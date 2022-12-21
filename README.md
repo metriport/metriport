@@ -255,65 +255,41 @@ $ npm run start
 
 ---
 
-## **Deployment Process**
+## **Self-Hosted Deployments**
 
 ### **Environment Setup**
 
+First, you'll need to create and configure a deployment config file: `/infra/config/standalone.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Then, proceed with the deployment steps below.
 
+### **Deployment Steps**
 
-### **API Server**
-
-First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands:
-
-```shell
-$ cd server/infrastructure
-$ npm install # only needs to be run once
-$ cdk bootstrap # only needs to be run once
-$ npm run prep-deploy
-$ cdk deploy APISecretsStack
-```
-
-After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
-
-Then, to deploy the back-end execute the following commands:
+1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
-$ cd server/infrastructure
-$ npm run prep-deploy
-$ npm run deploy-infra-prod
+$ ./deploy.sh -e "sandbox" -s "<config.secretsStackName>"
 ```
 
-After deployment, the API will be available at the specified domain (ie in this example `api.metriport.com`).
+2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
 
-Note down the output of the CDK deploy, as you'll need it for deploying the Developer Dashboard (this should only need to be done once).
-
-After deploying the back-end, you'll now also be able to deploy the sandbox environment. To do so, first fill out the `cognitoUserPoolID` in the sandbox stack properties using the output of the backend's CDK deploy, and then run the following command:
+3. Then, to deploy the back-end execute the following command:
 
 ```shell
-$ npm run deploy-infra-sandbox
+$ ./deploy.sh -e "sandbox" -s "<config.stackName>"
 ```
 
-### **Connect Widget**
+After deployment, the API will be available at the configured subdomain + domain.
 
-First, build the widget by executing the following commands:
+4. Finally, to self-host the Connect widget, run the following:
 
 ```shell
-$ cd connect-widget/widget
-$ npm run build
+$ ./deploy.sh -e "sandbox" -s "<config.connectWidget.stackName>"
 ```
 
-Then, to deploy the widget execute the following commands:
+Note: if you need help with the `deploy.sh` script at any time, you can run:
 
 ```shell
-$ cd connect-widget/infrastructure
-$ npm install # only needs to be run once
-$ cdk bootstrap # only needs to be run once
-$ npm run prep-deploy
-$ cdk deploy -c domain=metriport.com -c subdomain=connect
+$ ./deploy.sh -h
 ```
-
-After deployment, the app will be available at the specified domain (ie in this example `connect.metriport.com`).
-
 
 ## License
 

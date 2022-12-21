@@ -8,11 +8,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk",
-    "prep-deploy": "cd ../ && npm run prep-deploy && cd infrastructure/ && npm run build && npm run test && cdk diff -c domain=metriport.com -c subdomain=api APIInfrastructureStack",
-    "deploy-infra-prod": "cdk deploy APIInfrastructureStack",
-    "deploy-infra-sandbox": "cdk deploy SandboxAPIInfrastructureStack",
-    "deploy-secrets-prod": "cdk deploy APISecretsStack"
+    "cdk": "cdk"
   },
   "devDependencies": {
     "@types/jest": "^29.2.0",
