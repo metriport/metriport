@@ -74,18 +74,13 @@ In addition to our APIs, we've published an open-source demo app for you to buil
 
 ## **Getting Started**
 
-### **Quickstart Guide 🚀**
-- https://docs.metriport.com/getting-started/introduction
+### **[Quickstart Guide](https://docs.metriport.com/getting-started/introduction) 🚀**
 
-### **Developer Dashboard 💻**
-- https://dash.metriport.com/
+### **[Developer Dashboard](https://dash.metriport.com/) 💻**
 
-### **NPM**
-- https://www.npmjs.com/package/@metriport/api
+### **[npm package](https://www.npmjs.com/package/@metriport/api)**
 
 ## **Main Components**
-
-
 
 ### **API Server**
 
