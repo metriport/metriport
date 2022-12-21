@@ -266,7 +266,7 @@ First, you'll need to create and configure a deployment config file: `/infra/con
 1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
-$ ./deploy.sh -e "sandbox" -s "<config.secretsStackName>"
+$ ./deploy.sh -e "standalone" -s "<config.secretsStackName>"
 ```
 
 2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
@@ -274,7 +274,7 @@ $ ./deploy.sh -e "sandbox" -s "<config.secretsStackName>"
 3. Then, to deploy the back-end execute the following command:
 
 ```shell
-$ ./deploy.sh -e "sandbox" -s "<config.stackName>"
+$ ./deploy.sh -e "standalone" -s "<config.stackName>"
 ```
 
 After deployment, the API will be available at the configured subdomain + domain.
@@ -282,7 +282,7 @@ After deployment, the API will be available at the configured subdomain + domain
 4. Finally, to self-host the Connect widget, run the following:
 
 ```shell
-$ ./deploy.sh -e "sandbox" -s "<config.connectWidget.stackName>"
+$ ./deploy.sh -e "standalone" -s "<config.connectWidget.stackName>"
 ```
 
 Note: if you need help with the `deploy.sh` script at any time, you can run:
