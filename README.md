@@ -35,11 +35,11 @@
 
 #### Support us on [Product Hunt](https://www.producthunt.com/products/metriport-api) and [Launch YC](https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data)
 
-   <a href="https://www.producthunt.com/posts/metriport-health-devices-api?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-metriport&#0045;health&#0045;devices&#0045;api" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=371762&theme=light" alt="Metriport&#0032;&#0045;&#0032;Health&#0032;Devices&#0032;API - Open&#0045;source&#0032;Plaid&#0032;for&#0032;healthcare&#0032;data | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a> <a href='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data' target="_blank"><img src='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data/upvote_embed.svg' alt='Launch YC: Metriport - Universal API for Healthcare Data'></a>
+<a href="https://www.producthunt.com/posts/metriport-health-devices-api?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-metriport&#0045;health&#0045;devices&#0045;api" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=371762&theme=light" alt="Metriport&#0032;&#0045;&#0032;Health&#0032;Devices&#0032;API - Open&#0045;source&#0032;Plaid&#0032;for&#0032;healthcare&#0032;data | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a> <a href='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data' target="_blank"><img src='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data/upvote_embed.svg' alt='Launch YC: Metriport - Universal API for Healthcare Data'></a>
+
 </div>
 
 ## **Overview**
-
 
 <div align="center">
    <img width="50%" alt="wearables" src="https://metriport.com/wearables.svg">
@@ -80,90 +80,60 @@ In addition to our APIs, we've published an open-source demo app for you to buil
 
 ### **[npm package](https://www.npmjs.com/package/@metriport/api)**
 
-## **Main Components**
+## **Repo Rundown**
 
 ### **API Server**
+
+Backend for the Metriport API.
 
 - Dir: `/api`
-- Desc: Backend components for the Metriport API.
 - URL: [https://api.metriport.com/](https://api.metriport.com/)
+- Sandbox URL: [https://api.sandbox.metriport.com/](https://api.sandbox.metriport.com/)
 
 ### **Connect Widget**
 
-- Dir: `/connect-widget`
-- Desc: Pre-built React app that devs can embed in their own applications to allow their users to authenticate with various data sources, and then pull data from those sources on their behalf. Right now, this only supports consumer data auth (ie wearables + mHealth apps), but we will be adding support for medical data auth ASAP.
-- URL: [https://connect.metriport.com/](https://connect.metriport.com/)
+Pre-built app that you can embed your own app! Use it to allow your users to authenticate with various data sources, allowing you to pull their health data from those sources.
 
-## **Deployment Process**
-
-Note: Ensure the API Server is the first stack to be deployed.
-
-### **API Server**
-
----
-
-First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands:
-
-```shell
-$ cd server/infrastructure
-$ npm install # only needs to be run once
-$ cdk bootstrap # only needs to be run once
-$ npm run prep-deploy
-$ cdk deploy APISecretsStack
-```
-
-After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
-
-Then, to deploy the back-end execute the following commands:
-
-```shell
-$ cd server/infrastructure
-$ npm run prep-deploy
-$ npm run deploy-infra-prod
-```
-
-After deployment, the API will be available at the specified domain (ie in this example `api.metriport.com`).
-
-Note down the output of the CDK deploy, as you'll need it for deploying the Developer Dashboard (this should only need to be done once).
-
-After deploying the back-end, you'll now also be able to deploy the sandbox environment. To do so, first fill out the `cognitoUserPoolID` in the sandbox stack properties using the output of the backend's CDK deploy, and then run the following command:
-
-```shell
-$ npm run deploy-infra-sandbox
-```
-
-### **Connect Widget**
-
----
-
-<div align="center">
+<div align="left">
    <img width="50%" alt="connect widget" src="https://i.ibb.co/mNgMwyd/Screenshot-2022-12-20-at-3-51-47-PM.png">
 </div>
 
-First, build the widget by executing the following commands:
+- Dir: `/connect-widget`
+- URL: [https://connect.metriport.com/](https://connect.metriport.com/?token=demo)
 
-```shell
-$ cd connect-widget/widget
-$ npm run build
-```
+### **Infrastructure as Code**
 
-Then, to deploy the widget execute the following commands:
+We use AWS CDK as IaC.
 
-```shell
-$ cd connect-widget/infrastructure
-$ npm install # only needs to be run once
-$ cdk bootstrap # only needs to be run once
-$ npm run prep-deploy
-$ cdk deploy -c domain=metriport.com -c subdomain=connect
-```
+- Dir: `/infra`
 
-After deployment, the app will be available at the specified domain (ie in this example `connect.metriport.com`).
+### **Docs**
+
+Our beautiful developer documentation, powered by [mintlify](https://mintlify.com/) ❤️.
+
+- Dir: `/docs`
+- URL: [https://docs.metriport.com/](https://docs.metriport.com/getting-started/introduction)
+
+---
+
+## **Prerequisites**
+
+Before getting started with the deployment or any development, ensure you have done the following:
+
+1. Install the prerequisite programs:
+   - [The latest LTS Node.js version](https://nodejs.org/en/download/).
+   - [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+   - (Optional) [VS Code](https://code.visualstudio.com/) - recommended IDE.
+   - (Optional) [DBeaver](https://dbeaver.io/) - recommended universal DB tool.
+2. Create an AWS account.
+3. Create an [AWS IAM admin user](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html).
+4. Setup AWS `Route 53` to [handle the DNS for your domain, and create a hosted zone](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/migrate-dns-domain-inactive.html).
+5. Follow modules 1 & 2 of [this guide](https://aws.amazon.com/getting-started/guides/setup-cdk/) for `Typescript` to bootstrap the `AWS CDK` on your local machine.
+6. 🥳 🎉 🥳 🎉 🥳 🎉
 
 ## **Local Development**
 
 ### **API Server**
-
----
 
 First, create a local environment file, to define your developer keys:
 
@@ -183,7 +153,7 @@ $ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" > api/app/.env
 $ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
 ```
 
-#### Optional usage report
+#### **Optional usage report**
 
 The API server reports endpoint usage to an external service. This is optional.
 
@@ -199,7 +169,7 @@ If you want to set it up, add this to the `.env` file:
 $ echo "USAGE_URL=<YOUR-URL>" > api/app/.env
 ```
 
-#### Finalizing setting up the API Server
+#### **Finalizing setting up the API Server**
 
 Then to run the full back-end stack, use docker-compose to lauch a Postgres container, local instance of DynamoDB, and the Node server itself:
 
@@ -215,7 +185,7 @@ Now, the backend services will be available at:
 - Postgres: `localhost:5432`
 - DynamoDB: `localhost:8000`
 
-#### Database Migrations
+#### **Database Migrations**
 
 The API Server uses Sequelize as an ORM, and its migration component to update the DB with changes as the application
 evolves. It also uses Umzug for programatic migration execution and typing.
@@ -256,7 +226,7 @@ To create new migrations:
    - `up` add changes to the DB (takes it to the new version)
    - `down` rolls back changes from the DB (goes back to the previous version)
 
-#### Additional stuff
+#### **Additional stuff**
 
 To do basic UI admin operations on the DynamoDB instance, you can do the following:
 
@@ -273,11 +243,7 @@ $ docker-compose -f docker-compose.dev.yml down
 
 To debug the backend, you can attach a debugger to the running Docker container by launching the `Docker: Attach to Node` configuration in VS Code. Note that this will support hot reloads 🔥🔥!
 
-TODO: figure out local lambda dev
-
 ### **Connect Widget**
-
----
 
 To run the Connect Widget:
 
@@ -286,6 +252,68 @@ $ cd connect-widget/widget
 $ npm install # only needs to be run once
 $ npm run start
 ```
+
+---
+
+## **Deployment Process**
+
+### **Environment Setup**
+
+
+
+### **API Server**
+
+First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands:
+
+```shell
+$ cd server/infrastructure
+$ npm install # only needs to be run once
+$ cdk bootstrap # only needs to be run once
+$ npm run prep-deploy
+$ cdk deploy APISecretsStack
+```
+
+After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
+
+Then, to deploy the back-end execute the following commands:
+
+```shell
+$ cd server/infrastructure
+$ npm run prep-deploy
+$ npm run deploy-infra-prod
+```
+
+After deployment, the API will be available at the specified domain (ie in this example `api.metriport.com`).
+
+Note down the output of the CDK deploy, as you'll need it for deploying the Developer Dashboard (this should only need to be done once).
+
+After deploying the back-end, you'll now also be able to deploy the sandbox environment. To do so, first fill out the `cognitoUserPoolID` in the sandbox stack properties using the output of the backend's CDK deploy, and then run the following command:
+
+```shell
+$ npm run deploy-infra-sandbox
+```
+
+### **Connect Widget**
+
+First, build the widget by executing the following commands:
+
+```shell
+$ cd connect-widget/widget
+$ npm run build
+```
+
+Then, to deploy the widget execute the following commands:
+
+```shell
+$ cd connect-widget/infrastructure
+$ npm install # only needs to be run once
+$ cdk bootstrap # only needs to be run once
+$ npm run prep-deploy
+$ cdk deploy -c domain=metriport.com -c subdomain=connect
+```
+
+After deployment, the app will be available at the specified domain (ie in this example `connect.metriport.com`).
+
 
 ## License
 

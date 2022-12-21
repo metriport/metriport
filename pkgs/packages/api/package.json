@@ -1,6 +1,6 @@
 {
   "name": "@metriport/api",
-  "version": "0.0.36",
+  "version": "0.0.37",
   "description": "> TODO: description",
   "author": "Metriport Inc. <hello@metriport.ai>",
   "homepage": "https://metriport.com/",
@@ -29,7 +29,7 @@
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
   },
-  "gitHead": "99d9f6d7926d5d5fd7641ec3da4e3becf210e8d6",
+  "gitHead": "75bcc07515a622388c0cdb7aab4c8b7b4ed63730",
   "dependencies": {
     "axios": "^1.2.1"
   }
