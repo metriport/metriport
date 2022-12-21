@@ -70,6 +70,8 @@ Open-source with native FHIR support. More info on our Medical API here: https:/
 
 ## **Getting Started**
 
+Check out the links below to get started with Metriport in minutes!
+
 ### **[Quickstart Guide](https://docs.metriport.com/getting-started/introduction) 🚀**
 
 ### **[Developer Dashboard](https://dash.metriport.com/) 💻**
