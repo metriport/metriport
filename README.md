@@ -58,7 +58,7 @@ Metriport is SOC 2 and HIPAA compliant. [Click here](https://metriport.com/secur
 
 ### **Health Devices API**
 
-We’re very excited to announce the launch of our first product, our [Health Devices API](https://metriport.com/devices), which allows developers to gain access to their users’ health data from various wearables, RPM devices, and mHealth sources.
+Our [Health Devices API](https://metriport.com/devices), allows you to gain access to your users’ health data from various wearables, RPM devices, and mHealth sources through a single standardized API.
 
 Out of the box, our Health Devices API supports the following integrations:
 
