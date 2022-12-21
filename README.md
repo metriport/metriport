@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/metriport/metriport">
-    <img src="https://metriport.com/logo.png" alt="Logo">
+    <img src="./assets/logo.png" alt="Logo">
   </a>
 
   <p align="center">
@@ -42,7 +42,7 @@
 ## **Overview**
 
 <div align="center">
-   <img width="50%" alt="wearables" src="https://metriport.com/wearables.svg">
+   <img width="50%" alt="wearables" src="./assets/wearables.svg">
 </div>
 
 ## **Security and Privacy**
@@ -50,10 +50,10 @@
 Metriport is SOC 2 and HIPAA compliant. [Click here](https://metriport.com/security/) to learn more about our security practices.
 
 <p float="left">
-  <img src="https://metriport.com/soc2.png" width="25%" />
-  <img src="https://metriport.com/hipaa.png" width="25%" />
-  <img src="https://metriport.com/soc2-vanta.png" width="25%" />
-  <img src="https://metriport.com/hipaa-vanta.png" width="25%" />
+  <img src="./assets/soc2.png" width="20%" />
+  <img src="./assets/hipaa.png" width="30%" />
+  <img src="./assets/soc2-vanta.png" width="20%" />
+  <img src="./assets/hipaa-vanta.png" width="20%" />
 </p>
 
 ### **Health Devices API**
@@ -71,7 +71,7 @@ Out of the box, our Health Devices API supports the following integrations:
 ...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:hello@metriport.ai) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
 
 <div align="center">
-   <img width="50%" alt="wearables" src="https://metriport.com/graphic.svg">
+   <img width="50%" alt="wearables" src="./assets/graphic.svg">
 </div>
 
 ### **Medical API (Coming Soon)**
