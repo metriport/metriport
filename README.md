@@ -50,10 +50,10 @@
 Metriport is SOC 2 and HIPAA compliant. [Click here](https://metriport.com/security/) to learn more about our security practices.
 
 <p float="left">
-  <img src="https://metriport.com/soc2.webp" width="25%" />
-  <img src="https://metriport.com/hipaa.webp" width="25%" />
-  <img src="https://metriport.com/soc2-vanta.webp" width="25%" />
-  <img src="https://metriport.com/hipaa-vanta.webp" width="25%" />
+  <img src="https://metriport.com/soc2.png" width="25%" />
+  <img src="https://metriport.com/hipaa.png" width="25%" />
+  <img src="https://metriport.com/soc2-vanta.png" width="25%" />
+  <img src="https://metriport.com/hipaa-vanta.png" width="25%" />
 </p>
 
 ### **Health Devices API**
