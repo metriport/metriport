@@ -54,7 +54,6 @@ Out of the box, our Health Devices API supports the following integrations:
 - Fitbit
 - Oura
 - Whoop
-- Garmin
 - Withings
 - Cronometer
 
