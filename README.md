@@ -245,7 +245,7 @@ To debug the backend, you can attach a debugger to the running Docker container 
 To run the Connect Widget:
 
 ```shell
-$ cd connect-widget/widget
+$ cd connect-widget/app
 $ npm install # only needs to be run once
 $ npm run start
 ```
