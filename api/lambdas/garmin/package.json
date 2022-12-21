@@ -1,0 +1,16 @@
+{
+  "name": "garmin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No test specified\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.1248.0",
+    "axios": "^1.2.1"
+  }
+}

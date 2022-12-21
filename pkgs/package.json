@@ -1,0 +1,15 @@
+{
+  "name": "root",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "lerna": "^6.1.0"
+  },
+  "scripts": {
+    "publish": "lerna run tsc && lerna publish",
+    "force-publish": "lerna run tsc && lerna publish --force-publish --no-git-tag-version --no-push"
+  },
+  "license": "MIT"
+}

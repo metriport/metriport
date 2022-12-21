@@ -1,0 +1,299 @@
+<p align="center">
+  <a href="https://github.com/metriport/metriport">
+    <img src="https://metriport.com/logo.png" alt="Logo">
+  </a>
+
+  <p align="center">
+    Metriport helps digital health companies access and manage health and medical data, through a single open source API.
+    <br />
+    <a href="https://metriport.com" target="_blank"><strong>Learn more »</strong></a>
+    <br />
+    <br />
+    <a href="https://docs.metriport.com/" target="_blank">Docs</a>
+    ·
+    <a href="https://www.npmjs.com/package/@metriport/api" target="_blank">NPM</a>
+    ·
+    <a href="https://dash.metriport.com" target="_blank">Developer Dashboard</a>
+    ·
+    <a href="https://metriport.com" target="_blank">Website</a>
+    ·
+    <a href="https://github.com/metriport/metriport-demo-app" target="_blank">Demo App</a>
+  </p>
+</p>
+
+<p align="center">
+   <a href="https://metriport.statuspage.io/"><img src="https://betteruptime.com/status-badges/v1/monitor/a9kf.svg" alt="Uptime"></a>
+   <a href="https://github.com/metriport/metriport/stargazers"><img src="https://img.shields.io/github/stars/metriport/metriport" alt="Github Stars"></a>
+   <a href="https://github.com/metriport/metriport/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
+   <a href="https://github.com/metriport/metriport/pulse"><img src="https://img.shields.io/github/commit-activity/m/metriport/metriport" alt="Commits-per-month"></a>
+   <a href="https://twitter.com/metriport"><img src="https://img.shields.io/twitter/follow/metriport?style=flat"></a>
+   <a href="https://www.linkedin.com/company/metriport"><img src="https://img.shields.io/static/v1?label=LinkedIn&message=Metriport (YC S22)&color=blue" alt="LinkedIn"></a>
+   <a href="https://www.ycombinator.com/companies/metriport"><img src="https://img.shields.io/static/v1?label=Y Combinator&message=Metriport&color=orange" alt="YC"></a>
+</p>
+
+<div align="center">
+
+#### Support us on [Product Hunt](https://www.producthunt.com/products/metriport-api) and [Launch YC](https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data)
+
+   <a href="https://www.producthunt.com/posts/metriport-health-devices-api?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-metriport&#0045;health&#0045;devices&#0045;api" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=371762&theme=light" alt="Metriport&#0032;&#0045;&#0032;Health&#0032;Devices&#0032;API - Open&#0045;source&#0032;Plaid&#0032;for&#0032;healthcare&#0032;data | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a> <a href='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data' target="_blank"><img src='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data/upvote_embed.svg' alt='Launch YC: Metriport - Universal API for Healthcare Data'></a>
+</div>
+
+## **Overview**
+
+
+<div align="center">
+   <img width="50%" alt="wearables" src="https://metriport.com/wearables.svg">
+</div>
+
+### **Health Devices API**
+
+We’re very excited to announce the launch of our first product, our [Health Devices API](https://metriport.com/devices), which allows developers to gain access to their users’ health data from various wearables, RPM devices, and mHealth sources.
+
+Out of the box, our Health Devices API supports the following integrations:
+
+- Fitbit
+- Oura
+- Whoop
+- Garmin
+- Withings
+- Cronometer
+
+...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:hello@metriport.ai) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
+
+<div align="center">
+   <img width="50%" alt="wearables" src="https://metriport.com/graphic.svg">
+</div>
+
+### **Medical API (Coming Soon)**
+
+Open-source with native FHIR support. More info on our Medical API here: https://metriport.com/medical
+
+### **Demo App**
+
+In addition to our APIs, we've published an open-source demo app for you to build with! Get started here: https://github.com/metriport/metriport-demo-app
+
+## **Getting Started**
+
+### **Quickstart Guide 🚀**
+- https://docs.metriport.com/getting-started/introduction
+
+### **Developer Dashboard 💻**
+- https://dash.metriport.com/
+
+### **NPM**
+- https://www.npmjs.com/package/@metriport/api
+
+## **Main Components**
+
+
+
+### **API Server**
+
+- Dir: `/api`
+- Desc: Backend components for the Metriport API.
+- URL: [https://api.metriport.com/](https://api.metriport.com/)
+
+### **Connect Widget**
+
+- Dir: `/connect-widget`
+- Desc: Pre-built React app that devs can embed in their own applications to allow their users to authenticate with various data sources, and then pull data from those sources on their behalf. Right now, this only supports consumer data auth (ie wearables + mHealth apps), but we will be adding support for medical data auth ASAP.
+- URL: [https://connect.metriport.com/](https://connect.metriport.com/)
+
+## **Deployment Process**
+
+Note: Ensure the API Server is the first stack to be deployed.
+
+### **API Server**
+
+---
+
+First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands:
+
+```shell
+$ cd server/infrastructure
+$ npm install # only needs to be run once
+$ cdk bootstrap # only needs to be run once
+$ npm run prep-deploy
+$ cdk deploy APISecretsStack
+```
+
+After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
+
+Then, to deploy the back-end execute the following commands:
+
+```shell
+$ cd server/infrastructure
+$ npm run prep-deploy
+$ npm run deploy-infra-prod
+```
+
+After deployment, the API will be available at the specified domain (ie in this example `api.metriport.com`).
+
+Note down the output of the CDK deploy, as you'll need it for deploying the Developer Dashboard (this should only need to be done once).
+
+After deploying the back-end, you'll now also be able to deploy the sandbox environment. To do so, first fill out the `cognitoUserPoolID` in the sandbox stack properties using the output of the backend's CDK deploy, and then run the following command:
+
+```shell
+$ npm run deploy-infra-sandbox
+```
+
+### **Connect Widget**
+
+---
+
+<div align="center">
+   <img width="50%" alt="connect widget" src="https://i.ibb.co/mNgMwyd/Screenshot-2022-12-20-at-3-51-47-PM.png">
+</div>
+
+First, build the widget by executing the following commands:
+
+```shell
+$ cd connect-widget/widget
+$ npm run build
+```
+
+Then, to deploy the widget execute the following commands:
+
+```shell
+$ cd connect-widget/infrastructure
+$ npm install # only needs to be run once
+$ cdk bootstrap # only needs to be run once
+$ npm run prep-deploy
+$ cdk deploy -c domain=metriport.com -c subdomain=connect
+```
+
+After deployment, the app will be available at the specified domain (ie in this example `connect.metriport.com`).
+
+## **Local Development**
+
+### **API Server**
+
+---
+
+First, create a local environment file, to define your developer keys:
+
+```shell
+$ touch api/app/.env
+$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" > api/app/.env
+$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
+$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" > api/app/.env
+$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
+$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" > api/app/.env
+$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" > api/app/.env
+$ echo "OURA_CLINET_ID=<YOUR-KEY>" > api/app/.env
+$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
+$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" > api/app/.env
+$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" > api/app/.env
+$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" > api/app/.env
+$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
+```
+
+#### Optional usage report
+
+The API server reports endpoint usage to an external service. This is optional.
+
+A reachable service that accepts a `POST` request to the informed URL with the payload below is required:
+
+```
+{ "cxId": "<the account ID>", "cxUserId": "<the ID of the user who's data is being requested>" }
+```
+
+If you want to set it up, add this to the `.env` file:
+
+```shell
+$ echo "USAGE_URL=<YOUR-URL>" > api/app/.env
+```
+
+#### Finalizing setting up the API Server
+
+Then to run the full back-end stack, use docker-compose to lauch a Postgres container, local instance of DynamoDB, and the Node server itself:
+
+```shell
+$ cd api/app
+$ npm install # only needs to be run once
+$ docker-compose -f docker-compose.dev.yml up --build
+```
+
+Now, the backend services will be available at:
+
+- API Server: `0.0.0/0:8080`
+- Postgres: `localhost:5432`
+- DynamoDB: `localhost:8000`
+
+#### Database Migrations
+
+The API Server uses Sequelize as an ORM, and its migration component to update the DB with changes as the application
+evolves. It also uses Umzug for programatic migration execution and typing.
+
+When the application runs it automatically executes all migrations located under `src/sequelize/migrations` (in ascending order)
+before the code is atually executed.
+
+If you need to undo/revert a migration manually, you can use the CLI, which is a wrapper to Umzug's CLI (still under heavy
+development at the time of this writing).
+
+It requires DB credentials on the environment variable `DB_CREDS` (values from `docker-compose.dev.yml`, update as needed):
+
+```shell
+$ export DB_CREDS='{"username":"admin","password":"admin","dbname":"db","engine":"postgres","host":"localhost","port":5432}'
+```
+
+Run the CLI with:
+
+```shell
+$ npm i -g ts-node # only needs to be run once
+$ cd api/app
+$ ts-node src/sequelize/cli
+```
+
+Umzug's CLI is still in development at the time of this writing, so that's how one uses it:
+
+- it will print the commands being sent to the DB
+- followed by the result of the command
+- it won't exit by default, you need to `ctrl+c`
+- the command `up` executes all outstanding migrations
+- the command `down` reverts one migration at a time
+
+To create new migrations:
+
+1. Duplicate a migration file on `./api/app/src/sequelize/migrations`
+2. Rename the new file so the timestamp is close to the current time - it must be unique, migrations are executed in sorting order
+3. Edit the migration file to perform the changes you want
+   - `up` add changes to the DB (takes it to the new version)
+   - `down` rolls back changes from the DB (goes back to the previous version)
+
+#### Additional stuff
+
+To do basic UI admin operations on the DynamoDB instance, you can do the following:
+
+```shell
+$ npm install npm install -g dynamodb-admin # only needs to be run once
+$ DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin # admin console will be available at http://localhost:8001/
+```
+
+To kill and clean-up the back-end, hit `CTRL + C` a few times, and run the following from the `api/app` directory:
+
+```shell
+$ docker-compose -f docker-compose.dev.yml down
+```
+
+To debug the backend, you can attach a debugger to the running Docker container by launching the `Docker: Attach to Node` configuration in VS Code. Note that this will support hot reloads 🔥🔥!
+
+TODO: figure out local lambda dev
+
+### **Connect Widget**
+
+---
+
+To run the Connect Widget:
+
+```shell
+$ cd connect-widget/widget
+$ npm install # only needs to be run once
+$ npm run start
+```
+
+## License
+
+Distributed under the AGPLv3 License. See `LICENSE` for more information.
+
+Copyright © Metriport 2022

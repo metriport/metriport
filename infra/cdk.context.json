@@ -1,0 +1,24 @@
+{
+  "availability-zones:account=463519787594:region=us-west-1": [
+    "us-west-1a",
+    "us-west-1b"
+  ],
+  "hosted-zone:account=463519787594:domainName=metriport.com:region=us-west-1": {
+    "Id": "/hostedzone/Z06381181A1ZNHQQAN5CN",
+    "Name": "metriport.com."
+  },
+  "availability-zones:account=463519787594:region=us-west-2": [
+    "us-west-2a",
+    "us-west-2b",
+    "us-west-2c",
+    "us-west-2d"
+  ],
+  "hosted-zone:account=463519787594:domainName=metriport.com:region=us-west-2": {
+    "Id": "/hostedzone/Z06381181A1ZNHQQAN5CN",
+    "Name": "metriport.com."
+  },
+  "hosted-zone:account=463519787594:domainName=metriport.com:region=us-east-1": {
+    "Id": "/hostedzone/Z06381181A1ZNHQQAN5CN",
+    "Name": "metriport.com."
+  }
+}
