@@ -45,6 +45,17 @@
    <img width="50%" alt="wearables" src="https://metriport.com/wearables.svg">
 </div>
 
+## **Security and Privacy**
+
+Metriport is SOC 2 and HIPAA compliant. [Click here](https://metriport.com/security/) to learn more about our security practices.
+
+<p float="left">
+  <img src="https://metriport.com/soc2.webp" width="25%" />
+  <img src="https://metriport.com/hipaa.webp" width="25%" />
+  <img src="https://metriport.com/soc2-vanta.webp" width="25%" />
+  <img src="https://metriport.com/hipaa-vanta.webp" width="25%" />
+</p>
+
 ### **Health Devices API**
 
 We’re very excited to announce the launch of our first product, our [Health Devices API](https://metriport.com/devices), which allows developers to gain access to their users’ health data from various wearables, RPM devices, and mHealth sources.
