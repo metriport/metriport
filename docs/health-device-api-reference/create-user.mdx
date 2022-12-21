@@ -1,0 +1,23 @@
+---
+title: "Create User"
+description: "For your specified user ID, returns a Metriport user ID to be used in subsequent requests."
+api: "POST /user"
+---
+
+## Query Params
+
+<ParamField query="appUserId" type="string" required>
+  The user ID you identify this user with in your app.
+</ParamField>
+
+## Response
+
+<ResponseField name="userId" type="string" required>
+  The Metriport user ID to be used in subsequent requests for this user.
+</ResponseField>
+
+```json
+{
+  "userId": "66d4f01f-6ebe-44f8-8bbc-15a65adbe8c2"
+}
+```

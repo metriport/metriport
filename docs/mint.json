@@ -1,0 +1,72 @@
+{
+  "name": "Metriport",
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png"
+  },
+  "api": {
+    "baseUrl": ["https://api.metriport.com"],
+    "auth": {
+      "method": "key",
+      "name": "x-api-key"
+    }
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#748DF0",
+    "light": "#ADBCF6",
+    "dark": "#4958A9",
+    "ultraLight": "#E6EAFB",
+    "ultraDark": "#1E2362"
+  },
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "https://dash.metriport.com"
+  },
+  "topbarLinks": [
+    {
+      "name": "Contact Us",
+      "url": "mailto:hello@metriport.ai"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Website",
+      "icon": "globe",
+      "url": "https://metriport.com"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/metriport/metriport"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["getting-started/introduction", "getting-started/connect-quickstart"]
+    },
+    {
+      "group": "Health Device API Reference",
+      "pages": [
+        "health-device-api-reference/create-user",
+        "health-device-api-reference/create-connect-token",
+        "health-device-api-reference/get-activity-data",
+        "health-device-api-reference/get-biometrics-data",
+        "health-device-api-reference/get-body-data",
+        "health-device-api-reference/get-nutrition-data",
+        "health-device-api-reference/get-sleep-data",
+        "health-device-api-reference/get-user-data"
+      ]
+    },
+    {
+      "group": "Medical API Reference",
+      "pages": ["medical-api-reference/coming-soon"]
+    }
+  ],
+  "footerSocials": {
+    "twitter": "https://twitter.com/metriport?lang=en",
+    "linkedin": "https://www.linkedin.com/company/metriport/",
+    "github": "https://github.com/metriport/metriport"
+  }
+}

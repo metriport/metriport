@@ -1,0 +1,43 @@
+---
+title: "Get Body Data"
+description: "Returns body data from all of the specified user's connected providers."
+api: "GET /body"
+---
+
+## Query Params
+
+<ParamField query="userId" type="string" required>
+  The Metriport user ID to create a session token for.
+</ParamField>
+
+<ParamField query="date" type="string" required>
+  Day for which to pull the data. Formatted YYYY-MM-DD.
+
+  <Info>
+    For simplicity, all queries assume the UTC timezone for the specified date
+    starting at 00:00 to 23:59.
+  </Info>
+</ParamField>
+
+## Response
+
+<ResponseField name="body" type="Body[]">
+  An array of body objects for each of the user's connected providers
+</ResponseField>
+
+```json
+[
+  {
+    "metadata": {
+      "date": "2022-12-21",
+      "source": "whoop"
+    },
+    "body_fat_pct": 9,
+    "bone_mass_kg": 33,
+    "height_cm": 189,
+    "lean_mass_kg": 43,
+    "muscle_mass_kg": 22,
+    "weight_kg": 78
+  }
+]
+```

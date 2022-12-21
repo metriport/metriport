@@ -1,0 +1,40 @@
+---
+title: "Get User Data"
+description: "Returns user info from all of the specified user's connected providers."
+api: "GET /user"
+---
+
+## Query Params
+
+<ParamField query="userId" type="string" required>
+  The Metriport user ID to create a session token for.
+</ParamField>
+
+<ParamField query="date" type="string" required>
+  Day for which to pull the data. Formatted YYYY-MM-DD.
+
+  <Info>
+    For simplicity, all queries assume the UTC timezone for the specified date
+    starting at 00:00 to 23:59.
+  </Info>
+</ParamField>
+
+## Response
+
+<ResponseField name="user" type="User[]">
+  An array of user objects for each of the user's connected providers
+</ResponseField>
+
+```json
+[
+  {
+    "age": 27,
+    "city": "San Francisco",
+    "country": "US",
+    "date_of_birth": "1995-08-02",
+    "email": "hello@metriport.ai",
+    "region": "CA",
+    "sex": "male"
+  }
+]
+```

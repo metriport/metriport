@@ -1,0 +1,120 @@
+---
+title: "Connect Quickstart"
+description: "Follow this guide to get up and running with Metriport in minutes."
+---
+
+<img className="h-40" src="/images/integrations.svg" />
+
+## Overview
+
+Getting started with Metriport is pretty easy, you'll just need take the following steps:
+
+1. Create a developer account.
+2. Generate an API key.
+3. Setup the Metriport client on your server.
+4. Link to the Metriport Connect widget in your app.
+5. Access your user's health data 🎉🎉🎉
+
+Let's get into it! 🤘
+
+## 1. Create a developer account
+
+<Card
+  title="Click me to go to the developer dashboard!"
+  icon="user"
+  href="https://dash.metriport.com/"
+>
+  This will take you to the Metriport developer dashboard where you can create
+  your Metriport account.
+</Card>
+
+## 2. Generate an API key
+
+Once you've created an account and confirmed your email, you'll be taken to the [dashboard
+home page](https://dash.metriport.com/). From here, take the following steps to get your API key:
+
+- In the left hand menu, click "Settings".
+- On the Settings page, click the "Create Subscription" button, and add your payment info.
+- After that's done, back on the Settings page, you'll be able to click the "Generate API Key" button.
+
+<Info>
+  This API key will allow you to start making requests to the Metriport API on
+  your behalf. Keep it somewhere safe!
+</Info>
+
+<Tip>
+  If you believe your key has been compromised, you can always revoke it and
+  then generate a new one on the Settings page by clicking the trash button
+  beside the key.
+</Tip>
+
+## 3. Setup the Metriport client on your server
+
+In the root of your server project, run the following terminal command to install the Metriport client:
+
+```bash
+npm install --save @metriport/api
+```
+
+From here, all you need to do is to initialize a Metriport client instance using your API
+key, and you're good to start making requests to the Metriport API from your server:
+
+```typescript
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new Metriport("YOUR_API_KEY");
+```
+
+## 4. Link to the Metriport Connect widget in your app
+
+With Metriport, you get a pre-built [Connect widget](https://connect.metriport.com/?token=demo)
+that you can easily plug into your app, so that your users can connect all of their data sources to your application!
+Here's a preview:
+
+<iframe width="90%" height="700" src="https://connect.metriport.com/?token=demo"> </iframe>
+
+
+To hook this up, on your server you'll just need to create each user in Metriport, and
+generate a temporary token for each Connect session:
+
+```typescript
+// create user in Metriport and get the Metriport user ID
+const metriportUserId = await metriportClient.getMetriportUserId(
+  "your-internal-user-id"
+);
+
+// create a session token to be used in the Metriport Connect widget
+const connectToken = await metriportClient.getConnectToken(metriportUserId);
+```
+
+<Info>
+  As the Metriport user ID is reused for all subsequent data requests, we
+  recommend saving it in your database for future requests.
+</Info>
+
+Then, in your application's front end, simply link to the Metriport Connect widget
+and pass in that session token you generated above:
+
+```typescript
+window.open(`https://connect.metriport.com/?token=${connectToken}`);
+```
+
+<Info>
+  The token will expire 10 minutes after it is created, and can be reused for
+  the duration of the Connect session.
+</Info>
+
+## 5. Access your user's health data 🎉🎉🎉
+
+<Check>
+  That's it, now you're ready to start accessing all of your user's health data
+  from all of the data sources they've connected to your app!
+</Check>
+
+<Card
+  title="API reference"
+  icon="terminal"
+  href="/health-device-api-reference/create-user"
+>
+  Check out our API reference for example data requests and responses.
+</Card>

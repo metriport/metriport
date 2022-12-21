@@ -1,0 +1,25 @@
+---
+title: "Create Connect Token"
+description: "Returns a token to be used in a Metriport Connect session."
+api: "GET /user/connect/token"
+---
+
+## Query Params
+
+<ParamField query="userId" type="string" required>
+  The Metriport user ID to create a session token for.
+</ParamField>
+
+## Response
+
+<ResponseField name="token" type="string" required>
+  The temporary token to allow the specified user to access the Metriport Connect widget.
+
+  <Info>The token will expire 10 minutes after it is created, and can be reused for the duration of the session.</Info>
+</ResponseField>
+
+```json
+{
+  "token": "YXM-S_TFApXrAjLpfdmdG"
+}
+```
