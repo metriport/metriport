@@ -5,7 +5,10 @@
     "dark": "/logo/dark.png"
   },
   "api": {
-    "baseUrl": ["https://api.metriport.com"],
+    "baseUrl": [
+      "https://api.metriport.com",
+      "http://api.sandbox.metriport.com/"
+    ],
     "auth": {
       "method": "key",
       "name": "x-api-key"
@@ -44,7 +47,10 @@
   "navigation": [
     {
       "group": "Getting Started",
-      "pages": ["getting-started/introduction", "getting-started/connect-quickstart"]
+      "pages": [
+        "getting-started/introduction",
+        "getting-started/connect-quickstart"
+      ]
     },
     {
       "group": "Health Device API Reference",
@@ -60,8 +66,17 @@
       ]
     },
     {
+      "group": "More Info",
+      "pages": [
+        "more-info/our-integrations",
+        "more-info/webhooks"
+      ]
+    },
+    {
       "group": "Medical API Reference",
-      "pages": ["medical-api-reference/coming-soon"]
+      "pages": [
+        "medical-api-reference/coming-soon"
+      ]
     }
   ],
   "footerSocials": {
