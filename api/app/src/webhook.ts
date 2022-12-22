@@ -1,21 +1,28 @@
+import { MetriportData } from "@metriport/api/lib/models/metriport-data";
 import Axios from "axios";
 import { chunk, groupBy } from "lodash";
 import { getUserTokenByUAT } from "./command/cx-user/get-user-token";
 import { getSettingsOrFail } from "./command/settings/getSettings";
+import { updateWebhookStatus } from "./command/settings/updateSettings";
 import { getErrorMessage } from "./errors";
+import WebhookError from "./errors/webhook";
 import { DataType, TypedData, UserData } from "./mappings/garmin";
-import { Settings } from "./models/settings";
+import { Settings, WEBHOOK_STATUS_OK } from "./models/settings";
 import { Util } from "./shared/util";
 
 const axios = Axios.create();
 
 const log = Util.log(`GARMIN.Webhook`);
 
-interface WebhookPayload<T> {
-  [k: string]: T[];
-}
+type WebhookPayloadType = DataType | "ping";
 
-export const processData = async <T>(data: UserData<T>[]): Promise<void> => {
+type WebhookPayload = {
+  [k in WebhookPayloadType]?: MetriportData[];
+};
+
+export const processData = async <T extends MetriportData>(
+  data: UserData<T>[]
+): Promise<void> => {
   // TOO move to Promise.allSettled?
   // the same Garmin user/UAT might be associated with multiple Metriport Customers
   const dataWithCustomerIdList = await Promise.all(
@@ -52,7 +59,7 @@ export const processData = async <T>(data: UserData<T>[]): Promise<void> => {
   );
 };
 
-const processOneCustomer = async <T>(
+const processOneCustomer = async <T extends MetriportData>(
   settings: Settings,
   dataList: TypedData<T>[]
 ): Promise<boolean> => {
@@ -66,7 +73,9 @@ const processOneCustomer = async <T>(
     const chunksOfData = chunk(dataOfType, 100);
 
     for (const chunk of chunksOfData) {
-      const payload = { [type]: chunk.map((c) => c.data) };
+      const payload: WebhookPayload = {
+        [type]: chunk.map((c) => c.data),
+      };
 
       const success = await processChunk(payload, settings);
 
@@ -79,17 +88,16 @@ const processOneCustomer = async <T>(
   return true;
 };
 
-const processChunk = async <T>(
-  payload: WebhookPayload<T>,
+const processChunk = async (
+  payload: WebhookPayload,
   settings: Settings
 ): Promise<boolean> => {
   // STORE ON THE DB
   // TODO #34 depends on #150 to make table available
 
   const url = settings.webhookUrl;
-  // TODO #150 Get this from the DB
-  // const key = settings.webhookKey;
-  const key = "bogus";
+  const key = settings.webhookKey;
+  const webhookStatus = settings.webhookStatus;
 
   if (!url || !key) {
     console.log(
@@ -107,30 +115,48 @@ const processChunk = async <T>(
       2
     )}`
   );
-  await sendChunk(payload, url, key);
+  await sendPayload(payload, url, key);
 
   // UPDATE THE DB WITH STATUS OF SENDING RECORDS
   // TODO #34 depends on #150 to make table available
 
+  if (!webhookStatus || webhookStatus !== WEBHOOK_STATUS_OK) {
+    // update the status to successful since we were able to send the payload
+    await updateWebhookStatus({
+      id: settings.id,
+      webhookStatus: WEBHOOK_STATUS_OK,
+    });
+  }
+
   return true;
 };
 
-const sendChunk = async <T>(
-  payload: WebhookPayload<T>,
+const sendPayload = async (
+  payload: WebhookPayload,
   url: string,
-  apiKey: string
+  apiKey: string,
+  timeout = 2_000
 ): Promise<boolean> => {
-  await axios.post(url, JSON.stringify(payload), {
-    headers: {
-      "webhook-key": apiKey,
-      "user-agent": "Metriport API",
-    },
-    timeout: 5_000,
-  });
-  return true;
+  try {
+    await axios.post(url, JSON.stringify(payload), {
+      headers: {
+        "webhook-key": apiKey,
+        "user-agent": "Metriport API",
+      },
+      timeout,
+    });
+    return true;
+  } catch (err: any) {
+    throw new WebhookError(`Failed to send payload`, err);
+  }
 };
 
-// TODO #34 Find a way to authenticate our calls to our customer's webhook
-const getCustomerApiKey = async (customerId: string): Promise<string> => {
-  return `bogus`;
+export const sendTestPayload = async (
+  url: string,
+  key: string
+): Promise<boolean> => {
+  const payload: WebhookPayload = {
+    ping: [],
+  };
+  return sendPayload(payload, url, key, 2_000);
 };

@@ -12,13 +12,13 @@ import { Withings } from "../providers/withings";
 
 export const PROVIDER_CRONOMETER = ProviderSource.cronometer;
 export const PROVIDER_OURA = ProviderSource.oura;
-// export const PROVIDER_GARMIN = ProviderSource.garmin;
+export const PROVIDER_GARMIN = ProviderSource.garmin;
 export const PROVIDER_FITBIT = ProviderSource.fitbit;
 export const PROVIDER_WHOOP = ProviderSource.whoop;
 export const PROVIDER_WITHINGS = ProviderSource.withings;
 
-// export const providerOAuth1OptionsSchema = z.enum([PROVIDER_GARMIN]);
-// export type ProviderOAuth1Options = z.infer<typeof providerOAuth1OptionsSchema>;
+export const providerOAuth1OptionsSchema = z.enum([PROVIDER_GARMIN]);
+export type ProviderOAuth1Options = z.infer<typeof providerOAuth1OptionsSchema>;
 
 export const providerOAuth2OptionsSchema = z.enum([
   PROVIDER_CRONOMETER,
@@ -29,19 +29,18 @@ export const providerOAuth2OptionsSchema = z.enum([
 ]);
 export type ProviderOAuth2Options = z.infer<typeof providerOAuth2OptionsSchema>;
 
-// export type ProviderOptions = ProviderOAuth1Options | ProviderOAuth2Options;
-export type ProviderOptions = ProviderOAuth2Options;
+export type ProviderOptions = ProviderOAuth1Options | ProviderOAuth2Options;
 
 export class Constants {
   // the default time in seconds for which an auth token for a widget connect
   // session will be valid
   static readonly DEFAULT_TOKEN_EXPIRY_SECONDS: number = 600;
 
-  // static readonly PROVIDER_OAUTH1_MAP: {
-  //   [k in ProviderOAuth1Options]: OAuth1;
-  // } = {
-  //   garmin: new Garmin(),
-  // };
+  static readonly PROVIDER_OAUTH1_MAP: {
+    [k in ProviderOAuth1Options]: OAuth1;
+  } = {
+    garmin: new Garmin(),
+  };
   static readonly PROVIDER_OAUTH2_MAP: {
     [k in ProviderOAuth2Options]: OAuth2;
   } = {
@@ -54,7 +53,7 @@ export class Constants {
   static readonly PROVIDER_MAP: { [k in ProviderOptions]: Provider } = {
     cronometer: new Cronometer(),
     oura: new Oura(),
-    // garmin: new Garmin(),
+    garmin: new Garmin(),
     fitbit: new Fitbit(),
     whoop: new Whoop(),
     withings: new Withings(),
