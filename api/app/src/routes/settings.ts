@@ -45,7 +45,7 @@ router.get(
 
 const updateSettingsSchema = z
   .object({
-    webhookUrl: z.string().url().nullable(),
+    webhookUrl: z.string().url().or(z.literal("").nullable().optional()),
   })
   .strict(); // only using strict bc this is our internal API
 

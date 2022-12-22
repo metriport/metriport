@@ -17,19 +17,14 @@ export const updateSettings = async ({
   webhookUrl,
 }: UpdateSettingsCommand): Promise<Settings> => {
   const originalSettings = await getSettingsOrFail({ id });
-  const webhook = getWebhookDataForUpdate(originalSettings, webhookUrl);
+  const updateWebhook = getWebhookDataForUpdate(originalSettings, webhookUrl);
   await Settings.update(
     {
-      ...(webhook && {
-        ...webhook,
-        webhookStatus: null,
-      }),
+      ...updateWebhook,
     },
     { where: { id } }
   );
   const updatedSettings = await getSettingsOrFail({ id });
-  // intentionally asynchronous
-  testWebhook(updatedSettings);
   return updatedSettings;
 };
 
@@ -47,13 +42,22 @@ export const updateWebhookStatus = async ({
 const getWebhookDataForUpdate = (
   settings: Settings,
   newUrl?: string
-): Pick<Settings, "webhookUrl" | "webhookKey"> | undefined => {
-  if (!newUrl) return undefined;
-  const key = settings.webhookKey ?? nanoid();
-  return {
-    webhookUrl: newUrl,
-    webhookKey: key,
+): Pick<Settings, "webhookUrl" | "webhookKey"> => {
+  const webhookData = {
+    ...(newUrl
+      ? {
+          webhookUrl: newUrl,
+          webhookKey: settings.webhookKey ?? nanoid(),
+        }
+      : {
+          webhookUrl: null,
+          webhookKey: null,
+        }),
+    webhookStatus: null,
   };
+  // if there's a URL, fire a test towards it - intentionally asynchronous
+  webhookData.webhookUrl && testWebhook({ id: settings.id, ...webhookData });
+  return webhookData;
 };
 
 type TestWebhookCommand = Pick<Settings, "id" | "webhookUrl" | "webhookKey">;
