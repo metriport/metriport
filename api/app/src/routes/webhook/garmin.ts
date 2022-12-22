@@ -1,3 +1,4 @@
+import { MetriportData } from "@metriport/api/lib/models/metriport-data";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { UserData } from "../../mappings/garmin";
@@ -73,8 +74,8 @@ routes.post(
   })
 );
 
-function mapData(body: any): UserData<unknown>[] | undefined {
-  const results: UserData<unknown>[] = [];
+function mapData(body: any): UserData<MetriportData>[] | undefined {
+  const results: UserData<MetriportData>[] = [];
 
   if (body.activities) {
     results.push(
