@@ -9,6 +9,8 @@ import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { asyncHandler, getCxIdOrFail, getUserIdOrFail } from "./util";
+import { Constants, providerOAuth2OptionsSchema } from "../shared/constants";
+import BadRequestError from "../errors/bad-request";
 
 const router = Router();
 
@@ -114,6 +116,52 @@ router.get(
     return res.status(status.OK).json({ token: userToken.token });
   })
 );
+
+/** ---------------------------------------------------------------------------------------
+ * POST /user/revoke
+ *
+ * Revoke access to a provider
+ *
+ * @param   {string}  req.query.provider    The provider to revoke access.
+ * @param   {string}  req.query.userId     The internal user ID.
+
+ * @return  {}
+ */
+router.post(
+  "/revoke",
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.query.userId) {
+      return res.sendStatus(status.BAD_REQUEST);
+    }
+
+    const userId = getUserIdOrFail(req);
+    const cxId = getCxIdOrFail(req);
+
+    const connectedUser = await ConnectedUser.findOne({
+      where: { id: userId, cxId },
+    });
+    if (connectedUser == null) {
+      return res.sendStatus(status.BAD_REQUEST);
+    }
+
+    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(
+      req.query.provider
+    );
+
+    if (providerOAuth2.success) {
+
+      await Constants.PROVIDER_OAUTH2_MAP[
+        providerOAuth2.data
+      ].revokeProviderAccess(connectedUser);
+
+      // TODO: NOT REALLY SURE WHAT TO SEND BACK
+      return res.sendStatus(200);
+    } else {
+      throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
+    }
+  })
+);
+
 
 /* /user/connect */
 router.get("/connect", async (req: Request, res: Response) => {
