@@ -118,7 +118,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------------------
- * POST /user/revoke
+ * DELETE /user/revoke
  *
  * Revoke access to a provider
  *
@@ -127,7 +127,7 @@ router.get(
 
  * @return  {{success: boolean}}      If successfully removed.
  */
-router.post(
+router.delete(
   "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
     if (!req.query.userId) {
