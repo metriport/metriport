@@ -7,7 +7,7 @@
   "api": {
     "baseUrl": [
       "https://api.metriport.com",
-      "http://api.sandbox.metriport.com/"
+      "http://api.sandbox.metriport.com"
     ],
     "auth": {
       "method": "key",
@@ -53,10 +53,16 @@
       ]
     },
     {
+      "group": "User",
+      "pages": [
+        "user/create-user",
+        "user/create-connect-token",
+        "user/revoke-provider-access"
+      ]
+    },
+    {
       "group": "Health Device API Reference",
       "pages": [
-        "health-device-api-reference/create-user",
-        "health-device-api-reference/create-connect-token",
         "health-device-api-reference/get-activity-data",
         "health-device-api-reference/get-biometrics-data",
         "health-device-api-reference/get-body-data",
