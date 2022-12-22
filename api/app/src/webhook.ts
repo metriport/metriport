@@ -102,7 +102,7 @@ const processChunk = async (
   if (!url || !key) {
     console.log(
       `Missing webhook config, skipping sending it ` +
-        `(url: ${url}, key: ${key ? "<defined>" : null}`
+      `(url: ${url}, key: ${key ? "<defined>" : null}`
     );
     return false;
   }
