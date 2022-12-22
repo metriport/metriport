@@ -123,9 +123,9 @@ router.get(
  * Revoke access to a provider
  *
  * @param   {string}  req.query.provider    The provider to revoke access.
- * @param   {string}  req.query.userId     The internal user ID.
+ * @param   {string}  req.query.userId      The internal user ID.
 
- * @return  {}
+ * @return  {{success: boolean}}      If successfully removed.
  */
 router.post(
   "/revoke",
@@ -154,8 +154,7 @@ router.post(
         providerOAuth2.data
       ].revokeProviderAccess(connectedUser);
 
-      // TODO: NOT REALLY SURE WHAT TO SEND BACK
-      return res.sendStatus(200);
+      res.status(status.OK).json({ success: true });
     } else {
       throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
     }
