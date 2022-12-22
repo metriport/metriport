@@ -147,18 +147,18 @@ First, create a local environment file, to define your developer keys:
 
 ```shell
 $ touch api/app/.env
-$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" > api/app/.env
-$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" > api/app/.env
-$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" > api/app/.env
-$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "OURA_CLINET_ID=<YOUR-KEY>" > api/app/.env
-$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" > api/app/.env
-$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" > api/app/.env
-$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" > api/app/.env
-$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
+$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" >> api/app/.env
+$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" >> api/app/.env
+$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "OURA_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> api/app/.env
+$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
+$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
 ```
 
 #### **Optional usage report**
@@ -167,7 +167,7 @@ The API server reports endpoint usage to an external service. This is optional.
 
 A reachable service that accepts a `POST` request to the informed URL with the payload below is required:
 
-```
+```json
 { "cxId": "<the account ID>", "cxUserId": "<the ID of the user who's data is being requested>" }
 ```
 

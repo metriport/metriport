@@ -1,20 +1,25 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import { z } from "zod";
+import { createSettings } from "../command/settings/createSettings";
+import { getSettings } from "../command/settings/getSettings";
+import { updateSettings } from "../command/settings/updateSettings";
 import { Settings } from "../models/settings";
 import { asyncHandler, getCxIdOrFail } from "./util";
-import { z } from "zod";
-import { updateSettings } from "../command/settings/updateSettings";
-import { getSettings } from "../command/settings/getSettings";
-import { createSettings } from "../command/settings/createSettings";
 
 const router = Router();
 
 class SettingsDTO {
-  public constructor(public id: string, public webhookUrl: string | null) {}
+  public constructor(
+    public id: string,
+    public webhookUrl: string | null,
+    public webhookKey: string | null,
+    public webhookStatus: string | null
+  ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
-    return new SettingsDTO(s.id, s.webhookUrl);
+    return new SettingsDTO(s.id, s.webhookUrl, s.webhookKey, s.webhookStatus);
   }
 }
 
@@ -58,7 +63,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
     const { webhookUrl } = updateSettingsSchema.parse(req.body);
-    const settings = await updateSettings({ id, webhookUrl });
+    const settings = await updateSettings({
+      id,
+      webhookUrl: webhookUrl ?? undefined,
+    });
     res.status(status.OK).json(SettingsDTO.fromEntity(settings));
   })
 );
