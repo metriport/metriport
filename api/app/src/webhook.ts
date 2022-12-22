@@ -140,7 +140,7 @@ const sendPayload = async (
   try {
     await axios.post(url, JSON.stringify(payload), {
       headers: {
-        "webhook-key": apiKey,
+        "x-webhook-key": apiKey,
         "user-agent": "Metriport API",
       },
       timeout,
