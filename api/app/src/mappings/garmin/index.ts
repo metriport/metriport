@@ -1,3 +1,4 @@
+import { MetriportData } from "@metriport/api/lib/models/metriport-data";
 import dayjs from "dayjs";
 import { z } from "zod";
 
@@ -12,13 +13,16 @@ export interface User {
   userAccessToken: string;
 }
 
+// TODO move out of Garmin for reuse across Providers
 export type DataType = "activity" | "sleep";
 
-export interface TypedData<T> {
+// TODO move out of Garmin for reuse across Providers
+export interface TypedData<T extends MetriportData> {
   type: DataType;
   data: T;
 }
-export interface UserData<T> {
+// TODO move out of Garmin for reuse across Providers
+export interface UserData<T extends MetriportData> {
   user: User;
   typedData: TypedData<T>;
 }

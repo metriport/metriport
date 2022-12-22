@@ -40,8 +40,8 @@ export class Util {
 
   static log =
     (prefix: string) =>
-    (msg: string): void =>
-      console.log(`[${prefix}] ${msg}`);
+    (msg: string, err?: unknown): void =>
+      console.log(`[${prefix}] ${msg}`, err);
 
   static sleep = (timeInMs: number) =>
     new Promise((resolve) => setTimeout(resolve, timeInMs));

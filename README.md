@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/metriport/metriport">
-    <img src="https://metriport.com/logo.png" alt="Logo">
+    <img src="./assets/logo.png" alt="Logo">
   </a>
 
   <p align="center">
@@ -42,12 +42,23 @@
 ## **Overview**
 
 <div align="center">
-   <img width="50%" alt="wearables" src="https://metriport.com/wearables.svg">
+   <img width="50%" alt="wearables" src="./assets/wearables.svg">
 </div>
+
+## **Security and Privacy**
+
+Metriport is SOC 2 and HIPAA compliant. [Click here](https://metriport.com/security/) to learn more about our security practices.
+
+<p float="left">
+  <img src="./assets/soc2.png" width="20%" />
+  <img src="./assets/hipaa.png" width="30%" />
+  <img src="./assets/soc2-vanta.png" width="20%" />
+  <img src="./assets/hipaa-vanta.png" width="20%" />
+</p>
 
 ### **Health Devices API**
 
-We’re very excited to announce the launch of our first product, our [Health Devices API](https://metriport.com/devices), which allows developers to gain access to their users’ health data from various wearables, RPM devices, and mHealth sources.
+Our [Health Devices API](https://metriport.com/devices), allows you to gain access to your users’ health data from various wearables, RPM devices, and mHealth sources through a single standardized API.
 
 Out of the box, our Health Devices API supports the following integrations:
 
@@ -60,7 +71,7 @@ Out of the box, our Health Devices API supports the following integrations:
 ...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:hello@metriport.ai) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
 
 <div align="center">
-   <img width="50%" alt="wearables" src="https://metriport.com/graphic.svg">
+   <img width="50%" alt="wearables" src="./assets/graphic.svg">
 </div>
 
 ### **Medical API (Coming Soon)**
@@ -136,18 +147,18 @@ First, create a local environment file, to define your developer keys:
 
 ```shell
 $ touch api/app/.env
-$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" > api/app/.env
-$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" > api/app/.env
-$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" > api/app/.env
-$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "OURA_CLINET_ID=<YOUR-KEY>" > api/app/.env
-$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" > api/app/.env
-$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" > api/app/.env
-$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" > api/app/.env
-$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
+$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" >> api/app/.env
+$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" >> api/app/.env
+$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "OURA_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> api/app/.env
+$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
+$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
 ```
 
 #### **Optional usage report**
@@ -156,7 +167,7 @@ The API server reports endpoint usage to an external service. This is optional.
 
 A reachable service that accepts a `POST` request to the informed URL with the payload below is required:
 
-```
+```json
 { "cxId": "<the account ID>", "cxUserId": "<the ID of the user who's data is being requested>" }
 ```
 
