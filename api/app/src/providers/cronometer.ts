@@ -4,6 +4,7 @@ import UnauthorizedError from "../errors/unauthorized";
 import { cronometerDiarySummaryResp } from "../mappings/cronometer/models/diary-summary";
 import { mapToNutrition } from "../mappings/cronometer/nutrition";
 import { ConnectedUser } from "../models/connected-user";
+import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_CRONOMETER } from "../shared/constants";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
@@ -14,6 +15,7 @@ const axios = Axios.create();
 export class Cronometer extends Provider implements OAuth2 {
   static URL: string = "https://cronometer.com";
   static API_PATH: string = "api_v1";
+  static REVOKE_PATH: string = "/oauth/deauthorize"
   constructor(
     private readonly oauth = new OAuth2DefaultImpl(
       PROVIDER_CRONOMETER,
@@ -55,6 +57,18 @@ export class Cronometer extends Provider implements OAuth2 {
     if (!providerData) throw new UnauthorizedError();
 
     return providerData.token;
+  }
+
+  async revokeProviderAccess(connectedUser: ConnectedUser) {
+    const token = this.getAccessToken(connectedUser);
+    await axios.post(`${Cronometer.URL}/oauth/deauthorize?access_token=${token}`)
+
+    updateProviderData({
+      id: connectedUser.id,
+      cxId: connectedUser.cxId,
+      provider: PROVIDER_CRONOMETER,
+      providerItem: undefined
+    });
   }
 
   async getNutritionData(

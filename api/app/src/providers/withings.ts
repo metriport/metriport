@@ -10,7 +10,7 @@ import { Axios } from "axios";
 import dayjs from "dayjs";
 
 import { PROVIDER_WITHINGS } from "../shared/constants";
-import { ConnectedUser } from "../models/connected-user";
+import { ConnectedUser, ProviderMap } from "../models/connected-user";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
@@ -71,6 +71,7 @@ export class Withings extends Provider implements OAuth2 {
     return this.oauth.getAuthUri(state);
   }
 
+
   async getTokenFromAuthCode(code: string): Promise<string> {
     // TODO: WILL UDPDATE IT JUST WASNT STRAIGHT FORWARD - NEEDED CLIENTID TO BE IN PARAMS WITH ACTION = REQUEST
     const response = await axios.post(
@@ -88,6 +89,10 @@ export class Withings extends Provider implements OAuth2 {
     );
 
     return JSON.stringify(response.data.body);
+  }
+
+  async revokeProviderAccess(connectedUser: ConnectedUser) {
+    return this.oauth.revokeWithNoOauth(connectedUser);
   }
 
   async fetchActivityData(

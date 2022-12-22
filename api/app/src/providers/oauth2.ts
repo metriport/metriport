@@ -16,6 +16,7 @@ export const oauthUserTokenResponse = z.object({
 
 export interface OAuth2 {
   getAuthUri(state: string): Promise<string>;
+  revokeProviderAccess(connectedUser: ConnectedUser): void;
   getTokenFromAuthCode(code: string): Promise<string>;
 }
 
@@ -41,12 +42,13 @@ export class OAuth2DefaultImpl implements OAuth2 {
       readonly authorizeHost?: string;
       readonly authorizePath?: string;
       readonly tokenPath?: string;
+      readonly revokePath?: string;
     },
     private readonly scopes?: string[] | string,
     private readonly clientOptions?: {
       readonly authorizationMethod?: "body" | "header";
     }
-  ) {}
+  ) { }
 
   getRedirectUri(): string {
     return `${Config.getConnectRedirectUrl()}/${this.providerName}`;
@@ -138,6 +140,38 @@ export class OAuth2DefaultImpl implements OAuth2 {
     const refreshedToken = await this.checkRefreshToken(token, connectedUser);
 
     return refreshedToken.access_token;
+  }
+
+  async revokeProviderAccess(connectedUser: ConnectedUser) {
+    if (!connectedUser.providerMap) throw new UnauthorizedError();
+    const providerData = connectedUser.providerMap[this.providerName];
+    if (!providerData) throw new UnauthorizedError();
+
+    const client = this.makeClient();
+    const token = JSON.parse(providerData.token);
+    const accessToken = client.createToken(token);
+
+    await accessToken.revoke('access_token');
+
+    updateProviderData({
+      id: connectedUser.id,
+      cxId: connectedUser.cxId,
+      provider: this.providerName,
+      providerItem: undefined
+    })
+  }
+
+  async revokeWithNoOauth(connectedUser: ConnectedUser) {
+    if (!connectedUser.providerMap) throw new UnauthorizedError();
+    const providerData = connectedUser.providerMap[this.providerName];
+    if (!providerData) throw new UnauthorizedError();
+
+    updateProviderData({
+      id: connectedUser.id,
+      cxId: connectedUser.cxId,
+      provider: this.providerName,
+      providerItem: undefined
+    })
   }
 
   async fetchProviderData<T>(

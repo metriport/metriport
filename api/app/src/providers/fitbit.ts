@@ -53,6 +53,7 @@ export class Fitbit extends Provider implements OAuth2 {
   static AUTHORIZATION_URL: string = "https://www.fitbit.com";
   static AUTHORIZATION_PATH: string = "/oauth2/authorize";
   static TOKEN_PATH: string = "/oauth2/token";
+  static REVOKE_PATH: string = "/oauth2/revoke";
   static API_PATH: string = "1/user/-/";
   static scopes = [
     "activity",
@@ -84,6 +85,7 @@ export class Fitbit extends Provider implements OAuth2 {
         tokenHost: Fitbit.URL,
         authorizePath: Fitbit.AUTHORIZATION_PATH,
         tokenPath: Fitbit.TOKEN_PATH,
+        revokePath: Fitbit.REVOKE_PATH
       },
       Fitbit.scopes
     )
@@ -104,6 +106,10 @@ export class Fitbit extends Provider implements OAuth2 {
 
   async getTokenFromAuthCode(code: string): Promise<string> {
     return this.oauth.getTokenFromAuthCode(code);
+  }
+
+  async revokeProviderAccess(connectedUser: ConnectedUser) {
+    return this.oauth.revokeProviderAccess(connectedUser);
   }
 
   async getActivityData(
