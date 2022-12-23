@@ -12,7 +12,7 @@ import { ConnectedUser } from "../models/connected-user";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
-import { getProviderMapFromConnectUserOrFail } from "../routes/util";
+import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";
 import { mapToActivity } from "../mappings/withings/activity";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
 import { mapToSleep } from "../mappings/withings/sleep";
@@ -90,7 +90,7 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
-    const providerData = getProviderMapFromConnectUserOrFail(connectedUser, PROVIDER_WITHINGS);
+    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_WITHINGS);
 
     const client_id = Config.getWithingsClientId();
     const client_secret = Config.getWithingsClientSecret()

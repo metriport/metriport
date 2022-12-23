@@ -5,7 +5,7 @@ import { updateProviderData } from "../command/connected-user/save-connected-use
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { ProviderOAuth2Options } from "../shared/constants";
-import { getProviderMapFromConnectUserOrFail } from "../routes/util";
+import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";;
 
 const axios: Axios = require("axios").default;
 
@@ -131,7 +131,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
   }
 
   async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
-    const providerData = getProviderMapFromConnectUserOrFail(connectedUser, this.providerName);
+    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, this.providerName);
 
     const token = providerData.token;
 
@@ -151,7 +151,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
   }
 
   async revokeLocal(connectedUser: ConnectedUser): Promise<string> {
-    const providerData = getProviderMapFromConnectUserOrFail(connectedUser, this.providerName);
+    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, this.providerName);
 
     await updateProviderData({
       id: connectedUser.id,

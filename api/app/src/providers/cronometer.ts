@@ -1,6 +1,5 @@
 import { Nutrition } from "@metriport/api";
 import Axios from "axios";
-import UnauthorizedError from "../errors/unauthorized";
 import { cronometerDiarySummaryResp } from "../mappings/cronometer/models/diary-summary";
 import { mapToNutrition } from "../mappings/cronometer/nutrition";
 import { ConnectedUser } from "../models/connected-user";
@@ -9,7 +8,7 @@ import { Config } from "../shared/config";
 import { PROVIDER_CRONOMETER } from "../shared/constants";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
-import { getProviderMapFromConnectUserOrFail } from "../routes/util";
+import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";
 
 const axios = Axios.create();
 
@@ -44,16 +43,16 @@ export class Cronometer extends Provider implements OAuth2 {
   async getTokenFromAuthCode(code: string): Promise<string> {
     const resp = await axios.post(
       `${Cronometer.URL}/oauth/token` +
-        `?grant_type=authorization_code` +
-        `&code=${code}` +
-        `&client_id=${Config.getCronometerClientId()}` +
-        `&client_secret=${Config.getCronometerClientSecret()}`
+      `?grant_type=authorization_code` +
+      `&code=${code}` +
+      `&client_id=${Config.getCronometerClientId()}` +
+      `&client_secret=${Config.getCronometerClientSecret()}`
     );
     return resp.data.access_token;
   }
 
   private getAccessToken(connectedUser: ConnectedUser): string {
-    const providerData = getProviderMapFromConnectUserOrFail(connectedUser, PROVIDER_CRONOMETER);
+    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_CRONOMETER);
 
     return providerData.token;
   }
