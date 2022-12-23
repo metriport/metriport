@@ -16,8 +16,7 @@
     <a href="https://dash.metriport.com" target="_blank">Developer Dashboard</a>
     ·
     <a href="https://metriport.com" target="_blank">Website</a>
-    ·
-    <a href="https://github.com/metriport/metriport-demo-app" target="_blank">Demo App</a>
+
   </p>
 </p>
 
