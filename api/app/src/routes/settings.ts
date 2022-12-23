@@ -15,11 +15,18 @@ class SettingsDTO {
     public id: string,
     public webhookUrl: string | null,
     public webhookKey: string | null,
-    public webhookStatus: string | null
+    public webhookEnabled: boolean,
+    public webhookStatusDetail: string | null
   ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
-    return new SettingsDTO(s.id, s.webhookUrl, s.webhookKey, s.webhookStatus);
+    return new SettingsDTO(
+      s.id,
+      s.webhookUrl,
+      s.webhookKey,
+      s.webhookEnabled,
+      s.webhookStatusDetail ?? null
+    );
   }
 }
 

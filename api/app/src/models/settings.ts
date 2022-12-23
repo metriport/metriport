@@ -9,6 +9,7 @@ import { defaultModelOptions, ModelSetup } from "./_default";
 
 export const DATE_FORMAT = "YYYY-MM";
 export const WEBHOOK_STATUS_OK = "OK";
+export const WEBHOOK_STATUS_BAD_RESPONSE = "Bad response from webhook call";
 
 export class Settings extends Model<
   InferAttributes<Settings>,
@@ -18,7 +19,8 @@ export class Settings extends Model<
   declare id: string;
   declare webhookUrl: string | null;
   declare webhookKey: string | null;
-  declare webhookStatus: string | null;
+  declare webhookEnabled: boolean;
+  declare webhookStatusDetail: string | null;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Settings.init(
@@ -33,7 +35,10 @@ export class Settings extends Model<
         webhookKey: {
           type: DataTypes.STRING,
         },
-        webhookStatus: {
+        webhookEnabled: {
+          type: DataTypes.BOOLEAN,
+        },
+        webhookStatusDetail: {
           type: DataTypes.STRING,
         },
       },
