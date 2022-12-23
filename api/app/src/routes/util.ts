@@ -1,5 +1,9 @@
 import { NextFunction, Request, Response } from "express";
+
+import { ConnectedUser } from "../models/connected-user";
+import { ProviderOptions } from "../shared/constants";
 import BadRequestError from "../errors/bad-request";
+import UnauthorizedError from "../errors/unauthorized";
 
 export const asyncHandler =
   (
@@ -40,11 +44,19 @@ export const getUserIdFromHeaders = (req: Request): string | undefined =>
   req.header("userId") as string | undefined;
 export const getUserId = (req: Request): string | undefined =>
   req.query.userId as string | undefined;
-export const getUserIdOrFail = (req: Request): string => {
+export const getUserIdFromQueryOrFail = (req: Request): string => {
   const userId = getUserId(req);
   if (!userId) throw new BadRequestError("Missing userId query param");
   return userId as string;
 };
+
+export const getProviderMapFromConnectUserOrFail = (connectedUser: ConnectedUser, provider: ProviderOptions) => {
+  if (!connectedUser.providerMap) throw new UnauthorizedError();
+  const providerData = connectedUser.providerMap[provider];
+  if (!providerData) throw new UnauthorizedError();
+
+  return providerData;
+}
 
 export const getDate = (req: Request): string | undefined =>
   req.query.date as string | undefined;

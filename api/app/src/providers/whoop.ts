@@ -2,7 +2,7 @@ import { PROVIDER_WHOOP } from "../shared/constants";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
-import { ConnectedUser, ProviderMap } from "../models/connected-user";
+import { ConnectedUser } from "../models/connected-user";
 import { mapToBody } from "../mappings/whoop/body";
 import { whoopBodyResp } from "../mappings/whoop/models/body";
 import { Activity, Biometrics, Body, Sleep, User } from "@metriport/api";
@@ -76,7 +76,7 @@ export class Whoop extends Provider implements OAuth2 {
   }
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
-    return this.oauth.revokeWithNoOauth(connectedUser);
+    return this.oauth.revokeLocal(connectedUser);
   }
 
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {

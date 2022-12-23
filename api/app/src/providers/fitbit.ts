@@ -47,7 +47,7 @@ import {
 import { FitbitFood, fitbitFoodResp } from "../mappings/fitbit/models/food";
 import { FitbitWater, fitbitWaterResp } from "../mappings/fitbit/models/water";
 import { fitbitSleepResp } from "../mappings/fitbit/models/sleep";
-import { FitbitUser, fitbitUserResp } from "../mappings/fitbit/models/user";
+import { fitbitUserResp } from "../mappings/fitbit/models/user";
 export class Fitbit extends Provider implements OAuth2 {
   static URL: string = "https://api.fitbit.com";
   static AUTHORIZATION_URL: string = "https://www.fitbit.com";

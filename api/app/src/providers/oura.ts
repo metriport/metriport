@@ -17,7 +17,7 @@ import {
 import { mapToBody } from "../mappings/oura/body";
 import { mapToSleep, ouraSleepResponse } from "../mappings/oura/sleep";
 import { mapToUser, ouraPersonalInfoResponse } from "../mappings/oura/user";
-import { ConnectedUser, ProviderMap } from "../models/connected-user";
+import { ConnectedUser } from "../models/connected-user";
 import { PROVIDER_OURA } from "../shared/constants";
 import { getStartAndEndDate, getStartAndEndDateTime } from "../shared/date";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
@@ -61,8 +61,8 @@ export class Oura extends Provider implements OAuth2 {
     return this.oauth.getTokenFromAuthCode(code);
   }
 
-  async revokeProviderAccess(connectedUser: ConnectedUser) {
-    return this.oauth.revokeWithNoOauth(connectedUser);
+  async revokeProviderAccess(connectedUser: ConnectedUser): Promise<string> {
+    return this.oauth.revokeLocal(connectedUser);
   }
 
   private async fetchOuraData<T>(
