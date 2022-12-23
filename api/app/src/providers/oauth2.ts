@@ -2,10 +2,10 @@ import { Axios, AxiosResponse } from "axios";
 import { AuthorizationCode, Token } from "simple-oauth2";
 import { z } from "zod";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
-import UnauthorizedError from "../errors/unauthorized";
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { ProviderOAuth2Options } from "../shared/constants";
+import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";;
 
 const axios: Axios = require("axios").default;
 
@@ -16,6 +16,7 @@ export const oauthUserTokenResponse = z.object({
 
 export interface OAuth2 {
   getAuthUri(state: string): Promise<string>;
+  revokeProviderAccess(connectedUser: ConnectedUser): Promise<void>;
   getTokenFromAuthCode(code: string): Promise<string>;
 }
 
@@ -41,12 +42,13 @@ export class OAuth2DefaultImpl implements OAuth2 {
       readonly authorizeHost?: string;
       readonly authorizePath?: string;
       readonly tokenPath?: string;
+      readonly revokePath?: string;
     },
     private readonly scopes?: string[] | string,
     private readonly clientOptions?: {
       readonly authorizationMethod?: "body" | "header";
     }
-  ) {}
+  ) { }
 
   getRedirectUri(): string {
     return `${Config.getConnectRedirectUrl()}/${this.providerName}`;
@@ -129,15 +131,36 @@ export class OAuth2DefaultImpl implements OAuth2 {
   }
 
   async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
-    if (!connectedUser.providerMap) throw new UnauthorizedError();
-    const providerData = connectedUser.providerMap[this.providerName];
-    if (!providerData) throw new UnauthorizedError();
+    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, this.providerName);
 
     const token = providerData.token;
 
     const refreshedToken = await this.checkRefreshToken(token, connectedUser);
 
     return refreshedToken.access_token;
+  }
+
+  async revokeProviderAccess(connectedUser: ConnectedUser): Promise<void> {
+    const providerToken = await this.revokeLocal(connectedUser);
+
+    const client = this.makeClient();
+    const token = JSON.parse(providerToken);
+    const accessToken = client.createToken(token);
+
+    await accessToken.revoke('access_token');
+  }
+
+  async revokeLocal(connectedUser: ConnectedUser): Promise<string> {
+    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, this.providerName);
+
+    await updateProviderData({
+      id: connectedUser.id,
+      cxId: connectedUser.cxId,
+      provider: this.providerName,
+      providerItem: undefined
+    })
+
+    return providerData.token;
   }
 
   async fetchProviderData<T>(

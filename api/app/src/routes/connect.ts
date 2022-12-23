@@ -15,7 +15,6 @@ import { processOAuth2 } from "./middlewares/oauth2";
 import { asyncHandler, getCxId, getCxIdFromHeaders, getUserIdFromHeaders } from "./util";
 import { getUserToken } from "../command/cx-user/get-user-token";
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
-import { ProviderMap } from "../models/connected-user";
 
 const router = Router();
 

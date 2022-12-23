@@ -61,6 +61,10 @@ export class Oura extends Provider implements OAuth2 {
     return this.oauth.getTokenFromAuthCode(code);
   }
 
+  async revokeProviderAccess(connectedUser: ConnectedUser): Promise<void> {
+    await this.oauth.revokeLocal(connectedUser);
+  }
+
   private async fetchOuraData<T>(
     connectedUser: ConnectedUser,
     endpoint: string,
