@@ -276,7 +276,9 @@ TODO
 
 ### **Environment Setup**
 
-First, you'll need to create and configure a deployment config file: `/infra/config/prod.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Optionally, you can setup consig files for `staging` and `sandbox` deployments. Then, proceed with the deployment steps below.
+1. You'll need to create and configure a deployment config file: `/infra/config/prod.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Optionally, you can setup consig files for `staging` and `sandbox` deployments. Then, proceed with the deployment steps below.
+
+2. Configure the Connect Widget environment variables to the subdomain and domain you'll be hosting the API at in the config file: `connect-widget/app/.env.production`.
 
 ### **Deployment Steps**
 

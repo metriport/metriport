@@ -1,13 +1,16 @@
 import axios, { AxiosInstance } from "axios";
 import { URLSearchParams } from "url";
 import Constants from "./constants";
-import { isProdEnv, isSandbox } from "./util";
+import { isProdEnv, isSandbox, isStaging } from "./util";
 
 function buildBaseURL(searchParams: URLSearchParams): string {
   if (isProdEnv()) {
-    const prefix = isSandbox(searchParams)
-      ? process.env.REACT_APP_SANDBOX_API_URL_PREFIX
-      : process.env.REACT_APP_API_URL_PREFIX;
+    let prefix = process.env.REACT_APP_API_URL_PREFIX;
+    if (isSandbox(searchParams)) {
+      prefix = process.env.REACT_APP_SANDBOX_API_URL_PREFIX;
+    } else if (isStaging(searchParams)) {
+      prefix = process.env.REACT_APP_STAGING_API_URL_PREFIX;
+    }
     return `${prefix}.${process.env.REACT_APP_API_URL_DOMAIN}`;
   }
   return process.env.REACT_APP_API_URL!;
