@@ -2,10 +2,10 @@ import { Axios, AxiosResponse } from "axios";
 import { AuthorizationCode, Token } from "simple-oauth2";
 import { z } from "zod";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
-import UnauthorizedError from "../errors/unauthorized";
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { ProviderOAuth2Options } from "../shared/constants";
+import { getProviderMapFromConnectUserOrFail } from "../routes/util";
 
 const axios: Axios = require("axios").default;
 
@@ -16,7 +16,7 @@ export const oauthUserTokenResponse = z.object({
 
 export interface OAuth2 {
   getAuthUri(state: string): Promise<string>;
-  revokeProviderAccess(connectedUser: ConnectedUser): void;
+  revokeProviderAccess(connectedUser: ConnectedUser): Promise<void | string>;
   getTokenFromAuthCode(code: string): Promise<string>;
 }
 
@@ -131,9 +131,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
   }
 
   async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
-    if (!connectedUser.providerMap) throw new UnauthorizedError();
-    const providerData = connectedUser.providerMap[this.providerName];
-    if (!providerData) throw new UnauthorizedError();
+    const providerData = getProviderMapFromConnectUserOrFail(connectedUser, this.providerName);
 
     const token = providerData.token;
 
@@ -142,36 +140,27 @@ export class OAuth2DefaultImpl implements OAuth2 {
     return refreshedToken.access_token;
   }
 
-  async revokeProviderAccess(connectedUser: ConnectedUser) {
-    if (!connectedUser.providerMap) throw new UnauthorizedError();
-    const providerData = connectedUser.providerMap[this.providerName];
-    if (!providerData) throw new UnauthorizedError();
+  async revokeProviderAccess(connectedUser: ConnectedUser): Promise<void | string> {
+    const providerToken = await this.revokeLocal(connectedUser);
 
     const client = this.makeClient();
-    const token = JSON.parse(providerData.token);
+    const token = JSON.parse(providerToken);
     const accessToken = client.createToken(token);
 
     await accessToken.revoke('access_token');
-
-    updateProviderData({
-      id: connectedUser.id,
-      cxId: connectedUser.cxId,
-      provider: this.providerName,
-      providerItem: undefined
-    })
   }
 
-  async revokeWithNoOauth(connectedUser: ConnectedUser) {
-    if (!connectedUser.providerMap) throw new UnauthorizedError();
-    const providerData = connectedUser.providerMap[this.providerName];
-    if (!providerData) throw new UnauthorizedError();
+  async revokeLocal(connectedUser: ConnectedUser): Promise<string> {
+    const providerData = getProviderMapFromConnectUserOrFail(connectedUser, this.providerName);
 
-    updateProviderData({
+    await updateProviderData({
       id: connectedUser.id,
       cxId: connectedUser.cxId,
       provider: this.providerName,
       providerItem: undefined
     })
+
+    return providerData.token;
   }
 
   async fetchProviderData<T>(

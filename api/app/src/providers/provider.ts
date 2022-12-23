@@ -6,7 +6,6 @@ import {
   Sleep,
   User,
 } from "@metriport/api";
-import { Metadata } from "@metriport/api/lib/models/common/metadata";
 
 import NotImplementedError from "../errors/not-implemented";
 import { ConnectedUser } from "../models/connected-user";

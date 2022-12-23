@@ -9,6 +9,7 @@ import { Config } from "../shared/config";
 import { PROVIDER_CRONOMETER } from "../shared/constants";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
+import { getProviderMapFromConnectUserOrFail } from "../routes/util";
 
 const axios = Axios.create();
 
@@ -52,9 +53,7 @@ export class Cronometer extends Provider implements OAuth2 {
   }
 
   private getAccessToken(connectedUser: ConnectedUser): string {
-    if (!connectedUser.providerMap) throw new UnauthorizedError();
-    const providerData = connectedUser.providerMap[PROVIDER_CRONOMETER];
-    if (!providerData) throw new UnauthorizedError();
+    const providerData = getProviderMapFromConnectUserOrFail(connectedUser, PROVIDER_CRONOMETER);
 
     return providerData.token;
   }
@@ -63,7 +62,7 @@ export class Cronometer extends Provider implements OAuth2 {
     const token = this.getAccessToken(connectedUser);
     await axios.post(`${Cronometer.URL}/oauth/deauthorize?access_token=${token}`)
 
-    updateProviderData({
+    await updateProviderData({
       id: connectedUser.id,
       cxId: connectedUser.cxId,
       provider: PROVIDER_CRONOMETER,

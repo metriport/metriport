@@ -4,11 +4,12 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { createConnectedUser } from "../command/connected-user/create-connected-user";
 import { createUserToken } from "../command/cx-user/create-user-token";
+import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { ConnectedUser } from "../models/connected-user";
 import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
-import { asyncHandler, getCxIdOrFail, getUserIdOrFail } from "./util";
+import { asyncHandler, getCxIdOrFail, getUserIdFromQueryOrFail } from "./util";
 import { Constants, providerOAuth2OptionsSchema } from "../shared/constants";
 import BadRequestError from "../errors/bad-request";
 
@@ -100,7 +101,7 @@ router.get(
     if (!req.query.userId) {
       return res.sendStatus(status.BAD_REQUEST);
     }
-    const userId = getUserIdOrFail(req);
+    const userId = getUserIdFromQueryOrFail(req);
     const cxId = getCxIdOrFail(req);
 
     // check to make sure this user actually exists
@@ -118,7 +119,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------------------
- * DELETE /user/revoke
+ * DELETE /user/connect/token
  *
  * Revoke access to a provider
  *
@@ -128,21 +129,12 @@ router.get(
  * @return  {{success: boolean}}      If successfully removed.
  */
 router.delete(
-  "/revoke",
+  "/connect/token",
   asyncHandler(async (req: Request, res: Response) => {
-    if (!req.query.userId) {
-      return res.sendStatus(status.BAD_REQUEST);
-    }
 
-    const userId = getUserIdOrFail(req);
+    const userId = getUserIdFromQueryOrFail(req);
     const cxId = getCxIdOrFail(req);
-
-    const connectedUser = await ConnectedUser.findOne({
-      where: { id: userId, cxId },
-    });
-    if (connectedUser == null) {
-      return res.sendStatus(status.BAD_REQUEST);
-    }
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId })
 
     const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(
       req.query.provider
@@ -154,7 +146,7 @@ router.delete(
         providerOAuth2.data
       ].revokeProviderAccess(connectedUser);
 
-      res.status(status.OK).json({ success: true });
+      return res.sendStatus(200);
     } else {
       throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
     }
