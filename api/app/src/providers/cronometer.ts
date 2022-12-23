@@ -43,10 +43,10 @@ export class Cronometer extends Provider implements OAuth2 {
   async getTokenFromAuthCode(code: string): Promise<string> {
     const resp = await axios.post(
       `${Cronometer.URL}/oauth/token` +
-      `?grant_type=authorization_code` +
-      `&code=${code}` +
-      `&client_id=${Config.getCronometerClientId()}` +
-      `&client_secret=${Config.getCronometerClientSecret()}`
+        `?grant_type=authorization_code` +
+        `&code=${code}` +
+        `&client_id=${Config.getCronometerClientId()}` +
+        `&client_secret=${Config.getCronometerClientSecret()}`
     );
     return resp.data.access_token;
   }
