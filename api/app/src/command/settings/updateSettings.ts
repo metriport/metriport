@@ -46,13 +46,13 @@ const getWebhookDataForUpdate = (
   const webhookData = {
     ...(newUrl
       ? {
-        webhookUrl: newUrl,
-        webhookKey: settings.webhookKey ?? nanoid(),
-      }
+          webhookUrl: newUrl,
+          webhookKey: settings.webhookKey ?? nanoid(),
+        }
       : {
-        webhookUrl: null,
-        webhookKey: null,
-      }),
+          webhookUrl: null,
+          webhookKey: null,
+        }),
     webhookStatus: null,
   };
   // if there's a URL, fire a test towards it - intentionally asynchronous
