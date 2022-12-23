@@ -6,6 +6,8 @@ import Agreement from "./components/agreement";
 
 const ConnectPage = () => {
   const [agreement, setAgreement] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   const agreementLocalStorageKey = "agreement-accepted-v1";
 
   const getLocalStorageAgreement = (): boolean => {
@@ -28,6 +30,7 @@ const ConnectPage = () => {
     if (localStorageAgreement) {
       setAgreement(localStorageAgreement);
     }
+    setIsLoading(false);
   }, []);
 
   const acceptAgreement = (): void => {
@@ -37,7 +40,9 @@ const ConnectPage = () => {
 
   return (
     <WidgetContainer>
-      {agreement ? (
+      {isLoading ? (
+        <></>
+      ) : agreement ? (
         <ConnectProviders />
       ) : (
         <Agreement onAcceptAgreement={acceptAgreement} />
