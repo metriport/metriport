@@ -1,9 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
-import { ConnectedUser } from "../models/connected-user";
-import { ProviderOptions } from "../shared/constants";
 import BadRequestError from "../errors/bad-request";
-import UnauthorizedError from "../errors/unauthorized";
 
 export const asyncHandler =
   (
@@ -13,14 +10,14 @@ export const asyncHandler =
       next: NextFunction
     ) => Promise<Response<any, Record<string, any>> | void>
   ) =>
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      await f(req, res, next);
-    } catch (err) {
-      console.error(err);
-      next(err);
-    }
-  };
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      try {
+        await f(req, res, next);
+      } catch (err) {
+        console.error(err);
+        next(err);
+      }
+    };
 
 export const getCxId = (req: Request): string | undefined => req.cxId;
 export const getCxIdOrFail = (req: Request): string => {
@@ -49,14 +46,6 @@ export const getUserIdFromQueryOrFail = (req: Request): string => {
   if (!userId) throw new BadRequestError("Missing userId query param");
   return userId as string;
 };
-
-export const getProviderMapFromConnectUserOrFail = (connectedUser: ConnectedUser, provider: ProviderOptions) => {
-  if (!connectedUser.providerMap) throw new UnauthorizedError();
-  const providerData = connectedUser.providerMap[provider];
-  if (!providerData) throw new UnauthorizedError();
-
-  return providerData;
-}
 
 export const getDate = (req: Request): string | undefined =>
   req.query.date as string | undefined;

@@ -1,5 +1,6 @@
 import NotFoundError from "../../errors/not-found";
 import { ConnectedUser } from "../../models/connected-user";
+import { ProviderOptions } from "../../shared/constants";
 
 export const getConnectedUser = async ({
   id,
@@ -27,3 +28,11 @@ export const getConnectedUserOrFail = async ({
     );
   return connectedUser;
 };
+
+export const getProviderDataFromConnectUserOrFail = (connectedUser: ConnectedUser, provider: ProviderOptions) => {
+  if (!connectedUser.providerMap) throw new NotFoundError();
+  const providerData = connectedUser.providerMap[provider];
+  if (!providerData) throw new NotFoundError();
+
+  return providerData;
+}
