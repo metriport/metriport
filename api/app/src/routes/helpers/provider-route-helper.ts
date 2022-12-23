@@ -4,7 +4,7 @@ import { Metadata } from "@metriport/api/lib/models/common/metadata";
 import { getConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
 import { ConsumerHealthDataType } from "../../providers/provider";
 import { Constants, ProviderOptions } from "../../shared/constants";
-import { getCxIdOrFail, getDateOrFail, getUserIdOrFail } from "../util";
+import { getCxIdOrFail, getDateOrFail, getUserIdFromQueryOrFail } from "../util";
 
 // TODO make one of this for each Type so we can avoid the potential type mismatching
 // on the caller's side
@@ -13,7 +13,7 @@ export async function getProviderDataForType<T>(
   type: ConsumerHealthDataType
 ): Promise<T[]> {
   const cxId = getCxIdOrFail(req);
-  const userId = getUserIdOrFail(req);
+  const userId = getUserIdFromQueryOrFail(req);
   const date = getDateOrFail(req);
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
   if (!connectedUser.providerMap) return [];

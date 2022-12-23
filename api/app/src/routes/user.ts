@@ -4,11 +4,14 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { createConnectedUser } from "../command/connected-user/create-connected-user";
 import { createUserToken } from "../command/cx-user/create-user-token";
+import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { ConnectedUser } from "../models/connected-user";
 import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
-import { asyncHandler, getCxIdOrFail, getUserIdOrFail } from "./util";
+import { asyncHandler, getCxIdOrFail, getUserIdFromQueryOrFail } from "./util";
+import { Constants, providerOAuth2OptionsSchema } from "../shared/constants";
+import BadRequestError from "../errors/bad-request";
 
 const router = Router();
 
@@ -98,7 +101,7 @@ router.get(
     if (!req.query.userId) {
       return res.sendStatus(status.BAD_REQUEST);
     }
-    const userId = getUserIdOrFail(req);
+    const userId = getUserIdFromQueryOrFail(req);
     const cxId = getCxIdOrFail(req);
 
     // check to make sure this user actually exists
@@ -114,6 +117,42 @@ router.get(
     return res.status(status.OK).json({ token: userToken.token });
   })
 );
+
+/** ---------------------------------------------------------------------------------------
+ * DELETE /user/revoke
+ *
+ * Revoke access to a provider
+ *
+ * @param   {string}  req.query.provider    The provider to revoke access.
+ * @param   {string}  req.query.userId      The internal user ID.
+
+ * @return  {{success: boolean}}      If successfully removed.
+ */
+router.delete(
+  "/revoke",
+  asyncHandler(async (req: Request, res: Response) => {
+
+    const userId = getUserIdFromQueryOrFail(req);
+    const cxId = getCxIdOrFail(req);
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId })
+
+    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(
+      req.query.provider
+    );
+
+    if (providerOAuth2.success) {
+
+      await Constants.PROVIDER_OAUTH2_MAP[
+        providerOAuth2.data
+      ].revokeProviderAccess(connectedUser);
+
+      return res.sendStatus(200);
+    } else {
+      throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
+    }
+  })
+);
+
 
 /* /user/connect */
 router.get("/connect", async (req: Request, res: Response) => {

@@ -9,4 +9,6 @@ export default class Constants {
     xl: '1200px',
     '2xl': '1536px',
   };
+  static PRIMARY_COLOR: string = "#748df0";
+  static HOVER_COLOR: string = "#879ced";
 }

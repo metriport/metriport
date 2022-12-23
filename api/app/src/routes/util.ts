@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+
 import BadRequestError from "../errors/bad-request";
 
 export const asyncHandler =
@@ -40,7 +41,7 @@ export const getUserIdFromHeaders = (req: Request): string | undefined =>
   req.header("userId") as string | undefined;
 export const getUserId = (req: Request): string | undefined =>
   req.query.userId as string | undefined;
-export const getUserIdOrFail = (req: Request): string => {
+export const getUserIdFromQueryOrFail = (req: Request): string => {
   const userId = getUserId(req);
   if (!userId) throw new BadRequestError("Missing userId query param");
   return userId as string;
