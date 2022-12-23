@@ -100,7 +100,7 @@ export class Withings extends Provider implements OAuth2 {
     const status = await this.revokeToken(client_id, client_secret, timestamp, nonce, providerData.token)
 
     if (status === 0) {
-      return this.oauth.revokeLocal(connectedUser);
+      this.oauth.revokeLocal(connectedUser);
     }
 
     throw new Error("Withings Revoke failed");
