@@ -10,14 +10,14 @@ export const asyncHandler =
       next: NextFunction
     ) => Promise<Response<any, Record<string, any>> | void>
   ) =>
-    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-      try {
-        await f(req, res, next);
-      } catch (err) {
-        console.error(err);
-        next(err);
-      }
-    };
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await f(req, res, next);
+    } catch (err) {
+      console.error(err);
+      next(err);
+    }
+  };
 
 export const getCxId = (req: Request): string | undefined => req.cxId;
 export const getCxIdOrFail = (req: Request): string => {
