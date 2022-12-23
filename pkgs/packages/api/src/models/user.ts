@@ -1,5 +1,4 @@
 import { Sex } from "./common/sex";
-import { Metadata } from "./common/metadata";
 import { MetriportData } from "./metriport-data";
 
 export interface User extends MetriportData {
