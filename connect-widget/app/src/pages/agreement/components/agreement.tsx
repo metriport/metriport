@@ -24,28 +24,28 @@ type AgreementProps = {
 const Agreement = ({ onAcceptAgreement }: AgreementProps) => {
   return (
     <Box p={4} m={4}>
-      <Heading fontSize={32} mb={8} textAlign={"center"}>
-        This app uses Metriport to connect your account
+      <Heading fontSize={28} mb={8} textAlign={"center"}>
+        This app uses Metriport to connect your accounts
       </Heading>
       <Point
         icon={<LinkIcon mr={2} />}
         title="Connect effortlessly"
-        body="Metriport lets you securely connect your medical accounts in seconds"
+        body="Metriport lets you securely connect your health accounts in seconds."
       />
       <Point
         icon={<LockIcon mr={2} />}
-        title="Your data is secured"
-        body="Metriport encrypts data at rest and in transit for all of our customers"
+        title="Your data is secure and encrypted"
+        body="Your personal data is encrypted and only accessible through your consent."
       />
       <Point
         icon={<Icon as={GiHealthNormal} mr={2} />}
-        title="Health Data"
-        body="You are providing this app access to your health data including your heart rate, sleep workouts among others."
+        title="Health data"
+        body="You are providing this app access to your health data - including sleep, workouts, and other data points."
       />
       <Point
         icon={<Icon as={GrCompliance} mr={2} />}
-        title="HIPAA & SOC 2 Compliant"
-        body="Metriport is a SOC 2 and HIPAA compliant organization"
+        title="HIPAA & SOC 2 compliant"
+        body="Metriport is a SOC 2 and HIPAA compliant organization."
         footer={
           <Box mt={2} display={"flex"}>
             <Image
