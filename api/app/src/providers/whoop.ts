@@ -75,8 +75,8 @@ export class Whoop extends Provider implements OAuth2 {
     return this.oauth.getTokenFromAuthCode(code);
   }
 
-  async revokeProviderAccess(connectedUser: ConnectedUser) {
-    return this.oauth.revokeLocal(connectedUser);
+  async revokeProviderAccess(connectedUser: ConnectedUser): Promise<void> {
+    this.oauth.revokeLocal(connectedUser);
   }
 
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {

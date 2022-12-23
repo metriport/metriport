@@ -16,7 +16,7 @@ export const oauthUserTokenResponse = z.object({
 
 export interface OAuth2 {
   getAuthUri(state: string): Promise<string>;
-  revokeProviderAccess(connectedUser: ConnectedUser): Promise<void | string>;
+  revokeProviderAccess(connectedUser: ConnectedUser): Promise<void>;
   getTokenFromAuthCode(code: string): Promise<string>;
 }
 
@@ -140,7 +140,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
     return refreshedToken.access_token;
   }
 
-  async revokeProviderAccess(connectedUser: ConnectedUser): Promise<void | string> {
+  async revokeProviderAccess(connectedUser: ConnectedUser): Promise<void> {
     const providerToken = await this.revokeLocal(connectedUser);
 
     const client = this.makeClient();
