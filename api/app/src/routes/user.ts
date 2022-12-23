@@ -119,7 +119,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------------------
- * DELETE /user/connect/token
+ * DELETE /user/revoke
  *
  * Revoke access to a provider
  *
@@ -129,7 +129,7 @@ router.get(
  * @return  {{success: boolean}}      If successfully removed.
  */
 router.delete(
-  "/connect/token",
+  "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
 
     const userId = getUserIdFromQueryOrFail(req);
