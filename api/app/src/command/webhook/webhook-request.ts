@@ -14,7 +14,6 @@ export const createWebhookRequest = async (
     ...create,
     id: uuidv4(),
     status: "processing",
-    statusAt: new Date(),
   });
 };
 

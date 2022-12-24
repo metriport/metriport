@@ -191,7 +191,7 @@ const processChunk = async (
         status: "failure",
       });
     } catch (err2) {
-      console.log(`Failed to store failure state on WH log`, err);
+      console.log(`Failed to store failure state on WH log`, err2);
     }
     let webhookStatusDetail;
     if (err instanceof WebhookError) {
@@ -208,7 +208,7 @@ const processChunk = async (
         webhookStatusDetail,
       });
     } catch (err2) {
-      console.log(`Failed to store failure state on WH settings`, err);
+      console.log(`Failed to store failure state on WH settings`, err2);
     }
   }
   return false;
@@ -220,7 +220,6 @@ const sendPayload = async (
   apiKey: string,
   timeout = 5_000
 ): Promise<any> => {
-  log(`Sending payload:\n${JSON.stringify(payload)}`);
   try {
     const res = await axios.post(url, payload, {
       headers: {
