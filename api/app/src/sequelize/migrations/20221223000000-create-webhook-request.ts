@@ -48,11 +48,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      statusAt: {
-        type: DataTypes.DATE(6),
-        field: "status_at",
-        allowNull: false,
-      },
     });
   });
 };

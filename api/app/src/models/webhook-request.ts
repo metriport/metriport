@@ -9,7 +9,6 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
   declare cxId: string;
   declare payload: unknown;
   declare status: WebhookRequestStatus;
-  declare statusAt: Date;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     WebhookRequest.init(
@@ -26,9 +25,6 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
         },
         status: {
           type: DataTypes.STRING,
-        },
-        statusAt: {
-          type: DataTypes.DATE(6),
         },
       },
       {
