@@ -16,6 +16,7 @@ export class Settings extends BaseModel<Settings> {
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Settings.init(
       {
+        ...BaseModel.baseAttributes(),
         id: {
           type: DataTypes.UUID,
           primaryKey: true,

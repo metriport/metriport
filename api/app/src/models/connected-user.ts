@@ -22,6 +22,7 @@ export class ConnectedUser extends BaseModel<ConnectedUser> {
   static setup: ModelSetup = (sequelize: Sequelize) => {
     ConnectedUser.init(
       {
+        ...BaseModel.baseAttributes(),
         id: {
           type: DataTypes.UUID,
           primaryKey: true,

@@ -13,6 +13,7 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
   static setup: ModelSetup = (sequelize: Sequelize) => {
     WebhookRequest.init(
       {
+        ...BaseModel.baseAttributes(),
         id: {
           type: DataTypes.UUID,
           primaryKey: true,
