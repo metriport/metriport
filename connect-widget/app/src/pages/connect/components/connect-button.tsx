@@ -25,15 +25,15 @@ const ConnectButton = ({
     sm: 125,
   });
 
-  const garmin = useBreakpointValue({
-    base: <Text p="4">+</Text>,
-    sm: <Text p="4">Coming Soon!</Text>,
-  });
+  // const garmin = useBreakpointValue({
+  //   base: <Text p="4">+</Text>,
+  //   sm: <Text p="4">Coming Soon!</Text>,
+  // });
 
   return (
     <Box>
       <Center>
-        {provider.name === "garmin" ? (
+        {/* {provider.name === "garmin" ? (
           <IconButton
             border="1px"
             borderColor={Constants.PRIMARY_COLOR}
@@ -45,7 +45,7 @@ const ConnectButton = ({
             isDisabled={true}
             icon={garmin}
           ></IconButton>
-        ) : (
+        ) : ( */}
           <IconButton
             p={2}
             w={btnWidth}
@@ -61,7 +61,7 @@ const ConnectButton = ({
             onClick={() => onRedirect(provider.name)}
             isLoading={isLoading[provider.name]}
           ></IconButton>
-        )}
+        {/* )} */}
       </Center>
     </Box>
   );
