@@ -11,12 +11,9 @@ export function redirectToMain(
   navigate: NavigateFunction,
   searchParams: URLSearchParams
 ) {
-  let envParam = "";
-  if (isSandbox(searchParams)) {
-    envParam = buildEnvParam(Constants.SANDBOX_PARAM);
-  } else if (isStaging(searchParams)) {
-    envParam = buildEnvParam(Constants.STAGING_PARAM);
-  }
+  const envParam = isSandbox(searchParams)
+    ? buildEnvParam(Constants.SANDBOX_PARAM)
+    : "";
 
   navigate(
     `/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${envParam}`
@@ -42,8 +39,4 @@ function isEnvParamSet(
 
 export function isSandbox(searchParams: URLSearchParams): boolean {
   return isEnvParamSet(searchParams, Constants.SANDBOX_PARAM);
-}
-
-export function isStaging(searchParams: URLSearchParams): boolean {
-  return isEnvParamSet(searchParams, Constants.STAGING_PARAM);
 }

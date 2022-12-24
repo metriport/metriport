@@ -23,7 +23,11 @@ Help()
 Deploy()
 {
    echo "Deplying to env $env"
-   npm run prep-deploy
+   if [[ "$env" == "staging" ]]; then
+      npm run prep-deploy-staging
+   else
+      npm run prep-deploy
+   fi
    cd ./infra
    cdk deploy -c env=$env $stack
    cd ../
@@ -61,7 +65,7 @@ if [[ -z "$stack" ]]; then
     exit
 fi
 
-if [[ "$env" =~ ^prod|sandbox|staging|standalone$ ]]; then
+if [[ "$env" =~ ^prod|sandbox|staging$ ]]; then
     Deploy
 else
     echo "Invalid environment! -e must be one of prod|sandbox|staging"
