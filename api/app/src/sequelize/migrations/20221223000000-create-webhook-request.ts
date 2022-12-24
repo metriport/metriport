@@ -30,35 +30,30 @@ export const up: Migration = async ({ context: queryInterface }) => {
       "webhook_status_detail",
       { transaction }
     );
-    await shared.createTable<WebhookRequest>(
-      queryInterface,
-      transaction,
-      WebhookRequest.NAME,
-      {
-        id: {
-          type: DataTypes.UUID,
-          primaryKey: true,
-        },
-        cxId: {
-          type: DataTypes.STRING,
-          field: "cx_id",
-          allowNull: false,
-        },
-        payload: {
-          type: DataTypes.JSONB,
-          allowNull: false,
-        },
-        status: {
-          type: DataTypes.STRING,
-          allowNull: false,
-        },
-        statusAt: {
-          type: DataTypes.STRING,
-          field: "status_at",
-          allowNull: false,
-        },
-      }
-    );
+    await shared.createTable(queryInterface, transaction, WebhookRequest.NAME, {
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+      },
+      cxId: {
+        type: DataTypes.STRING,
+        field: "cx_id",
+        allowNull: false,
+      },
+      payload: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+      },
+      status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      statusAt: {
+        type: DataTypes.DATE(6),
+        field: "status_at",
+        allowNull: false,
+      },
+    });
   });
 };
 

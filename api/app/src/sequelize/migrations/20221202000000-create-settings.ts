@@ -7,7 +7,7 @@ import * as shared from "../migrations-shared";
 // Docs: https://sequelize.org/api/v6/class/src/dialects/abstract/query-interface.js~queryinterface
 export const up: Migration = async ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async (transaction) => {
-    await shared.createTable<Settings>(
+    await shared.createTable(
       queryInterface,
       transaction,
       Settings.NAME,

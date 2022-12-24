@@ -16,7 +16,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       undefined,
       { transaction }
     );
-    await shared.createTable<ConnectedUser>(
+    await shared.createTable(
       queryInterface,
       transaction,
       ConnectedUser.NAME,

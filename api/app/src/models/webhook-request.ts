@@ -1,18 +1,9 @@
-import {
-  DataTypes,
-  InferAttributes,
-  InferCreationAttributes,
-  Model,
-  Sequelize,
-} from "sequelize";
-import { defaultModelOptions, ModelSetup } from "./_default";
+import { DataTypes, Sequelize } from "sequelize";
+import { BaseModel, defaultModelOptions, ModelSetup } from "./_default";
 
 export type WebhookRequestStatus = "processing" | "success" | "failure";
 
-export class WebhookRequest extends Model<
-  InferAttributes<WebhookRequest>,
-  InferCreationAttributes<WebhookRequest>
-> {
+export class WebhookRequest extends BaseModel<WebhookRequest> {
   static NAME: string = "webhook_request";
   declare id: string;
   declare cxId: string;
@@ -37,7 +28,7 @@ export class WebhookRequest extends Model<
           type: DataTypes.STRING,
         },
         statusAt: {
-          type: DataTypes.STRING,
+          type: DataTypes.DATE(6),
         },
       },
       {
