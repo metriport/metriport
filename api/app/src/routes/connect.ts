@@ -33,7 +33,7 @@ export const buildConnectErrorRedirectURL = (
 ): string => {
   const redirectPath = success ? "success" : "error";
   const sandboxFlag = Config.isSandbox() ? "&sandbox=true" : "";
-  return `${Config.CONNECT_WIDGET_URL}${redirectPath}?token=${token}${sandboxFlag}`;
+  return `${Config.getConnectWidgetUrl()}${redirectPath}?token=${token}${sandboxFlag}`;
 };
 
 /** ---------------------------------------------------------------------------------------

@@ -2,14 +2,21 @@ import { getApiToken } from "./api";
 import { NavigateFunction } from "react-router-dom";
 import Constants from "./constants";
 
+function buildEnvParam(envParam: string) {
+  return `${envParam}=true`;
+}
+
 // redirects to the main connect page while keeping the token state
 export function redirectToMain(
   navigate: NavigateFunction,
   searchParams: URLSearchParams
 ) {
-  const sandboxFlag = isSandbox(searchParams) ? "&sandbox=true" : "";
+  const envParam = isSandbox(searchParams)
+    ? `&${buildEnvParam(Constants.SANDBOX_PARAM)}`
+    : "";
+
   navigate(
-    `/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${sandboxFlag}`
+    `/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${envParam}`
   );
 }
 
@@ -22,7 +29,14 @@ export function isProdEnv(): boolean {
   return process.env.NODE_ENV === Constants.PROD_ENV;
 }
 
+function isEnvParamSet(
+  searchParams: URLSearchParams,
+  envParam: string
+): boolean {
+  const isSet = searchParams.get(envParam);
+  return isSet != null && isSet === String(true);
+}
+
 export function isSandbox(searchParams: URLSearchParams): boolean {
-  const isSandbox = searchParams.get(Constants.SANDBOX_PARAM);
-  return isSandbox != null && isSandbox === String(true);
+  return isEnvParamSet(searchParams, Constants.SANDBOX_PARAM);
 }
