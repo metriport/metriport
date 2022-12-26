@@ -132,6 +132,7 @@ const reportUsage = async (cxId: string, userIds: string[]): Promise<void> => {
   const users = await getConnectedUsers({ cxId, ids: userIds });
   users.forEach(({ cxUserId }) => [
     reportUsageCmd({ cxId, cxUserId }).catch((err) => {
+      // TODO #156 report to monitoring app instead
       log(`Failed to report usage, cxId ${cxId}, cxUserId ${cxUserId}`, err);
     }),
   ]);
