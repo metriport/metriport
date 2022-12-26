@@ -16,8 +16,7 @@ class SettingsDTO {
     public webhookUrl: string | null,
     public webhookKey: string | null,
     public webhookEnabled: boolean,
-    public webhookStatusDetail: string | null,
-    public webhookStatus: string | null // temporary, for compatibility while deployment
+    public webhookStatusDetail: string | null
   ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
@@ -26,8 +25,7 @@ class SettingsDTO {
       s.webhookUrl,
       s.webhookKey,
       s.webhookEnabled,
-      s.webhookStatusDetail ?? null,
-      s.webhookStatusDetail ?? null // temporary, for compatibility while deployment
+      s.webhookStatusDetail ?? null
     );
   }
 }
