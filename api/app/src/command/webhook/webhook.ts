@@ -8,9 +8,11 @@ import WebhookError from "../../errors/webhook";
 import { DataType, TypedData, UserData } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { Util } from "../../shared/util";
+import { getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
+import { reportUsage as reportUsageCmd } from "../usage/report-usage";
 import {
   createWebhookRequest,
   updateWebhookRequestStatus,
@@ -111,6 +113,10 @@ export const processData = async <T extends MetriportData>(
           // now that we have a all the chunks for one customer, process them
           const settings = await getSettingsOrFail({ id: cxId });
           await processOneCustomer(cxId, settings, payloads);
+          await reportUsage(
+            cxId,
+            dataAndUserList.map((du) => du.userId)
+          );
         } catch (err) {
           const msg = getErrorMessage(err);
           log(`Failed to process data of customer ${cxId}: ${msg}`);
@@ -120,6 +126,16 @@ export const processData = async <T extends MetriportData>(
   } catch (err) {
     log(`Error on processData: `, err);
   }
+};
+
+const reportUsage = async (cxId: string, userIds: string[]): Promise<void> => {
+  const users = await getConnectedUsers({ cxId, ids: userIds });
+  users.forEach(({ cxUserId }) => [
+    reportUsageCmd({ cxId, cxUserId }).catch((err) => {
+      // TODO #156 report to monitoring app instead
+      log(`Failed to report usage, cxId ${cxId}, cxUserId ${cxUserId}`, err);
+    }),
+  ]);
 };
 
 // const processOneCustomer = async <T extends MetriportData>(
