@@ -3,7 +3,7 @@ import { NavigateFunction } from "react-router-dom";
 import Constants from "./constants";
 
 function buildEnvParam(envParam: string) {
-  return `&${envParam}=true`;
+  return `${envParam}=true`;
 }
 
 // redirects to the main connect page while keeping the token state
@@ -12,7 +12,7 @@ export function redirectToMain(
   searchParams: URLSearchParams
 ) {
   const envParam = isSandbox(searchParams)
-    ? buildEnvParam(Constants.SANDBOX_PARAM)
+    ? `&${buildEnvParam(Constants.SANDBOX_PARAM)}`
     : "";
 
   navigate(
