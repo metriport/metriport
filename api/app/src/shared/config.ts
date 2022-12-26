@@ -21,27 +21,21 @@ export class Config {
   static isSandbox(): boolean {
     return process.env.ENV_TYPE === this.SANDBOX_ENV;
   }
-  static CONNECT_WIDGET_URL: string;
-  static {
-    // TODO move these to env vars
-    if (this.isProdEnv()) {
-      this.CONNECT_WIDGET_URL = "https://connect.metriport.com/";
-    } else {
-      this.CONNECT_WIDGET_URL = "http://localhost:3001/";
-    }
+  static getConnectWidgetUrl(): string {
+    return getEnvVarOrFail("CONNECT_WIDGET_URL");
   }
 
   static getConnectRedirectUrl(): string {
     if (this.isProdEnv()) {
-      if (this.isSandbox()) {
-        return "https://api.sandbox.metriport.com/token/connect";
-      }
-
-      return "https://api.metriport.com/token/connect";
+      return `${Config.getApiUrl()}/token/connect`;
     }
 
     // Garmin requires an internet accessible address - use a proxy like NGrok or similar
-    return `http://localhost:8080/connect`;
+    return `${Config.getApiUrl()}/connect`;
+  }
+
+  static getApiUrl(): string {
+    return getEnvVarOrFail("API_URL");
   }
 
   static getCronometerClientId(): string {
