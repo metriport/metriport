@@ -1,10 +1,8 @@
 import { NextFunction, Request } from "express";
-import { Config } from "../../shared/config";
+import { reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
 import { Util } from "../../shared/util";
 import { getCxId, getUserId } from "../util";
-import Axios from "axios";
 
-const axios = Axios.create();
 const log = Util.log("USAGE");
 
 /**
@@ -32,34 +30,19 @@ export const reportUsage = async (
  */
 const reportIt = async (req: Request): Promise<void> => {
   try {
-    const url = Config.getUsageUrl();
-    if (!url) return;
-
-    const data = await getData(req);
-    if (!data) return;
-
-    await axios.post(url, data, { timeout: 500 });
+    const cxId = getCxId(req);
+    if (!cxId) {
+      log(`Skipped, missing cxId`);
+      return;
+    }
+    const cxUserId = getUserId(req);
+    if (!cxUserId) {
+      log(`Skipped, missing cxUserId (cxId ${cxId})`);
+      return;
+    }
+    await reportUsageCmd({ cxId, cxUserId });
   } catch (err) {
     console.log(err);
     // intentionally failing silently
   }
-};
-
-const getData = async (
-  req: Request
-): Promise<{
-  cxId: string;
-  cxUserId: string;
-} | void> => {
-  const cxId = getCxId(req);
-  if (!cxId) {
-    log(`Skipped, missing cxId`);
-    return;
-  }
-  const cxUserId = getUserId(req);
-  if (!cxUserId) {
-    log(`Skipped, missing cxUserId (cxId ${cxId})`);
-    return;
-  }
-  return { cxId, cxUserId };
 };
