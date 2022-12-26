@@ -24,8 +24,9 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use(errorHandler);
 
-app.listen(8080, "0.0.0.0", async () => {
+const port = 8080;
+app.listen(port, "0.0.0.0", async () => {
   // initialize connection to the databases
   await initDB();
-  console.log(`[server]: API server is running :)`);
+  console.log(`[server]: API server is running on port ${port} :)`);
 });

@@ -1,8 +1,188 @@
 ---
 title: "Webhooks"
-description:
-  "We're hard at work building out our Webhooks so you can subscribe to your
-  users' health data."
+description: "Receive user information as soon as it becomes available"
 ---
 
-<Warning>**Check back soon!**</Warning>
+## Overview
+
+Usually, when an application wants to consume information from another it makes a request to
+obtain such information.
+
+Webhooks turn this around: the producer of information calls the consumer when data is available.
+This way, the consumer doesn't have to poll the producer regularly to obtain information.
+
+Metriport will call your app's webhook endpoint when user data is available - there's no way for your
+application to request data exposed through webhooks.
+
+To enable this integration approach with Metriport:
+
+1. Expose a public endpoint on your app;
+1. Set this endpoint URL on the [settings page](https://dash.metriport.com/settings) in the developer dashboard;
+1. This will generate a webhook key that should be used to authenticate requests on
+   your app's endpoint (webhook).
+
+General requirements for the endpoint:
+
+1. Public endpoint accessible from the internet;
+1. Accepts a `POST` HTTP request;
+1. Verifies requests by comparing the HTTP header `x-webhook-key` with the webhook key;
+1. Accepts and responds to a [`ping` message](#the-ping-message);
+1. Accepts and processes [user data messages](#user-data-message).
+
+<Warning>
+  Currently, the webhook API doesn't implement retries - we're working hard to
+  implement this soon!
+</Warning>
+
+## Authentication
+
+Validate requests to your public endpoing by comparing the webhook key with each request's HTTP header.
+
+The webhook key is accessible on [settings page](https://dash.metriport.com/settings) in the developer 
+dashboard - see how to enable webhooks on the [overview section](#overview).
+
+The HTTP header will contain a header named `x-webhook-key` - it should contain the webhook key above.
+Your app is expected to disregard requests if those don't match. We suggest returning a HTTP status code
+`401` with no body in such cases.
+
+If you want to generate a new webhook key, delete your webhook URL on the settings page, save, and enter it again.
+
+## Format
+
+Webhook requests contain the relevant information on the body of the HTTP request.
+
+There are two types of messages:
+- [`ping`](#the-ping-message): validation of the webhook connection between Metriport and your app;
+- [user data](#user-data-message): health information grouped by user.
+
+### The `ping` message
+
+This is a simple message to validate access to your app's webhook endpoint. Your app should
+accept a `POST` request with this body...
+
+```json
+{
+  "ping": "<random-sequence>"
+}
+```
+
+...and respond to this request by sending back the `<random-sequence>` as below:
+
+```json
+{
+  "pong": "<random-sequence>"
+}
+```
+
+You can check the [webhook mock server available on our repository](https://github.com/metriport/metriport/blob/master/utils/src/mock-webhook.ts)
+for a simple implementation of this message.
+
+### User data message
+
+These are the messages Metriport will send to your app with user data from Providers, as soon
+as those become available.
+
+The format follows:
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>"
+  },
+  "users": [
+    {
+      "userId": "<user-id-1>",
+      "sleep": [
+        {
+          "metadata": {
+            "date": "2022-12-21",
+            "source": "garmin"
+          },
+          "start_time": "2022-12-12T22:15:40Z",
+          "end_time": "2022-12-13T04:15:40Z",
+          "durations": {
+            "awake_seconds": 400,
+            ...
+          },
+          "biometrics": {
+            "heart_rate": {
+              "avg_bpm": 70,
+              ...
+            },
+            ...
+          }
+        },
+        {
+          "metadata": {
+            "date": "2022-12-21",
+            "source": "garmin"
+          },
+          "start_time": "2022-12-12T22:15:40Z",
+          "end_time": "2022-12-13T04:15:40Z",
+          "durations": {
+            "awake_seconds": 400,
+            ...
+          },
+          "biometrics": {
+            "heart_rate": {
+              "avg_bpm": 70,
+              ...
+            },
+            ...
+          }
+        }
+      ],
+      "activity": [
+        {
+          "metadata": {
+            "date": "2022-12-21",
+            "source": "garmin"
+          },
+          "summary": {
+            "biometrics": {
+              ...
+            },
+            "durations": {
+              ...
+            },
+            ...
+          },
+          "activity_logs": [
+            ...
+          ],
+        }
+      ]
+    },
+    {
+      "userId": "<user-id-2>",
+      ...
+    }
+  ]
+}
+```
+
+<ResponseField name="Details">
+  <Expandable title="details">
+
+    - `message-id`: this request ID from Metriport, useful for debugging purposes only;
+    - `date-time-in-utc`: the timestamp in datetime format when this message was originally sent
+      (example: `2022-12-24T00:46:05.413Z`)
+    - `users`: array of users, where each item represents all of that user's information available
+      in this request (more data might be available in subsequent requests)
+    - for each user:
+
+      - `user-id`: the user ID as defined by your application when it called [`/create-user`](/user/create-user)
+      - `data`: array of data points for the given user; this follows the same format of the response
+        of the SDK API reference
+        - in the example above, `user-id-1` has 2 entries of [`sleep`](/health-device-api-reference/get-sleep-data)
+          data and 1 entry of [`activity`](/health-device-api-reference/get-activity-data) data
+
+    </Expandable>
+</ResponseField>
+
+
+Upon successful receiving of these messages, it's expected that your app responds with a 200 HTTP
+status code (OK).
+
+There's no need to include anything on the response body.

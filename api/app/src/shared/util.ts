@@ -41,7 +41,9 @@ export class Util {
   static log =
     (prefix: string) =>
     (msg: string, err?: unknown): void =>
-      console.log(`[${prefix}] ${msg}`, err);
+      err
+        ? console.log(`[${prefix}] ${msg}`, err)
+        : console.log(`[${prefix}] ${msg}`);
 
   static sleep = (timeInMs: number) =>
     new Promise((resolve) => setTimeout(resolve, timeInMs));

@@ -1,12 +1,6 @@
-import {
-  DataTypes,
-  InferAttributes,
-  InferCreationAttributes,
-  Model,
-  Sequelize,
-} from "sequelize";
+import { DataTypes, Sequelize } from "sequelize";
 import { ProviderOptions } from "../shared/constants";
-import { defaultModelOptions, ModelSetup } from "./_default";
+import { BaseModel, defaultModelOptions, ModelSetup } from "./_default";
 
 export type ProviderMapItem = {
   token: string; // user authorization token
@@ -18,10 +12,7 @@ export type ProviderMap = {
   [k in ProviderOptions]?: ProviderMapItem;
 };
 
-export class ConnectedUser extends Model<
-  InferAttributes<ConnectedUser>,
-  InferCreationAttributes<ConnectedUser>
-> {
+export class ConnectedUser extends BaseModel<ConnectedUser> {
   static NAME: string = "connected_user";
   declare id: string;
   declare cxId: string;
@@ -31,6 +22,7 @@ export class ConnectedUser extends Model<
   static setup: ModelSetup = (sequelize: Sequelize) => {
     ConnectedUser.init(
       {
+        ...BaseModel.baseAttributes(),
         id: {
           type: DataTypes.UUID,
           primaryKey: true,

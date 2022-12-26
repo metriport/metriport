@@ -1,8 +1,12 @@
 import { nanoid } from "nanoid";
 import WebhookError from "../../errors/webhook";
-import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
+import {
+  Settings,
+  WEBHOOK_STATUS_BAD_RESPONSE,
+  WEBHOOK_STATUS_OK,
+} from "../../models/settings";
 import { Util } from "../../shared/util";
-import { sendTestPayload } from "../../webhook";
+import { sendTestPayload } from "../webhook/webhook";
 import { getSettingsOrFail } from "./getSettings";
 
 const log = Util.log(`updateSettings`);
@@ -30,13 +34,21 @@ export const updateSettings = async ({
 
 export type UpdateWebhookStatusCommand = {
   id: string;
-  webhookStatus?: string;
+  webhookEnabled: boolean;
+  webhookStatusDetail?: string;
 };
 export const updateWebhookStatus = async ({
   id,
-  webhookStatus,
+  webhookEnabled,
+  webhookStatusDetail,
 }: UpdateWebhookStatusCommand): Promise<void> => {
-  await Settings.update({ webhookStatus }, { where: { id } });
+  await Settings.update(
+    {
+      webhookEnabled,
+      ...(webhookStatusDetail ? { webhookStatusDetail } : undefined),
+    },
+    { where: { id } }
+  );
 };
 
 const getWebhookDataForUpdate = (
@@ -69,12 +81,21 @@ const testWebhook = async ({
 }: TestWebhookCommand): Promise<void> => {
   if (!webhookUrl || !webhookKey) return;
   try {
-    await sendTestPayload(webhookUrl, webhookKey);
-    await updateWebhookStatus({ id, webhookStatus: WEBHOOK_STATUS_OK });
+    const testOK = await sendTestPayload(webhookUrl, webhookKey);
+    await updateWebhookStatus({
+      id,
+      webhookEnabled: testOK,
+      webhookStatusDetail: testOK
+        ? WEBHOOK_STATUS_OK
+        : WEBHOOK_STATUS_BAD_RESPONSE,
+    });
   } catch (err) {
     if (err instanceof WebhookError) {
-      const webhookStatus = err.underlyingError.message;
-      await updateWebhookStatus({ id, webhookStatus });
+      await updateWebhookStatus({
+        id,
+        webhookEnabled: false,
+        webhookStatusDetail: err.underlyingError.message,
+      });
     } else {
       log(`Unexpected error testing webhook`, err);
     }

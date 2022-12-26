@@ -53,36 +53,36 @@
       ]
     },
     {
-      "group": "User",
+      "group": "API Reference",
       "pages": [
-        "user/create-user",
-        "user/create-connect-token",
-        "user/revoke-provider-access"
-      ]
-    },
-    {
-      "group": "Health Device API Reference",
-      "pages": [
-        "health-device-api-reference/get-activity-data",
-        "health-device-api-reference/get-biometrics-data",
-        "health-device-api-reference/get-body-data",
-        "health-device-api-reference/get-nutrition-data",
-        "health-device-api-reference/get-sleep-data",
-        "health-device-api-reference/get-user-data"
+        {
+          "group": "User API",
+          "pages": [
+            "user/create-user",
+            "user/create-connect-token",
+            "user/revoke-provider-access"
+          ]
+        },
+        {
+          "group": "Health Device API",
+          "pages": [
+            "health-device-api-reference/get-activity-data",
+            "health-device-api-reference/get-biometrics-data",
+            "health-device-api-reference/get-body-data",
+            "health-device-api-reference/get-nutrition-data",
+            "health-device-api-reference/get-sleep-data",
+            "health-device-api-reference/get-user-data"
+          ]
+        },
+        {
+          "group": "Medical API",
+          "pages": ["medical-api-reference/coming-soon"]
+        }
       ]
     },
     {
       "group": "More Info",
-      "pages": [
-        "more-info/our-integrations",
-        "more-info/webhooks"
-      ]
-    },
-    {
-      "group": "Medical API Reference",
-      "pages": [
-        "medical-api-reference/coming-soon"
-      ]
+      "pages": ["more-info/our-integrations", "more-info/webhooks"]
     }
   ],
   "footerSocials": {

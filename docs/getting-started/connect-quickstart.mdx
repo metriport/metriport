@@ -1,5 +1,5 @@
 ---
-title: "Connect Quickstart"
+title: "Quick start"
 description: "Follow this guide to get up and running with Metriport in minutes."
 ---
 
@@ -9,11 +9,11 @@ description: "Follow this guide to get up and running with Metriport in minutes.
 
 Getting started with Metriport is pretty easy, you'll just need take the following steps:
 
-1. Create a developer account.
-2. Generate an API key.
-3. Setup the Metriport client on your server.
-4. Link to the Metriport Connect widget in your app.
-5. Access your users' health data 🎉🎉🎉
+1. [Create a developer account](#1-create-a-developer-account).
+2. [Generate an API key](#2-generate-an-api-key).
+3. [Integrate your app with Metriport](#3-integrate-your-app-with-metriport).
+4. [Link to the Metriport Connect widget in your app](#4-link-to-the-metriport-connect-widget-in-your-app).
+5. [Access your users' health data](#5-access-your-user-s-health-data) 🎉🎉🎉
 
 Let's get into it! 🤘
 
@@ -54,9 +54,21 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
   beside the key.
 </Tip>
 
-## 3. Setup the Metriport client on your server
+## 3. Integrate your app with Metriport
 
-In the root of your server project, run the following terminal command to install the Metriport client:
+There are two ways to receive data from Metriport:
+- API: Your app requests data from Metriport:
+  - your application polls Metriport for user data, for a specific date;
+  - currently, this is the required method for all providers with the exception of Garmin (below);
+- Webhook: Metriport sends data to your app when it becomes available:
+  - your application exposes a webhook (endpoint), which Metriport calls when there's more user data available;
+  - currently, this is the only way to get information from Garmin.
+
+### 3.1 API: setup the Metriport client on your server
+
+The Metriport client is a SDK (library) that's installed on an application codebase and simplifies calling Metriport's API.
+
+In the root of your server project, run the following terminal command to install the SDK:
 
 ```bash
 npm install --save @metriport/api
@@ -70,6 +82,14 @@ import { Metriport } from "@metriport/api";
 
 const metriportClient = new Metriport("YOUR_API_KEY");
 ```
+
+### 3.2. Webhook: expose an endpoint to be called by Metriport
+
+This allows your application to receive user data as soon as it becomes available, removing the need to poll Metriport's API at regular intervals.
+
+It's the only and required way to get information from Garmin.
+
+Head to the [webhook page](/more-info/webhooks) to learn how to setup this integration with Metriport.
 
 ## 4. Link to the Metriport Connect widget in your app
 
@@ -120,7 +140,7 @@ window.open(`https://connect.metriport.com/?token=${connectToken}`);
 <Card
   title="API reference"
   icon="terminal"
-  href="/health-device-api-reference/create-user"
+  href="/user/create-user"
 >
   Check out our API reference for example data requests and responses.
 </Card>

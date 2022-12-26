@@ -15,11 +15,20 @@ class SettingsDTO {
     public id: string,
     public webhookUrl: string | null,
     public webhookKey: string | null,
-    public webhookStatus: string | null
+    public webhookEnabled: boolean,
+    public webhookStatusDetail: string | null,
+    public webhookStatus: string | null // temporary, for compatibility while deployment
   ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
-    return new SettingsDTO(s.id, s.webhookUrl, s.webhookKey, s.webhookStatus);
+    return new SettingsDTO(
+      s.id,
+      s.webhookUrl,
+      s.webhookKey,
+      s.webhookEnabled,
+      s.webhookStatusDetail ?? null,
+      s.webhookStatusDetail ?? null // temporary, for compatibility while deployment
+    );
   }
 }
 
@@ -39,7 +48,7 @@ router.get(
     if (!settings) {
       settings = await createSettings({ id });
     }
-    return res.status(status.OK).send(settings);
+    return res.status(status.OK).send(SettingsDTO.fromEntity(settings));
   })
 );
 
