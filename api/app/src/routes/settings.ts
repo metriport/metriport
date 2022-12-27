@@ -17,8 +17,6 @@ class SettingsDTO {
     public id: string,
     public webhookUrl: string | null,
     public webhookKey: string | null,
-    public webhookEnabled: boolean, // TODO remove
-    public webhookStatusDetail: string | null // TODO remove
   ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
@@ -26,8 +24,6 @@ class SettingsDTO {
       s.id,
       s.webhookUrl,
       s.webhookKey,
-      s.webhookEnabled, // TODO remove
-      s.webhookStatusDetail ?? null // TODO remove
     );
   }
 }
