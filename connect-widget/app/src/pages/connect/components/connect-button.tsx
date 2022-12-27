@@ -1,13 +1,12 @@
 import {
   Text,
-  IconButton,
+  Button,
   useBreakpointValue,
   Box,
   Center,
 } from "@chakra-ui/react";
 
 import { ProviderProps } from "./provider";
-import Constants from "../../../shared/constants";
 
 const ConnectButton = ({
   isLoading,
@@ -25,45 +24,44 @@ const ConnectButton = ({
     sm: 125,
   });
 
+  return (
+    <Box>
+      <Center>
+        {provider.name === "garmin" ? (
+          <ComingSoon btnWidth={btnWidth} />
+        ) : (
+          <Button
+            p={2}
+            w={btnWidth}
+            aria-label="Connect"
+            isDisabled={isConnected}
+            onClick={() => onRedirect(provider.name)}
+            isLoading={isLoading[provider.name]}
+          >
+            {content}
+          </Button>
+        )}
+      </Center>
+    </Box>
+  );
+};
+
+const ComingSoon = ({ btnWidth }: { btnWidth: any }) => {
   const garmin = useBreakpointValue({
     base: <Text p="4">+</Text>,
     sm: <Text p="4">Coming Soon!</Text>,
   });
 
   return (
-    <Box>
-      <Center>
-        {provider.name === "garmin" ? (
-          <IconButton
-            border="1px"
-            borderColor={Constants.PRIMARY_COLOR}
-            p={2}
-            w={btnWidth}
-            aria-label="Connect"
-            bg={"white"}
-            color={Constants.PRIMARY_COLOR}
-            isDisabled={true}
-            icon={garmin}
-          ></IconButton>
-        ) : (
-          <IconButton
-            p={2}
-            w={btnWidth}
-            colorScheme="blue"
-            aria-label="Connect"
-            bg={Constants.PRIMARY_COLOR}
-            color="white"
-            _hover={{
-              bg: Constants.HOVER_COLOR,
-            }}
-            isDisabled={isConnected}
-            icon={content}
-            onClick={() => onRedirect(provider.name)}
-            isLoading={isLoading[provider.name]}
-          ></IconButton>
-        )}
-      </Center>
-    </Box>
+    <Button
+      border="1px"
+      p={2}
+      w={btnWidth}
+      variant={"hollow"}
+      isDisabled={true}
+    >
+      {garmin}
+    </Button>
   );
 };
 

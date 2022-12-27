@@ -1,42 +1,31 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import WidgetContainer from "../../shared/components/WidgetContainer";
 import ConnectProviders from "./components/connect-providers";
 import Agreement from "./components/agreement";
+import { api, setupApi } from "../../shared/api";
+import Constants from "../../shared/constants";
+import {
+  setAgreementState,
+  acceptAgreement,
+} from "../../shared/localStorage/agreement";
+import { storeColorMode } from "../../shared/localStorage/color-mode";
 
 const ConnectPage = () => {
   const [agreement, setAgreement] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchParams, _] = useSearchParams();
 
-  const agreementLocalStorageKey = "agreement-accepted-v1";
-
-  const getLocalStorageAgreement = (): boolean => {
-    const localStorageAgreement = localStorage.getItem(
-      agreementLocalStorageKey
-    );
-
-    if (localStorageAgreement) {
-      const parsedValue = JSON.parse(localStorageAgreement);
-
-      return parsedValue;
-    }
-
-    return false;
-  };
+  const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
 
   useEffect(() => {
-    const localStorageAgreement = getLocalStorageAgreement();
+    setupApi(api, searchParams);
+    storeColorMode(colorMode);
+    setAgreementState(setAgreement);
 
-    if (localStorageAgreement) {
-      setAgreement(localStorageAgreement);
-    }
     setIsLoading(false);
-  }, []);
-
-  const acceptAgreement = (): void => {
-    localStorage.setItem(agreementLocalStorageKey, JSON.stringify(true));
-    setAgreement(true);
-  };
+  }, [searchParams, colorMode]);
 
   return (
     <WidgetContainer>
@@ -45,7 +34,7 @@ const ConnectPage = () => {
       ) : agreement ? (
         <ConnectProviders />
       ) : (
-        <Agreement onAcceptAgreement={acceptAgreement} />
+        <Agreement onAcceptAgreement={() => acceptAgreement(setAgreement)} />
       )}
     </WidgetContainer>
   );
