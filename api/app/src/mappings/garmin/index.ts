@@ -1,8 +1,5 @@
 import { MetriportData } from "@metriport/api/lib/models/metriport-data";
-import dayjs from "dayjs";
 import { z } from "zod";
-
-export const ISO_DATE = "YYYY-MM-DD";
 
 export const garminMetaSchema = z.object({
   userAccessToken: z.string(),
@@ -13,38 +10,17 @@ export interface User {
   userAccessToken: string;
 }
 
-// TODO move out of Garmin for reuse across Providers
-export type DataType = "activity" | "sleep";
+export type DataType = "activity" | "sleep" | "body";
 
-// TODO move out of Garmin for reuse across Providers
 export interface TypedData<T extends MetriportData> {
   type: DataType;
   data: T;
 }
-// TODO move out of Garmin for reuse across Providers
+
 export interface UserData<T extends MetriportData> {
   user: User;
   typedData: TypedData<T>;
 }
-
-export const toISODate = (unixTime: number): string => {
-  return dayjs.unix(unixTime).format(ISO_DATE);
-};
-
-export const toISODateTime = (unixTime: number): string => {
-  return dayjs.unix(unixTime).toISOString();
-};
-
-export const oneOf = <T>(...values: T[]): NonNullable<T> | undefined =>
-  values.find((v) => v != null) ?? undefined;
-
-/**
- * Converts the parameter to undefined if its null, or return
- * it if present.
- * The return type is the original or undefined, can't return null.
- */
-export const optional = <T>(v: T): NonNullable<T> | undefined =>
-  v != null ? v : undefined;
 
 export const garminUnits = {
   date: z.string().optional().nullable(), // or regex('yyyy-mm-dd')
@@ -73,6 +49,10 @@ export const garminUnits = {
   respiration: z.number(),
   spo2: z.number(),
   sleepScore: z.enum(["EXCELLENT", "GOOD", "FAIR", "POOR"]),
+  massInGrams: z.number().int(),
+  percent: z.number(),
+  bodyMassIndex: z.number(),
+  weightInGrams: z.number().int(),
 };
 
 export const timeRange = z
@@ -158,4 +138,11 @@ export const garminTypes = {
   //
   steps: garminUnits.steps,
   stepsGoal: garminUnits.steps,
+  //
+  muscleMass: garminUnits.massInGrams,
+  boneMass: garminUnits.massInGrams,
+  bodyWaterInPercent: garminUnits.percent,
+  bodyFatInPercent: garminUnits.percent,
+  bodyMassIndex: garminUnits.bodyMassIndex,
+  weight: garminUnits.weightInGrams,
 };
