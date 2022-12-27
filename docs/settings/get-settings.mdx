@@ -1,0 +1,29 @@
+---
+title: "Get Settings"
+description: "Gets the settings for the API customer."
+api: "GET /settings"
+---
+
+## Response
+
+<ResponseField name="id" type="string" required>
+  The settings ID.
+</ResponseField>
+
+<ResponseField name="webhookUrl" type="string" required>
+  The customer's webhook URL.
+</ResponseField>
+
+<ResponseField name="webhookKey" type="string" required>
+  The key used to authenticate webhook calls to the customer's app.
+</ResponseField>
+
+Example response:
+
+```json
+{
+  "id": "<settings-id>",
+  "webhookUrl": "https://server.domain.com/webhook/endpoint",
+  "webhookKey": "<webhook-key>"
+}
+```

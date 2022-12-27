@@ -56,11 +56,26 @@
       "group": "API Reference",
       "pages": [
         {
-          "group": "User API",
+          "group": "General API",
           "pages": [
-            "user/create-user",
-            "user/create-connect-token",
-            "user/revoke-provider-access"
+            {
+              "group": "User",
+              "pages": [
+                "user/create-user",
+                "user/create-connect-token",
+                "user/revoke-provider-access"
+              ]
+            },
+            {
+              "group": "Settings",
+              "pages": [
+                "settings/get-settings",
+                "settings/post-settings",
+                "settings/get-webhook",
+                "settings/retry-webhook"
+              ]
+            },
+            "settings/dash"
           ]
         },
         {
