@@ -10,6 +10,7 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
     where: { cxId, status: ["failure"] },
     order: [["createdAt", "ASC"]],
   });
+  if (failed.length < 1) return;
 
   // mark all as processing and the process them asynchronously
   await WebhookRequest.update(
