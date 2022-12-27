@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import z from "zod";
 import status from "http-status";
+import z from "zod";
+import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
+import { getUserToken } from "../command/cx-user/get-user-token";
 import BadRequestError from "../errors/bad-request";
 import UnauthorizedError from "../errors/unauthorized";
 import { Config } from "../shared/config";
@@ -12,9 +14,7 @@ import {
 } from "../shared/constants";
 import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
-import { asyncHandler, getCxId, getCxIdFromHeaders, getUserIdFromHeaders } from "./util";
-import { getUserToken } from "../command/cx-user/get-user-token";
-import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
+import { asyncHandler, getCxIdFromHeaders, getUserIdFromHeaders } from "./util";
 
 const router = Router();
 
@@ -33,7 +33,7 @@ export const buildConnectErrorRedirectURL = (
 ): string => {
   const redirectPath = success ? "success" : "error";
   const sandboxFlag = Config.isSandbox() ? "&sandbox=true" : "";
-  return `${Config.CONNECT_WIDGET_URL}${redirectPath}?token=${token}${sandboxFlag}`;
+  return `${Config.getConnectWidgetUrl()}${redirectPath}?token=${token}${sandboxFlag}`;
 };
 
 /** ---------------------------------------------------------------------------------------
@@ -162,12 +162,13 @@ router.get("/user/providers", async (req: Request, res: Response) => {
   }
 
   if (!cxId || !userId) {
-    throw new BadRequestError('Invalid headers')
+    throw new BadRequestError("Invalid headers");
   }
 
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+  if (!connectedUser.providerMap) return res.status(status.OK).send([]);
 
-  const providers = Object.keys(connectedUser.providerMap!);
+  const providers = Object.keys(connectedUser.providerMap);
 
   return res.status(status.OK).send(providers);
 });

@@ -1,6 +1,7 @@
 export default class Constants {
   static TOKEN_PARAM: string = "token";
   static SANDBOX_PARAM: string = "sandbox";
+  static STAGING_PARAM: string = "staging";
   static PROD_ENV: string = "production";
   static COLOR_MODE_PARAM: string = 'colorMode';
   static CUSTOM_COLOR_PARAM: string = 'customColor';

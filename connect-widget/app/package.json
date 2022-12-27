@@ -15,6 +15,7 @@
     "@types/react": "^18.0.25",
     "@types/react-dom": "^18.0.9",
     "axios": "^0.27.2",
+    "env-cmd": "^10.1.0",
     "framer-motion": "^7.6.15",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -27,6 +28,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:staging": "env-cmd -f .env.staging react-scripts build",
     "test": "react-scripts test --watchAll=false --passWithNoTests",
     "eject": "react-scripts eject"
   },

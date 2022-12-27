@@ -1,6 +1,7 @@
 import { MetriportData } from "@metriport/api/lib/models/metriport-data";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
+import { processData } from "../../command/webhook/webhook";
 import { UserData } from "../../mappings/garmin";
 import {
   garminActivityListSchema,
@@ -15,7 +16,6 @@ import {
   mapToSleeps,
 } from "../../mappings/garmin/sleep";
 import { Util } from "../../shared/util";
-import { processData } from "../../webhook";
 import { deregister, deregisterUsersSchema } from "../middlewares/oauth1";
 import { asyncHandler } from "../util";
 
