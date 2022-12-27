@@ -1,12 +1,12 @@
 ---
 title: "Get Webhook status"
-description: "Gets the status for the customer's Webhook"
+description: "Gets the status of communication with your app's webhook."
 api: "GET /settings/webhook"
 ---
 
 ## Response
 
-Might return an empty body if there's no settings yet stored for the givne customer.
+Might return an empty body if there's no settings yet stored for your account.
 
 <ResponseField name="webhookEnabled" type="string" required>
   Indicates whether the webhook is currently enabled, working properly.
@@ -24,7 +24,7 @@ Might return an empty body if there's no settings yet stored for the givne custo
 </ResponseField>
 
 <ResponseField name="webhookRequestsFailed" type="number" required>
-  The number of failed webhook requests for the current customer. It gets
+  The number of failed webhook requests for your acccount. It gets
   updated as the retries are attempted.
 </ResponseField>
 

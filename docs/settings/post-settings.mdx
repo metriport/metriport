@@ -1,14 +1,13 @@
 ---
 title: "Update Settings"
-description: "Updates the settings for the API customer."
+description: "Updates your account's settings."
 api: "POST /settings"
 ---
 
 ## Body
 
 <ParamField body="webhookUrl" type="string" required>
-  The webhook URL to be stored on this customer's settings.
-  It should be a valid URL.
+  The webhook URL to be stored with your settings.  It should be a valid URL.
 </ParamField>
 
 ## Response
@@ -18,11 +17,11 @@ api: "POST /settings"
 </ResponseField>
 
 <ResponseField name="webhookUrl" type="string" required>
-  The customer's webhook URL.
+  Your application's webhook URL.
 </ResponseField>
 
 <ResponseField name="webhookKey" type="string" required>
-  The key used to authenticate webhook calls to the customer's app.
+  The key used to authenticate webhook calls to your app.
 </ResponseField>
 
 Example response:
