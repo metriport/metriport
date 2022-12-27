@@ -5,6 +5,8 @@ import { z } from "zod";
 import { createSettings } from "../command/settings/createSettings";
 import { getSettings } from "../command/settings/getSettings";
 import { updateSettings } from "../command/settings/updateSettings";
+import { countFailedAndProcessingRequests } from "../command/webhook/count-failed";
+import { retryFailedRequests } from "../command/webhook/retry-failed";
 import { Settings } from "../models/settings";
 import { asyncHandler, getCxIdOrFail } from "./util";
 
@@ -16,16 +18,24 @@ class SettingsDTO {
     public webhookUrl: string | null,
     public webhookKey: string | null,
     public webhookEnabled: boolean,
-    public webhookStatusDetail: string | null
+    public webhookStatusDetail: string | null,
+    public webhookRequestsProcessing: number,
+    public webhookRequestsFailed: number
   ) {}
 
-  static fromEntity(s: Settings): SettingsDTO {
+  static fromEntity(
+    s: Settings,
+    amountRequestsProcessing: number,
+    amountRequestsFailed: number
+  ): SettingsDTO {
     return new SettingsDTO(
       s.id,
       s.webhookUrl,
       s.webhookKey,
       s.webhookEnabled,
-      s.webhookStatusDetail ?? null
+      s.webhookStatusDetail ?? null,
+      amountRequestsProcessing,
+      amountRequestsFailed
     );
   }
 }
@@ -46,7 +56,10 @@ router.get(
     if (!settings) {
       settings = await createSettings({ id });
     }
-    return res.status(status.OK).send(SettingsDTO.fromEntity(settings));
+    const { processing, failure } = await countFailedAndProcessingRequests(id);
+    return res
+      .status(status.OK)
+      .send(SettingsDTO.fromEntity(settings, processing, failure));
   })
 );
 
@@ -74,7 +87,26 @@ router.post(
       id,
       webhookUrl: webhookUrl ?? undefined,
     });
-    res.status(status.OK).json(SettingsDTO.fromEntity(settings));
+    const { processing, failure } = await countFailedAndProcessingRequests(id);
+    res
+      .status(status.OK)
+      .json(SettingsDTO.fromEntity(settings, processing, failure));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /settings/retry-webhook
+ *
+ * Retries failed webhook requests.
+ *
+ * @return {200} indicating retry being processed.
+ */
+router.post(
+  "/retry-webhook",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    await retryFailedRequests(cxId);
+    res.sendStatus(status.OK);
   })
 );
 
