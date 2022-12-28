@@ -1,4 +1,5 @@
 import { Body } from "@metriport/api";
+import convert from "convert-units";
 import { groupBy } from "lodash";
 import { z } from "zod";
 import { DataType, garminMetaSchema, garminTypes, User, UserData } from ".";
@@ -34,16 +35,16 @@ export const garminBodyCompositionToBody = (
     },
   };
   if (gBody.muscleMassInGrams != null) {
-    res.muscle_mass_kg = gBody.muscleMassInGrams / 1_000;
+    res.muscle_mass_kg = convert(gBody.muscleMassInGrams).from("g").to("kg");
   }
   if (gBody.boneMassInGrams != null) {
-    res.bone_mass_kg = gBody.boneMassInGrams / 1_000;
+    res.bone_mass_kg = convert(gBody.boneMassInGrams).from("g").to("kg");
   }
   if (gBody.bodyFatInPercent != null) {
     res.body_fat_pct = gBody.bodyFatInPercent;
   }
   if (gBody.weightInGrams != null) {
-    res.weight_kg = gBody.weightInGrams / 1_000;
+    res.weight_kg = convert(gBody.weightInGrams).from("g").to("kg");
   }
   return res;
 };
