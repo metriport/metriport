@@ -7,6 +7,7 @@ import { getErrorMessage } from "../../errors";
 import WebhookError from "../../errors/webhook";
 import { DataType, TypedData, UserData } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
+import { WebhookRequest } from "../../models/webhook-request";
 import { Util } from "../../shared/util";
 import { getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
@@ -144,22 +145,22 @@ const processOneCustomer = async (
   settings: Settings,
   payloads: WebhookDataPayloadWithoutMessageId[]
 ): Promise<boolean> => {
-  // TODO #43 Check if there are failed chunks from previous attempts ans start with those
   for (const payload of payloads) {
-    const success = await processChunk(cxId, payload, settings);
+    // create a representation of this request and store on the DB
+    const webhookRequest = await createWebhookRequest({ cxId, payload });
+    // send it to the customer and update the request status
+    const success = await processRequest(webhookRequest, settings);
     // give it some time to prevent flooding the customer
     if (success) await Util.sleep(Math.random() * 200);
   }
   return true;
 };
 
-const processChunk = async (
-  cxId: string,
-  payload: WebhookDataPayloadWithoutMessageId,
+export const processRequest = async (
+  webhookRequest: WebhookRequest,
   settings: Settings
 ): Promise<boolean> => {
-  // create a representation of this request and store on the DB
-  const webhookRequest = await createWebhookRequest({ cxId, payload });
+  const payload: any = webhookRequest.payload as any;
 
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
@@ -231,7 +232,7 @@ const processChunk = async (
 };
 
 const sendPayload = async (
-  payload: WebhookPayload,
+  payload: unknown,
   url: string,
   apiKey: string,
   timeout = 5_000

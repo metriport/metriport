@@ -5,6 +5,8 @@ import { z } from "zod";
 import { createSettings } from "../command/settings/createSettings";
 import { getSettings } from "../command/settings/getSettings";
 import { updateSettings } from "../command/settings/updateSettings";
+import { countFailedAndProcessingRequests } from "../command/webhook/count-failed";
+import { retryFailedRequests } from "../command/webhook/retry-failed";
 import { Settings } from "../models/settings";
 import { asyncHandler, getCxIdOrFail } from "./util";
 
@@ -15,8 +17,8 @@ class SettingsDTO {
     public id: string,
     public webhookUrl: string | null,
     public webhookKey: string | null,
-    public webhookEnabled: boolean,
-    public webhookStatusDetail: string | null
+    public webhookEnabled: boolean, // TODO remove
+    public webhookStatusDetail: string | null // TODO remove
   ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
@@ -24,8 +26,31 @@ class SettingsDTO {
       s.id,
       s.webhookUrl,
       s.webhookKey,
-      s.webhookEnabled,
-      s.webhookStatusDetail ?? null
+      s.webhookEnabled, // TODO remove
+      s.webhookStatusDetail ?? null // TODO remove
+    );
+  }
+}
+
+class WebhookStatusDTO {
+  public constructor(
+    public webhookEnabled: boolean,
+    public webhookStatusDetail: string | null,
+    public webhookRequestsProcessing: number,
+    public webhookRequestsFailed: number
+  ) {}
+
+  static fromEntity(
+    webhookEnabled: boolean,
+    webhookStatusDetail: string | null,
+    amountRequestsProcessing: number,
+    amountRequestsFailed: number
+  ): WebhookStatusDTO {
+    return new WebhookStatusDTO(
+      webhookEnabled,
+      webhookStatusDetail,
+      amountRequestsProcessing,
+      amountRequestsFailed
     );
   }
 }
@@ -75,6 +100,50 @@ router.post(
       webhookUrl: webhookUrl ?? undefined,
     });
     res.status(status.OK).json(SettingsDTO.fromEntity(settings));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /settings/webhook
+ *
+ * Get webhook status information.
+ *
+ * @return {WebhookStatusDTO} The Webhook status information or empty body if no
+ * no settings defined.
+ */
+router.get(
+  "/webhook",
+  asyncHandler(async (req: Request, res: Response) => {
+    const id = getCxIdOrFail(req);
+    const settings = await getSettings({ id });
+    if (!settings) return res.status(status.OK).send({});
+    const { processing, failure } = await countFailedAndProcessingRequests(id);
+    res
+      .status(status.OK)
+      .json(
+        WebhookStatusDTO.fromEntity(
+          settings.webhookEnabled,
+          settings.webhookStatusDetail,
+          processing,
+          failure
+        )
+      );
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /settings/webhook/retry
+ *
+ * Retries failed webhook requests.
+ *
+ * @return {200} indicating retry being processed.
+ */
+router.post(
+  "/webhook/retry",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    await retryFailedRequests(cxId);
+    res.sendStatus(status.OK);
   })
 );
 
