@@ -17,8 +17,6 @@ class SettingsDTO {
     public id: string,
     public webhookUrl: string | null,
     public webhookKey: string | null,
-    public webhookEnabled: boolean, // TODO remove
-    public webhookStatusDetail: string | null // TODO remove
   ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
@@ -26,8 +24,6 @@ class SettingsDTO {
       s.id,
       s.webhookUrl,
       s.webhookKey,
-      s.webhookEnabled, // TODO remove
-      s.webhookStatusDetail ?? null // TODO remove
     );
   }
 }
@@ -61,7 +57,7 @@ class WebhookStatusDTO {
  *
  * Gets the settings for the API customer.
  *
- * @return  {Settings | null}   The customer settings, if they exist.
+ * @return {SettingsDTO} The customer settings data as defined by SettingsDTO.
  */
 router.get(
   "/",
@@ -79,7 +75,7 @@ const updateSettingsSchema = z
   .object({
     webhookUrl: z.string().url().or(z.literal("").nullable().optional()),
   })
-  .strict(); // only using strict bc this is our internal API
+  .strict();
 
 /** ---------------------------------------------------------------------------
  * POST /settings
@@ -88,7 +84,7 @@ const updateSettingsSchema = z
  *
  * @param {string}  req.body.webhookUrl The webhook URL to set.
  *
- * @return  The updated settings data as defined by SettingsDTO.
+ * @return {SettingsDTO} The updated settings data as defined by SettingsDTO.
  */
 router.post(
   "/",

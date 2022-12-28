@@ -1,0 +1,40 @@
+---
+title: "Get Webhook status"
+description: "Gets the status of communication with your app's webhook."
+api: "GET /settings/webhook"
+---
+
+## Response
+
+Might return an empty body if there's no settings yet stored for your account.
+
+<ResponseField name="webhookEnabled" type="string" required>
+  Indicates whether the webhook is currently enabled, and working properly.
+</ResponseField>
+
+<ResponseField name="webhookStatusDetail" type="string">
+  The message indicating the reason for the webhook being disabled, or 'OK' if
+  the webhook is enabled. This gets updated with the message of the last failed
+  request to the webhook.
+</ResponseField>
+
+<ResponseField name="webhookRequestsProcessing" type="number" required>
+  The number of webhook requests being currently being processed. It gets
+  updated as the requests are processed.
+</ResponseField>
+
+<ResponseField name="webhookRequestsFailed" type="number" required>
+  The number of failed webhook requests for your acccount. It gets
+  updated as the retries are attempted.
+</ResponseField>
+
+Example response:
+
+```json
+{
+  "webhookEnabled": false,
+  "webhookStatusDetail": "Request failed with status code 404",
+  "webhookRequestsProcessing": 0,
+  "webhookRequestsFailed": 3
+}
+```
