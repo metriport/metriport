@@ -10,7 +10,7 @@ export interface User {
   userAccessToken: string;
 }
 
-export type DataType = "activity" | "sleep" | "body";
+export type DataType = "activity" | "sleep" | "body" | "biometrics";
 
 export interface TypedData<T extends MetriportData> {
   type: DataType;
@@ -33,6 +33,7 @@ export const garminUnits = {
   intensityDuration: z.number().int(),
   floorsClimbed: z.number().int(),
   heartRate: z.number().int(),
+  heartRateVariablity: z.number().int(),
   steps: z.number().int(),
   stressLevel: z.number().int(),
   stressQualifier: z.enum([
@@ -53,13 +54,13 @@ export const garminUnits = {
   percent: z.number(),
   bodyMassIndex: z.number(),
   weightInGrams: z.number().int(),
+  vo2: z.number().int(),
 };
 
-export const timeRange = z
-  .object({
-    startTimeInSeconds: garminUnits.time,
-    endTimeInSeconds: garminUnits.time,
-  });
+export const timeRange = z.object({
+  startTimeInSeconds: garminUnits.time,
+  endTimeInSeconds: garminUnits.time,
+});
 
 export const sleepLevelsSchema = z.object({
   deep: z.array(timeRange),
@@ -117,6 +118,9 @@ export const garminTypes = {
   maxHeartRate: garminUnits.heartRate,
   restingHeartRate: garminUnits.heartRate,
   timeOffsetHeartRateSamples: garminUnits.heartRate,
+  // HRV
+  hrv: garminUnits.heartRateVariablity,
+  hrvAverage: garminUnits.heartRateVariablity,
   // stress
   averageStressLevel: garminUnits.stressLevel,
   maxStressLevel: garminUnits.stressLevel,
@@ -137,4 +141,6 @@ export const garminTypes = {
   bodyFatInPercent: garminUnits.percent,
   bodyMassIndex: garminUnits.bodyMassIndex,
   weight: garminUnits.weightInGrams,
+  //
+  vo2Max: garminUnits.vo2,
 };
