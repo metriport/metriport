@@ -13,7 +13,7 @@ const providersLocalStorageKey = "providers";
 
 
 export const getProviders = (searchProviders: string | null): DefaultProvider[] => {
-  const validProviders = showValidProviders(searchProviders);
+  const validProviders = getValidProviders(searchProviders);
 
   if (validProviders) {
     localStorage.setItem(providersLocalStorageKey, JSON.stringify(validProviders));
@@ -29,7 +29,7 @@ export const getProviders = (searchProviders: string | null): DefaultProvider[] 
   return providers;
 };
 
-const showValidProviders = (searchProviders: string | null) => {
+const getValidProviders = (searchProviders: string | null) => {
   if (searchProviders) {
     const providerArr = searchProviders.split(",");
     const validProviders = providers.filter((provider) =>

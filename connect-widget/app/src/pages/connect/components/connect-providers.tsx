@@ -27,6 +27,7 @@ const ConnectProviders = () => {
     getConnectedProviders();
   }, []);
   const searchProviders = searchParams.get(Constants.PROVIDERS_PARAM);
+  const providers = getProviders(searchProviders);
 
   return (
     <>
@@ -36,7 +37,7 @@ const ConnectProviders = () => {
         </Heading>
       </Flex>
       <Providers
-        providers={getProviders(searchProviders)}
+        providers={providers}
         connectedProviders={connectedProviders}
       />
     </>
