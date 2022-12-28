@@ -109,19 +109,19 @@ export const garminSleepSchema = z.object({
   // calendarDate: t.date, // getting this from 'startTimeInSeconds'
   startTimeInSeconds: garminTypes.startTime,
   // startTimeOffsetInSeconds: -21600, // always return UTC
-  durationInSeconds: garminTypes.duration,
-  unmeasurableSleepInSeconds: garminTypes.unmeasurableSleep,
-  deepSleepDurationInSeconds: garminTypes.deepSleepDuration,
-  lightSleepDurationInSeconds: garminTypes.lightSleepDuration,
-  remSleepInSeconds: garminTypes.remSleep,
-  awakeDurationInSeconds: garminTypes.awakeDuration,
-  sleepLevelsMap: garminTypes.sleepLevels,
+  durationInSeconds: garminTypes.duration.nullable().optional(),
+  unmeasurableSleepInSeconds: garminTypes.unmeasurableSleep.nullable().optional(),
+  deepSleepDurationInSeconds: garminTypes.deepSleepDuration.nullable().optional(),
+  lightSleepDurationInSeconds: garminTypes.lightSleepDuration.nullable().optional(),
+  remSleepInSeconds: garminTypes.remSleep.nullable().optional(),
+  awakeDurationInSeconds: garminTypes.awakeDuration.nullable().optional(),
+  sleepLevelsMap: garminTypes.sleepLevels.nullable().optional(),
   // relays the validation state of the sleep data and its date range
   // could be used to filter out data - see docs
-  validation: garminTypes.sleepValidation,
-  timeOffsetSleepRespiration: garminTypes.timeOffsetSleepRespiration,
-  timeOffsetSleepSpo2: garminTypes.timeOffsetSleepSpo2,
-  overallSleepScore: garminTypes.overallSleepScore,
+  validation: garminTypes.sleepValidation.nullable().optional(),
+  timeOffsetSleepRespiration: garminTypes.timeOffsetSleepRespiration.nullable().optional(),
+  timeOffsetSleepSpo2: garminTypes.timeOffsetSleepSpo2.nullable().optional(),
+  overallSleepScore: garminTypes.overallSleepScore.nullable().optional(),
 });
 export type GarminSleep = z.infer<typeof garminSleepSchema>;
 

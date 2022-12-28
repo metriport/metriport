@@ -23,18 +23,18 @@ export interface UserData<T extends MetriportData> {
 }
 
 export const garminUnits = {
-  date: z.string().optional().nullable(), // or regex('yyyy-mm-dd')
+  date: z.string(), // or regex('yyyy-mm-dd')
   time: z.number().int(),
   timeKey: z.string().transform((v) => Number(v)),
-  sleep: z.number().nullable().optional(),
-  kilocalories: z.number().nullable().optional(),
-  duration: z.number().int().nullable().optional(),
-  distance: z.number().int().nullable().optional(),
-  intensityDuration: z.number().int().nullable().optional(),
-  floorsClimbed: z.number().int().nullable().optional(),
-  heartRate: z.number().int().nullable().optional(),
-  steps: z.number().int().nullable().optional(),
-  stressLevel: z.number().int().nullable().optional(),
+  sleep: z.number(),
+  kilocalories: z.number(),
+  duration: z.number().int(),
+  distance: z.number().int(),
+  intensityDuration: z.number().int(),
+  floorsClimbed: z.number().int(),
+  heartRate: z.number().int(),
+  steps: z.number().int(),
+  stressLevel: z.number().int(),
   stressQualifier: z.enum([
     "unknown",
     "calm",
@@ -59,9 +59,7 @@ export const timeRange = z
   .object({
     startTimeInSeconds: garminUnits.time,
     endTimeInSeconds: garminUnits.time,
-  })
-  .nullable()
-  .optional();
+  });
 
 export const sleepLevelsSchema = z.object({
   deep: z.array(timeRange),
@@ -86,29 +84,23 @@ export const garminTypes = {
   lightSleepDuration: garminUnits.sleep,
   remSleep: garminUnits.sleep,
   awakeDuration: garminUnits.sleep,
-  sleepLevels: sleepLevelsSchema.nullable().optional(),
-  sleepValidation: z
-    .enum([
-      "MANUAL",
-      "DEVICE",
-      "OFF_WRIST",
-      "AUTO_TENTATIVE",
-      "AUTO_FINAL",
-      "AUTO_MANUAL",
-      "ENHANCED_TENTATIVE",
-      "ENHANCED_FINAL",
-    ])
-    .nullable()
-    .optional(),
-  timeOffsetSleepRespiration: respirationMeasurements.nullable().optional(),
-  timeOffsetSleepSpo2: spo2Measurements.nullable().optional(),
-  overallSleepScore: z
-    .object({
-      value: z.number(),
-      qualifierKey: z.string(),
-    })
-    .nullable()
-    .optional(),
+  sleepLevels: sleepLevelsSchema,
+  sleepValidation: z.enum([
+    "MANUAL",
+    "DEVICE",
+    "OFF_WRIST",
+    "AUTO_TENTATIVE",
+    "AUTO_FINAL",
+    "AUTO_MANUAL",
+    "ENHANCED_TENTATIVE",
+    "ENHANCED_FINAL",
+  ]),
+  timeOffsetSleepRespiration: respirationMeasurements,
+  timeOffsetSleepSpo2: spo2Measurements,
+  overallSleepScore: z.object({
+    value: z.number(),
+    qualifierKey: z.string(),
+  }),
   //
   activeKilocalories: garminUnits.kilocalories,
   bmrKilocalories: garminUnits.kilocalories,
