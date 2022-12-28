@@ -55,6 +55,7 @@ export const garminUnits = {
   bodyMassIndex: z.number(),
   weightInGrams: z.number().int(),
   vo2: z.number().int(),
+  bloodPressure: z.number().int(),
 };
 
 export const timeRange = z.object({
@@ -78,6 +79,7 @@ export const garminTypes = {
   duration: garminUnits.duration,
   distance: garminUnits.distance,
   startTime: garminUnits.time,
+  measurementTime: garminUnits.time,
   activeTime: garminUnits.time,
   // sleep
   unmeasurableSleep: garminUnits.sleep,
@@ -143,4 +145,7 @@ export const garminTypes = {
   weight: garminUnits.weightInGrams,
   //
   vo2Max: garminUnits.vo2,
+  // blood pressure
+  systolic: garminUnits.bloodPressure,
+  diastolic: garminUnits.bloodPressure,
 };
