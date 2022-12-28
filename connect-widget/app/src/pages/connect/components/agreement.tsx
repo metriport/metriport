@@ -11,9 +11,8 @@ import {
 } from "@chakra-ui/react";
 import { LinkIcon, LockIcon } from "@chakra-ui/icons";
 import { GiHealthNormal } from "react-icons/gi";
-import { GrCompliance } from "react-icons/gr";
+import { ImClipboard } from "react-icons/im";
 
-import Constants from "../../../shared/constants";
 import hippa from "../../../assets/hipaa.jpg";
 import soc2 from "../../../assets/soc2.png";
 
@@ -23,7 +22,7 @@ type AgreementProps = {
 
 const Agreement = ({ onAcceptAgreement }: AgreementProps) => {
   return (
-    <Box p={4} m={4}>
+    <>
       <Heading fontSize={28} mb={8} textAlign={"center"}>
         This app uses Metriport to connect your accounts
       </Heading>
@@ -43,7 +42,7 @@ const Agreement = ({ onAcceptAgreement }: AgreementProps) => {
         body="You are providing this app access to your health data - including sleep, workouts, and other data points."
       />
       <Point
-        icon={<Icon as={GrCompliance} mr={2} />}
+        icon={<Icon as={ImClipboard} mr={2} />}
         title="HIPAA & SOC 2 compliant"
         body="Metriport is a SOC 2 and HIPAA compliant organization."
         footer={
@@ -78,18 +77,11 @@ const Agreement = ({ onAcceptAgreement }: AgreementProps) => {
         </Text>
       </Flex>
       <Flex justifyContent={"center"}>
-        <Button
-          width={"90%"}
-          bg={Constants.PRIMARY_COLOR}
-          _hover={{
-            bg: Constants.HOVER_COLOR,
-          }}
-          onClick={onAcceptAgreement}
-        >
-          <Text color={"white"}>Continue</Text>
+        <Button width={"90%"} onClick={onAcceptAgreement}>
+          Continue
         </Button>
       </Flex>
-    </Box>
+    </>
   );
 };
 
