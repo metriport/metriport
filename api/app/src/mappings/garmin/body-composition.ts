@@ -1,13 +1,7 @@
 import { Body } from "@metriport/api";
 import { groupBy } from "lodash";
 import { z } from "zod";
-import {
-  DataType,
-  garminMetaSchema,
-  garminTypes as t,
-  User,
-  UserData,
-} from ".";
+import { DataType, garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 import { toISODate } from "../../shared/date";
 
@@ -55,14 +49,14 @@ export const garminBodyCompositionToBody = (
 };
 
 export const garminBodyCompositionSchema = z.object({
-  measurementTimeInSeconds: t.startTime,
+  measurementTimeInSeconds: garminTypes.startTime,
   // measurementTimeOffsetInSeconds: -21600,  // always return UTC
-  muscleMassInGrams: t.muscleMass.optional().nullable(),
-  boneMassInGrams: t.boneMass.optional().nullable(),
+  muscleMassInGrams: garminTypes.muscleMass.optional().nullable(),
+  boneMassInGrams: garminTypes.boneMass.optional().nullable(),
   // bodyWaterInPercent: t.bodyWaterInPercent.optional().nullable(), // we don't store this
-  bodyFatInPercent: t.bodyFatInPercent.optional().nullable(),
+  bodyFatInPercent: garminTypes.bodyFatInPercent.optional().nullable(),
   // bodyMassIndex: t.bodyMassIndex.optional().nullable(), // we don't store this
-  weightInGrams: t.weight.optional().nullable(),
+  weightInGrams: garminTypes.weight.optional().nullable(),
 });
 export type GarminBodyComposition = z.infer<typeof garminBodyCompositionSchema>;
 

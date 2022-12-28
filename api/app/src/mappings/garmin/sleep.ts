@@ -5,7 +5,7 @@ import {
 } from "@metriport/api/lib/models/sleep";
 import { groupBy } from "lodash";
 import { z } from "zod";
-import { garminMetaSchema, garminTypes as t, User, UserData } from ".";
+import { garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 import { toISODate, toISODateTime } from "../../shared/date";
 
@@ -107,21 +107,21 @@ export const toBiometrics = (
 
 export const garminSleepSchema = z.object({
   // calendarDate: t.date, // getting this from 'startTimeInSeconds'
-  startTimeInSeconds: t.startTime,
+  startTimeInSeconds: garminTypes.startTime,
   // startTimeOffsetInSeconds: -21600, // always return UTC
-  durationInSeconds: t.duration,
-  unmeasurableSleepInSeconds: t.unmeasurableSleep,
-  deepSleepDurationInSeconds: t.deepSleepDuration,
-  lightSleepDurationInSeconds: t.lightSleepDuration,
-  remSleepInSeconds: t.remSleep,
-  awakeDurationInSeconds: t.awakeDuration,
-  sleepLevelsMap: t.sleepLevels,
+  durationInSeconds: garminTypes.duration,
+  unmeasurableSleepInSeconds: garminTypes.unmeasurableSleep,
+  deepSleepDurationInSeconds: garminTypes.deepSleepDuration,
+  lightSleepDurationInSeconds: garminTypes.lightSleepDuration,
+  remSleepInSeconds: garminTypes.remSleep,
+  awakeDurationInSeconds: garminTypes.awakeDuration,
+  sleepLevelsMap: garminTypes.sleepLevels,
   // relays the validation state of the sleep data and its date range
   // could be used to filter out data - see docs
-  validation: t.sleepValidation,
-  timeOffsetSleepRespiration: t.timeOffsetSleepRespiration,
-  timeOffsetSleepSpo2: t.timeOffsetSleepSpo2,
-  overallSleepScore: t.overallSleepScore,
+  validation: garminTypes.sleepValidation,
+  timeOffsetSleepRespiration: garminTypes.timeOffsetSleepRespiration,
+  timeOffsetSleepSpo2: garminTypes.timeOffsetSleepSpo2,
+  overallSleepScore: garminTypes.overallSleepScore,
 });
 export type GarminSleep = z.infer<typeof garminSleepSchema>;
 
