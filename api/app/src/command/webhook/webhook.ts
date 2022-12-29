@@ -38,6 +38,7 @@ type WebhookPingPayload = {
 };
 type WebhookPayload = WebhookDataPayload | WebhookPingPayload;
 
+// TODO #163 - break this up, it has Garmin-specific logic that should live on its own file
 /**
  * Does the bulk of processing webhook incoming data, including storing and sending
  * to Customers/accounts.
@@ -56,9 +57,19 @@ export const processData = async <T extends MetriportData>(
         const userTokens = await getUserTokenByUAT({
           oauthUserAccessToken: uat,
         });
-        const cxIdAndUserIdList = userTokens.map((t) => ({
+        const connectedUsers = (
+          await Promise.all(
+            userTokens.map(async (ut) => {
+              return getConnectedUsers({
+                cxId: ut.cxId,
+                ids: [ut.userId],
+              });
+            })
+          )
+        ).flatMap((u) => u);
+        const cxIdAndUserIdList = connectedUsers.map((t) => ({
           cxId: t.cxId,
-          userId: t.userId,
+          cxUserId: t.cxUserId,
         }));
         if (cxIdAndUserIdList.length < 1) {
           log(`Could not find account for UAT ${uat}`);
@@ -68,9 +79,9 @@ export const processData = async <T extends MetriportData>(
     );
     // Flatten the list so each item has one cxId/userId and one data record
     const dataByUser = dataWithListOfCxIdAndUserId.flatMap((v) =>
-      v.cxIdAndUserIdList.map(({ cxId, userId }) => ({
+      v.cxIdAndUserIdList.map(({ cxId, cxUserId }) => ({
         cxId,
-        userId,
+        cxUserId,
         typedData: v.typedData,
       }))
     );
@@ -82,7 +93,7 @@ export const processData = async <T extends MetriportData>(
         try {
           // flat list of each data record and its respective user
           const dataAndUserList = dataByCustomer[cxId].map((v) => ({
-            userId: v.userId,
+            cxUserId: v.cxUserId,
             typedData: v.typedData,
           }));
           // split the list in chunks
@@ -90,11 +101,13 @@ export const processData = async <T extends MetriportData>(
           // transform each chunk into a payload
           const payloads = chunks.map((c) => {
             // groups by user
-            const dataByUser = groupBy(dataAndUserList, (v) => v.userId);
+            const dataByUser = groupBy(dataAndUserList, (v) => v.cxUserId);
             // now convert that into an array of WebhookUserPayload (all the data of a user for this chunk)
             const users: WebhookUserPayload[] = [];
-            for (const userId of Object.keys(dataByUser)) {
-              const usersData = dataByUser[userId].map((dbu) => dbu.typedData);
+            for (const cxUserId of Object.keys(dataByUser)) {
+              const usersData = dataByUser[cxUserId].map(
+                (dbu) => dbu.typedData
+              );
               // for each user, group together data by type
               const usersDataByType = groupBy(usersData, (ud) => ud.type);
               const data: MetriportData[] = [];
@@ -103,7 +116,7 @@ export const processData = async <T extends MetriportData>(
                   usersDataByType[type];
                 data.push(...dataOfType.map((d) => d.data));
                 users.push({
-                  userId: userId,
+                  userId: cxUserId,
                   [type]: data,
                 });
               }
@@ -116,7 +129,7 @@ export const processData = async <T extends MetriportData>(
           await processOneCustomer(cxId, settings, payloads);
           await reportUsage(
             cxId,
-            dataAndUserList.map((du) => du.userId)
+            dataAndUserList.map((du) => du.cxUserId)
           );
         } catch (err) {
           const msg = getErrorMessage(err);
@@ -129,9 +142,11 @@ export const processData = async <T extends MetriportData>(
   }
 };
 
-const reportUsage = async (cxId: string, userIds: string[]): Promise<void> => {
-  const users = await getConnectedUsers({ cxId, ids: userIds });
-  users.forEach(({ cxUserId }) => [
+const reportUsage = async (
+  cxId: string,
+  cxUserIds: string[]
+): Promise<void> => {
+  cxUserIds.forEach((cxUserId) => [
     reportUsageCmd({ cxId, cxUserId }).catch((err) => {
       // TODO #156 report to monitoring app instead
       log(`Failed to report usage, cxId ${cxId}, cxUserId ${cxUserId}`, err);

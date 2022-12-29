@@ -51,4 +51,19 @@ export class Util {
   static kilojoulesToKilocalories(kilojoules: number): number {
     return kilojoules * 0.239006;
   }
+
+  /**
+   * Converts the parameter to undefined if its null, or return
+   * it if present.
+   * The return type is the original or undefined, can't return null.
+   */
+  static optional = <T>(v: T): NonNullable<T> | undefined =>
+    v != null ? v : undefined;
+
+  /**
+   * Returns the first non-null and non-undefined item in the array,
+   * or undefined.
+   */
+  static oneOf = <T>(...values: T[]): NonNullable<T> | undefined =>
+    values.find((v) => v != null) ?? undefined;
 }

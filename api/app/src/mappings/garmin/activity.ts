@@ -7,14 +7,11 @@ import { groupBy, partition } from "lodash";
 import { z } from "zod";
 import {
   garminMetaSchema,
-  oneOf,
-  optional,
-  toISODate,
-  toISODateTime,
   User,
   UserData,
 } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
+import { toISODate, toISODateTime } from "../../shared/date";
 import { Util } from "../../shared/util";
 import { activityTypeReadable, activityTypeSchema } from "./activity-types";
 
@@ -28,13 +25,13 @@ export const activityToMovement = (
   activity: GarminActivitySummary
 ): ActivityMovement | undefined => {
   const res: ActivityMovement = {
-    steps_count: optional(activity.steps),
-    avg_cadence: oneOf(
+    steps_count: Util.optional(activity.steps),
+    avg_cadence: Util.oneOf(
       activity.averageBikeCadenceInRoundsPerMinute,
       activity.averageRunCadenceInStepsPerMinute,
       activity.averageSwimCadenceInStrokesPerMinute
     ),
-    distance_meters: optional(activity.distanceInMeters),
+    distance_meters: Util.optional(activity.distanceInMeters),
   };
   if (activity.totalElevationGainInMeters) {
     res.elevation = { gain_meters: activity.totalElevationGainInMeters };
@@ -44,8 +41,8 @@ export const activityToMovement = (
     activity.averageSpeedInMetersPerSecond
   ) {
     res.speed = {
-      max_km_h: optional(activity.maxSpeedInMetersPerSecond),
-      avg_km_h: optional(activity.averageSpeedInMetersPerSecond),
+      max_km_h: Util.optional(activity.maxSpeedInMetersPerSecond),
+      avg_km_h: Util.optional(activity.averageSpeedInMetersPerSecond),
     };
   }
   return Object.keys(res).length > 0 ? res : undefined;
@@ -72,8 +69,8 @@ export const activityToBiometrics = (
   activity: GarminActivitySummary
 ): ActivityLog["biometrics"] | undefined => {
   const hearRate: HeartRate = {
-    avg_bpm: optional(activity.averageHeartRateInBeatsPerMinute),
-    max_bpm: optional(activity.maxHeartRateInBeatsPerMinute),
+    avg_bpm: Util.optional(activity.averageHeartRateInBeatsPerMinute),
+    max_bpm: Util.optional(activity.maxHeartRateInBeatsPerMinute),
   };
   return Object.keys(hearRate).length > 0
     ? { heart_rate: hearRate }

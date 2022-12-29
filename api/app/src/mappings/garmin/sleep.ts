@@ -1,18 +1,15 @@
 import { Sleep } from "@metriport/api";
-import { SleepDurations } from "@metriport/api/lib/models/sleep";
+import {
+  SleepBiometrics,
+  SleepDurations,
+} from "@metriport/api/lib/models/sleep";
 import { groupBy } from "lodash";
 import { z } from "zod";
-import {
-  garminMetaSchema,
-  garminTypes as t,
-  toISODate,
-  toISODateTime,
-  User,
-  UserData,
-} from ".";
+import { garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
+import { toISODate, toISODateTime } from "../../shared/date";
 
-export const mapToSleeps = (sleepList: GarminSleepList): UserData<Sleep>[] => {
+export const mapToSleep = (sleepList: GarminSleepList): UserData<Sleep>[] => {
   const type = "sleep";
   const byUAT = groupBy(sleepList, (a) => a.userAccessToken);
   return Object.entries(byUAT).flatMap(([key, values]) => {
@@ -41,6 +38,7 @@ export const garminSleepToSleep = (gSleep: GarminSleep): Sleep => {
     );
   }
   res.durations = toDurations(gSleep);
+  res.biometrics = toBiometrics(gSleep);
   return res;
 };
 
@@ -66,7 +64,13 @@ export const toDurations = (
   if (gSleep.unmeasurableSleepInSeconds != null) {
     res.no_data_seconds = gSleep.unmeasurableSleepInSeconds;
   }
+  return Object.keys(res).length > 0 ? res : undefined;
+};
 
+// https://github.com/metriport/metriport-internal/issues/161
+export const toBiometrics = (
+  gSleep: GarminSleep
+): SleepBiometrics | undefined => {
   /*
   "gSleep.timeOffsetSleepRespiration"
 
@@ -98,24 +102,26 @@ export const toDurations = (
     “360”: 96
   },
   */
-  return Object.keys(res).length > 0 ? res : undefined;
+  return undefined;
 };
 
 export const garminSleepSchema = z.object({
   // calendarDate: t.date, // getting this from 'startTimeInSeconds'
-  startTimeInSeconds: t.startTime,
+  startTimeInSeconds: garminTypes.startTime,
   // startTimeOffsetInSeconds: -21600, // always return UTC
-  durationInSeconds: t.duration,
-  unmeasurableSleepInSeconds: t.unmeasurableSleep,
-  deepSleepDurationInSeconds: t.deepSleepDuration,
-  lightSleepDurationInSeconds: t.lightSleepDuration,
-  remSleepInSeconds: t.remSleep,
-  awakeDurationInSeconds: t.awakeDuration,
-  sleepLevelsMap: t.sleepLevels,
-  validation: t.sleepValidation,
-  timeOffsetSleepRespiration: t.timeOffsetSleepRespiration,
-  timeOffsetSleepSpo2: t.timeOffsetSleepSpo2,
-  overallSleepScore: t.overallSleepScore,
+  durationInSeconds: garminTypes.duration,
+  unmeasurableSleepInSeconds: garminTypes.unmeasurableSleep,
+  deepSleepDurationInSeconds: garminTypes.deepSleepDuration,
+  lightSleepDurationInSeconds: garminTypes.lightSleepDuration,
+  remSleepInSeconds: garminTypes.remSleep,
+  awakeDurationInSeconds: garminTypes.awakeDuration,
+  sleepLevelsMap: garminTypes.sleepLevels,
+  // relays the validation state of the sleep data and its date range
+  // could be used to filter out data - see docs
+  validation: garminTypes.sleepValidation,
+  timeOffsetSleepRespiration: garminTypes.timeOffsetSleepRespiration,
+  timeOffsetSleepSpo2: garminTypes.timeOffsetSleepSpo2,
+  overallSleepScore: garminTypes.overallSleepScore,
 });
 export type GarminSleep = z.infer<typeof garminSleepSchema>;
 
