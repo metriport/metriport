@@ -19,7 +19,7 @@ export const mapToBody = (
     };
     return userData.map(garminBodyCompositionToBody).map((data) => ({
       user,
-      typedData: { type, data, x: data.bone_mass_kg },
+      typedData: { type, data },
     }));
   });
 };

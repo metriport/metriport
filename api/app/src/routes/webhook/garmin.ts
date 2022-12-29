@@ -15,7 +15,15 @@ import {
   garminBodyCompositionListSchema,
   mapToBody,
 } from "../../mappings/garmin/body-composition";
+import {
+  garminHRVListSchema,
+  mapToBiometricsFromHRV,
+} from "../../mappings/garmin/hrv";
 import { garminSleepListSchema, mapToSleep } from "../../mappings/garmin/sleep";
+import {
+  garminUserMetricsListSchema,
+  mapToBiometricsFromUser,
+} from "../../mappings/garmin/user";
 import { Util } from "../../shared/util";
 import { deregister, deregisterUsersSchema } from "../middlewares/oauth1";
 import { asyncHandler } from "../util";
@@ -74,6 +82,18 @@ function mapData(body: any): UserData<MetriportData>[] | undefined {
   if (body.bodyComps) {
     results.push(
       ...mapToBody(garminBodyCompositionListSchema.parse(body.bodyComps))
+    );
+  }
+  if (body.userMetrics) {
+    results.push(
+      ...mapToBiometricsFromUser(
+        garminUserMetricsListSchema.parse(body.userMetrics)
+      )
+    );
+  }
+  if (body.hrv) {
+    results.push(
+      ...mapToBiometricsFromHRV(garminHRVListSchema.parse(body.hrv))
     );
   }
 
