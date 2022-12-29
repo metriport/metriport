@@ -14,7 +14,8 @@ npm install --save @metriport/api
 
 #### Setup
 
-`ENVIRONMENT_URL` is optional and defaults to https://api.metriport.com
+`ENVIRONMENT_URL` is optional and defaults to https://api.metriport.com. For
+sandbox mode add https://api.sandbox.metriport.com.
 
 ```
 import { Metriport } from "@metriport/api";
