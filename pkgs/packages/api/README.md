@@ -14,8 +14,10 @@ npm install --save @metriport/api
 
 #### Setup
 
+`ENVIRONMENT_URL` is optional and defaults to https://api.metriport.com
+
 ```
 import { Metriport } from "@metriport/api";
 
-const metriportClient = new Metriport("YOUR_API_KEY");
+const metriportClient = new Metriport("YOUR_API_KEY", "ENVIRONMENT_URL");
 ```

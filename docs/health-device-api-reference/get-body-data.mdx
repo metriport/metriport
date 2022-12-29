@@ -25,6 +25,21 @@ api: "GET /body"
   An array of body objects for each of the user's connected providers
 </ResponseField>
 
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new Metriport("YOUR_API_KEY", "ENVIRONMENT_URL");
+
+const response = await metriportClient.getBodyData(
+  "metriportUserId",
+  "date"
+);
+```
+
+</ResponseExample>
+
 ```json
 [
   {

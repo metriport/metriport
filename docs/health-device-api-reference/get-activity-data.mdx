@@ -25,6 +25,21 @@ api: "GET /activity"
   An array of activity objects for each of the user's connected providers
 </ResponseField>
 
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new Metriport("YOUR_API_KEY", "ENVIRONMENT_URL");
+
+const response = await metriportClient.getActivityData(
+  "metriportUserId",
+  "date"
+);
+```
+
+</ResponseExample>
+
 ```json
 [
   {
