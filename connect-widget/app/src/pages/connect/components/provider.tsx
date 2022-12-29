@@ -1,4 +1,4 @@
-import { Avatar, Card, Container, Text, Grid } from "@chakra-ui/react";
+import { Avatar, Card, Box, Text, Grid } from "@chakra-ui/react";
 
 import { DefaultProvider } from "./connect-providers";
 import ConnectButton from "./connect-button";
@@ -16,7 +16,7 @@ const Provider = (props: ProviderProps) => {
   };
 
   return (
-    <Container>
+    <Box>
       <Card align={"stretch"} p={6} m={2}>
         <Grid templateColumns={"repeat(3, 1fr)"}>
           <Avatar
@@ -28,7 +28,7 @@ const Provider = (props: ProviderProps) => {
           <ConnectButton {...props} />
         </Grid>
       </Card>
-    </Container>
+    </Box>
   );
 };
 

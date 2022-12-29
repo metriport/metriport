@@ -49,7 +49,8 @@
       "group": "Getting Started",
       "pages": [
         "getting-started/introduction",
-        "getting-started/connect-quickstart"
+        "getting-started/connect-quickstart",
+        "getting-started/connect-widget"
       ]
     },
     {
@@ -91,13 +92,18 @@
         },
         {
           "group": "Medical API",
-          "pages": ["medical-api-reference/coming-soon"]
+          "pages": [
+            "medical-api-reference/coming-soon"
+          ]
         }
       ]
     },
     {
       "group": "More Info",
-      "pages": ["more-info/our-integrations", "more-info/webhooks"]
+      "pages": [
+        "more-info/our-integrations",
+        "more-info/webhooks"
+      ]
     }
   ],
   "footerSocials": {
