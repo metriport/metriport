@@ -7,7 +7,7 @@ import { groupBy } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
-import { toISODate, toISODateTime } from "../../shared/date";
+import { toISODateTime } from "../../shared/date";
 
 export const mapToSleep = (sleepList: GarminSleepList): UserData<Sleep>[] => {
   const type = "sleep";
@@ -27,7 +27,7 @@ export const mapToSleep = (sleepList: GarminSleepList): UserData<Sleep>[] => {
 export const garminSleepToSleep = (gSleep: GarminSleep): Sleep => {
   const res: Sleep = {
     metadata: {
-      date: toISODate(gSleep.startTimeInSeconds),
+      date: gSleep.calendarDate,
       source: PROVIDER_GARMIN,
     },
   };
@@ -106,7 +106,7 @@ export const toBiometrics = (
 };
 
 export const garminSleepSchema = z.object({
-  // calendarDate: t.date, // getting this from 'startTimeInSeconds'
+  calendarDate: garminTypes.date,
   startTimeInSeconds: garminTypes.startTime,
   // startTimeOffsetInSeconds: -21600, // always return UTC
   durationInSeconds: garminTypes.duration.nullable().optional(),

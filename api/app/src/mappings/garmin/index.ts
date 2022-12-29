@@ -1,5 +1,10 @@
 import { MetriportData } from "@metriport/api/lib/models/metriport-data";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { z } from "zod";
+import { ISO_DATE } from "../../shared/date";
+
+dayjs.extend(customParseFormat);
 
 export const garminMetaSchema = z.object({
   userAccessToken: z.string(),
@@ -23,13 +28,13 @@ export interface UserData<T extends MetriportData> {
 }
 
 export const garminUnits = {
-  date: z.string(), // or regex('yyyy-mm-dd')
+  date: z.string().refine((v) => dayjs(v, ISO_DATE, true).isValid()),
   time: z.number().int(),
   timeKey: z.string().transform((v) => Number(v)),
   sleep: z.number(),
   kilocalories: z.number(),
   duration: z.number().int(),
-  distance: z.number().int(),
+  distance: z.number(),
   intensityDuration: z.number().int(),
   floorsClimbed: z.number().int(),
   heartRate: z.number().int(),
@@ -55,11 +60,10 @@ export const garminUnits = {
   weightInGrams: z.number().int(),
 };
 
-export const timeRange = z
-  .object({
-    startTimeInSeconds: garminUnits.time,
-    endTimeInSeconds: garminUnits.time,
-  });
+export const timeRange = z.object({
+  startTimeInSeconds: garminUnits.time,
+  endTimeInSeconds: garminUnits.time,
+});
 
 export const sleepLevelsSchema = z.object({
   deep: z.array(timeRange),
