@@ -25,6 +25,21 @@ api: "GET /user"
   An array of user objects for each of the user's connected providers
 </ResponseField>
 
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new Metriport("YOUR_API_KEY");
+
+const response = await metriportClient.getUserData(
+  "metriportUserId",
+  "date"
+);
+```
+
+</ResponseExample>
+
 ```json
 [
   {

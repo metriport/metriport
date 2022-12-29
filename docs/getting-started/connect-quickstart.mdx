@@ -81,8 +81,13 @@ key, and you're good to start making requests to the Metriport API from your ser
 ```typescript
 import { Metriport } from "@metriport/api";
 
-const metriportClient = new Metriport("YOUR_API_KEY");
+const metriportClient = new Metriport("YOUR_API_KEY", "ENVIRONMENT_URL");
 ```
+
+<Info>
+  ENVIRONMENT_URL is optional and defaults to https://api.metriport.com. For
+  sandbox mode add https://api.sandbox.metriport.com.
+</Info>
 
 ### 3.2. Webhook: expose an endpoint to be called by Metriport
 
