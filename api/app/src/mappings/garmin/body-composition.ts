@@ -52,12 +52,12 @@ export const garminBodyCompositionToBody = (
 export const garminBodyCompositionSchema = z.object({
   measurementTimeInSeconds: garminTypes.startTime,
   // measurementTimeOffsetInSeconds: -21600,  // always return UTC
-  muscleMassInGrams: garminTypes.muscleMass.optional().nullable(),
-  boneMassInGrams: garminTypes.boneMass.optional().nullable(),
-  // bodyWaterInPercent: t.bodyWaterInPercent.optional().nullable(), // we don't store this
-  bodyFatInPercent: garminTypes.bodyFatInPercent.optional().nullable(),
-  // bodyMassIndex: t.bodyMassIndex.optional().nullable(), // we don't store this
-  weightInGrams: garminTypes.weight.optional().nullable(),
+  muscleMassInGrams: garminTypes.muscleMass.nullable().optional(),
+  boneMassInGrams: garminTypes.boneMass.nullable().optional(),
+  // bodyWaterInPercent: t.bodyWaterInPercent.nullable().optional(), // we don't store this
+  bodyFatInPercent: garminTypes.bodyFatInPercent.nullable().optional(),
+  // bodyMassIndex: t.bodyMassIndex.nullable().optional(), // we don't store this
+  weightInGrams: garminTypes.weight.nullable().optional(),
 });
 export type GarminBodyComposition = z.infer<typeof garminBodyCompositionSchema>;
 
