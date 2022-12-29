@@ -29,7 +29,7 @@ Deploy()
       npm run prep-deploy
    fi
    cd ./infra
-   cdk bootstrap
+   cdk bootstrap -c env=$env
    cdk deploy -c env=$env $stack
    cd ../
    echo "Done!"
