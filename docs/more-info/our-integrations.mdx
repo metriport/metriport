@@ -11,6 +11,7 @@ description:
 | ---------- | ------ | -------- | ---------- | ---- | --------- | ----- | ---- |
 | Cronometer | Active | No       | No         | No   | Yes       | No    | No   |
 | Fitbit     | Active | Yes      | Yes        | Yes  | Yes       | Yes   | Yes  |
+| Garmin     | Active | Yes      | Yes        | Yes  | No        | Yes   | No   |
 | Oura       | Active | Yes      | Yes        | Yes  | No        | Yes   | Yes  |
 | Whoop      | Active | Yes      | Yes        | Yes  | No        | Yes   | Yes  |
 | Withings   | Active | Yes      | Yes        | No   | Yes       | Yes   | No   |
@@ -19,6 +20,16 @@ description:
 
 | Providers    | Status      | Activity | Biometrics | Body | Nutrition | Sleep | User |
 | ------------ | ----------- | -------- | ---------- | ---- | --------- | ----- | ---- |
-| Garmin       | Coming Soon | N/A      | N/A        | N/A  | N/A       | N/A   | N/A  |
 | Apple Health | Coming Soon | N/A      | N/A        | N/A  | N/A       | N/A   | N/A  |
 | Google Fit   | Coming Soon | N/A      | N/A        | N/A  | N/A       | N/A   | N/A  |
+
+
+## Notes
+
+### Garmin
+
+Garmin is only supported through [webhooks](/more-info/webhooks).
+
+As of now, our Garmin integration only supports new data - there's no option to
+"backfill"/request a users' past data. [Let us know](mailto:hello@metriport.ai) about
+your use case if that's something you're looking for.
