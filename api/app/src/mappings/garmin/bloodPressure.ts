@@ -1,5 +1,6 @@
 import { Biometrics } from "@metriport/api";
 import { BloodPressure } from "@metriport/api/lib/models/common/blood-pressure";
+import { HeartRate } from "@metriport/api/lib/models/common/heart-rate";
 import { groupBy } from "lodash";
 import { DeepNonNullable, DeepRequired } from "ts-essentials";
 import { z } from "zod";
@@ -26,29 +27,39 @@ export const mapToBiometricsFromBloodPressure = (
       userDataByDate
     ).map((date) => {
       const userDataOfDate: GarminBloodPressure[] = userDataByDate[date].filter(
-        (d) => d.systolic != null || d.diastolic != null
+        (d) => d.systolic != null || d.diastolic != null || d.pulse != null
       );
       if (userDataOfDate.length < 1) return undefined;
       const distolic = mapToDiastolicSamples(userDataOfDate);
       const systolic = mapToSystolicSamples(userDataOfDate);
+      const heartRate = mapToHeartRateSamples(userDataOfDate);
       return {
         user,
         typedData: {
           type,
           data: {
             metadata: { date, source: PROVIDER_GARMIN },
-            blood_pressure: {
-              ...(distolic
-                ? {
-                    diastolic_mm_Hg: distolic,
-                  }
-                : undefined),
-              ...(systolic
-                ? {
-                    systolic_mm_Hg: systolic,
-                  }
-                : undefined),
-            },
+            ...(distolic || systolic
+              ? {
+                  blood_pressure: {
+                    ...(distolic
+                      ? {
+                          diastolic_mm_Hg: distolic,
+                        }
+                      : undefined),
+                    ...(systolic
+                      ? {
+                          systolic_mm_Hg: systolic,
+                        }
+                      : undefined),
+                  },
+                }
+              : undefined),
+            ...(heartRate
+              ? {
+                  heart_rate: heartRate,
+                }
+              : undefined),
           },
         },
       };
@@ -100,6 +111,24 @@ export const mapToSystolicSamples = (
   };
 };
 
+type Pulse = DeepNonNullable<
+  DeepRequired<Pick<GarminBloodPressure, "pulse" | "measurementTimeInSeconds">>
+>;
+export const mapToHeartRateSamples = (
+  garminBloodPressure: GarminBloodPressure[]
+): Pick<HeartRate, "samples_bpm"> | undefined => {
+  const pulses: Pulse[] = garminBloodPressure.filter(
+    (v) => v.pulse != null
+  ) as Pulse[];
+  if (pulses.length < 1) return undefined;
+  return {
+    samples_bpm: pulses.map((v) => ({
+      time: toISODateTime(v.measurementTimeInSeconds),
+      value: v.pulse,
+    })),
+  };
+};
+
 export const garminBloodPressureSchema = z.object({
   // calendarDate: garminTypes.date,
   measurementTimeInSeconds: garminTypes.measurementTime,
@@ -107,7 +136,7 @@ export const garminBloodPressureSchema = z.object({
   // sourceType: z.enum(["MANUAL", "DEVICE"]), // not being used
   systolic: garminTypes.systolic.nullable().optional(),
   diastolic: garminTypes.diastolic.nullable().optional(),
-  // pulse: 77, // should we map this to Biometrics.heart_rate.samples_bpm?
+  pulse: garminTypes.pulse.nullable().optional(),
 });
 export type GarminBloodPressure = z.infer<typeof garminBloodPressureSchema>;
 

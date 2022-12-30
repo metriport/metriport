@@ -153,4 +153,5 @@ export const garminTypes = {
   // blood pressure
   systolic: garminUnits.bloodPressure,
   diastolic: garminUnits.bloodPressure,
+  pulse: garminUnits.heartRate,
 };
