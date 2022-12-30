@@ -34,7 +34,7 @@ export const mapToBiometricsFromRespiration = (
           data: {
             metadata: { date, source: PROVIDER_GARMIN },
             respiration: {
-              samples: breathsOfDate.map((v) => v.breath),
+              samples_breaths_per_minute: breathsOfDate.map((v) => v.breath),
             },
           },
         },
