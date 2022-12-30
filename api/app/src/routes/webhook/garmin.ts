@@ -23,6 +23,7 @@ import {
   garminHRVListSchema,
   mapToBiometricsFromHRV,
 } from "../../mappings/garmin/hrv";
+import { garminRespirationListSchema, mapToBiometricsFromRespiration } from "../../mappings/garmin/respiration";
 import { garminSleepListSchema, mapToSleep } from "../../mappings/garmin/sleep";
 import {
   garminUserMetricsListSchema,
@@ -104,6 +105,13 @@ function mapData(body: any): UserData<MetriportData>[] | undefined {
     results.push(
       ...mapToBiometricsFromBloodPressure(
         garminBloodPressureListSchema.parse(body.bloodPressures)
+      )
+    );
+  }
+  if (body.allDayRespiration) {
+    results.push(
+      ...mapToBiometricsFromRespiration(
+        garminRespirationListSchema.parse(body.allDayRespiration)
       )
     );
   }

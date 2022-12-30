@@ -1,42 +1,82 @@
-// TODO #34 Implement
-/*
-  {
-  "allDayRespiration": [
-    {
-      "userId": "833827f5-c1eb-41e6-823f-edfe3e402c2a",
-      "userAccessToken": "89c10db5-6384-4a9b-be5f-78dd5a99ae02",
-      "summaryId": "sd4a71cf0-63987cf0",
-      "startTimeInSeconds": 1670937840,
-      "durationInSeconds": 451,
-      "startTimeOffsetInSeconds": -21600,
-      "timeOffsetEpochToBreaths": {
-        "300": 11.50178
-      }
-    },
-    {
-      "userId": "833827f5-c1eb-41e6-823f-edfe3e402c2a",
-      "userAccessToken": "89c10db5-6384-4a9b-be5f-78dd5a99ae02",
-      "summaryId": "sd4a71cf0-63988074",
-      "startTimeInSeconds": 1670938740,
-      "durationInSeconds": 332,
-      "startTimeOffsetInSeconds": -21600,
-      "timeOffsetEpochToBreaths": {
-        "300": 13.701131
-      }
-    },
-    ...
-    {
-      "userId": "833827f5-c1eb-41e6-823f-edfe3e402c2a",
-      "userAccessToken": "89c10db5-6384-4a9b-be5f-78dd5a99ae02",
-      "summaryId": "sd4a71cf0-6399aecc",
-      "startTimeInSeconds": 1671016140,
-      "durationInSeconds": 671,
-      "startTimeOffsetInSeconds": -21600,
-      "timeOffsetEpochToBreaths": {
-        "300": 14.161177,
-        "420": 14.963327
-      }
-    }
-  ]
-}
-*/
+import { Biometrics } from "@metriport/api";
+import dayjs from "dayjs";
+import { groupBy } from "lodash";
+import { z } from "zod";
+import { DataType, garminMetaSchema, garminTypes, User, UserData } from ".";
+import { PROVIDER_GARMIN } from "../../shared/constants";
+import { toISODate } from "../../shared/date";
+
+type BreathAndDate = { date: string; breath: { time: string; value: number } };
+
+export const mapToBiometricsFromRespiration = (
+  items: GarminRespirationList
+): UserData<Biometrics>[] => {
+  const type: DataType = "biometrics";
+  // group by user
+  const itemsByUAT = groupBy(items, (a) => a.userAccessToken);
+  return Object.entries(itemsByUAT).flatMap(([key, values]) => {
+    const uat = key;
+    const userData = values;
+    const user: User = {
+      userAccessToken: uat,
+    };
+    // flat list of user breaths/samples with date
+    const breaths = toBreaths(userData);
+    // now group those breaths by date and return as a Biometrics
+    const breathsByDate = groupBy(breaths, (i) => i.date);
+    // convert a
+    const toUserBiometrics = (date: string): UserData<Biometrics> => {
+      const breathsOfDate = breathsByDate[date];
+      return {
+        user,
+        typedData: {
+          type,
+          data: {
+            metadata: { date, source: PROVIDER_GARMIN },
+            respiration: {
+              samples: breathsOfDate.map((v) => v.breath),
+            },
+          },
+        },
+      };
+    };
+    return Object.keys(breathsByDate).map(toUserBiometrics);
+  });
+};
+
+const toBreaths = (userData: GarminRespirationList): BreathAndDate[] => {
+  const mappedItems = userData.flatMap((v) => {
+    if (!v.timeOffsetEpochToBreaths) return undefined;
+    const offsets = Object.keys(v.timeOffsetEpochToBreaths).map(Number);
+    if (offsets.length < 1) return undefined;
+    return offsets.map((offset) => {
+      const date = toISODate(v.startTimeInSeconds);
+      const time = dayjs.unix(v.startTimeInSeconds + offset).toISOString();
+      const value = v.timeOffsetEpochToBreaths![offset];
+      return { date, breath: { time, value } };
+    });
+  });
+  return mappedItems.filter((v) => v != null) as BreathAndDate[];
+};
+
+export const garminRespirationSchema = z.object({
+  startTimeInSeconds: garminTypes.startTime,
+  // startTimeOffsetInSeconds: -21600, // always return UTC
+  // durationInSeconds: garminTypes.duration.nullable().optional(), // not being used
+  timeOffsetEpochToBreaths: garminTypes.timeOffsetEpochToBreaths
+    .nullable()
+    .optional(),
+});
+export type GarminRespiration = z.infer<typeof garminRespirationSchema>;
+
+export const garminRespirationWithMetaSchema = garminMetaSchema.merge(
+  garminRespirationSchema
+);
+export type GarminRespirationWithMeta = z.infer<
+  typeof garminRespirationWithMetaSchema
+>;
+
+export const garminRespirationListSchema = z.array(
+  garminRespirationWithMetaSchema
+);
+export type GarminRespirationList = z.infer<typeof garminRespirationListSchema>;

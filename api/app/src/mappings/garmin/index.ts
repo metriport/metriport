@@ -73,8 +73,8 @@ export const sleepLevelsSchema = z.object({
   light: z.array(timeRange),
 });
 
-export const respirationMeasurements = z.map(
-  z.number().int(),
+export const respirationMeasurements = z.record(
+  garminUnits.timeKey,
   garminUnits.respiration
 );
 export const spo2Measurements = z.record(garminUnits.timeKey, garminUnits.spo2);
@@ -153,4 +153,6 @@ export const garminTypes = {
   // blood pressure
   systolic: garminUnits.bloodPressure,
   diastolic: garminUnits.bloodPressure,
+  //
+  timeOffsetEpochToBreaths: respirationMeasurements,
 };
