@@ -12,6 +12,10 @@ import {
   mapToActivity as mapToActivityDetail,
 } from "../../mappings/garmin/activity-detail";
 import {
+  garminBloodPressureListSchema,
+  mapToBiometricsFromBloodPressure,
+} from "../../mappings/garmin/bloodPressure";
+import {
   garminBodyCompositionListSchema,
   mapToBody,
 } from "../../mappings/garmin/body-composition";
@@ -94,6 +98,13 @@ function mapData(body: any): UserData<MetriportData>[] | undefined {
   if (body.hrv) {
     results.push(
       ...mapToBiometricsFromHRV(garminHRVListSchema.parse(body.hrv))
+    );
+  }
+  if (body.bloodPressures) {
+    results.push(
+      ...mapToBiometricsFromBloodPressure(
+        garminBloodPressureListSchema.parse(body.bloodPressures)
+      )
     );
   }
 
