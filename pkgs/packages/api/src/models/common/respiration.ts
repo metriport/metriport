@@ -11,5 +11,5 @@ export interface Respiration {
   /**
    * Samples of respiration readings, breaths per minute over time.
    */
-  samples?: Sample[];
+  samples_breaths_per_minute?: Sample[];
 }
