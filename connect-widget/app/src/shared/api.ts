@@ -1,19 +1,24 @@
-import axios, { AxiosInstance } from "axios";
+import axios from "axios";
 import { URLSearchParams } from "url";
 import Constants from "./constants";
-import { isProdEnv, isSandbox } from "./util";
+import { getEnvVarOrFail, isLocalEnv, isSandbox } from "./util";
 
 function buildBaseURL(searchParams: URLSearchParams): string {
-  if (isProdEnv()) {
-    const prefix = isSandbox(searchParams)
-      ? process.env.REACT_APP_SANDBOX_API_URL_PREFIX
-      : process.env.REACT_APP_API_URL_PREFIX;
-    return `${prefix}.${process.env.REACT_APP_API_URL_DOMAIN}`;
+  if (isLocalEnv()) {
+    return getEnvVarOrFail("REACT_APP_API_URL");
   }
-  return process.env.REACT_APP_API_URL!;
+  return isSandbox(searchParams)
+    ? getEnvVarOrFail("REACT_APP_SANDBOX_API_URL")
+    : getEnvVarOrFail("REACT_APP_API_URL");
 }
 
-export const api = axios.create();
+const api = axios.create();
+let apiInitialized = false;
+
+export const getApi = () => {
+  if (!apiInitialized) throw new Error(`API not initialized`);
+  return api;
+};
 
 // get the session token in query params
 export function getApiToken(searchParams: URLSearchParams): string {
@@ -25,13 +30,14 @@ export function getApiToken(searchParams: URLSearchParams): string {
 }
 
 // get the session token in query params, and set in the API headers
-export function setupApi(api: AxiosInstance, searchParams: URLSearchParams) {
+export function setupApi(searchParams: URLSearchParams) {
   api.defaults.baseURL = buildBaseURL(searchParams);
-  if (isProdEnv()) {
-    api.defaults.params = { state: getApiToken(searchParams) };
-  } else {
+  if (isLocalEnv()) {
     // insert the API token right into the headers, as we're bypassing
     // API Gateway in local envs
     api.defaults.headers.common["api-token"] = getApiToken(searchParams);
+  } else {
+    api.defaults.params = { state: getApiToken(searchParams) };
   }
+  apiInitialized = true;
 }

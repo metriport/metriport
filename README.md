@@ -265,6 +265,8 @@ $ npm install # only needs to be run once
 $ npm run start # available on port 3001 by default
 ```
 
+To debug the Connect Widget, you can attach a run a Chrome window by launching the `Run Chrome` configuration in VS Code.
+
 ---
 
 ## **Self-Hosted Deployments**

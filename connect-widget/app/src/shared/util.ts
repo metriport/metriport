@@ -1,5 +1,5 @@
-import { getApiToken } from "./api";
 import { NavigateFunction } from "react-router-dom";
+import { getApiToken } from "./api";
 import Constants from "./constants";
 
 function buildEnvParam(envParam: string) {
@@ -21,12 +21,12 @@ export function redirectToMain(
 }
 
 /**
- * Checks to see if the app is running in a production environment.
+ * Checks to see if the app is running in a local development environment.
  *
- * @returns {boolean} True if the app is running in prod; false otherwise.
+ * @returns {boolean} True if the app is running in local/dev; false otherwise.
  */
-export function isProdEnv(): boolean {
-  return process.env.NODE_ENV === Constants.PROD_ENV;
+export function isLocalEnv(): boolean {
+  return process.env.NODE_ENV !== Constants.CLOUD_ENV;
 }
 
 function isEnvParamSet(
@@ -40,3 +40,18 @@ function isEnvParamSet(
 export function isSandbox(searchParams: URLSearchParams): boolean {
   return isEnvParamSet(searchParams, Constants.SANDBOX_PARAM);
 }
+
+export function getEnvVar(varName: string): string | undefined {
+  return process.env[varName];
+}
+
+export function getEnvVarOrFail(varName: string): string {
+  const value = getEnvVar(varName);
+  if (!value || value.trim().length < 1) {
+    throw new Error(`Missing ${varName} env var`);
+  }
+  return value;
+}
+
+export const sleep = (timeInMs: number) =>
+  new Promise((resolve) => setTimeout(resolve, timeInMs));
