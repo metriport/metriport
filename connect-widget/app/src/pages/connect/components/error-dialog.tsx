@@ -10,6 +10,8 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 
+export const DEFAULT_ERROR_MESSAGE = `Something went wrong, you can try again.`;
+
 export interface ErrorDialogProps {
   show: boolean;
   title?: string;
@@ -33,7 +35,7 @@ const ErrorDialog = ({
   useEffect(() => {
     setActual({
       actualTitle: title ?? "Ooops...",
-      actualMsg: message ?? `Something went wrong, you can try again`,
+      actualMsg: message ?? DEFAULT_ERROR_MESSAGE,
     });
   }, [title, message]);
 

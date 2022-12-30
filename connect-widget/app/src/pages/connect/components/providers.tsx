@@ -2,7 +2,7 @@ import { useState } from "react";
 import { getApi } from "../../../shared/api";
 import { sleep } from "../../../shared/util";
 import { DefaultProvider } from "./connect-providers";
-import ErrorDialog from "./error-dialog";
+import ErrorDialog, { DEFAULT_ERROR_MESSAGE } from "./error-dialog";
 import Provider from "./provider";
 
 type ProvidersProps = {
@@ -12,7 +12,7 @@ type ProvidersProps = {
 
 const Providers = ({ providers, connectedProviders }: ProvidersProps) => {
   const [isLoading, setIsLoading] = useState<{ [id: string]: boolean }>({});
-  const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const redirectToProvider = async (provider: string) => {
     setIsLoading({
@@ -26,7 +26,11 @@ const Providers = ({ providers, connectedProviders }: ProvidersProps) => {
       });
       window.location.href = resp.data;
     } catch (err: any) {
-      setIsError(true);
+      if (err.message.includes("403")) {
+        setErrorMessage(`Token expired, restart the connect session.`);
+      } else {
+        setErrorMessage(DEFAULT_ERROR_MESSAGE);
+      }
       // TODO #135 send err to Sentry
       console.log(err.message);
     }
@@ -53,7 +57,13 @@ const Providers = ({ providers, connectedProviders }: ProvidersProps) => {
           />
         );
       })}
-      {isError && <ErrorDialog show onClose={() => setIsError(false)} />}
+      {errorMessage && (
+        <ErrorDialog
+          show
+          message={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
+      )}
     </>
   );
 };
