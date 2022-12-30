@@ -24,7 +24,6 @@ export const mapToBiometricsFromRespiration = (
     const breaths = toBreaths(userData);
     // now group those breaths by date and return as a Biometrics
     const breathsByDate = groupBy(breaths, (i) => i.date);
-    // convert a
     const toUserBiometrics = (date: string): UserData<Biometrics> => {
       const breathsOfDate = breathsByDate[date];
       return {
