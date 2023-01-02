@@ -1,4 +1,4 @@
-import { Avatar, Card, Box, Text, Grid } from "@chakra-ui/react";
+import { Avatar, Card, Box, Text, Grid, Button } from "@chakra-ui/react";
 
 import { DefaultProvider } from "./connect-providers";
 import ConnectButton from "./connect-button";
@@ -25,7 +25,16 @@ const Provider = (props: ProviderProps) => {
           <Text fontSize={{ base: 14, sm: "md" }} pl={1} alignSelf={"center"}>
             {capitalizeFirstLetter(props.provider.name)}
           </Text>
-          <ConnectButton {...props} />
+          {props.provider.name === "google" && !props.isConnected ? (
+            <button
+              onClick={() => props.onRedirect(props.provider.name)}
+              style={{ width: "175px" }}
+            >
+              <img src={require(`../../../assets/signingoogle.png`)} />
+            </button>
+          ) : (
+            <ConnectButton {...props} />
+          )}
         </Grid>
       </Card>
     </Box>

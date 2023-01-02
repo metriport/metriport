@@ -7,6 +7,7 @@ const providers: DefaultProvider[] = [
   { name: "whoop", image: "whoop.png" },
   { name: "withings", image: "withings.png" },
   { name: "garmin", image: "garmin.webp" },
+  { name: "google", image: "google.png" },
 ];
 
 const providersLocalStorageKey = "providers";
