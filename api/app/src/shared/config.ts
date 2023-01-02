@@ -66,6 +66,13 @@ export class Config {
     return getEnvVarOrFail("FITBIT_CLIENT_SECRET");
   }
 
+  static getGoogleClientId(): string {
+    return getEnvVarOrFail("GOOGLE_CLIENT_ID");
+  }
+  static getGoogleClientSecret(): string {
+    return getEnvVarOrFail("GOOGLE_CLIENT_SECRET");
+  }
+
   static getWhoopClientId(): string {
     return getEnvVarOrFail("WHOOP_CLIENT_ID");
   }
