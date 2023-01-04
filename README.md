@@ -5,7 +5,7 @@ something new
   </a>
 
   <p align="center">
-    Metriport helps digital health companies access and manage health and medical data, through a single open source API. (added)
+    Metriport helps digital health companies access and manage health and medical data, through a single open source API. (added, a bit more)
     <br />
     <a href="https://metriport.com" target="_blank"><strong>Learn more »</strong></a>
     <br />
