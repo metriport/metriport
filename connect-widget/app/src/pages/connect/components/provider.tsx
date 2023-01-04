@@ -26,12 +26,13 @@ const Provider = (props: ProviderProps) => {
             {capitalizeFirstLetter(props.provider.name)}
           </Text>
           {props.provider.name === "google" && !props.isConnected ? (
-            <button
+            <Button
+              width={"max-content"}
               onClick={() => props.onRedirect(props.provider.name)}
-              style={{ width: "175px" }}
+              // style={{ width: "175px" }}
             >
-              <img src={require(`../../../assets/signingoogle.png`)} />
-            </button>
+              Activate Google Fit
+            </Button>
           ) : (
             <ConnectButton {...props} />
           )}
