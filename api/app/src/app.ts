@@ -25,6 +25,7 @@ app.get("/", (req: Request, res: Response) => {
 app.use(errorHandler);
 
 const port = 8080;
+
 app.listen(port, "0.0.0.0", async () => {
   // initialize connection to the databases
   await initDB();
