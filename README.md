@@ -1,4 +1,3 @@
-something new
 <p align="center">
   <a href="https://github.com/metriport/metriport">
     <img src="./assets/logo.png" alt="Logo">
