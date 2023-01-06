@@ -17,7 +17,7 @@ type WidgetContainerProps = {
 };
 
 const WidgetContainer = ({ children }: WidgetContainerProps) => {
-  const [searchParams, _] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const color = searchParams.get(Constants.CUSTOM_COLOR_PARAM);
 

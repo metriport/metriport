@@ -15,7 +15,7 @@ import { storeColorMode } from "../../shared/localStorage/color-mode";
 const ConnectPage = () => {
   const [agreement, setAgreement] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchParams, _] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
 

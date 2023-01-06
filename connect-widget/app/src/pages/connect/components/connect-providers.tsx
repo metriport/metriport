@@ -14,7 +14,7 @@ export type DefaultProvider = {
 
 const ConnectProviders = () => {
   const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
-  const [searchParams, _] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     // TODO: NPM I  AND ADD ZOD TO INCOMING REQUEST
