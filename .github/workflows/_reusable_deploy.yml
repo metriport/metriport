@@ -48,18 +48,12 @@ jobs:
         shell: bash
 
       # SET CONFIG FILES
-      # - name: Infra set config file
-      #   run: |
-      #     echo "Env ${{ inputs.deploy_env }}"
-      #     echo "${{ secrets.INFRA_CONFIG }}" > ${{ inputs.deploy_env }}.ts
-      #     echo ">>> INFRA CONFIG FILE starts"
-      #     cat ${{ inputs.deploy_env }}.ts
-      #     echo ">>> INFRA CONFIG FILE ends"
-      #   working-directory: "infra/config"
-      - uses: "finnp/create-file-action@master"
-        env:
-          FILE_NAME: "infra/config/${{ inputs.deploy_env }}.ts"
-          FILE_BASE64: ${{ secrets.INFRA_CONFIG }}
+      - name: Infra set config file
+        run: |
+          echo "Env ${{ inputs.deploy_env }}"
+          echo "${{ secrets.INFRA_CONFIG }}" | base64 -d > ${{ inputs.deploy_env }}.ts
+          ls -la
+        working-directory: "infra/config"
 
       # INSTALL DEPENDENCIES
       # infra
