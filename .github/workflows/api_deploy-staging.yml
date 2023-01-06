@@ -25,3 +25,4 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.API_REGION_STAGING }}
       CDK_STACK: ${{ secrets.API_STACK_NAME_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}

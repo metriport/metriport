@@ -4,7 +4,7 @@ import { EnvType } from "../lib/env-type";
 export const config: EnvConfig = {
   stackName: "MetriportInfraStack",
   secretsStackName: "MetriportSecretsStack",
-  environmentType: EnvType.prod,
+  environmentType: EnvType.production,
   region: "us-east-1",
   subdomain: "api",
   host: "myhealthapp.com",

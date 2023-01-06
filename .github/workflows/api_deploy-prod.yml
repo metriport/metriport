@@ -25,6 +25,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.API_REGION_PRODUCTION }}
       CDK_STACK: ${{ secrets.API_STACK_NAME_PRODUCTION }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }}
 
   sandbox-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
@@ -36,3 +37,4 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.API_REGION_SANDBOX }}
       CDK_STACK: ${{ secrets.API_STACK_NAME_SANDBOX }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_SANDBOX }}

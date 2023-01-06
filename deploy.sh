@@ -10,10 +10,10 @@ Help()
    echo "Syntax: deploy.sh [h|e|s]"
    echo "options:"
    echo "h     Print this Help."
-   echo "e     The environment to which to deploy to. Must be one of prod|sandbox|staging"
+   echo "e     The environment to which to deploy to. Must be one of production|sandbox|staging"
    echo "s     The name of the CDK stack you want to deploy."
    echo
-   echo "Example: deploy.sh -e \"prod\" -s \"APIInfrastructureStack\""
+   echo "Example: deploy.sh -e \"production\" -s \"APIInfrastructureStack\""
    echo
 }
 
@@ -66,8 +66,8 @@ if [[ -z "$stack" ]]; then
     exit
 fi
 
-if [[ "$env" =~ ^prod|sandbox|staging$ ]]; then
+if [[ "$env" =~ ^production|sandbox|staging$ ]]; then
     Deploy
 else
-    echo "Invalid environment! -e must be one of prod|sandbox|staging"
+    echo "Invalid environment! -e must be one of production|sandbox|staging"
 fi
