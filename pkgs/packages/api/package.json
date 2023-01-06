@@ -1,8 +1,8 @@
 {
   "name": "@metriport/api",
-  "version": "0.0.37",
+  "version": "0.1.0",
   "description": "> TODO: description",
-  "author": "Metriport Inc. <hello@metriport.ai>",
+  "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
   "main": "lib/index.js",

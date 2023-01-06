@@ -3,12 +3,17 @@ import { Sequelize } from "sequelize";
 import updateDB from "../sequelize";
 import { Config, getEnvVarOrFail } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
-import { Settings } from "./settings";
 import { initDDBDev } from "./db-dev";
+import { Settings } from "./settings";
+import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
-const models: ModelSetup[] = [ConnectedUser.setup, Settings.setup];
+const models: ModelSetup[] = [
+  ConnectedUser.setup,
+  Settings.setup,
+  WebhookRequest.setup,
+];
 
 export type MetriportDB = {
   sequelize: Sequelize;
@@ -58,7 +63,6 @@ const initDB = async (): Promise<void> => {
 
     // run DB migrations - update the DB to the expected state
     await updateDB(sequelize);
-    // await sequelize.sync({force: true});
 
     // define all models
     for (const setup of models) setup(sequelize);

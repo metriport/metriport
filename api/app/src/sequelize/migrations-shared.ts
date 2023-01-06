@@ -56,11 +56,11 @@ export const addUpdatedAtTrigger = (
     { transaction }
   );
 
-export const createTable = async <M extends Model>(
+export const createTable = async (
   queryInterface: QueryInterface,
   transaction: Transaction,
   tableName: string,
-  tableDefinitions: ModelAttributes<M, CreationAttributes<M>>
+  tableDefinitions: ModelAttributes
 ) => {
   await queryInterface.createTable(
     tableName,

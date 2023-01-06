@@ -27,7 +27,7 @@ const zodResponseBody = (err: ZodError): string => {
   return JSON.stringify({
     status: status.BAD_REQUEST,
     name: status[status.BAD_REQUEST],
-    title: 'Missing or invalid parameters',
+    title: "Missing or invalid parameters",
     details: err.issues,
   });
 };
@@ -45,6 +45,17 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
       .status(status.BAD_REQUEST)
       .send(zodResponseBody(err));
   }
+  if (err.statusCode) {
+    return res
+      .contentType("json")
+      .status(err.statusCode)
+      .send(
+        defaultResponseBody({
+          status: err.statusCode,
+          title: err.message,
+        })
+      );
+  }
   console.log(`Error: `, err);
   return res
     .contentType("json")
@@ -52,7 +63,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     .send(
       defaultResponseBody({
         status: status.INTERNAL_SERVER_ERROR,
-        title: 'Internal server error, please try again or reach out to help@metriport.ai',
+        title:
+          "Internal server error, please try again or reach out to help@metriport.ai",
       })
     );
 };

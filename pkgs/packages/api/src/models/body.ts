@@ -1,4 +1,3 @@
-import {Metadata} from "./common/metadata";
 import { MetriportData } from "./metriport-data";
 
 export interface Body extends MetriportData {

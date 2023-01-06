@@ -1,0 +1,103 @@
+name: Reusable Deploy script
+
+on:
+  workflow_call:
+    inputs:
+      build_env:
+        description: "the environment we're building to, either 'staging' or 'production' - only apps that have special build scripts need to set this"
+        type: string
+        required: false
+        default: "production"
+      deploy_env:
+        required: true
+        type: string
+        description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_REGION:
+        required: true
+      CDK_STACK:
+        required: true
+      INFRA_CONFIG:
+        required: true
+
+jobs:
+  deploy:
+    # prevents 2+ devs/workflows trying to deploy to AWS at the same time
+    # https://serverlessfirst.com/emails/how-to-prevent-concurrent-deployments-of-serverless-stacks-in-github-actions/
+    # TODO Consider the solution here: https://github.com/tj-actions/aws-cdk/blob/main/action.yml
+    concurrency:
+      group: ${{ format('{0}-{1}', github.workflow, github.job) }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.deploy_env }}
+    steps:
+      # TODO we should reuse the checked out code from the previous step
+      # doing this here might introduce minutes between `build` and `deploy`, which
+      # gives opportunity for problems (someone merges between `build` and `deploy`)
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+      - run: env
+        shell: bash
+      - run: |
+          echo "Version/ref: $(git rev-parse HEAD)"
+        shell: bash
+
+      # SET CONFIG FILES
+      - name: Infra set config file
+        run: |
+          echo "Env ${{ inputs.deploy_env }}"
+          echo "${{ secrets.INFRA_CONFIG }}" | base64 -d > ${{ inputs.deploy_env }}.ts
+          ls -la
+        working-directory: "infra/config"
+
+      # INSTALL DEPENDENCIES
+      # infra
+      - name: Infra install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "infra/"
+      # api
+      - name: API install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/app"
+        # move to an external file so both this and deploy can use this logic
+      - name: API build/compile
+        run: npm run build
+        working-directory: "api/app"
+      # lambdas
+      - name: Garmin lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/garmin/"
+      - name: Token-auth lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/token-auth/"
+      # widget
+      - name: Widget install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "connect-widget/app"
+        # move to an external file so both this and deploy can use this logic
+      - name: Widget build/compile PRODUCTION
+        if: ${{ inputs.build_env == 'production' }}
+        run: npm run build
+        working-directory: "connect-widget/app"
+      - name: Widget build/compile STAGING
+        if: ${{ inputs.build_env == 'staging' }}
+        run: npm run build:staging
+        working-directory: "connect-widget/app"
+
+      # DEPLOY
+      - name: Deploy CDK stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "deploy --verbose --require-approval never"
+          cdk_version: "2.49.0"
+          cdk_stack: "${{ secrets.CDK_STACK }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}

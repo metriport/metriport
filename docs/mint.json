@@ -7,7 +7,7 @@
   "api": {
     "baseUrl": [
       "https://api.metriport.com",
-      "http://api.sandbox.metriport.com/"
+      "http://api.sandbox.metriport.com"
     ],
     "auth": {
       "method": "key",
@@ -29,7 +29,7 @@
   "topbarLinks": [
     {
       "name": "Contact Us",
-      "url": "mailto:hello@metriport.ai"
+      "url": "mailto:contact@metriport.com"
     }
   ],
   "anchors": [
@@ -49,20 +49,53 @@
       "group": "Getting Started",
       "pages": [
         "getting-started/introduction",
-        "getting-started/connect-quickstart"
+        "getting-started/connect-quickstart",
+        "getting-started/connect-widget"
       ]
     },
     {
-      "group": "Health Device API Reference",
+      "group": "API Reference",
       "pages": [
-        "health-device-api-reference/create-user",
-        "health-device-api-reference/create-connect-token",
-        "health-device-api-reference/get-activity-data",
-        "health-device-api-reference/get-biometrics-data",
-        "health-device-api-reference/get-body-data",
-        "health-device-api-reference/get-nutrition-data",
-        "health-device-api-reference/get-sleep-data",
-        "health-device-api-reference/get-user-data"
+        {
+          "group": "General API",
+          "pages": [
+            {
+              "group": "User",
+              "pages": [
+                "user/create-user",
+                "user/create-connect-token",
+                "user/revoke-provider-access"
+              ]
+            },
+            {
+              "group": "Settings",
+              "pages": [
+                "settings/get-settings",
+                "settings/post-settings",
+                "settings/get-webhook",
+                "settings/retry-webhook"
+              ]
+            },
+            "settings/dash"
+          ]
+        },
+        {
+          "group": "Health Device API",
+          "pages": [
+            "health-device-api-reference/get-activity-data",
+            "health-device-api-reference/get-biometrics-data",
+            "health-device-api-reference/get-body-data",
+            "health-device-api-reference/get-nutrition-data",
+            "health-device-api-reference/get-sleep-data",
+            "health-device-api-reference/get-user-data"
+          ]
+        },
+        {
+          "group": "Medical API",
+          "pages": [
+            "medical-api-reference/coming-soon"
+          ]
+        }
       ]
     },
     {
@@ -70,12 +103,6 @@
       "pages": [
         "more-info/our-integrations",
         "more-info/webhooks"
-      ]
-    },
-    {
-      "group": "Medical API Reference",
-      "pages": [
-        "medical-api-reference/coming-soon"
       ]
     }
   ],

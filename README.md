@@ -67,7 +67,7 @@ Out of the box, our Health Devices API supports the following integrations:
 - Withings
 - Cronometer
 
-...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:hello@metriport.ai) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
+...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
 
 <div align="center">
    <img width="50%" alt="wearables" src="./assets/graphic.svg">
@@ -142,22 +142,24 @@ Before getting started with the deployment or any development, ensure you have d
 
 ### **API Server**
 
-First, create a local environment file, to define your developer keys:
+First, create a local environment file to define your developer keys, and local dev URLs:
 
 ```shell
 $ touch api/app/.env
-$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" > api/app/.env
-$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" > api/app/.env
-$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" > api/app/.env
-$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "OURA_CLINET_ID=<YOUR-KEY>" > api/app/.env
-$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
-$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" > api/app/.env
-$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" > api/app/.env
-$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" > api/app/.env
-$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" > api/app/.env
+$ echo "API_URL=http://localhost:8080" >> api/app/.env
+$ echo "CONNECT_WIDGET_URL=http://localhost:3001/" >> api/app/.env
+$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" >> api/app/.env
+$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" >> api/app/.env
+$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "OURA_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> api/app/.env
+$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
+$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
 ```
 
 #### **Optional usage report**
@@ -166,8 +168,11 @@ The API server reports endpoint usage to an external service. This is optional.
 
 A reachable service that accepts a `POST` request to the informed URL with the payload below is required:
 
-```
-{ "cxId": "<the account ID>", "cxUserId": "<the ID of the user who's data is being requested>" }
+```json
+{
+  "cxId": "<the account ID>",
+  "cxUserId": "<the ID of the user who's data is being requested>"
+}
 ```
 
 If you want to set it up, add this to the `.env` file:
@@ -257,23 +262,31 @@ To run the Connect Widget:
 ```shell
 $ cd connect-widget/app
 $ npm install # only needs to be run once
-$ npm run start
+$ npm run start # available on port 3001 by default
 ```
+
+To debug the Connect Widget, you can attach a run a Chrome window by launching the `Run Chrome` configuration in VS Code.
 
 ---
 
 ## **Self-Hosted Deployments**
 
+### **API Key Setup**
+
+TODO
+
 ### **Environment Setup**
 
-First, you'll need to create and configure a deployment config file: `/infra/config/standalone.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Then, proceed with the deployment steps below.
+1. You'll need to create and configure a deployment config file: `/infra/config/production.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Optionally, you can setup config files for `staging` and `sandbox` deployments, based on your environment needs. Then, proceed with the deployment steps below.
+
+2. Configure the Connect Widget environment variables to the subdomain and domain you'll be hosting the API at in the config file: `connect-widget/app/.env.production`.
 
 ### **Deployment Steps**
 
 1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
-$ ./deploy.sh -e "standalone" -s "<config.secretsStackName>"
+$ ./deploy.sh -e "production" -s "<config.secretsStackName>"
 ```
 
 2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
@@ -281,7 +294,7 @@ $ ./deploy.sh -e "standalone" -s "<config.secretsStackName>"
 3. Then, to deploy the back-end execute the following command:
 
 ```shell
-$ ./deploy.sh -e "standalone" -s "<config.stackName>"
+$ ./deploy.sh -e "production" -s "<config.stackName>"
 ```
 
 After deployment, the API will be available at the configured subdomain + domain.
@@ -289,7 +302,7 @@ After deployment, the API will be available at the configured subdomain + domain
 4. Finally, to self-host the Connect widget, run the following:
 
 ```shell
-$ ./deploy.sh -e "standalone" -s "<config.connectWidget.stackName>"
+$ ./deploy.sh -e "production" -s "<config.connectWidget.stackName>"
 ```
 
 Note: if you need help with the `deploy.sh` script at any time, you can run:

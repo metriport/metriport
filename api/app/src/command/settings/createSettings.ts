@@ -9,6 +9,7 @@ export const createSettings = async ({
 }: CreateSettingsCommand): Promise<Settings> => {
   const settings = await Settings.create({
     id,
+    webhookEnabled: false,
   });
   return settings;
 };

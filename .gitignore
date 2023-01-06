@@ -26,4 +26,5 @@ Temporary Items
 .apdisk
 
 # VSCode
+.vscode/
 workspaceConfiguration/

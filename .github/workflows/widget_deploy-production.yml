@@ -1,0 +1,29 @@
+name: Widget Deploy - PRODUCTION
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'connect-widget/app/**'
+  workflow_dispatch:
+
+jobs:
+  production-build:
+    uses: ./.github/workflows/_reusable_build.yml
+    with:
+      path: "connect-widget/app"
+      build_env: "production"
+
+  production-deploy:
+    uses: ./.github/workflows/_reusable_deploy.yml
+    needs: production-build
+    with:
+      build_env: "production"
+      deploy_env: "production"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.WIDGET_REGION_PRODUCTION }}
+      CDK_STACK: ${{ secrets.WIDGET_STACK_NAME_PRODUCTION }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }}

@@ -1,0 +1,54 @@
+name: Reusable Build script
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        required: true
+        type: string
+      build_env:
+        required: false
+        type: string
+        description: "the environment we're building to, either 'staging' or 'production'"
+        default: 'production'
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.path }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+      - name: Install environment
+        run: |
+          pwd
+          npm ci --ignore-scripts
+      #TODO add Lint scripts
+      # move to an external file so both this and deploy can use this logic
+      - name: Build/compile PRODUCTION
+        if: ${{ inputs.build_env == 'production' }}
+        run: npm run build
+      - name: Build/compile STAGING
+        if: ${{ inputs.build_env == 'staging' }}
+        run: npm run build:staging
+
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.path }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+      - name: Install environment
+        run: |
+          pwd
+          npm ci --ignore-scripts
+      - name: Run Tests
+        run: npm run test

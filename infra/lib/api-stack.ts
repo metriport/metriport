@@ -155,6 +155,12 @@ export class APIStack extends Stack {
       directory: "../api/app",
     });
 
+    const connectWidgetUrlEnvVar = props.config.connectWidgetUrl
+      ? props.config.connectWidgetUrl
+      : `https://${props.config.connectWidget!.subdomain}.${
+          props.config.connectWidget!.domain
+        }/`;
+
     // Run some servers on fargate containers
     const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
       this,
@@ -175,6 +181,8 @@ export class APIStack extends Stack {
             NODE_ENV: "production",
             ENV_TYPE: props.config.environmentType,
             TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+            API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
+            CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
             ...(props.config.usageReportUrl && {
               USAGE_URL: props.config.usageReportUrl,
             }),
@@ -448,6 +456,6 @@ export class APIStack extends Stack {
   }
 
   private isProd(props: APIStackProps): boolean {
-    return props.config.environmentType === EnvType.prod;
+    return props.config.environmentType === EnvType.production;
   }
 }

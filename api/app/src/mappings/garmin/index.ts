@@ -1,7 +1,10 @@
+import { MetriportData } from "@metriport/api/lib/models/metriport-data";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { z } from "zod";
+import { ISO_DATE } from "../../shared/date";
 
-export const ISO_DATE = "YYYY-MM-DD";
+dayjs.extend(customParseFormat);
 
 export const garminMetaSchema = z.object({
   userAccessToken: z.string(),
@@ -12,49 +15,32 @@ export interface User {
   userAccessToken: string;
 }
 
-export type DataType = "activity" | "sleep";
+export type DataType = "activity" | "sleep" | "body" | "biometrics";
 
-export interface TypedData<T> {
+export interface TypedData<T extends MetriportData> {
   type: DataType;
   data: T;
 }
-export interface UserData<T> {
+
+export interface UserData<T extends MetriportData> {
   user: User;
   typedData: TypedData<T>;
 }
 
-export const toISODate = (unixTime: number): string => {
-  return dayjs.unix(unixTime).format(ISO_DATE);
-};
-
-export const toISODateTime = (unixTime: number): string => {
-  return dayjs.unix(unixTime).toISOString();
-};
-
-export const oneOf = <T>(...values: T[]): NonNullable<T> | undefined =>
-  values.find((v) => v != null) ?? undefined;
-
-/**
- * Converts the parameter to undefined if its null, or return
- * it if present.
- * The return type is the original or undefined, can't return null.
- */
-export const optional = <T>(v: T): NonNullable<T> | undefined =>
-  v != null ? v : undefined;
-
 export const garminUnits = {
-  date: z.string().optional().nullable(), // or regex('yyyy-mm-dd')
+  date: z.string().refine((v) => dayjs(v, ISO_DATE, true).isValid()),
   time: z.number().int(),
   timeKey: z.string().transform((v) => Number(v)),
-  sleep: z.number().nullable().optional(),
-  kilocalories: z.number().nullable().optional(),
-  duration: z.number().int().nullable().optional(),
-  distance: z.number().int().nullable().optional(),
-  intensityDuration: z.number().int().nullable().optional(),
-  floorsClimbed: z.number().int().nullable().optional(),
-  heartRate: z.number().int().nullable().optional(),
-  steps: z.number().int().nullable().optional(),
-  stressLevel: z.number().int().nullable().optional(),
+  sleep: z.number(),
+  kilocalories: z.number(),
+  duration: z.number().int(),
+  distance: z.number(),
+  intensityDuration: z.number().int(),
+  floorsClimbed: z.number().int(),
+  heartRate: z.number().int(),
+  heartRateVariablity: z.number().int(),
+  steps: z.number().int(),
+  stressLevel: z.number().int(),
   stressQualifier: z.enum([
     "unknown",
     "calm",
@@ -69,23 +55,26 @@ export const garminUnits = {
   respiration: z.number(),
   spo2: z.number(),
   sleepScore: z.enum(["EXCELLENT", "GOOD", "FAIR", "POOR"]),
+  massInGrams: z.number().int(),
+  percent: z.number(),
+  bodyMassIndex: z.number(),
+  weightInGrams: z.number().int(),
+  vo2: z.number().int(),
+  bloodPressure: z.number().int(),
 };
 
-export const timeRange = z
-  .object({
-    startTimeInSeconds: garminUnits.time,
-    endTimeInSeconds: garminUnits.time,
-  })
-  .nullable()
-  .optional();
+export const timeRange = z.object({
+  startTimeInSeconds: garminUnits.time,
+  endTimeInSeconds: garminUnits.time,
+});
 
 export const sleepLevelsSchema = z.object({
   deep: z.array(timeRange),
   light: z.array(timeRange),
 });
 
-export const respirationMeasurements = z.map(
-  z.number().int(),
+export const respirationMeasurements = z.record(
+  garminUnits.timeKey,
   garminUnits.respiration
 );
 export const spo2Measurements = z.record(garminUnits.timeKey, garminUnits.spo2);
@@ -95,6 +84,7 @@ export const garminTypes = {
   duration: garminUnits.duration,
   distance: garminUnits.distance,
   startTime: garminUnits.time,
+  measurementTime: garminUnits.time,
   activeTime: garminUnits.time,
   // sleep
   unmeasurableSleep: garminUnits.sleep,
@@ -102,29 +92,23 @@ export const garminTypes = {
   lightSleepDuration: garminUnits.sleep,
   remSleep: garminUnits.sleep,
   awakeDuration: garminUnits.sleep,
-  sleepLevels: sleepLevelsSchema.nullable().optional(),
-  sleepValidation: z
-    .enum([
-      "MANUAL",
-      "DEVICE",
-      "OFF_WRIST",
-      "AUTO_TENTATIVE",
-      "AUTO_FINAL",
-      "AUTO_MANUAL",
-      "ENHANCED_TENTATIVE",
-      "ENHANCED_FINAL",
-    ])
-    .nullable()
-    .optional(),
-  timeOffsetSleepRespiration: respirationMeasurements.nullable().optional(),
-  timeOffsetSleepSpo2: spo2Measurements.nullable().optional(),
-  overallSleepScore: z
-    .object({
-      value: z.number(),
-      qualifierKey: z.string(),
-    })
-    .nullable()
-    .optional(),
+  sleepLevels: sleepLevelsSchema,
+  sleepValidation: z.enum([
+    "MANUAL",
+    "DEVICE",
+    "OFF_WRIST",
+    "AUTO_TENTATIVE",
+    "AUTO_FINAL",
+    "AUTO_MANUAL",
+    "ENHANCED_TENTATIVE",
+    "ENHANCED_FINAL",
+  ]),
+  timeOffsetSleepRespiration: respirationMeasurements,
+  timeOffsetSleepSpo2: spo2Measurements,
+  overallSleepScore: z.object({
+    value: z.number(),
+    qualifierKey: z.string(),
+  }),
   //
   activeKilocalories: garminUnits.kilocalories,
   bmrKilocalories: garminUnits.kilocalories,
@@ -141,6 +125,9 @@ export const garminTypes = {
   maxHeartRate: garminUnits.heartRate,
   restingHeartRate: garminUnits.heartRate,
   timeOffsetHeartRateSamples: garminUnits.heartRate,
+  // HRV
+  hrv: garminUnits.heartRateVariablity,
+  hrvAverage: garminUnits.heartRateVariablity,
   // stress
   averageStressLevel: garminUnits.stressLevel,
   maxStressLevel: garminUnits.stressLevel,
@@ -154,4 +141,19 @@ export const garminTypes = {
   //
   steps: garminUnits.steps,
   stepsGoal: garminUnits.steps,
+  //
+  muscleMass: garminUnits.massInGrams,
+  boneMass: garminUnits.massInGrams,
+  bodyWaterInPercent: garminUnits.percent,
+  bodyFatInPercent: garminUnits.percent,
+  bodyMassIndex: garminUnits.bodyMassIndex,
+  weight: garminUnits.weightInGrams,
+  //
+  vo2Max: garminUnits.vo2,
+  // blood pressure
+  systolic: garminUnits.bloodPressure,
+  diastolic: garminUnits.bloodPressure,
+  pulse: garminUnits.heartRate,
+  //
+  timeOffsetEpochToBreaths: respirationMeasurements,
 };

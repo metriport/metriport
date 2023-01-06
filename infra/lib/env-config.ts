@@ -32,5 +32,6 @@ export interface EnvConfig {
     host: string;
     domain: string;
   };
+  connectWidgetUrl?: string;
   usageReportUrl?: string;
 }

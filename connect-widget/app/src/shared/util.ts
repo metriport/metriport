@@ -1,28 +1,57 @@
-import { getApiToken } from "./api";
 import { NavigateFunction } from "react-router-dom";
+import { getApiToken } from "./api";
 import Constants from "./constants";
+
+function buildEnvParam(envParam: string) {
+  return `${envParam}=true`;
+}
 
 // redirects to the main connect page while keeping the token state
 export function redirectToMain(
   navigate: NavigateFunction,
   searchParams: URLSearchParams
 ) {
-  const sandboxFlag = isSandbox(searchParams) ? "&sandbox=true" : "";
+  const envParam = isSandbox(searchParams)
+    ? `&${buildEnvParam(Constants.SANDBOX_PARAM)}`
+    : "";
+
   navigate(
-    `/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${sandboxFlag}`
+    `/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${envParam}`
   );
 }
 
 /**
- * Checks to see if the app is running in a production environment.
+ * Checks to see if the app is running in a local development environment.
  *
- * @returns {boolean} True if the app is running in prod; false otherwise.
+ * @returns {boolean} True if the app is running in local/dev; false otherwise.
  */
-export function isProdEnv(): boolean {
-  return process.env.NODE_ENV === Constants.PROD_ENV;
+export function isLocalEnv(): boolean {
+  return process.env.NODE_ENV !== Constants.CLOUD_ENV;
+}
+
+function isEnvParamSet(
+  searchParams: URLSearchParams,
+  envParam: string
+): boolean {
+  const isSet = searchParams.get(envParam);
+  return isSet != null && isSet === String(true);
 }
 
 export function isSandbox(searchParams: URLSearchParams): boolean {
-  const isSandbox = searchParams.get(Constants.SANDBOX_PARAM);
-  return isSandbox != null && isSandbox === String(true);
+  return isEnvParamSet(searchParams, Constants.SANDBOX_PARAM);
 }
+
+export function getEnvVar(varName: string): string | undefined {
+  return process.env[varName];
+}
+
+export function getEnvVarOrFail(varName: string): string {
+  const value = getEnvVar(varName);
+  if (!value || value.trim().length < 1) {
+    throw new Error(`Missing ${varName} env var`);
+  }
+  return value;
+}
+
+export const sleep = (timeInMs: number) =>
+  new Promise((resolve) => setTimeout(resolve, timeInMs));

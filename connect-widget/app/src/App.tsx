@@ -1,10 +1,10 @@
 import "./App.css";
-import { ChakraProvider} from "@chakra-ui/react";
+import { ChakraProvider } from "@chakra-ui/react";
 import theme from "./Theme";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import Connect from "./components/connect/connect";
-import Success from "./components/success/success";
-import Error from "./components/error/error";
+import Connect from "./pages/connect";
+import Success from "./pages/success";
+import Error from "./pages/error";
 
 function App() {
   return (
