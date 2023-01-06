@@ -67,7 +67,7 @@ Out of the box, our Health Devices API supports the following integrations:
 - Withings
 - Cronometer
 
-...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:hello@metriport.ai) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
+...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
 
 <div align="center">
    <img width="50%" alt="wearables" src="./assets/graphic.svg">
@@ -277,7 +277,7 @@ TODO
 
 ### **Environment Setup**
 
-1. You'll need to create and configure a deployment config file: `/infra/config/prod.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Optionally, you can setup config files for `staging` and `sandbox` deployments, based on your environment needs. Then, proceed with the deployment steps below.
+1. You'll need to create and configure a deployment config file: `/infra/config/production.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Optionally, you can setup config files for `staging` and `sandbox` deployments, based on your environment needs. Then, proceed with the deployment steps below.
 
 2. Configure the Connect Widget environment variables to the subdomain and domain you'll be hosting the API at in the config file: `connect-widget/app/.env.production`.
 
@@ -286,7 +286,7 @@ TODO
 1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
-$ ./deploy.sh -e "prod" -s "<config.secretsStackName>"
+$ ./deploy.sh -e "production" -s "<config.secretsStackName>"
 ```
 
 2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
@@ -294,7 +294,7 @@ $ ./deploy.sh -e "prod" -s "<config.secretsStackName>"
 3. Then, to deploy the back-end execute the following command:
 
 ```shell
-$ ./deploy.sh -e "prod" -s "<config.stackName>"
+$ ./deploy.sh -e "production" -s "<config.stackName>"
 ```
 
 After deployment, the API will be available at the configured subdomain + domain.
@@ -302,7 +302,7 @@ After deployment, the API will be available at the configured subdomain + domain
 4. Finally, to self-host the Connect widget, run the following:
 
 ```shell
-$ ./deploy.sh -e "prod" -s "<config.connectWidget.stackName>"
+$ ./deploy.sh -e "production" -s "<config.connectWidget.stackName>"
 ```
 
 Note: if you need help with the `deploy.sh` script at any time, you can run:

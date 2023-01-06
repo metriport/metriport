@@ -8,7 +8,7 @@ const getEnvOrFail = (name) => {
   return value;
 };
 const api = axios.create();
-const apiServerURL = getEnvOrFail('API_URL');
+const apiServerURL = getEnvOrFail("API_URL");
 const tableName = getEnvOrFail("TOKEN_TABLE_NAME");
 const attribName = "userAccessToken";
 
@@ -31,12 +31,15 @@ const buildResponse = (status, body) => ({
   body,
 });
 
-const unauthorized = () => buildResponse(401);
+const defaultResponse = () => buildResponse(200);
 
 exports.handler = async (req) => {
   console.log(`Verifying at least one UserAuthToken on body...`);
 
-  if (!req.body) return unauthorized();
+  if (!req.body) {
+    console.log("Resquest has no body - will not be forwarded to the API");
+    return defaultResponse();
+  }
 
   const body = JSON.parse(req.body);
 
@@ -87,7 +90,8 @@ exports.handler = async (req) => {
     }
   }
 
-  return unauthorized();
+  console.log("Resquest has no UAT - will not be forwarded to the API");
+  return defaultResponse();
 };
 
 async function forwardCallToServer(req) {
@@ -97,5 +101,5 @@ async function forwardCallToServer(req) {
 
   console.log(`Server response - status: ${resp.status}`);
   console.log(`Server response - body: ${resp.data}`);
-  return buildResponse(resp.status, resp.data)
-};
+  return buildResponse(resp.status, resp.data);
+}

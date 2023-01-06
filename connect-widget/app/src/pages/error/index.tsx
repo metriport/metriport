@@ -12,8 +12,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import WidgetContainer from "../../shared/components/WidgetContainer";
 import { redirectToMain } from "../../shared/util";
 
-export default function Error({}: {}) {
-  const [searchParams, _] = useSearchParams();
+export default function Error() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const handleClick = () => redirectToMain(navigate, searchParams);
 

@@ -16,7 +16,7 @@ import ErrorDialog from "./components/error-dialog";
 const ConnectPage = () => {
   const [agreement, setAgreement] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchParams, _] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [isError, setIsError] = useState(false);
 
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
