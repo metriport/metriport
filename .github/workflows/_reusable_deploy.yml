@@ -21,6 +21,8 @@ on:
         required: true
       CDK_STACK:
         required: true
+      INFRA_CONFIG:
+        required: true
 
 jobs:
   deploy:
@@ -44,6 +46,13 @@ jobs:
       - run: |
           echo "Version/ref: $(git rev-parse HEAD)"
         shell: bash
+
+      # SET CONFIG FILES
+      - name: Infra set config file
+        run: |
+          echo "Env ${{ inputs.deploy_env }}"
+          echo "${{ secrets.INFRA_CONFIG }}" > ${{ inputs.deploy_env }}.ts
+        working-directory: "infra/config"
 
       # INSTALL DEPENDENCIES
       # infra
