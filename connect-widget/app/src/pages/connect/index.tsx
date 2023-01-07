@@ -27,7 +27,7 @@ const ConnectPage = () => {
     storeColorMode(colorMode);
 
     setIsLoading(false);
-  }, [searchParams, colorMode, token]);
+  }, [searchParams, colorMode]);
 
   return (
     <WidgetContainer>
