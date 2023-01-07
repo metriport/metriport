@@ -15,7 +15,7 @@ const ConnectButton = ({
   onRedirect,
 }: ProviderProps) => {
   const content = useBreakpointValue({
-    base: <Text p="4">+</Text>,
+    base: <Text p="4">{isConnected ? "\u2713" : "+"}</Text>,
     sm: <Text p="4">{isConnected ? "Connected" : "Connect"}</Text>,
   });
 
