@@ -15,3 +15,16 @@ api: "DELETE /user/revoke"
 
   Can be one of: `cronometer`, `fitbit`, `oura`, `whoop`, or `withings`.
 </ParamField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+import { ProviderSource } from "@metriport/api";
+
+const metriportClient = new Metriport("YOUR_API_KEY");
+
+await metriportClient.revokeUserAccessToProvider("metriportUserId", ProviderSource.fitbit);
+```
+
+</ResponseExample>

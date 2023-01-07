@@ -5,3 +5,4 @@ export { Metriport } from "./client/metriport";
 export { Nutrition } from "./models/nutrition";
 export { Sleep } from "./models/sleep";
 export { User } from "./models/user";
+export { ProviderSource } from "./models/common/provider-source";

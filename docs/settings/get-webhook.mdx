@@ -24,9 +24,21 @@ Might return an empty body if there's no settings yet stored for your account.
 </ResponseField>
 
 <ResponseField name="webhookRequestsFailed" type="number" required>
-  The number of failed webhook requests for your acccount. It gets
-  updated as the retries are attempted.
+  The number of failed webhook requests for your acccount. It gets updated as
+  the retries are attempted.
 </ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new Metriport("YOUR_API_KEY");
+
+const response = await metriportClient.getWebhookStatus();
+```
+
+</ResponseExample>
 
 Example response:
 

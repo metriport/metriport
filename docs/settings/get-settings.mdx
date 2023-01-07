@@ -18,6 +18,18 @@ api: "GET /settings"
   The key used to authenticate webhook calls to your app.
 </ResponseField>
 
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new Metriport("YOUR_API_KEY");
+
+const response = await metriportClient.getSettings();
+```
+
+</ResponseExample>
+
 Example response:
 
 ```json
