@@ -5,9 +5,12 @@ import { Body } from "../models/body";
 import { Nutrition } from "../models/nutrition";
 import { Sleep } from "../models/sleep";
 import { User } from "../models/user";
+import { ProviderSource } from "../models/common/provider-source";
 import { dateIsValid } from "./util/date-util";
 import { GetConnectTokenResponse } from "./models/get-connect-token-response";
 import { GetMetriportUserIDResponse } from "./models/get-metriport-user-id-response";
+import { SettingsResponse } from "./models/settings-response";
+import { WebhookStatusResponse } from "./models/webhook-status-response";
 
 export class Metriport {
   private api: AxiosInstance;
@@ -17,7 +20,7 @@ export class Metriport {
    *
    * @param {string} apiKey - Your Metriport API key.
    */
-  constructor(apiKey: string, baseURL: string = 'https://api.metriport.com') {
+  constructor(apiKey: string, baseURL: string = "https://api.metriport.com") {
     this.api = axios.create({
       baseURL,
       headers: { "x-api-key": apiKey },
@@ -56,6 +59,22 @@ export class Metriport {
       }
     );
     return resp.data.token;
+  }
+
+  /**
+   * For the given user ID, revoke the user's access to the specified provider.
+   *
+   * @param {string}          userId    - The user ID of the user for which to revoke access.
+   * @param {ProviderSource}  provider  - The data provider to revoke access to.
+   * @returns void.
+   */
+  async revokeUserAccessToProvider(
+    userId: string,
+    provider: ProviderSource
+  ): Promise<void> {
+    await this.api.delete("/user/revoke", {
+      params: { userId: userId, provider: provider.toString() },
+    });
   }
 
   /**
@@ -154,5 +173,46 @@ export class Metriport {
     if (userId.trim().length < 1) throw Error(`userId must not be empty!`);
     if (!dateIsValid(date)) throw Error(`date must be in format YYYY-MM-DD!`);
     return { userId, date };
+  }
+
+  /**
+   * Gets the settings for your account.
+   *
+   * @returns Your account settings.
+   */
+  async getSettings(): Promise<SettingsResponse> {
+    const resp = await this.api.get<SettingsResponse>("/settings");
+    return resp.data;
+  }
+
+  /**
+   * Update the settings for your account.
+   *
+   * @returns Your updated account settings.
+   */
+  async updateSettings(webhookUrl: string): Promise<SettingsResponse> {
+    const resp = await this.api.post<SettingsResponse>("/settings", {
+      webhookUrl,
+    });
+    return resp.data;
+  }
+
+  /**
+   * Gets the status of communication with your app's webhook.
+   *
+   * @returns The status of communication with your app's webhook.
+   */
+  async getWebhookStatus(): Promise<WebhookStatusResponse> {
+    const resp = await this.api.get<WebhookStatusResponse>("/settings/webhook");
+    return resp.data;
+  }
+
+  /**
+   * Retries failed webhook requests.
+   *
+   * @returns void
+   */
+  async retryWebhookRequests(): Promise<void> {
+    await this.api.post("/settings/webhook/retry");
   }
 }
