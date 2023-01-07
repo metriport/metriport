@@ -1,10 +1,13 @@
 const colorLocalStorageKey = "custom-color";
 
-export const getCustomColor = (paramColor: string | null) => {
+export const getCustomColor = (paramColor: string | null, isDemo: boolean) => {
   const color = validateColor(paramColor);
 
   if (color) {
-    localStorage.setItem(colorLocalStorageKey, color);
+    if (!isDemo) {
+      localStorage.setItem(colorLocalStorageKey, color);
+    }
+
     return color;
   }
 

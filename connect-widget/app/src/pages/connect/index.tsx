@@ -18,14 +18,16 @@ const ConnectPage = () => {
   const [searchParams, _] = useSearchParams();
 
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
+  const token = searchParams.get(Constants.TOKEN_PARAM);
+  const isDemo = token === "demo";
 
   useEffect(() => {
     setupApi(api, searchParams);
-    storeColorMode(colorMode);
     setAgreementState(setAgreement);
+    storeColorMode(colorMode);
 
     setIsLoading(false);
-  }, [searchParams, colorMode]);
+  }, [searchParams, colorMode, token]);
 
   return (
     <WidgetContainer>
@@ -34,7 +36,9 @@ const ConnectPage = () => {
       ) : agreement ? (
         <ConnectProviders />
       ) : (
-        <Agreement onAcceptAgreement={() => acceptAgreement(setAgreement)} />
+        <Agreement
+          onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)}
+        />
       )}
     </WidgetContainer>
   );

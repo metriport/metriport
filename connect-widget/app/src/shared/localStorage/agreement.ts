@@ -23,7 +23,10 @@ const getLocalStorageAgreement = (): boolean => {
   return false;
 };
 
-export const acceptAgreement = (setAgreement: (value: boolean) => void): void => {
-  localStorage.setItem(agreementLocalStorageKey, JSON.stringify(true));
+export const acceptAgreement = (setAgreement: (value: boolean) => void, isDemo: boolean): void => {
+  if (!isDemo) {
+    localStorage.setItem(agreementLocalStorageKey, JSON.stringify(true));
+  }
+
   setAgreement(true);
 };
