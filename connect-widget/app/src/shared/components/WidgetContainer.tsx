@@ -20,8 +20,10 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
   const [searchParams] = useSearchParams();
 
   const color = searchParams.get(Constants.CUSTOM_COLOR_PARAM);
+  const token = searchParams.get(Constants.TOKEN_PARAM);
+  const isDemo = token === "demo";
 
-  const customColor = getCustomColor(color);
+  const customColor = getCustomColor(color, isDemo);
 
   const decidePrimaryColor = `${
     customColor ? customColor : Constants.PRIMARY_COLOR
@@ -91,18 +93,7 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
             <Text mr={2}>Powered by</Text>
             <Image width={150} src={"logo.png"}></Image>
           </Flex>
-          <Box
-            px={8}
-            py={6}
-            height={{
-              base: "100%",
-              xs: "80vh",
-              sm: "100%",
-              md: "100%",
-              lg: "100%",
-            }}
-            overflowY={"scroll"}
-          >
+          <Box px={8} py={6} maxHeight={"80vh"} overflowY={"scroll"}>
             {children}
           </Box>
         </Box>
