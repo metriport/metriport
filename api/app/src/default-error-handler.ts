@@ -64,7 +64,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
       defaultResponseBody({
         status: status.INTERNAL_SERVER_ERROR,
         title:
-          "Internal server error, please try again or reach out to help@metriport.ai",
+          "Internal server error, please try again or reach out to support@metriport.com",
       })
     );
 };

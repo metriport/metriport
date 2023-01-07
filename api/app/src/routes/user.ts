@@ -10,7 +10,11 @@ import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { asyncHandler, getCxIdOrFail, getUserIdFromQueryOrFail } from "./util";
-import { Constants, providerOAuth2OptionsSchema } from "../shared/constants";
+import {
+  Constants,
+  providerOAuth1OptionsSchema,
+  providerOAuth2OptionsSchema,
+} from "../shared/constants";
 import BadRequestError from "../errors/bad-request";
 
 const router = Router();
@@ -131,28 +135,36 @@ router.get(
 router.delete(
   "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
-
     const userId = getUserIdFromQueryOrFail(req);
     const cxId = getCxIdOrFail(req);
-    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId })
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
     const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(
       req.query.provider
     );
 
-    if (providerOAuth2.success) {
+    // TODO #249: implement garmin revoke support 
+    // const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
+    //   req.query.provider
+    // );
 
+    if (providerOAuth2.success) {
       await Constants.PROVIDER_OAUTH2_MAP[
         providerOAuth2.data
       ].revokeProviderAccess(connectedUser);
 
       return res.sendStatus(200);
+    // } else if (providerOAuth1.success) {
+    //   // await Constants.PROVIDER_OAUTH1_MAP[
+    //   //   providerOAuth1.data
+    //   // ].deregister(connectedUser);
     } else {
-      throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
+      throw new BadRequestError(
+        `Provider not supported: ${req.query.provider}`
+      );
     }
   })
 );
-
 
 /* /user/connect */
 router.get("/connect", async (req: Request, res: Response) => {
