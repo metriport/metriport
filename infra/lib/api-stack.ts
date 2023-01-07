@@ -456,6 +456,6 @@ export class APIStack extends Stack {
   }
 
   private isProd(props: APIStackProps): boolean {
-    return props.config.environmentType === EnvType.prod;
+    return props.config.environmentType === EnvType.production;
   }
 }

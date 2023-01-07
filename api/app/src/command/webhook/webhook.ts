@@ -183,6 +183,11 @@ export const processRequest = async (
       `Missing webhook config, skipping sending it ` +
         `(url: ${webhookUrl}, key: ${webhookKey ? "<defined>" : null}`
     );
+    // mark this request as failed on the DB - so it can be retried later
+    await updateWebhookRequestStatus({
+      id: webhookRequest.id,
+      status: "failure",
+    });
     return false;
   }
   // TODO Separate preparing the payloads with the actual sending of that data over the wire
