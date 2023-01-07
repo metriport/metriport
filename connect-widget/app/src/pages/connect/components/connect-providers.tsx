@@ -25,7 +25,9 @@ const ConnectProviders = () => {
     getConnectedProviders();
   }, []);
   const searchProviders = searchParams.get(Constants.PROVIDERS_PARAM);
-  const providers = getProviders(searchProviders);
+  const token = searchParams.get(Constants.TOKEN_PARAM);
+  const isDemo = token === "demo";
+  const providers = getProviders(searchProviders, isDemo);
 
   return (
     <>

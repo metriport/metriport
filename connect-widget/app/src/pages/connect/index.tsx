@@ -20,6 +20,8 @@ const ConnectPage = () => {
   const [isError, setIsError] = useState(false);
 
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
+  const token = searchParams.get(Constants.TOKEN_PARAM);
+  const isDemo = token === "demo";
 
   useEffect(() => {
     try {
@@ -43,7 +45,9 @@ const ConnectPage = () => {
         ) : agreement ? (
           <ConnectProviders />
         ) : (
-          <Agreement onAcceptAgreement={() => acceptAgreement(setAgreement)} />
+          <Agreement
+            onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)}
+          />
         )}
         {isError && <ErrorDialog show onClose={() => setIsError(false)} />}
       </>
