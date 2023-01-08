@@ -22,7 +22,11 @@ struct Metriport_mobileApp: App {
 struct ContentView: View {
     @State private var showWebView = false
     
-    var webView = MetriportWidget(url: URL(string: "http://localhost:3001/?token=1bEFTi9Zt_ljmG88pHj4U&colorMode=dark")!)
+    // var localWebView = MetriportWidget(url: URL(string: "http://localhost:3001/?token={YOUR_TOKEN}")!)
+
+    // For more information of how to create a token view link below
+    // https://docs.metriport.com/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app
+    var webView = MetriportWidget(url: URL(string: "https://connect.metriport.com/?token=demo")!)
     
     var body: some View {
         VStack {
