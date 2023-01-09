@@ -1,0 +1,614 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		9707B9BC2963B279003D8123 /* Metriport_mobileApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9707B9BB2963B279003D8123 /* Metriport_mobileApp.swift */; };
+		9707B9C02963B27B003D8123 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9707B9BF2963B27B003D8123 /* Assets.xcassets */; };
+		9707B9C32963B27B003D8123 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9707B9C22963B27B003D8123 /* Preview Assets.xcassets */; };
+		9707B9CD2963B27C003D8123 /* Metriport_mobileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9707B9CC2963B27C003D8123 /* Metriport_mobileTests.swift */; };
+		9707B9D72963B27C003D8123 /* Metriport_mobileUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9707B9D62963B27C003D8123 /* Metriport_mobileUITests.swift */; };
+		9707B9D92963B27C003D8123 /* Metriport_mobileUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9707B9D82963B27C003D8123 /* Metriport_mobileUITestsLaunchTests.swift */; };
+		9764FE342968959300184072 /* Metriport-IOS in Frameworks */ = {isa = PBXBuildFile; productRef = 9764FE332968959300184072 /* Metriport-IOS */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9707B9C92963B27C003D8123 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9707B9B02963B279003D8123 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9707B9B72963B279003D8123;
+			remoteInfo = "Metriport mobile";
+		};
+		9707B9D32963B27C003D8123 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9707B9B02963B279003D8123 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9707B9B72963B279003D8123;
+			remoteInfo = "Metriport mobile";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		9707B9B82963B279003D8123 /* Metriport mobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Metriport mobile.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9707B9BB2963B279003D8123 /* Metriport_mobileApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Metriport_mobileApp.swift; sourceTree = "<group>"; };
+		9707B9BF2963B27B003D8123 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9707B9C22963B27B003D8123 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		9707B9C82963B27C003D8123 /* Metriport mobileTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Metriport mobileTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9707B9CC2963B27C003D8123 /* Metriport_mobileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Metriport_mobileTests.swift; sourceTree = "<group>"; };
+		9707B9D22963B27C003D8123 /* Metriport mobileUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Metriport mobileUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9707B9D62963B27C003D8123 /* Metriport_mobileUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Metriport_mobileUITests.swift; sourceTree = "<group>"; };
+		9707B9D82963B27C003D8123 /* Metriport_mobileUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Metriport_mobileUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		9707B9E52963B66D003D8123 /* Metriport mobile.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Metriport mobile.entitlements"; sourceTree = "<group>"; };
+		9764FE3029673A9400184072 /* Metriport-mobile-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Metriport-mobile-Info.plist"; sourceTree = SOURCE_ROOT; };
+		9764FE3129686AD000184072 /* Metriport-IOS */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "Metriport-IOS"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9707B9B52963B279003D8123 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9764FE342968959300184072 /* Metriport-IOS in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9707B9C52963B27C003D8123 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9707B9CF2963B27C003D8123 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		9707B9AF2963B279003D8123 = {
+			isa = PBXGroup;
+			children = (
+				9764FE3129686AD000184072 /* Metriport-IOS */,
+				9707B9BA2963B279003D8123 /* Metriport mobile */,
+				9707B9CB2963B27C003D8123 /* Metriport mobileTests */,
+				9707B9D52963B27C003D8123 /* Metriport mobileUITests */,
+				9707B9B92963B279003D8123 /* Products */,
+				9764FE322968959300184072 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		9707B9B92963B279003D8123 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9707B9B82963B279003D8123 /* Metriport mobile.app */,
+				9707B9C82963B27C003D8123 /* Metriport mobileTests.xctest */,
+				9707B9D22963B27C003D8123 /* Metriport mobileUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9707B9BA2963B279003D8123 /* Metriport mobile */ = {
+			isa = PBXGroup;
+			children = (
+				9764FE3029673A9400184072 /* Metriport-mobile-Info.plist */,
+				9707B9E52963B66D003D8123 /* Metriport mobile.entitlements */,
+				9707B9BB2963B279003D8123 /* Metriport_mobileApp.swift */,
+				9707B9BF2963B27B003D8123 /* Assets.xcassets */,
+				9707B9C12963B27B003D8123 /* Preview Content */,
+			);
+			path = "Metriport mobile";
+			sourceTree = "<group>";
+		};
+		9707B9C12963B27B003D8123 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				9707B9C22963B27B003D8123 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		9707B9CB2963B27C003D8123 /* Metriport mobileTests */ = {
+			isa = PBXGroup;
+			children = (
+				9707B9CC2963B27C003D8123 /* Metriport_mobileTests.swift */,
+			);
+			path = "Metriport mobileTests";
+			sourceTree = "<group>";
+		};
+		9707B9D52963B27C003D8123 /* Metriport mobileUITests */ = {
+			isa = PBXGroup;
+			children = (
+				9707B9D62963B27C003D8123 /* Metriport_mobileUITests.swift */,
+				9707B9D82963B27C003D8123 /* Metriport_mobileUITestsLaunchTests.swift */,
+			);
+			path = "Metriport mobileUITests";
+			sourceTree = "<group>";
+		};
+		9764FE322968959300184072 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9707B9B72963B279003D8123 /* Metriport mobile */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9707B9DC2963B27C003D8123 /* Build configuration list for PBXNativeTarget "Metriport mobile" */;
+			buildPhases = (
+				9707B9B42963B279003D8123 /* Sources */,
+				9707B9B52963B279003D8123 /* Frameworks */,
+				9707B9B62963B279003D8123 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Metriport mobile";
+			packageProductDependencies = (
+				9764FE332968959300184072 /* Metriport-IOS */,
+			);
+			productName = "Metriport mobile";
+			productReference = 9707B9B82963B279003D8123 /* Metriport mobile.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9707B9C72963B27C003D8123 /* Metriport mobileTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9707B9DF2963B27C003D8123 /* Build configuration list for PBXNativeTarget "Metriport mobileTests" */;
+			buildPhases = (
+				9707B9C42963B27C003D8123 /* Sources */,
+				9707B9C52963B27C003D8123 /* Frameworks */,
+				9707B9C62963B27C003D8123 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9707B9CA2963B27C003D8123 /* PBXTargetDependency */,
+			);
+			name = "Metriport mobileTests";
+			productName = "Metriport mobileTests";
+			productReference = 9707B9C82963B27C003D8123 /* Metriport mobileTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		9707B9D12963B27C003D8123 /* Metriport mobileUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9707B9E22963B27C003D8123 /* Build configuration list for PBXNativeTarget "Metriport mobileUITests" */;
+			buildPhases = (
+				9707B9CE2963B27C003D8123 /* Sources */,
+				9707B9CF2963B27C003D8123 /* Frameworks */,
+				9707B9D02963B27C003D8123 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9707B9D42963B27C003D8123 /* PBXTargetDependency */,
+			);
+			name = "Metriport mobileUITests";
+			productName = "Metriport mobileUITests";
+			productReference = 9707B9D22963B27C003D8123 /* Metriport mobileUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9707B9B02963B279003D8123 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1420;
+				LastUpgradeCheck = 1420;
+				TargetAttributes = {
+					9707B9B72963B279003D8123 = {
+						CreatedOnToolsVersion = 14.2;
+					};
+					9707B9C72963B27C003D8123 = {
+						CreatedOnToolsVersion = 14.2;
+						TestTargetID = 9707B9B72963B279003D8123;
+					};
+					9707B9D12963B27C003D8123 = {
+						CreatedOnToolsVersion = 14.2;
+						TestTargetID = 9707B9B72963B279003D8123;
+					};
+				};
+			};
+			buildConfigurationList = 9707B9B32963B279003D8123 /* Build configuration list for PBXProject "Metriport mobile" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 9707B9AF2963B279003D8123;
+			productRefGroup = 9707B9B92963B279003D8123 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9707B9B72963B279003D8123 /* Metriport mobile */,
+				9707B9C72963B27C003D8123 /* Metriport mobileTests */,
+				9707B9D12963B27C003D8123 /* Metriport mobileUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9707B9B62963B279003D8123 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9707B9C32963B27B003D8123 /* Preview Assets.xcassets in Resources */,
+				9707B9C02963B27B003D8123 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9707B9C62963B27C003D8123 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9707B9D02963B27C003D8123 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9707B9B42963B279003D8123 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9707B9BC2963B279003D8123 /* Metriport_mobileApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9707B9C42963B27C003D8123 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9707B9CD2963B27C003D8123 /* Metriport_mobileTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9707B9CE2963B27C003D8123 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9707B9D72963B27C003D8123 /* Metriport_mobileUITests.swift in Sources */,
+				9707B9D92963B27C003D8123 /* Metriport_mobileUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9707B9CA2963B27C003D8123 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9707B9B72963B279003D8123 /* Metriport mobile */;
+			targetProxy = 9707B9C92963B27C003D8123 /* PBXContainerItemProxy */;
+		};
+		9707B9D42963B27C003D8123 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9707B9B72963B279003D8123 /* Metriport mobile */;
+			targetProxy = 9707B9D32963B27C003D8123 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		9707B9DA2963B27C003D8123 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		9707B9DB2963B27C003D8123 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		9707B9DD2963B27C003D8123 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Metriport mobile/Metriport mobile.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Metriport mobile/Preview Content\"";
+				DEVELOPMENT_TEAM = 7Z5GX3JWF8;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Metriport-mobile-Info.plist";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Share usage with all people";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Update usage with all people";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.metriport.Metriport-mobile";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		9707B9DE2963B27C003D8123 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Metriport mobile/Metriport mobile.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Metriport mobile/Preview Content\"";
+				DEVELOPMENT_TEAM = 7Z5GX3JWF8;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Metriport-mobile-Info.plist";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Share usage with all people";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Update usage with all people";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.metriport.Metriport-mobile";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		9707B9E02963B27C003D8123 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.metriport.Metriport-mobileTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Metriport mobile.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Metriport mobile";
+			};
+			name = Debug;
+		};
+		9707B9E12963B27C003D8123 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.metriport.Metriport-mobileTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Metriport mobile.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Metriport mobile";
+			};
+			name = Release;
+		};
+		9707B9E32963B27C003D8123 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.metriport.Metriport-mobileUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Metriport mobile";
+			};
+			name = Debug;
+		};
+		9707B9E42963B27C003D8123 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.metriport.Metriport-mobileUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Metriport mobile";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9707B9B32963B279003D8123 /* Build configuration list for PBXProject "Metriport mobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9707B9DA2963B27C003D8123 /* Debug */,
+				9707B9DB2963B27C003D8123 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9707B9DC2963B27C003D8123 /* Build configuration list for PBXNativeTarget "Metriport mobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9707B9DD2963B27C003D8123 /* Debug */,
+				9707B9DE2963B27C003D8123 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9707B9DF2963B27C003D8123 /* Build configuration list for PBXNativeTarget "Metriport mobileTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9707B9E02963B27C003D8123 /* Debug */,
+				9707B9E12963B27C003D8123 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9707B9E22963B27C003D8123 /* Build configuration list for PBXNativeTarget "Metriport mobileUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9707B9E32963B27C003D8123 /* Debug */,
+				9707B9E42963B27C003D8123 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9764FE332968959300184072 /* Metriport-IOS */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = "Metriport-IOS";
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 9707B9B02963B279003D8123 /* Project object */;
+}
