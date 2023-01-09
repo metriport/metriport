@@ -1,9 +1,9 @@
 ---
 title: "Connect Widget"
-description: "Overview of the configurations for the widget."
+description: "Overview of the configurations and implementation details for the Metriport Connect Widget."
 ---
 
-# Link the the Metriport Connect widget in your app
+# Overview
 
 With Metriport, you get a pre-built [Connect widget](https://connect.metriport.com/?token=demo)
 that you can easily plug into your app, so that your users can connect all of their data sources to your application!
@@ -13,17 +13,248 @@ Here's a preview:
   width="90%"
   height="700"
   src="https://connect.metriport.com/?token=demo"
-></iframe>
-<br />
+  ></iframe>
 
-# URL Parameters
+
+## How to Implement
+
+You can use the references below for sample implementations on various platforms. Generally, you can simply link to the Connect Widget in web apps, and use WebViews to implement the Widget on mobile platforms.
+
+<Info>
+  As per the [Quickstart guide](/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app), you'll need to generate a temporary token for each Connect Widget session.
+</Info>
+
+### Web
+
+```typescript
+window.open(`https://connect.metriport.com/?token=${connectToken}`);
+```
+
+<Info>
+  Not all of the data providers support an `iframe` embedding, so we recommend to avoid using an `iframe` for the Connect Widget in your web app.
+</Info>
+
+### iOS (Swift)
+
+```swift
+import SwiftUI
+import Foundation
+import WebKit
+
+@main
+struct Metriport_mobileApp: App {
+    // Return the scene.
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+
+struct ContentView: View {
+    @State private var showWebView = false
+    
+    // var localWebView = MetriportWidget(url: URL(string: "http://localhost:3001/?token={YOUR_TOKEN}")!)
+    // For more information of how to create a token view link below
+    // https://docs.metriport.com/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app
+    var webView = MetriportWidget(url: URL(string: "https://connect.metriport.com/?token=demo")!)
+    
+    var body: some View {
+        VStack {
+          webView
+          HStack {
+            Button(action: {
+              self.webView.goBack()
+            }){
+              Image(systemName: "arrowtriangle.left.fill")
+                                .font(.title)
+                                .foregroundColor(.blue)
+                                .padding()
+            }
+            Spacer()
+            Button(action: {
+              self.webView.refresh()
+            }){
+              Image(systemName: "arrow.clockwise.circle.fill")
+                    .font(.title)
+                    .foregroundColor(.blue)
+                    .padding()
+            }
+            Spacer()
+            Button(action: {
+              self.webView.goForward()
+            }){
+              Image(systemName: "arrowtriangle.right.fill")
+                    .font(.title)
+                    .foregroundColor(.blue)
+                    .padding()
+            }
+          }
+        }
+      }
+}
+
+struct MetriportWidget: UIViewRepresentable {
+    
+    var url: URL
+    private var webView: WKWebView?
+    
+    public init(url: URL) {
+        self.webView = WKWebView()
+        self.url = url
+    }
+    
+    public func makeUIView(context: Context) -> WKWebView {
+        return webView!
+    }
+
+    public func updateUIView(_ webView: WKWebView, context: Context) {
+       let request = URLRequest(url: url)
+       webView.load(request)
+    }
+    
+    public func goBack(){
+        webView?.goBack()
+    }
+
+    public func goForward(){
+        webView?.goForward()
+    }
+    
+    public func refresh() {
+        webView?.reload()
+    }
+}
+```
+
+<Tip>
+  Our GitHub repo has [an example implementation](https://github.com/metriport/metriport/tree/develop/examples/ios/Metriport%20mobile) of this in an iOS app.
+</Tip>
+
+### Android (Kotlin)
+
+<CodeGroup>
+
+```kotlin MainActivity.kt
+
+package com.example.metriport
+
+import android.os.Bundle
+import android.webkit.WebViewClient
+import androidx.appcompat.app.AppCompatActivity
+import kotlinx.android.synthetic.main.activity_main.*
+
+
+class MainActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        webView.webViewClient = WebViewClient()
+
+        // For more information of how to create a token view link below
+        // https://docs.metriport.com/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app
+        val prodUrl = "https://connect.metriport.com/?token=demo"
+
+        // To use emulator locally make sure to use your IP
+        // val localhostUrl = "http://{LOCAL_IP}:3001/?token={YOUR_TOKEN}"
+
+        webView.loadUrl(prodUrl)
+
+        webView.settings.domStorageEnabled = true;
+
+        webView.settings.javaScriptEnabled = true
+
+        webView.settings.setSupportZoom(true)
+    }
+
+    override fun onBackPressed() {
+        if (webView.canGoBack())
+            webView.goBack()
+        else
+            super.onBackPressed()
+    }
+}
+
+```
+
+```xml activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <!-- Place WebView on the Screen -->
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+```
+
+```xml AndroidManifest.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- These permissions are needed to embed the WebView -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+
+    <application
+        android:allowBackup="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Metriport"
+        tools:targetApi="31">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="" />
+        </activity>
+    </application>
+
+</manifest>
+
+```
+
+</CodeGroup>
+
+<Tip>
+  Our GitHub repo has [an example implementation](https://github.com/metriport/metriport/tree/develop/examples/android) of this in an Android app.
+</Tip>
+
+## URL Parameters
 
 Set url parameters to validate the current session of the widget and make
 certain customizations to fit your product needs.
 
 ### token
 
-This is the token generated by Metriport. Check the [quick start guide](/getting-started/connect-quickstart) for more details.
+This is the token generated by Metriport. Check the [Quickstart guide](/getting-started/connect-quickstart) for more details.
 
 ```typescript
 `https://connect.metriport.com/?token=${connectToken}`;

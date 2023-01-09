@@ -93,7 +93,7 @@ Check out the links below to get started with Metriport in minutes!
 
 Backend for the Metriport API.
 
-- Dir: `/api`
+- Dir: [`/api`](/api)
 - URL: [https://api.metriport.com/](https://api.metriport.com/)
 - Sandbox URL: [https://api.sandbox.metriport.com/](https://api.sandbox.metriport.com/)
 
@@ -105,21 +105,27 @@ Pre-built app that you can embed your own app! Use it to allow your users to aut
    <img width="50%" alt="connect widget" src="https://i.ibb.co/mNgMwyd/Screenshot-2022-12-20-at-3-51-47-PM.png">
 </div>
 
-- Dir: `/connect-widget`
+- Dir: [`/connect-widget`](/connect-widget)
 - URL: [https://connect.metriport.com/](https://connect.metriport.com/?token=demo)
 
 ### **Infrastructure as Code**
 
 We use AWS CDK as IaC.
 
-- Dir: `/infra`
+- Dir: [`/infra`](/infra)
 
 ### **Docs**
 
 Our beautiful developer documentation, powered by [mintlify](https://mintlify.com/) ❤️.
 
-- Dir: `/docs`
+- Dir: [`/docs`](/docs)
 - URL: [https://docs.metriport.com/](https://docs.metriport.com/getting-started/introduction)
+
+### **Code Examples**
+
+Some example projects that serve as examples for how to integrate with Metriport on various platforms.
+
+- Dir: [`/examples`](/examples)
 
 ---
 
