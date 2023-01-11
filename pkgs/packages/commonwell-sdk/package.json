@@ -1,7 +1,7 @@
 {
   "name": "@metriport/commonwell-sdk",
-  "version": "1.0.0",
-  "description": "> TODO: description",
+  "version": "1.0.2",
+  "description": "SDK to simplify CommonWell API integration - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
@@ -35,5 +35,6 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.0",
     "@types/node": "^18.11.18"
-  }
+  },
+  "gitHead": "1efbd81af4541ac7cf3bca7d72ca880fdd91bf9a"
 }
