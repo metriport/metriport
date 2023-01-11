@@ -330,4 +330,4 @@ $ ./deploy.sh -h
 
 Distributed under the AGPLv3 License. See `LICENSE` for more information.
 
-Copyright © Metriport 2022
+Copyright © Metriport 2022-present
