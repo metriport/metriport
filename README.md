@@ -66,6 +66,7 @@ Out of the box, our Health Devices API supports the following integrations:
 - Whoop
 - Withings
 - Cronometer
+- Garmin
 
 ...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
 
@@ -121,9 +122,17 @@ Our beautiful developer documentation, powered by [mintlify](https://mintlify.co
 - Dir: [`/docs`](/docs)
 - URL: [https://docs.metriport.com/](https://docs.metriport.com/getting-started/introduction)
 
+### **npm Packages**
+
+Checkout our npm packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
+
+- [Metriport API](/pkgs/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
+- [CommonWell JWT Maker](/pkgs/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
+- [CommonWell SDK](/pkgs/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+
 ### **Code Examples**
 
-Some example projects that serve as examples for how to integrate with Metriport on various platforms.
+Some example projects that serve as examples for how to integrate with Metriport on various platforms - such as iOS and Android.
 
 - Dir: [`/examples`](/examples)
 
