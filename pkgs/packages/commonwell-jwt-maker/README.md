@@ -32,7 +32,7 @@ Absolute path to the RSA256 private key file corresponding to the specified orga
 
 `--role <practitioner-role>`
 
-The practitioner role of the entity making this request. Valid role values: http://hl7.org/fhir/R4/valueset_practitioner_role.html
+The practitioner role of the entity making this request. Valid role values: https://hl7.org/fhir/R4/valueset-practitioner-role.html
 
 `--subject-id <subject-id>`
 

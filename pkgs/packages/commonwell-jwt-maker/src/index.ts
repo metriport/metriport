@@ -23,7 +23,7 @@ program
   )
   .requiredOption(
     `--${roleOpt} <practitioner-role>`,
-    "The practitioner role of the entity making this request. Valid role values: http://hl7.org/fhir/R4/valueset_practitioner_role.html"
+    "The practitioner role of the entity making this request. Valid role values: https://hl7.org/fhir/R4/valueset-practitioner-role.html"
   )
   .requiredOption(
     `--${subjectIdOpt} <subject-id>`,
