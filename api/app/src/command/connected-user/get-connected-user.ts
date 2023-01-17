@@ -3,6 +3,29 @@ import { ConnectedUser } from "../../models/connected-user";
 import { ProviderOptions } from "../../shared/constants";
 import { AtLeastOne } from "../../shared/types";
 
+export const getConnectedUserById = async ({
+  id,
+}: {
+  id: string;
+}): Promise<ConnectedUser | null> => {
+  return ConnectedUser.findOne({
+    where: { id },
+  });
+};
+
+export const getConnectedUserByIdOrFail = async ({
+  id,
+}: {
+  id: string;
+}): Promise<ConnectedUser | null> => {
+  const connectedUser = await getConnectedUserById({ id });
+  if (!connectedUser)
+    throw new NotFoundError(
+      `Could not find connected user ${id}`
+    );
+  return connectedUser;
+};
+
 export const getConnectedUser = async ({
   id,
   cxId,
