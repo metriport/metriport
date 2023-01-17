@@ -6,6 +6,7 @@ export default class Constants {
   static COLOR_MODE_PARAM: string = "colorMode";
   static CUSTOM_COLOR_PARAM: string = "customColor";
   static PROVIDERS_PARAM: string = "providers";
+  static APPLE_PARAM: string = "apple";
   static BREAKPOINTS: Object = {
     xs: "300px",
     sm: "500px",

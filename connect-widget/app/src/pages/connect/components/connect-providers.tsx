@@ -24,10 +24,12 @@ const ConnectProviders = () => {
     }
     getConnectedProviders();
   }, []);
+
   const searchProviders = searchParams.get(Constants.PROVIDERS_PARAM);
   const token = searchParams.get(Constants.TOKEN_PARAM);
   const isDemo = token === "demo";
-  const providers = getProviders(searchProviders, isDemo);
+  const isApple = searchParams.get(Constants.APPLE_PARAM);
+  const providers = getProviders(searchProviders, isDemo, isApple);
 
   return (
     <>
@@ -39,6 +41,7 @@ const ConnectProviders = () => {
       <Providers
         providers={providers}
         connectedProviders={connectedProviders}
+        setConnectedProviders={setConnectedProviders}
       />
     </>
   );

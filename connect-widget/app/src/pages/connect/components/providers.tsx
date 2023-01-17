@@ -1,4 +1,10 @@
-import { useState } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { getApi } from "../../../shared/api";
 import { sleep } from "../../../shared/util";
 import { DefaultProvider } from "./connect-providers";
@@ -8,11 +14,57 @@ import Provider from "./provider";
 type ProvidersProps = {
   providers: DefaultProvider[];
   connectedProviders: string[];
+  setConnectedProviders: Dispatch<SetStateAction<string[]>>;
 };
 
-const Providers = ({ providers, connectedProviders }: ProvidersProps) => {
+declare global {
+  interface Window {
+    webkit: any;
+  }
+}
+
+const Providers = ({
+  providers,
+  connectedProviders,
+  setConnectedProviders,
+}: ProvidersProps) => {
   const [isLoading, setIsLoading] = useState<{ [id: string]: boolean }>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const customEventHandler = useCallback(
+    async (e: any) => {
+      try {
+        if (e.detail.success) {
+          const { data } = await getApi().get("/connect/user/apple");
+
+          window?.webkit?.messageHandlers?.connect?.postMessage(data);
+
+          setConnectedProviders(["apple", ...connectedProviders]);
+        } else {
+          setErrorMessage("Error while authorizing healthkit");
+        }
+
+        setIsLoading({
+          ...isLoading,
+          apple: false,
+        });
+      } catch (error) {
+        setErrorMessage("Error while authorizing healthkit");
+        setIsLoading({
+          ...isLoading,
+          apple: false,
+        });
+      }
+    },
+    [setIsLoading, isLoading, connectedProviders, setConnectedProviders]
+  );
+
+  useEffect(() => {
+    window.addEventListener("authorization", customEventHandler);
+
+    return () =>
+      window.removeEventListener("authorization", customEventHandler);
+  }, [customEventHandler]);
 
   const redirectToProvider = async (provider: string) => {
     setIsLoading({
@@ -42,10 +94,20 @@ const Providers = ({ providers, connectedProviders }: ProvidersProps) => {
     });
   };
 
+  const connectToApple = () => {
+    setIsLoading({
+      ...isLoading,
+      apple: true,
+    });
+
+    window?.webkit?.messageHandlers?.connect?.postMessage("connect");
+  };
+
   return (
     <>
       {providers.map((value: DefaultProvider, index: number) => {
         const isConnected = connectedProviders.includes(value.name);
+        const isApple = value.name === "apple";
 
         return (
           <Provider
@@ -53,7 +115,7 @@ const Providers = ({ providers, connectedProviders }: ProvidersProps) => {
             isConnected={isConnected}
             isLoading={isLoading}
             provider={value}
-            onRedirect={redirectToProvider}
+            onRedirect={isApple ? connectToApple : redirectToProvider}
           />
         );
       })}
