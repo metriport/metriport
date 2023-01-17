@@ -1,4 +1,5 @@
 export enum ProviderSource {
+    apple = "apple",
     cronometer = "cronometer",
     fitbit = "fitbit",
     garmin = "garmin",
