@@ -1,7 +1,7 @@
 {
-  "name": "@metriport/api",
+  "name": "@metriport/commonwell-sdk",
   "version": "1.0.3",
-  "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
+  "description": "SDK to simplify CommonWell API integration - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
@@ -17,20 +17,25 @@
   "publishConfig": {
     "access": "public"
   },
+  "repository": {
+    "url": "https://github.com/metriport/metriport.git",
+    "type": "git",
+    "directory": "pkgs/packages/commonwell-sdk"
+  },
   "scripts": {
     "tsc": "tsc",
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
-  "repository": {
-    "url": "https://github.com/metriport/metriport.git",
-    "type": "git",
-    "directory": "pkgs/packages/api"
-  },
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
   },
-  "gitHead": "3f89c1e0d39ed55e180444335ff446e8c67bf8fa",
   "dependencies": {
-    "axios": "^1.2.1"
-  }
+    "jsonwebtoken": "^9.0.0",
+    "zod": "^3.20.2"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/node": "^18.11.18"
+  },
+  "gitHead": "3f89c1e0d39ed55e180444335ff446e8c67bf8fa"
 }

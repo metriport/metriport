@@ -66,6 +66,7 @@ Out of the box, our Health Devices API supports the following integrations:
 - Whoop
 - Withings
 - Cronometer
+- Garmin
 
 ...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
 
@@ -93,7 +94,7 @@ Check out the links below to get started with Metriport in minutes!
 
 Backend for the Metriport API.
 
-- Dir: `/api`
+- Dir: [`/api`](/api)
 - URL: [https://api.metriport.com/](https://api.metriport.com/)
 - Sandbox URL: [https://api.sandbox.metriport.com/](https://api.sandbox.metriport.com/)
 
@@ -105,21 +106,35 @@ Pre-built app that you can embed your own app! Use it to allow your users to aut
    <img width="50%" alt="connect widget" src="https://i.ibb.co/mNgMwyd/Screenshot-2022-12-20-at-3-51-47-PM.png">
 </div>
 
-- Dir: `/connect-widget`
+- Dir: [`/connect-widget`](/connect-widget)
 - URL: [https://connect.metriport.com/](https://connect.metriport.com/?token=demo)
 
 ### **Infrastructure as Code**
 
 We use AWS CDK as IaC.
 
-- Dir: `/infra`
+- Dir: [`/infra`](/infra)
 
 ### **Docs**
 
 Our beautiful developer documentation, powered by [mintlify](https://mintlify.com/) ❤️.
 
-- Dir: `/docs`
+- Dir: [`/docs`](/docs)
 - URL: [https://docs.metriport.com/](https://docs.metriport.com/getting-started/introduction)
+
+### **npm Packages**
+
+Checkout our npm packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
+
+- [Metriport API](/pkgs/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
+- [CommonWell JWT Maker](/pkgs/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
+- [CommonWell SDK](/pkgs/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+
+### **Code Examples**
+
+Some example projects that serve as examples for how to integrate with Metriport on various platforms - such as iOS and Android.
+
+- Dir: [`/examples`](/examples)
 
 ---
 
@@ -315,4 +330,4 @@ $ ./deploy.sh -h
 
 Distributed under the AGPLv3 License. See `LICENSE` for more information.
 
-Copyright © Metriport 2022
+Copyright © Metriport 2022-present
