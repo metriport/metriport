@@ -1,11 +1,7 @@
-import {
-  Activity,
-  Biometrics,
-  Sleep,
-} from "@metriport/api";
+import { Activity, Biometrics, Sleep } from "@metriport/api";
 import { Axios } from "axios";
 import dayjs from "dayjs";
-import crypto from 'crypto';
+import crypto from "crypto";
 
 import { PROVIDER_WITHINGS } from "../shared/constants";
 import { ConnectedUser } from "../models/connected-user";
@@ -69,7 +65,6 @@ export class Withings extends Provider implements OAuth2 {
     return this.oauth.getAuthUri(state);
   }
 
-
   async getTokenFromAuthCode(code: string): Promise<string> {
     // TODO: WILL UDPDATE IT JUST WASNT STRAIGHT FORWARD - NEEDED CLIENTID TO BE IN PARAMS WITH ACTION = REQUEST
     const response = await axios.post(
@@ -90,43 +85,70 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
-    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_WITHINGS);
+    const providerData = getProviderDataFromConnectUserOrFail(
+      connectedUser,
+      PROVIDER_WITHINGS
+    );
 
     const client_id = Config.getWithingsClientId();
-    const client_secret = Config.getWithingsClientSecret()
+    const client_secret = Config.getWithingsClientSecret();
     const timestamp = dayjs().unix();
 
     const nonce = await this.getNonce(client_id, client_secret, timestamp);
-    const status = await this.revokeToken(client_id, client_secret, timestamp, nonce, providerData.token)
+    const status = await this.revokeToken(
+      client_id,
+      client_secret,
+      timestamp,
+      nonce,
+      providerData.token
+    );
 
     if (status === 0) {
       await this.oauth.revokeLocal(connectedUser);
+    } else {
+      throw new Error("Withings Revoke failed");
     }
-
-    throw new Error("Withings Revoke failed");
   }
 
-  async getNonce(clientId: string, clientSecret: string, timestamp: number): Promise<string> {
-    const nonceAction = 'getnonce';
-    const nonceSignature = `${nonceAction},${clientId},${timestamp}`
-    const hashString = crypto.createHmac('sha256', clientSecret).update(nonceSignature).digest('hex')
+  async getNonce(
+    clientId: string,
+    clientSecret: string,
+    timestamp: number
+  ): Promise<string> {
+    const nonceAction = "getnonce";
+    const nonceSignature = `${nonceAction},${clientId},${timestamp}`;
+    const hashString = crypto
+      .createHmac("sha256", clientSecret)
+      .update(nonceSignature)
+      .digest("hex");
 
-    const { data } = await axios.post(`${Withings.URL}/v2/signature?action=${nonceAction}&client_id=${clientId}&timestamp=${timestamp}&signature=${hashString}`);
+    const { data } = await axios.post(
+      `${Withings.URL}/v2/signature?action=${nonceAction}&client_id=${clientId}&timestamp=${timestamp}&signature=${hashString}`
+    );
 
-    return data.body.nonce
+    return data.body.nonce;
   }
 
-  async revokeToken(clientId: string, clientSecret: string, timestamp: number, nonce: string, token: string): Promise<number> {
-    const revokeAction = 'revoke';
-    const revokeSignature = `${revokeAction},${clientId},${nonce}`
-    const revokeHashString = crypto.createHmac('sha256', clientSecret).update(revokeSignature).digest('hex')
+  async revokeToken(
+    clientId: string,
+    clientSecret: string,
+    timestamp: number,
+    nonce: string,
+    token: string
+  ): Promise<number> {
+    const revokeAction = "revoke";
+    const revokeSignature = `${revokeAction},${clientId},${nonce}`;
+    const revokeHashString = crypto
+      .createHmac("sha256", clientSecret)
+      .update(revokeSignature)
+      .digest("hex");
     const parsedToken = JSON.parse(token);
 
     const { data } = await axios.post(`
     ${Withings.URL}/${Withings.TOKEN_PATH}?action=revoke&client_id=${clientId}&timestamp=${timestamp}&signature=${revokeHashString}&userid=${parsedToken.userid}&nonce=${nonce}
-  `)
+  `);
 
-    return data.status
+    return data.status;
   }
 
   async fetchActivityData(

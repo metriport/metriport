@@ -375,6 +375,47 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
     });
 
+    // add webhook path for apple health clients
+    const appleHealthResource = webhookResource.addResource("apple");
+    const integrationApple = new apig.Integration({
+      type: apig.IntegrationType.HTTP,
+      options: {
+        connectionType: apig.ConnectionType.VPC_LINK,
+        vpcLink: link,
+      },
+      integrationHttpMethod: "POST",
+      uri: `http://${fargateService.loadBalancer.loadBalancerDnsName}${appleHealthResource.path}`,
+    });
+    appleHealthResource.addMethod("POST", integrationApple, {
+      apiKeyRequired: true,
+    });
+
+    // add another usage plan for Publishable (Client) API keys
+    // everything is throttled to 0 - except explicitely permitted routes
+    const appleHealthThrottleKey = `${appleHealthResource.path}/POST`;
+    const clientPlan = new apig.CfnUsagePlan(this, "APIClientUsagePlan", {
+      usagePlanName: "Client Plan",
+      description: "Client Plan for API",
+      apiStages: [
+        {
+          apiId: api.restApiId,
+          stage: api.deploymentStage.stageName,
+          throttle: {
+            "*/*": { burstLimit: 0, rateLimit: 0 },
+            [appleHealthThrottleKey]: { burstLimit: 10, rateLimit: 50 },
+          },
+        },
+      ],
+      throttle: {
+        burstLimit: 10,
+        rateLimit: 50,
+      },
+      quota: {
+        limit: this.isProd(props) ? 10000 : 500,
+        period: apig.Period.DAY,
+      },
+    });
+
     //-------------------------------------------
     // Output
     //-------------------------------------------
@@ -413,6 +454,10 @@ export class APIStack extends Stack {
     new CfnOutput(this, "APIUsagePlan", {
       description: "API Usage Plan",
       value: plan.usagePlanId,
+    });
+    new CfnOutput(this, "ClientAPIUsagePlan", {
+      description: "Client API Usage Plan",
+      value: clientPlan.attrId,
     });
     new CfnOutput(this, "APIDBCluster", {
       description: "API DB Cluster",
@@ -456,6 +501,6 @@ export class APIStack extends Stack {
   }
 
   private isProd(props: APIStackProps): boolean {
-    return props.config.environmentType === EnvType.prod;
+    return props.config.environmentType === EnvType.production;
   }
 }

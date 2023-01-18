@@ -66,8 +66,9 @@ Out of the box, our Health Devices API supports the following integrations:
 - Whoop
 - Withings
 - Cronometer
+- Garmin
 
-...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:hello@metriport.ai) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
+...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
 
 <div align="center">
    <img width="50%" alt="wearables" src="./assets/graphic.svg">
@@ -93,7 +94,7 @@ Check out the links below to get started with Metriport in minutes!
 
 Backend for the Metriport API.
 
-- Dir: `/api`
+- Dir: [`/api`](/api)
 - URL: [https://api.metriport.com/](https://api.metriport.com/)
 - Sandbox URL: [https://api.sandbox.metriport.com/](https://api.sandbox.metriport.com/)
 
@@ -105,21 +106,35 @@ Pre-built app that you can embed your own app! Use it to allow your users to aut
    <img width="50%" alt="connect widget" src="https://i.ibb.co/mNgMwyd/Screenshot-2022-12-20-at-3-51-47-PM.png">
 </div>
 
-- Dir: `/connect-widget`
+- Dir: [`/connect-widget`](/connect-widget)
 - URL: [https://connect.metriport.com/](https://connect.metriport.com/?token=demo)
 
 ### **Infrastructure as Code**
 
 We use AWS CDK as IaC.
 
-- Dir: `/infra`
+- Dir: [`/infra`](/infra)
 
 ### **Docs**
 
 Our beautiful developer documentation, powered by [mintlify](https://mintlify.com/) ❤️.
 
-- Dir: `/docs`
+- Dir: [`/docs`](/docs)
 - URL: [https://docs.metriport.com/](https://docs.metriport.com/getting-started/introduction)
+
+### **npm Packages**
+
+Checkout our npm packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
+
+- [Metriport API](/pkgs/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
+- [CommonWell JWT Maker](/pkgs/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
+- [CommonWell SDK](/pkgs/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+
+### **Code Examples**
+
+Some example projects that serve as examples for how to integrate with Metriport on various platforms - such as iOS and Android.
+
+- Dir: [`/examples`](/examples)
 
 ---
 
@@ -265,6 +280,8 @@ $ npm install # only needs to be run once
 $ npm run start # available on port 3001 by default
 ```
 
+To debug the Connect Widget, you can attach a run a Chrome window by launching the `Run Chrome` configuration in VS Code.
+
 ---
 
 ## **Self-Hosted Deployments**
@@ -275,7 +292,7 @@ TODO
 
 ### **Environment Setup**
 
-1. You'll need to create and configure a deployment config file: `/infra/config/prod.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Optionally, you can setup config files for `staging` and `sandbox` deployments, based on your environment needs. Then, proceed with the deployment steps below.
+1. You'll need to create and configure a deployment config file: `/infra/config/production.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Optionally, you can setup config files for `staging` and `sandbox` deployments, based on your environment needs. Then, proceed with the deployment steps below.
 
 2. Configure the Connect Widget environment variables to the subdomain and domain you'll be hosting the API at in the config file: `connect-widget/app/.env.production`.
 
@@ -284,7 +301,7 @@ TODO
 1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
-$ ./deploy.sh -e "prod" -s "<config.secretsStackName>"
+$ ./deploy.sh -e "production" -s "<config.secretsStackName>"
 ```
 
 2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
@@ -292,7 +309,7 @@ $ ./deploy.sh -e "prod" -s "<config.secretsStackName>"
 3. Then, to deploy the back-end execute the following command:
 
 ```shell
-$ ./deploy.sh -e "prod" -s "<config.stackName>"
+$ ./deploy.sh -e "production" -s "<config.stackName>"
 ```
 
 After deployment, the API will be available at the configured subdomain + domain.
@@ -300,7 +317,7 @@ After deployment, the API will be available at the configured subdomain + domain
 4. Finally, to self-host the Connect widget, run the following:
 
 ```shell
-$ ./deploy.sh -e "prod" -s "<config.connectWidget.stackName>"
+$ ./deploy.sh -e "production" -s "<config.connectWidget.stackName>"
 ```
 
 Note: if you need help with the `deploy.sh` script at any time, you can run:
@@ -313,4 +330,4 @@ $ ./deploy.sh -h
 
 Distributed under the AGPLv3 License. See `LICENSE` for more information.
 
-Copyright © Metriport 2022
+Copyright © Metriport 2022-present

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+<!--  Add local IP to test locally  -->
+<!--    <domain-config cleartextTrafficPermitted="true">-->
+<!--        <domain includeSubdomains="true">localhost</domain>-->
+<!--        <domain includeSubdomains="true">10.0.2.2</domain>-->
+<!--        <domain includeSubdomains="true">192.168.0.138</domain>-->
+<!--    </domain-config>-->
+</network-security-config>

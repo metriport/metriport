@@ -13,11 +13,14 @@ const providers: DefaultProvider[] = [
 const providersLocalStorageKey = "providers";
 
 
-export const getProviders = (searchProviders: string | null): DefaultProvider[] => {
+export const getProviders = (searchProviders: string | null, isDemo: boolean): DefaultProvider[] => {
   const validProviders = getValidProviders(searchProviders);
 
   if (validProviders) {
-    localStorage.setItem(providersLocalStorageKey, JSON.stringify(validProviders));
+    if (!isDemo) {
+      localStorage.setItem(providersLocalStorageKey, JSON.stringify(validProviders));
+    }
+
     return validProviders;
   }
 

@@ -1,9 +1,9 @@
 import { useState } from "react";
-
-import { api } from "../../../shared/api";
-import { isProdEnv } from "../../../shared/util";
-import Provider from "./provider";
+import { getApi } from "../../../shared/api";
+import { sleep } from "../../../shared/util";
 import { DefaultProvider } from "./connect-providers";
+import ErrorDialog, { DEFAULT_ERROR_MESSAGE } from "./error-dialog";
+import Provider from "./provider";
 
 type ProvidersProps = {
   providers: DefaultProvider[];
@@ -12,11 +12,7 @@ type ProvidersProps = {
 
 const Providers = ({ providers, connectedProviders }: ProvidersProps) => {
   const [isLoading, setIsLoading] = useState<{ [id: string]: boolean }>({});
-
-  const getRedirectURLPath = (): string => {
-    const urlBase = "/connect/redirect";
-    return isProdEnv() ? `/token${urlBase}` : urlBase;
-  };
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const redirectToProvider = async (provider: string) => {
     setIsLoading({
@@ -25,13 +21,25 @@ const Providers = ({ providers, connectedProviders }: ProvidersProps) => {
     });
 
     try {
-      const resp = await api.get(getRedirectURLPath(), {
+      const resp = await getApi().get("/connect/redirect", {
         params: { provider },
       });
       window.location.href = resp.data;
-    } catch (error) {
-      console.error(error);
+    } catch (err: any) {
+      if (err.message.includes("403")) {
+        setErrorMessage(`Token expired, restart the connect session.`);
+      } else {
+        setErrorMessage(DEFAULT_ERROR_MESSAGE);
+      }
+      // TODO #135 send err to Sentry
+      console.log(err.message);
     }
+    sleep(2_000).then(() => {
+      setIsLoading({
+        ...isLoading,
+        [provider]: false,
+      });
+    });
   };
 
   return (
@@ -49,6 +57,13 @@ const Providers = ({ providers, connectedProviders }: ProvidersProps) => {
           />
         );
       })}
+      {errorMessage && (
+        <ErrorDialog
+          show
+          message={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
+      )}
     </>
   );
 };
