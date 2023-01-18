@@ -2,6 +2,7 @@ import { Body } from "@metriport/api";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthItem, hasBody } from "../../mappings/apple";
+import { PROVIDER_APPLE } from "../../shared/constants";
 
 export function mapDataToBody(data: AppleHealth) {
   const body: Body[] = []
@@ -20,7 +21,7 @@ export function mapDataToBody(data: AppleHealth) {
     body.push({
       metadata: {
         date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-        source: 'apple',
+        source: PROVIDER_APPLE,
       },
       [key]: appleItem.value
     })

@@ -2,6 +2,7 @@ import { Nutrition } from "@metriport/api";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthItem, hasNutrition } from "../../mappings/apple";
+import { PROVIDER_APPLE } from "../../shared/constants";
 
 export function mapDataToNutrition(data: AppleHealth) {
   const nutrition: Nutrition[] = []
@@ -26,7 +27,7 @@ export function mapDataToNutrition(data: AppleHealth) {
     nutrition.push({
       metadata: {
         date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-        source: 'apple',
+        source: PROVIDER_APPLE,
       },
       summary: {
         macros: {

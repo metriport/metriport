@@ -2,6 +2,7 @@ import { Biometrics } from "@metriport/api";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthItem, hasBiometrics } from "../../mappings/apple";
+import { PROVIDER_APPLE } from "../../shared/constants";
 
 enum BiometricsSource {
   blood_glucose = "blood_glucose",
@@ -32,7 +33,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
     biometrics.push({
       metadata: {
         date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-        source: 'apple',
+        source: PROVIDER_APPLE,
       },
       [sourceKey]: {
         [key]: appleItem.value
@@ -60,7 +61,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
     biometrics.push({
       metadata: {
         date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-        source: 'apple',
+        source: PROVIDER_APPLE,
       },
       hrv: {
         sdnn: {
@@ -90,7 +91,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
     biometrics.push({
       metadata: {
         date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-        source: 'apple',
+        source: PROVIDER_APPLE,
       },
       temperature: {
         core: {

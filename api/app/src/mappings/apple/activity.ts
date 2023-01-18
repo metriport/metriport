@@ -2,6 +2,7 @@ import { Activity } from "@metriport/api";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthItem, hasActivity } from "../../mappings/apple";
+import { PROVIDER_APPLE } from "../../shared/constants";
 
 export function mapDataToActivity(data: AppleHealth) {
   const activity: Activity[] = []
@@ -27,7 +28,7 @@ export function mapDataToActivity(data: AppleHealth) {
       activity.push({
         metadata: {
           date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-          source: 'apple',
+          source: PROVIDER_APPLE,
         },
         summary: {
           energy_expenditure: {
@@ -57,7 +58,7 @@ export function mapDataToActivity(data: AppleHealth) {
       activity.push({
         metadata: {
           date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-          source: 'apple',
+          source: PROVIDER_APPLE,
         },
         summary: {
           energy_expenditure: {
@@ -71,7 +72,6 @@ export function mapDataToActivity(data: AppleHealth) {
       const dateIndex = findDateIndex(activity, appleItem);
 
       if (dateIndex >= 0) {
-        // activity[dateIndex].summary!.movement?.steps_count = appleItem.value
         activity[dateIndex] = {
           ...activity[dateIndex],
           summary: {
@@ -88,7 +88,7 @@ export function mapDataToActivity(data: AppleHealth) {
       activity.push({
         metadata: {
           date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-          source: 'apple',
+          source: PROVIDER_APPLE,
         },
         summary: {
           movement: {
@@ -119,7 +119,7 @@ export function mapDataToActivity(data: AppleHealth) {
       activity.push({
         metadata: {
           date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-          source: 'apple',
+          source: PROVIDER_APPLE,
         },
         summary: {
           movement: {
