@@ -11,7 +11,7 @@ struct ThirtyDaySamples: Codable {
 
 class MyDailyData: ObservableObject {
     var dailyData: [Sample] = []
-    
+
     public func addDay(date: Date, value: Int) {
         let day = Sample(date: date, value: value)
         self.dailyData.append(day)
@@ -28,18 +28,18 @@ public class MetriportClient {
     let metriportApi = MetriportApi()
     private let healthKitTypes = HealthKitTypes()
     private var thirtyDaySamples: [ String: [Sample] ] = [:]
-    
+
     init (healthStore: HKHealthStore) {
         self.healthStore = healthStore
     }
-    
+
     public func checkBackgroundUpdates(metriportUserId: String, sampleTypes: [HKSampleType]) {
         enableBackgroundDelivery(for: sampleTypes)
         fetchDataForAllTypes(metriportUserId: metriportUserId)
 //        sleepTime()
 //        workouts()
     }
-    
+
     // TODO: ALL IT GIVES ME IS IN BED RIGHT NOW (REM, DEEP AND LIGHT ARE A PART OF IOS 16 AND BEYOND)
     // WOULD NEED TO IMPLEMENT VERSION CHECKS (I KNOW ITS POSSIBLE BECAUSE VITAL DOES IT)
 //    func sleepTime() {
@@ -72,7 +72,7 @@ public class MetriportClient {
 //            healthStore.execute(query)
 //        }
 //    }
-    
+
     // TODO: AGGREGATE WORKOUT DATA
     // ITS A QUERY WITHIN A QUERY IF I WANT TO BE ABLE TO ACCESS HEART RATE, RESPITORY RATE ETC. DURING WORKOUT
 //    func workouts() {
@@ -111,7 +111,7 @@ public class MetriportClient {
 //
 //        HKHealthStore().execute(query)
 //    }
-    
+
     // Enable all specified data types to send data in the background
     private func enableBackgroundDelivery(for sampleTypes: [HKSampleType]) {
       for sampleType in sampleTypes {
@@ -123,12 +123,12 @@ public class MetriportClient {
         }
       }
     }
-    
+
     private func fetchDataForAllTypes(metriportUserId: String) {
         // There are 2 types of data aggregations
         let cumalativeTypes = self.healthKitTypes.cumalativeTypes
         let discreteTypes = self.healthKitTypes.discreteTypes
-        
+
         // This allows us to await until all the queries for the last 30 days are done
         // So that in group.notifiy we make a request
         let group = DispatchGroup()
@@ -138,37 +138,37 @@ public class MetriportClient {
             fetchLast30Days(type: sampleType, queryOption: .cumulativeSum, group: group)
             fetchHourly(type: sampleType, queryOption: .cumulativeSum, metriportUserId: metriportUserId)
         }
-        
+
         for sampleType in discreteTypes {
             group.enter()
             fetchLast30Days(type: sampleType, queryOption: .discreteAverage, group: group)
             fetchHourly(type: sampleType, queryOption: .discreteAverage, metriportUserId: metriportUserId)
         }
-        
+
         group.notify(queue: .main) {
             if self.thirtyDaySamples.count != 0 {
                 self.metriportApi.sendData(metriportUserId: metriportUserId, samples: self.thirtyDaySamples)
             }
         }
     }
-    
+
     // Retrieve daily values for the last 30 days for all types
     private func fetchLast30Days(type: HKQuantityType, queryOption: HKStatisticsOptions, group: DispatchGroup) {
-        
+
         // Check local storage to see if we have fetched 30 days already.
-        // If we have dont detch again
-//        if UserDefaults.standard.object(forKey: "date \(type)") != nil {
-//            return
-//        }
-        
+      //   If we have dont detch again
+       if UserDefaults.standard.object(forKey: "date \(type)") != nil {
+           return
+       }
+
         // Aggregate data for a day
         let interval = DateComponents(day: 1)
-        
+
         let query = createStatisticsQuery(interval: interval, quantityType: type, options: queryOption)
-        
+
         query.initialResultsHandler = {
             query, results, error in
-            
+
             // Set time for a month ago (last 30 days)
             let calendar = Calendar.current
             let endDate = Date()
@@ -176,10 +176,10 @@ public class MetriportClient {
             guard let startDate = calendar.date(byAdding: oneMonthAgo, to: endDate) else {
                 fatalError("*** Unable to calculate the start date ***")
             }
-            
+
             // Each type has its own unit of measurement
             let unit = self.healthKitTypes.getUnit(quantityType: type)
-                        
+
             guard let data = self.handleStatistics(results: results,
                                                    unit: unit,
                                                    startDate: startDate,
@@ -188,20 +188,20 @@ public class MetriportClient {
                 print("error with handleStatistics \(type)")
                 return
             }
-            
+
             // Get the last date and set it in local storage
             // This will be used as the starting point for hourly queries
             let lastDate = data.last?.date ?? Date()
-            
+
             self.setLocalKeyValue(key: "date \(type)", val: lastDate)
-            
+
             self.thirtyDaySamples["\(type)"] = data
             group.leave()
         }
-    
+
         healthStore.execute(query)
     }
-    
+
     private func fetchHourly(type: HKQuantityType, queryOption: HKStatisticsOptions, metriportUserId: String) {
 
         // Aggregate data for an hour
@@ -234,7 +234,7 @@ public class MetriportClient {
             guard let endDate = calendar.date(byAdding: tomorrow, to: startDate) else {
                 fatalError("*** Unable to calculate the start date ***")
             }
-            
+
             // Each type has its own unit of measurement
             let unit = self.healthKitTypes.getUnit(quantityType: type)
 
@@ -246,13 +246,13 @@ public class MetriportClient {
                 print("error with handleStatistics \(type)")
                 return
             }
-            
+
             self.metriportApi.sendData(metriportUserId: metriportUserId, samples: ["\(type)" : data])
         }
 
         healthStore.execute(query)
     }
-    
+
     // This sets up the query to gather statitics
     private func createStatisticsQuery(interval: DateComponents, quantityType: Optional<HKQuantityType>, options: HKStatisticsOptions) -> HKStatisticsCollectionQuery {
         let calendar = Calendar.current
@@ -271,7 +271,7 @@ public class MetriportClient {
                                                  direction: .backward) else {
             fatalError("*** unable to find the previous Monday. ***")
         }
-        
+
         guard let statsQuantityType = quantityType else {
             fatalError("*** Unable to create a step count type ***")
         }
@@ -282,10 +282,10 @@ public class MetriportClient {
                                                 options: options,
                                                 anchorDate: anchorDate,
                                                 intervalComponents: interval)
-        
+
         return query
     }
-    
+
     // This handles the results of the query
     private func handleStatistics(results: Optional<HKStatisticsCollection>,
                                   unit: HKUnit,
@@ -297,16 +297,16 @@ public class MetriportClient {
             print("error with stats collection")
             return nil
         }
-        
+
         let dailyData = self.getCollectionsData(statsCollection: statsCollection,
                                             startDate: startDate,
                                             endDate: endDate,
                                             unit: unit,
                                             queryOption: queryOption)
-        
+
         return dailyData
     }
-    
+
     // Grabs the results and picks out the data for specified days and then formats it
     private func getCollectionsData(statsCollection: HKStatisticsCollection,
                                     startDate: Date,
@@ -314,31 +314,31 @@ public class MetriportClient {
                                     unit: HKUnit,
                                     queryOption: HKStatisticsOptions
     ) -> [Sample] {
-        
+
         let dailyData = MyDailyData()
-        
+
         statsCollection.enumerateStatistics(from: startDate, to: endDate)
         { (statistics, stop) in
             if let quantity = self.getSumOrAvgQuantity(statistics: statistics, queryOption: queryOption) {
                 let date = statistics.startDate
                 let value = quantity.doubleValue(for: unit)
-                                    
+
                 // Extract each week's data.
                 dailyData.addDay(date: date, value: Int(value))
             }
         }
-                
+
         return dailyData.dailyData
     }
-    
+
     private func getSumOrAvgQuantity(statistics: HKStatistics, queryOption: HKStatisticsOptions) -> Optional<HKQuantity> {
         if queryOption == .cumulativeSum {
             return statistics.sumQuantity()
         }
-        
+
         return statistics.averageQuantity()
     }
-    
+
     private func setLocalKeyValue(key: String, val: Date) {
         do {
             let data : Data = try NSKeyedArchiver.archivedData(withRootObject: val as Any, requiringSecureCoding: false)
