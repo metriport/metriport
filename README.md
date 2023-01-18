@@ -122,13 +122,23 @@ Our beautiful developer documentation, powered by [mintlify](https://mintlify.co
 - Dir: [`/docs`](/docs)
 - URL: [https://docs.metriport.com/](https://docs.metriport.com/getting-started/introduction)
 
-### **npm Packages**
+### **Packages**
 
-Checkout our npm packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
+Checkout our packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
 
-- [Metriport API](/pkgs/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
-- [CommonWell JWT Maker](/pkgs/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
-- [CommonWell SDK](/pkgs/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+## **npm**
+
+Our npm packages are available in [`/pkgs/npm`](/pkgs/npm):
+
+- [Metriport API](/pkgs/npm/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
+- [CommonWell JWT Maker](/pkgs/npm/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
+- [CommonWell SDK](/pkgs/npm/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+
+## **iOS**
+
+Our iOS packages are available in [`/pkgs/ios`](/pkgs/ios):
+
+- [Metriport iOS](/pkgs/ios/Metriport-IOS): contains the Metriport Webview widget, and a wrapper to access Healthkit via webhooks.
 
 ### **Code Examples**
 
