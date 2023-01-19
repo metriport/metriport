@@ -73,6 +73,7 @@ struct HealthKitTypes {
         HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!,
         HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
         HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
+        HKSampleType.quantityType(forIdentifier: .vo2Max)!
     ]
     
     init() {

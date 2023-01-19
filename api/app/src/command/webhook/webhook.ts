@@ -11,7 +11,7 @@ import { DataType, TypedData, UserData } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { Util } from "../../shared/util";
-import { getConnectedUsers, getConnectedUserByIdOrFail } from "../connected-user/get-connected-user";
+import { getConnectedUsers, getConnectedUserOrFail } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
@@ -146,11 +146,12 @@ export const processData = async <T extends MetriportData>(
 
 export const processAppleData = async (
   data: AppleWebhookPayload,
-  metriportUserId: string
+  metriportUserId: string,
+  cxId: string
 ): Promise<void> => {
   try {
 
-    const connectedUser = await getConnectedUserByIdOrFail({ id: metriportUserId })
+    const connectedUser = await getConnectedUserOrFail({ id: metriportUserId, cxId })
 
     const settings = await getSettingsOrFail({ id: connectedUser!.cxId });
     await processOneCustomer(connectedUser!.cxId, settings, [{ users: [{ userId: metriportUserId, ...data }] }]);
@@ -159,7 +160,7 @@ export const processAppleData = async (
       [connectedUser!.cxUserId]
     );
   } catch (err) {
-    log(`Error on processData: `, err);
+    log(`Error on processAppleData: `, err);
   }
 };
 

@@ -126,7 +126,7 @@ Our beautiful developer documentation, powered by [mintlify](https://mintlify.co
 
 Checkout our packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
 
-## **npm**
+#### **npm**
 
 Our npm packages are available in [`/pkgs/npm`](/pkgs/npm):
 
@@ -134,11 +134,11 @@ Our npm packages are available in [`/pkgs/npm`](/pkgs/npm):
 - [CommonWell JWT Maker](/pkgs/npm/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
 - [CommonWell SDK](/pkgs/npm/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
 
-## **iOS**
+#### **iOS**
 
 Our iOS packages are available in [`/pkgs/ios`](/pkgs/ios):
 
-- [Metriport iOS](/pkgs/ios/Metriport-IOS): contains the Metriport Webview widget, and a wrapper to access Healthkit via webhooks.
+- [Metriport iOS](/pkgs/ios/Metriport-IOS): SDK to integrate with the Metriport Connect Widget and Apple Health on iOS.
 
 ### **Code Examples**
 

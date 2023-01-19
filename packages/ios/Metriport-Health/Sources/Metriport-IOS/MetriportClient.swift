@@ -4,11 +4,6 @@ import Combine
 import CoreData
 import WebKit
 
-struct ThirtyDaySamples: Codable {
-    var type: String
-    var samples: [Sample]
-}
-
 class MyDailyData: ObservableObject {
     var dailyData: [Sample] = []
 
@@ -25,11 +20,12 @@ struct Sample: Codable {
 
 public class MetriportClient {
     let healthStore: HKHealthStore
-    let metriportApi = MetriportApi()
+    let metriportApi: MetriportApi
     private let healthKitTypes = HealthKitTypes()
     private var thirtyDaySamples: [ String: [Sample] ] = [:]
 
-    init (healthStore: HKHealthStore) {
+    init (healthStore: HKHealthStore, apiUrl: String, clientApiKey: String) {
+        self.metriportApi = MetriportApi(apiUrl: apiUrl, clientApiKey: clientApiKey)
         self.healthStore = healthStore
     }
 
@@ -41,7 +37,6 @@ public class MetriportClient {
     }
 
     // TODO: ALL IT GIVES ME IS IN BED RIGHT NOW (REM, DEEP AND LIGHT ARE A PART OF IOS 16 AND BEYOND)
-    // WOULD NEED TO IMPLEMENT VERSION CHECKS (I KNOW ITS POSSIBLE BECAUSE VITAL DOES IT)
 //    func sleepTime() {
 //        print("started")
 //        let healthStore = HKHealthStore()
@@ -132,16 +127,27 @@ public class MetriportClient {
         // This allows us to await until all the queries for the last 30 days are done
         // So that in group.notifiy we make a request
         let group = DispatchGroup()
-
+        
+        // Aggregate data for a day
+        let interval = DateComponents(day: 1)
+        
         for sampleType in cumalativeTypes {
             group.enter()
-            fetchLast30Days(type: sampleType, queryOption: .cumulativeSum, group: group)
+
+           if UserDefaults.standard.object(forKey: "date \(sampleType)") == nil {
+               fetchHistoricalData(type: sampleType, queryOption: .cumulativeSum, interval: interval, group: group)
+           }
+            
             fetchHourly(type: sampleType, queryOption: .cumulativeSum, metriportUserId: metriportUserId)
         }
 
         for sampleType in discreteTypes {
             group.enter()
-            fetchLast30Days(type: sampleType, queryOption: .discreteAverage, group: group)
+            
+            if UserDefaults.standard.object(forKey: "date \(sampleType)") == nil {
+                fetchHistoricalData(type: sampleType, queryOption: .discreteAverage, interval: interval, group: group)
+            }
+            
             fetchHourly(type: sampleType, queryOption: .discreteAverage, metriportUserId: metriportUserId)
         }
 
@@ -153,16 +159,7 @@ public class MetriportClient {
     }
 
     // Retrieve daily values for the last 30 days for all types
-    private func fetchLast30Days(type: HKQuantityType, queryOption: HKStatisticsOptions, group: DispatchGroup) {
-
-        // Check local storage to see if we have fetched 30 days already.
-      //   If we have dont detch again
-       if UserDefaults.standard.object(forKey: "date \(type)") != nil {
-           return
-       }
-
-        // Aggregate data for a day
-        let interval = DateComponents(day: 1)
+    private func fetchHistoricalData(type: HKQuantityType, queryOption: HKStatisticsOptions, interval: DateComponents, group: DispatchGroup) {
 
         let query = createStatisticsQuery(interval: interval, quantityType: type, options: queryOption)
 
@@ -194,8 +191,11 @@ public class MetriportClient {
             let lastDate = data.last?.date ?? Date()
 
             self.setLocalKeyValue(key: "date \(type)", val: lastDate)
+            
+            if data.count != 0 {
+                self.thirtyDaySamples["\(type)"] = data
+            }
 
-            self.thirtyDaySamples["\(type)"] = data
             group.leave()
         }
 
@@ -257,6 +257,7 @@ public class MetriportClient {
     private func createStatisticsQuery(interval: DateComponents, quantityType: Optional<HKQuantityType>, options: HKStatisticsOptions) -> HKStatisticsCollectionQuery {
         let calendar = Calendar.current
 
+
         let components = DateComponents(calendar: calendar,
                                         timeZone: calendar.timeZone,
                                         hour: 12,
@@ -264,6 +265,8 @@ public class MetriportClient {
                                         second: 0,
                                         weekday: 1)
 
+        // This creates the anchor point to fetch data in intervals from
+        // We are setting it to monnday at midnight above
         guard let anchorDate = calendar.nextDate(after: Date(),
                                                  matching: components,
                                                  matchingPolicy: .nextTime,
@@ -276,7 +279,9 @@ public class MetriportClient {
             fatalError("*** Unable to create a step count type ***")
         }
 
-        // Create the query.
+        // Create the query. It gathers the quantity type we would like to receive
+        // It uses the anchor point to set the initial date and time
+        // Then with the interval we set we will aggregate data within the timeframe
         let query = HKStatisticsCollectionQuery(quantityType: statsQuantityType,
                                                 quantitySamplePredicate: nil,
                                                 options: options,
@@ -323,7 +328,7 @@ public class MetriportClient {
                 let date = statistics.startDate
                 let value = quantity.doubleValue(for: unit)
 
-                // Extract each week's data.
+                // Extract each day's data.
                 dailyData.addDay(date: date, value: Int(value))
             }
         }

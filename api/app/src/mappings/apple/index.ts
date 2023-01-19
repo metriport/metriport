@@ -5,6 +5,7 @@ import { mapDataToActivity } from "./activity";
 import { mapDataToBody } from "./body";
 import { mapDataToBiometrics } from "./biometrics";
 import { mapDataToNutrition } from "./nutrition";
+import { PROVIDER_APPLE } from "../../shared/constants";
 
 export type AppleWebhookPayload = {
   activity?: Activity[],
@@ -33,6 +34,13 @@ export function mapData(data: AppleHealth): AppleWebhookPayload {
   if (nutritionData.length) payload.nutrition = nutritionData
 
   return payload
+}
+
+export const createMetadata = (date: string) => {
+  return {
+    date,
+    source: PROVIDER_APPLE,
+  }
 }
 
 export const hasActivity = (data: AppleHealth): Boolean => {
@@ -95,7 +103,10 @@ export const hasBiometrics = (data: AppleHealth): Boolean => {
 };
 
 
-export const appleItem = z.object({ date: z.string(), value: z.number() })
+export const appleItem = z.object({
+  date: z.string(),
+  value: z.number()
+})
 export type AppleHealthItem = z.infer<typeof appleItem>;
 
 export const appleSchema = z.object({
@@ -144,7 +155,7 @@ export const appleSchema = z.object({
   HKQuantityTypeIdentifierDietaryWater: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierDietaryZinc: z.array(appleItem).optional(),
 
-  // VITALS
+  // BIOMETRICS
   HKQuantityTypeIdentifierHeartRate: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierRestingHeartRate: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierHeartRateVariabilitySDNN: z.array(appleItem).optional(),

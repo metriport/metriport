@@ -1,19 +1,30 @@
-import { Body as MetriportBody } from "@metriport/api";
+import { Body } from "@metriport/api";
+import convert from "convert-units";
 
 import { PROVIDER_OURA } from "../../shared/constants";
-import { Util } from "../../shared/util";
 import { OuraPersonalInfo } from "./user";
 
 export const mapToBody = (
   ouraPersonalInfo: OuraPersonalInfo,
   date: string
-): MetriportBody => {
-  return {
-    metadata: {
-      date: date,
-      source: PROVIDER_OURA,
-    },
-    ...Util.addDataToObject("height_cm", ouraPersonalInfo.height),
-    ...Util.addDataToObject("weight_kg", ouraPersonalInfo.weight),
+): Body => {
+
+  const metadata = {
+    date: date,
+    source: PROVIDER_OURA,
   };
+
+  let body: Body = {
+    metadata: metadata,
+  };
+
+  if (ouraPersonalInfo.height) {
+    body.height_cm = convert(ouraPersonalInfo.height).from("m").to("cm")
+  }
+
+  if (ouraPersonalInfo.weight) {
+    body.weight_kg = ouraPersonalInfo.weight;
+  }
+
+  return body;
 };

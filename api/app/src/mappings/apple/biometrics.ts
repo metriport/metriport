@@ -1,8 +1,8 @@
 import { Biometrics } from "@metriport/api";
 import dayjs from "dayjs";
 
-import { AppleHealth, AppleHealthItem, hasBiometrics } from "../../mappings/apple";
-import { PROVIDER_APPLE } from "../../shared/constants";
+import { AppleHealth, AppleHealthItem, createMetadata } from "../../mappings/apple";
+import { ISO_DATE } from "../../shared/date";
 
 enum BiometricsSource {
   blood_glucose = "blood_glucose",
@@ -13,28 +13,34 @@ enum BiometricsSource {
   temperature = "temperature",
 }
 
+enum BloodPressureType {
+  diastolic_mm_Hg = "diastolic_mm_Hg",
+  systolic_mm_Hg = "systolic_mm_Hg"
+}
+
 export function mapDataToBiometrics(data: AppleHealth) {
   const biometrics: Biometrics[] = []
+  const dateToIndex: { [key: string]: number } = {}
 
   const addToBiometrics = (appleItem: AppleHealthItem, sourceKey: BiometricsSource, key: string) => {
-    const dateIndex = findDateIndex(biometrics, appleItem);
+    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const index = dateToIndex[date];
 
-    if (dateIndex >= 0) {
-      biometrics[dateIndex] = {
-        ...biometrics[dateIndex],
+    if (index || index === 0) {
+      biometrics[index] = {
+        ...biometrics[index],
         [sourceKey]: {
-          ...biometrics[dateIndex][sourceKey],
+          ...biometrics[index][sourceKey],
           [key]: appleItem.value
         }
       }
       return;
     }
 
+    dateToIndex[date] = biometrics.length;
+
     biometrics.push({
-      metadata: {
-        date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-        source: PROVIDER_APPLE,
-      },
+      metadata: createMetadata(date),
       [sourceKey]: {
         [key]: appleItem.value
       }
@@ -42,15 +48,16 @@ export function mapDataToBiometrics(data: AppleHealth) {
   }
 
   const addToHRV = (appleItem: AppleHealthItem) => {
-    const dateIndex = findDateIndex(biometrics, appleItem);
+    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const index = dateToIndex[date];
 
-    if (dateIndex >= 0) {
-      biometrics[dateIndex] = {
-        ...biometrics[dateIndex],
+    if (index || index === 0) {
+      biometrics[index] = {
+        ...biometrics[index],
         hrv: {
-          ...biometrics[dateIndex].hrv,
+          ...biometrics[index].hrv,
           sdnn: {
-            ...biometrics[dateIndex].hrv?.rmssd,
+            ...biometrics[index].hrv?.rmssd,
             avg_millis: appleItem.value
           }
         }
@@ -58,11 +65,10 @@ export function mapDataToBiometrics(data: AppleHealth) {
       return;
     }
 
+    dateToIndex[date] = biometrics.length;
+
     biometrics.push({
-      metadata: {
-        date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-        source: PROVIDER_APPLE,
-      },
+      metadata: createMetadata(date),
       hrv: {
         sdnn: {
           avg_millis: appleItem.value
@@ -72,15 +78,16 @@ export function mapDataToBiometrics(data: AppleHealth) {
   }
 
   const addToTemp = (appleItem: AppleHealthItem) => {
-    const dateIndex = findDateIndex(biometrics, appleItem);
+    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const index = dateToIndex[date];
 
-    if (dateIndex >= 0) {
-      biometrics[dateIndex] = {
-        ...biometrics[dateIndex],
+    if (index || index === 0) {
+      biometrics[index] = {
+        ...biometrics[index],
         temperature: {
-          ...biometrics[dateIndex].temperature,
+          ...biometrics[index].temperature,
           core: {
-            ...biometrics[dateIndex].temperature?.core,
+            ...biometrics[index].temperature?.core,
             avg_celcius: appleItem.value
           }
         }
@@ -88,11 +95,10 @@ export function mapDataToBiometrics(data: AppleHealth) {
       return;
     }
 
+    dateToIndex[date] = biometrics.length;
+
     biometrics.push({
-      metadata: {
-        date: dayjs(appleItem.date).format("YYYY-MM-DD"),
-        source: PROVIDER_APPLE,
-      },
+      metadata: createMetadata(date),
       temperature: {
         core: {
           avg_celcius: appleItem.value
@@ -101,17 +107,59 @@ export function mapDataToBiometrics(data: AppleHealth) {
     })
   }
 
-  if (hasBiometrics(data)) {
-    data.HKQuantityTypeIdentifierHeartRate?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.heart_rate, 'avg_bpm'))
-    data.HKQuantityTypeIdentifierRestingHeartRate?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.heart_rate, 'resting_bpm'))
-    data.HKQuantityTypeIdentifierHeartRateVariabilitySDNN?.forEach((appleItem) => addToHRV(appleItem))
-    data.HKQuantityTypeIdentifierBodyTemperature?.forEach((appleItem) => addToTemp(appleItem))
-    data.HKQuantityTypeIdentifierRespiratoryRate?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.respiration, 'avg_breaths_per_minute'))
+  const addToBloodPressure = (appleItem: AppleHealthItem, bpType: BloodPressureType) => {
+    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const index = dateToIndex[date];
+
+    const createSamples = () => {
+      if (biometrics[index] && biometrics[index].blood_pressure && biometrics[index].blood_pressure![bpType]) {
+        return [
+          ...biometrics[index].blood_pressure![bpType]!.samples!,
+          {
+            time: appleItem.date,
+            value: appleItem.value
+          }
+        ]
+      }
+
+      return []
+    }
+
+    if (index || index === 0) {
+      biometrics[index] = {
+        ...biometrics[index],
+        blood_pressure: {
+          ...biometrics[index].blood_pressure,
+          [bpType]: {
+            samples: createSamples()
+          }
+        }
+      }
+      return;
+    }
+
+    dateToIndex[date] = biometrics.length;
+
+    biometrics.push({
+      metadata: createMetadata(date),
+      blood_pressure: {
+        [bpType]: {
+          samples: [{
+            time: appleItem.date,
+            value: appleItem.value
+          }]
+        }
+      }
+    })
   }
 
-  return biometrics
-}
+  data.HKQuantityTypeIdentifierHeartRate?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.heart_rate, 'avg_bpm'))
+  data.HKQuantityTypeIdentifierRestingHeartRate?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.heart_rate, 'resting_bpm'))
+  data.HKQuantityTypeIdentifierHeartRateVariabilitySDNN?.forEach((appleItem) => addToHRV(appleItem))
+  data.HKQuantityTypeIdentifierBodyTemperature?.forEach((appleItem) => addToTemp(appleItem))
+  data.HKQuantityTypeIdentifierRespiratoryRate?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.respiration, 'avg_breaths_per_minute'))
+  data.HKQuantityTypeIdentifierBloodPressureDiastolic?.forEach((appleItem) => addToBloodPressure(appleItem, BloodPressureType.diastolic_mm_Hg))
+  data.HKQuantityTypeIdentifierBloodPressureSystolic?.forEach((appleItem) => addToBloodPressure(appleItem, BloodPressureType.systolic_mm_Hg))
 
-const findDateIndex = (arr: Biometrics[], appleItem: AppleHealthItem) => {
-  return arr.findIndex(biometrics => dayjs(biometrics.metadata.date).format("YYYY-MM-DD") === dayjs(appleItem.date).format("YYYY-MM-DD"))
+  return biometrics
 }
