@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Metriport_IOS
+import MetriportSDK
 import Foundation
 
 struct WidgetView: View {
@@ -14,7 +14,7 @@ struct WidgetView: View {
     @ObservedObject var webviewController = WebviewController()
     
     // Initialize the Metriport healthkit package
-    var healthStore = MetriportHealthStoreManager(apiUrl: "http://192.168.0.139:8080", clientApiKey: "eXV6N0FISEVTMGJ3azhKTVg2bFZBOmY1NjUwYWE0LWRkZWQtNDIwZi05YjM2LWVlMmRiZmNjZTNlYQ");
+    var healthStore = MetriportHealthStoreManager(clientApiKey: "eXV6N0FISEVTMGJ3azhKTVg2bFZBOmY1NjUwYWE0LWRkZWQtNDIwZi05YjM2LWVlMmRiZmNjZTNlYQ");
     
     var body: some View {
         VStack {

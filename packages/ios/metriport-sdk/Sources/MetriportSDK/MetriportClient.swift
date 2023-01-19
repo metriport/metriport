@@ -24,8 +24,8 @@ public class MetriportClient {
     private let healthKitTypes = HealthKitTypes()
     private var thirtyDaySamples: [ String: [Sample] ] = [:]
 
-    init (healthStore: HKHealthStore, apiUrl: String, clientApiKey: String) {
-        self.metriportApi = MetriportApi(apiUrl: apiUrl, clientApiKey: clientApiKey)
+    init (healthStore: HKHealthStore, clientApiKey: String, apiUrl: String?) {
+        self.metriportApi = MetriportApi(clientApiKey: clientApiKey, apiUrl: apiUrl)
         self.healthStore = healthStore
     }
 
