@@ -1,10 +1,3 @@
-//
-//  Metriport_mobileApp.swift
-//  Metriport mobile
-//
-//  Created by Jorge orta on 1/2/23.
-//
-
 import SwiftUI
 import Foundation
 import WebKit

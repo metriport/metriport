@@ -1,0 +1,133 @@
+---
+title: "iOS"
+description: "Our iOS SDK allows you to receive Apple HealthKit data via webhooks"
+---
+
+## Initial Setup
+
+**Enable HealthKit:**
+
+First thing you need to do is enable HealthKit capabilities for your app.
+In Xcode, select the project, click on the `Signing & Capabilities` tab and add the HealthKit capability.
+Make sure to select `Background Delivery` under `Capabilities` to be able to
+receive data via webhooks.
+
+<img className="h-100" src="/images/healthkit-capability.png" />
+
+Also add the following key in your Info.plist:
+
+```swift
+<key>NSHealthShareUsageDescription</key>
+<string>Example: Share usage with all people</string>
+```
+
+**Install Package:**
+
+Our packages can be downloaded using SPM (Swift Package Manager).
+To add a package dependency to your Xcode project, select `File > Add Packages` and enter https://github.com/metriport/metriport-ios-sdk.
+
+<img className="h-100" src="/images/package-install.png" />
+
+## Usage
+
+To use our SDK go to the root of your project and add:
+
+```swift
+import MetriportSDK
+
+var healthStore = MetriportHealthStoreManager(clientApiKey: "CLIENT_API_KEY", apiUrl: "ENVIRONMENT_URL");
+```
+
+<Info>
+  ENVIRONMENT_URL is optional and defaults to https://api.metriport.com. For
+  sandbox mode add https://api.sandbox.metriport.com.
+</Info>
+
+The next step is to add inside of a view the `MetriportWidget` to be able to access all available providers.
+
+```swift
+var body: some View {
+    VStack {
+        Button {
+            webviewController.getToken()
+        } label: {
+            Text("Metriport Widget")
+        }
+        .sheet(isPresented: $webviewController.showWebView) {
+            MetriportWidget(url: "\(WIDGET_URL)/?token=\("TOKEN")", healthStore: healthStore)
+        }
+    }
+    .padding()
+}
+```
+
+<Info>Make sure to pass the healthStore to the widget</Info>
+
+## Receiving Data
+
+The way we receive and send data via webhooks is in 2 steps:
+
+**Step 1:** When the user first connects to Apple HealthKit we will make an initial query for all data within the last 30 days.
+This will be a daily average of all data types.
+
+**Step 2:** Once this data is queried we will then listen on an hourly basis for any updates to the Apple HealthKit.
+If there are changes then a query will be sent via webhook with just the data that's been added.
+
+These are the data types that we are requesting access too and receiving from Apple HealthKit:
+
+```swift
+// ACTIVITY
+HKObjectType.quantityType(forIdentifier: .stepCount)!,
+HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
+HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)!,
+HKObjectType.quantityType(forIdentifier: .flightsClimbed)!,
+
+// BIOMETRICS
+HKObjectType.quantityType(forIdentifier: .heartRate)!,
+HKObjectType.quantityType(forIdentifier: .restingHeartRate)!,
+HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
+HKObjectType.quantityType(forIdentifier: .bodyTemperature)!,
+HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!,
+HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
+HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
+HKSampleType.quantityType(forIdentifier: .vo2Max)!
+
+// BODY
+HKObjectType.quantityType(forIdentifier: .height)!,
+HKObjectType.quantityType(forIdentifier: .leanBodyMass)!,
+HKObjectType.quantityType(forIdentifier: .bodyMass)!,
+HKObjectType.quantityType(forIdentifier: .bodyFatPercentage)!,
+
+// NUTRITION
+HKObjectType.quantityType(forIdentifier: .dietaryCaffeine)!,
+HKObjectType.quantityType(forIdentifier: .dietaryCalcium)!,
+HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates)!,
+HKObjectType.quantityType(forIdentifier: .dietaryCholesterol)!,
+HKObjectType.quantityType(forIdentifier: .dietaryCopper)!,
+HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed)!,
+HKObjectType.quantityType(forIdentifier: .dietaryFatTotal)!,
+HKObjectType.quantityType(forIdentifier: .dietaryFiber)!,
+HKObjectType.quantityType(forIdentifier: .dietaryFolate)!,
+HKObjectType.quantityType(forIdentifier: .dietaryIodine)!,
+HKObjectType.quantityType(forIdentifier: .dietaryMagnesium)!,
+HKObjectType.quantityType(forIdentifier: .dietaryManganese)!,
+HKObjectType.quantityType(forIdentifier: .dietaryNiacin)!,
+HKObjectType.quantityType(forIdentifier: .dietaryPantothenicAcid)!,
+HKObjectType.quantityType(forIdentifier: .dietaryPhosphorus)!,
+HKObjectType.quantityType(forIdentifier: .dietaryPotassium)!,
+HKObjectType.quantityType(forIdentifier: .dietaryProtein)!,
+HKObjectType.quantityType(forIdentifier: .dietaryRiboflavin)!,
+HKObjectType.quantityType(forIdentifier: .dietarySelenium)!,
+HKObjectType.quantityType(forIdentifier: .dietarySodium)!,
+HKObjectType.quantityType(forIdentifier: .dietarySugar)!,
+HKObjectType.quantityType(forIdentifier: .dietaryThiamin)!,
+HKObjectType.quantityType(forIdentifier: .dietaryVitaminA)!,
+HKObjectType.quantityType(forIdentifier: .dietaryVitaminB6)!,
+HKObjectType.quantityType(forIdentifier: .dietaryVitaminB12)!,
+HKObjectType.quantityType(forIdentifier: .dietaryVitaminC)!,
+HKObjectType.quantityType(forIdentifier: .dietaryVitaminD)!,
+HKObjectType.quantityType(forIdentifier: .dietaryVitaminE)!,
+HKObjectType.quantityType(forIdentifier: .dietaryVitaminK)!,
+HKObjectType.quantityType(forIdentifier: .dietaryWater)!,
+HKObjectType.quantityType(forIdentifier: .dietaryZinc)!,
+```

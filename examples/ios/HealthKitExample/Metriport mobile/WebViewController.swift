@@ -1,10 +1,3 @@
-//
-//  getToken.swift
-//  Metriport mobile
-//
-//  Created by Jorge orta on 1/6/23.
-//
-
 import Foundation
 import SwiftUI
 
