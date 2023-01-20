@@ -122,13 +122,23 @@ Our beautiful developer documentation, powered by [mintlify](https://mintlify.co
 - Dir: [`/docs`](/docs)
 - URL: [https://docs.metriport.com/](https://docs.metriport.com/getting-started/introduction)
 
-### **npm Packages**
+### **Packages**
 
-Checkout our npm packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
+Checkout our packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
 
-- [Metriport API](/pkgs/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
-- [CommonWell JWT Maker](/pkgs/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
-- [CommonWell SDK](/pkgs/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+#### **npm**
+
+Our npm packages are available in [`/packages`](/packages):
+
+- [Metriport API](/packages/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
+- [CommonWell JWT Maker](/packages/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
+- [CommonWell SDK](/packages/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+
+#### **iOS**
+
+Our iOS packages are available in our [`iOS repo`](https://github.com/metriport/metriport-ios-sdk):
+
+- [Metriport iOS](https://github.com/metriport/metriport-ios-sdk): SDK to integrate with the Metriport Connect Widget and Apple Health on iOS.
 
 ### **Code Examples**
 

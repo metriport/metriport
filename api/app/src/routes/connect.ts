@@ -3,6 +3,7 @@ import Router from "express-promise-router";
 import status from "http-status";
 import z from "zod";
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
+import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { getUserToken } from "../command/cx-user/get-user-token";
 import BadRequestError from "../errors/bad-request";
 import UnauthorizedError from "../errors/unauthorized";
@@ -15,6 +16,7 @@ import {
 import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
 import { asyncHandler, getCxIdFromHeaders, getUserIdFromHeaders } from "./util";
+import { PROVIDER_APPLE } from "../shared/constants";
 
 const router = Router();
 
@@ -171,6 +173,50 @@ router.get("/user/providers", async (req: Request, res: Response) => {
   const providers = Object.keys(connectedUser.providerMap);
 
   return res.status(status.OK).send(providers);
+});
+
+/** ---------------------------------------------------------------------------------------
+ * GET /connect/user/apple
+ *
+ * Add apple to the provider map and return metriportUserId
+ *
+ * @param   {string}  req.header.cxId  Passed via headers from the /token auth lambda.
+ * @param   {string}  req.header.userId  Passed via headers from the /token auth lambda.
+ *
+ * @return  {string[]}  The user's connected providers
+ */
+router.get("/user/apple", async (req: Request, res: Response) => {
+  const token = req.header("api-token");
+  if (!token) throw new UnauthorizedError();
+
+  let cxId;
+  let userId;
+
+  if (!Config.isProdEnv()) {
+    const useToken = await getUserToken({ token });
+    cxId = useToken.cxId;
+    userId = useToken.userId;
+  } else {
+    cxId = getCxIdFromHeaders(req);
+    userId = getUserIdFromHeaders(req);
+  }
+
+  if (!cxId || !userId) {
+    throw new BadRequestError("Invalid headers");
+  }
+
+  const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+
+  await updateProviderData({
+    id: connectedUser.id,
+    cxId: connectedUser.cxId,
+    provider: PROVIDER_APPLE,
+    providerItem: {
+      token: 'true'
+    }
+  });
+
+  return res.status(status.OK).send(connectedUser.id);
 });
 
 export default router;
