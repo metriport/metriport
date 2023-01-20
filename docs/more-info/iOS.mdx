@@ -1,22 +1,20 @@
 ---
 title: "Apple Health"
-description: "Our iOS SDK allows you to receive Apple HealthKit data via webhooks."
+description: "Our iOS SDK allows you to receive Apple Health data via webhooks."
 ---
 
 ## Overview
 
-This is a guide to help you get started with iOS, specifically Apple HealthKit. First and foremost Apple HealthKit is a central repository for health and fitness data only available on iPhone and Apple Watch.
-Where Metriport comes in is we provide an SDK that allows you to be able to receive Apple HealthKit data in the background.
-When data gets added to Apple HealthKit by a user it will simply send that data to the Metriport api and from there it gets sent to your webhook url.
+This is a guide to help you get started with iOS, specifically Apple Health. First and foremost Apple Health is a central repository for health and fitness data only available on iPhone.
+Where Metriport comes in is we provide an SDK that allows you to be able to receive Apple Health data in the background.
+When data gets added to Apple Health by a user it will simply send that data to the Metriport api and from there it gets sent to your webhook URL.
 
 <Info>
-  Apple HealthKit is available for devices on iOS v13 or higher. This also
-  applies for when developing on a simulator.
+  Apple Health is available for devices on iOS v13 or higher. This also applies for when developing on a simulator.
 </Info>
 
 <Tip>
-  As a prerequisite we suggest looking at our [webhooks
-  docs](/more-info/webhooks) to understand how the flow works.
+  As a prerequisite we suggest looking at our [webhooks docs](/more-info/webhooks) to understand how the flow works.
 </Tip>
 
 ## Initial Setup
@@ -39,7 +37,7 @@ Also add the following key in your Info.plist:
 ### 2. Install Metriport iOS SDK Package
 
 Our packages can be downloaded using SPM (Swift Package Manager).
-To add a package dependency to your Xcode project, select `File > Add Packages` and enter
+To add a package dependency to your Xcode project, select `File > Add Packages` and enter our repo URL:
 
 ```
 https://github.com/metriport/metriport-ios-sdk.
@@ -86,13 +84,13 @@ var body: some View {
 
 The way we receive and send data via webhooks is in 2 steps:
 
-**Step 1:** When the user first connects to Apple HealthKit we will make an initial query for all data within the last 30 days.
+**Step 1:** When the user first connects to Apple Health we will make an initial query for all data within the last 30 days.
 This will be a daily average of all data types.
 
-**Step 2:** Once this data is queried we will then listen on an hourly basis for any updates to the Apple HealthKit.
+**Step 2:** Once this data is queried we will then listen on an hourly basis for any updates to the Apple Health.
 If there are changes then a query will be sent via webhook with just the data that's been added.
 
 <Info>
-  To understand the data you should expect to receive from Apple HealthKit
-  checkout our [data models](/more-info/models)
+  To understand the data you should expect to receive from Apple Health checkout
+  our [data models](/more-info/models)
 </Info>
