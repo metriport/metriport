@@ -128,17 +128,17 @@ Checkout our packages in [`/pkgs`](/pkgs) to help you turbocharge your developme
 
 #### **npm**
 
-Our npm packages are available in [`/pkgs/npm`](/pkgs/npm):
+Our npm packages are available in [`/packages`](/packages):
 
-- [Metriport API](/pkgs/npm/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
-- [CommonWell JWT Maker](/pkgs/npm/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
-- [CommonWell SDK](/pkgs/npm/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+- [Metriport API](/packages/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
+- [CommonWell JWT Maker](/packages/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
+- [CommonWell SDK](/packages/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
 
 #### **iOS**
 
-Our iOS packages are available in [`/pkgs/ios`](/pkgs/ios):
+Our iOS packages are available in our [`iOS repo`](https://github.com/metriport/metriport-ios-sdk):
 
-- [Metriport iOS](/pkgs/ios/Metriport-IOS): SDK to integrate with the Metriport Connect Widget and Apple Health on iOS.
+- [Metriport iOS](https://github.com/metriport/metriport-ios-sdk): SDK to integrate with the Metriport Connect Widget and Apple Health on iOS.
 
 ### **Code Examples**
 

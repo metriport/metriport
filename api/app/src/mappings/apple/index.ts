@@ -163,6 +163,8 @@ export const appleSchema = z.object({
   HKQuantityTypeIdentifierBloodPressureSystolic: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierBloodPressureDiastolic: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierRespiratoryRate: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierOxygenSaturation: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierBloodGlucose: z.array(appleItem).optional(),
 })
 
 export type AppleHealth = z.infer<typeof appleSchema>;

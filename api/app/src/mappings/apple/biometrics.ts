@@ -153,6 +153,36 @@ export function mapDataToBiometrics(data: AppleHealth) {
     })
   }
 
+  const addToSpo2 = (appleItem: AppleHealthItem) => {
+    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const index = dateToIndex[date];
+
+    if (index || index === 0) {
+      biometrics[index] = {
+        ...biometrics[index],
+        respiration: {
+          ...biometrics[index].respiration,
+          spo2: {
+            ...biometrics[index].respiration?.spo2,
+            avg_pct: appleItem.value
+          }
+        }
+      }
+      return;
+    }
+
+    dateToIndex[date] = biometrics.length;
+
+    biometrics.push({
+      metadata: createMetadata(date),
+      respiration: {
+        spo2: {
+          avg_pct: appleItem.value
+        }
+      }
+    })
+  }
+
   data.HKQuantityTypeIdentifierHeartRate?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.heart_rate, 'avg_bpm'))
   data.HKQuantityTypeIdentifierRestingHeartRate?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.heart_rate, 'resting_bpm'))
   data.HKQuantityTypeIdentifierHeartRateVariabilitySDNN?.forEach((appleItem) => addToHRV(appleItem))
@@ -160,6 +190,8 @@ export function mapDataToBiometrics(data: AppleHealth) {
   data.HKQuantityTypeIdentifierRespiratoryRate?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.respiration, 'avg_breaths_per_minute'))
   data.HKQuantityTypeIdentifierBloodPressureDiastolic?.forEach((appleItem) => addToBloodPressure(appleItem, BloodPressureType.diastolic_mm_Hg))
   data.HKQuantityTypeIdentifierBloodPressureSystolic?.forEach((appleItem) => addToBloodPressure(appleItem, BloodPressureType.systolic_mm_Hg))
+  data.HKQuantityTypeIdentifierBloodGlucose?.forEach((appleItem) => addToBiometrics(appleItem, BiometricsSource.blood_glucose, 'avg_mg_dL'))
+  data.HKQuantityTypeIdentifierOxygenSaturation?.forEach((appleItem) => addToSpo2(appleItem))
 
   return biometrics
 }
