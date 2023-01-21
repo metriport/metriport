@@ -1,5 +1,6 @@
 import { ProviderSource } from "@metriport/api/lib/models/common/provider-source";
 import { z } from "zod";
+import { Apple } from "../providers/apple";
 import { Cronometer } from "../providers/cronometer";
 import { Fitbit } from "../providers/fitbit";
 import { Garmin } from "../providers/garmin";
@@ -11,6 +12,7 @@ import Provider from "../providers/provider";
 import { Whoop } from "../providers/whoop";
 import { Withings } from "../providers/withings";
 
+export const PROVIDER_APPLE = ProviderSource.apple;
 export const PROVIDER_CRONOMETER = ProviderSource.cronometer;
 export const PROVIDER_OURA = ProviderSource.oura;
 export const PROVIDER_GARMIN = ProviderSource.garmin;
@@ -32,7 +34,12 @@ export const providerOAuth2OptionsSchema = z.enum([
 ]);
 export type ProviderOAuth2Options = z.infer<typeof providerOAuth2OptionsSchema>;
 
-export type ProviderOptions = ProviderOAuth1Options | ProviderOAuth2Options;
+export const providerNoAuthSchema = z.enum([
+  PROVIDER_APPLE,
+]);
+export type ProviderNoAuthSchema = z.infer<typeof providerNoAuthSchema>;
+
+export type ProviderOptions = ProviderOAuth1Options | ProviderOAuth2Options | ProviderNoAuthSchema;
 
 export class Constants {
   // the default time in seconds for which an auth token for a widget connect
@@ -55,6 +62,7 @@ export class Constants {
       withings: new Withings(),
     };
   static readonly PROVIDER_MAP: { [k in ProviderOptions]: Provider } = {
+    apple: new Apple(),
     cronometer: new Cronometer(),
     oura: new Oura(),
     garmin: new Garmin(),

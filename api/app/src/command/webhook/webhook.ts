@@ -3,13 +3,15 @@ import Axios from "axios";
 import dayjs from "dayjs";
 import { chunk, groupBy } from "lodash";
 import { nanoid } from "nanoid";
+
+import { AppleWebhookPayload } from "../../mappings/apple";
 import { getErrorMessage } from "../../errors";
 import WebhookError from "../../errors/webhook";
 import { DataType, TypedData, UserData } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { Util } from "../../shared/util";
-import { getConnectedUsers } from "../connected-user/get-connected-user";
+import { getConnectedUsers, getConnectedUserOrFail } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
@@ -139,6 +141,26 @@ export const processData = async <T extends MetriportData>(
     );
   } catch (err) {
     log(`Error on processData: `, err);
+  }
+};
+
+export const processAppleData = async (
+  data: AppleWebhookPayload,
+  metriportUserId: string,
+  cxId: string
+): Promise<void> => {
+  try {
+
+    const connectedUser = await getConnectedUserOrFail({ id: metriportUserId, cxId })
+
+    const settings = await getSettingsOrFail({ id: connectedUser!.cxId });
+    await processOneCustomer(connectedUser!.cxId, settings, [{ users: [{ userId: metriportUserId, ...data }] }]);
+    await reportUsage(
+      connectedUser!.cxId,
+      [connectedUser!.cxUserId]
+    );
+  } catch (err) {
+    log(`Error on processAppleData: `, err);
   }
 };
 

@@ -101,8 +101,10 @@
     {
       "group": "More Info",
       "pages": [
+        "more-info/models",
         "more-info/our-integrations",
-        "more-info/webhooks"
+        "more-info/webhooks",
+        "more-info/iOS"
       ]
     }
   ],
