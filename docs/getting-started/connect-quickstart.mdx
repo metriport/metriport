@@ -41,11 +41,13 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 
 - In the left hand menu, click "Settings".
 - On the Settings page, click the "Create Subscription" button, and add your payment info.
-- After that's done, back on the Settings page, you'll be able to click the "Generate API Key" button.
+- After that's done, back on the Settings page, you'll be able to click the "Generate Secret Key" button.
 
 <Info>
-  This API key will allow you to start making requests to the Metriport API on
-  your behalf. Keep it somewhere safe!
+  This Secret Key will allow you to start making requests to the entire
+  Metriport API on your behalf. Treat this like a password, and keep it
+  somewhere safe! You can read the [API Keys](/more-info/api-keys) page to learn
+  more about API key security best practices.
 </Info>
 
 <Tip>
@@ -140,10 +142,9 @@ window.open(`https://connect.metriport.com/?token=${connectToken}`);
 </Info>
 
 <Info>
-  To open the widget in Sandbox mode, add the parameter `&sandbox=true` to the URL. For example:
-  ```typescript
-  `https://connect.metriport.com/?token=${connectToken}&sandbox=true`
-  ```
+  To open the widget in Sandbox mode, add the parameter `&sandbox=true` to the
+  URL. For example: ```typescript `https://connect.metriport.com/?token=$
+  {connectToken}&sandbox=true` ```
 </Info>
 
 Head to the [Connect Widget page](/getting-started/connect-widget) to learn more about the various Widget customization options, and view some code samples for integrating the Widget on different platforms such as iOS and Android.
