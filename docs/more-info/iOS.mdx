@@ -10,11 +10,13 @@ Where Metriport comes in is we provide an SDK that allows you to be able to rece
 When data gets added to Apple Health by a user it will simply send that data to the Metriport api and from there it gets sent to your webhook URL.
 
 <Info>
-  Apple Health is available for devices on iOS v13 or higher. This also applies for when developing on a simulator.
+  Apple Health is available for devices on iOS v13 or higher. This also applies
+  for when developing on a simulator.
 </Info>
 
 <Tip>
-  As a prerequisite we suggest looking at our [webhooks docs](/more-info/webhooks) to understand how the flow works.
+  As a prerequisite we suggest looking at our [webhooks
+  docs](/more-info/webhooks) to understand how the flow works.
 </Tip>
 
 ## Initial Setup
@@ -54,6 +56,12 @@ import MetriportSDK
 
 var healthStore = MetriportHealthStoreManager(clientApiKey: "CLIENT_API_KEY", apiUrl: "ENVIRONMENT_URL");
 ```
+
+<Warning>
+  Ensure you use your Client Key here, and not your Secret Key. You can read
+  more about the differences between the two in our [API Keys
+  guide](/more-info/api-keys).
+</Warning>
 
 <Info>
   ENVIRONMENT_URL is optional and defaults to https://api.metriport.com. For

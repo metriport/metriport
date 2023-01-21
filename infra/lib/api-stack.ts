@@ -378,7 +378,7 @@ export class APIStack extends Stack {
     // add webhook path for apple health clients
     const appleHealthResource = webhookResource.addResource("apple");
     const integrationApple = new apig.Integration({
-      type: apig.IntegrationType.HTTP,
+      type: apig.IntegrationType.HTTP_PROXY,
       options: {
         connectionType: apig.ConnectionType.VPC_LINK,
         vpcLink: link,
