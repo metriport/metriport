@@ -15,9 +15,11 @@ import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "../models/connected-user";
 import { mapToBody } from "../mappings/google/body";
+import { googleBodyResp } from "../mappings/google/models/body";
 
 const axios: Axios = require("axios").default;
 
+type GoogleDataType = { [key: string]: string }
 export class Google extends Provider implements OAuth2 {
   static URL: string = "https://www.googleapis.com";
   static AUTHORIZATION_URL: string = "https://accounts.google.com";
@@ -80,45 +82,101 @@ export class Google extends Provider implements OAuth2 {
     return this.oauth.revokeProviderAccess(connectedUser);
   }
 
-  async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
-    // return this.oauth.fetchProviderData<FitbitWater>(
-    //   connectedUser,
-    //   `${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`,
-    //   async (resp) => {
-    //     return mapToBody(resp.data, date);
-    //   },
-    //   AxiosMethod.post,
-    //   {
-    //     "aggregateBy": [{
-    //       "dataTypeName": "com.google.weight",
-    //       "dataSourceId": "derived:com.google.weight:com.google.android.gms:merge_weight"
-    //     }],
-    //     "startTimeMillis": dayjs(date).valueOf(),
-    //     "endTimeMillis": dayjs(date).add(24, 'hours').valueOf()
-    //   }
-    // );
-
+  async fetchGoogleData(connectedUser: ConnectedUser, date: string, options: any) {
     try {
       const access_token = await this.oauth.getAccessToken(connectedUser);
-
+      console.log(access_token)
       const resp = await axios.post(`${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`, {
-        "aggregateBy": [{
-          "dataTypeName": "com.google.weight",
-          "dataSourceId": "derived:com.google.weight:com.google.android.gms:merge_weight"
-        }],
         "startTimeMillis": dayjs(date).valueOf(),
-        "endTimeMillis": dayjs(date).add(24, 'hours').valueOf()
+        "endTimeMillis": dayjs(date).add(24, 'hours').valueOf(),
+        ...options
       }, {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
       });
 
-      return mapToBody(resp.data, date);
+      return resp.data;
     } catch (error) {
       console.error(error);
 
       throw new Error(`Request failed google`);
     }
+  }
+
+  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+    const activity = await this.fetchGoogleData(
+      connectedUser,
+      date,
+      {
+        "aggregateBy": [
+          // TODO: CALORIES RETURNING INCONSISTENT DATA
+          // {
+          //   "dataTypeName": "com.google.calories.bmr",
+          //   "dataSourceId": "derived:com.google.calories.bmr:com.google.android.gms:merged"
+          // },
+          {
+            "dataTypeName": "com.google.calories.expended",
+            "dataSourceId": "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended"
+          },
+          // {
+          //   "dataTypeName": "com.google.step_count.delta",
+          //   "dataSourceId": "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps"
+          // }
+        ],
+        "bucketByTime": { "durationMillis": 86400000 },
+      }
+    )
+
+    return activity
+    // PARSE DATA
+    // return mapToBody(
+    //   weight,
+    //   bodyFat,
+    //   height,
+    //   date
+    // );
+  }
+
+  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+    const biometrics = await this.fetchGoogleData(
+      connectedUser,
+      date,
+      {
+        "aggregateBy": [
+          {
+            "dataTypeName": "com.google.blood_glucose",
+            // "dataSourceId": "derived:com.google.blood_glucose:com.google.android.gms:merged"
+          }
+        ],
+        "bucketByTime": { "durationMillis": 86400000 },
+
+      }
+    )
+
+    return biometrics
+    return mapToBody(googleBodyResp.parse(body), date)
+  }
+
+  async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+    const body = await this.fetchGoogleData(
+      connectedUser,
+      date,
+      {
+        "aggregateBy": [
+          {
+            "dataTypeName": "com.google.weight"
+          },
+          {
+            "dataTypeName": "com.google.height"
+          },
+          {
+            "dataTypeName": "com.google.body.fat.percentage"
+          }
+        ]
+      }
+    )
+
+    return mapToBody(googleBodyResp.parse(body), date)
   }
 }

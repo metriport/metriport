@@ -24,6 +24,7 @@ export interface UriParams {
   scope?: string[] | string;
   redirect_uri: string;
   state: string;
+  access_type: string;
 }
 
 export interface AuthCodeUriParams {
@@ -93,16 +94,22 @@ export class OAuth2DefaultImpl implements OAuth2 {
     let uriParams: UriParams = {
       redirect_uri: this.getRedirectUri(),
       state: state,
+      access_type: 'offline',
     };
 
     if (this.scopes) {
       uriParams.scope = this.scopes;
     }
 
+    if (this.providerName === 'google') {
+      uriParams.access_type = 'offline'
+    }
+
     const authorizationUri = client.authorizeURL(uriParams);
     return authorizationUri;
   }
 
+  // TODO: REFRESH TOKEN BROKEN FOR GOOGLE
   private async checkRefreshToken(
     token: string,
     connectedUser: ConnectedUser
@@ -176,13 +183,12 @@ export class OAuth2DefaultImpl implements OAuth2 {
     connectedUser: ConnectedUser,
     endpoint: string,
     callBack: (response: AxiosResponse<any, any>) => Promise<T>,
-    method: AxiosMethod = AxiosMethod.get,
-    params?: { [k: string]: any }
+    params?: { [k: string]: any },
   ): Promise<T> {
     try {
       const access_token = await this.getAccessToken(connectedUser);
 
-      const resp = await axios[method](endpoint, {
+      const resp = await axios.get(endpoint, {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
