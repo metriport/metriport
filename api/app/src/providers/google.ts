@@ -10,7 +10,7 @@ import { Axios, AxiosResponse } from "axios";
 import dayjs from "dayjs";
 
 import { PROVIDER_GOOGLE } from "../shared/constants";
-import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
+import { OAuth2, OAuth2DefaultImpl, AxiosMethod } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "../models/connected-user";
@@ -81,10 +81,25 @@ export class Google extends Provider implements OAuth2 {
   }
 
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+    // return this.oauth.fetchProviderData<FitbitWater>(
+    //   connectedUser,
+    //   `${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`,
+    //   async (resp) => {
+    //     return mapToBody(resp.data, date);
+    //   },
+    //   AxiosMethod.post,
+    //   {
+    //     "aggregateBy": [{
+    //       "dataTypeName": "com.google.weight",
+    //       "dataSourceId": "derived:com.google.weight:com.google.android.gms:merge_weight"
+    //     }],
+    //     "startTimeMillis": dayjs(date).valueOf(),
+    //     "endTimeMillis": dayjs(date).add(24, 'hours').valueOf()
+    //   }
+    // );
+
     try {
       const access_token = await this.oauth.getAccessToken(connectedUser);
-
-      console.log(dayjs(date).valueOf())
 
       const resp = await axios.post(`${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`, {
         "aggregateBy": [{

@@ -1,4 +1,4 @@
-import { Axios, AxiosResponse } from "axios";
+import { Axios, AxiosResponse, Method } from "axios";
 import { AuthorizationCode, Token } from "simple-oauth2";
 import { z } from "zod";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
@@ -30,6 +30,13 @@ export interface AuthCodeUriParams {
   scope?: string[] | string;
   redirect_uri: string;
   code: string;
+}
+
+export enum AxiosMethod {
+  patch = "patch",
+  put = "put",
+  get = "get",
+  post = "post"
 }
 
 export class OAuth2DefaultImpl implements OAuth2 {
@@ -109,9 +116,9 @@ export class OAuth2DefaultImpl implements OAuth2 {
 
         const providerItem = connectedUser.providerMap
           ? {
-              ...connectedUser.providerMap[this.providerName],
-              token: JSON.stringify(accessToken.token),
-            }
+            ...connectedUser.providerMap[this.providerName],
+            token: JSON.stringify(accessToken.token),
+          }
           : { token: JSON.stringify(accessToken.token) };
         await updateProviderData({
           id: connectedUser.id,
@@ -163,16 +170,19 @@ export class OAuth2DefaultImpl implements OAuth2 {
     return providerData.token;
   }
 
+
+
   async fetchProviderData<T>(
     connectedUser: ConnectedUser,
     endpoint: string,
     callBack: (response: AxiosResponse<any, any>) => Promise<T>,
-    params?: { [k: string]: string | number }
+    method: AxiosMethod = AxiosMethod.get,
+    params?: { [k: string]: any }
   ): Promise<T> {
     try {
       const access_token = await this.getAccessToken(connectedUser);
 
-      const resp = await axios.get(endpoint, {
+      const resp = await axios[method](endpoint, {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
