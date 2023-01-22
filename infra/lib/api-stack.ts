@@ -35,7 +35,7 @@ export class APIStack extends Stack {
     const apiSecrets: { [key: string]: ecs.Secret } = {};
     for (const key of Object.keys(props.config.providerSecretNames)) {
       apiSecrets[key] = ecs.Secret.fromSecretsManager(
-        buildSecret((props.config.providerSecretNames as { [index: string]: any })[key])
+        buildSecret((props.config.providerSecretNames as { [index: string]: string })[key])
       );
     }
 
@@ -153,9 +153,10 @@ export class APIStack extends Stack {
       directory: "../api/app",
     });
 
-    const connectWidgetUrlEnvVar = props.config.connectWidgetUrl
-      ? props.config.connectWidgetUrl
-      : `https://${props.config.connectWidget!.subdomain}.${props.config.connectWidget!.domain}/`;
+    const connectWidgetUrlEnvVar =
+      props.config.connectWidgetUrl != undefined
+        ? props.config.connectWidgetUrl
+        : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
     // Run some servers on fargate containers
     const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
@@ -321,7 +322,7 @@ export class APIStack extends Stack {
       // see: https://forum.serverless.com/t/rest-api-with-custom-authorizer-how-are-you-dealing-with-authorization-and-policy-cache/3310
       resultsCacheTtl: Duration.minutes(0),
     });
-    dynamoDBTokenTable.grantReadData(tokenAuthLambda.role!);
+    tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
 
     // setup /token path with token auth
     const apiTokenResource = api.root.addResource("token");
@@ -471,7 +472,7 @@ export class APIStack extends Stack {
     addErrorAlarmToLambdaFunc(this, garminLambda, "GarminAuthFunctionAlarm");
 
     // Grant lambda access to the DynamoDB token table
-    dynamoDBTokenTable.grantReadData(garminLambda.role!);
+    garminLambda.role && dynamoDBTokenTable.grantReadData(garminLambda.role);
 
     // Grant lambda access to the api server
     server.service.connections.allowFrom(garminLambda, Port.allTcp());

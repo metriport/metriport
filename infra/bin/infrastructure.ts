@@ -12,7 +12,7 @@ const app = new cdk.App();
 // Parse config based on specified env
 //-------------------------------------------
 async function getConfig(): Promise<EnvConfig> {
-  let env = app.node.tryGetContext("env");
+  const env = app.node.tryGetContext("env");
   const validVals = Object.values(EnvType);
   if (!env || !validVals.includes(env)) {
     throw new Error(
@@ -68,7 +68,7 @@ async function deploy() {
         account: process.env.CDK_DEFAULT_ACCOUNT,
         region: config.connectWidget.region,
       },
-      config: config,
+      config,
     });
   }
   app.synth();
