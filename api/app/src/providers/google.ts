@@ -45,7 +45,6 @@ export class Google extends Provider implements OAuth2 {
     "https://www.googleapis.com/auth/fitness.sleep.read"
   ];
 
-  // TODO: MAKE SURE TO ADD TO INFRA
   private static clientId = Config.getGoogleClientId();
   private static clientSecret = Config.getGoogleClientSecret();
 
@@ -81,8 +80,6 @@ export class Google extends Provider implements OAuth2 {
     return this.oauth.getTokenFromAuthCode(code);
   }
 
-  // TODO: REVOKE ACCESS IS DONE THROUGH USERS GOOGLE ACCOUNT
-  // IF ACCESS IS INVALID WHEN MAKING REQUEST REMOVE FROM PROVIDER MAP
   async revokeProviderAccess(connectedUser: ConnectedUser) {
     return this.oauth.revokeProviderAccess(connectedUser);
   }
