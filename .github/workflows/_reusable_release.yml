@@ -1,7 +1,8 @@
 name: Reusable Release script
 
 on:
-  workflow_call:
+  workflow_call: # called by other workflows
+  workflow_dispatch: # manually executed by a user - should be able to remove this once semver is well mature
 
 # From https://thecodinganalyst.github.io/knowledgebase/Using-Semantic-Release-with-Github-Actions/
 env:
@@ -28,5 +29,7 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # run: npx semantic-release
-        run: echo "NOT SETTING UP VERSION YET - UPCOMING NEXT"
+        # TODO once this is mature, remove '--debug'
+        run: |
+          pwd
+          npx semantic-release --debug
