@@ -1,4 +1,5 @@
 import * as AWS from "aws-sdk";
+import { docTableNames } from "./db"; //eslint-disable-line @typescript-eslint/no-unused-vars
 
 /**
  * Creates the token table. Destroys the existing one.
@@ -19,7 +20,7 @@ const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
   //     throw error;
   //   }
   // }
-  // var params: AWS.DynamoDB.CreateTableInput = {
+  // const params: AWS.DynamoDB.CreateTableInput = {
   //   AttributeDefinitions: [
   //     {
   //       AttributeName: "token",
