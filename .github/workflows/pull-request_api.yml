@@ -1,5 +1,5 @@
 # TODO we should also check lambda PRs, but currently we could only 'npm ci' it.
-name: API - Check a PR
+name: PR Check - API
 
 on:
   pull_request:

@@ -1,0 +1,32 @@
+name: Reusable Deploy script
+
+on:
+  workflow_call:
+
+# From https://thecodinganalyst.github.io/knowledgebase/Using-Semantic-Release-with-Github-Actions/
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # run: npx semantic-release
+        run: echo "NOT SETTING UP VERSION YET - UPCOMING NEXT"
