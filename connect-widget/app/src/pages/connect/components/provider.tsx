@@ -1,4 +1,4 @@
-import { Avatar, Card, Box, Text, Grid, Button } from "@chakra-ui/react";
+import { Avatar, Card, Box, Text, Grid } from "@chakra-ui/react";
 
 import { DefaultProvider } from "./connect-providers";
 import ConnectButton from "./connect-button";
