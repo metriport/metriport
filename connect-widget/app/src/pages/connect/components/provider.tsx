@@ -25,17 +25,7 @@ const Provider = (props: ProviderProps) => {
           <Text fontSize={{ base: 14, sm: "md" }} pl={1} alignSelf={"center"}>
             {capitalizeFirstLetter(props.provider.name)}
           </Text>
-          {props.provider.name === "google" && !props.isConnected ? (
-            <Button
-              width={"max-content"}
-              onClick={() => props.onRedirect(props.provider.name)}
-              // style={{ width: "175px" }}
-            >
-              Activate Google Fit
-            </Button>
-          ) : (
-            <ConnectButton {...props} />
-          )}
+          <ConnectButton {...props} />
         </Grid>
       </Card>
     </Box>
