@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "bin": {},
   "scripts": {
-    "prepare": "husky install",
     "prep-garmin": "cd api/lambdas/garmin/ && npm install && npm run test && cd ../../../",
     "prep-token-auth": "cd api/lambdas/token-auth/ && npm install && npm run test && cd ../../../",
     "prep-deploy": "npm install && npm run build && npm run test && npm run prep-token-auth && npm run prep-garmin",
@@ -19,8 +18,6 @@
       "infra"
     ]
   },
-  "devDependencies": {
-    "husky": "^8.0.0"
-  },
+  "devDependencies": {},
   "dependencies": {}
 }
