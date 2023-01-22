@@ -15,7 +15,8 @@ export const mapToSleep = (whoopSleep: WhoopSleep, date: string): Sleep => {
 
   // this means that the sleep resp has the score
   if (whoopSleep.score_state === "SCORED") {
-    const score = whoopSleep.score!;
+    if (!whoopSleep.score) throw new Error(`Missing whoopSleep.score`);
+    const score = whoopSleep.score;
     sleep = {
       ...sleep,
       durations: {

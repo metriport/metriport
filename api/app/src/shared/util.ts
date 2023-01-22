@@ -30,7 +30,7 @@ export class Util {
     return 0;
   };
 
-  static addDataToObject = (key: string, value: any) => {
+  static addDataToObject = (key: string, value: unknown) => {
     if (value) {
       return { [key]: value };
     }

@@ -18,11 +18,11 @@ import { WhoopRecovery, whoopRecoveryResp } from "../mappings/whoop/models/recov
 import { mapToBiometrics } from "../mappings/whoop/biometrics";
 
 export class Whoop extends Provider implements OAuth2 {
-  static BASE_URL: string = "https://api.prod.whoop.com";
-  static AUTHORIZATION_PATH: string = "/oauth/oauth2/auth";
-  static TOKEN_PATH: string = "/oauth/oauth2/token";
-  static API_PATH: string = "/developer/v1";
-  static DATA_URL: string = `${this.BASE_URL}${this.API_PATH}`;
+  static BASE_URL = "https://api.prod.whoop.com";
+  static AUTHORIZATION_PATH = "/oauth/oauth2/auth";
+  static TOKEN_PATH = "/oauth/oauth2/token";
+  static API_PATH = "/developer/v1";
+  static DATA_URL = `${this.BASE_URL}${this.API_PATH}`;
   static scopes = [
     "read:recovery",
     "read:cycles",

@@ -15,7 +15,7 @@ try {
   const sqlDBCreds = process.env.DB_CREDS;
   if (!sqlDBCreds) throw new Error("Missing DB_CREDS env var");
   dbCreds = JSON.parse(sqlDBCreds);
-} catch (err: any) {
+} catch (err) {
   const msg = "Error processing DB_CREDS env var";
   console.log(msg, err);
   throw new Error(msg);

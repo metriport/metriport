@@ -10,7 +10,7 @@ export const mapToSleep = (date: string, withingsSleep: WithingsSleep): Sleep =>
     date: date,
     source: PROVIDER_WITHINGS,
   };
-  let sleep: Sleep = {
+  const sleep: Sleep = {
     metadata: metadata,
   };
 

@@ -13,7 +13,7 @@ export type ProviderMap = {
 };
 
 export class ConnectedUser extends BaseModel<ConnectedUser> {
-  static NAME: string = "connected_user";
+  static NAME = "connected_user";
   declare id: string;
   declare cxId: string;
   declare cxUserId: string;

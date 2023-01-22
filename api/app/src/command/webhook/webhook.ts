@@ -35,7 +35,6 @@ type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
 type WebhookPingPayload = {
   ping: string;
 };
-type WebhookPayload = WebhookDataPayload | WebhookPingPayload;
 
 // TODO #163 - break this up, it has Garmin-specific logic that should live on its own file
 /**
@@ -98,7 +97,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
           // transform each chunk into a payload
           const payloads = chunks.map(c => {
             // groups by user
-            const dataByUser = groupBy(dataAndUserList, v => v.cxUserId);
+            const dataByUser = groupBy(c, v => v.cxUserId);
             // now convert that into an array of WebhookUserPayload (all the data of a user for this chunk)
             const users: WebhookUserPayload[] = [];
             for (const cxUserId of Object.keys(dataByUser)) {
@@ -144,11 +143,11 @@ export const processAppleData = async (
   try {
     const connectedUser = await getConnectedUserOrFail({ id: metriportUserId, cxId });
 
-    const settings = await getSettingsOrFail({ id: connectedUser!.cxId });
-    await processOneCustomer(connectedUser!.cxId, settings, [
+    const settings = await getSettingsOrFail({ id: connectedUser.cxId });
+    await processOneCustomer(connectedUser.cxId, settings, [
       { users: [{ userId: metriportUserId, ...data }] },
     ]);
-    await reportUsage(connectedUser!.cxId, [connectedUser!.cxUserId]);
+    await reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (err) {
     log(`Error on processAppleData: `, err);
   }
@@ -184,7 +183,7 @@ export const processRequest = async (
   webhookRequest: WebhookRequest,
   settings: Settings
 ): Promise<boolean> => {
-  const payload: any = webhookRequest.payload as any;
+  const payload = webhookRequest.payload;
 
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
@@ -209,7 +208,7 @@ export const processRequest = async (
           messageId: webhookRequest.id,
           when: dayjs(webhookRequest.createdAt).toISOString(),
         },
-        ...payload,
+        ...(payload as any), //eslint-disable-line @typescript-eslint/no-explicit-any
       },
       webhookUrl,
       webhookKey
@@ -229,6 +228,7 @@ export const processRequest = async (
       });
     }
     return true;
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     try {
       // mark this request as failed on the DB
@@ -265,6 +265,7 @@ const sendPayload = async (
   url: string,
   apiKey: string,
   timeout = 5_000
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   try {
     const res = await axios.post(url, payload, {
@@ -275,6 +276,7 @@ const sendPayload = async (
       timeout,
     });
     return res.data;
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     throw new WebhookError(`Failed to send payload`, err);
   }

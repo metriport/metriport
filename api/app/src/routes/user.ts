@@ -3,19 +3,15 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createConnectedUser } from "../command/connected-user/create-connected-user";
-import { createUserToken } from "../command/cx-user/create-user-token";
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
+import { createUserToken } from "../command/cx-user/create-user-token";
+import BadRequestError from "../errors/bad-request";
 import { ConnectedUser } from "../models/connected-user";
 import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
+import { Constants, providerOAuth2OptionsSchema } from "../shared/constants";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { asyncHandler, getCxIdOrFail, getUserIdFromQueryOrFail } from "./util";
-import {
-  Constants,
-  providerOAuth1OptionsSchema,
-  providerOAuth2OptionsSchema,
-} from "../shared/constants";
-import BadRequestError from "../errors/bad-request";
 
 const router = Router();
 
@@ -60,7 +56,7 @@ router.post(
 
     if (Config.isSandbox()) {
       // limit the amount of users that can be created in sandbox mode
-      let numConnectedUsers = await ConnectedUser.count({ where: { cxId } });
+      const numConnectedUsers = await ConnectedUser.count({ where: { cxId } });
       if (numConnectedUsers >= Config.SANDBOX_USER_LIMIT) {
         return res.sendStatus(status.BAD_REQUEST).json({
           message: `Cannot connect more than ${Config.SANDBOX_USER_LIMIT} users in Sandbox mode!`,

@@ -1,5 +1,4 @@
 import * as AWS from "aws-sdk";
-import { docTableNames } from "./db";
 
 /**
  * Creates the token table. Destroys the existing one.
@@ -7,6 +6,7 @@ import { docTableNames } from "./db";
  *
  * This is disabled by default (see first command/comment).
  */
+//eslint-disable-next-line @typescript-eslint/no-unused-vars
 const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
   /*
    * Important: if you change the structure here, or if you want data there to

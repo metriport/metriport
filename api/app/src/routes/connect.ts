@@ -101,8 +101,8 @@ router.get("/:provider", async (req: Request, res: Response) => {
     const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(req.params.provider);
     if (providerOAuth2.success) {
       const provider = providerOAuth2.data;
-      let cxId = getCxIdFromHeaders(req);
-      let userId = getUserIdFromHeaders(req);
+      const cxId = getCxIdFromHeaders(req);
+      const userId = getUserIdFromHeaders(req);
       await processOAuth2(provider, state, authCode, cxId, userId);
       return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
     }

@@ -26,7 +26,7 @@ export const mapToBiometrics = (
     source: PROVIDER_FITBIT,
   };
 
-  let biometrics: Biometrics = {
+  const biometrics: Biometrics = {
     metadata: metadata,
     heart_rate: {},
     hrv: {},
