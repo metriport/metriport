@@ -21,12 +21,12 @@ export default (app: Application) => {
   // ADD BACK REPORTTING USAGEÅ
   // routes with API key auth
   app.use("/settings", processAPIKey, settings);
-  app.use("/activity", processAPIKey, activity);
-  app.use("/body", processAPIKey, body);
-  app.use("/biometrics", processAPIKey, biometrics);
-  app.use("/nutrition", processAPIKey, nutrition);
-  app.use("/sleep", processAPIKey, sleep);
-  app.use("/user", processAPIKey, user);
+  app.use("/activity", processAPIKey, reportUsage, activity);
+  app.use("/body", processAPIKey, reportUsage, body);
+  app.use("/biometrics", processAPIKey, reportUsage, biometrics);
+  app.use("/nutrition", processAPIKey, reportUsage, nutrition);
+  app.use("/sleep", processAPIKey, reportUsage, sleep);
+  app.use("/user", processAPIKey, reportUsage, user);
 
   // routes with session token auth
   app.use("/connect", connect);
