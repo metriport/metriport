@@ -224,7 +224,13 @@ Then to run the full back-end stack, use docker-compose to lauch a Postgres cont
 
 ```shell
 $ cd api/app
-$ docker-compose -f docker-compose.dev.yml up --build
+$ npm run start-docker-compose
+```
+
+...or, from the root folder...
+
+```shell
+$ npm run start-docker-compose -w api
 ```
 
 Now, the backend services will be available at:
