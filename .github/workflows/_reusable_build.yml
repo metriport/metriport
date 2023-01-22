@@ -10,7 +10,7 @@ on:
         required: false
         type: string
         description: "the environment we're building to, either 'staging' or 'production'"
-        default: 'production'
+        default: "production"
 
 jobs:
   lint-and-build:
@@ -27,7 +27,8 @@ jobs:
         run: |
           pwd
           npm ci --ignore-scripts
-      #TODO add Lint scripts
+      - name: Run Linter
+        run: npm run lint
       # move to an external file so both this and deploy can use this logic
       - name: Build/compile PRODUCTION
         if: ${{ inputs.build_env == 'production' }}
