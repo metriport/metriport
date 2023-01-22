@@ -1,15 +1,17 @@
 import { Sample } from '@metriport/api/lib/models/common/sample'
 import dayjs from "dayjs";
+import convert from 'convert-units';
 
 import { GooglePoint } from "./models";
 
 export const getSamples = (arr: GooglePoint, valueIndex: number = 0): Sample[] => {
   return arr.map(item => {
     const hasFpVal = item.value.filter(val => val.fpVal);
+    const startTimeNanos = Number(item.startTimeNanos);
 
     return {
       value: hasFpVal[valueIndex].fpVal!,
-      time: dayjs(Number(item.startTimeNanos) / 1000000).format(
+      time: dayjs(convert(startTimeNanos).from('ns').to('ms')).format(
         "YYYY-MM-DDTHH:mm:ssZ"
       )
     }

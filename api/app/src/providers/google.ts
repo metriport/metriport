@@ -107,8 +107,6 @@ export class Google extends Provider implements OAuth2 {
   }
 
   async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
-    // Made requests to this endpoint to receive sessions but get a 400 with no message
-    // /fitness/v1/users/me/sessions?startTime=2019-12-05T00:00:00.000Z&endTime=2019-12-17T23:59:59.999Z&activityType=72
     const activity = await this.fetchGoogleData(
       connectedUser,
       date,

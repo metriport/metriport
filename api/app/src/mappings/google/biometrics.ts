@@ -5,6 +5,12 @@ import { GoogleBiometrics } from "./models/biometrics";
 import { Util } from "../../shared/util";
 import { getValues, getSamples } from ".";
 
+const sourceIdBloodGlucose = "derived:com.google.blood_glucose:com.google.android.gms:merged";
+const sourceIdBloodPressure = "derived:com.google.blood_pressure:com.google.android.gms:merged";
+const sourceIdBodyTemp = "derived:com.google.body.temperature:com.google.android.gms:merged";
+const sourceIdOxygenSat = "derived:com.google.oxygen_saturation:com.google.android.gms:merged";
+const sourceIdHeartBpm = "derived:com.google.heart_rate.bpm:com.google.android.gms:merge_heart_rate_bpm";
+
 export const mapToBiometrics = (googleBiometrics: GoogleBiometrics, date: string): Biometrics => {
   const metadata = {
     date: date,
@@ -19,7 +25,7 @@ export const mapToBiometrics = (googleBiometrics: GoogleBiometrics, date: string
     if (data.point.length) {
       const values = getValues(data.point);
 
-      if (data.dataSourceId === "derived:com.google.blood_glucose:com.google.android.gms:merged") {
+      if (data.dataSourceId === sourceIdBloodGlucose) {
 
         biometrics.blood_glucose = {
           samples_mg_dL: getSamples(data.point),
@@ -27,7 +33,7 @@ export const mapToBiometrics = (googleBiometrics: GoogleBiometrics, date: string
         }
       }
 
-      if (data.dataSourceId === "derived:com.google.blood_pressure:com.google.android.gms:merged") {
+      if (data.dataSourceId === sourceIdBloodPressure) {
 
         biometrics.blood_pressure = {
           systolic_mm_Hg: {
@@ -39,7 +45,7 @@ export const mapToBiometrics = (googleBiometrics: GoogleBiometrics, date: string
         }
       }
 
-      if (data.dataSourceId === "derived:com.google.body.temperature:com.google.android.gms:merged") {
+      if (data.dataSourceId === sourceIdBodyTemp) {
 
         biometrics.temperature = {
           core: {
@@ -49,7 +55,7 @@ export const mapToBiometrics = (googleBiometrics: GoogleBiometrics, date: string
         }
       }
 
-      if (data.dataSourceId === "derived:com.google.oxygen_saturation:com.google.android.gms:merged") {
+      if (data.dataSourceId === sourceIdOxygenSat) {
         const min_max = Util.getMinMaxItem(values);
         biometrics.respiration = {
           spo2: {
@@ -60,7 +66,7 @@ export const mapToBiometrics = (googleBiometrics: GoogleBiometrics, date: string
         }
       }
 
-      if (data.dataSourceId = "derived:com.google.heart_rate.bpm:com.google.android.gms:merge_heart_rate_bpm") {
+      if (data.dataSourceId = sourceIdHeartBpm) {
         const min_max = Util.getMinMaxItem(values);
 
         biometrics.heart_rate = {

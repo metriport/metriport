@@ -24,7 +24,7 @@ export interface UriParams {
   scope?: string[] | string;
   redirect_uri: string;
   state: string;
-  access_type: string;
+  access_type?: string;
 }
 
 export interface AuthCodeUriParams {
@@ -49,7 +49,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
     private readonly clientOptions?: {
       readonly authorizationMethod?: "body" | "header";
     }
-  ) {}
+  ) { }
 
   getRedirectUri(): string {
     return `${Config.getConnectRedirectUrl()}/${this.providerName}`;
@@ -92,7 +92,6 @@ export class OAuth2DefaultImpl implements OAuth2 {
     let uriParams: UriParams = {
       redirect_uri: this.getRedirectUri(),
       state: state,
-      access_type: 'offline',
     };
 
     if (this.scopes) {
@@ -188,7 +187,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
     connectedUser: ConnectedUser,
     endpoint: string,
     callBack: (response: AxiosResponse<any, any>) => Promise<T>,
-    params?: { [k: string]: any },
+    params?: { [k: string]: string | number },
   ): Promise<T> {
     try {
       const access_token = await this.getAccessToken(connectedUser);

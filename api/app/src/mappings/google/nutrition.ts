@@ -1,11 +1,14 @@
 import { Nutrition } from "@metriport/api";
 import convert from "convert-units";
+import { sum } from "lodash";
 
 import { PROVIDER_GOOGLE } from "../../shared/constants";
 import { GoogleNutrition } from "./models/nutrition";
-import { Util } from "../../shared/util";
 import { getValues } from ".";
 import { GooglePoint } from "./models";
+
+const sourceIdHydration = "derived:com.google.hydration:com.google.android.gms:merged";
+const sourceIdNutrition = "derived:com.google.nutrition:com.google.android.gms:merged";
 
 export const mapToNutrition = (googleNutrition: GoogleNutrition, date: string): Nutrition => {
   const metadata = {
@@ -21,15 +24,15 @@ export const mapToNutrition = (googleNutrition: GoogleNutrition, date: string): 
     if (data.point.length) {
       const values = getValues(data.point);
 
-      if (data.dataSourceId === "derived:com.google.hydration:com.google.android.gms:merged") {
+      if (data.dataSourceId === sourceIdHydration) {
         nutrition.summary = {
           macros: {
-            water_ml: convert(Util.getAvgOfArr(values, 3)).from('l').to("ml")
+            water_ml: convert(sum(values)).from('l').to("ml")
           }
         }
       }
 
-      if (data.dataSourceId === "derived:com.google.nutrition:com.google.android.gms:merged") {
+      if (data.dataSourceId === sourceIdNutrition) {
         const macros = getMacros(data.point);
 
         nutrition.summary = {

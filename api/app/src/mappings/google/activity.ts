@@ -5,6 +5,9 @@ import { PROVIDER_GOOGLE } from "../../shared/constants";
 import { GoogleActivity } from "./models/activity";
 import { getValues, ValueKey } from ".";
 
+const sourceIdCalories = "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended";
+const sourceIdSteps = "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps";
+
 export const mapToActivity = (googleActivity: GoogleActivity, date: string): Activity => {
   const metadata = {
     date: date,
@@ -20,7 +23,7 @@ export const mapToActivity = (googleActivity: GoogleActivity, date: string): Act
       const values = getValues(data.point);
       const intValues = getValues(data.point, ValueKey.intVal)
 
-      if (data.dataSourceId === "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended") {
+      if (data.dataSourceId === sourceIdCalories) {
 
         activity.summary = {
           ...activity.summary,
@@ -30,7 +33,7 @@ export const mapToActivity = (googleActivity: GoogleActivity, date: string): Act
         }
       }
 
-      if (data.dataSourceId === "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps") {
+      if (data.dataSourceId === sourceIdSteps) {
 
         activity.summary = {
           ...activity.summary,
