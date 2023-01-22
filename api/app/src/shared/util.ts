@@ -22,10 +22,10 @@ export class Util {
     };
   };
 
-  static getAvgOfArr = (arr: number[]): number => {
+  static getAvgOfArr = (arr: number[], fixed: number = 0): number => {
     if (arr.length) {
       const average = mean(arr);
-      return Number(average.toFixed(0));
+      return Number(average.toFixed(fixed));
     }
 
     return 0;

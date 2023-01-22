@@ -4,22 +4,27 @@ import {
   Body,
   Nutrition,
   Sleep,
-  User,
 } from "@metriport/api";
-import { Axios, AxiosResponse } from "axios";
+import { Axios } from "axios";
 import dayjs from "dayjs";
 
 import { PROVIDER_GOOGLE } from "../shared/constants";
-import { OAuth2, OAuth2DefaultImpl, AxiosMethod } from "./oauth2";
+import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "../models/connected-user";
+import { mapToActivity } from "../mappings/google/activity";
+import { googleActivityResp } from "../mappings/google/models/activity";
 import { mapToBody } from "../mappings/google/body";
 import { googleBodyResp } from "../mappings/google/models/body";
+import { mapToBiometrics } from "../mappings/google/biometrics";
+import { googleBiometricsResp } from "../mappings/google/models/biometrics";
+import { mapToNutrition } from "../mappings/google/nutrition";
+import { googleNutritionResp } from "../mappings/google/models/nutrition";
+import { mapToSleep } from "../mappings/google/sleep";
+import { googleSleepResp } from "../mappings/google/models/sleep";
 
 const axios: Axios = require("axios").default;
-
-type GoogleDataType = { [key: string]: string }
 export class Google extends Provider implements OAuth2 {
   static URL: string = "https://www.googleapis.com";
   static AUTHORIZATION_URL: string = "https://accounts.google.com";
@@ -64,7 +69,7 @@ export class Google extends Provider implements OAuth2 {
       [ConsumerHealthDataType.Biometrics]: true,
       [ConsumerHealthDataType.Nutrition]: true,
       [ConsumerHealthDataType.Sleep]: true,
-      [ConsumerHealthDataType.User]: true,
+      [ConsumerHealthDataType.User]: false,
     });
   }
 
@@ -85,7 +90,7 @@ export class Google extends Provider implements OAuth2 {
   async fetchGoogleData(connectedUser: ConnectedUser, date: string, options: any) {
     try {
       const access_token = await this.oauth.getAccessToken(connectedUser);
-      console.log(access_token)
+
       const resp = await axios.post(`${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`, {
         "startTimeMillis": dayjs(date).valueOf(),
         "endTimeMillis": dayjs(date).add(24, 'hours').valueOf(),
@@ -104,61 +109,59 @@ export class Google extends Provider implements OAuth2 {
     }
   }
 
-  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
+    // Made requests to this endpoint to receive sessions but get a 400 with no message
+    // /fitness/v1/users/me/sessions?startTime=2019-12-05T00:00:00.000Z&endTime=2019-12-17T23:59:59.999Z&activityType=72
     const activity = await this.fetchGoogleData(
       connectedUser,
       date,
       {
         "aggregateBy": [
-          // TODO: CALORIES RETURNING INCONSISTENT DATA
-          // {
-          //   "dataTypeName": "com.google.calories.bmr",
-          //   "dataSourceId": "derived:com.google.calories.bmr:com.google.android.gms:merged"
-          // },
           {
             "dataTypeName": "com.google.calories.expended",
             "dataSourceId": "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended"
           },
-          // {
-          //   "dataTypeName": "com.google.step_count.delta",
-          //   "dataSourceId": "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps"
-          // }
+          {
+            "dataTypeName": "com.google.step_count.delta",
+            "dataSourceId": "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps"
+          }
         ],
-        "bucketByTime": { "durationMillis": 86400000 },
       }
     )
 
-    return activity
-    // PARSE DATA
-    // return mapToBody(
-    //   weight,
-    //   bodyFat,
-    //   height,
-    //   date
-    // );
+    return mapToActivity(googleActivityResp.parse(activity), date);
   }
 
-  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
     const biometrics = await this.fetchGoogleData(
       connectedUser,
       date,
       {
         "aggregateBy": [
           {
+            "dataTypeName": "	com.google.blood_pressure",
+            "dataSourceId": "derived:com.google.blood_pressure:com.google.android.gms:merged"
+          },
+          {
             "dataTypeName": "com.google.blood_glucose",
-            // "dataSourceId": "derived:com.google.blood_glucose:com.google.android.gms:merged"
-          }
-        ],
-        "bucketByTime": { "durationMillis": 86400000 },
-
+          },
+          {
+            "dataTypeName": "com.google.body.temperature"
+          },
+          {
+            "dataTypeName": "com.google.oxygen_saturation"
+          },
+          {
+            "dataTypeName": "com.google.heart_rate.bpm",
+          },
+        ]
       }
     )
-
-    return biometrics
-    return mapToBody(googleBodyResp.parse(body), date)
+    return mapToBiometrics(googleBiometricsResp.parse(biometrics), date)
   }
 
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+
     const body = await this.fetchGoogleData(
       connectedUser,
       date,
@@ -178,5 +181,40 @@ export class Google extends Provider implements OAuth2 {
     )
 
     return mapToBody(googleBodyResp.parse(body), date)
+  }
+
+  async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
+    const nutrition = await this.fetchGoogleData(
+      connectedUser,
+      date,
+      {
+        "aggregateBy": [
+          {
+            "dataTypeName": "com.google.hydration"
+          },
+          {
+            "dataTypeName": "com.google.nutrition"
+          }
+        ]
+      }
+    )
+
+    return mapToNutrition(googleNutritionResp.parse(nutrition), date)
+  }
+
+  async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
+    const sleep = await this.fetchGoogleData(
+      connectedUser,
+      date,
+      {
+        "aggregateBy": [
+          {
+            "dataTypeName": "com.google.sleep.segment"
+          }
+        ]
+      }
+    )
+
+    return mapToSleep(googleSleepResp.parse(sleep), date)
   }
 }

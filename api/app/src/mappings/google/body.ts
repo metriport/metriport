@@ -15,17 +15,19 @@ export const mapToBody = (googleBody: GoogleBody, date: string): Body => {
   };
 
   googleBody.bucket[0].dataset.forEach((data) => {
-    const dataPoint = data.point[0];
-    if (dataPoint.dataTypeName === 'com.google.weight') {
-      body.weight_kg = dataPoint.value[0].fpVal;
-    }
+    if (data.point.length) {
+      const dataPoint = data.point[0];
+      if (data.dataSourceId === 'derived:com.google.weight:com.google.android.gms:merge_weight') {
+        body.weight_kg = dataPoint.value[0].fpVal;
+      }
 
-    if (dataPoint.dataTypeName === 'com.google.height') {
-      body.height_cm = convert(dataPoint.value[0].fpVal).from("m").to("cm");
-    }
+      if (data.dataSourceId === 'derived:com.google.height:com.google.android.gms:merge_height') {
+        body.height_cm = convert(dataPoint.value[0].fpVal).from("m").to("cm");
+      }
 
-    if (dataPoint.dataTypeName === 'com.google.body.fat.percentage') {
-      body.body_fat_pct = dataPoint.value[0].fpVal;
+      if (data.dataSourceId === 'derived:com.google.body.fat.percentage:com.google.android.gms:merged') {
+        body.body_fat_pct = dataPoint.value[0].fpVal;
+      }
     }
   })
 

@@ -31,6 +31,7 @@ export interface AuthCodeUriParams {
   scope?: string[] | string;
   redirect_uri: string;
   code: string;
+  access_type?: string;
 }
 
 export enum AxiosMethod {
@@ -83,6 +84,11 @@ export class OAuth2DefaultImpl implements OAuth2 {
     if (this.scopes) {
       params.scope = this.scopes;
     }
+
+    if (this.providerName === 'google') {
+      params.access_type = 'offline'
+    }
+
     const accessToken = await client.getToken(params);
 
     return JSON.stringify(accessToken);
@@ -109,7 +115,6 @@ export class OAuth2DefaultImpl implements OAuth2 {
     return authorizationUri;
   }
 
-  // TODO: REFRESH TOKEN BROKEN FOR GOOGLE
   private async checkRefreshToken(
     token: string,
     connectedUser: ConnectedUser
@@ -121,12 +126,24 @@ export class OAuth2DefaultImpl implements OAuth2 {
       try {
         accessToken = await accessToken.refresh();
 
+        // When the access token is refreshed it doesnt return a refresh token
+        // It only creates one when creating authurl
+        if (this.providerName === 'google') {
+          const oldToken = JSON.parse(token);
+          const extensibleToken = JSON.parse(JSON.stringify(accessToken));
+
+          extensibleToken.refresh_token = oldToken.refresh_token;
+
+          accessToken.token = extensibleToken
+        }
+
         const providerItem = connectedUser.providerMap
           ? {
             ...connectedUser.providerMap[this.providerName],
             token: JSON.stringify(accessToken.token),
           }
           : { token: JSON.stringify(accessToken.token) };
+
         await updateProviderData({
           id: connectedUser.id,
           cxId: connectedUser.cxId,
@@ -176,7 +193,6 @@ export class OAuth2DefaultImpl implements OAuth2 {
 
     return providerData.token;
   }
-
 
 
   async fetchProviderData<T>(
