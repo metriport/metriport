@@ -9,6 +9,10 @@
     "prep-deploy-staging": "npm install && npm run build:staging && npm run test && npm run prep-token-auth && npm run prep-garmin",
     "build": "npm run build --workspaces",
     "build:staging": "npm run build -w api && npm run build:staging -w dash && npm run build -w infra",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint-fix": "npm run lint-fix --workspaces --if-present",
+    "prettier-fix": "npm run prettier-fix --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },
   "workspaces": {
