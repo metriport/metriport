@@ -28,10 +28,7 @@ export async function getProviderDataForType<T>(
     if (provider.consumerHealthDataTypeSupported(type)) {
       providers.push(providerName);
       requests.push(
-        Constants.PROVIDER_MAP[providerName][`get${type}Data`](
-          connectedUser,
-          date
-        ) as Promise<T>
+        Constants.PROVIDER_MAP[providerName][`get${type}Data`](connectedUser, date) as Promise<T>
       );
     }
   }

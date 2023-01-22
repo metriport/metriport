@@ -47,8 +47,7 @@ export const getUserIdFromQueryOrFail = (req: Request): string => {
   return userId as string;
 };
 
-export const getDate = (req: Request): string | undefined =>
-  req.query.date as string | undefined;
+export const getDate = (req: Request): string | undefined => req.query.date as string | undefined;
 export const getDateOrFail = (req: Request): string => {
   const date = getDate(req);
   if (!date) throw new BadRequestError("Missing date query param");

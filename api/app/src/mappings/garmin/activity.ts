@@ -5,11 +5,7 @@ import { EnergyExpenditure } from "@metriport/api/lib/models/common/energy-expen
 import { HeartRate } from "@metriport/api/lib/models/common/heart-rate";
 import { groupBy, partition } from "lodash";
 import { z } from "zod";
-import {
-  garminMetaSchema,
-  User,
-  UserData,
-} from ".";
+import { garminMetaSchema, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 import { toISODate, toISODateTime } from "../../shared/date";
 import { Util } from "../../shared/util";
@@ -36,10 +32,7 @@ export const activityToMovement = (
   if (activity.totalElevationGainInMeters) {
     res.elevation = { gain_meters: activity.totalElevationGainInMeters };
   }
-  if (
-    activity.maxSpeedInMetersPerSecond ||
-    activity.averageSpeedInMetersPerSecond
-  ) {
+  if (activity.maxSpeedInMetersPerSecond || activity.averageSpeedInMetersPerSecond) {
     res.speed = {
       max_km_h: Util.optional(activity.maxSpeedInMetersPerSecond),
       avg_km_h: Util.optional(activity.averageSpeedInMetersPerSecond),
@@ -51,10 +44,7 @@ export const activityToMovement = (
 export const activityToLocation = (
   activity: GarminActivitySummary
 ): ActivityLog["location"] | undefined => {
-  if (
-    activity.startingLatitudeInDegree != null &&
-    activity.startingLongitudeInDegree != null
-  ) {
+  if (activity.startingLatitudeInDegree != null && activity.startingLongitudeInDegree != null) {
     return {
       start_lat_lon_deg: {
         lat: activity.startingLatitudeInDegree,
@@ -72,24 +62,17 @@ export const activityToBiometrics = (
     avg_bpm: Util.optional(activity.averageHeartRateInBeatsPerMinute),
     max_bpm: Util.optional(activity.maxHeartRateInBeatsPerMinute),
   };
-  return Object.keys(hearRate).length > 0
-    ? { heart_rate: hearRate }
-    : undefined;
+  return Object.keys(hearRate).length > 0 ? { heart_rate: hearRate } : undefined;
 };
 
-export const mapToActivity = (
-  activities: GarminActivity[]
-): UserData<Activity>[] => {
+export const mapToActivity = (activities: GarminActivity[]): UserData<Activity>[] => {
   const type = "activity";
   // The current version does not supported composite activities - ie. MULTI_SPORT
-  const [activitiesToProcess, doNotProcess] = partition(
-    activities,
-    (a) => !a.parentSummaryId
-  );
+  const [activitiesToProcess, doNotProcess] = partition(activities, a => !a.parentSummaryId);
   if (doNotProcess.length > 0) {
     log(`Skipping ${doNotProcess.length} MULTI_SPORT activities`);
   }
-  const byUser = groupBy(activitiesToProcess, (a) => a.userAccessToken);
+  const byUser = groupBy(activitiesToProcess, a => a.userAccessToken);
   return Object.entries(byUser).flatMap(([key, values]) => {
     const uat = key;
     const userData = values;
@@ -98,7 +81,7 @@ export const mapToActivity = (
     };
     return userData
       .map(garminActivitySummaryToActivityLog)
-      .map((data) => ({ user, typedData: { type, data } }));
+      .map(data => ({ user, typedData: { type, data } }));
   });
 };
 
@@ -120,13 +103,8 @@ export const garminActivitySummaryToActivityLog = (
   if (activity.startTimeInSeconds != null) {
     res.start_time = toISODateTime(activity.startTimeInSeconds);
   }
-  if (
-    activity.startTimeInSeconds != null &&
-    activity.durationInSeconds != null
-  ) {
-    res.end_time = toISODateTime(
-      activity.startTimeInSeconds + activity.durationInSeconds
-    );
+  if (activity.startTimeInSeconds != null && activity.durationInSeconds != null) {
+    res.end_time = toISODateTime(activity.startTimeInSeconds + activity.durationInSeconds);
   }
   // durations: ActivityDurations, // nothing from Garmin's Activity Details, comes from Health API
   if (activity.activeKilocalories != null) {
@@ -174,9 +152,7 @@ export const garminActivitySummarySchema = z.object({
 });
 export type GarminActivitySummary = z.infer<typeof garminActivitySummarySchema>;
 
-export const garminActivitySchema = garminMetaSchema.merge(
-  garminActivitySummarySchema
-);
+export const garminActivitySchema = garminMetaSchema.merge(garminActivitySummarySchema);
 export type GarminActivity = z.infer<typeof garminActivitySchema>;
 
 export const garminActivityListSchema = z.array(garminActivitySchema);

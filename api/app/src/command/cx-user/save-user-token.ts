@@ -3,9 +3,7 @@ import { UserToken } from "../../domain/user-token";
 
 export type SaveUserTokenCommand = UserToken;
 
-export const saveUserToken = async (
-  userToken: SaveUserTokenCommand
-): Promise<UserToken> => {
+export const saveUserToken = async (userToken: SaveUserTokenCommand): Promise<UserToken> => {
   await getDB()
     .doc?.put({
       TableName: docTableNames.token,

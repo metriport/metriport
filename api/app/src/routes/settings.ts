@@ -16,15 +16,11 @@ class SettingsDTO {
   public constructor(
     public id: string,
     public webhookUrl: string | null,
-    public webhookKey: string | null,
+    public webhookKey: string | null
   ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
-    return new SettingsDTO(
-      s.id,
-      s.webhookUrl,
-      s.webhookKey,
-    );
+    return new SettingsDTO(s.id, s.webhookUrl, s.webhookKey);
   }
 }
 

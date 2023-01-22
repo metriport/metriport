@@ -37,10 +37,7 @@ export const mapToBiometrics = (
   if (breathing) {
     biometrics.respiration = {
       ...biometrics.respiration,
-      ...Util.addDataToObject(
-        "avg_breaths_per_minute",
-        breathing.breathingRate
-      ),
+      ...Util.addDataToObject("avg_breaths_per_minute", breathing.breathingRate),
     };
   }
 

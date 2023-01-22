@@ -3,21 +3,12 @@ import { Sample } from "@metriport/api/lib/models/common/sample";
 import dayjs from "dayjs";
 import { groupBy } from "lodash";
 import { z } from "zod";
-import {
-  DataType,
-  garminMetaSchema,
-  garminTypes,
-  garminUnits,
-  User,
-  UserData,
-} from ".";
+import { DataType, garminMetaSchema, garminTypes, garminUnits, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 
-export const mapToBiometricsFromHRV = (
-  items: GarminHRVList
-): UserData<Biometrics>[] => {
+export const mapToBiometricsFromHRV = (items: GarminHRVList): UserData<Biometrics>[] => {
   const type: DataType = "biometrics";
-  const itemsByUAT = groupBy(items, (a) => a.userAccessToken);
+  const itemsByUAT = groupBy(items, a => a.userAccessToken);
   return Object.entries(itemsByUAT).flatMap(([key, values]) => {
     const uat = key;
     const userData = values;
@@ -28,7 +19,7 @@ export const mapToBiometricsFromHRV = (
     const definedItems: Biometrics[] = mappedItems.filter(
       (v: Biometrics | undefined) => v != undefined
     ) as Biometrics[];
-    return definedItems.map((data) => ({
+    return definedItems.map(data => ({
       user,
       typedData: { type, data },
     }));
@@ -43,10 +34,7 @@ export const garminHRVToBody = (gBody: GarminHRV): Biometrics | undefined => {
     },
   };
   if (gBody.lastNightAvg != null || gBody.hrvValues != null) {
-    const samples_millis = getHRVSamples(
-      gBody.hrvValues,
-      gBody.startTimeInSeconds
-    );
+    const samples_millis = getHRVSamples(gBody.hrvValues, gBody.startTimeInSeconds);
     bio.hrv = {
       // Choosing RMSSD bc docs hint at it on 7.10 (health snapshot) and this page:
       // https://www.garmin.com/en-US/garmin-technology/running-science/physiological-measurements/hrv-status/
@@ -81,10 +69,7 @@ export const garminHRVSchema = z.object({
   // durationInSeconds: garminTypes.duration.nullable().optional(), // not being used
   lastNightAvg: garminTypes.hrvAverage,
   // lastNight5MinHigh: 93, // not being used
-  hrvValues: z
-    .record(garminUnits.timeKey, garminTypes.hrv)
-    .nullable()
-    .optional(),
+  hrvValues: z.record(garminUnits.timeKey, garminTypes.hrv).nullable().optional(),
 });
 export type GarminHRV = z.infer<typeof garminHRVSchema>;
 

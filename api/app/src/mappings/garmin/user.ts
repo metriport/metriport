@@ -4,11 +4,9 @@ import { z } from "zod";
 import { DataType, garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 
-export const mapToBiometricsFromUser = (
-  items: GarminUserMetricsList
-): UserData<Biometrics>[] => {
+export const mapToBiometricsFromUser = (items: GarminUserMetricsList): UserData<Biometrics>[] => {
   const type: DataType = "biometrics";
-  const itemsByUAT = groupBy(items, (a) => a.userAccessToken);
+  const itemsByUAT = groupBy(items, a => a.userAccessToken);
   return Object.entries(itemsByUAT).flatMap(([key, values]) => {
     const uat = key;
     const userData = values;
@@ -19,16 +17,14 @@ export const mapToBiometricsFromUser = (
     const definedItems: Biometrics[] = mappedItems.filter(
       (v: Biometrics | undefined) => v != undefined
     ) as Biometrics[];
-    return definedItems.map((data) => ({
+    return definedItems.map(data => ({
       user,
       typedData: { type, data },
     }));
   });
 };
 
-export const garminUserMetricsToBody = (
-  gBody: GarminUserMetrics
-): Biometrics | undefined => {
+export const garminUserMetricsToBody = (gBody: GarminUserMetrics): Biometrics | undefined => {
   const bio: Biometrics = {
     metadata: {
       date: gBody.calendarDate,
@@ -51,14 +47,8 @@ export const garminUserMetricsSchema = z.object({
 });
 export type GarminUserMetrics = z.infer<typeof garminUserMetricsSchema>;
 
-export const garminUserMetricsWithMetaSchema = garminMetaSchema.merge(
-  garminUserMetricsSchema
-);
-export type GarminUserMetricsWithMeta = z.infer<
-  typeof garminUserMetricsWithMetaSchema
->;
+export const garminUserMetricsWithMetaSchema = garminMetaSchema.merge(garminUserMetricsSchema);
+export type GarminUserMetricsWithMeta = z.infer<typeof garminUserMetricsWithMetaSchema>;
 
-export const garminUserMetricsListSchema = z.array(
-  garminUserMetricsWithMetaSchema
-);
+export const garminUserMetricsListSchema = z.array(garminUserMetricsWithMetaSchema);
 export type GarminUserMetricsList = z.infer<typeof garminUserMetricsListSchema>;

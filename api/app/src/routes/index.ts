@@ -17,7 +17,7 @@ export default (app: Application) => {
 
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", webhook);
-  
+
   // routes with API key auth
   app.use("/settings", processAPIKey, settings);
   app.use("/activity", processAPIKey, reportUsage, activity);

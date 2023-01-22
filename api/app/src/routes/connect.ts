@@ -29,10 +29,7 @@ const router = Router();
  * @param     {string}  token     The connect widget's session token.
  * @returns   {string}  The connect error redirect URL.
  */
-export const buildConnectErrorRedirectURL = (
-  success: boolean,
-  token: string
-): string => {
+export const buildConnectErrorRedirectURL = (success: boolean, token: string): string => {
   const redirectPath = success ? "success" : "error";
   const sandboxFlag = Config.isSandbox() ? "&sandbox=true" : "";
   return `${Config.getConnectWidgetUrl()}${redirectPath}?token=${token}${sandboxFlag}`;
@@ -54,23 +51,19 @@ router.get(
     const token = req.header("api-token");
     if (!token) throw new UnauthorizedError();
 
-    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(
-      req.query.provider
-    );
+    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(req.query.provider);
     if (providerOAuth2.success) {
-      const providerUrl = await Constants.PROVIDER_OAUTH2_MAP[
-        providerOAuth2.data
-      ].getAuthUri(token);
+      const providerUrl = await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].getAuthUri(
+        token
+      );
       return res.send(providerUrl);
     }
 
-    const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
-      req.query.provider
-    );
+    const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(req.query.provider);
     if (providerOAuth1.success) {
-      const providerUrl = await Constants.PROVIDER_OAUTH1_MAP[
-        providerOAuth1.data
-      ].processStep1(token);
+      const providerUrl = await Constants.PROVIDER_OAUTH1_MAP[providerOAuth1.data].processStep1(
+        token
+      );
       return res.send(providerUrl);
     }
 
@@ -101,18 +94,11 @@ const providerRequest = z.object({
  * @return  redirect to the Success page.
  */
 router.get("/:provider", async (req: Request, res: Response) => {
-  const {
-    state,
-    code: authCode,
-    oauth_token,
-    oauth_verifier,
-  } = providerRequest.parse(req.query);
+  const { state, code: authCode, oauth_token, oauth_verifier } = providerRequest.parse(req.query);
 
   try {
     // OAUTH 2
-    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(
-      req.params.provider
-    );
+    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(req.params.provider);
     if (providerOAuth2.success) {
       const provider = providerOAuth2.data;
       let cxId = getCxIdFromHeaders(req);
@@ -122,9 +108,7 @@ router.get("/:provider", async (req: Request, res: Response) => {
     }
 
     // OAUTH 1
-    const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
-      req.params.provider
-    );
+    const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(req.params.provider);
     if (providerOAuth1.success) {
       const provider = providerOAuth1.data;
       await processOAuth1(provider, state, oauth_token, oauth_verifier);
@@ -212,8 +196,8 @@ router.get("/user/apple", async (req: Request, res: Response) => {
     cxId: connectedUser.cxId,
     provider: PROVIDER_APPLE,
     providerItem: {
-      token: 'true'
-    }
+      token: "true",
+    },
   });
 
   return res.status(status.OK).send(connectedUser.id);

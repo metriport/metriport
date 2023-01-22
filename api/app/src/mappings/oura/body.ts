@@ -4,11 +4,7 @@ import convert from "convert-units";
 import { PROVIDER_OURA } from "../../shared/constants";
 import { OuraPersonalInfo } from "./user";
 
-export const mapToBody = (
-  ouraPersonalInfo: OuraPersonalInfo,
-  date: string
-): Body => {
-
+export const mapToBody = (ouraPersonalInfo: OuraPersonalInfo, date: string): Body => {
   const metadata = {
     date: date,
     source: PROVIDER_OURA,
@@ -19,7 +15,7 @@ export const mapToBody = (
   };
 
   if (ouraPersonalInfo.height) {
-    body.height_cm = convert(ouraPersonalInfo.height).from("m").to("cm")
+    body.height_cm = convert(ouraPersonalInfo.height).from("m").to("cm");
   }
 
   if (ouraPersonalInfo.weight) {

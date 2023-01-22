@@ -1,9 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import NotFoundError from "../../errors/not-found";
-import {
-  WebhookRequest,
-  WebhookRequestStatus,
-} from "../../models/webhook-request";
+import { WebhookRequest, WebhookRequestStatus } from "../../models/webhook-request";
 
 export type CreateWebhookRequestCommand = { cxId: string; payload: unknown };
 

@@ -13,7 +13,7 @@ export const mapToBiometricsFromRespiration = (
 ): UserData<Biometrics>[] => {
   const type: DataType = "biometrics";
   // group by user
-  const itemsByUAT = groupBy(items, (a) => a.userAccessToken);
+  const itemsByUAT = groupBy(items, a => a.userAccessToken);
   return Object.entries(itemsByUAT).flatMap(([key, values]) => {
     const uat = key;
     const userData = values;
@@ -23,7 +23,7 @@ export const mapToBiometricsFromRespiration = (
     // flat list of user breaths/samples with date
     const breaths = toBreaths(userData);
     // now group those breaths by date and return as a Biometrics
-    const breathsByDate = groupBy(breaths, (i) => i.date);
+    const breathsByDate = groupBy(breaths, i => i.date);
     const toUserBiometrics = (date: string): UserData<Biometrics> => {
       const breathsOfDate = breathsByDate[date];
       return {
@@ -33,7 +33,7 @@ export const mapToBiometricsFromRespiration = (
           data: {
             metadata: { date, source: PROVIDER_GARMIN },
             respiration: {
-              samples_breaths_per_minute: breathsOfDate.map((v) => v.breath),
+              samples_breaths_per_minute: breathsOfDate.map(v => v.breath),
             },
           },
         },
@@ -44,38 +44,30 @@ export const mapToBiometricsFromRespiration = (
 };
 
 const toBreaths = (userData: GarminRespirationList): BreathAndDate[] => {
-  const mappedItems = userData.flatMap((v) => {
+  const mappedItems = userData.flatMap(v => {
     if (!v.timeOffsetEpochToBreaths) return undefined;
     const offsets = Object.keys(v.timeOffsetEpochToBreaths).map(Number);
     if (offsets.length < 1) return undefined;
-    return offsets.map((offset) => {
+    return offsets.map(offset => {
       const date = toISODate(v.startTimeInSeconds);
       const time = dayjs.unix(v.startTimeInSeconds + offset).toISOString();
       const value = v.timeOffsetEpochToBreaths![offset];
       return { date, breath: { time, value } };
     });
   });
-  return mappedItems.filter((v) => v != null) as BreathAndDate[];
+  return mappedItems.filter(v => v != null) as BreathAndDate[];
 };
 
 export const garminRespirationSchema = z.object({
   startTimeInSeconds: garminTypes.startTime,
   // startTimeOffsetInSeconds: -21600, // always return UTC
   // durationInSeconds: garminTypes.duration.nullable().optional(), // not being used
-  timeOffsetEpochToBreaths: garminTypes.timeOffsetEpochToBreaths
-    .nullable()
-    .optional(),
+  timeOffsetEpochToBreaths: garminTypes.timeOffsetEpochToBreaths.nullable().optional(),
 });
 export type GarminRespiration = z.infer<typeof garminRespirationSchema>;
 
-export const garminRespirationWithMetaSchema = garminMetaSchema.merge(
-  garminRespirationSchema
-);
-export type GarminRespirationWithMeta = z.infer<
-  typeof garminRespirationWithMetaSchema
->;
+export const garminRespirationWithMetaSchema = garminMetaSchema.merge(garminRespirationSchema);
+export type GarminRespirationWithMeta = z.infer<typeof garminRespirationWithMetaSchema>;
 
-export const garminRespirationListSchema = z.array(
-  garminRespirationWithMetaSchema
-);
+export const garminRespirationListSchema = z.array(garminRespirationWithMetaSchema);
 export type GarminRespirationList = z.infer<typeof garminRespirationListSchema>;

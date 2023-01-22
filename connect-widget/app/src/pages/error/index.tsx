@@ -1,12 +1,5 @@
 import { NotAllowedIcon } from "@chakra-ui/icons";
-import {
-  Container,
-  Flex,
-  Heading,
-  Text,
-  Card,
-  IconButton,
-} from "@chakra-ui/react";
+import { Container, Flex, Heading, Text, Card, IconButton } from "@chakra-ui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WidgetContainer from "../../shared/components/WidgetContainer";
@@ -24,9 +17,7 @@ export default function Error() {
           <NotAllowedIcon mt={4} boxSize={"60px"} color={"red.300"} />
         </Flex>
         <Flex justify={"center"} textAlign="center">
-          <Heading>
-            Ensure you've authorized access to all scopes and try again.
-          </Heading>
+          <Heading>Ensure you've authorized access to all scopes and try again.</Heading>
         </Flex>
         <Container>
           <Card align={"center"} shadow={"none"} p={6}>

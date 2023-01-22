@@ -14,9 +14,7 @@ export enum NameUseCodes {
   maiden = "maiden",
   unspecified = "unspecified",
 }
-export const nameUseCodesSchema = z.enum(
-  Object.keys(NameUseCodes) as [string, ...string[]]
-);
+export const nameUseCodesSchema = z.enum(Object.keys(NameUseCodes) as [string, ...string[]]);
 
 // A name of a Person with text, parts and usage information.
 // Names may be changed or repudiated. People may have different names in different contexts.

@@ -25,14 +25,9 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
 
   const customColor = getCustomColor(color, isDemo);
 
-  const decidePrimaryColor = `${
-    customColor ? customColor : Constants.PRIMARY_COLOR
-  } !important`;
+  const decidePrimaryColor = `${customColor ? customColor : Constants.PRIMARY_COLOR} !important`;
 
-  const decideHollowColor = `${useColorModeValue(
-    "white",
-    "grey.700"
-  )} !important`;
+  const decideHollowColor = `${useColorModeValue("white", "grey.700")} !important`;
 
   const theme = extendTheme({
     breakpoints: Constants.BREAKPOINTS,
@@ -43,9 +38,7 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
           color: "white",
           backgroundColor: decidePrimaryColor,
           _hover: {
-            backgroundColor: `${
-              customColor ? customColor : Constants.HOVER_COLOR
-            } !important`,
+            backgroundColor: `${customColor ? customColor : Constants.HOVER_COLOR} !important`,
             ...(customColor ? { opacity: 0.8 } : undefined),
           },
         },

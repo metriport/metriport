@@ -1,14 +1,4 @@
-import {
-  Heading,
-  Flex,
-  Button,
-  Text,
-  Icon,
-  Box,
-  Image,
-  Divider,
-  Link,
-} from "@chakra-ui/react";
+import { Heading, Flex, Button, Text, Icon, Box, Image, Divider, Link } from "@chakra-ui/react";
 import { LinkIcon, LockIcon } from "@chakra-ui/icons";
 import { GiHealthNormal } from "react-icons/gi";
 import { ImClipboard } from "react-icons/im";
@@ -47,19 +37,8 @@ const Agreement = ({ onAcceptAgreement }: AgreementProps) => {
         body="Metriport is a SOC 2 and HIPAA compliant organization."
         footer={
           <Box mt={2} display={"flex"}>
-            <Image
-              boxSize={"50px"}
-              mr={4}
-              objectFit="contain"
-              src={hippa}
-              alt="Hipaa"
-            />
-            <Image
-              boxSize={"50px"}
-              objectFit="contain"
-              src={soc2}
-              alt="Hipaa"
-            />
+            <Image boxSize={"50px"} mr={4} objectFit="contain" src={hippa} alt="Hipaa" />
+            <Image boxSize={"50px"} objectFit="contain" src={soc2} alt="Hipaa" />
           </Box>
         }
       />
@@ -67,11 +46,7 @@ const Agreement = ({ onAcceptAgreement }: AgreementProps) => {
       <Flex mb={4} px={6} justifyContent={"center"}>
         <Text textAlign={"center"}>
           By selecting "Continue" you agree to the{" "}
-          <Link
-            textDecor={"underline"}
-            href="https://metriport.com/privacy/"
-            isExternal
-          >
+          <Link textDecor={"underline"} href="https://metriport.com/privacy/" isExternal>
             Metriport End User Privacy Policy
           </Link>
         </Text>
