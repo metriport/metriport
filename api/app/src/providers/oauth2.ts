@@ -1,4 +1,4 @@
-import { Axios, AxiosResponse, Method } from "axios";
+import { Axios, AxiosResponse } from "axios";
 import { AuthorizationCode, Token } from "simple-oauth2";
 import { z } from "zod";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
@@ -33,14 +33,6 @@ export interface AuthCodeUriParams {
   code: string;
   access_type?: string;
 }
-
-export enum AxiosMethod {
-  patch = "patch",
-  put = "put",
-  get = "get",
-  post = "post"
-}
-
 export class OAuth2DefaultImpl implements OAuth2 {
   constructor(
     private readonly providerName: ProviderOAuth2Options,
