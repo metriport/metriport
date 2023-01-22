@@ -1,4 +1,4 @@
-name: Reusable Deploy script
+name: Reusable Release script
 
 on:
   workflow_call:
