@@ -35,9 +35,7 @@ export class APIStack extends Stack {
     const apiSecrets: { [key: string]: ecs.Secret } = {};
     for (const key of Object.keys(props.config.providerSecretNames)) {
       apiSecrets[key] = ecs.Secret.fromSecretsManager(
-        buildSecret(
-          (props.config.providerSecretNames as { [index: string]: any })[key]
-        )
+        buildSecret((props.config.providerSecretNames as { [index: string]: any })[key])
       );
     }
 
@@ -157,9 +155,7 @@ export class APIStack extends Stack {
 
     const connectWidgetUrlEnvVar = props.config.connectWidgetUrl
       ? props.config.connectWidgetUrl
-      : `https://${props.config.connectWidget!.subdomain}.${
-          props.config.connectWidget!.domain
-        }/`;
+      : `https://${props.config.connectWidget!.subdomain}.${props.config.connectWidget!.domain}/`;
 
     // Run some servers on fargate containers
     const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
@@ -195,10 +191,7 @@ export class APIStack extends Stack {
     );
     // This speeds up deployments so the tasks are swapped quicker.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-    fargateService.targetGroup.setAttribute(
-      "deregistration_delay.timeout_seconds",
-      "17"
-    );
+    fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
 
     // This also speeds up deployments so the health checks have a faster turnaround.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
@@ -212,9 +205,7 @@ export class APIStack extends Stack {
     dbCluster.connections.allowDefaultPortFrom(fargateService.service);
 
     // RW grant for Dynamo DB
-    dynamoDBTokenTable.grantReadWriteData(
-      fargateService.taskDefinition.taskRole
-    );
+    dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
     // hookup autoscaling based on 90% thresholds
     const scaling = fargateService.service.autoScaleTaskCount({
@@ -312,17 +303,13 @@ export class APIStack extends Stack {
     });
 
     // token auth for connect sessions
-    const tokenAuthLambda = new lambda_node.NodejsFunction(
-      this,
-      "APITokenAuthLambda",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X,
-        entry: "../api/lambdas/token-auth/index.js",
-        environment: {
-          TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-        },
-      }
-    );
+    const tokenAuthLambda = new lambda_node.NodejsFunction(this, "APITokenAuthLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "../api/lambdas/token-auth/index.js",
+      environment: {
+        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+      },
+    });
     addErrorAlarmToLambdaFunc(this, tokenAuthLambda, "TokenAuthFunctionAlarm");
 
     const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
@@ -349,8 +336,7 @@ export class APIStack extends Stack {
         vpcLink: link,
         requestParameters: {
           "integration.request.path.proxy": "method.request.path.proxy",
-          "integration.request.header.api-token":
-            "context.authorizer.api-token",
+          "integration.request.header.api-token": "context.authorizer.api-token",
           "integration.request.header.cxId": "context.authorizer.cxId",
           "integration.request.header.userId": "context.authorizer.userId",
         },
@@ -471,12 +457,7 @@ export class APIStack extends Stack {
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     dynamoDBTokenTable: dynamodb.Table;
   }) {
-    const {
-      baseResource,
-      vpc,
-      fargateService: server,
-      dynamoDBTokenTable,
-    } = ownProps;
+    const { baseResource, vpc, fargateService: server, dynamoDBTokenTable } = ownProps;
 
     const garminLambda = new lambda_node.NodejsFunction(this, "GarminLambda", {
       runtime: lambda.Runtime.NODEJS_16_X,

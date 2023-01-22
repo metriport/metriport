@@ -15,14 +15,13 @@ const routes = Router();
 routes.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
-
     const metriportUserId = req.body.metriportUserId;
     const cxId = req.cxId;
     const payload = JSON.parse(req.body.data);
 
-    const mappedData = mapData(appleSchema.parse(payload))
+    const mappedData = mapData(appleSchema.parse(payload));
 
-    processAppleData(mappedData, metriportUserId, cxId)
+    processAppleData(mappedData, metriportUserId, cxId);
 
     return res.sendStatus(200);
   })

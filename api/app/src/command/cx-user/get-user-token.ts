@@ -7,9 +7,7 @@ export type GetUserTokenCommand = {
   token: string;
 };
 
-export const getUserToken = async ({
-  token,
-}: GetUserTokenCommand): Promise<UserToken> => {
+export const getUserToken = async ({ token }: GetUserTokenCommand): Promise<UserToken> => {
   const item = await getDB()
     .doc?.get({
       TableName: docTableNames.token,

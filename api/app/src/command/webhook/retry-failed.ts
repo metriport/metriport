@@ -19,7 +19,7 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
     },
     {
       where: {
-        id: failed.map((f) => f.id),
+        id: failed.map(f => f.id),
       },
     }
   );

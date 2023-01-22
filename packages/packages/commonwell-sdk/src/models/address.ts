@@ -11,9 +11,7 @@ export enum AddressUseCodes {
   old = "old",
   unspecified = "unspecified",
 }
-export const addressUseCodesSchema = z.enum(
-  Object.keys(AddressUseCodes) as [string, ...string[]]
-);
+export const addressUseCodesSchema = z.enum(Object.keys(AddressUseCodes) as [string, ...string[]]);
 
 // A postal address.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.3 Address)

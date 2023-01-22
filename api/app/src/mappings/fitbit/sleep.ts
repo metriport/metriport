@@ -14,7 +14,7 @@ export const mapToSleep = (fitbitSleep: FitbitSleep, date: string): Sleep => {
   };
 
   // TODO: We need to account for multiple sleeps like mentioned
-  const mainSleep = fitbitSleep.sleep.filter((sess) => sess.isMainSleep)[0];
+  const mainSleep = fitbitSleep.sleep.filter(sess => sess.isMainSleep)[0];
 
   if (mainSleep) {
     sleep = {
@@ -41,15 +41,9 @@ export const mapToSleep = (fitbitSleep: FitbitSleep, date: string): Sleep => {
     if (mainSleep.levels?.summary) {
       sleep.durations = {
         ...sleep.durations,
-        deep_seconds: convert(mainSleep.levels.summary.deep.minutes)
-          .from("min")
-          .to("s"),
-        rem_seconds: convert(mainSleep.levels.summary.rem.minutes)
-          .from("min")
-          .to("s"),
-        light_seconds: convert(mainSleep.levels.summary.light.minutes)
-          .from("min")
-          .to("s"),
+        deep_seconds: convert(mainSleep.levels.summary.deep.minutes).from("min").to("s"),
+        rem_seconds: convert(mainSleep.levels.summary.rem.minutes).from("min").to("s"),
+        light_seconds: convert(mainSleep.levels.summary.light.minutes).from("min").to("s"),
       };
     }
 
@@ -63,9 +57,7 @@ export const mapToSleep = (fitbitSleep: FitbitSleep, date: string): Sleep => {
     if (mainSleep.minutesToFallAsleep) {
       sleep.durations = {
         ...sleep.durations,
-        time_to_fall_asleep_seconds: convert(mainSleep.minutesToFallAsleep)
-          .from("min")
-          .to("s"),
+        time_to_fall_asleep_seconds: convert(mainSleep.minutesToFallAsleep).from("min").to("s"),
       };
     }
   }

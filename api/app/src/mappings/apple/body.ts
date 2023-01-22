@@ -5,8 +5,8 @@ import { AppleHealth, AppleHealthItem, createMetadata } from "../../mappings/app
 import { ISO_DATE } from "../../shared/date";
 
 export function mapDataToBody(data: AppleHealth) {
-  const body: Body[] = []
-  const dateToIndex: { [key: string]: number } = {}
+  const body: Body[] = [];
+  const dateToIndex: { [key: string]: number } = {};
 
   const addToBody = (appleItem: AppleHealthItem, key: string) => {
     const date = dayjs(appleItem.date).format(ISO_DATE);
@@ -15,8 +15,8 @@ export function mapDataToBody(data: AppleHealth) {
     if (index || index === 0) {
       body[index] = {
         ...body[index],
-        [key]: appleItem.value
-      }
+        [key]: appleItem.value,
+      };
       return;
     }
 
@@ -24,14 +24,18 @@ export function mapDataToBody(data: AppleHealth) {
 
     body.push({
       metadata: createMetadata(date),
-      [key]: appleItem.value
-    })
-  }
+      [key]: appleItem.value,
+    });
+  };
 
-  data.HKQuantityTypeIdentifierHeight?.forEach((appleItem) => addToBody(appleItem, 'height_cm'))
-  data.HKQuantityTypeIdentifierLeanBodyMass?.forEach((appleItem) => addToBody(appleItem, 'lean_mass_kg'))
-  data.HKQuantityTypeIdentifierBodyMass?.forEach((appleItem) => addToBody(appleItem, 'weight_kg'))
-  data.HKQuantityTypeIdentifierBodyFatPercentage?.forEach((appleItem) => addToBody(appleItem, 'body_fat_pct'))
+  data.HKQuantityTypeIdentifierHeight?.forEach(appleItem => addToBody(appleItem, "height_cm"));
+  data.HKQuantityTypeIdentifierLeanBodyMass?.forEach(appleItem =>
+    addToBody(appleItem, "lean_mass_kg")
+  );
+  data.HKQuantityTypeIdentifierBodyMass?.forEach(appleItem => addToBody(appleItem, "weight_kg"));
+  data.HKQuantityTypeIdentifierBodyFatPercentage?.forEach(appleItem =>
+    addToBody(appleItem, "body_fat_pct")
+  );
 
-  return body
+  return body;
 }

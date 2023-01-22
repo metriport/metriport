@@ -19,9 +19,7 @@ const Provider = (props: ProviderProps) => {
     <Box>
       <Card align={"stretch"} p={6} m={2}>
         <Grid templateColumns={"repeat(3, 1fr)"}>
-          <Avatar
-            src={require(`../../../assets/${props.provider.image}`)}
-          ></Avatar>
+          <Avatar src={require(`../../../assets/${props.provider.image}`)}></Avatar>
           <Text fontSize={{ base: 14, sm: "md" }} pl={1} alignSelf={"center"}>
             {capitalizeFirstLetter(props.provider.name)}
           </Text>

@@ -28,9 +28,9 @@ export interface UserData<T extends MetriportData> {
 }
 
 export const garminUnits = {
-  date: z.string().refine((v) => dayjs(v, ISO_DATE, true).isValid()),
+  date: z.string().refine(v => dayjs(v, ISO_DATE, true).isValid()),
   time: z.number().int(),
-  timeKey: z.string().transform((v) => Number(v)),
+  timeKey: z.string().transform(v => Number(v)),
   sleep: z.number(),
   kilocalories: z.number(),
   duration: z.number().int(),
@@ -73,10 +73,7 @@ export const sleepLevelsSchema = z.object({
   light: z.array(timeRange),
 });
 
-export const respirationMeasurements = z.record(
-  garminUnits.timeKey,
-  garminUnits.respiration
-);
+export const respirationMeasurements = z.record(garminUnits.timeKey, garminUnits.respiration);
 export const spo2Measurements = z.record(garminUnits.timeKey, garminUnits.spo2);
 
 export const garminTypes = {

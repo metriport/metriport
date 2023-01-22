@@ -15,7 +15,7 @@ const axios = Axios.create();
 export class Cronometer extends Provider implements OAuth2 {
   static URL: string = "https://cronometer.com";
   static API_PATH: string = "api_v1";
-  static REVOKE_PATH: string = "/oauth/deauthorize"
+  static REVOKE_PATH: string = "/oauth/deauthorize";
   constructor(
     private readonly oauth = new OAuth2DefaultImpl(
       PROVIDER_CRONOMETER,
@@ -59,20 +59,17 @@ export class Cronometer extends Provider implements OAuth2 {
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
     const token = this.getAccessToken(connectedUser);
-    await axios.post(`${Cronometer.URL}/oauth/deauthorize?access_token=${token}`)
+    await axios.post(`${Cronometer.URL}/oauth/deauthorize?access_token=${token}`);
 
     await updateProviderData({
       id: connectedUser.id,
       cxId: connectedUser.cxId,
       provider: PROVIDER_CRONOMETER,
-      providerItem: undefined
+      providerItem: undefined,
     });
   }
 
-  async getNutritionData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Nutrition> {
+  async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
     // not using fetchProviderData here on purpose due to interesting API design - this is a POST
     const resp = await axios.post(
       `${Cronometer.URL}/${Cronometer.API_PATH}/diary_summary`,

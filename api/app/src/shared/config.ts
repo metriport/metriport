@@ -1,5 +1,4 @@
-export const getEnvVar = (varName: string): string | undefined =>
-  process.env[varName];
+export const getEnvVar = (varName: string): string | undefined => process.env[varName];
 
 export const getEnvVarOrFail = (varName: string): string => {
   const value = getEnvVar(varName);

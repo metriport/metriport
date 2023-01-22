@@ -2,12 +2,7 @@ import axios, { AxiosInstance } from "axios";
 import { Agent } from "https";
 import { makeJwt } from "../common/make-jwt";
 import { PurposeOfUse } from "../models/purpose-of-use";
-import {
-  Person,
-  personSchema,
-  PersonSearchResp,
-  personSearchRespSchema,
-} from "../models/person";
+import { Person, personSchema, PersonSearchResp, personSearchRespSchema } from "../models/person";
 
 export enum APIMode {
   integration = "integration",
@@ -23,8 +18,7 @@ export interface RequestMetadata {
 }
 
 export class CommonWell {
-  static integrationUrl =
-    "https://integration.rest.api.commonwellalliance.org/v1";
+  static integrationUrl = "https://integration.rest.api.commonwellalliance.org/v1";
   static productionUrl = "https://rest.api.commonwellalliance.org/v1";
 
   private api: AxiosInstance;
@@ -52,9 +46,7 @@ export class CommonWell {
     this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
     this.api = axios.create({
       baseURL:
-        apiMode === APIMode.production
-          ? CommonWell.productionUrl
-          : CommonWell.integrationUrl,
+        apiMode === APIMode.production ? CommonWell.productionUrl : CommonWell.integrationUrl,
       httpsAgent: this.httpsAgent,
     });
     this.orgName = orgName;
@@ -116,11 +108,7 @@ export class CommonWell {
    * @param id      The person to be updated.
    * @returns
    */
-  async updatePerson(
-    meta: RequestMetadata,
-    person: Person,
-    id: string
-  ): Promise<Person> {
+  async updatePerson(meta: RequestMetadata, person: Person, id: string): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.post(`/person/${id}`, person, {
       headers,

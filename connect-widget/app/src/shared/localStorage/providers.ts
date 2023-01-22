@@ -1,7 +1,7 @@
 import { DefaultProvider } from "../../pages/connect/components/connect-providers";
 
 const defaultProviders: DefaultProvider[] = [
-  { name: 'apple', image: "apple.png" },
+  { name: "apple", image: "apple.png" },
   { name: "fitbit", image: "fitbit.webp" },
   { name: "garmin", image: "garmin.webp" },
   { name: "google", image: "google.png" },
@@ -13,8 +13,11 @@ const defaultProviders: DefaultProvider[] = [
 
 const providersLocalStorageKey = "providers";
 
-
-export const getProviders = (providerParams: string | null, isDemo: boolean, isApple: string | null): DefaultProvider[] => {
+export const getProviders = (
+  providerParams: string | null,
+  isDemo: boolean,
+  isApple: string | null
+): DefaultProvider[] => {
   const providers = toggleProvidersWithApple(defaultProviders, isApple);
   const validProviders = getValidProviders(providers, providerParams);
 
@@ -38,9 +41,7 @@ export const getProviders = (providerParams: string | null, isDemo: boolean, isA
 const getValidProviders = (providers: DefaultProvider[], providerParams: string | null) => {
   if (providerParams) {
     const providerArr = providerParams.split(",");
-    const validProviders = providers.filter((provider) =>
-      providerArr.includes(provider.name)
-    );
+    const validProviders = providers.filter(provider => providerArr.includes(provider.name));
 
     if (validProviders.length) {
       return validProviders;
@@ -53,9 +54,7 @@ const getValidProviders = (providers: DefaultProvider[], providerParams: string 
 };
 
 const getLocalStorageProviders = (): DefaultProvider[] | null => {
-  const localStorageProviders = localStorage.getItem(
-    providersLocalStorageKey
-  );
+  const localStorageProviders = localStorage.getItem(providersLocalStorageKey);
 
   if (localStorageProviders) {
     const parsedValue = JSON.parse(localStorageProviders);
@@ -67,8 +66,8 @@ const getLocalStorageProviders = (): DefaultProvider[] | null => {
 
 const toggleProvidersWithApple = (providers: DefaultProvider[], isApple: string | null) => {
   if (isApple) {
-    return providers
+    return providers;
   }
 
-  return providers.filter(provider => provider.name !== 'apple')
-}
+  return providers.filter(provider => provider.name !== "apple");
+};

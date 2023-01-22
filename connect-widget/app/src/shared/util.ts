@@ -7,17 +7,10 @@ function buildEnvParam(envParam: string) {
 }
 
 // redirects to the main connect page while keeping the token state
-export function redirectToMain(
-  navigate: NavigateFunction,
-  searchParams: URLSearchParams
-) {
-  const envParam = isSandbox(searchParams)
-    ? `&${buildEnvParam(Constants.SANDBOX_PARAM)}`
-    : "";
+export function redirectToMain(navigate: NavigateFunction, searchParams: URLSearchParams) {
+  const envParam = isSandbox(searchParams) ? `&${buildEnvParam(Constants.SANDBOX_PARAM)}` : "";
 
-  navigate(
-    `/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${envParam}`
-  );
+  navigate(`/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${envParam}`);
 }
 
 /**
@@ -29,10 +22,7 @@ export function isLocalEnv(): boolean {
   return process.env.NODE_ENV !== Constants.CLOUD_ENV;
 }
 
-function isEnvParamSet(
-  searchParams: URLSearchParams,
-  envParam: string
-): boolean {
+function isEnvParamSet(searchParams: URLSearchParams, envParam: string): boolean {
   const isSet = searchParams.get(envParam);
   return isSet != null && isSet === String(true);
 }
@@ -53,5 +43,4 @@ export function getEnvVarOrFail(varName: string): string {
   return value;
 }
 
-export const sleep = (timeInMs: number) =>
-  new Promise((resolve) => setTimeout(resolve, timeInMs));
+export const sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));

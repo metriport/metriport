@@ -1,4 +1,4 @@
 export interface Sample {
-    time: string;
-    value: number;
+  time: string;
+  value: number;
 }

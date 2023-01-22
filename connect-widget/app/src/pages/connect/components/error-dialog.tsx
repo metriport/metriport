@@ -19,12 +19,7 @@ export interface ErrorDialogProps {
   onClose?: () => void;
 }
 
-const ErrorDialog = ({
-  show,
-  title,
-  message,
-  onClose: closed,
-}: ErrorDialogProps) => {
+const ErrorDialog = ({ show, title, message, onClose: closed }: ErrorDialogProps) => {
   const { isOpen, onClose } = useDisclosure({ isOpen: show });
   const closeButtonRef = useRef(null);
   const [{ actualTitle, actualMsg }, setActual] = useState({
@@ -45,11 +40,7 @@ const ErrorDialog = ({
   };
 
   return (
-    <AlertDialog
-      isOpen={isOpen}
-      leastDestructiveRef={closeButtonRef}
-      onClose={close}
-    >
+    <AlertDialog isOpen={isOpen} leastDestructiveRef={closeButtonRef} onClose={close}>
       <AlertDialogOverlay>
         <AlertDialogContent>
           <AlertDialogHeader fontSize="lg" fontWeight="bold">

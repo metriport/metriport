@@ -35,13 +35,9 @@ export class Metriport {
    * @returns The userId of the user.
    */
   async getMetriportUserId(appUserId: string): Promise<string> {
-    const resp = await this.api.post<GetMetriportUserIDResponse>(
-      "/user",
-      null,
-      {
-        params: { appUserId: appUserId },
-      }
-    );
+    const resp = await this.api.post<GetMetriportUserIDResponse>("/user", null, {
+      params: { appUserId: appUserId },
+    });
     return resp.data.userId;
   }
 
@@ -52,12 +48,9 @@ export class Metriport {
    * @returns The Metriport Connect session token.
    */
   async getConnectToken(userId: string): Promise<string> {
-    const resp = await this.api.get<GetConnectTokenResponse>(
-      "/user/connect/token",
-      {
-        params: { userId: userId },
-      }
-    );
+    const resp = await this.api.get<GetConnectTokenResponse>("/user/connect/token", {
+      params: { userId: userId },
+    });
     return resp.data.token;
   }
 
@@ -68,10 +61,7 @@ export class Metriport {
    * @param {ProviderSource}  provider  - The data provider to revoke access to.
    * @returns void.
    */
-  async revokeUserAccessToProvider(
-    userId: string,
-    provider: ProviderSource
-  ): Promise<void> {
+  async revokeUserAccessToProvider(userId: string, provider: ProviderSource): Promise<void> {
     await this.api.delete("/user/revoke", {
       params: { userId: userId, provider: provider.toString() },
     });

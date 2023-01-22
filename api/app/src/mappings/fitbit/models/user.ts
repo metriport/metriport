@@ -21,10 +21,7 @@ export const fitbitUserResp = z.object({
     displayNameSetting: z.string().optional().nullable(),
     distanceUnit: z.string().optional().nullable(),
     encodedId: z.string().optional().nullable(),
-    features: z
-      .object({ exerciseGoal: z.boolean().optional().nullable() })
-      .optional()
-      .nullable(),
+    features: z.object({ exerciseGoal: z.boolean().optional().nullable() }).optional().nullable(),
     firstName: z.string().optional().nullable(),
     foodsLocale: z.string().optional().nullable(),
     fullName: z.string().optional().nullable(),

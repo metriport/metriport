@@ -6,27 +6,23 @@ import { DataType, garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 import { toISODate } from "../../shared/date";
 
-export const mapToBody = (
-  items: GarminBodyCompositionList
-): UserData<Body>[] => {
+export const mapToBody = (items: GarminBodyCompositionList): UserData<Body>[] => {
   const type: DataType = "body";
-  const byUAT = groupBy(items, (a) => a.userAccessToken);
+  const byUAT = groupBy(items, a => a.userAccessToken);
   return Object.entries(byUAT).flatMap(([key, values]) => {
     const uat = key;
     const userData = values;
     const user: User = {
       userAccessToken: uat,
     };
-    return userData.map(garminBodyCompositionToBody).map((data) => ({
+    return userData.map(garminBodyCompositionToBody).map(data => ({
       user,
       typedData: { type, data },
     }));
   });
 };
 
-export const garminBodyCompositionToBody = (
-  gBody: GarminBodyComposition
-): Body => {
+export const garminBodyCompositionToBody = (gBody: GarminBodyComposition): Body => {
   const res: Body = {
     metadata: {
       // TODO https://github.com/metriport/metriport-internal/issues/166
@@ -64,13 +60,7 @@ export type GarminBodyComposition = z.infer<typeof garminBodyCompositionSchema>;
 export const garminBodyCompositionWithMetaSchema = garminMetaSchema.merge(
   garminBodyCompositionSchema
 );
-export type GarminBodyCompositionWithMeta = z.infer<
-  typeof garminBodyCompositionWithMetaSchema
->;
+export type GarminBodyCompositionWithMeta = z.infer<typeof garminBodyCompositionWithMetaSchema>;
 
-export const garminBodyCompositionListSchema = z.array(
-  garminBodyCompositionWithMetaSchema
-);
-export type GarminBodyCompositionList = z.infer<
-  typeof garminBodyCompositionListSchema
->;
+export const garminBodyCompositionListSchema = z.array(garminBodyCompositionWithMetaSchema);
+export type GarminBodyCompositionList = z.infer<typeof garminBodyCompositionListSchema>;

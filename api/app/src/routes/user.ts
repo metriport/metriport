@@ -33,10 +33,7 @@ const router = Router();
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
-    const results = await getProviderDataForType<User>(
-      req,
-      ConsumerHealthDataType.User
-    );
+    const results = await getProviderDataForType<User>(req, ConsumerHealthDataType.User);
 
     res.status(status.OK).json(results);
   })
@@ -139,29 +136,23 @@ router.delete(
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
-    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(
-      req.query.provider
-    );
+    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(req.query.provider);
 
-    // TODO #249: implement garmin revoke support 
+    // TODO #249: implement garmin revoke support
     // const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
     //   req.query.provider
     // );
 
     if (providerOAuth2.success) {
-      await Constants.PROVIDER_OAUTH2_MAP[
-        providerOAuth2.data
-      ].revokeProviderAccess(connectedUser);
+      await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
 
       return res.sendStatus(200);
-    // } else if (providerOAuth1.success) {
-    //   // await Constants.PROVIDER_OAUTH1_MAP[
-    //   //   providerOAuth1.data
-    //   // ].deregister(connectedUser);
+      // } else if (providerOAuth1.success) {
+      //   // await Constants.PROVIDER_OAUTH1_MAP[
+      //   //   providerOAuth1.data
+      //   // ].deregister(connectedUser);
     } else {
-      throw new BadRequestError(
-        `Provider not supported: ${req.query.provider}`
-      );
+      throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
     }
   })
 );

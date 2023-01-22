@@ -5,11 +5,7 @@ import { NextFunction, Request, Response } from "express";
  * Process the API key and get the customer id.
  * The customer id is stored on the Request, property 'cxId'.
  */
-export const processAPIKey = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const processAPIKey = (req: Request, res: Response, next: NextFunction): void => {
   try {
     // TODO: don't do anything in standalone mode
     // just trying to get the info, the auth is done on API GW
@@ -23,4 +19,3 @@ export const processAPIKey = (
   }
   next();
 };
-

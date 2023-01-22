@@ -7,10 +7,10 @@ const theme = extendTheme({
   styles: {
     global: (props: any) => ({
       body: {
-        bg: mode(light, dark)(props)
-      }
-    })
-  }
+        bg: mode(light, dark)(props),
+      },
+    }),
+  },
 });
 
 export default theme;

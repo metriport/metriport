@@ -39,9 +39,7 @@ function metriportBanner(): string {
 const program = new Command();
 program
   .name("cw-cert-runner")
-  .description(
-    "Tool to run through Edge System CommonWell certification test cases."
-  )
+  .description("Tool to run through Edge System CommonWell certification test cases.")
   .requiredOption(
     `--env-file <file-path>`,
     `Absolute path to the .env file containing required config. Example required file contents:
@@ -166,11 +164,7 @@ async function main() {
   // C2: Person search
 
   // C2a: Search for a Person using the Strong ID.
-  const respC2a = await commonWell.searchPerson(
-    queryMeta,
-    driversLicenseId,
-    caDriversLicenseUri
-  );
+  const respC2a = await commonWell.searchPerson(queryMeta, driversLicenseId, caDriversLicenseUri);
   console.log(respC2a);
 
   // C2b: Search for a Person using the local Patient demographics.
@@ -181,11 +175,7 @@ async function main() {
   // C3a: Update a Person with an existing Strong ID by updating their demographics and/or Strong ID.
   const personId = getId(respC1a);
   personStrongId.details.name[0].family[0] = "Graham";
-  const respC3a = await commonWell.updatePerson(
-    queryMeta,
-    personStrongId,
-    personId
-  );
+  const respC3a = await commonWell.updatePerson(queryMeta, personStrongId, personId);
   console.log(respC3a);
 
   // C3b: ​Update a Person without a Strong ID by updating their demographics and/or by adding a Strong ID.

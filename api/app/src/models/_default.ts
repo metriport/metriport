@@ -10,9 +10,7 @@ import {
 
 export type ModelSetup = (sequelize: Sequelize) => void;
 
-export const defaultModelOptions = <M extends Model>(
-  sequelize: Sequelize
-): InitOptions<M> => ({
+export const defaultModelOptions = <M extends Model>(sequelize: Sequelize): InitOptions<M> => ({
   sequelize,
   freezeTableName: true,
   underscored: true,

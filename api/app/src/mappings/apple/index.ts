@@ -8,58 +8,63 @@ import { mapDataToNutrition } from "./nutrition";
 import { PROVIDER_APPLE } from "../../shared/constants";
 
 export type AppleWebhookPayload = {
-  activity?: Activity[],
-  body?: Body[],
-  biometrics?: Biometrics[],
-  nutrition?: Nutrition[],
-}
+  activity?: Activity[];
+  body?: Body[];
+  biometrics?: Biometrics[];
+  nutrition?: Nutrition[];
+};
 
 export function mapData(data: AppleHealth): AppleWebhookPayload {
   const payload: AppleWebhookPayload = {};
 
   const activityData = mapDataToActivity(data);
 
-  if (activityData.length) payload.activity = activityData
+  if (activityData.length) payload.activity = activityData;
 
   const bodyData = mapDataToBody(data);
 
-  if (bodyData.length) payload.body = bodyData
+  if (bodyData.length) payload.body = bodyData;
 
   const biometricsData = mapDataToBiometrics(data);
 
-  if (biometricsData.length) payload.biometrics = biometricsData
+  if (biometricsData.length) payload.biometrics = biometricsData;
 
   const nutritionData = mapDataToNutrition(data);
 
-  if (nutritionData.length) payload.nutrition = nutritionData
+  if (nutritionData.length) payload.nutrition = nutritionData;
 
-  return payload
+  return payload;
 }
 
 export const createMetadata = (date: string) => {
   return {
     date,
     source: PROVIDER_APPLE,
-  }
-}
+  };
+};
 
 export const hasActivity = (data: AppleHealth): Boolean => {
-  return !!data.HKQuantityTypeIdentifierActiveEnergyBurned ||
+  return (
+    !!data.HKQuantityTypeIdentifierActiveEnergyBurned ||
     !!data.HKQuantityTypeIdentifierStepCount ||
     !!data.HKQuantityTypeIdentifierActiveEnergyBurned ||
     !!data.HKQuantityTypeIdentifierBasalEnergyBurned ||
     !!data.HKQuantityTypeIdentifierFlightsClimbed
+  );
 };
 
 export const hasBody = (data: AppleHealth): Boolean => {
-  return !!data.HKQuantityTypeIdentifierHeight ||
+  return (
+    !!data.HKQuantityTypeIdentifierHeight ||
     !!data.HKQuantityTypeIdentifierLeanBodyMass ||
     !!data.HKQuantityTypeIdentifierBodyMass ||
     !!data.HKQuantityTypeIdentifierBodyFatPercentage
+  );
 };
 
 export const hasNutrition = (data: AppleHealth): Boolean => {
-  return !!data.HKQuantityTypeIdentifierDietaryCaffeine ||
+  return (
+    !!data.HKQuantityTypeIdentifierDietaryCaffeine ||
     !!data.HKQuantityTypeIdentifierDietaryCalcium ||
     !!data.HKQuantityTypeIdentifierDietaryCarbohydrates ||
     !!data.HKQuantityTypeIdentifierDietaryCholesterol ||
@@ -90,23 +95,25 @@ export const hasNutrition = (data: AppleHealth): Boolean => {
     !!data.HKQuantityTypeIdentifierDietaryVitaminK ||
     !!data.HKQuantityTypeIdentifierDietaryWater ||
     !!data.HKQuantityTypeIdentifierDietaryZinc
-}
+  );
+};
 
 export const hasBiometrics = (data: AppleHealth): Boolean => {
-  return !!data.HKQuantityTypeIdentifierHeartRate ||
+  return (
+    !!data.HKQuantityTypeIdentifierHeartRate ||
     !!data.HKQuantityTypeIdentifierRestingHeartRate ||
     !!data.HKQuantityTypeIdentifierHeartRateVariabilitySDNN ||
     !!data.HKQuantityTypeIdentifierBodyTemperature ||
     !!data.HKQuantityTypeIdentifierBloodPressureSystolic ||
     !!data.HKQuantityTypeIdentifierBloodPressureDiastolic ||
     !!data.HKQuantityTypeIdentifierRespiratoryRate
+  );
 };
-
 
 export const appleItem = z.object({
   date: z.string(),
-  value: z.number()
-})
+  value: z.number(),
+});
 export type AppleHealthItem = z.infer<typeof appleItem>;
 
 export const appleSchema = z.object({
@@ -165,7 +172,6 @@ export const appleSchema = z.object({
   HKQuantityTypeIdentifierRespiratoryRate: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierOxygenSaturation: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierBloodGlucose: z.array(appleItem).optional(),
-})
+});
 
 export type AppleHealth = z.infer<typeof appleSchema>;
-

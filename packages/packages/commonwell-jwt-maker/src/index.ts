@@ -38,17 +38,11 @@ program
     "OID of the org making the request. CW uses this ID to certificate in order to validate the signature on the token."
   )
   .addOption(
-    new Option(
-      `--${pouOpt} <purpose-of-use>`,
-      "The purpose of use (POU) for this request."
-    )
+    new Option(`--${pouOpt} <purpose-of-use>`, "The purpose of use (POU) for this request.")
       .choices(Object.values(PurposeOfUse))
       .makeOptionMandatory(true)
   )
-  .option(
-    `--${npiOpt} [npi-number]`,
-    "Ten digit National Provider Identifier (optional)."
-  )
+  .option(`--${npiOpt} [npi-number]`, "Ten digit National Provider Identifier (optional).")
   .option(
     `--${payloadHashOpt} [payload-hash]`,
     "Only required for Patient IDLink - MurmurHash2 calculation of HTTP POST body (optional)."

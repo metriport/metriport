@@ -5,7 +5,7 @@ import { updateProviderData } from "../command/connected-user/save-connected-use
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { ProviderOAuth2Options } from "../shared/constants";
-import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";;
+import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";
 
 const axios: Axios = require("axios").default;
 
@@ -49,7 +49,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
     private readonly clientOptions?: {
       readonly authorizationMethod?: "body" | "header";
     }
-  ) { }
+  ) {}
 
   getRedirectUri(): string {
     return `${Config.getConnectRedirectUrl()}/${this.providerName}`;
@@ -107,10 +107,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
     return authorizationUri;
   }
 
-  private async checkRefreshToken(
-    token: string,
-    connectedUser: ConnectedUser
-  ): Promise<Token> {
+  private async checkRefreshToken(token: string, connectedUser: ConnectedUser): Promise<Token> {
     const client = this.makeClient();
     let accessToken = client.createToken(JSON.parse(token));
 
@@ -170,7 +167,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
     const token = JSON.parse(providerToken);
     const accessToken = client.createToken(token);
 
-    await accessToken.revoke('access_token');
+    await accessToken.revoke("access_token");
   }
 
   async revokeLocal(connectedUser: ConnectedUser): Promise<string> {
@@ -180,8 +177,8 @@ export class OAuth2DefaultImpl implements OAuth2 {
       id: connectedUser.id,
       cxId: connectedUser.cxId,
       provider: this.providerName,
-      providerItem: undefined
-    })
+      providerItem: undefined,
+    });
 
     return providerData.token;
   }

@@ -28,13 +28,9 @@ export class ConnectWidgetStack extends Stack {
       domainName: widgetConfig.host,
     });
     const siteDomain = siteSubDomain + "." + domainName;
-    const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
-      this,
-      `${idPrefix}cloudfront-OAI`,
-      {
-        comment: `OriginAccessIdentity for ${idPrefix}`,
-      }
-    );
+    const cloudfrontOAI = new cloudfront.OriginAccessIdentity(this, `${idPrefix}cloudfront-OAI`, {
+      comment: `OriginAccessIdentity for ${idPrefix}`,
+    });
 
     new CfnOutput(this, "Site", { value: "https://" + siteDomain });
 
@@ -61,15 +57,11 @@ export class ConnectWidgetStack extends Stack {
     new CfnOutput(this, "Bucket", { value: siteBucket.bucketName });
 
     // TLS certificate
-    const certificate = new acm.DnsValidatedCertificate(
-      this,
-      `${idPrefix}Certificate`,
-      {
-        domainName: siteDomain,
-        hostedZone: zone,
-        region: "us-east-1", // Cloudfront only checks this region for certificates.
-      }
-    );
+    const certificate = new acm.DnsValidatedCertificate(this, `${idPrefix}Certificate`, {
+      domainName: siteDomain,
+      hostedZone: zone,
+      region: "us-east-1", // Cloudfront only checks this region for certificates.
+    });
     // add error alarming to CDK-generated lambdas
     const certificateRequestorLambda = certificate.node.findChild(
       "CertificateRequestorFunction"
@@ -83,39 +75,34 @@ export class ConnectWidgetStack extends Stack {
     new CfnOutput(this, "Certificate", { value: certificate.certificateArn });
 
     // CloudFront distribution
-    const distribution = new cloudfront.Distribution(
-      this,
-      `${idPrefix}Distribution`,
-      {
-        certificate: certificate,
-        defaultRootObject: "index.html",
-        domainNames: [siteDomain],
-        minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
-        errorResponses: [
-          {
-            httpStatus: 403,
-            responseHttpStatus: 200,
-            responsePagePath: "/index.html",
-            ttl: Duration.minutes(30),
-          },
-          {
-            httpStatus: 404,
-            responseHttpStatus: 200,
-            responsePagePath: "/index.html",
-            ttl: Duration.minutes(30),
-          },
-        ],
-        defaultBehavior: {
-          origin: new cloudfront_origins.S3Origin(siteBucket, {
-            originAccessIdentity: cloudfrontOAI,
-          }),
-          compress: true,
-          allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-          viewerProtocolPolicy:
-            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+    const distribution = new cloudfront.Distribution(this, `${idPrefix}Distribution`, {
+      certificate: certificate,
+      defaultRootObject: "index.html",
+      domainNames: [siteDomain],
+      minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+      errorResponses: [
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+          ttl: Duration.minutes(30),
         },
-      }
-    );
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+          ttl: Duration.minutes(30),
+        },
+      ],
+      defaultBehavior: {
+        origin: new cloudfront_origins.S3Origin(siteBucket, {
+          originAccessIdentity: cloudfrontOAI,
+        }),
+        compress: true,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      },
+    });
 
     new CfnOutput(this, "DistributionId", {
       value: distribution.distributionId,
@@ -124,9 +111,7 @@ export class ConnectWidgetStack extends Stack {
     // Route53 alias record for the CloudFront distribution
     new route53.ARecord(this, `${idPrefix}AliasRecord`, {
       recordName: siteDomain,
-      target: route53.RecordTarget.fromAlias(
-        new targets.CloudFrontTarget(distribution)
-      ),
+      target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
       zone,
     });
 

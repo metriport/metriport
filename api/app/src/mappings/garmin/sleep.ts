@@ -1,8 +1,5 @@
 import { Sleep } from "@metriport/api";
-import {
-  SleepBiometrics,
-  SleepDurations,
-} from "@metriport/api/lib/models/sleep";
+import { SleepBiometrics, SleepDurations } from "@metriport/api/lib/models/sleep";
 import { groupBy } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, garminTypes, User, UserData } from ".";
@@ -11,16 +8,14 @@ import { toISODateTime } from "../../shared/date";
 
 export const mapToSleep = (sleepList: GarminSleepList): UserData<Sleep>[] => {
   const type = "sleep";
-  const byUAT = groupBy(sleepList, (a) => a.userAccessToken);
+  const byUAT = groupBy(sleepList, a => a.userAccessToken);
   return Object.entries(byUAT).flatMap(([key, values]) => {
     const uat = key;
     const userData = values;
     const user: User = {
       userAccessToken: uat,
     };
-    return userData
-      .map(garminSleepToSleep)
-      .map((data) => ({ user, typedData: { type, data } }));
+    return userData.map(garminSleepToSleep).map(data => ({ user, typedData: { type, data } }));
   });
 };
 
@@ -33,18 +28,14 @@ export const garminSleepToSleep = (gSleep: GarminSleep): Sleep => {
   };
   res.start_time = toISODateTime(gSleep.startTimeInSeconds);
   if (gSleep.durationInSeconds != null) {
-    res.end_time = toISODateTime(
-      gSleep.startTimeInSeconds + gSleep.durationInSeconds
-    );
+    res.end_time = toISODateTime(gSleep.startTimeInSeconds + gSleep.durationInSeconds);
   }
   res.durations = toDurations(gSleep);
   res.biometrics = toBiometrics(gSleep);
   return res;
 };
 
-export const toDurations = (
-  gSleep: GarminSleep
-): SleepDurations | undefined => {
+export const toDurations = (gSleep: GarminSleep): SleepDurations | undefined => {
   const res: SleepDurations = {};
   if (gSleep.durationInSeconds != null) {
     res.total_seconds = gSleep.durationInSeconds;
@@ -68,9 +59,7 @@ export const toDurations = (
 };
 
 // https://github.com/metriport/metriport-internal/issues/161
-export const toBiometrics = (
-  gSleep: GarminSleep
-): SleepBiometrics | undefined => {
+export const toBiometrics = (gSleep: GarminSleep): SleepBiometrics | undefined => {
   /*
   "gSleep.timeOffsetSleepRespiration"
 
@@ -125,8 +114,7 @@ export const garminSleepSchema = z.object({
 });
 export type GarminSleep = z.infer<typeof garminSleepSchema>;
 
-export const garminSleepWithMetaSchema =
-  garminMetaSchema.merge(garminSleepSchema);
+export const garminSleepWithMetaSchema = garminMetaSchema.merge(garminSleepSchema);
 export type GarminSleepWithMeta = z.infer<typeof garminSleepWithMetaSchema>;
 
 export const garminSleepListSchema = z.array(garminSleepWithMetaSchema);

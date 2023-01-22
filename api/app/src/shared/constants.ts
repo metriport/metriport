@@ -34,9 +34,7 @@ export const providerOAuth2OptionsSchema = z.enum([
 ]);
 export type ProviderOAuth2Options = z.infer<typeof providerOAuth2OptionsSchema>;
 
-export const providerNoAuthSchema = z.enum([
-  PROVIDER_APPLE,
-]);
+export const providerNoAuthSchema = z.enum([PROVIDER_APPLE]);
 export type ProviderNoAuthSchema = z.infer<typeof providerNoAuthSchema>;
 
 export type ProviderOptions = ProviderOAuth1Options | ProviderOAuth2Options | ProviderNoAuthSchema;

@@ -4,11 +4,7 @@ import { PROVIDER_FITBIT } from "../../shared/constants";
 import { FitbitFood } from "./models/food";
 import { FitbitWater } from "./models/water";
 
-export const mapToNutrition = (
-  date: string,
-  food?: FitbitFood,
-  water?: FitbitWater
-): Nutrition => {
+export const mapToNutrition = (date: string, food?: FitbitFood, water?: FitbitWater): Nutrition => {
   const metadata = {
     date: date,
     source: PROVIDER_FITBIT,

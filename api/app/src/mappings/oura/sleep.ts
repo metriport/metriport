@@ -5,10 +5,7 @@ import { PROVIDER_OURA } from "../../shared/constants";
 import { Util } from "../../shared/util";
 import { streamingDataSchema } from ".";
 
-export const mapToSleep = (
-  ouraSleep: OuraSleep,
-  date: string
-): MetriportSleep => {
+export const mapToSleep = (ouraSleep: OuraSleep, date: string): MetriportSleep => {
   const defaultPayload = {
     metadata: {
       date: date,
@@ -31,18 +28,13 @@ export const mapToSleep = (
         },
       },
       respiration: {
-        ...Util.addDataToObject(
-          "avg_breaths_per_minute",
-          ouraSleep.average_breath
-        ),
+        ...Util.addDataToObject("avg_breaths_per_minute", ouraSleep.average_breath),
       },
     },
   };
 
   if (ouraSleep.heart_rate.items && ouraSleep.heart_rate.items.length) {
-    const filteredItems = ouraSleep.heart_rate.items.filter((item) =>
-      Number.isInteger(item)
-    );
+    const filteredItems = ouraSleep.heart_rate.items.filter(item => Number.isInteger(item));
     const { min_item, max_item } = Util.getMinMaxItem(filteredItems);
     const avg_heart_rate = Util.getAvgOfArr(filteredItems);
 

@@ -28,12 +28,10 @@ const validateColor = (paramColor: string | null) => {
   }
 
   return null;
-}
+};
 
 const getLocalStorageColor = (): string | null => {
-  const localStorageColor = localStorage.getItem(
-    colorLocalStorageKey
-  );
+  const localStorageColor = localStorage.getItem(colorLocalStorageKey);
 
   if (localStorageColor) {
     return localStorageColor;

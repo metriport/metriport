@@ -1,12 +1,5 @@
 import { CheckCircleIcon } from "@chakra-ui/icons";
-import {
-  Container,
-  Flex,
-  Heading,
-  Text,
-  Card,
-  IconButton,
-} from "@chakra-ui/react";
+import { Container, Flex, Heading, Text, Card, IconButton } from "@chakra-ui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WidgetContainer from "../../shared/components/WidgetContainer";

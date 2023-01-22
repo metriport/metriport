@@ -13,9 +13,7 @@ export enum ContactUseCodes {
   mobile = "mobile",
   unspecified = "unspecified",
 }
-export const contactUseCodesSchema = z.enum(
-  Object.keys(ContactUseCodes) as [string, ...string[]]
-);
+export const contactUseCodesSchema = z.enum(Object.keys(ContactUseCodes) as [string, ...string[]]);
 
 // Describes the kind of contact. This value set defines its own terms in the
 // system http://hl7.org/fhir/R4/valueset-contact-point-system.html.
