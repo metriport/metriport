@@ -21,9 +21,7 @@ export const getUmzug = (sequelize: Sequelize): Umzug<QueryInterface> => {
 };
 
 // export the type helper exposed by umzug, which will have the `context` argument typed correctly
-export type Migration = (
-  params: MigrationParams<QueryInterface>
-) => Promise<unknown>;
+export type Migration = (params: MigrationParams<QueryInterface>) => Promise<unknown>;
 
 const updateDB = async (sequelize: Sequelize): Promise<MigrationMeta[]> => {
   const queryInterface = sequelize.getQueryInterface();

@@ -22,9 +22,7 @@ async function getConfig(): Promise<EnvConfig> {
   const configPath = `../config/${env}.ts`;
   const config = await import(configPath);
   if (!config || !config.default) {
-    throw new Error(
-      `Ensure config is defined, could not fine file ${configPath}`
-    );
+    throw new Error(`Ensure config is defined, could not fine file ${configPath}`);
   }
   return config.default;
 }

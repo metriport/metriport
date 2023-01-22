@@ -1,10 +1,6 @@
 import { nanoid } from "nanoid";
 import WebhookError from "../../errors/webhook";
-import {
-  Settings,
-  WEBHOOK_STATUS_BAD_RESPONSE,
-  WEBHOOK_STATUS_OK,
-} from "../../models/settings";
+import { Settings, WEBHOOK_STATUS_BAD_RESPONSE, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { Util } from "../../shared/util";
 import { sendTestPayload } from "../webhook/webhook";
 import { getSettingsOrFail } from "./getSettings";
@@ -74,20 +70,14 @@ const getWebhookDataForUpdate = (
 
 type TestWebhookCommand = Pick<Settings, "id" | "webhookUrl" | "webhookKey">;
 
-const testWebhook = async ({
-  id,
-  webhookUrl,
-  webhookKey,
-}: TestWebhookCommand): Promise<void> => {
+const testWebhook = async ({ id, webhookUrl, webhookKey }: TestWebhookCommand): Promise<void> => {
   if (!webhookUrl || !webhookKey) return;
   try {
     const testOK = await sendTestPayload(webhookUrl, webhookKey);
     await updateWebhookStatus({
       id,
       webhookEnabled: testOK,
-      webhookStatusDetail: testOK
-        ? WEBHOOK_STATUS_OK
-        : WEBHOOK_STATUS_BAD_RESPONSE,
+      webhookStatusDetail: testOK ? WEBHOOK_STATUS_OK : WEBHOOK_STATUS_BAD_RESPONSE,
     });
   } catch (err) {
     if (err instanceof WebhookError) {

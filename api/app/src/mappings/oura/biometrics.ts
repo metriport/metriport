@@ -17,7 +17,7 @@ export const mapToBiometrics = (
   };
 
   if (ouraHeartRate.length) {
-    const heartRates = ouraHeartRate.map((item) => item.bpm);
+    const heartRates = ouraHeartRate.map(item => item.bpm);
     const { min_item, max_item } = Util.getMinMaxItem(heartRates);
     const avg_heart_rate = Util.getAvgOfArr(heartRates);
     const resting_heart_rate = getAvgRestingHeartRate(ouraHeartRate);
@@ -47,24 +47,20 @@ const getAvgHeartRate = (sessionHeartRates: number[]): number => {
   return 0;
 };
 
-const getAvgRestingHeartRate = (
-  ouraHeartRate: OuraHeartRate
-): number | undefined => {
-  const getRestingHeartRate = ouraHeartRate.filter(
-    (heartRate) => heartRate.source === "rest"
-  );
+const getAvgRestingHeartRate = (ouraHeartRate: OuraHeartRate): number | undefined => {
+  const getRestingHeartRate = ouraHeartRate.filter(heartRate => heartRate.source === "rest");
 
   if (!getRestingHeartRate.length) {
     return undefined;
   }
 
-  const heartRates = getRestingHeartRate.map((item) => item.bpm);
+  const heartRates = getRestingHeartRate.map(item => item.bpm);
 
   return getAvgHeartRate(heartRates);
 };
 
 const formatBpmSamples = (ouraHeartRate: OuraHeartRate) => {
-  return ouraHeartRate.map((heartRate) => {
+  return ouraHeartRate.map(heartRate => {
     return {
       time: heartRate.timestamp,
       value: heartRate.bpm,

@@ -1,10 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useCallback,
-  Dispatch,
-  SetStateAction,
-} from "react";
+import { useState, useEffect, useCallback, Dispatch, SetStateAction } from "react";
 import { getApi } from "../../../shared/api";
 import { sleep } from "../../../shared/util";
 import { DefaultProvider } from "./connect-providers";
@@ -23,11 +17,7 @@ declare global {
   }
 }
 
-const Providers = ({
-  providers,
-  connectedProviders,
-  setConnectedProviders,
-}: ProvidersProps) => {
+const Providers = ({ providers, connectedProviders, setConnectedProviders }: ProvidersProps) => {
   const [isLoading, setIsLoading] = useState<{ [id: string]: boolean }>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -62,8 +52,7 @@ const Providers = ({
   useEffect(() => {
     window.addEventListener("authorization", customEventHandler);
 
-    return () =>
-      window.removeEventListener("authorization", customEventHandler);
+    return () => window.removeEventListener("authorization", customEventHandler);
   }, [customEventHandler]);
 
   const redirectToProvider = async (provider: string) => {
@@ -120,11 +109,7 @@ const Providers = ({
         );
       })}
       {errorMessage && (
-        <ErrorDialog
-          show
-          message={errorMessage}
-          onClose={() => setErrorMessage(null)}
-        />
+        <ErrorDialog show message={errorMessage} onClose={() => setErrorMessage(null)} />
       )}
     </>
   );

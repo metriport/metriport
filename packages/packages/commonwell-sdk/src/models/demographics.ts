@@ -11,9 +11,7 @@ export enum GenderCodes {
   M = "M", // Male
   UN = "UN",
 }
-export const genderCodesSchema = z.enum(
-  Object.keys(GenderCodes) as [string, ...string[]]
-);
+export const genderCodesSchema = z.enum(Object.keys(GenderCodes) as [string, ...string[]]);
 
 export const genderSchema = z.object({
   code: genderCodesSchema,

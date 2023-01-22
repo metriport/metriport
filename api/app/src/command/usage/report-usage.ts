@@ -8,10 +8,7 @@ export type ReportUsageCommand = {
   cxUserId: string;
 };
 
-export const reportUsage = async ({
-  cxId,
-  cxUserId,
-}: ReportUsageCommand): Promise<void> => {
+export const reportUsage = async ({ cxId, cxUserId }: ReportUsageCommand): Promise<void> => {
   const url = Config.getUsageUrl();
   if (!url) return;
 

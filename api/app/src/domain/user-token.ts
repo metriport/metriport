@@ -4,8 +4,7 @@ import { Constants } from "../shared/constants";
 import { Util } from "../shared/util";
 
 export type UserTokenCreate = OmitProperties<
-  Omit<UserToken, "token" | "expiryTime"> &
-    Partial<Pick<UserToken, "token" | "expiryTime">>,
+  Omit<UserToken, "token" | "expiryTime"> & Partial<Pick<UserToken, "token" | "expiryTime">>,
   Function
 >;
 
@@ -28,9 +27,7 @@ export class UserToken {
     return UserToken.build({
       ...v,
       token: v.token ?? nanoid(),
-      expiryTime:
-        v.expiryTime ??
-        Util.curSecSinceEpoch() + Constants.DEFAULT_TOKEN_EXPIRY_SECONDS,
+      expiryTime: v.expiryTime ?? Util.curSecSinceEpoch() + Constants.DEFAULT_TOKEN_EXPIRY_SECONDS,
     });
   };
 

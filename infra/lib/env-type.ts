@@ -1,5 +1,5 @@
 export enum EnvType {
-    production = "production",
-    sandbox = "sandbox",
-    staging = "staging",
-  }
+  production = "production",
+  sandbox = "sandbox",
+  staging = "staging",
+}

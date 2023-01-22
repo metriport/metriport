@@ -5,10 +5,7 @@ import url from "node:url";
 import oauthSignature from "oauth-signature";
 import { z } from "zod";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
-import {
-  getUserToken,
-  getUserTokenByUAT,
-} from "../command/cx-user/get-user-token";
+import { getUserToken, getUserTokenByUAT } from "../command/cx-user/get-user-token";
 import { saveUserToken } from "../command/cx-user/save-user-token";
 import { UserToken } from "../domain/user-token";
 import { Config } from "../shared/config";
@@ -50,9 +47,7 @@ export class OAuth1DefaultImpl implements OAuth1 {
   async processStep1(token: string): Promise<string> {
     const userToken = await getUserToken({ token });
     // connect to provider to obtain token and secret for URL that'll be sent to user
-    const { oauth_token, oauth_token_secret } = await this.getTokenAndSecret(
-      this.requestTokenUrl
-    );
+    const { oauth_token, oauth_token_secret } = await this.getTokenAndSecret(this.requestTokenUrl);
     // store the info on DynamoDB for the next steps
     const updatedUserToken = userToken.clone();
     updatedUserToken.oauthRequestToken = oauth_token;
@@ -60,8 +55,7 @@ export class OAuth1DefaultImpl implements OAuth1 {
     await saveUserToken(updatedUserToken);
     // build the authorization URL for the user
     const callbackUrl =
-      Config.getConnectRedirectUrl() +
-      `/${this.providerName}/?state=${userToken.token}`;
+      Config.getConnectRedirectUrl() + `/${this.providerName}/?state=${userToken.token}`;
     return `${this.userApproveUrl}?oauth_token=${oauth_token}&oauth_callback=${callbackUrl}`;
   }
 
@@ -86,10 +80,8 @@ export class OAuth1DefaultImpl implements OAuth1 {
       oauth_token_secret,
       oauth_verifier,
     });
-    const {
-      oauth_token: userAccessToken,
-      oauth_token_secret: userAccessTokenSecret,
-    } = tokenAndSecret;
+    const { oauth_token: userAccessToken, oauth_token_secret: userAccessTokenSecret } =
+      tokenAndSecret;
     // store the info on DynamoDB so we can identify webhook calls with the UAT
     const updatedUserToken = userToken.clone();
     updatedUserToken.oauthUserAccessToken = userAccessToken;
@@ -164,9 +156,7 @@ export class OAuth1DefaultImpl implements OAuth1 {
 
     // use 'url' to parse the response from format "oauth_token=<oauth_token>&oauth_token_secret=<oauth_token_secret>"
     const parsed = url.parse(`http://test.com?${res.data}`, true);
-    const { oauth_token, oauth_token_secret } = oauthUserTokenResponse.parse(
-      parsed.query
-    );
+    const { oauth_token, oauth_token_secret } = oauthUserTokenResponse.parse(parsed.query);
     return { oauth_token, oauth_token_secret };
   }
 

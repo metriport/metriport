@@ -24,9 +24,7 @@ export const getConnectedUserOrFail = async ({
 }): Promise<ConnectedUser> => {
   const connectedUser = await getConnectedUser({ id, cxId });
   if (!connectedUser)
-    throw new NotFoundError(
-      `Could not find connected user ${id} for customer ${cxId}`
-    );
+    throw new NotFoundError(`Could not find connected user ${id} for customer ${cxId}`);
   return connectedUser;
 };
 
@@ -44,9 +42,9 @@ export const getProviderDataFromConnectUserOrFail = (
 export const getConnectedUsers = async ({
   ids,
   cxId,
-}: AtLeastOne<
-  Pick<ConnectedUser, "cxId"> & { ids: ConnectedUser["id"][] }
->): Promise<ConnectedUser[]> => {
+}: AtLeastOne<Pick<ConnectedUser, "cxId"> & { ids: ConnectedUser["id"][] }>): Promise<
+  ConnectedUser[]
+> => {
   return ConnectedUser.findAll({
     where: {
       ...(ids ? { id: ids } : undefined),

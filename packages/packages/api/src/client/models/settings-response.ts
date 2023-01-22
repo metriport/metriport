@@ -1,6 +1,5 @@
 export interface SettingsResponse {
-    id: string;
-    webhookUrl?: string | null;
-    webhookKey?: string | null;
-  }
-  
+  id: string;
+  webhookUrl?: string | null;
+  webhookKey?: string | null;
+}

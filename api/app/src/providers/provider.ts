@@ -1,11 +1,4 @@
-import {
-  Activity,
-  Biometrics,
-  Body,
-  Nutrition,
-  Sleep,
-  User,
-} from "@metriport/api";
+import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api";
 
 import NotImplementedError from "../errors/not-implemented";
 import { ConnectedUser } from "../models/connected-user";
@@ -30,10 +23,7 @@ export default abstract class Provider {
     return this.supportedDataTypes[dataType];
   }
 
-  async getActivityData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Activity> {
+  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
     throw new NotImplementedError();
   }
 
@@ -41,24 +31,15 @@ export default abstract class Provider {
     throw new NotImplementedError();
   }
 
-  async getBiometricsData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Biometrics> {
+  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
     throw new NotImplementedError();
   }
 
-  async getNutritionData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Nutrition> {
+  async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
     throw new NotImplementedError();
   }
 
-  async getSleepData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Sleep> {
+  async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
     throw new NotImplementedError();
   }
 
