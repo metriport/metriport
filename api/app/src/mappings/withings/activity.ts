@@ -18,7 +18,7 @@ export const mapToActivity = (
     date: date,
     source: PROVIDER_WITHINGS,
   };
-  let activity: Activity = {
+  const activity: Activity = {
     metadata: metadata,
   };
 
@@ -36,7 +36,7 @@ const formatActivityLogs = (
 
   if (withingsActivityLogs) {
     for (const withingsActivityLog of withingsActivityLogs) {
-      let activityLog: ActivityLog = {
+      const activityLog: ActivityLog = {
         metadata: metadata,
       };
 
@@ -88,7 +88,7 @@ const formatWorkoutLogs = (
 
   if (withingsWorkoutLogs) {
     for (const withingsWorkoutLog of withingsWorkoutLogs) {
-      let workoutLog: ActivityLog = {
+      const workoutLog: ActivityLog = {
         metadata: metadata,
         start_time: dayjs(withingsWorkoutLog.startdate).format("YYYY-MM-DDTHH:mm:ssZ"),
         end_time: dayjs(withingsWorkoutLog.enddate).format("YYYY-MM-DDTHH:mm:ssZ"),

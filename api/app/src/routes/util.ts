@@ -8,6 +8,7 @@ export const asyncHandler =
       req: Request,
       res: Response,
       next: NextFunction
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) => Promise<Response<any, Record<string, any>> | void>
   ) =>
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {

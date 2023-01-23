@@ -10,7 +10,7 @@ export const mapToNutrition = (date: string, food?: FitbitFood, water?: FitbitWa
     source: PROVIDER_FITBIT,
   };
 
-  let nutrition: Nutrition = {
+  const nutrition: Nutrition = {
     metadata: metadata,
     summary: {
       macros: {},

@@ -4,10 +4,15 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"No test specified yet\"",
     "dev": "ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9229 --files src/app.ts",
     "start": "ts-node dist/app.js",
-    "build": "tsc -p ."
+    "start-docker-compose": "docker-compose -f docker-compose.dev.yml up --build",
+    "build": "tsc -p .",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "echo \"No test specified yet\""
   },
   "keywords": [],
   "author": "",
@@ -53,9 +58,13 @@
     "@types/simple-oauth2": "^4.1.1",
     "@types/uuid": "^8.3.4",
     "@types/validator": "^13.7.10",
-    "@typescript-eslint/parser": "^5.42.0",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.6.0",
+    "prettier": "^2.8.3",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^4.8.4"
+    "typescript": "^4.9.4"
   }
 }

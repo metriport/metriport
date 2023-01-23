@@ -1,0 +1,13 @@
+name: PR Check - Infra
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+  workflow_dispatch:
+
+jobs:
+  check-pr:
+    uses: ./.github/workflows/_reusable_build.yml
+    with:
+      path: "infra"

@@ -1,4 +1,4 @@
-import { Axios, AxiosResponse } from "axios";
+import axios, { AxiosResponse } from "axios";
 import { AuthorizationCode, Token } from "simple-oauth2";
 import { z } from "zod";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
@@ -6,8 +6,6 @@ import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { ProviderOAuth2Options } from "../shared/constants";
 import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";
-
-const axios: Axios = require("axios").default;
 
 export const oauthUserTokenResponse = z.object({
   oauth_token: z.string(),
@@ -89,7 +87,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
   async getAuthUri(state: string): Promise<string> {
     const client = this.makeClient();
 
-    let uriParams: UriParams = {
+    const uriParams: UriParams = {
       redirect_uri: this.getRedirectUri(),
       state: state,
     };
@@ -186,6 +184,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
   async fetchProviderData<T>(
     connectedUser: ConnectedUser,
     endpoint: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     callBack: (response: AxiosResponse<any, any>) => Promise<T>,
     params?: { [k: string]: string | number },
   ): Promise<T> {

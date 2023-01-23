@@ -165,6 +165,81 @@ Before getting started with the deployment or any development, ensure you have d
 
 ## **Local Development**
 
+### Monorepo
+
+This monorepo uses [npm workspaces](https://docs.npmjs.com/cli/v9/using-npm/workspaces) to manage the packages and execute commands globally.
+
+To setup this repository for local development, issue this command on the root folder:
+
+```shell
+$ npm install # only needs to be run once
+```
+
+Useful commands:
+
+- `npm run typecheck`: it will run `typecheck` on all workspaces, which checks for typescript compilation/syntax issues;
+- `npm run lint-fix`: it will run `lint-fix` on all workspaces, which checks for linting issues and automatically fixes the issues it can;
+- `npm run prettier-fix`: it will run `prettier-fix` on all workspaces, which checks for formatting issues and automatically fixes the issues it can;
+
+### Semantic version
+
+This repo uses [Semantic Version](https://semver.org/), and we automate the versioning by using [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
+
+This means all commit messages must be created following a certain standard:
+
+```
+<type>[optional scope]: <description>
+[optional body]
+[optional footer(s)]
+```
+
+To enforce commits follow this pattern, we have a Git hook (using [Husky](https://github.com/typicode/husky)) that verifies commit messages according to the Conventional Commits -
+it uses [commitlint](https://github.com/conventional-changelog/commitlint) under the hood ([config](https://github.com/conventional-changelog/commitlint/tree/master/@commitlint/config-conventional)).
+
+Accepted types:
+
+- build
+- chore
+- ci
+- docs
+- feat
+- fix
+- perf
+- refactor
+- revert
+- style
+- test
+
+Scope is optional, and we can use one of these, or empty (no scope):
+
+- api
+- widget
+- infra
+
+The footer should have the ticket number supporting the commit:
+
+```
+...
+Ref: #<ticket-number>
+```
+
+#### Commitizen
+
+One can enter the commit message manually and have `commitlint` check its content, or use [Commitizen](https://github.com/commitizen/cz-cli)'s
+CLI to guide through building the commit message:
+
+```shell
+$ npm run commit
+```
+
+In case something goes wrong after you prepare the commit message and you want to retry it after fixing the issue, you can issue this command:
+
+```shell
+$ npm run commit -- --retry
+```
+
+Commitizen will retry the last commit message you prepared previously. More about this [here](https://github.com/commitizen/cz-cli#retrying-failed-commits).
+
 ### **API Server**
 
 First, create a local environment file to define your developer keys, and local dev URLs:
@@ -214,8 +289,13 @@ Then to run the full back-end stack, use docker-compose to lauch a Postgres cont
 
 ```shell
 $ cd api/app
-$ npm install # only needs to be run once
-$ docker-compose -f docker-compose.dev.yml up --build
+$ npm run start-docker-compose
+```
+
+...or, from the root folder...
+
+```shell
+$ npm run start-docker-compose -w api
 ```
 
 Now, the backend services will be available at:
@@ -270,7 +350,7 @@ To create new migrations:
 To do basic UI admin operations on the DynamoDB instance, you can do the following:
 
 ```shell
-$ npm install npm install -g dynamodb-admin # only needs to be run once
+$ npm install -g dynamodb-admin # only needs to be run once
 $ DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin # admin console will be available at http://localhost:8001/
 ```
 
@@ -288,8 +368,13 @@ To run the Connect Widget:
 
 ```shell
 $ cd connect-widget/app
-$ npm install # only needs to be run once
 $ npm run start # available on port 3001 by default
+```
+
+...or, from the root folder...
+
+```shell
+$ npm run start -w connect-widget
 ```
 
 To debug the Connect Widget, you can attach a run a Chrome window by launching the `Run Chrome` configuration in VS Code.

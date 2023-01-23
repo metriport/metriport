@@ -1,3 +1,5 @@
+import { test } from "@jest/globals";
+
 // import * as cdk from 'aws-cdk-lib';
 // import { Template } from 'aws-cdk-lib/assertions';
 // import * as Infrastructure from '../lib/infrastructure-stack';
@@ -14,3 +16,5 @@ test("SQS Queue Created", () => {
   //     VisibilityTimeout: 300
   //   });
 });
+
+export {};

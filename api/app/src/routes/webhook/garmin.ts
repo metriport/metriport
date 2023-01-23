@@ -57,6 +57,7 @@ routes.post(
   })
 );
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapData(body: any): UserData<MetriportData>[] | undefined {
   const results: UserData<MetriportData>[] = [];
 

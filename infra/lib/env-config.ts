@@ -1,6 +1,14 @@
 import { EnvType } from "./env-type";
 
-export interface EnvConfig {
+export type ConnectWidgetConfig = {
+  stackName: string;
+  region: string;
+  subdomain: string;
+  host: string;
+  domain: string;
+};
+
+export type EnvConfig = {
   stackName: string;
   secretsStackName?: string;
   environmentType: EnvType;
@@ -27,13 +35,14 @@ export interface EnvConfig {
     WHOOP_CLIENT_ID: string;
     WHOOP_CLIENT_SECRET: string;
   };
-  connectWidget?: {
-    stackName: string;
-    region: string;
-    subdomain: string;
-    host: string;
-    domain: string;
-  };
-  connectWidgetUrl?: string;
   usageReportUrl?: string;
-}
+} & (
+  | {
+      connectWidget: ConnectWidgetConfig;
+      connectWidgetUrl?: never;
+    }
+  | {
+      connectWidget?: never;
+      connectWidgetUrl: string;
+    }
+);

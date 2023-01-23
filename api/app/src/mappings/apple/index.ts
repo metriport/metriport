@@ -43,7 +43,7 @@ export const createMetadata = (date: string) => {
   };
 };
 
-export const hasActivity = (data: AppleHealth): Boolean => {
+export const hasActivity = (data: AppleHealth): boolean => {
   return (
     !!data.HKQuantityTypeIdentifierActiveEnergyBurned ||
     !!data.HKQuantityTypeIdentifierStepCount ||
@@ -53,7 +53,7 @@ export const hasActivity = (data: AppleHealth): Boolean => {
   );
 };
 
-export const hasBody = (data: AppleHealth): Boolean => {
+export const hasBody = (data: AppleHealth): boolean => {
   return (
     !!data.HKQuantityTypeIdentifierHeight ||
     !!data.HKQuantityTypeIdentifierLeanBodyMass ||
@@ -62,7 +62,7 @@ export const hasBody = (data: AppleHealth): Boolean => {
   );
 };
 
-export const hasNutrition = (data: AppleHealth): Boolean => {
+export const hasNutrition = (data: AppleHealth): boolean => {
   return (
     !!data.HKQuantityTypeIdentifierDietaryCaffeine ||
     !!data.HKQuantityTypeIdentifierDietaryCalcium ||
@@ -98,7 +98,7 @@ export const hasNutrition = (data: AppleHealth): Boolean => {
   );
 };
 
-export const hasBiometrics = (data: AppleHealth): Boolean => {
+export const hasBiometrics = (data: AppleHealth): boolean => {
   return (
     !!data.HKQuantityTypeIdentifierHeartRate ||
     !!data.HKQuantityTypeIdentifierRestingHeartRate ||

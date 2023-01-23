@@ -1,4 +1,4 @@
-name: Widget - Check a PR
+name: PR Check - Widget
 
 on:
   pull_request:

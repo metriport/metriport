@@ -46,12 +46,13 @@ export const mapToBiometricsFromRespiration = (
 const toBreaths = (userData: GarminRespirationList): BreathAndDate[] => {
   const mappedItems = userData.flatMap(v => {
     if (!v.timeOffsetEpochToBreaths) return undefined;
-    const offsets = Object.keys(v.timeOffsetEpochToBreaths).map(Number);
+    const timeOffsetEpochToBreaths = v.timeOffsetEpochToBreaths;
+    const offsets = Object.keys(timeOffsetEpochToBreaths).map(Number);
     if (offsets.length < 1) return undefined;
     return offsets.map(offset => {
       const date = toISODate(v.startTimeInSeconds);
       const time = dayjs.unix(v.startTimeInSeconds + offset).toISOString();
-      const value = v.timeOffsetEpochToBreaths![offset];
+      const value = timeOffsetEpochToBreaths[offset];
       return { date, breath: { time, value } };
     });
   });

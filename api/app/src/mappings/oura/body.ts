@@ -10,7 +10,7 @@ export const mapToBody = (ouraPersonalInfo: OuraPersonalInfo, date: string): Bod
     source: PROVIDER_OURA,
   };
 
-  let body: Body = {
+  const body: Body = {
     metadata: metadata,
   };
 

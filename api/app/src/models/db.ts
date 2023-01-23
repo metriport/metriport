@@ -36,7 +36,7 @@ const initDB = async (): Promise<void> => {
   };
 
   // get database creds
-  var dbCreds = JSON.parse(sqlDBCreds);
+  const dbCreds = JSON.parse(sqlDBCreds);
   console.log("[server]: connecting to db...");
   const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
     host: dbCreds.host,

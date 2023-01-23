@@ -21,7 +21,7 @@ export class Util {
     };
   };
 
-  static getAvgOfArr = (arr: number[], fixed: number = 0): number => {
+  static getAvgOfArr = (arr: number[], fixed = 0): number => {
     if (arr.length) {
       const average = mean(arr);
       return Number(average.toFixed(fixed));
@@ -30,7 +30,7 @@ export class Util {
     return 0;
   };
 
-  static addDataToObject = (key: string, value: any) => {
+  static addDataToObject = (key: string, value: unknown) => {
     if (value) {
       return { [key]: value };
     }

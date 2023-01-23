@@ -10,7 +10,7 @@ on:
         required: false
         type: string
         description: "the environment we're building to, either 'staging' or 'production'"
-        default: 'production'
+        default: "production"
 
 jobs:
   lint-and-build:
@@ -20,6 +20,11 @@ jobs:
         working-directory: ${{ inputs.path }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 100 # bc of below
+      # check commits' messages to make sure they follow Conventional Commits
+      - uses: wagoid/commitlint-github-action@v5
+      # Lint and build/compile the code
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
@@ -27,7 +32,8 @@ jobs:
         run: |
           pwd
           npm ci --ignore-scripts
-      #TODO add Lint scripts
+      - name: Run Linter
+        run: npm run lint
       # move to an external file so both this and deploy can use this logic
       - name: Build/compile PRODUCTION
         if: ${{ inputs.build_env == 'production' }}
