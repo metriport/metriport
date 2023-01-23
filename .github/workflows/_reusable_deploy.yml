@@ -44,7 +44,7 @@ jobs:
       - run: env
         shell: bash
       - run: |
-          echo "Version/ref: $(git rev-parse HEAD)"
+          echo "Git ref: $(git rev-parse HEAD)"
         shell: bash
 
       # SET CONFIG FILES
@@ -56,31 +56,24 @@ jobs:
         working-directory: "infra/config"
 
       # INSTALL DEPENDENCIES
-      # infra
-      - name: Infra install dependencies
+      - name: Install dependencies
         run: npm ci --ignore-scripts
-        working-directory: "infra/"
-      # api
-      - name: API install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/app"
-        # move to an external file so both this and deploy can use this logic
-      - name: API build/compile
-        run: npm run build
-        working-directory: "api/app"
-      # lambdas
+        working-directory: "./"
+      # lambdas are not on the npm workspaces, so need to 'install' individually
       - name: Garmin lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/garmin/"
       - name: Token-auth lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/token-auth/"
-      # widget
-      - name: Widget install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "connect-widget/app"
-        # move to an external file so both this and deploy can use this logic
-      - name: Widget build/compile PRODUCTION
+
+      # BUILD
+      # api
+      - name: API build/compile
+        run: npm run build
+        working-directory: "api/app"
+      # TODO move to an external file so both this and deploy can use this logic
+      - name: Widget build/compile
         if: ${{ inputs.build_env == 'production' }}
         run: npm run build
         working-directory: "connect-widget/app"

@@ -3,14 +3,24 @@
   "version": "0.1.0",
   "bin": {},
   "scripts": {
-    "prep-infra": "cd infra/ && npm install && cd ../",
-    "prep-api-app": "cd api/app/ && npm install && cd ../../",
     "prep-garmin": "cd api/lambdas/garmin/ && npm install && npm run test && cd ../../../",
     "prep-token-auth": "cd api/lambdas/token-auth/ && npm install && npm run test && cd ../../../",
-    "prep-connect-app": "cd connect-widget/app/ && npm install && npm run build && cd ../../../",
-    "prep-connect-app-staging": "cd connect-widget/app/ && npm install && npm run build:staging && cd ../../../",
-    "prep-deploy": "npm run prep-infra && npm run prep-api-app && npm run prep-token-auth && npm run prep-garmin && npm run prep-connect-app",
-    "prep-deploy-staging": "npm run prep-infra && npm run prep-api-app && npm run prep-token-auth && npm run prep-garmin && npm run prep-connect-app-staging"
+    "prep-deploy": "npm install && npm run build && npm run test && npm run prep-token-auth && npm run prep-garmin",
+    "prep-deploy-staging": "npm install && npm run build:staging && npm run test && npm run prep-token-auth && npm run prep-garmin",
+    "build": "npm run build --workspaces",
+    "build:staging": "npm run build -w api && npm run build:staging -w connect-widget && npm run build -w infra",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint-fix": "npm run lint-fix --workspaces --if-present",
+    "prettier-fix": "npm run prettier-fix --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "workspaces": {
+    "packages": [
+      "api/app",
+      "connect-widget/app",
+      "infra"
+    ]
   },
   "devDependencies": {},
   "dependencies": {}

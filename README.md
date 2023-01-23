@@ -165,6 +165,21 @@ Before getting started with the deployment or any development, ensure you have d
 
 ## **Local Development**
 
+### Monorepo
+This monorepo uses [npm workspaces](https://docs.npmjs.com/cli/v9/using-npm/workspaces) to manage the packages and execute commands globally.
+
+To setup this repository for local development, issue this command on the root folder:
+
+```shell
+$ npm install # only needs to be run once
+```
+
+Useful commands:
+
+- `npm run typecheck`: it will run `typecheck` on all workspaces, which checks for typescript compilation/syntax issues;
+- `npm run lint-fix`: it will run `lint-fix` on all workspaces, which checks for linting issues and automatically fixes the issues it can;
+- `npm run prettier-fix`: it will run `prettier-fix` on all workspaces, which checks for formatting issues and automatically fixes the issues it can;
+
 ### **API Server**
 
 First, create a local environment file to define your developer keys, and local dev URLs:
@@ -214,7 +229,6 @@ Then to run the full back-end stack, use docker-compose to lauch a Postgres cont
 
 ```shell
 $ cd api/app
-$ npm install # only needs to be run once
 $ docker-compose -f docker-compose.dev.yml up --build
 ```
 
@@ -270,7 +284,7 @@ To create new migrations:
 To do basic UI admin operations on the DynamoDB instance, you can do the following:
 
 ```shell
-$ npm install npm install -g dynamodb-admin # only needs to be run once
+$ npm install -g dynamodb-admin # only needs to be run once
 $ DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin # admin console will be available at http://localhost:8001/
 ```
 
@@ -288,8 +302,13 @@ To run the Connect Widget:
 
 ```shell
 $ cd connect-widget/app
-$ npm install # only needs to be run once
 $ npm run start # available on port 3001 by default
+```
+
+...or, from the root folder...
+
+```shell
+$ npm run start -w connect-widget
 ```
 
 To debug the Connect Widget, you can attach a run a Chrome window by launching the `Run Chrome` configuration in VS Code.
