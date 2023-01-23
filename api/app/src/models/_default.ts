@@ -19,6 +19,7 @@ export const defaultModelOptions = <M extends Model>(sequelize: Sequelize): Init
   updatedAt: "updated_at",
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export abstract class BaseModel<T extends Model<any, any>> extends Model<
   InferAttributes<T>,
   InferCreationAttributes<T>

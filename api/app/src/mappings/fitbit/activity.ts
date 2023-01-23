@@ -14,14 +14,14 @@ export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string
     date: date,
     source: PROVIDER_FITBIT,
   };
-  let activity: Activity = {
+  const activity: Activity = {
     metadata: metadata,
   };
 
   const activityLogs: ActivityLog[] = [];
 
   for (const fitbitActivityLog of filteredLogs) {
-    let activityLog: ActivityLog = {
+    const activityLog: ActivityLog = {
       metadata: metadata,
       ...Util.addDataToObject("name", fitbitActivityLog.activityName),
       ...Util.addDataToObject("start_time", fitbitActivityLog.originalStartTime),
@@ -84,7 +84,8 @@ export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string
     }
 
     if (fitbitActivityLog.hasActiveZoneMinutes) {
-      const heartZones = fitbitActivityLog.heartRateZones!;
+      if (!fitbitActivityLog.heartRateZones) throw new Error(`Missing heartRateZones`);
+      const heartZones = fitbitActivityLog.heartRateZones;
 
       const { min_item, max_item } = findMinMaxHeartRate(heartZones);
 

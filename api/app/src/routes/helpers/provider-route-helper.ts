@@ -37,7 +37,7 @@ export async function getProviderDataForType<T>(
   // and marshalled into the appropriate model
   const results = await Promise.allSettled(requests);
   const data: T[] = [];
-  let i: number = 0;
+  let i = 0;
   for (const result of results) {
     if (result.status === "fulfilled") {
       data.push(result.value);

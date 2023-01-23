@@ -10,7 +10,7 @@ export const mapToBody = (fitbitUser: FitbitUser, date: string): Body => {
     source: PROVIDER_FITBIT,
   };
 
-  let body: Body = {
+  const body: Body = {
     metadata: metadata,
   };
 

@@ -1,5 +1,5 @@
 import { Activity, Biometrics, Body, Sleep, User } from "@metriport/api";
-import { Axios, AxiosResponse } from "axios";
+import axios, { AxiosResponse } from "axios";
 
 import {
   mapToActivity,
@@ -15,18 +15,16 @@ import { mapToBody } from "../mappings/oura/body";
 import { mapToSleep, ouraSleepResponse } from "../mappings/oura/sleep";
 import { mapToUser, ouraPersonalInfoResponse } from "../mappings/oura/user";
 import { ConnectedUser } from "../models/connected-user";
+import { Config } from "../shared/config";
 import { PROVIDER_OURA } from "../shared/constants";
 import { getStartAndEndDate, getStartAndEndDateTime } from "../shared/date";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
-import { Config } from "../shared/config";
-
-const axios: Axios = require("axios").default;
 
 export class Oura extends Provider implements OAuth2 {
-  static URL: string = "https://api.ouraring.com";
-  static AUTHORIZATION_URL: string = "https://cloud.ouraring.com";
-  static API_PATH: string = "v2/usercollection";
+  static URL = "https://api.ouraring.com";
+  static AUTHORIZATION_URL = "https://cloud.ouraring.com";
+  static API_PATH = "v2/usercollection";
   private static clientId = Config.getOuraClientId();
   private static clientSecret = Config.getOuraClientSecret();
 
@@ -65,6 +63,7 @@ export class Oura extends Provider implements OAuth2 {
   private async fetchOuraData<T>(
     connectedUser: ConnectedUser,
     endpoint: string,
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     callBack: (response: AxiosResponse<any, any>) => Promise<T>,
     params?: { [k: string]: string }
   ): Promise<T> {

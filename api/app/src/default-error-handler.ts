@@ -26,7 +26,7 @@ const zodResponseBody = (err: ZodError): string => {
   });
 };
 
-export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res) => {
   if (err instanceof MetriportError) {
     return res.contentType("json").status(err.status).send(metriportResponseBody(err));
   }

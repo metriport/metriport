@@ -4,7 +4,7 @@ import { BaseModel, defaultModelOptions, ModelSetup } from "./_default";
 export type WebhookRequestStatus = "processing" | "success" | "failure";
 
 export class WebhookRequest extends BaseModel<WebhookRequest> {
-  static NAME: string = "webhook_request";
+  static NAME = "webhook_request";
   declare id: string;
   declare cxId: string;
   declare payload: unknown;

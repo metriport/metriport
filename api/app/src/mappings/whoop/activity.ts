@@ -9,7 +9,7 @@ export const mapToActivity = (whoopWorkouts: WhoopWorkout[], date: string): Acti
     date: date,
     source: PROVIDER_WHOOP,
   };
-  let activity: Activity = {
+  const activity: Activity = {
     metadata: metadata,
   };
 
@@ -22,7 +22,8 @@ export const mapToActivity = (whoopWorkouts: WhoopWorkout[], date: string): Acti
     };
     // this means that the sleep resp has the score
     if (workout.score_state === "SCORED") {
-      const score = workout.score!;
+      if (!workout.score) throw new Error(`Missing workout.score`);
+      const score = workout.score;
       activityLog = {
         ...activityLog,
         durations: {

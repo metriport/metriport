@@ -1,5 +1,5 @@
 import { Activity, Biometrics, Sleep } from "@metriport/api";
-import { Axios } from "axios";
+import axios from "axios";
 import dayjs from "dayjs";
 import crypto from "crypto";
 
@@ -21,14 +21,12 @@ import { withingsWorkoutLogsResp, WithingsWorkoutLogs } from "../mappings/within
 import { withingsHeartRateResp } from "../mappings/withings/models/heart-rate";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
 
-const axios: Axios = require("axios").default;
-
 export class Withings extends Provider implements OAuth2 {
-  static URL: string = "https://wbsapi.withings.net";
-  static AUTHORIZATION_URL: string = "https://account.withings.com";
-  static AUTHORIZATION_PATH: string = "/oauth2_user/authorize2";
-  static TOKEN_PATH: string = "/v2/oauth2";
-  static API_PATH: string = "v2";
+  static URL = "https://wbsapi.withings.net";
+  static AUTHORIZATION_URL = "https://account.withings.com";
+  static AUTHORIZATION_PATH = "/oauth2_user/authorize2";
+  static TOKEN_PATH = "/v2/oauth2";
+  static API_PATH = "v2";
   static scopes = "user.activity,user.metrics";
 
   private static clientId = Config.getWithingsClientId();

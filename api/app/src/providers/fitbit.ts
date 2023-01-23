@@ -30,12 +30,12 @@ import { FitbitWater, fitbitWaterResp } from "../mappings/fitbit/models/water";
 import { fitbitSleepResp } from "../mappings/fitbit/models/sleep";
 import { fitbitUserResp } from "../mappings/fitbit/models/user";
 export class Fitbit extends Provider implements OAuth2 {
-  static URL: string = "https://api.fitbit.com";
-  static AUTHORIZATION_URL: string = "https://www.fitbit.com";
-  static AUTHORIZATION_PATH: string = "/oauth2/authorize";
-  static TOKEN_PATH: string = "/oauth2/token";
-  static REVOKE_PATH: string = "/oauth2/revoke";
-  static API_PATH: string = "1/user/-/";
+  static URL = "https://api.fitbit.com";
+  static AUTHORIZATION_URL = "https://www.fitbit.com";
+  static AUTHORIZATION_PATH = "/oauth2/authorize";
+  static TOKEN_PATH = "/oauth2/token";
+  static REVOKE_PATH = "/oauth2/revoke";
+  static API_PATH = "1/user/-/";
   static scopes = [
     "activity",
     "cardio_fitness",

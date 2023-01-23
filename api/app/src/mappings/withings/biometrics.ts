@@ -10,7 +10,7 @@ export const mapToBiometrics = (date: string, withingsHeartRate: WithingsHeartRa
     date: date,
     source: PROVIDER_WITHINGS,
   };
-  let biometrics: Biometrics = {
+  const biometrics: Biometrics = {
     metadata: metadata,
   };
 

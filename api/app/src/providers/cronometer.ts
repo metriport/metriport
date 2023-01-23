@@ -13,9 +13,9 @@ import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/
 const axios = Axios.create();
 
 export class Cronometer extends Provider implements OAuth2 {
-  static URL: string = "https://cronometer.com";
-  static API_PATH: string = "api_v1";
-  static REVOKE_PATH: string = "/oauth/deauthorize";
+  static URL = "https://cronometer.com";
+  static API_PATH = "api_v1";
+  static REVOKE_PATH = "/oauth/deauthorize";
   constructor(
     private readonly oauth = new OAuth2DefaultImpl(
       PROVIDER_CRONOMETER,

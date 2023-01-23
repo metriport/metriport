@@ -119,9 +119,11 @@ export function mapDataToBiometrics(data: AppleHealth) {
       if (
         biometrics[index] &&
         biometrics[index].blood_pressure &&
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         biometrics[index].blood_pressure![bpType]
       ) {
         return [
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           ...biometrics[index].blood_pressure![bpType]!.samples!,
           {
             time: appleItem.date,

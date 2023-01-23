@@ -9,7 +9,7 @@ export const mapToUser = (fitbitUser: FitbitUser, date: string): User => {
     date: date,
     source: PROVIDER_FITBIT,
   };
-  let user: User = {
+  const user: User = {
     metadata: metadata,
     ...Util.addDataToObject("age", fitbitUser.user.age),
     ...Util.addDataToObject("first_name", fitbitUser.user.firstName),

@@ -42,6 +42,7 @@ export const addUpdatedAtTrigger = (
     tableName,
     `trg_update_${tableName}`,
     "before",
+    //eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore - https://github.com/sequelize/sequelize/issues/11420
     { before: "update" },
     updateUpdatedAtFnName,
