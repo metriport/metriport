@@ -9,8 +9,10 @@ on:
       - "api/app/**"
       - "api/lambdas/**"
       - "infra/**"
-      - 'package.json'
-      - '.github/workflows/**'
+      - "package.json"
+      - "commitlint.config.js"
+      - ".releaserc.yaml"
+      - ".github/workflows/**"
   workflow_dispatch: # manually executed by a user
 
 jobs:
