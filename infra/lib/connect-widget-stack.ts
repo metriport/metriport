@@ -9,11 +9,13 @@ import * as cloudfront_origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
-import { EnvConfig } from "./env-config";
+import { ConnectWidgetConfig, EnvConfig } from "./env-config";
 import { addErrorAlarmToLambdaFunc } from "./util";
 
 interface ConnectWidgetStackProps extends StackProps {
-  config: EnvConfig;
+  config: Omit<EnvConfig, "connectWidget" | "connectWidgetUrl"> & {
+    connectWidget: ConnectWidgetConfig;
+  };
 }
 
 export class ConnectWidgetStack extends Stack {
@@ -21,7 +23,7 @@ export class ConnectWidgetStack extends Stack {
     super(scope, id, props);
 
     const idPrefix = "Connect";
-    const widgetConfig = props.config.connectWidget!;
+    const widgetConfig = props.config.connectWidget;
     const domainName = widgetConfig.domain;
     const siteSubDomain = widgetConfig.subdomain;
     const zone = route53.HostedZone.fromLookup(this, `${idPrefix}Zone`, {
