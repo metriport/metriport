@@ -27,8 +27,10 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "prettier --list-different",
-      "eslint --max-warnings=0"
+      "eslint --max-warnings=0 --debug"
+    ],
+    "*.{ts,tsx,md}": [
+      "prettier --list-different"
     ]
   },
   "config": {

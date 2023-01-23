@@ -166,6 +166,7 @@ Before getting started with the deployment or any development, ensure you have d
 ## **Local Development**
 
 ### Monorepo
+
 This monorepo uses [npm workspaces](https://docs.npmjs.com/cli/v9/using-npm/workspaces) to manage the packages and execute commands globally.
 
 To setup this repository for local development, issue this command on the root folder:
@@ -192,10 +193,11 @@ This means all commit messages must be created following a certain standard:
 [optional footer(s)]
 ```
 
-To enforce commits follow this pattern, we have a Git hook (using Husky) that verifies commit messages according to the Conventional Commits - 
+To enforce commits follow this pattern, we have a Git hook (using [Husky](https://github.com/typicode/husky)) that verifies commit messages according to the Conventional Commits -
 it uses [commitlint](https://github.com/conventional-changelog/commitlint) under the hood ([config](https://github.com/conventional-changelog/commitlint/tree/master/@commitlint/config-conventional)).
 
 Accepted types:
+
 - build
 - chore
 - ci
@@ -209,8 +211,9 @@ Accepted types:
 - test
 
 Scope is optional, and we can use one of these, or empty (no scope):
+
 - api
-- dash
+- widget
 - infra
 
 The footer should have the ticket number supporting the commit:
