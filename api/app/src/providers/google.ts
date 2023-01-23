@@ -1,11 +1,5 @@
-import {
-  Activity,
-  Biometrics,
-  Body,
-  Nutrition,
-  Sleep,
-} from "@metriport/api";
-import { Axios } from "axios";
+import { Activity, Biometrics, Body, Nutrition, Sleep } from "@metriport/api";
+import axios from "axios";
 import dayjs from "dayjs";
 
 import { PROVIDER_GOOGLE } from "../shared/constants";
@@ -24,14 +18,13 @@ import { googleNutritionResp } from "../mappings/google/models/nutrition";
 import { mapToSleep } from "../mappings/google/sleep";
 import { googleSleepResp } from "../mappings/google/models/sleep";
 
-const axios: Axios = require("axios").default;
 export class Google extends Provider implements OAuth2 {
-  static URL: string = "https://www.googleapis.com";
-  static AUTHORIZATION_URL: string = "https://accounts.google.com";
-  static TOKEN_HOST: string = "https://oauth2.googleapis.com";
-  static AUTHORIZATION_PATH: string = "/o/oauth2/v2/auth";
-  static TOKEN_PATH: string = "/token";
-  static API_PATH: string = "/fitness/v1";
+  static URL = "https://www.googleapis.com";
+  static AUTHORIZATION_URL = "https://accounts.google.com";
+  static TOKEN_HOST = "https://oauth2.googleapis.com";
+  static AUTHORIZATION_PATH = "/o/oauth2/v2/auth";
+  static TOKEN_PATH = "/token";
+  static API_PATH = "/fitness/v1";
   static scopes = [
     "https://www.googleapis.com/auth/fitness.activity.read",
     "https://www.googleapis.com/auth/fitness.blood_glucose.read",
@@ -42,7 +35,7 @@ export class Google extends Provider implements OAuth2 {
     "https://www.googleapis.com/auth/fitness.location.read",
     "https://www.googleapis.com/auth/fitness.nutrition.read",
     "https://www.googleapis.com/auth/fitness.oxygen_saturation.read",
-    "https://www.googleapis.com/auth/fitness.sleep.read"
+    "https://www.googleapis.com/auth/fitness.sleep.read",
   ];
 
   private static clientId = Config.getGoogleClientId();
@@ -84,19 +77,24 @@ export class Google extends Provider implements OAuth2 {
     return this.oauth.revokeProviderAccess(connectedUser);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async fetchGoogleData(connectedUser: ConnectedUser, date: string, options: any) {
     try {
       const access_token = await this.oauth.getAccessToken(connectedUser);
 
-      const resp = await axios.post(`${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`, {
-        "startTimeMillis": dayjs(date).valueOf(),
-        "endTimeMillis": dayjs(date).add(24, 'hours').valueOf(),
-        ...options
-      }, {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
+      const resp = await axios.post(
+        `${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`,
+        {
+          startTimeMillis: dayjs(date).valueOf(),
+          endTimeMillis: dayjs(date).add(24, "hours").valueOf(),
+          ...options,
         },
-      });
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        }
+      );
 
       return resp.data;
     } catch (error) {
@@ -107,109 +105,90 @@ export class Google extends Provider implements OAuth2 {
   }
 
   async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
-    const activity = await this.fetchGoogleData(
-      connectedUser,
-      date,
-      {
-        "aggregateBy": [
-          {
-            "dataTypeName": "com.google.calories.expended",
-            "dataSourceId": "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended"
-          },
-          {
-            "dataTypeName": "com.google.step_count.delta",
-            "dataSourceId": "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps"
-          }
-        ],
-      }
-    )
+    const activity = await this.fetchGoogleData(connectedUser, date, {
+      aggregateBy: [
+        {
+          dataTypeName: "com.google.calories.expended",
+          dataSourceId:
+            "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended",
+        },
+        {
+          dataTypeName: "com.google.step_count.delta",
+          dataSourceId:
+            "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps",
+        },
+      ],
+    });
 
     return mapToActivity(googleActivityResp.parse(activity), date);
   }
 
   async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
-    const biometrics = await this.fetchGoogleData(
-      connectedUser,
-      date,
-      {
-        "aggregateBy": [
-          {
-            "dataTypeName": "	com.google.blood_pressure",
-            "dataSourceId": "derived:com.google.blood_pressure:com.google.android.gms:merged"
-          },
-          {
-            "dataTypeName": "com.google.blood_glucose",
-          },
-          {
-            "dataTypeName": "com.google.body.temperature"
-          },
-          {
-            "dataTypeName": "com.google.oxygen_saturation"
-          },
-          {
-            "dataTypeName": "com.google.heart_rate.bpm",
-          },
-        ]
-      }
-    )
-    return mapToBiometrics(googleBiometricsResp.parse(biometrics), date)
+    const biometrics = await this.fetchGoogleData(connectedUser, date, {
+      aggregateBy: [
+        {
+          dataTypeName: "	com.google.blood_pressure",
+          dataSourceId: "derived:com.google.blood_pressure:com.google.android.gms:merged",
+        },
+        {
+          dataTypeName: "com.google.blood_glucose",
+        },
+        {
+          dataTypeName: "com.google.body.temperature",
+        },
+        {
+          dataTypeName: "com.google.oxygen_saturation",
+        },
+        {
+          dataTypeName: "com.google.heart_rate.bpm",
+        },
+      ],
+    });
+    return mapToBiometrics(googleBiometricsResp.parse(biometrics), date);
   }
 
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+    const body = await this.fetchGoogleData(connectedUser, date, {
+      aggregateBy: [
+        {
+          dataTypeName: "com.google.weight",
+        },
+        {
+          dataTypeName: "com.google.height",
+        },
+        {
+          dataTypeName: "com.google.body.fat.percentage",
+        },
+      ],
+    });
 
-    const body = await this.fetchGoogleData(
-      connectedUser,
-      date,
-      {
-        "aggregateBy": [
-          {
-            "dataTypeName": "com.google.weight"
-          },
-          {
-            "dataTypeName": "com.google.height"
-          },
-          {
-            "dataTypeName": "com.google.body.fat.percentage"
-          }
-        ]
-      }
-    )
-
-    return mapToBody(googleBodyResp.parse(body), date)
+    return mapToBody(googleBodyResp.parse(body), date);
   }
 
   async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
-    const nutrition = await this.fetchGoogleData(
-      connectedUser,
-      date,
-      {
-        "aggregateBy": [
-          {
-            "dataTypeName": "com.google.hydration"
-          },
-          {
-            "dataTypeName": "com.google.nutrition"
-          }
-        ]
-      }
-    )
+    const nutrition = await this.fetchGoogleData(connectedUser, date, {
+      aggregateBy: [
+        {
+          dataTypeName: "com.google.hydration",
+        },
+        {
+          dataTypeName: "com.google.nutrition",
+        },
+      ],
+    });
 
-    return mapToNutrition(googleNutritionResp.parse(nutrition), date)
+    return mapToNutrition(googleNutritionResp.parse(nutrition), date);
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
-    const sleep = await this.fetchGoogleData(
-      connectedUser,
-      date,
-      {
-        "aggregateBy": [
-          {
-            "dataTypeName": "com.google.sleep.segment"
-          }
-        ]
-      }
-    )
+    const sleep = await this.fetchGoogleData(connectedUser, date, {
+      aggregateBy: [
+        {
+          dataTypeName: "com.google.sleep.segment",
+        },
+      ],
+    });
 
-    return mapToSleep(googleSleepResp.parse(sleep), date)
+    return mapToSleep(googleSleepResp.parse(sleep), date);
   }
 }

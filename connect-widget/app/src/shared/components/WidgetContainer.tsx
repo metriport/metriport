@@ -59,7 +59,8 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
 
   const resetScroll = useRef<HTMLDivElement>(null);
 
-  useEffect (() => {
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     resetScroll.current!.scrollTo(0, 0);
   }, [children]);
 
