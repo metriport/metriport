@@ -12,9 +12,11 @@ import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { asyncHandler, getCxIdOrFail, getUserIdFromQueryOrFail } from "./util";
 import {
   Constants,
+  PROVIDER_APPLE,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
 } from "../shared/constants";
+import { Apple } from '../providers/apple'
 import BadRequestError from "../errors/bad-request";
 
 const router = Router();
@@ -151,6 +153,10 @@ router.delete(
       //   // await Constants.PROVIDER_OAUTH1_MAP[
       //   //   providerOAuth1.data
       //   // ].deregister(connectedUser);
+    } else if (req.query.provider === PROVIDER_APPLE) {
+      const apple = new Apple()
+      await apple.revokeProviderAccess(connectedUser);
+      return res.sendStatus(200);
     } else {
       throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
     }
