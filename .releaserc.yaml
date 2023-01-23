@@ -8,17 +8,4 @@ plugins:
   - - "@semantic-release/npm"
     - options:
       npmPublish: false
-  - - "@semantic-release/git"
-    - options:
-      assets:
-        - "api/app/dist"
-        - "api/lambdas/garmin/*.{js}"
-        - "api/lambdas/token-auth/*.{js}"
-        - "connect-widget/app/build"
-        - "infra/**/*.{ts}"
-        - "infra/cdk.json"
-        - "infra/cdk.context.json"
-        - "**/package.json"
-        - "**/README.md"
-      message: "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
   - "@semantic-release/github"
