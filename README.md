@@ -165,6 +165,9 @@ Before getting started with the deployment or any development, ensure you have d
 
 ## **Local Development**
 
+### Monorepo
+This monorepo uses [npm workspaces](https://docs.npmjs.com/cli/v9/using-npm/workspaces) to manage the packages and execute commands globally.
+
 To setup this repository for local development, issue this command on the root folder:
 
 ```shell
