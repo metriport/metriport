@@ -24,11 +24,10 @@ export enum ValueKey {
 
 export const getValues = (arr: GooglePoint, key: ValueKey = ValueKey.fpVal): number[] => {
   return arr.reduce((acc, curr) => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const hasFpVal = curr.value.filter(val => val[key]).map(val => val[key]!);
-
-    hasFpVal.forEach(val => acc.push(val));
-
+    curr.value.forEach(val => {
+      const fpVal = val[key];
+      if (fpVal) acc.push(fpVal);
+    });
     return acc;
   }, [] as number[]);
 };
