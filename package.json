@@ -15,7 +15,8 @@
     "lint-fix": "npm run lint-fix --workspaces --if-present",
     "lint-staged": "npx lint-staged",
     "prettier-fix": "npm run prettier-fix --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "commit": "cz"
   },
   "workspaces": {
     "packages": [
@@ -26,13 +27,24 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "prettier --list-different",
       "eslint --max-warnings=0"
+    ],
+    "*.{ts,tsx,md}": [
+      "prettier --list-different"
     ]
   },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
+  },
   "devDependencies": {
+    "@commitlint/cli": "^17.4.2",
+    "@commitlint/config-conventional": "^17.4.2",
+    "@commitlint/cz-commitlint": "^17.4.2",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
+    "commitizen": "^4.3.0",
     "eslint": "^8.32.0",
     "eslint-config-prettier": "^8.6.0",
     "husky": "^8.0.3",

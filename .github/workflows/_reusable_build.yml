@@ -20,6 +20,11 @@ jobs:
         working-directory: ${{ inputs.path }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 100 # bc of below
+      # check commits' messages to make sure they follow Conventional Commits
+      - uses: wagoid/commitlint-github-action@v5
+      # Lint and build/compile the code
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
