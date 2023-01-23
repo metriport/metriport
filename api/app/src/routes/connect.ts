@@ -87,7 +87,7 @@ const providerRequest = z.object({
  * well, will redirect to the Success page in the Connect widget.
  *
  * @param   {string}  req.params.provider       The provider for the request.
- * @param   {string}  req.query.authCode        The OAuth v2 authorization token.
+ * @param   {string}  req.query.authCode        The OAuth v2 authorization code.
  * @param   {string}  req.query.oauth_token     The OAuth v1 request token.
  * @param   {string}  req.query.oauth_verifier  The OAuth v1 request token verifier.
  *
