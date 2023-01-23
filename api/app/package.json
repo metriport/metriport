@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9229 --files src/app.ts",
     "start": "ts-node dist/app.js",
+    "start-docker-compose": "docker-compose -f docker-compose.dev.yml up --build",
     "build": "tsc -p .",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",

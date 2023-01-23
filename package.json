@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "bin": {},
   "scripts": {
+    "prepare": "husky install",
     "prep-garmin": "cd api/lambdas/garmin/ && npm install && npm run test && cd ../../../",
     "prep-token-auth": "cd api/lambdas/token-auth/ && npm install && npm run test && cd ../../../",
     "prep-deploy": "npm install && npm run build && npm run test && npm run prep-token-auth && npm run prep-garmin",
@@ -12,6 +13,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "lint-fix": "npm run lint-fix --workspaces --if-present",
+    "lint-staged": "npx lint-staged",
     "prettier-fix": "npm run prettier-fix --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },
@@ -22,6 +24,19 @@
       "infra"
     ]
   },
-  "devDependencies": {},
-  "dependencies": {}
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --list-different",
+      "eslint --max-warnings=0"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.6.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.1.0",
+    "typescript": "^4.9.4"
+  }
 }

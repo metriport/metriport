@@ -16,3 +16,5 @@ test("SQS Queue Created", () => {
   //     VisibilityTimeout: 300
   //   });
 });
+
+export {};
