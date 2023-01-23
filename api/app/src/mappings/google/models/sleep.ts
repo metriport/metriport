@@ -1,8 +1,10 @@
 import { z } from "zod"
 import { googleResp } from ".";
 
+export const sourceIdSleep = "derived:com.google.sleep.segment:com.google.android.gms:merged";
+
 export const googleSleepDataSourceId = z.enum([
-  "derived:com.google.sleep.segment:com.google.android.gms:merged",
+  sourceIdSleep,
 ]);
 
 export const googleSleepResp = googleResp(googleSleepDataSourceId)

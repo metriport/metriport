@@ -1,15 +1,16 @@
 import { Biometrics } from "@metriport/api";
 
 import { PROVIDER_GOOGLE } from "../../shared/constants";
-import { GoogleBiometrics } from "./models/biometrics";
+import {
+  GoogleBiometrics,
+  sourceIdBloodGlucose,
+  sourceIdBloodPressure,
+  sourceIdBodyTemp,
+  sourceIdHeartBpm,
+  sourceIdOxygenSat
+} from "./models/biometrics";
 import { Util } from "../../shared/util";
 import { getValues, getSamples } from ".";
-
-const sourceIdBloodGlucose = "derived:com.google.blood_glucose:com.google.android.gms:merged";
-const sourceIdBloodPressure = "derived:com.google.blood_pressure:com.google.android.gms:merged";
-const sourceIdBodyTemp = "derived:com.google.body.temperature:com.google.android.gms:merged";
-const sourceIdOxygenSat = "derived:com.google.oxygen_saturation:com.google.android.gms:merged";
-const sourceIdHeartBpm = "derived:com.google.heart_rate.bpm:com.google.android.gms:merge_heart_rate_bpm";
 
 export const mapToBiometrics = (googleBiometrics: GoogleBiometrics, date: string): Biometrics => {
   const metadata = {

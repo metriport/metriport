@@ -2,11 +2,9 @@ import { Body } from "@metriport/api";
 import convert from "convert-units";
 
 import { PROVIDER_GOOGLE } from "../../shared/constants";
-import { GoogleBody } from "./models/body";
+import { GoogleBody, sourceIdBodyFat, sourceIdHeight, sourceIdWeight } from "./models/body";
 
-const sourceIdWeight = 'derived:com.google.weight:com.google.android.gms:merge_weight';
-const sourceIdHeight = 'derived:com.google.height:com.google.android.gms:merge_height';
-const sourceIdBodyFat = 'derived:com.google.body.fat.percentage:com.google.android.gms:merged';
+
 
 export const mapToBody = (googleBody: GoogleBody, date: string): Body => {
   const metadata = {

@@ -3,9 +3,7 @@ import dayjs from "dayjs";
 import convert from 'convert-units';
 
 import { PROVIDER_GOOGLE } from "../../shared/constants";
-import { GoogleSleep } from "./models/sleep";
-
-const sourceIdSleep = "derived:com.google.sleep.segment:com.google.android.gms:merged";
+import { GoogleSleep, sourceIdSleep } from "./models/sleep";
 
 export const mapToSleep = (googleSleep: GoogleSleep, date: string): Sleep => {
   const metadata = {

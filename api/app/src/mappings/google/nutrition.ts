@@ -3,12 +3,10 @@ import convert from "convert-units";
 import { sum } from "lodash";
 
 import { PROVIDER_GOOGLE } from "../../shared/constants";
-import { GoogleNutrition } from "./models/nutrition";
+import { GoogleNutrition, sourceIdHydration, sourceIdNutrition } from "./models/nutrition";
 import { getValues } from ".";
 import { GooglePoint } from "./models";
 
-const sourceIdHydration = "derived:com.google.hydration:com.google.android.gms:merged";
-const sourceIdNutrition = "derived:com.google.nutrition:com.google.android.gms:merged";
 
 export const mapToNutrition = (googleNutrition: GoogleNutrition, date: string): Nutrition => {
   const metadata = {
