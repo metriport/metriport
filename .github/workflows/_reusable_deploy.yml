@@ -82,6 +82,19 @@ jobs:
         run: npm run build:staging
         working-directory: "connect-widget/app"
 
+      # CDK DIFF
+      - name: Diff CDK stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "diff"
+          cdk_version: "2.49.0"
+          cdk_stack: "${{ secrets.CDK_STACK }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+
       # DEPLOY
       - name: Deploy CDK stack
         uses: metriport/deploy-with-cdk@master

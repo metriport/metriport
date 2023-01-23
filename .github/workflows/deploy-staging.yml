@@ -1,0 +1,54 @@
+name: Deploy - Staging
+
+on:
+  push: # a commit to the specified branches, if any
+    branches:
+      - develop
+    paths:
+      - "connect-widget/app/**"
+      - "api/app/**"
+      - "api/lambdas/**"
+      - "infra/**"
+      - 'package.json'
+      - '.github/workflows/**'
+  workflow_dispatch: # manually executed by a user
+
+jobs:
+  widget-build:
+    uses: ./.github/workflows/_reusable_build.yml
+    with:
+      path: "connect-widget/app"
+      build_env: "staging"
+  widget-deploy:
+    uses: ./.github/workflows/_reusable_deploy.yml
+    needs: widget-build
+    with:
+      build_env: "staging"
+      deploy_env: "staging"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
+      CDK_STACK: ${{ secrets.WIDGET_STACK_NAME_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+
+  api-build:
+    uses: ./.github/workflows/_reusable_build.yml
+    with:
+      path: "api/app" # there's no "build" for lambdas, so one job for both works
+  api-deploy:
+    uses: ./.github/workflows/_reusable_deploy.yml
+    needs: api-build
+    with:
+      deploy_env: "staging"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.API_REGION_STAGING }}
+      CDK_STACK: ${{ secrets.API_STACK_NAME_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+
+  release:
+    uses: ./.github/workflows/_reusable_release.yml
+    needs: [widget-deploy, api-deploy]
+    secrets: inherit
