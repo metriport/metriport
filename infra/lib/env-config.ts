@@ -26,6 +26,8 @@ export type EnvConfig = {
     FITBIT_CLIENT_SECRET: string;
     GARMIN_CONSUMER_KEY: string;
     GARMIN_CONSUMER_SECRET: string;
+    GOOGLE_CLIENT_ID: string;
+    GOOGLE_CLIENT_SECRET: string;
     OURA_CLIENT_ID: string;
     OURA_CLIENT_SECRET: string;
     WITHINGS_CLIENT_ID: string;

@@ -7,9 +7,10 @@ import { getConnectedUserOrFail } from "../command/connected-user/get-connected-
 import { createUserToken } from "../command/cx-user/create-user-token";
 import BadRequestError from "../errors/bad-request";
 import { ConnectedUser } from "../models/connected-user";
+import { Apple } from "../providers/apple";
 import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
-import { Constants, providerOAuth2OptionsSchema } from "../shared/constants";
+import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../shared/constants";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { asyncHandler, getCxIdOrFail, getUserIdFromQueryOrFail } from "./util";
 
@@ -147,6 +148,10 @@ router.delete(
       //   // await Constants.PROVIDER_OAUTH1_MAP[
       //   //   providerOAuth1.data
       //   // ].deregister(connectedUser);
+    } else if (req.query.provider === PROVIDER_APPLE) {
+      const apple = new Apple();
+      await apple.revokeProviderAccess(connectedUser);
+      return res.sendStatus(200);
     } else {
       throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
     }

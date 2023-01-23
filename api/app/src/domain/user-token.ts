@@ -5,12 +5,12 @@ import { Util } from "../shared/util";
 
 export type UserTokenCreate = OmitProperties<
   Omit<UserToken, "token" | "expiryTime"> & Partial<Pick<UserToken, "token" | "expiryTime">>,
-  // Only safe bc we're not relyint on the function signature, just omiting all functions ferm the resulting type
+  // Only safe bc we're not relying on the function signature, just omiting all functions from the resulting type
   // eslint-disable-next-line @typescript-eslint/ban-types
   Function
 >;
 
-// Only safe bc we're not relyint on the function signature, just omiting all functions ferm the resulting type
+// Only safe bc we're not relying on the function signature, just omiting all functions from the resulting type
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type UserTokenBuild = OmitProperties<UserToken, Function>;
 

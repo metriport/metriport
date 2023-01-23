@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/api": "^1.0.4",
+    "@metriport/api": "^1.0.5",
     "aws-sdk": "^2.1243.0",
     "axios": "^0.27.2",
     "base64url": "^3.0.1",
