@@ -1,0 +1,177 @@
+import { z } from "zod";
+import { Activity, Body, Biometrics, Nutrition } from "@metriport/api";
+
+import { mapDataToActivity } from "./activity";
+import { mapDataToBody } from "./body";
+import { mapDataToBiometrics } from "./biometrics";
+import { mapDataToNutrition } from "./nutrition";
+import { PROVIDER_APPLE } from "../../shared/constants";
+
+export type AppleWebhookPayload = {
+  activity?: Activity[];
+  body?: Body[];
+  biometrics?: Biometrics[];
+  nutrition?: Nutrition[];
+};
+
+export function mapData(data: AppleHealth): AppleWebhookPayload {
+  const payload: AppleWebhookPayload = {};
+
+  const activityData = mapDataToActivity(data);
+
+  if (activityData.length) payload.activity = activityData;
+
+  const bodyData = mapDataToBody(data);
+
+  if (bodyData.length) payload.body = bodyData;
+
+  const biometricsData = mapDataToBiometrics(data);
+
+  if (biometricsData.length) payload.biometrics = biometricsData;
+
+  const nutritionData = mapDataToNutrition(data);
+
+  if (nutritionData.length) payload.nutrition = nutritionData;
+
+  return payload;
+}
+
+export const createMetadata = (date: string) => {
+  return {
+    date,
+    source: PROVIDER_APPLE,
+  };
+};
+
+export const hasActivity = (data: AppleHealth): boolean => {
+  return (
+    !!data.HKQuantityTypeIdentifierActiveEnergyBurned ||
+    !!data.HKQuantityTypeIdentifierStepCount ||
+    !!data.HKQuantityTypeIdentifierActiveEnergyBurned ||
+    !!data.HKQuantityTypeIdentifierBasalEnergyBurned ||
+    !!data.HKQuantityTypeIdentifierFlightsClimbed
+  );
+};
+
+export const hasBody = (data: AppleHealth): boolean => {
+  return (
+    !!data.HKQuantityTypeIdentifierHeight ||
+    !!data.HKQuantityTypeIdentifierLeanBodyMass ||
+    !!data.HKQuantityTypeIdentifierBodyMass ||
+    !!data.HKQuantityTypeIdentifierBodyFatPercentage
+  );
+};
+
+export const hasNutrition = (data: AppleHealth): boolean => {
+  return (
+    !!data.HKQuantityTypeIdentifierDietaryCaffeine ||
+    !!data.HKQuantityTypeIdentifierDietaryCalcium ||
+    !!data.HKQuantityTypeIdentifierDietaryCarbohydrates ||
+    !!data.HKQuantityTypeIdentifierDietaryCholesterol ||
+    !!data.HKQuantityTypeIdentifierDietaryCopper ||
+    !!data.HKQuantityTypeIdentifierDietaryEnergyConsumed ||
+    !!data.HKQuantityTypeIdentifierDietaryFatTotal ||
+    !!data.HKQuantityTypeIdentifierDietaryFiber ||
+    !!data.HKQuantityTypeIdentifierDietaryFolate ||
+    !!data.HKQuantityTypeIdentifierDietaryIodine ||
+    !!data.HKQuantityTypeIdentifierDietaryMagnesium ||
+    !!data.HKQuantityTypeIdentifierDietaryManganese ||
+    !!data.HKQuantityTypeIdentifierDietaryNiacin ||
+    !!data.HKQuantityTypeIdentifierDietaryPantothenicAcid ||
+    !!data.HKQuantityTypeIdentifierDietaryPhosphorus ||
+    !!data.HKQuantityTypeIdentifierDietaryPotassium ||
+    !!data.HKQuantityTypeIdentifierDietaryProtein ||
+    !!data.HKQuantityTypeIdentifierDietaryRiboflavin ||
+    !!data.HKQuantityTypeIdentifierDietarySelenium ||
+    !!data.HKQuantityTypeIdentifierDietarySodium ||
+    !!data.HKQuantityTypeIdentifierDietarySugar ||
+    !!data.HKQuantityTypeIdentifierDietaryThiamin ||
+    !!data.HKQuantityTypeIdentifierDietaryVitaminA ||
+    !!data.HKQuantityTypeIdentifierDietaryVitaminB6 ||
+    !!data.HKQuantityTypeIdentifierDietaryVitaminB12 ||
+    !!data.HKQuantityTypeIdentifierDietaryVitaminC ||
+    !!data.HKQuantityTypeIdentifierDietaryVitaminD ||
+    !!data.HKQuantityTypeIdentifierDietaryVitaminE ||
+    !!data.HKQuantityTypeIdentifierDietaryVitaminK ||
+    !!data.HKQuantityTypeIdentifierDietaryWater ||
+    !!data.HKQuantityTypeIdentifierDietaryZinc
+  );
+};
+
+export const hasBiometrics = (data: AppleHealth): boolean => {
+  return (
+    !!data.HKQuantityTypeIdentifierHeartRate ||
+    !!data.HKQuantityTypeIdentifierRestingHeartRate ||
+    !!data.HKQuantityTypeIdentifierHeartRateVariabilitySDNN ||
+    !!data.HKQuantityTypeIdentifierBodyTemperature ||
+    !!data.HKQuantityTypeIdentifierBloodPressureSystolic ||
+    !!data.HKQuantityTypeIdentifierBloodPressureDiastolic ||
+    !!data.HKQuantityTypeIdentifierRespiratoryRate
+  );
+};
+
+export const appleItem = z.object({
+  date: z.string(),
+  value: z.number(),
+});
+export type AppleHealthItem = z.infer<typeof appleItem>;
+
+export const appleSchema = z.object({
+  // ACTIVITY
+  HKQuantityTypeIdentifierActiveEnergyBurned: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierStepCount: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierBasalEnergyBurned: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierFlightsClimbed: z.array(appleItem).optional(),
+
+  // BODY
+  HKQuantityTypeIdentifierHeight: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierLeanBodyMass: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierBodyMass: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierBodyFatPercentage: z.array(appleItem).optional(),
+
+  // NUTRITION
+  HKQuantityTypeIdentifierDietaryCaffeine: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryCalcium: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryCarbohydrates: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryCholesterol: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryCopper: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryEnergyConsumed: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryFatTotal: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryFiber: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryFolate: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryIodine: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryMagnesium: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryManganese: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryNiacin: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryPantothenicAcid: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryPhosphorus: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryPotassium: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryProtein: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryRiboflavin: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietarySelenium: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietarySodium: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietarySugar: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryThiamin: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryVitaminA: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryVitaminB6: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryVitaminB12: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryVitaminC: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryVitaminD: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryVitaminE: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryVitaminK: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryWater: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierDietaryZinc: z.array(appleItem).optional(),
+
+  // BIOMETRICS
+  HKQuantityTypeIdentifierHeartRate: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierRestingHeartRate: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierHeartRateVariabilitySDNN: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierBodyTemperature: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierBloodPressureSystolic: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierBloodPressureDiastolic: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierRespiratoryRate: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierOxygenSaturation: z.array(appleItem).optional(),
+  HKQuantityTypeIdentifierBloodGlucose: z.array(appleItem).optional(),
+});
+
+export type AppleHealth = z.infer<typeof appleSchema>;

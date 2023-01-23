@@ -1,11 +1,4 @@
-import {
-  Activity,
-  Biometrics,
-  Body,
-  Nutrition,
-  Sleep,
-  User,
-} from "@metriport/api";
+import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api";
 
 import NotImplementedError from "../errors/not-implemented";
 import { ConnectedUser } from "../models/connected-user";
@@ -30,38 +23,32 @@ export default abstract class Provider {
     return this.supportedDataTypes[dataType];
   }
 
-  async getActivityData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Activity> {
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
     throw new NotImplementedError();
   }
 
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
     throw new NotImplementedError();
   }
 
-  async getBiometricsData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Biometrics> {
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
     throw new NotImplementedError();
   }
 
-  async getNutritionData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Nutrition> {
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
     throw new NotImplementedError();
   }
 
-  async getSleepData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Sleep> {
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
     throw new NotImplementedError();
   }
 
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
     throw new NotImplementedError();
   }

@@ -18,7 +18,8 @@ export const mapToBiometrics = (
   };
 
   if (whoopRecovery && whoopRecovery.score_state === "SCORED") {
-    const score = whoopRecovery.score!;
+    if (!whoopRecovery.score) throw new Error(`Missing whoopRecovery.score`);
+    const score = whoopRecovery.score;
     biometrics = {
       ...biometrics,
       heart_rate: {
@@ -43,7 +44,8 @@ export const mapToBiometrics = (
   }
 
   if (whoopCycle && whoopCycle.score_state === "SCORED") {
-    const score = whoopCycle.score!;
+    if (!whoopCycle.score) throw new Error(`Missing whoopCycle.score`);
+    const score = whoopCycle.score;
     biometrics = {
       ...biometrics,
       heart_rate: {

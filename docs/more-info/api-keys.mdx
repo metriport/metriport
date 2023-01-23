@@ -1,0 +1,46 @@
+---
+title: "API Keys"
+description: "Learn more about API key security best practices."
+---
+
+## Overview
+
+On the [Metriport Developer Dashboard](https://dash.metriport.com/settings), we support generating 2 types of API keys - a Secret Key and a Client Key.
+
+For your security, read through this page to understand the difference between the two keys,
+and when it's appropriate to use them.
+
+<Warning>
+  If you believe any of your keys have been compromised, you can always revoke
+  them on the Settings page by clicking the trash button beside the key. This
+  will make the key inactive immediately, and you'll need to subsequenly
+  generate a new one.
+</Warning>
+
+## Secret Key
+
+The Secret Key will give you full access to the Metriport API. This key has the
+ability to perform destructive operations, and as such, we recommend treating it with the same
+care as your account password.
+
+Generally, this key should only be used in your backend services, not shared with anyone,
+and never exposed in plain text.
+
+<Warning>
+  As you probably know, don't commit this key in plain text to your repositories
+  either - even if your repos are private.
+</Warning>
+
+## Client Key
+
+The Client Key gives your frontend clients limited access to the Metriport API - just enough
+access to perform the client's specific function. Your Client Key is safe to expose to your frontend
+applications, however we still recommend taking a base level of precaution and not storing
+it in plain text.
+
+You can treat your Client Key like a secret that's safe to use client-side.
+
+<Info>
+  For an example usage of a Client Key, feel free to read about our [Apple
+  Health implementation](/more-info/apple-health).
+</Info>

@@ -7,8 +7,7 @@ interface MinMaxItem {
 export class Util {
   static curSecSinceEpoch(): number {
     const now = new Date();
-    const utcMilllisecondsSinceEpoch =
-      now.getTime() + now.getTimezoneOffset() * 60 * 1000;
+    const utcMilllisecondsSinceEpoch = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
     return Math.round(utcMilllisecondsSinceEpoch / 1000);
   }
 
@@ -22,16 +21,16 @@ export class Util {
     };
   };
 
-  static getAvgOfArr = (arr: number[]): number => {
+  static getAvgOfArr = (arr: number[], fixed = 0): number => {
     if (arr.length) {
       const average = mean(arr);
-      return Number(average.toFixed(0));
+      return Number(average.toFixed(fixed));
     }
 
     return 0;
   };
 
-  static addDataToObject = (key: string, value: any) => {
+  static addDataToObject = (key: string, value: unknown) => {
     if (value) {
       return { [key]: value };
     }
@@ -41,12 +40,9 @@ export class Util {
   static log =
     (prefix: string) =>
     (msg: string, err?: unknown): void =>
-      err
-        ? console.log(`[${prefix}] ${msg}`, err)
-        : console.log(`[${prefix}] ${msg}`);
+      err ? console.log(`[${prefix}] ${msg}`, err) : console.log(`[${prefix}] ${msg}`);
 
-  static sleep = (timeInMs: number) =>
-    new Promise((resolve) => setTimeout(resolve, timeInMs));
+  static sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));
 
   static kilojoulesToKilocalories(kilojoules: number): number {
     return kilojoules * 0.239006;
@@ -57,13 +53,12 @@ export class Util {
    * it if present.
    * The return type is the original or undefined, can't return null.
    */
-  static optional = <T>(v: T): NonNullable<T> | undefined =>
-    v != null ? v : undefined;
+  static optional = <T>(v: T): NonNullable<T> | undefined => (v != null ? v : undefined);
 
   /**
    * Returns the first non-null and non-undefined item in the array,
    * or undefined.
    */
   static oneOf = <T>(...values: T[]): NonNullable<T> | undefined =>
-    values.find((v) => v != null) ?? undefined;
+    values.find(v => v != null) ?? undefined;
 }

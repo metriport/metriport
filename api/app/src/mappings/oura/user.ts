@@ -4,10 +4,7 @@ import { PROVIDER_OURA } from "../../shared/constants";
 
 import { Util } from "../../shared/util";
 
-export const mapToUser = (
-  ouraPersonalInfo: OuraPersonalInfo,
-  date: string
-): MetriportUser => {
+export const mapToUser = (ouraPersonalInfo: OuraPersonalInfo, date: string): MetriportUser => {
   return {
     metadata: { date: date, source: PROVIDER_OURA },
     ...Util.addDataToObject("age", ouraPersonalInfo.age),

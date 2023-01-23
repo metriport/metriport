@@ -1,5 +1,4 @@
-export const getEnvVar = (varName: string): string | undefined =>
-  process.env[varName];
+export const getEnvVar = (varName: string): string | undefined => process.env[varName];
 
 export const getEnvVarOrFail = (varName: string): string => {
   const value = getEnvVar(varName);
@@ -64,6 +63,13 @@ export class Config {
   }
   static getFitbitClientSecret(): string {
     return getEnvVarOrFail("FITBIT_CLIENT_SECRET");
+  }
+
+  static getGoogleClientId(): string {
+    return getEnvVarOrFail("GOOGLE_CLIENT_ID");
+  }
+  static getGoogleClientSecret(): string {
+    return getEnvVarOrFail("GOOGLE_CLIENT_SECRET");
   }
 
   static getWhoopClientId(): string {

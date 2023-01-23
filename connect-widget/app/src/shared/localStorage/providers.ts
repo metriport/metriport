@@ -1,19 +1,25 @@
 import { DefaultProvider } from "../../pages/connect/components/connect-providers";
 
-const providers: DefaultProvider[] = [
+const defaultProviders: DefaultProvider[] = [
+  { name: "apple", image: "apple.png" },
   { name: "fitbit", image: "fitbit.webp" },
-  { name: "oura", image: "oura.webp" },
-  { name: "cronometer", image: "cronometer.webp" },
-  { name: "whoop", image: "whoop.png" },
-  { name: "withings", image: "withings.png" },
   { name: "garmin", image: "garmin.webp" },
+  { name: "google", image: "google.png" },
+  { name: "oura", image: "oura.webp" },
+  { name: "withings", image: "withings.png" },
+  { name: "whoop", image: "whoop.png" },
+  { name: "cronometer", image: "cronometer.webp" },
 ];
 
 const providersLocalStorageKey = "providers";
 
-
-export const getProviders = (searchProviders: string | null, isDemo: boolean): DefaultProvider[] => {
-  const validProviders = getValidProviders(searchProviders);
+export const getProviders = (
+  providerParams: string | null,
+  isDemo: boolean,
+  isApple: string | null
+): DefaultProvider[] => {
+  const providers = toggleProvidersWithApple(defaultProviders, isApple);
+  const validProviders = getValidProviders(providers, providerParams);
 
   if (validProviders) {
     if (!isDemo) {
@@ -32,12 +38,10 @@ export const getProviders = (searchProviders: string | null, isDemo: boolean): D
   return providers;
 };
 
-const getValidProviders = (searchProviders: string | null) => {
-  if (searchProviders) {
-    const providerArr = searchProviders.split(",");
-    const validProviders = providers.filter((provider) =>
-      providerArr.includes(provider.name)
-    );
+const getValidProviders = (providers: DefaultProvider[], providerParams: string | null) => {
+  if (providerParams) {
+    const providerArr = providerParams.split(",");
+    const validProviders = providers.filter(provider => providerArr.includes(provider.name));
 
     if (validProviders.length) {
       return validProviders;
@@ -50,9 +54,7 @@ const getValidProviders = (searchProviders: string | null) => {
 };
 
 const getLocalStorageProviders = (): DefaultProvider[] | null => {
-  const localStorageProviders = localStorage.getItem(
-    providersLocalStorageKey
-  );
+  const localStorageProviders = localStorage.getItem(providersLocalStorageKey);
 
   if (localStorageProviders) {
     const parsedValue = JSON.parse(localStorageProviders);
@@ -60,4 +62,12 @@ const getLocalStorageProviders = (): DefaultProvider[] | null => {
   }
 
   return null;
+};
+
+const toggleProvidersWithApple = (providers: DefaultProvider[], isApple: string | null) => {
+  if (isApple) {
+    return providers;
+  }
+
+  return providers.filter(provider => provider.name !== "apple");
 };

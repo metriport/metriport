@@ -3,21 +3,20 @@ import Axios from "axios";
 import dayjs from "dayjs";
 import { chunk, groupBy } from "lodash";
 import { nanoid } from "nanoid";
+
+import { AppleWebhookPayload } from "../../mappings/apple";
 import { getErrorMessage } from "../../errors";
 import WebhookError from "../../errors/webhook";
 import { DataType, TypedData, UserData } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { Util } from "../../shared/util";
-import { getConnectedUsers } from "../connected-user/get-connected-user";
+import { getConnectedUsers, getConnectedUserOrFail } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { reportUsage as reportUsageCmd } from "../usage/report-usage";
-import {
-  createWebhookRequest,
-  updateWebhookRequestStatus,
-} from "../webhook/webhook-request";
+import { createWebhookRequest, updateWebhookRequestStatus } from "../webhook/webhook-request";
 
 const axios = Axios.create();
 
@@ -36,7 +35,6 @@ type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
 type WebhookPingPayload = {
   ping: string;
 };
-type WebhookPayload = WebhookDataPayload | WebhookPingPayload;
 
 // TODO #163 - break this up, it has Garmin-specific logic that should live on its own file
 /**
@@ -45,29 +43,27 @@ type WebhookPayload = WebhookDataPayload | WebhookPingPayload;
  *
  * @param {UserData} data The data coming from a Provider, already converted to our internal format
  */
-export const processData = async <T extends MetriportData>(
-  data: UserData<T>[]
-): Promise<void> => {
+export const processData = async <T extends MetriportData>(data: UserData<T>[]): Promise<void> => {
   try {
     // the same Garmin user/UAT might be associated with multiple Metriport Customers
     // convert "data + UAT" into "data + list of users/customers"
     const dataWithListOfCxIdAndUserId = await Promise.all(
-      data.map(async (d) => {
+      data.map(async d => {
         const uat = d.user.userAccessToken;
         const userTokens = await getUserTokenByUAT({
           oauthUserAccessToken: uat,
         });
         const connectedUsers = (
           await Promise.all(
-            userTokens.map(async (ut) => {
+            userTokens.map(async ut => {
               return getConnectedUsers({
                 cxId: ut.cxId,
                 ids: [ut.userId],
               });
             })
           )
-        ).flatMap((u) => u);
-        const cxIdAndUserIdList = connectedUsers.map((t) => ({
+        ).flatMap(u => u);
+        const cxIdAndUserIdList = connectedUsers.map(t => ({
           cxId: t.cxId,
           cxUserId: t.cxUserId,
         }));
@@ -78,7 +74,7 @@ export const processData = async <T extends MetriportData>(
       })
     );
     // Flatten the list so each item has one cxId/userId and one data record
-    const dataByUser = dataWithListOfCxIdAndUserId.flatMap((v) =>
+    const dataByUser = dataWithListOfCxIdAndUserId.flatMap(v =>
       v.cxIdAndUserIdList.map(({ cxId, cxUserId }) => ({
         cxId,
         cxUserId,
@@ -86,35 +82,32 @@ export const processData = async <T extends MetriportData>(
       }))
     );
     // Group all the data records for the same cxId
-    const dataByCustomer = groupBy(dataByUser, (v) => v.cxId);
+    const dataByCustomer = groupBy(dataByUser, v => v.cxId);
     // Process all data for the same Customer in one Promise, run all in parallel
     await Promise.allSettled(
-      Object.keys(dataByCustomer).map(async (cxId) => {
+      Object.keys(dataByCustomer).map(async cxId => {
         try {
           // flat list of each data record and its respective user
-          const dataAndUserList = dataByCustomer[cxId].map((v) => ({
+          const dataAndUserList = dataByCustomer[cxId].map(v => ({
             cxUserId: v.cxUserId,
             typedData: v.typedData,
           }));
           // split the list in chunks
           const chunks = chunk(dataAndUserList, 10);
           // transform each chunk into a payload
-          const payloads = chunks.map((c) => {
+          const payloads = chunks.map(c => {
             // groups by user
-            const dataByUser = groupBy(dataAndUserList, (v) => v.cxUserId);
+            const dataByUser = groupBy(c, v => v.cxUserId);
             // now convert that into an array of WebhookUserPayload (all the data of a user for this chunk)
             const users: WebhookUserPayload[] = [];
             for (const cxUserId of Object.keys(dataByUser)) {
-              const usersData = dataByUser[cxUserId].map(
-                (dbu) => dbu.typedData
-              );
+              const usersData = dataByUser[cxUserId].map(dbu => dbu.typedData);
               // for each user, group together data by type
-              const usersDataByType = groupBy(usersData, (ud) => ud.type);
+              const usersDataByType = groupBy(usersData, ud => ud.type);
               const data: MetriportData[] = [];
               for (const type of Object.keys(usersDataByType)) {
-                const dataOfType: TypedData<MetriportData>[] =
-                  usersDataByType[type];
-                data.push(...dataOfType.map((d) => d.data));
+                const dataOfType: TypedData<MetriportData>[] = usersDataByType[type];
+                data.push(...dataOfType.map(d => d.data));
                 users.push({
                   userId: cxUserId,
                   [type]: data,
@@ -129,7 +122,7 @@ export const processData = async <T extends MetriportData>(
           await processOneCustomer(cxId, settings, payloads);
           await reportUsage(
             cxId,
-            dataAndUserList.map((du) => du.cxUserId)
+            dataAndUserList.map(du => du.cxUserId)
           );
         } catch (err) {
           const msg = getErrorMessage(err);
@@ -142,12 +135,27 @@ export const processData = async <T extends MetriportData>(
   }
 };
 
-const reportUsage = async (
-  cxId: string,
-  cxUserIds: string[]
+export const processAppleData = async (
+  data: AppleWebhookPayload,
+  metriportUserId: string,
+  cxId: string
 ): Promise<void> => {
-  cxUserIds.forEach((cxUserId) => [
-    reportUsageCmd({ cxId, cxUserId }).catch((err) => {
+  try {
+    const connectedUser = await getConnectedUserOrFail({ id: metriportUserId, cxId });
+
+    const settings = await getSettingsOrFail({ id: connectedUser.cxId });
+    await processOneCustomer(connectedUser.cxId, settings, [
+      { users: [{ userId: metriportUserId, ...data }] },
+    ]);
+    await reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
+  } catch (err) {
+    log(`Error on processAppleData: `, err);
+  }
+};
+
+const reportUsage = async (cxId: string, cxUserIds: string[]): Promise<void> => {
+  cxUserIds.forEach(cxUserId => [
+    reportUsageCmd({ cxId, cxUserId }).catch(err => {
       // TODO #156 report to monitoring app instead
       log(`Failed to report usage, cxId ${cxId}, cxUserId ${cxUserId}`, err);
     }),
@@ -175,7 +183,7 @@ export const processRequest = async (
   webhookRequest: WebhookRequest,
   settings: Settings
 ): Promise<boolean> => {
-  const payload: any = webhookRequest.payload as any;
+  const payload = webhookRequest.payload;
 
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
@@ -200,7 +208,7 @@ export const processRequest = async (
           messageId: webhookRequest.id,
           when: dayjs(webhookRequest.createdAt).toISOString(),
         },
-        ...payload,
+        ...(payload as any), //eslint-disable-line @typescript-eslint/no-explicit-any
       },
       webhookUrl,
       webhookKey
@@ -220,6 +228,7 @@ export const processRequest = async (
       });
     }
     return true;
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     try {
       // mark this request as failed on the DB
@@ -256,6 +265,7 @@ const sendPayload = async (
   url: string,
   apiKey: string,
   timeout = 5_000
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   try {
     const res = await axios.post(url, payload, {
@@ -266,15 +276,13 @@ const sendPayload = async (
       timeout,
     });
     return res.data;
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     throw new WebhookError(`Failed to send payload`, err);
   }
 };
 
-export const sendTestPayload = async (
-  url: string,
-  key: string
-): Promise<boolean> => {
+export const sendTestPayload = async (url: string, key: string): Promise<boolean> => {
   const ping = nanoid();
   const payload: WebhookPingPayload = {
     ping,

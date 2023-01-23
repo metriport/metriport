@@ -5,12 +5,13 @@ const light = "gray.100";
 
 const theme = extendTheme({
   styles: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     global: (props: any) => ({
       body: {
-        bg: mode(light, dark)(props)
-      }
-    })
-  }
+        bg: mode(light, dark)(props),
+      },
+    }),
+  },
 });
 
 export default theme;

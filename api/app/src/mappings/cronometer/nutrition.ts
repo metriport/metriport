@@ -2,10 +2,7 @@ import { Nutrition } from "@metriport/api";
 import { PROVIDER_CRONOMETER } from "../../shared/constants";
 import { CronometerDiarySummary } from "./models/diary-summary";
 
-export const mapToNutrition = (
-  diarySummary: CronometerDiarySummary,
-  date: string
-): Nutrition => {
+export const mapToNutrition = (diarySummary: CronometerDiarySummary, date: string): Nutrition => {
   return {
     metadata: {
       date: date,

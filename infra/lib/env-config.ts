@@ -1,6 +1,14 @@
 import { EnvType } from "./env-type";
 
-export interface EnvConfig {
+export type ConnectWidgetConfig = {
+  stackName: string;
+  region: string;
+  subdomain: string;
+  host: string;
+  domain: string;
+};
+
+export type EnvConfig = {
   stackName: string;
   secretsStackName?: string;
   environmentType: EnvType;
@@ -18,6 +26,8 @@ export interface EnvConfig {
     FITBIT_CLIENT_SECRET: string;
     GARMIN_CONSUMER_KEY: string;
     GARMIN_CONSUMER_SECRET: string;
+    GOOGLE_CLIENT_ID: string;
+    GOOGLE_CLIENT_SECRET: string;
     OURA_CLIENT_ID: string;
     OURA_CLIENT_SECRET: string;
     WITHINGS_CLIENT_ID: string;
@@ -25,13 +35,14 @@ export interface EnvConfig {
     WHOOP_CLIENT_ID: string;
     WHOOP_CLIENT_SECRET: string;
   };
-  connectWidget?: {
-    stackName: string;
-    region: string;
-    subdomain: string;
-    host: string;
-    domain: string;
-  };
-  connectWidgetUrl?: string;
   usageReportUrl?: string;
-}
+} & (
+  | {
+      connectWidget: ConnectWidgetConfig;
+      connectWidgetUrl?: never;
+    }
+  | {
+      connectWidget?: never;
+      connectWidgetUrl: string;
+    }
+);

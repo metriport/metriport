@@ -6,7 +6,7 @@ export const WEBHOOK_STATUS_OK = "OK";
 export const WEBHOOK_STATUS_BAD_RESPONSE = "Bad response from webhook call";
 
 export class Settings extends BaseModel<Settings> {
-  static NAME: string = "settings";
+  static NAME = "settings";
   declare id: string;
   declare webhookUrl: string | null;
   declare webhookKey: string | null;

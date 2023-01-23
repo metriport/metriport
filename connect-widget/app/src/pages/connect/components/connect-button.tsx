@@ -1,19 +1,8 @@
-import {
-  Text,
-  Button,
-  useBreakpointValue,
-  Box,
-  Center,
-} from "@chakra-ui/react";
+import { Text, Button, useBreakpointValue, Box, Center } from "@chakra-ui/react";
 
 import { ProviderProps } from "./provider";
 
-const ConnectButton = ({
-  isLoading,
-  isConnected,
-  provider,
-  onRedirect,
-}: ProviderProps) => {
+const ConnectButton = ({ isLoading, isConnected, provider, onRedirect }: ProviderProps) => {
   const content = useBreakpointValue({
     base: <Text p="4">{isConnected ? "\u2713" : "+"}</Text>,
     sm: <Text p="4">{isConnected ? "Connected" : "Connect"}</Text>,

@@ -18,7 +18,7 @@ export const mapToActivity = (
     date: date,
     source: PROVIDER_WITHINGS,
   };
-  let activity: Activity = {
+  const activity: Activity = {
     metadata: metadata,
   };
 
@@ -36,7 +36,7 @@ const formatActivityLogs = (
 
   if (withingsActivityLogs) {
     for (const withingsActivityLog of withingsActivityLogs) {
-      let activityLog: ActivityLog = {
+      const activityLog: ActivityLog = {
         metadata: metadata,
       };
 
@@ -59,16 +59,19 @@ const formatActivityLogs = (
         distance_meters: withingsActivityLog.distance,
       };
 
-      if (withingsActivityLog.hr_min || withingsActivityLog.hr_max || withingsActivityLog.hr_average) {
+      if (
+        withingsActivityLog.hr_min ||
+        withingsActivityLog.hr_max ||
+        withingsActivityLog.hr_average
+      ) {
         activityLog.biometrics = {
           heart_rate: {
-            ...Util.addDataToObject('min_bpm', withingsActivityLog.hr_min),
-            ...Util.addDataToObject('max_bpm', withingsActivityLog.hr_max),
-            ...Util.addDataToObject('avg_bpm', withingsActivityLog.hr_average)
+            ...Util.addDataToObject("min_bpm", withingsActivityLog.hr_min),
+            ...Util.addDataToObject("max_bpm", withingsActivityLog.hr_max),
+            ...Util.addDataToObject("avg_bpm", withingsActivityLog.hr_average),
           },
         };
       }
-
 
       activityLogs.push(activityLog);
     }
@@ -85,14 +88,10 @@ const formatWorkoutLogs = (
 
   if (withingsWorkoutLogs) {
     for (const withingsWorkoutLog of withingsWorkoutLogs) {
-      let workoutLog: ActivityLog = {
+      const workoutLog: ActivityLog = {
         metadata: metadata,
-        start_time: dayjs(withingsWorkoutLog.startdate).format(
-          "YYYY-MM-DDTHH:mm:ssZ"
-        ),
-        end_time: dayjs(withingsWorkoutLog.enddate).format(
-          "YYYY-MM-DDTHH:mm:ssZ"
-        ),
+        start_time: dayjs(withingsWorkoutLog.startdate).format("YYYY-MM-DDTHH:mm:ssZ"),
+        end_time: dayjs(withingsWorkoutLog.enddate).format("YYYY-MM-DDTHH:mm:ssZ"),
         name: categories[withingsWorkoutLog.category],
       };
 
@@ -101,18 +100,17 @@ const formatWorkoutLogs = (
 
         if (manual_calories) {
           workoutLog.energy_expenditure = {
-            ...Util.addDataToObject('active_kcal', manual_calories)
+            ...Util.addDataToObject("active_kcal", manual_calories),
           };
         }
 
         const { steps, elevation, distance } = withingsWorkoutLog.data;
 
         workoutLog.movement = {
-          ...Util.addDataToObject('steps_count', steps),
-          ...Util.addDataToObject('floors_count', elevation),
-          ...Util.addDataToObject('distance_meters', distance),
+          ...Util.addDataToObject("steps_count", steps),
+          ...Util.addDataToObject("floors_count", elevation),
+          ...Util.addDataToObject("distance_meters", distance),
         };
-
 
         const { hr_max, hr_min, hr_average, spo2_average } = withingsWorkoutLog.data;
 
@@ -123,9 +121,9 @@ const formatWorkoutLogs = (
             workoutLog.biometrics = {
               ...workoutLog.biometrics,
               heart_rate: {
-                ...Util.addDataToObject('min_bpm', hr_min),
-                ...Util.addDataToObject('max_bpm', hr_max),
-                ...Util.addDataToObject('avg_bpm', hr_average)
+                ...Util.addDataToObject("min_bpm", hr_min),
+                ...Util.addDataToObject("max_bpm", hr_max),
+                ...Util.addDataToObject("avg_bpm", hr_average),
               },
             };
           }
@@ -135,13 +133,12 @@ const formatWorkoutLogs = (
               ...workoutLog.biometrics,
               respiration: {
                 spo2: {
-                  ...Util.addDataToObject('avg_pct', spo2_average)
+                  ...Util.addDataToObject("avg_pct", spo2_average),
                 },
               },
             };
           }
         }
-
       }
 
       workoutLogs.push(workoutLog);

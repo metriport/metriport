@@ -4,13 +4,7 @@ import MetriportError from "./errors/metriport-error";
 import { ZodError } from "zod";
 
 // https://www.rfc-editor.org/rfc/rfc7807
-const defaultResponseBody = ({
-  status,
-  title,
-}: {
-  status: number;
-  title: string;
-}): string => {
+const defaultResponseBody = ({ status, title }: { status: number; title: string }): string => {
   return JSON.stringify({
     status,
     title,
@@ -32,18 +26,12 @@ const zodResponseBody = (err: ZodError): string => {
   });
 };
 
-export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res) => {
   if (err instanceof MetriportError) {
-    return res
-      .contentType("json")
-      .status(err.status)
-      .send(metriportResponseBody(err));
+    return res.contentType("json").status(err.status).send(metriportResponseBody(err));
   }
   if (err instanceof ZodError) {
-    return res
-      .contentType("json")
-      .status(status.BAD_REQUEST)
-      .send(zodResponseBody(err));
+    return res.contentType("json").status(status.BAD_REQUEST).send(zodResponseBody(err));
   }
   if (err.statusCode) {
     return res
@@ -63,8 +51,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     .send(
       defaultResponseBody({
         status: status.INTERNAL_SERVER_ERROR,
-        title:
-          "Internal server error, please try again or reach out to support@metriport.com",
+        title: "Internal server error, please try again or reach out to support@metriport.com",
       })
     );
 };

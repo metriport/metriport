@@ -1,5 +1,5 @@
 import MetriportError from "./metriport-error";
-import status from 'http-status';
+import status from "http-status";
 
 export default class NotFoundError extends MetriportError {
   status = status.NOT_FOUND;

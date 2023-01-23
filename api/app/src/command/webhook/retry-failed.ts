@@ -19,13 +19,12 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
     },
     {
       where: {
-        id: failed.map((f) => f.id),
+        id: failed.map(f => f.id),
       },
     }
   );
 
-  // intentionally asynchronous
-  new Promise(async () => {
+  const _processRequest = async () => {
     try {
       for (const request of failed) {
         const success = await processRequest(request, settings);
@@ -36,5 +35,7 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
       // TODO #156 report to monitoring app instead
       console.log(`Error retrying failed webhook requests`, err);
     }
-  });
+  };
+  // intentionally asynchronous
+  _processRequest();
 };

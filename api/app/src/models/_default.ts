@@ -10,9 +10,7 @@ import {
 
 export type ModelSetup = (sequelize: Sequelize) => void;
 
-export const defaultModelOptions = <M extends Model>(
-  sequelize: Sequelize
-): InitOptions<M> => ({
+export const defaultModelOptions = <M extends Model>(sequelize: Sequelize): InitOptions<M> => ({
   sequelize,
   freezeTableName: true,
   underscored: true,
@@ -21,6 +19,7 @@ export const defaultModelOptions = <M extends Model>(
   updatedAt: "updated_at",
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export abstract class BaseModel<T extends Model<any, any>> extends Model<
   InferAttributes<T>,
   InferCreationAttributes<T>

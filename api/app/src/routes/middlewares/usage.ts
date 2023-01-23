@@ -11,6 +11,7 @@ const log = Util.log("USAGE");
  */
 export const reportUsage = async (
   req: Request,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   res: any, // otherwise we get type error, those Response functions are not mapped on Typescript
   next: NextFunction
 ): Promise<void> => {

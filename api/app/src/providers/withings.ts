@@ -1,5 +1,5 @@
 import { Activity, Biometrics, Sleep } from "@metriport/api";
-import { Axios } from "axios";
+import axios from "axios";
 import dayjs from "dayjs";
 import crypto from "crypto";
 
@@ -17,21 +17,16 @@ import {
   withingsActivityLogResp,
   WithingsActivityLogs,
 } from "../mappings/withings/models/activity";
-import {
-  withingsWorkoutLogsResp,
-  WithingsWorkoutLogs,
-} from "../mappings/withings/models/workouts";
+import { withingsWorkoutLogsResp, WithingsWorkoutLogs } from "../mappings/withings/models/workouts";
 import { withingsHeartRateResp } from "../mappings/withings/models/heart-rate";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
 
-const axios: Axios = require("axios").default;
-
 export class Withings extends Provider implements OAuth2 {
-  static URL: string = "https://wbsapi.withings.net";
-  static AUTHORIZATION_URL: string = "https://account.withings.com";
-  static AUTHORIZATION_PATH: string = "/oauth2_user/authorize2";
-  static TOKEN_PATH: string = "/v2/oauth2";
-  static API_PATH: string = "v2";
+  static URL = "https://wbsapi.withings.net";
+  static AUTHORIZATION_URL = "https://account.withings.com";
+  static AUTHORIZATION_PATH = "/oauth2_user/authorize2";
+  static TOKEN_PATH = "/v2/oauth2";
+  static API_PATH = "v2";
   static scopes = "user.activity,user.metrics";
 
   private static clientId = Config.getWithingsClientId();
@@ -85,10 +80,7 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
-    const providerData = getProviderDataFromConnectUserOrFail(
-      connectedUser,
-      PROVIDER_WITHINGS
-    );
+    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_WITHINGS);
 
     const client_id = Config.getWithingsClientId();
     const client_secret = Config.getWithingsClientSecret();
@@ -110,11 +102,7 @@ export class Withings extends Provider implements OAuth2 {
     }
   }
 
-  async getNonce(
-    clientId: string,
-    clientSecret: string,
-    timestamp: number
-  ): Promise<string> {
+  async getNonce(clientId: string, clientSecret: string, timestamp: number): Promise<string> {
     const nonceAction = "getnonce";
     const nonceSignature = `${nonceAction},${clientId},${timestamp}`;
     const hashString = crypto
@@ -164,17 +152,14 @@ export class Withings extends Provider implements OAuth2 {
     return this.oauth.fetchProviderData<WithingsActivityLogs>(
       connectedUser,
       `${Withings.URL}/${Withings.API_PATH}/measure`,
-      async (resp) => {
+      async resp => {
         return withingsActivityLogResp.parse(resp.data.body.activities);
       },
       params
     );
   }
 
-  async fetchWorkoutData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<WithingsWorkoutLogs> {
+  async fetchWorkoutData(connectedUser: ConnectedUser, date: string): Promise<WithingsWorkoutLogs> {
     const params = {
       action: "getworkouts",
       startdateymd: date,
@@ -184,26 +169,21 @@ export class Withings extends Provider implements OAuth2 {
     return this.oauth.fetchProviderData<WithingsWorkoutLogs>(
       connectedUser,
       `${Withings.URL}/${Withings.API_PATH}/measure`,
-      async (resp) => {
+      async resp => {
         return withingsWorkoutLogsResp.parse(resp.data.body.series);
       },
       params
     );
   }
 
-  async getActivityData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Activity> {
+  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
     const [resActivity, resWorkouts] = await Promise.allSettled([
       this.fetchActivityData(connectedUser, date),
       this.fetchWorkoutData(connectedUser, date),
     ]);
 
-    const activity =
-      resActivity.status === "fulfilled" ? resActivity.value : undefined;
-    const workouts =
-      resWorkouts.status === "fulfilled" ? resWorkouts.value : undefined;
+    const activity = resActivity.status === "fulfilled" ? resActivity.value : undefined;
+    const workouts = resWorkouts.status === "fulfilled" ? resWorkouts.value : undefined;
 
     if (!activity && !workouts) {
       throw new Error("All Requests failed");
@@ -211,10 +191,7 @@ export class Withings extends Provider implements OAuth2 {
     return mapToActivity(date, activity, workouts);
   }
 
-  async getBiometricsData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Biometrics> {
+  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
     const params = {
       action: "list",
       startdate: dayjs(date).unix(),
@@ -223,20 +200,14 @@ export class Withings extends Provider implements OAuth2 {
     return this.oauth.fetchProviderData<Biometrics>(
       connectedUser,
       `${Withings.URL}/${Withings.API_PATH}/heart`,
-      async (resp) => {
-        return mapToBiometrics(
-          date,
-          withingsHeartRateResp.parse(resp.data.body.series)
-        );
+      async resp => {
+        return mapToBiometrics(date, withingsHeartRateResp.parse(resp.data.body.series));
       },
       params
     );
   }
 
-  async getSleepData(
-    connectedUser: ConnectedUser,
-    date: string
-  ): Promise<Sleep> {
+  async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
     const params = {
       action: "getsummary",
       startdateymd: date,
@@ -246,7 +217,7 @@ export class Withings extends Provider implements OAuth2 {
     return this.oauth.fetchProviderData<Sleep>(
       connectedUser,
       `${Withings.URL}/${Withings.API_PATH}/sleep`,
-      async (resp) => {
+      async resp => {
         return mapToSleep(date, withingsSleepResp.parse(resp.data.body.series));
       },
       params

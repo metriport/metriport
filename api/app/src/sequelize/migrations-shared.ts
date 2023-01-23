@@ -12,19 +12,13 @@ import {
 
 export const updateUpdatedAtFnName = "update_trigger_fn";
 
-class BaseModel extends Model<
-  InferAttributes<BaseModel>,
-  InferCreationAttributes<BaseModel>
-> {
+class BaseModel extends Model<InferAttributes<BaseModel>, InferCreationAttributes<BaseModel>> {
   declare createdAt: Date;
   declare updatedAt: Date;
 }
 
 // default columns, don't change them here; if you need something different do it on the migration file
-export const defaultColumnsDef = (): ModelAttributes<
-  BaseModel,
-  CreationAttributes<BaseModel>
-> => ({
+export const defaultColumnsDef = (): ModelAttributes<BaseModel, CreationAttributes<BaseModel>> => ({
   createdAt: {
     field: "created_at",
     type: DataTypes.DATE(6),
@@ -48,6 +42,7 @@ export const addUpdatedAtTrigger = (
     tableName,
     `trg_update_${tableName}`,
     "before",
+    //eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore - https://github.com/sequelize/sequelize/issues/11420
     { before: "update" },
     updateUpdatedAtFnName,

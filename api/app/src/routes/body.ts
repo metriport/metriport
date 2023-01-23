@@ -21,10 +21,7 @@ const router = Router();
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
-    const results = await getProviderDataForType<Body>(
-      req,
-      ConsumerHealthDataType.Body
-    );
+    const results = await getProviderDataForType<Body>(req, ConsumerHealthDataType.Body);
 
     res.status(status.OK).json(results);
   })

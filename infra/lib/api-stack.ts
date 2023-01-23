@@ -35,9 +35,7 @@ export class APIStack extends Stack {
     const apiSecrets: { [key: string]: ecs.Secret } = {};
     for (const key of Object.keys(props.config.providerSecretNames)) {
       apiSecrets[key] = ecs.Secret.fromSecretsManager(
-        buildSecret(
-          (props.config.providerSecretNames as { [index: string]: any })[key]
-        )
+        buildSecret((props.config.providerSecretNames as { [index: string]: string })[key])
       );
     }
 
@@ -155,11 +153,10 @@ export class APIStack extends Stack {
       directory: "../api/app",
     });
 
-    const connectWidgetUrlEnvVar = props.config.connectWidgetUrl
-      ? props.config.connectWidgetUrl
-      : `https://${props.config.connectWidget!.subdomain}.${
-          props.config.connectWidget!.domain
-        }/`;
+    const connectWidgetUrlEnvVar =
+      props.config.connectWidgetUrl != undefined
+        ? props.config.connectWidgetUrl
+        : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
     // Run some servers on fargate containers
     const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
@@ -195,10 +192,7 @@ export class APIStack extends Stack {
     );
     // This speeds up deployments so the tasks are swapped quicker.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-    fargateService.targetGroup.setAttribute(
-      "deregistration_delay.timeout_seconds",
-      "17"
-    );
+    fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
 
     // This also speeds up deployments so the health checks have a faster turnaround.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
@@ -212,9 +206,7 @@ export class APIStack extends Stack {
     dbCluster.connections.allowDefaultPortFrom(fargateService.service);
 
     // RW grant for Dynamo DB
-    dynamoDBTokenTable.grantReadWriteData(
-      fargateService.taskDefinition.taskRole
-    );
+    dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
     // hookup autoscaling based on 90% thresholds
     const scaling = fargateService.service.autoScaleTaskCount({
@@ -312,17 +304,13 @@ export class APIStack extends Stack {
     });
 
     // token auth for connect sessions
-    const tokenAuthLambda = new lambda_node.NodejsFunction(
-      this,
-      "APITokenAuthLambda",
-      {
-        runtime: lambda.Runtime.NODEJS_16_X,
-        entry: "../api/lambdas/token-auth/index.js",
-        environment: {
-          TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-        },
-      }
-    );
+    const tokenAuthLambda = new lambda_node.NodejsFunction(this, "APITokenAuthLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "../api/lambdas/token-auth/index.js",
+      environment: {
+        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+      },
+    });
     addErrorAlarmToLambdaFunc(this, tokenAuthLambda, "TokenAuthFunctionAlarm");
 
     const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
@@ -334,7 +322,7 @@ export class APIStack extends Stack {
       // see: https://forum.serverless.com/t/rest-api-with-custom-authorizer-how-are-you-dealing-with-authorization-and-policy-cache/3310
       resultsCacheTtl: Duration.minutes(0),
     });
-    dynamoDBTokenTable.grantReadData(tokenAuthLambda.role!);
+    tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
 
     // setup /token path with token auth
     const apiTokenResource = api.root.addResource("token");
@@ -349,8 +337,7 @@ export class APIStack extends Stack {
         vpcLink: link,
         requestParameters: {
           "integration.request.path.proxy": "method.request.path.proxy",
-          "integration.request.header.api-token":
-            "context.authorizer.api-token",
+          "integration.request.header.api-token": "context.authorizer.api-token",
           "integration.request.header.cxId": "context.authorizer.cxId",
           "integration.request.header.userId": "context.authorizer.userId",
         },
@@ -373,6 +360,47 @@ export class APIStack extends Stack {
       vpc,
       fargateService,
       dynamoDBTokenTable,
+    });
+
+    // add webhook path for apple health clients
+    const appleHealthResource = webhookResource.addResource("apple");
+    const integrationApple = new apig.Integration({
+      type: apig.IntegrationType.HTTP_PROXY,
+      options: {
+        connectionType: apig.ConnectionType.VPC_LINK,
+        vpcLink: link,
+      },
+      integrationHttpMethod: "POST",
+      uri: `http://${fargateService.loadBalancer.loadBalancerDnsName}${appleHealthResource.path}`,
+    });
+    appleHealthResource.addMethod("POST", integrationApple, {
+      apiKeyRequired: true,
+    });
+
+    // add another usage plan for Publishable (Client) API keys
+    // everything is throttled to 0 - except explicitely permitted routes
+    const appleHealthThrottleKey = `${appleHealthResource.path}/POST`;
+    const clientPlan = new apig.CfnUsagePlan(this, "APIClientUsagePlan", {
+      usagePlanName: "Client Plan",
+      description: "Client Plan for API",
+      apiStages: [
+        {
+          apiId: api.restApiId,
+          stage: api.deploymentStage.stageName,
+          throttle: {
+            "*/*": { burstLimit: 0, rateLimit: 0 },
+            [appleHealthThrottleKey]: { burstLimit: 10, rateLimit: 50 },
+          },
+        },
+      ],
+      throttle: {
+        burstLimit: 10,
+        rateLimit: 50,
+      },
+      quota: {
+        limit: this.isProd(props) ? 10000 : 500,
+        period: apig.Period.DAY,
+      },
     });
 
     //-------------------------------------------
@@ -414,6 +442,10 @@ export class APIStack extends Stack {
       description: "API Usage Plan",
       value: plan.usagePlanId,
     });
+    new CfnOutput(this, "ClientAPIUsagePlan", {
+      description: "Client API Usage Plan",
+      value: clientPlan.attrId,
+    });
     new CfnOutput(this, "APIDBCluster", {
       description: "API DB Cluster",
       value: `${dbCluster.clusterEndpoint.hostname} ${dbCluster.clusterEndpoint.port} ${dbCluster.clusterEndpoint.socketAddress}`,
@@ -426,12 +458,7 @@ export class APIStack extends Stack {
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     dynamoDBTokenTable: dynamodb.Table;
   }) {
-    const {
-      baseResource,
-      vpc,
-      fargateService: server,
-      dynamoDBTokenTable,
-    } = ownProps;
+    const { baseResource, vpc, fargateService: server, dynamoDBTokenTable } = ownProps;
 
     const garminLambda = new lambda_node.NodejsFunction(this, "GarminLambda", {
       runtime: lambda.Runtime.NODEJS_16_X,
@@ -445,7 +472,7 @@ export class APIStack extends Stack {
     addErrorAlarmToLambdaFunc(this, garminLambda, "GarminAuthFunctionAlarm");
 
     // Grant lambda access to the DynamoDB token table
-    dynamoDBTokenTable.grantReadData(garminLambda.role!);
+    garminLambda.role && dynamoDBTokenTable.grantReadData(garminLambda.role);
 
     // Grant lambda access to the api server
     server.service.connections.allowFrom(garminLambda, Port.allTcp());

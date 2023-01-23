@@ -28,10 +28,7 @@ export async function getProviderDataForType<T>(
     if (provider.consumerHealthDataTypeSupported(type)) {
       providers.push(providerName);
       requests.push(
-        Constants.PROVIDER_MAP[providerName][`get${type}Data`](
-          connectedUser,
-          date
-        ) as Promise<T>
+        Constants.PROVIDER_MAP[providerName][`get${type}Data`](connectedUser, date) as Promise<T>
       );
     }
   }
@@ -40,7 +37,7 @@ export async function getProviderDataForType<T>(
   // and marshalled into the appropriate model
   const results = await Promise.allSettled(requests);
   const data: T[] = [];
-  let i: number = 0;
+  let i = 0;
   for (const result of results) {
     if (result.status === "fulfilled") {
       data.push(result.value);

@@ -1,0 +1,14 @@
+# TODO we should also check lambda PRs, but currently we could only 'npm ci' it.
+name: PR Check - API
+
+on:
+  pull_request:
+    paths:
+      - "api/app/**"
+  workflow_dispatch:
+
+jobs:
+  check-pr:
+    uses: ./.github/workflows/_reusable_build.yml
+    with:
+      path: "api/app"

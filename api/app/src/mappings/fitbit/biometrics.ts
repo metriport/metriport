@@ -26,7 +26,7 @@ export const mapToBiometrics = (
     source: PROVIDER_FITBIT,
   };
 
-  let biometrics: Biometrics = {
+  const biometrics: Biometrics = {
     metadata: metadata,
     heart_rate: {},
     hrv: {},
@@ -37,10 +37,7 @@ export const mapToBiometrics = (
   if (breathing) {
     biometrics.respiration = {
       ...biometrics.respiration,
-      ...Util.addDataToObject(
-        "avg_breaths_per_minute",
-        breathing.breathingRate
-      ),
+      ...Util.addDataToObject("avg_breaths_per_minute", breathing.breathingRate),
     };
   }
 

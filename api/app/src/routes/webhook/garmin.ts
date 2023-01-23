@@ -3,10 +3,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { processData } from "../../command/webhook/webhook";
 import { UserData } from "../../mappings/garmin";
-import {
-  garminActivityListSchema,
-  mapToActivity,
-} from "../../mappings/garmin/activity";
+import { garminActivityListSchema, mapToActivity } from "../../mappings/garmin/activity";
 import {
   garminActivityDetailListSchema,
   mapToActivity as mapToActivityDetail,
@@ -15,20 +12,14 @@ import {
   garminBloodPressureListSchema,
   mapToBiometricsFromBloodPressure,
 } from "../../mappings/garmin/bloodPressure";
+import { garminBodyCompositionListSchema, mapToBody } from "../../mappings/garmin/body-composition";
+import { garminHRVListSchema, mapToBiometricsFromHRV } from "../../mappings/garmin/hrv";
 import {
-  garminBodyCompositionListSchema,
-  mapToBody,
-} from "../../mappings/garmin/body-composition";
-import {
-  garminHRVListSchema,
-  mapToBiometricsFromHRV,
-} from "../../mappings/garmin/hrv";
-import { garminRespirationListSchema, mapToBiometricsFromRespiration } from "../../mappings/garmin/respiration";
+  garminRespirationListSchema,
+  mapToBiometricsFromRespiration,
+} from "../../mappings/garmin/respiration";
 import { garminSleepListSchema, mapToSleep } from "../../mappings/garmin/sleep";
-import {
-  garminUserMetricsListSchema,
-  mapToBiometricsFromUser,
-} from "../../mappings/garmin/user";
+import { garminUserMetricsListSchema, mapToBiometricsFromUser } from "../../mappings/garmin/user";
 import { Util } from "../../shared/util";
 import { deregister, deregisterUsersSchema } from "../middlewares/oauth1";
 import { asyncHandler } from "../util";
@@ -66,53 +57,38 @@ routes.post(
   })
 );
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapData(body: any): UserData<MetriportData>[] | undefined {
   const results: UserData<MetriportData>[] = [];
 
   if (body.activities) {
-    results.push(
-      ...mapToActivity(garminActivityListSchema.parse(body.activities))
-    );
+    results.push(...mapToActivity(garminActivityListSchema.parse(body.activities)));
   }
   if (body.activityDetails) {
     results.push(
-      ...mapToActivityDetail(
-        garminActivityDetailListSchema.parse(body.activityDetails)
-      )
+      ...mapToActivityDetail(garminActivityDetailListSchema.parse(body.activityDetails))
     );
   }
   if (body.sleeps) {
     results.push(...mapToSleep(garminSleepListSchema.parse(body.sleeps)));
   }
   if (body.bodyComps) {
-    results.push(
-      ...mapToBody(garminBodyCompositionListSchema.parse(body.bodyComps))
-    );
+    results.push(...mapToBody(garminBodyCompositionListSchema.parse(body.bodyComps)));
   }
   if (body.userMetrics) {
-    results.push(
-      ...mapToBiometricsFromUser(
-        garminUserMetricsListSchema.parse(body.userMetrics)
-      )
-    );
+    results.push(...mapToBiometricsFromUser(garminUserMetricsListSchema.parse(body.userMetrics)));
   }
   if (body.hrv) {
-    results.push(
-      ...mapToBiometricsFromHRV(garminHRVListSchema.parse(body.hrv))
-    );
+    results.push(...mapToBiometricsFromHRV(garminHRVListSchema.parse(body.hrv)));
   }
   if (body.bloodPressures) {
     results.push(
-      ...mapToBiometricsFromBloodPressure(
-        garminBloodPressureListSchema.parse(body.bloodPressures)
-      )
+      ...mapToBiometricsFromBloodPressure(garminBloodPressureListSchema.parse(body.bloodPressures))
     );
   }
   if (body.allDayRespiration) {
     results.push(
-      ...mapToBiometricsFromRespiration(
-        garminRespirationListSchema.parse(body.allDayRespiration)
-      )
+      ...mapToBiometricsFromRespiration(garminRespirationListSchema.parse(body.allDayRespiration))
     );
   }
 

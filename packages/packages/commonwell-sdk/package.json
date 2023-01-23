@@ -1,0 +1,41 @@
+{
+  "name": "@metriport/commonwell-sdk",
+  "version": "1.0.3",
+  "description": "SDK to simplify CommonWell API integration - by Metriport Inc.",
+  "author": "Metriport Inc. <contact@metriport.com>",
+  "homepage": "https://metriport.com/",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "url": "https://github.com/metriport/metriport.git",
+    "type": "git",
+    "directory": "pkgs/packages/commonwell-sdk"
+  },
+  "scripts": {
+    "tsc": "tsc",
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.0",
+    "zod": "^3.20.2"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/node": "^18.11.18"
+  },
+  "gitHead": "3f89c1e0d39ed55e180444335ff446e8c67bf8fa"
+}

@@ -1,7 +1,4 @@
-import {
-  Activity as MetriportActivity,
-  Biometrics as MetriportBiometrics,
-} from "@metriport/api";
+import { Activity as MetriportActivity, Biometrics as MetriportBiometrics } from "@metriport/api";
 import { z } from "zod";
 
 import { PROVIDER_OURA } from "../../shared/constants";
@@ -55,7 +52,7 @@ const getActivityLogs = (sessions?: OuraSessions, workouts?: OuraWorkouts) => {
 
 const transformSessionsToActivityLogs = (sessions?: OuraSessions) => {
   if (sessions && sessions.length) {
-    return sessions.map((session) => {
+    return sessions.map(session => {
       const defaultPayload = {
         metadata: {
           date: session.day,
@@ -67,9 +64,7 @@ const transformSessionsToActivityLogs = (sessions?: OuraSessions) => {
       };
 
       if (session.heart_rate.items && session.heart_rate.items.length) {
-        const { min_item, max_item } = Util.getMinMaxItem(
-          session.heart_rate.items
-        );
+        const { min_item, max_item } = Util.getMinMaxItem(session.heart_rate.items);
         const avg_heart_rate = Util.getAvgOfArr(session.heart_rate.items);
 
         return {
@@ -93,7 +88,7 @@ const transformSessionsToActivityLogs = (sessions?: OuraSessions) => {
 
 const transformWorkoutsToActivityLogs = (workouts?: OuraWorkouts) => {
   if (workouts && workouts.length) {
-    return workouts.map((workout) => {
+    return workouts.map(workout => {
       return {
         metadata: {
           date: workout.day,

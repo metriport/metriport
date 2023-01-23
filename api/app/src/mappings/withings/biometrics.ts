@@ -5,15 +5,12 @@ import dayjs from "dayjs";
 import { PROVIDER_WITHINGS } from "../../shared/constants";
 import { WithingsHeartRate } from "./models/heart-rate";
 
-export const mapToBiometrics = (
-  date: string,
-  withingsHeartRate: WithingsHeartRate
-): Biometrics => {
+export const mapToBiometrics = (date: string, withingsHeartRate: WithingsHeartRate): Biometrics => {
   const metadata = {
     date: date,
     source: PROVIDER_WITHINGS,
   };
-  let biometrics: Biometrics = {
+  const biometrics: Biometrics = {
     metadata: metadata,
   };
 
@@ -38,34 +35,32 @@ export const mapToBiometrics = (
 // TODO: NEED TO REFACTOR
 const createDiastolicSamples = (arr: WithingsHeartRate): Sample[] => {
   return arr.reduce((acc: Sample[], item) => {
-
     if (item.bloodpressure) {
       acc.push({
         time: dayjs(item.timestamp).format("YYYY-MM-DDTHH:mm:ssZ"),
         value: item.bloodpressure.diastole,
-      })
+      });
     }
 
-    return acc
+    return acc;
   }, []);
 };
 
 const createSystolicSamples = (arr: WithingsHeartRate): Sample[] => {
   return arr.reduce((acc: Sample[], item) => {
-
     if (item.bloodpressure) {
       acc.push({
         time: dayjs(item.timestamp).format("YYYY-MM-DDTHH:mm:ssZ"),
         value: item.bloodpressure.systole,
-      })
+      });
     }
 
-    return acc
+    return acc;
   }, []);
 };
 
 const createHrSamples = (arr: WithingsHeartRate): Sample[] => {
-  return arr.map((item) => {
+  return arr.map(item => {
     return {
       time: dayjs(item.timestamp).format("YYYY-MM-DDTHH:mm:ssZ"),
       value: item.heart_rate,

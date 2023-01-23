@@ -3,19 +3,16 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createConnectedUser } from "../command/connected-user/create-connected-user";
-import { createUserToken } from "../command/cx-user/create-user-token";
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
+import { createUserToken } from "../command/cx-user/create-user-token";
+import BadRequestError from "../errors/bad-request";
 import { ConnectedUser } from "../models/connected-user";
+import { Apple } from "../providers/apple";
 import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
+import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../shared/constants";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { asyncHandler, getCxIdOrFail, getUserIdFromQueryOrFail } from "./util";
-import {
-  Constants,
-  providerOAuth1OptionsSchema,
-  providerOAuth2OptionsSchema,
-} from "../shared/constants";
-import BadRequestError from "../errors/bad-request";
 
 const router = Router();
 
@@ -33,10 +30,7 @@ const router = Router();
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
-    const results = await getProviderDataForType<User>(
-      req,
-      ConsumerHealthDataType.User
-    );
+    const results = await getProviderDataForType<User>(req, ConsumerHealthDataType.User);
 
     res.status(status.OK).json(results);
   })
@@ -63,7 +57,7 @@ router.post(
 
     if (Config.isSandbox()) {
       // limit the amount of users that can be created in sandbox mode
-      let numConnectedUsers = await ConnectedUser.count({ where: { cxId } });
+      const numConnectedUsers = await ConnectedUser.count({ where: { cxId } });
       if (numConnectedUsers >= Config.SANDBOX_USER_LIMIT) {
         return res.sendStatus(status.BAD_REQUEST).json({
           message: `Cannot connect more than ${Config.SANDBOX_USER_LIMIT} users in Sandbox mode!`,
@@ -139,29 +133,27 @@ router.delete(
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
-    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(
-      req.query.provider
-    );
+    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(req.query.provider);
 
-    // TODO #249: implement garmin revoke support 
+    // TODO #249: implement garmin revoke support
     // const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
     //   req.query.provider
     // );
 
     if (providerOAuth2.success) {
-      await Constants.PROVIDER_OAUTH2_MAP[
-        providerOAuth2.data
-      ].revokeProviderAccess(connectedUser);
+      await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
 
       return res.sendStatus(200);
-    // } else if (providerOAuth1.success) {
-    //   // await Constants.PROVIDER_OAUTH1_MAP[
-    //   //   providerOAuth1.data
-    //   // ].deregister(connectedUser);
+      // } else if (providerOAuth1.success) {
+      //   // await Constants.PROVIDER_OAUTH1_MAP[
+      //   //   providerOAuth1.data
+      //   // ].deregister(connectedUser);
+    } else if (req.query.provider === PROVIDER_APPLE) {
+      const apple = new Apple();
+      await apple.revokeProviderAccess(connectedUser);
+      return res.sendStatus(200);
     } else {
-      throw new BadRequestError(
-        `Provider not supported: ${req.query.provider}`
-      );
+      throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
     }
   })
 );

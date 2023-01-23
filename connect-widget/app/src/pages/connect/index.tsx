@@ -4,10 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { setupApi } from "../../shared/api";
 import WidgetContainer from "../../shared/components/WidgetContainer";
 import Constants from "../../shared/constants";
-import {
-  acceptAgreement,
-  setAgreementState,
-} from "../../shared/localStorage/agreement";
+import { acceptAgreement, setAgreementState } from "../../shared/localStorage/agreement";
 import { storeColorMode } from "../../shared/localStorage/color-mode";
 import Agreement from "./components/agreement";
 import ConnectProviders from "./components/connect-providers";
@@ -28,6 +25,7 @@ const ConnectPage = () => {
       setupApi(searchParams);
       storeColorMode(colorMode);
       setAgreementState(setAgreement);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setIsError(true);
       // TODO #135 send err to Sentry
@@ -45,9 +43,7 @@ const ConnectPage = () => {
         ) : agreement ? (
           <ConnectProviders />
         ) : (
-          <Agreement
-            onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)}
-          />
+          <Agreement onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)} />
         )}
         {isError && <ErrorDialog show onClose={() => setIsError(false)} />}
       </>

@@ -8,6 +8,7 @@ export const asyncHandler =
       req: Request,
       res: Response,
       next: NextFunction
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) => Promise<Response<any, Record<string, any>> | void>
   ) =>
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -47,8 +48,7 @@ export const getUserIdFromQueryOrFail = (req: Request): string => {
   return userId as string;
 };
 
-export const getDate = (req: Request): string | undefined =>
-  req.query.date as string | undefined;
+export const getDate = (req: Request): string | undefined => req.query.date as string | undefined;
 export const getDateOrFail = (req: Request): string => {
   const date = getDate(req);
   if (!date) throw new BadRequestError("Missing date query param");

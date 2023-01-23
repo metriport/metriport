@@ -7,45 +7,33 @@ import { PROVIDER_FITBIT } from "../../shared/constants";
 import { FitbitActivityLogs, HeartRateZone } from "./models/activity-log";
 import { Util } from "../../shared/util";
 
-export const mapToActivity = (
-  fitbitActiveLogs: FitbitActivityLogs,
-  date: string
-): Activity => {
+export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string): Activity => {
   const filteredLogs = filterLogsByDate(fitbitActiveLogs, date);
 
   const metadata = {
     date: date,
     source: PROVIDER_FITBIT,
   };
-  let activity: Activity = {
+  const activity: Activity = {
     metadata: metadata,
   };
 
   const activityLogs: ActivityLog[] = [];
 
   for (const fitbitActivityLog of filteredLogs) {
-    let activityLog: ActivityLog = {
+    const activityLog: ActivityLog = {
       metadata: metadata,
       ...Util.addDataToObject("name", fitbitActivityLog.activityName),
-      ...Util.addDataToObject(
-        "start_time",
-        fitbitActivityLog.originalStartTime
-      ),
+      ...Util.addDataToObject("start_time", fitbitActivityLog.originalStartTime),
       durations: {
-        ...Util.addDataToObject(
-          "active_seconds",
-          fitbitActivityLog.activeDuration
-        ),
+        ...Util.addDataToObject("active_seconds", fitbitActivityLog.activeDuration),
       },
       movement: {
         ...Util.addDataToObject("steps_count", fitbitActivityLog.steps),
       },
     };
 
-    if (
-      fitbitActivityLog.activityLevel &&
-      fitbitActivityLog.activityLevel.length
-    ) {
+    if (fitbitActivityLog.activityLevel && fitbitActivityLog.activityLevel.length) {
       const level = fitbitActivityLog.activityLevel;
       activityLog.durations = {
         ...activityLog.durations,
@@ -58,14 +46,8 @@ export const mapToActivity = (
             "low_seconds",
             findAndConvertActivityLevelToSec("lightly", level)
           ),
-          ...Util.addDataToObject(
-            "med_seconds",
-            findAndConvertActivityLevelToSec("fairly", level)
-          ),
-          ...Util.addDataToObject(
-            "high_seconds",
-            findAndConvertActivityLevelToSec("very", level)
-          ),
+          ...Util.addDataToObject("med_seconds", findAndConvertActivityLevelToSec("fairly", level)),
+          ...Util.addDataToObject("high_seconds", findAndConvertActivityLevelToSec("very", level)),
         },
       };
     }
@@ -102,7 +84,8 @@ export const mapToActivity = (
     }
 
     if (fitbitActivityLog.hasActiveZoneMinutes) {
-      const heartZones = fitbitActivityLog.heartRateZones!;
+      if (!fitbitActivityLog.heartRateZones) throw new Error(`Missing heartRateZones`);
+      const heartZones = fitbitActivityLog.heartRateZones;
 
       const { min_item, max_item } = findMinMaxHeartRate(heartZones);
 
@@ -120,11 +103,8 @@ export const mapToActivity = (
   return { ...activity, activity_logs: activityLogs };
 };
 
-const filterLogsByDate = (
-  logs: FitbitActivityLogs,
-  date: string
-): FitbitActivityLogs => {
-  const filteredLogs = logs.filter((log) => {
+const filterLogsByDate = (logs: FitbitActivityLogs, date: string): FitbitActivityLogs => {
+  const filteredLogs = logs.filter(log => {
     const originalDate = dayjs(log.originalStartTime).format("YYYY-MM-DD");
 
     return originalDate === date;
@@ -137,7 +117,7 @@ const findAndConvertActivityLevelToSec = (
   type: string,
   arr: Array<{ name: string; minutes: number }>
 ): number | undefined => {
-  const level = arr.find((level) => type === level.name);
+  const level = arr.find(level => type === level.name);
 
   if (level?.minutes) {
     return level.minutes * 60;
@@ -148,19 +128,16 @@ const findAndConvertActivityLevelToSec = (
 
 export const findMinMaxHeartRate = (heartrateZones: HeartRateZone[]) => {
   const acceptableHeartRateZones = heartrateZones.filter(
-    (heartRate) => heartRate.name !== "Out of Range"
+    heartRate => heartRate.name !== "Out of Range"
   );
-  const getHeartRates = acceptableHeartRateZones.reduce(
-    (acc: number[], heartRate) => {
-      if (heartRate.name !== "Out of Range") {
-        acc.push(heartRate.max);
-        acc.push(heartRate.min);
-      }
+  const getHeartRates = acceptableHeartRateZones.reduce((acc: number[], heartRate) => {
+    if (heartRate.name !== "Out of Range") {
+      acc.push(heartRate.max);
+      acc.push(heartRate.min);
+    }
 
-      return acc;
-    },
-    []
-  );
+    return acc;
+  }, []);
 
   return Util.getMinMaxItem(getHeartRates);
 };

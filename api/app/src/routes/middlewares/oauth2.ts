@@ -21,9 +21,7 @@ export const processOAuth2 = async (
     throw new UnauthorizedError();
   }
   // get access token based on the provided auth code
-  const token = await Constants.PROVIDER_OAUTH2_MAP[
-    provider
-  ].getTokenFromAuthCode(authCode);
+  const token = await Constants.PROVIDER_OAUTH2_MAP[provider].getTokenFromAuthCode(authCode);
   if (!token) throw new UnauthorizedError();
 
   // save the access token in the provider map

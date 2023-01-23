@@ -1,4 +1,3 @@
-
 const agreementLocalStorageKey = "agreement-accepted-v1";
 
 export const setAgreementState = (setAgreement: (value: boolean) => void) => {
@@ -7,12 +6,10 @@ export const setAgreementState = (setAgreement: (value: boolean) => void) => {
   if (localStorageAgreement) {
     setAgreement(localStorageAgreement);
   }
-}
+};
 
 const getLocalStorageAgreement = (): boolean => {
-  const localStorageAgreement = localStorage.getItem(
-    agreementLocalStorageKey
-  );
+  const localStorageAgreement = localStorage.getItem(agreementLocalStorageKey);
 
   if (localStorageAgreement) {
     const parsedValue = JSON.parse(localStorageAgreement);
