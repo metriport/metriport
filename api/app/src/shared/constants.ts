@@ -4,6 +4,7 @@ import { Apple } from "../providers/apple";
 import { Cronometer } from "../providers/cronometer";
 import { Fitbit } from "../providers/fitbit";
 import { Garmin } from "../providers/garmin";
+import { Google } from "../providers/google";
 import { OAuth1 } from "../providers/oauth1";
 import { OAuth2 } from "../providers/oauth2";
 import { Oura } from "../providers/oura";
@@ -15,6 +16,7 @@ export const PROVIDER_APPLE = ProviderSource.apple;
 export const PROVIDER_CRONOMETER = ProviderSource.cronometer;
 export const PROVIDER_OURA = ProviderSource.oura;
 export const PROVIDER_GARMIN = ProviderSource.garmin;
+export const PROVIDER_GOOGLE = ProviderSource.google;
 export const PROVIDER_FITBIT = ProviderSource.fitbit;
 export const PROVIDER_WHOOP = ProviderSource.whoop;
 export const PROVIDER_WITHINGS = ProviderSource.withings;
@@ -25,6 +27,7 @@ export type ProviderOAuth1Options = z.infer<typeof providerOAuth1OptionsSchema>;
 export const providerOAuth2OptionsSchema = z.enum([
   PROVIDER_CRONOMETER,
   PROVIDER_OURA,
+  PROVIDER_GOOGLE,
   PROVIDER_FITBIT,
   PROVIDER_WHOOP,
   PROVIDER_WITHINGS,
@@ -44,22 +47,24 @@ export class Constants {
   static readonly PROVIDER_OAUTH1_MAP: {
     [k in ProviderOAuth1Options]: OAuth1;
   } = {
-    garmin: new Garmin(),
-  };
+      garmin: new Garmin(),
+    };
   static readonly PROVIDER_OAUTH2_MAP: {
     [k in ProviderOAuth2Options]: OAuth2;
   } = {
-    cronometer: new Cronometer(),
-    oura: new Oura(),
-    fitbit: new Fitbit(),
-    whoop: new Whoop(),
-    withings: new Withings(),
-  };
+      cronometer: new Cronometer(),
+      oura: new Oura(),
+      google: new Google(),
+      fitbit: new Fitbit(),
+      whoop: new Whoop(),
+      withings: new Withings(),
+    };
   static readonly PROVIDER_MAP: { [k in ProviderOptions]: Provider } = {
     apple: new Apple(),
     cronometer: new Cronometer(),
     oura: new Oura(),
     garmin: new Garmin(),
+    google: new Google(),
     fitbit: new Fitbit(),
     whoop: new Whoop(),
     withings: new Withings(),

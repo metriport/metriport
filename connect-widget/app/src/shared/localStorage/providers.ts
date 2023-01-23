@@ -4,6 +4,7 @@ const defaultProviders: DefaultProvider[] = [
   { name: "apple", image: "apple.png" },
   { name: "fitbit", image: "fitbit.webp" },
   { name: "garmin", image: "garmin.webp" },
+  { name: "google", image: "google.png" },
   { name: "oura", image: "oura.webp" },
   { name: "withings", image: "withings.png" },
   { name: "whoop", image: "whoop.png" },

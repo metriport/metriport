@@ -24,14 +24,15 @@ export interface UriParams {
   scope?: string[] | string;
   redirect_uri: string;
   state: string;
+  access_type?: string;
 }
 
 export interface AuthCodeUriParams {
   scope?: string[] | string;
   redirect_uri: string;
   code: string;
+  access_type?: string;
 }
-
 export class OAuth2DefaultImpl implements OAuth2 {
   constructor(
     private readonly providerName: ProviderOAuth2Options,
@@ -48,7 +49,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
     private readonly clientOptions?: {
       readonly authorizationMethod?: "body" | "header";
     }
-  ) {}
+  ) { }
 
   getRedirectUri(): string {
     return `${Config.getConnectRedirectUrl()}/${this.providerName}`;
@@ -75,6 +76,11 @@ export class OAuth2DefaultImpl implements OAuth2 {
     if (this.scopes) {
       params.scope = this.scopes;
     }
+
+    if (this.providerName === 'google') {
+      params.access_type = 'offline'
+    }
+
     const accessToken = await client.getToken(params);
 
     return JSON.stringify(accessToken);
@@ -92,6 +98,10 @@ export class OAuth2DefaultImpl implements OAuth2 {
       uriParams.scope = this.scopes;
     }
 
+    if (this.providerName === 'google') {
+      uriParams.access_type = 'offline'
+    }
+
     const authorizationUri = client.authorizeURL(uriParams);
     return authorizationUri;
   }
@@ -104,12 +114,24 @@ export class OAuth2DefaultImpl implements OAuth2 {
       try {
         accessToken = await accessToken.refresh();
 
+        // When the access token is refreshed it doesnt return a refresh token
+        // It only creates one when creating authurl
+        if (this.providerName === 'google') {
+          const oldToken = JSON.parse(token);
+          const extensibleToken = JSON.parse(JSON.stringify(accessToken));
+
+          extensibleToken.refresh_token = oldToken.refresh_token;
+
+          accessToken.token = extensibleToken
+        }
+
         const providerItem = connectedUser.providerMap
           ? {
-              ...connectedUser.providerMap[this.providerName],
-              token: JSON.stringify(accessToken.token),
-            }
+            ...connectedUser.providerMap[this.providerName],
+            token: JSON.stringify(accessToken.token),
+          }
           : { token: JSON.stringify(accessToken.token) };
+
         await updateProviderData({
           id: connectedUser.id,
           cxId: connectedUser.cxId,
@@ -160,11 +182,12 @@ export class OAuth2DefaultImpl implements OAuth2 {
     return providerData.token;
   }
 
+
   async fetchProviderData<T>(
     connectedUser: ConnectedUser,
     endpoint: string,
     callBack: (response: AxiosResponse<any, any>) => Promise<T>,
-    params?: { [k: string]: string | number }
+    params?: { [k: string]: string | number },
   ): Promise<T> {
     try {
       const access_token = await this.getAccessToken(connectedUser);
