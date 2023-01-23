@@ -91,7 +91,7 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
             align={"center"}
           >
             <Text mr={2}>Powered by</Text>
-            <Image width={150} src={"logo.png"}></Image>
+            <Image width={150} src={require(`../../assets/metriport-logo.png`)}></Image>
           </Flex>
           <Box px={8} py={6} maxHeight={"80vh"} overflowY={"scroll"}>
             {children}
