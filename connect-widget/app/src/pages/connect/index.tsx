@@ -25,6 +25,7 @@ const ConnectPage = () => {
       setupApi(searchParams);
       storeColorMode(colorMode);
       setAgreementState(setAgreement);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setIsError(true);
       // TODO #135 send err to Sentry

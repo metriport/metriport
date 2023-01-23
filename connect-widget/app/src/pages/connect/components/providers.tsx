@@ -13,7 +13,7 @@ type ProvidersProps = {
 
 declare global {
   interface Window {
-    webkit: any;
+    webkit: any; //eslint-disable-line @typescript-eslint/no-explicit-any
   }
 }
 
@@ -22,6 +22,7 @@ const Providers = ({ providers, connectedProviders, setConnectedProviders }: Pro
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const customEventHandler = useCallback(
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     async (e: any) => {
       try {
         if (e.detail.success) {
@@ -66,6 +67,7 @@ const Providers = ({ providers, connectedProviders, setConnectedProviders }: Pro
         params: { provider },
       });
       window.location.href = resp.data;
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.message.includes("403")) {
         setErrorMessage(`Token expired, restart the connect session.`);

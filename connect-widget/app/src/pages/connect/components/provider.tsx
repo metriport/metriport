@@ -11,8 +11,8 @@ export type ProviderProps = {
 };
 
 const Provider = (props: ProviderProps) => {
-  const capitalizeFirstLetter = (string: String) => {
-    return string.charAt(0).toUpperCase() + string.slice(1);
+  const capitalizeFirstLetter = (v: string) => {
+    return v.charAt(0).toUpperCase() + v.slice(1);
   };
 
   return (
