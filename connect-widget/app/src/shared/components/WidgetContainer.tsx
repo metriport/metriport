@@ -7,6 +7,7 @@ import {
   extendTheme,
   ChakraProvider,
 } from "@chakra-ui/react";
+import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import Constants from "../../shared/constants";
@@ -56,6 +57,12 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
     },
   });
 
+  const resetScroll = useRef<HTMLDivElement>(null);
+
+  useEffect (() => {
+    resetScroll.current!.scrollTo(0, 0);
+  }, [children]);
+
   return (
     <ChakraProvider theme={theme}>
       <Flex
@@ -86,7 +93,7 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
             <Text mr={2}>Powered by</Text>
             <Image width={150} src={"logo.png"}></Image>
           </Flex>
-          <Box px={8} py={6} maxHeight={"80vh"} overflowY={"scroll"}>
+          <Box px={8} py={6} ref={resetScroll} maxHeight={"80vh"} overflowY={"scroll"}>
             {children}
           </Box>
         </Box>
