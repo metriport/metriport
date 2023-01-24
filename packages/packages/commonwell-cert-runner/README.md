@@ -57,7 +57,9 @@ Display help for command.
 
 `npm run build`: builds the package
 
-`npm run local`: installs the package globally and runs it
+`npm start`: runs the local code pointing to `./.env`
+
+(optionally) `npm run install-local`: installs the package globally from the local source
 
 ```
             ,▄,
