@@ -18,8 +18,10 @@ export interface RequestMetadata {
 }
 
 export class CommonWell {
-  static integrationUrl = "https://integration.rest.api.commonwellalliance.org/v1";
-  static productionUrl = "https://rest.api.commonwellalliance.org/v1";
+  static integrationUrl = "https://integration.rest.api.commonwellalliance.org";
+  static productionUrl = "https://rest.api.commonwellalliance.org";
+
+  static PERSON_ENDPOINT = "/v1/person";
 
   private api: AxiosInstance;
   private rsaPrivateKey: string;
@@ -71,7 +73,7 @@ export class CommonWell {
    */
   async enrollPerson(meta: RequestMetadata, person: Person): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post("/person", person, {
+    const resp = await this.api.post(CommonWell.PERSON_ENDPOINT, person, {
       headers,
     });
     return personSchema.parse(resp.data);
@@ -92,7 +94,7 @@ export class CommonWell {
     system: string
   ): Promise<PersonSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get("/person", {
+    const resp = await this.api.get(CommonWell.PERSON_ENDPOINT, {
       headers,
       params: { key, system },
     });
@@ -110,7 +112,7 @@ export class CommonWell {
    */
   async updatePerson(meta: RequestMetadata, person: Person, id: string): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(`/person/${id}`, person, {
+    const resp = await this.api.post(`${CommonWell.PERSON_ENDPOINT}/${id}`, person, {
       headers,
     });
     return personSchema.parse(resp.data);
@@ -127,7 +129,7 @@ export class CommonWell {
   async unenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.put(
-      `/person/${id}/unenroll`,
+      `${CommonWell.PERSON_ENDPOINT}/${id}/unenroll`,
       {},
       {
         headers,
@@ -146,7 +148,7 @@ export class CommonWell {
    */
   async deletePerson(meta: RequestMetadata, id: string): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
-    await this.api.delete(`/person/${id}`, { headers });
+    await this.api.delete(`${CommonWell.PERSON_ENDPOINT}/${id}`, { headers });
     return;
   }
 
