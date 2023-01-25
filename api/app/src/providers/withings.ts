@@ -63,8 +63,10 @@ export class Withings extends Provider implements OAuth2 {
   async getTokenFromAuthCode(code: string): Promise<string> {
     const response = await axios.post(
       "https://wbsapi.withings.net/v2/oauth2",
-      `action=requesttoken&grant_type=authorization_code&client_id=${Withings.clientId
-      }&client_secret=${Withings.clientSecret
+      `action=requesttoken&grant_type=authorization_code&client_id=${
+        Withings.clientId
+      }&client_secret=${
+        Withings.clientSecret
       }&code=${code}&redirect_uri=${this.oauth.getRedirectUri()}`,
       {
         headers: {
@@ -87,8 +89,8 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async checkRefreshToken(token: string, connectedUser: ConnectedUser): Promise<Token> {
-    const access_token = JSON.parse(token)
-    const isExpired = (access_token.expires_at * 1000) - (Date.now() + 120 * 1000) <= 0;
+    const access_token = JSON.parse(token);
+    const isExpired = access_token.expires_at * 1000 - (Date.now() + 120 * 1000) <= 0;
 
     if (isExpired) {
       try {
@@ -102,13 +104,15 @@ export class Withings extends Provider implements OAuth2 {
           }
         );
 
-        response.data.body.expires_at = dayjs(Date.now()).add(response.data.body.expires_in, "seconds").unix()
+        response.data.body.expires_at = dayjs(Date.now())
+          .add(response.data.body.expires_in, "seconds")
+          .unix();
 
         const providerItem = connectedUser.providerMap
           ? {
-            ...connectedUser.providerMap[PROVIDER_WITHINGS],
-            token: JSON.stringify(response.data.body),
-          }
+              ...connectedUser.providerMap[PROVIDER_WITHINGS],
+              token: JSON.stringify(response.data.body),
+            }
           : { token: JSON.stringify(response.data.body) };
 
         await updateProviderData({
@@ -119,15 +123,13 @@ export class Withings extends Provider implements OAuth2 {
         });
 
         return response.data.body;
-        1674682301644
-
       } catch (error) {
         console.log("Error refreshing access token: ", error);
         throw new Error("Error refreshing access token: ");
       }
     }
 
-    return access_token
+    return access_token;
   }
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
@@ -190,10 +192,7 @@ export class Withings extends Provider implements OAuth2 {
     return data.status;
   }
 
-  async fetchActivityData(
-    accessToken: string,
-    date: string
-  ): Promise<WithingsActivityLogs> {
+  async fetchActivityData(accessToken: string, date: string): Promise<WithingsActivityLogs> {
     const params = {
       action: "getactivity",
       startdateymd: date,

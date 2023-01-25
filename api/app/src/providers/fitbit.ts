@@ -113,10 +113,7 @@ export class Fitbit extends Provider implements OAuth2 {
     );
   }
 
-  async fetchBreathingData(
-    accessToken: string,
-    date: string
-  ): Promise<FitbitBreathingRate> {
+  async fetchBreathingData(accessToken: string, date: string): Promise<FitbitBreathingRate> {
     return this.oauth.fetchProviderData<FitbitBreathingRate>(
       `${Fitbit.URL}/${Fitbit.API_PATH}/br/date/${date}.json`,
       accessToken,

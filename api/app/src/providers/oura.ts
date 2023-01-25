@@ -160,7 +160,8 @@ export class Oura extends Provider implements OAuth2 {
       accessToken,
       async resp => {
         return mapToBody(ouraPersonalInfoResponse.parse(resp.data), date);
-      });
+      }
+    );
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
@@ -170,7 +171,6 @@ export class Oura extends Provider implements OAuth2 {
       end_date: end_date,
     };
     const accessToken = await this.oauth.getAccessToken(connectedUser);
-
 
     return this.oauth.fetchProviderData<Sleep>(
       `${Oura.URL}/${Oura.API_PATH}/sleep`,
@@ -188,8 +188,12 @@ export class Oura extends Provider implements OAuth2 {
   async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
     const accessToken = await this.oauth.getAccessToken(connectedUser);
 
-    return this.oauth.fetchProviderData<User>(`${Oura.URL}/${Oura.API_PATH}/personal_info`, accessToken, async resp => {
-      return mapToUser(ouraPersonalInfoResponse.parse(resp.data), date);
-    });
+    return this.oauth.fetchProviderData<User>(
+      `${Oura.URL}/${Oura.API_PATH}/personal_info`,
+      accessToken,
+      async resp => {
+        return mapToUser(ouraPersonalInfoResponse.parse(resp.data), date);
+      }
+    );
   }
 }
