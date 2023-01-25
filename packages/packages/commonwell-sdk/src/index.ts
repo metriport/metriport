@@ -1,5 +1,5 @@
 export { makeJwt } from "./common/make-jwt";
-export { getId } from "./common/util";
+export { getId, getIdPatient } from "./common/util";
 export { PurposeOfUse } from "./models/purpose-of-use";
 export { Address, AddressUseCodes } from "./models/address";
 export { Contact, ContactSystemCodes, ContactUseCodes } from "./models/contact";
