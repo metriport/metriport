@@ -74,9 +74,11 @@ export class Whoop extends Provider implements OAuth2 {
   }
 
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<Body>(
-      connectedUser,
       `${Whoop.DATA_URL}/user/measurement/body`,
+      accessToken,
       async resp => {
         return mapToBody(whoopBodyResp.parse(resp.data), date);
       }
@@ -84,9 +86,11 @@ export class Whoop extends Provider implements OAuth2 {
   }
 
   async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<User>(
-      connectedUser,
       `${Whoop.DATA_URL}/user/profile/basic`,
+      accessToken,
       async resp => {
         return mapToUser(whoopUserResp.parse(resp.data), date);
       }
@@ -95,9 +99,11 @@ export class Whoop extends Provider implements OAuth2 {
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
     const { start_date, end_date } = getStartAndEndDateTime(date);
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<Sleep>(
-      connectedUser,
       `${Whoop.DATA_URL}/activity/sleep`,
+      accessToken,
       async resp => {
         // TODO: need to support multiple sleep sessions in our model,
         // technically someone could sleep twice in the same day. This is
@@ -110,9 +116,11 @@ export class Whoop extends Provider implements OAuth2 {
 
   async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
     const { start_date, end_date } = getStartAndEndDateTime(date);
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<Activity>(
-      connectedUser,
       `${Whoop.DATA_URL}/activity/workout`,
+      accessToken,
       async resp => {
         const whoopWorkouts: WhoopWorkout[] = [];
         if (resp.data && resp.data.records) {
@@ -126,11 +134,11 @@ export class Whoop extends Provider implements OAuth2 {
     );
   }
 
-  async fetchCycleData(connectedUser: ConnectedUser, date: string): Promise<WhoopCycle> {
+  async fetchCycleData(accessToken: string, date: string): Promise<WhoopCycle> {
     const { start_date, end_date } = getStartAndEndDateTime(date);
     return this.oauth.fetchProviderData<WhoopCycle>(
-      connectedUser,
       `${Whoop.DATA_URL}/cycle`,
+      accessToken,
       async resp => {
         return whoopCycleResp.parse(resp.data.records[0]);
       },
@@ -138,11 +146,11 @@ export class Whoop extends Provider implements OAuth2 {
     );
   }
 
-  async fetchRecoveryData(connectedUser: ConnectedUser, date: string): Promise<WhoopRecovery> {
+  async fetchRecoveryData(accessToken: string, date: string): Promise<WhoopRecovery> {
     const { start_date, end_date } = getStartAndEndDateTime(date);
     return this.oauth.fetchProviderData<WhoopRecovery>(
-      connectedUser,
       `${Whoop.DATA_URL}/recovery`,
+      accessToken,
       async resp => {
         return whoopRecoveryResp.parse(resp.data.records[0]);
       },
@@ -151,9 +159,11 @@ export class Whoop extends Provider implements OAuth2 {
   }
 
   async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     const [resCycle, resRecovery] = await Promise.allSettled([
-      this.fetchCycleData(connectedUser, date),
-      this.fetchRecoveryData(connectedUser, date),
+      this.fetchCycleData(accessToken, date),
+      this.fetchRecoveryData(accessToken, date),
     ]);
     const cycle = resCycle.status === "fulfilled" ? resCycle.value : undefined;
     const recovery = resRecovery.status === "fulfilled" ? resRecovery.value : undefined;
