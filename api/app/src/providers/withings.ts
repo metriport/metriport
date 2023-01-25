@@ -2,6 +2,7 @@ import { Activity, Biometrics, Sleep } from "@metriport/api";
 import axios from "axios";
 import dayjs from "dayjs";
 import crypto from "crypto";
+import { Token } from "simple-oauth2";
 
 import { PROVIDER_WITHINGS } from "../shared/constants";
 import { ConnectedUser } from "../models/connected-user";
@@ -12,7 +13,7 @@ import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/
 import { mapToActivity } from "../mappings/withings/activity";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
 import { mapToSleep } from "../mappings/withings/sleep";
-
+import { updateProviderData } from "../command/connected-user/save-connected-user";
 import {
   withingsActivityLogResp,
   WithingsActivityLogs,
@@ -20,7 +21,6 @@ import {
 import { withingsWorkoutLogsResp, WithingsWorkoutLogs } from "../mappings/withings/models/workouts";
 import { withingsHeartRateResp } from "../mappings/withings/models/heart-rate";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
-
 export class Withings extends Provider implements OAuth2 {
   static URL = "https://wbsapi.withings.net";
   static AUTHORIZATION_URL = "https://account.withings.com";
@@ -61,13 +61,10 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async getTokenFromAuthCode(code: string): Promise<string> {
-    // TODO: WILL UDPDATE IT JUST WASNT STRAIGHT FORWARD - NEEDED CLIENTID TO BE IN PARAMS WITH ACTION = REQUEST
     const response = await axios.post(
       "https://wbsapi.withings.net/v2/oauth2",
-      `action=requesttoken&grant_type=authorization_code&client_id=${
-        Withings.clientId
-      }&client_secret=${
-        Withings.clientSecret
+      `action=requesttoken&grant_type=authorization_code&client_id=${Withings.clientId
+      }&client_secret=${Withings.clientSecret
       }&code=${code}&redirect_uri=${this.oauth.getRedirectUri()}`,
       {
         headers: {
@@ -77,6 +74,60 @@ export class Withings extends Provider implements OAuth2 {
     );
 
     return JSON.stringify(response.data.body);
+  }
+
+  async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
+    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_WITHINGS);
+
+    const token = providerData.token;
+
+    const refreshedToken = await this.checkRefreshToken(token, connectedUser);
+
+    return refreshedToken.access_token;
+  }
+
+  async checkRefreshToken(token: string, connectedUser: ConnectedUser): Promise<Token> {
+    const access_token = JSON.parse(token)
+    const now = dayjs(Date.now()).unix()
+    const isExpired = access_token.expires_at < now;
+
+    if (isExpired) {
+      try {
+        const response = await axios.post(
+          "https://wbsapi.withings.net/v2/oauth2",
+          `action=requesttoken&grant_type=refresh_token&client_id=${Withings.clientId}&client_secret=${Withings.clientSecret}&refresh_token=${access_token.refresh_token}`,
+          {
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          }
+        );
+
+        response.data.body.expires_at = dayjs(Date.now()).add(response.data.body.expires_in, "seconds").unix()
+
+        const providerItem = connectedUser.providerMap
+          ? {
+            ...connectedUser.providerMap[PROVIDER_WITHINGS],
+            token: JSON.stringify(response.data.body),
+          }
+          : { token: JSON.stringify(response.data.body) };
+
+        await updateProviderData({
+          id: connectedUser.id,
+          cxId: connectedUser.cxId,
+          provider: PROVIDER_WITHINGS,
+          providerItem,
+        });
+
+        return response.data.body;
+
+      } catch (error) {
+        console.log("Error refreshing access token: ", error);
+        throw new Error("Error refreshing access token: ");
+      }
+    }
+
+    return access_token
   }
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
@@ -140,7 +191,7 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async fetchActivityData(
-    connectedUser: ConnectedUser,
+    accessToken: string,
     date: string
   ): Promise<WithingsActivityLogs> {
     const params = {
@@ -150,8 +201,8 @@ export class Withings extends Provider implements OAuth2 {
     };
 
     return this.oauth.fetchProviderData<WithingsActivityLogs>(
-      connectedUser,
       `${Withings.URL}/${Withings.API_PATH}/measure`,
+      accessToken,
       async resp => {
         return withingsActivityLogResp.parse(resp.data.body.activities);
       },
@@ -159,7 +210,7 @@ export class Withings extends Provider implements OAuth2 {
     );
   }
 
-  async fetchWorkoutData(connectedUser: ConnectedUser, date: string): Promise<WithingsWorkoutLogs> {
+  async fetchWorkoutData(accessToken: string, date: string): Promise<WithingsWorkoutLogs> {
     const params = {
       action: "getworkouts",
       startdateymd: date,
@@ -167,8 +218,8 @@ export class Withings extends Provider implements OAuth2 {
     };
 
     return this.oauth.fetchProviderData<WithingsWorkoutLogs>(
-      connectedUser,
       `${Withings.URL}/${Withings.API_PATH}/measure`,
+      accessToken,
       async resp => {
         return withingsWorkoutLogsResp.parse(resp.data.body.series);
       },
@@ -177,9 +228,11 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
+    const accessToken = await this.getAccessToken(connectedUser);
+
     const [resActivity, resWorkouts] = await Promise.allSettled([
-      this.fetchActivityData(connectedUser, date),
-      this.fetchWorkoutData(connectedUser, date),
+      this.fetchActivityData(accessToken, date),
+      this.fetchWorkoutData(accessToken, date),
     ]);
 
     const activity = resActivity.status === "fulfilled" ? resActivity.value : undefined;
@@ -197,9 +250,11 @@ export class Withings extends Provider implements OAuth2 {
       startdate: dayjs(date).unix(),
     };
 
+    const accessToken = await this.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<Biometrics>(
-      connectedUser,
       `${Withings.URL}/${Withings.API_PATH}/heart`,
+      accessToken,
       async resp => {
         return mapToBiometrics(date, withingsHeartRateResp.parse(resp.data.body.series));
       },
@@ -214,9 +269,11 @@ export class Withings extends Provider implements OAuth2 {
       enddateymd: date,
     };
 
+    const accessToken = await this.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<Sleep>(
-      connectedUser,
       `${Withings.URL}/${Withings.API_PATH}/sleep`,
+      accessToken,
       async resp => {
         return mapToSleep(date, withingsSleepResp.parse(resp.data.body.series));
       },

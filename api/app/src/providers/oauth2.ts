@@ -182,15 +182,13 @@ export class OAuth2DefaultImpl implements OAuth2 {
 
 
   async fetchProviderData<T>(
-    connectedUser: ConnectedUser,
     endpoint: string,
+    access_token: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     callBack: (response: AxiosResponse<any, any>) => Promise<T>,
     params?: { [k: string]: string | number },
   ): Promise<T> {
     try {
-      const access_token = await this.getAccessToken(connectedUser);
-
       const resp = await axios.get(endpoint, {
         headers: {
           Authorization: `Bearer ${access_token}`,

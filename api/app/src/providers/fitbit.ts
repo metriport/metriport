@@ -101,9 +101,11 @@ export class Fitbit extends Provider implements OAuth2 {
       sort: "asc",
     };
 
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<Activity>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/activities/list.json`,
+      accessToken,
       async resp => {
         return mapToActivity(fitbitActivityLogResp.parse(resp.data.activities), date);
       },
@@ -112,32 +114,32 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   async fetchBreathingData(
-    connectedUser: ConnectedUser,
+    accessToken: string,
     date: string
   ): Promise<FitbitBreathingRate> {
     return this.oauth.fetchProviderData<FitbitBreathingRate>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/br/date/${date}.json`,
+      accessToken,
       async resp => {
         return fitbitBreathingRateResp.parse(resp.data.br[0]);
       }
     );
   }
 
-  async fetchCardioData(connectedUser: ConnectedUser, date: string): Promise<FitbitCardioScore> {
+  async fetchCardioData(accessToken: string, date: string): Promise<FitbitCardioScore> {
     return this.oauth.fetchProviderData<FitbitCardioScore>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/cardioscore/date/${date}.json`,
+      accessToken,
       async resp => {
         return fitbitCardioScoreResp.parse(resp.data.cardioScore[0]);
       }
     );
   }
 
-  async fetchHeartRateData(connectedUser: ConnectedUser, date: string): Promise<FitbitHeartRate> {
+  async fetchHeartRateData(accessToken: string, date: string): Promise<FitbitHeartRate> {
     return this.oauth.fetchProviderData<FitbitHeartRate>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/activities/heart/date/${date}/1d.json`,
+      accessToken,
       async resp => {
         return fitbitHeartRateResp.parse(resp.data["activities-heart"][0]);
       }
@@ -145,42 +147,42 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   async fetchHeartVariabilityData(
-    connectedUser: ConnectedUser,
+    accessToken: string,
     date: string
   ): Promise<FitbitHeartVariability> {
     return this.oauth.fetchProviderData<FitbitHeartVariability>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/hrv/date/${date}.json`,
+      accessToken,
       async resp => {
         return fitbitHeartVariabilityResp.parse(resp.data.hrv[0]);
       }
     );
   }
 
-  async fetchSpo2Data(connectedUser: ConnectedUser, date: string): Promise<FitbitSpo2> {
+  async fetchSpo2Data(accessToken: string, date: string): Promise<FitbitSpo2> {
     return this.oauth.fetchProviderData<FitbitSpo2>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/spo2/date/${date}.json`,
+      accessToken,
       async resp => {
         return fitbitSpo2Resp.parse(resp.data);
       }
     );
   }
 
-  async fetchTempCoreData(connectedUser: ConnectedUser, date: string): Promise<FitbitTempCore> {
+  async fetchTempCoreData(accessToken: string, date: string): Promise<FitbitTempCore> {
     return this.oauth.fetchProviderData<FitbitTempCore>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/temp/core/date/${date}.json`,
+      accessToken,
       async resp => {
         return fitbitTempCoreResp.parse(resp.data.tempCore[0]);
       }
     );
   }
 
-  async fetchTempSkinData(connectedUser: ConnectedUser, date: string): Promise<FitbitTempSkin> {
+  async fetchTempSkinData(accessToken: string, date: string): Promise<FitbitTempSkin> {
     return this.oauth.fetchProviderData<FitbitTempSkin>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/temp/skin/date/${date}.json`,
+      accessToken,
       async resp => {
         return fitbitTempSkinResp.parse(resp.data.tempSkin[0]);
       }
@@ -188,15 +190,17 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     const [resBreathing, resCardio, resHr, resHrv, resSpo, resTempCore, resTempSkin] =
       await Promise.allSettled([
-        this.fetchBreathingData(connectedUser, date),
-        this.fetchCardioData(connectedUser, date),
-        this.fetchHeartRateData(connectedUser, date),
-        this.fetchHeartVariabilityData(connectedUser, date),
-        this.fetchSpo2Data(connectedUser, date),
-        this.fetchTempCoreData(connectedUser, date),
-        this.fetchTempSkinData(connectedUser, date),
+        this.fetchBreathingData(accessToken, date),
+        this.fetchCardioData(accessToken, date),
+        this.fetchHeartRateData(accessToken, date),
+        this.fetchHeartVariabilityData(accessToken, date),
+        this.fetchSpo2Data(accessToken, date),
+        this.fetchTempCoreData(accessToken, date),
+        this.fetchTempSkinData(accessToken, date),
       ]);
 
     const breathing = resBreathing.status === "fulfilled" ? resBreathing.value : undefined;
@@ -214,29 +218,31 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<Body>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
+      accessToken,
       async resp => {
         return mapToBody(fitbitUserResp.parse(resp.data), date);
       }
     );
   }
 
-  async fetchFoodData(connectedUser: ConnectedUser, date: string): Promise<FitbitFood> {
+  async fetchFoodData(accessToken: string, date: string): Promise<FitbitFood> {
     return this.oauth.fetchProviderData<FitbitFood>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/foods/log/date/${date}.json`,
+      accessToken,
       async resp => {
         return fitbitFoodResp.parse(resp.data);
       }
     );
   }
 
-  async fetchWaterData(connectedUser: ConnectedUser, date: string): Promise<FitbitWater> {
+  async fetchWaterData(accessToken: string, date: string): Promise<FitbitWater> {
     return this.oauth.fetchProviderData<FitbitWater>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/foods/log/water/date/${date}.json`,
+      accessToken,
       async resp => {
         return fitbitWaterResp.parse(resp.data);
       }
@@ -244,9 +250,11 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     const [resFood, resWater] = await Promise.allSettled([
-      this.fetchFoodData(connectedUser, date),
-      this.fetchWaterData(connectedUser, date),
+      this.fetchFoodData(accessToken, date),
+      this.fetchWaterData(accessToken, date),
     ]);
 
     const food = resFood.status === "fulfilled" ? resFood.value : undefined;
@@ -260,9 +268,11 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<Sleep>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/sleep/date/${date}.json`,
+      accessToken,
       async resp => {
         return mapToSleep(fitbitSleepResp.parse(resp.data), date);
       }
@@ -270,9 +280,11 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     return this.oauth.fetchProviderData<User>(
-      connectedUser,
       `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
+      accessToken,
       async resp => {
         return mapToUser(fitbitUserResp.parse(resp.data), date);
       }
