@@ -10,14 +10,14 @@ function metriportBanner(): string {
             ,▄,
           ▄▓███▌
       ▄▀╙   ▀▓▀    ²▄
-    ▄└               ╙▌     
-  ,▀                   ╨▄   
-  ▌                     ║   
-                         ▌  
-                         ▌  
-,▓██▄                 ╔███▄ 
-╙███▌                 ▀███▀ 
-    ▀▄                      
+    ▄└               ╙▌
+  ,▀                   ╨▄
+  ▌                     ║
+                         ▌
+                         ▌
+,▓██▄                 ╔███▄
+╙███▌                 ▀███▀
+    ▀▄
       ▀╗▄         ,▄
          '╙▀▀▀▀▀╙''
 
@@ -84,7 +84,7 @@ async function main() {
   // Run through the CommonWell certification test cases
 
   await personManagement(commonWell, queryMeta);
-  await patientManagement(commonWell, queryMeta)
+  await patientManagement(commonWell, queryMeta);
 }
 
 main();

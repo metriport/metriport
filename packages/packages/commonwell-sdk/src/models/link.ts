@@ -14,7 +14,7 @@ export type Link = z.infer<typeof linkSchema>;
 export const networkLinkSchema = z.array(
   z.object({
     _links: linkSchema.optional().nullable(),
-    assuranceLevel: linkSchema.optional().nullable(),
+    assuranceLevel: z.number(),
     linkedPatient: z.object({
       details: demographicsSchema
     }).optional().nullable()

@@ -41,7 +41,7 @@ const mainDetails = {
       },
     },
   ],
-}
+};
 
 const secondaryDetails = {
   address: [
@@ -64,7 +64,7 @@ const secondaryDetails = {
     code: "F",
   },
   birthDate: "2000-04-20T00:00:00Z",
-}
+};
 
 export const personStrongId: Person = {
   details: {
@@ -83,7 +83,7 @@ export const personStrongId: Person = {
 };
 
 export const personNoStrongId: Person = {
-  details: secondaryDetails
+  details: secondaryDetails,
 };
 
 // PATIENT
@@ -94,11 +94,11 @@ export const patient = {
       label: "Metriport",
       system: "urn:oid:2.16.840.1.113883.3.9621",
       key: nanoid.nanoid(),
-      assigner: "Metriport"
-    }
+      assigner: "Metriport",
+    },
   ],
-  details: mainDetails
-}
+  details: mainDetails,
+};
 
 export const mergePatient = {
   identifier: [
@@ -107,8 +107,8 @@ export const mergePatient = {
       label: "Metriport",
       system: "urn:oid:2.16.840.1.113883.3.9621",
       key: nanoid.nanoid(),
-      assigner: "Metriport"
-    }
+      assigner: "Metriport",
+    },
   ],
-  details: secondaryDetails
-}
+  details: secondaryDetails,
+};

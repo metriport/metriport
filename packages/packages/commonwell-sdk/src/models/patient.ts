@@ -2,6 +2,8 @@ import { z } from "zod";
 import { demographicsSchema } from "./demographics";
 import { identifierSchema } from "./identifier";
 import { linkSchema, networkLinkSchema } from "./link";
+import { organizationSchema } from "./organization";
+import { facilitySchema } from "./facility";
 
 export const patientLinksSchema = z.object({
   self: linkSchema,
@@ -12,22 +14,16 @@ export const patientLinksSchema = z.object({
   downgrade: linkSchema.optional().nullable(),
 });
 
-export const patientProviderSchema = z.object({
-  type: z.string().optional().nullable(),
-  reference: z.string().optional().nullable(),
-  display: z.string().optional().nullable()
-})
-
 // The Patient resource represents a natural patient independent of a specific healthcare context.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.6.4 Patient)
 export const patientSchema = z.object({
   active: z.boolean().optional().nullable(),
   identifier: z.array(identifierSchema).optional().nullable(),
-  provider: patientProviderSchema.optional().nullable(),
+  provider: organizationSchema.optional().nullable(),
   details: demographicsSchema,
   _links: patientLinksSchema.optional().nullable(),
-  facilities: demographicsSchema.optional().nullable()
-})
+  facilities: z.array(facilitySchema).optional().nullable(),
+});
 
 export type Patient = z.infer<typeof patientSchema>;
 

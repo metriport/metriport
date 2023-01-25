@@ -13,7 +13,7 @@ import {
   caDriversLicenseUri,
   personStrongId,
   personNoStrongId,
-  patient
+  patient,
 } from "./payloads";
 
 // 1. Person Management
@@ -38,16 +38,20 @@ export async function personManagement(commonWell: CommonWell, queryMeta: Reques
   const personId = getId(respC1a);
   const newPatient = await commonWell.registerPatient(queryMeta, patient);
   const patientId = getIdPatient(newPatient);
-  const respC2b = await commonWell.searchPersonByPatientDemo(queryMeta, patientId)
-  console.log(respC2b)
+  const respC2b = await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
+  console.log(respC2b);
 
   // C3: Person Update
-  console.log(`>>> C3a: Update a Person with an existing Strong ID by updating their demographics and/or Strong ID`);
+  console.log(
+    `>>> C3a: Update a Person with an existing Strong ID by updating their demographics and/or Strong ID`
+  );
   personStrongId.details.name[0].family[0] = "Graham";
   const respC3a = await commonWell.updatePerson(queryMeta, personStrongId, personId);
   console.log(respC3a);
 
-  console.log(`>>> C3b: Update a Person without a Strong ID by updating their demographics and/or by adding a Strong ID`);
+  console.log(
+    `>>> C3b: Update a Person without a Strong ID by updating their demographics and/or by adding a Strong ID`
+  );
   const personId2 = getId(respC1b);
   const driversLicenseId2 = nanoid.nanoid();
   personNoStrongId.details.identifier = [
@@ -66,7 +70,7 @@ export async function personManagement(commonWell: CommonWell, queryMeta: Reques
   // C4: Patient Match
   console.log(`>>> C4a: Search for patients matching the Person demographics.`);
   const respC4a = await commonWell.patientMatch(queryMeta, personId);
-  console.log(respC4a)
+  console.log(respC4a);
 
   // C6: Unenroll a person
   console.log(`>>> C6a: Unenroll a Person who is active`);
@@ -81,6 +85,6 @@ export async function personManagement(commonWell: CommonWell, queryMeta: Reques
   await commonWell.deletePerson(queryMeta, personId);
   await commonWell.deletePerson(queryMeta, personId2);
 
-  // Node: delete created patient
+  // Note: delete created patient
   await commonWell.deletePatient(queryMeta, patientId);
 }
