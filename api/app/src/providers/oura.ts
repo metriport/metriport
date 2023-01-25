@@ -60,36 +60,14 @@ export class Oura extends Provider implements OAuth2 {
     await this.oauth.revokeLocal(connectedUser);
   }
 
-  private async fetchOuraData<T>(
-    connectedUser: ConnectedUser,
-    endpoint: string,
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    callBack: (response: AxiosResponse<any, any>) => Promise<T>,
-    params?: { [k: string]: string }
-  ): Promise<T> {
-    try {
-      const access_token = await this.oauth.getAccessToken(connectedUser);
-
-      const resp = await axios.get(`${Oura.URL}/${Oura.API_PATH}/${endpoint}`, {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
-        params,
-      });
-      return await callBack(resp);
-    } catch (error) {
-      console.error(error);
-
-      throw new Error(`Oura Request failed ${endpoint}`);
-    }
-  }
-
   async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
     const [resFetchDaily, resBio, resSess, resWork] = await Promise.allSettled([
-      this.fetchDailyActivity(connectedUser, date),
+      this.fetchDailyActivity(accessToken, date),
       this.getBiometricsData(connectedUser, date),
-      this.fetchUserSessions(connectedUser, date),
-      this.fetchWorkoutSessions(connectedUser, date),
+      this.fetchUserSessions(accessToken, date),
+      this.fetchWorkoutSessions(accessToken, date),
     ]);
 
     const dailyActivty = resFetchDaily.status === "fulfilled" ? resFetchDaily.value : undefined;
@@ -104,16 +82,16 @@ export class Oura extends Provider implements OAuth2 {
     return mapToActivity(date, dailyActivty, biometrics, sessions, workouts);
   }
 
-  async fetchDailyActivity(connectedUser: ConnectedUser, date: string): Promise<OuraDailyActivity> {
+  async fetchDailyActivity(accessToken: string, date: string): Promise<OuraDailyActivity> {
     const { start_date, end_date } = getStartAndEndDate(date);
     const params = {
       start_date: start_date,
       end_date: end_date,
     };
 
-    return this.fetchOuraData<OuraDailyActivity>(
-      connectedUser,
-      "daily_activity",
+    return this.oauth.fetchProviderData<OuraDailyActivity>(
+      `${Oura.URL}/${Oura.API_PATH}/daily_activity`,
+      accessToken,
       async resp => {
         return ouraDailyActivityResponse.parse(resp.data.data[0]);
       },
@@ -121,16 +99,16 @@ export class Oura extends Provider implements OAuth2 {
     );
   }
 
-  async fetchUserSessions(connectedUser: ConnectedUser, date: string): Promise<OuraSessions> {
+  async fetchUserSessions(accessToken: string, date: string): Promise<OuraSessions> {
     const { start_date, end_date } = getStartAndEndDate(date);
     const params = {
       start_date: start_date,
       end_date: end_date,
     };
 
-    return this.fetchOuraData<OuraSessions>(
-      connectedUser,
-      "session",
+    return this.oauth.fetchProviderData<OuraSessions>(
+      `${Oura.URL}/${Oura.API_PATH}/session`,
+      accessToken,
       async resp => {
         return ouraSessionsResponse.parse(resp.data.data);
       },
@@ -138,16 +116,16 @@ export class Oura extends Provider implements OAuth2 {
     );
   }
 
-  async fetchWorkoutSessions(connectedUser: ConnectedUser, date: string): Promise<OuraWorkouts> {
+  async fetchWorkoutSessions(accessToken: string, date: string): Promise<OuraWorkouts> {
     const { start_date, end_date } = getStartAndEndDate(date);
     const params = {
       start_date: start_date,
       end_date: end_date,
     };
 
-    return this.fetchOuraData<OuraWorkouts>(
-      connectedUser,
-      "workout",
+    return this.oauth.fetchProviderData<OuraWorkouts>(
+      `${Oura.URL}/${Oura.API_PATH}/workout`,
+      accessToken,
       async resp => {
         return ouraWorkoutsResponse.parse(resp.data.data);
       },
@@ -162,9 +140,11 @@ export class Oura extends Provider implements OAuth2 {
       end_datetime: end_date,
     };
 
-    return this.fetchOuraData<Biometrics>(
-      connectedUser,
-      "heartrate",
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
+    return this.oauth.fetchProviderData<Biometrics>(
+      `${Oura.URL}/${Oura.API_PATH}/heartrate`,
+      accessToken,
       async resp => {
         return mapToBiometrics(ouraHeartRateResponse.parse(resp.data.data), date);
       },
@@ -173,9 +153,14 @@ export class Oura extends Provider implements OAuth2 {
   }
 
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
-    return this.fetchOuraData<Body>(connectedUser, "personal_info", async resp => {
-      return mapToBody(ouraPersonalInfoResponse.parse(resp.data), date);
-    });
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
+    return this.oauth.fetchProviderData<Body>(
+      `${Oura.URL}/${Oura.API_PATH}/personal_info`,
+      accessToken,
+      async resp => {
+        return mapToBody(ouraPersonalInfoResponse.parse(resp.data), date);
+      });
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
@@ -184,10 +169,12 @@ export class Oura extends Provider implements OAuth2 {
       start_date: start_date,
       end_date: end_date,
     };
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
 
-    return this.fetchOuraData<Sleep>(
-      connectedUser,
-      "sleep",
+
+    return this.oauth.fetchProviderData<Sleep>(
+      `${Oura.URL}/${Oura.API_PATH}/sleep`,
+      accessToken,
       async resp => {
         // TODO: need to support multiple sleep sessions in our model,
         // technically someone could sleep twice in the same day. This is
@@ -199,7 +186,9 @@ export class Oura extends Provider implements OAuth2 {
   }
 
   async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
-    return this.fetchOuraData<User>(connectedUser, "personal_info", async resp => {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
+    return this.oauth.fetchProviderData<User>(`${Oura.URL}/${Oura.API_PATH}/personal_info`, accessToken, async resp => {
       return mapToUser(ouraPersonalInfoResponse.parse(resp.data), date);
     });
   }

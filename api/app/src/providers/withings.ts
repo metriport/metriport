@@ -88,8 +88,7 @@ export class Withings extends Provider implements OAuth2 {
 
   async checkRefreshToken(token: string, connectedUser: ConnectedUser): Promise<Token> {
     const access_token = JSON.parse(token)
-    const now = dayjs(Date.now()).unix()
-    const isExpired = access_token.expires_at < now;
+    const isExpired = (access_token.expires_at * 1000) - (Date.now() + 120 * 1000) <= 0;
 
     if (isExpired) {
       try {
@@ -120,6 +119,7 @@ export class Withings extends Provider implements OAuth2 {
         });
 
         return response.data.body;
+        1674682301644
 
       } catch (error) {
         console.log("Error refreshing access token: ", error);
