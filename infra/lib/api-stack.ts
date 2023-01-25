@@ -14,6 +14,7 @@ import { Credentials } from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
 import { EnvType } from "./env-type";
@@ -118,12 +119,18 @@ export class APIStack extends Stack {
       },
     });
 
+    // add performance alarms for monitoring prod environment
+    if (this.isProd(props)) {
+      this.addDBClusterPerformanceAlarms(dbCluster, dbClusterName);
+    }
+
     //----------------------------------------------------------
     // DynamoDB
     //----------------------------------------------------------
 
     // global table for auth token management
-    const dynamoDBTokenTable = new dynamodb.Table(this, "APIUserTokens", {
+    const dynamoConstructName = "APIUserTokens";
+    const dynamoDBTokenTable = new dynamodb.Table(this, dynamoConstructName, {
       partitionKey: { name: "token", type: dynamodb.AttributeType.STRING },
       replicationRegions: this.isProd(props) ? ["us-east-1"] : undefined,
       replicationTimeout: this.isProd(props) ? Duration.hours(3) : undefined,
@@ -138,6 +145,11 @@ export class APIStack extends Stack {
       },
       projectionType: dynamodb.ProjectionType.ALL,
     });
+
+    // add performance alarms for monitoring prod environment
+    if (this.isProd(props)) {
+      this.addDynamoPerformanceAlarms(dynamoDBTokenTable, dynamoConstructName);
+    }
 
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
@@ -480,6 +492,58 @@ export class APIStack extends Stack {
     // setup $base/garmin path with token auth
     const garminResource = baseResource.addResource("garmin");
     garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
+  }
+
+  private addDBClusterPerformanceAlarms(dbCluster: rds.DatabaseCluster, dbClusterName: string) {
+    const memoryMetric = dbCluster.metricFreeableMemory();
+    memoryMetric.createAlarm(this, `${dbClusterName}FreeableMemoryAlarm`, {
+      threshold: this.mbToBytes(150),
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
+    });
+
+    const storageMetric = dbCluster.metricFreeLocalStorage();
+    storageMetric.createAlarm(this, `${dbClusterName}FreeLocalStorageAlarm`, {
+      threshold: this.mbToBytes(250),
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
+    });
+
+    const cpuMetric = dbCluster.metricCPUUtilization();
+    cpuMetric.createAlarm(this, `${dbClusterName}CPUUtilizationAlarm`, {
+      threshold: 90, // pct
+      evaluationPeriods: 1,
+    });
+
+    const readIOPsMetric = dbCluster.metricVolumeReadIOPs();
+    readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
+      threshold: 20000, // IOPs per second
+      evaluationPeriods: 1,
+    });
+
+    const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
+    writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
+      threshold: 5000, // IOPs per second
+      evaluationPeriods: 1,
+    });
+  }
+
+  private mbToBytes(mb: number): number {
+    return mb * 1024 * 1024;
+  }
+
+  private addDynamoPerformanceAlarms(table: dynamodb.Table, dynamoConstructName: string) {
+    const readUnitsMetric = table.metricConsumedReadCapacityUnits();
+    readUnitsMetric.createAlarm(this, `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`, {
+      threshold: 10000, // units per second
+      evaluationPeriods: 1,
+    });
+
+    const writeUnitsMetric = table.metricConsumedReadCapacityUnits();
+    writeUnitsMetric.createAlarm(this, `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`, {
+      threshold: 10000, // units per second
+      evaluationPeriods: 1,
+    });
   }
 
   private isProd(props: APIStackProps): boolean {
