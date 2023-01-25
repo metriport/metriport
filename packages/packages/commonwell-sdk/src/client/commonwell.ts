@@ -215,7 +215,7 @@ export class CommonWell {
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8762-adding-a-local-patient-record
    *
    * @param meta    Metadata about the request.
-   * @param patient  The patient to enroll.
+   * @param patient  The patient to register.
    * @returns
    */
   async registerPatient(meta: RequestMetadata, patient: Patient): Promise<Patient> {

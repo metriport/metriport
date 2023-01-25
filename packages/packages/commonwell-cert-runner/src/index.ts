@@ -3,6 +3,7 @@ import { APIMode, CommonWell, PurposeOfUse, RequestMetadata } from "@metriport/c
 import { Command } from "commander";
 import * as dotenv from "dotenv";
 import { personManagement } from "./person-management";
+import { patientManagement } from "./patient-management";
 
 function metriportBanner(): string {
   return `
@@ -83,6 +84,7 @@ async function main() {
   // Run through the CommonWell certification test cases
 
   await personManagement(commonWell, queryMeta);
+  await patientManagement(commonWell, queryMeta)
 }
 
 main();
