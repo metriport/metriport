@@ -6,6 +6,10 @@ import {
   Person,
 } from "@metriport/commonwell-sdk";
 import * as nanoid from "nanoid";
+import { getEnvOrFail } from "./util";
+
+const commonwellOID = getEnvOrFail("COMMONWELL_OID");
+const commonwellOrgName = getEnvOrFail("COMMONWELL_ORG_NAME");
 
 // PERSON
 export const caDriversLicenseUri = "urn:oid:2.16.840.1.113883.4.3.6";
@@ -91,10 +95,10 @@ export const patient = {
   identifier: [
     {
       use: "unspecified",
-      label: "Metriport",
-      system: "urn:oid:2.16.840.1.113883.3.9621",
+      label: commonwellOrgName,
+      system: `urn:oid:${commonwellOID}`,
       key: nanoid.nanoid(),
-      assigner: "Metriport",
+      assigner: commonwellOrgName,
     },
   ],
   details: mainDetails,
@@ -104,10 +108,10 @@ export const mergePatient = {
   identifier: [
     {
       use: "unspecified",
-      label: "Metriport",
-      system: "urn:oid:2.16.840.1.113883.3.9621",
+      label: commonwellOrgName,
+      system: `urn:oid:${commonwellOID}`,
       key: nanoid.nanoid(),
-      assigner: "Metriport",
+      assigner: commonwellOrgName,
     },
   ],
   details: secondaryDetails,

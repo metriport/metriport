@@ -3,10 +3,19 @@ import { CommonWell, getIdPatient, RequestMetadata, getId } from "@metriport/com
 
 import { patient, mergePatient, personStrongId } from "./payloads";
 
+import { getEnvOrFail } from "./util";
+
+const commonwellSandboxOID = getEnvOrFail("COMMONWELL_SANDBOX_OID");
+const commonwellSandboxOrgName = getEnvOrFail("COMMONWELL_SANDBOX_ORG_NAME");
+
 // 2. Patient Management
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Patient-Management-(PIX,-REST).aspx
 
-export async function patientManagement(commonWell: CommonWell, queryMeta: RequestMetadata) {
+export async function patientManagement(
+  commonWell: CommonWell,
+  commonwellSandbox: CommonWell,
+  queryMeta: RequestMetadata
+) {
   console.log(`>>> D1b: Register a new Patient`);
   const respD1b = await commonWell.registerPatient(queryMeta, patient);
   console.log(respD1b);
@@ -38,9 +47,19 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
   console.log("D4a successful");
 
   console.log(`>>> D5a: Retrieve network links`);
+  // Main Account Link
   const person = await commonWell.enrollPerson(queryMeta, personStrongId);
   const personId = getId(person);
   await commonWell.patientLink(queryMeta, personId, referenceLink);
+  // Sandbox Account Link                                                   MAKE SURE PATIENT IDENTIFIER DIFFERENT
+  patient.identifier[0].system = `urn:oid:${commonwellSandboxOID}`;
+  patient.identifier[0].assigner = commonwellSandboxOrgName;
+  patient.identifier[0].label = commonwellSandboxOrgName;
+  const sandboxPatient = await commonwellSandbox.registerPatient(queryMeta, patient);
+  const sandboxPatientId = getIdPatient(sandboxPatient);
+  const sandboxReferenceLink = sandboxPatient._links.self.href;
+  await commonwellSandbox.patientLink(queryMeta, personId, sandboxReferenceLink);
+
   const respD5a = await commonWell.getPatientsLinks(queryMeta, patientId);
   console.log(respD5a);
 
@@ -48,6 +67,7 @@ export async function patientManagement(commonWell: CommonWell, queryMeta: Reque
   console.log(`>>> Delete created patients.`);
 
   // Note: will be deleting patient & person created in this run
+  await commonWell.deletePerson(queryMeta, personId);
   await commonWell.deletePatient(queryMeta, patientId);
-  await commonWell.deletePerson(queryMeta, patientId);
+  await commonwellSandbox.deletePatient(queryMeta, sandboxPatientId);
 }
