@@ -24,6 +24,7 @@
   },
   "scripts": {
     "tsc": "tsc",
+    "build": "tsc -p .",
     "test": "echo \"Error: run tests from root\" && exit 1"
   },
   "bugs": {

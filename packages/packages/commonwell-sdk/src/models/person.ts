@@ -29,3 +29,15 @@ export const personSearchRespSchema = z.object({
 });
 
 export type PersonSearchResp = z.infer<typeof personSearchRespSchema>;
+
+// Within the context of a Person resource, a PatientLink represents a confirmed relationship to a Patient Record.
+// See: https://specification.commonwellalliance.org/services/rest-api-reference (8.6.5 PatientLink)
+
+export const patientLinkSchema = z.object({
+  patient: z.string(),
+  assuranceLevel: z.string(),
+  _links: personLinksSchema.optional().nullable(),
+});
+
+export type PatientLink = z.infer<typeof patientLinkSchema>;
+
