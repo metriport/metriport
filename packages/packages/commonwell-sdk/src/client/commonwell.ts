@@ -18,7 +18,8 @@ import {
   patientNetworkLinkRespSchema,
   PatientNetworkLinkResp,
 } from "../models/patient";
-
+import { networkLinkSchema, NetworkLink } from "../models/link";
+import { Identifier } from "../models/identifier";
 export enum APIMode {
   integration = "integration",
   production = "production",
@@ -37,6 +38,8 @@ export class CommonWell {
   static productionUrl = "https://rest.api.commonwellalliance.org";
 
   static PERSON_ENDPOINT = "/v1/person";
+  static ORG_ENDPOINT = "/v1/org";
+  static PATIENT_ENDPOINT = "/v1/patient";
 
   private api: AxiosInstance;
   private rsaPrivateKey: string;
@@ -126,7 +129,7 @@ export class CommonWell {
    */
   async searchPersonByPatientDemo(meta: RequestMetadata, id: string): Promise<PersonSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`/org/${this.oid}/patient/${id}/person`, {
+    const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/person`, {
       headers,
     });
     return personSearchRespSchema.parse(resp.data);
@@ -159,7 +162,7 @@ export class CommonWell {
    */
   async patientMatch(meta: RequestMetadata, id: string): Promise<PatientSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`/person/${id}/patientMatch`, {
+    const resp = await this.api.get(`${CommonWell.PERSON_ENDPOINT}/${id}/patientMatch`, {
       headers,
       params: { orgId: this.oid },
     });
@@ -178,7 +181,7 @@ export class CommonWell {
   async patientLink(meta: RequestMetadata, id: string, uri: string): Promise<PatientLink> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.post(
-      `/person/${id}/patientLink`,
+      `${CommonWell.PERSON_ENDPOINT}/${id}/patientLink`,
       {
         patient: uri,
       },
@@ -237,7 +240,7 @@ export class CommonWell {
    */
   async registerPatient(meta: RequestMetadata, patient: Patient): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(`/org/${this.oid}/patient`, patient, {
+    const resp = await this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, patient, {
       headers,
     });
     return patientSchema.parse(resp.data);
@@ -264,7 +267,7 @@ export class CommonWell {
     zip: string
   ): Promise<PatientSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`/org/${this.oid}/patient`, {
+    const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, {
       headers,
       params: { fname, lname, dob, gender, zip },
     });
@@ -282,9 +285,13 @@ export class CommonWell {
    */
   async updatePatient(meta: RequestMetadata, patient: Patient, id: string): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.post(`/org/${this.oid}/patient/${id}/`, patient, {
-      headers,
-    });
+    const resp = await this.api.post(
+      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`,
+      patient,
+      {
+        headers,
+      }
+    );
     return patientSchema.parse(resp.data);
   }
 
@@ -304,7 +311,7 @@ export class CommonWell {
   ): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
     await this.api.put(
-      `/org/${this.oid}/patient/${nonSurvivingPatientId}/merge`,
+      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${nonSurvivingPatientId}/merge`,
       {
         link: {
           other: {
@@ -330,9 +337,12 @@ export class CommonWell {
    */
   async getPatientsLinks(meta: RequestMetadata, id: string): Promise<PatientNetworkLinkResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`/org/${this.oid}/patient/${id}/networkLink`, {
-      headers,
-    });
+    const resp = await this.api.get(
+      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/networkLink`,
+      {
+        headers,
+      }
+    );
     return patientNetworkLinkRespSchema.parse(resp.data);
   }
 
@@ -346,9 +356,62 @@ export class CommonWell {
    */
   async deletePatient(meta: RequestMetadata, id: string): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
-    await this.api.delete(`/org/${this.oid}/patient/${id}/`, {
+    await this.api.delete(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, {
       headers,
     });
+
+    return;
+  }
+
+  //--------------------------------------------------------------------------------------------
+  // Link Management
+  //--------------------------------------------------------------------------------------------
+
+  async upgradeOrDowngradePatientLink(meta: RequestMetadata, href: string): Promise<NetworkLink> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      href,
+      {
+        proxy: {},
+      },
+      {
+        headers,
+      }
+    );
+    return networkLinkSchema.parse(resp.data);
+  }
+
+  async updatePatientLink(
+    meta: RequestMetadata,
+    patientLinkUri: string,
+    patientUri?: string,
+    identifier?: Identifier
+  ): Promise<PatientLink> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      patientLinkUri,
+      {
+        patient: patientUri,
+        identifier: identifier,
+      },
+      {
+        headers,
+      }
+    );
+
+    return patientLinkSchema.parse(resp.data);
+  }
+
+  async deletePatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<void> {
+    const headers = await this.buildQueryHeaders(meta);
+
+    await this.api.put(
+      `${patientLinkUri}reset`,
+      {},
+      {
+        headers,
+      }
+    );
 
     return;
   }

@@ -4,6 +4,7 @@ import { Command } from "commander";
 import * as dotenv from "dotenv";
 import { personManagement } from "./person-management";
 import { patientManagement } from "./patient-management";
+import { linkManagement } from "./link-management";
 import { getEnvOrFail } from "./util";
 
 function metriportBanner(): string {
@@ -96,6 +97,7 @@ async function main() {
 
   await personManagement(commonWell, queryMeta);
   await patientManagement(commonWell, commonWellSandbox, queryMeta);
+  await linkManagement(commonWell, queryMeta);
 }
 
 main();

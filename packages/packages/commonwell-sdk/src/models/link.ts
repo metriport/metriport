@@ -12,9 +12,16 @@ export const linkSchema = z.object({
 export type Link = z.infer<typeof linkSchema>;
 
 export const networkLinkSchema = z.object({
-  _links: linkSchema.optional().nullable(),
+  _links: z
+    .object({
+      self: linkSchema.optional().nullable(),
+      upgrade: linkSchema.optional().nullable(),
+      downgrade: linkSchema.optional().nullable(),
+    })
+    .optional()
+    .nullable(),
   assuranceLevel: z.string().optional().nullable(),
-  linkedPatient: z
+  patient: z
     .object({
       details: demographicsSchema,
     })
