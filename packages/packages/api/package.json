@@ -24,7 +24,7 @@
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
-    "directory": "pkgs/packages/api"
+    "directory": "packages/packages/api"
   },
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"

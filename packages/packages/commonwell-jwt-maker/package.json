@@ -20,7 +20,7 @@
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
-    "directory": "pkgs/packages/commonwell-jwt-maker"
+    "directory": "packages/packages/commonwell-jwt-maker"
   },
   "scripts": {
     "tsc": "tsc",

@@ -8,7 +8,7 @@ export const withingsActivityLogResp = z.array(
     deviceid: z.string().nullable(),
     hash_deviceid: z.string().nullable(),
     brand: z.number().optional().nullable(),
-    is_tracker: z.boolean(),
+    is_tracker: z.boolean().optional().nullable(),
     steps: z.number(),
     distance: z.number(),
     elevation: z.number(),

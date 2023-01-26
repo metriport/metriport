@@ -20,13 +20,14 @@
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
-    "directory": "pkgs/packages/commonwell-cert-runner"
+    "directory": "packages/packages/commonwell-cert-runner"
   },
   "scripts": {
     "tsc": "tsc",
     "test": "echo \"Error: run tests from root\" && exit 1",
     "build": "tsc -p .",
-    "local": "sudo npm i -g && cw-cert-runner"
+    "install-local": "sudo npm i -g",
+    "start": "ts-node src/index.ts --env-file .env"
   },
   "bin": {
     "cw-cert-runner": "lib/index.js"

@@ -5,13 +5,13 @@ export const withingsWorkoutLogsResp = z.array(
   z.object({
     category: z.number(),
     timezone: z.string().optional().nullable(),
-    model: z.number(),
-    attrib: z.number(),
+    model: z.number().optional().nullable(),
+    attrib: z.number().optional().nullable(),
     startdate: z.number(),
     enddate: z.number(),
     date: z.string(),
-    modified: z.number(),
-    deviceid: z.string(),
+    modified: z.number().optional().nullable(),
+    deviceid: z.string().optional().nullable(),
     data: z
       .object({
         algo_pause_duration: z.number().optional().nullable(),
