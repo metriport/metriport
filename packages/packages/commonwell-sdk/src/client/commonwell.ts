@@ -18,7 +18,7 @@ import {
   patientNetworkLinkRespSchema,
   PatientNetworkLinkResp,
 } from "../models/patient";
-import { networkLinkSchema, NetworkLink } from "../models/link";
+import { networkLinkSchema, NetworkLink, PatientLinkProxy } from "../models/link";
 import { Identifier } from "../models/identifier";
 export enum APIMode {
   integration = "integration",
@@ -367,12 +367,25 @@ export class CommonWell {
   // Link Management
   //--------------------------------------------------------------------------------------------
 
-  async upgradeOrDowngradePatientLink(meta: RequestMetadata, href: string): Promise<NetworkLink> {
+  /**
+   * Upgrade or downgrade patient link.
+   * See: https://specification.commonwellalliance.org/services/record-locator-service/protocol-operations-record-locator-service#8772-upgrading-a-network-link
+   *
+   * @param meta    Metadata about the request.
+   * @param href    The href of patient link to be upgraded or downgraded
+   * @param proxy   The proxy for the patient link action.
+   * @returns
+   */
+  async upgradeOrDowngradePatientLink(
+    meta: RequestMetadata,
+    href: string,
+    proxy?: PatientLinkProxy
+  ): Promise<NetworkLink> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.post(
       href,
       {
-        proxy: {},
+        proxy,
       },
       {
         headers,
@@ -381,6 +394,16 @@ export class CommonWell {
     return networkLinkSchema.parse(resp.data);
   }
 
+  /**
+   * Update a patient link.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8722-updating-a-patient-link
+   *
+   * @param meta              Metadata about the request.
+   * @param patientLinkUri    The uri of patient link to be updated
+   * @param patientUri        The uri of patient that belongs to this link
+   * @param identifier        Add identifier information to the patient link
+   * @returns
+   */
   async updatePatientLink(
     meta: RequestMetadata,
     patientLinkUri: string,
@@ -402,6 +425,14 @@ export class CommonWell {
     return patientLinkSchema.parse(resp.data);
   }
 
+  /**
+   * Deletes a patient link.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8724-deleting-a-patient-link
+   *
+   * @param meta              Metadata about the request.
+   * @param patientLinkUri    The uri of patient link to be deleted
+   * @returns
+   */
   async deletePatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
 

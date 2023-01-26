@@ -6,6 +6,7 @@ export { Contact, ContactSystemCodes, ContactUseCodes } from "./models/contact";
 export { Demographics, GenderCodes } from "./models/demographics";
 export { EnrollmentSummary } from "./models/enrollment-summary";
 export { HumanName, NameUseCodes } from "./models/human-name";
+export { LOLA } from "./models/link";
 export { Identifier, IdentifierUseCodes } from "./models/identifier";
 export { Person } from "./models/person";
 export { CommonWell, APIMode, RequestMetadata } from "./client/commonwell";

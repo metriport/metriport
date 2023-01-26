@@ -1,5 +1,11 @@
 #!/usr/bin/env node
-import { CommonWell, getIdTrailingSlash, RequestMetadata, getId } from "@metriport/commonwell-sdk";
+import {
+  CommonWell,
+  getIdTrailingSlash,
+  RequestMetadata,
+  getId,
+  LOLA,
+} from "@metriport/commonwell-sdk";
 import { cloneDeep } from "lodash";
 
 import { patient, mergePatient, personStrongId } from "./payloads";
@@ -70,7 +76,9 @@ export async function patientManagement(
 
   // D6: Upgrade/Downgrade a Network link
   console.log(`>>> D6a: Upgrade link from LOLA 1 to LOLA 2`);
-  const getLola1Link = respD5a._embedded.networkLink.find(link => link.assuranceLevel === "1");
+  const getLola1Link = respD5a._embedded.networkLink.find(
+    link => link.assuranceLevel === LOLA.level_1
+  );
   const respD6a = await commonWell.upgradeOrDowngradePatientLink(
     queryMeta,
     getLola1Link._links.upgrade.href
