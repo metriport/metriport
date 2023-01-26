@@ -2,7 +2,7 @@
 import {
   CommonWell,
   getId,
-  getIdTrailingSlash,
+  getPatientId,
   IdentifierUseCodes,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
@@ -37,7 +37,7 @@ export async function personManagement(commonWell: CommonWell, queryMeta: Reques
   console.log(`>>> C2b: Search for a Person using the local Patient demographics.`);
   const personId = getId(respC1a);
   const newPatient = await commonWell.registerPatient(queryMeta, patient);
-  const patientId = getIdTrailingSlash(newPatient);
+  const patientId = getPatientId(newPatient);
   const respC2b = await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
   console.log(respC2b);
 
