@@ -3,7 +3,7 @@ import { z } from "zod";
 // https://developer.withings.com/api-reference/#operation/measurev2-getworkouts
 export const withingsWorkoutLogsResp = z.array(
   z.object({
-    category: z.number().optional().nullable(),
+    category: z.number(),
     timezone: z.string().optional().nullable(),
     model: z.number().optional().nullable(),
     attrib: z.number().optional().nullable(),
