@@ -35,9 +35,9 @@ export type PersonSearchResp = z.infer<typeof personSearchRespSchema>;
 
 export const patientLinkSchema = z.object({
   patient: z.string(),
-  assuranceLevel: z.number(),
+  assuranceLevel: z.string(),
   _links: personLinksSchema.optional().nullable(),
-})
+});
 
 export type PatientLink = z.infer<typeof patientLinkSchema>;
 

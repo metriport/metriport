@@ -37,7 +37,7 @@ export type PatientSearchResp = z.infer<typeof patientSearchRespSchema>;
 
 export const patientNetworkLinkRespSchema = z.object({
   _embedded: z.object({
-    networkLink: networkLinkSchema.optional().nullable(),
+    networkLink: z.array(networkLinkSchema.optional().nullable()).optional().nullable(),
   }),
   _links: z.object({ self: linkSchema }),
 });

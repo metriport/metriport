@@ -51,7 +51,7 @@ export async function patientManagement(
   const person = await commonWell.enrollPerson(queryMeta, personStrongId);
   const personId = getId(person);
   await commonWell.patientLink(queryMeta, personId, referenceLink);
-  // Sandbox Account Link                                                   MAKE SURE PATIENT IDENTIFIER DIFFERENT
+  // Sandbox Account Link
   patient.identifier[0].system = `urn:oid:${commonwellSandboxOID}`;
   patient.identifier[0].assigner = commonwellSandboxOrgName;
   patient.identifier[0].label = commonwellSandboxOrgName;

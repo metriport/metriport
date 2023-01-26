@@ -318,7 +318,6 @@ export class CommonWell {
     return;
   }
 
-  // TODO: Not returning from other orgs
   /**
    * Get Patient's Network Links.
    * See: https://specification.commonwellalliance.org/services/record-locator-service/protocol-operations-record-locator-service#8771-retrieving-network-links
