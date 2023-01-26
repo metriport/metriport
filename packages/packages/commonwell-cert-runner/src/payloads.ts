@@ -14,6 +14,16 @@ const commonwellOrgName = getEnvOrFail("COMMONWELL_ORG_NAME");
 // PERSON
 export const caDriversLicenseUri = "urn:oid:2.16.840.1.113883.4.3.6";
 export const driversLicenseId = nanoid.nanoid();
+
+export const identifier = {
+  use: IdentifierUseCodes.usual,
+  key: driversLicenseId,
+  system: caDriversLicenseUri,
+  period: {
+    start: "1996-04-20T00:00:00Z",
+  },
+};
+
 const mainDetails = {
   address: [
     {
@@ -35,16 +45,7 @@ const mainDetails = {
     code: "M",
   },
   birthDate: "1980-04-20T00:00:00Z",
-  identifier: [
-    {
-      use: IdentifierUseCodes.usual,
-      key: driversLicenseId,
-      system: caDriversLicenseUri,
-      period: {
-        start: "1996-04-20T00:00:00Z",
-      },
-    },
-  ],
+  identifier: [identifier],
 };
 
 const secondaryDetails = {
@@ -73,16 +74,7 @@ const secondaryDetails = {
 export const personStrongId: Person = {
   details: {
     ...mainDetails,
-    identifier: [
-      {
-        use: IdentifierUseCodes.usual,
-        key: driversLicenseId,
-        system: caDriversLicenseUri,
-        period: {
-          start: "1996-04-20T00:00:00Z",
-        },
-      },
-    ],
+    identifier: [identifier],
   },
 };
 

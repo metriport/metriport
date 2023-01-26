@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { demographicsSchema } from "./demographics";
 import { enrollmentSummarySchema } from "./enrollment-summary";
-import { linkSchema } from "./link";
+import { linkSchema, lolaSchema } from "./link";
 
 export const personLinksSchema = z.object({
   self: linkSchema,
@@ -35,9 +35,8 @@ export type PersonSearchResp = z.infer<typeof personSearchRespSchema>;
 
 export const patientLinkSchema = z.object({
   patient: z.string(),
-  assuranceLevel: z.string(),
+  assuranceLevel: lolaSchema,
   _links: personLinksSchema.optional().nullable(),
 });
 
 export type PatientLink = z.infer<typeof patientLinkSchema>;
-
