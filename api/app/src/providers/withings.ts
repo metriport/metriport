@@ -75,6 +75,10 @@ export class Withings extends Provider implements OAuth2 {
       }
     );
 
+    response.data.body.expires_at = dayjs(Date.now())
+      .add(response.data.body.expires_in, "seconds")
+      .unix();
+
     return JSON.stringify(response.data.body);
   }
 
