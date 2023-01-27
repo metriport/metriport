@@ -19,6 +19,13 @@ import {
   PatientNetworkLinkResp,
 } from "../models/patient";
 import { networkLinkSchema, NetworkLink, PatientLinkProxy } from "../models/link";
+import {
+  Organization,
+  organizationSchema,
+  OrganizationList,
+  organizationListSchema,
+} from "../models/organization";
+import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
 import { Identifier } from "../models/identifier";
 export enum APIMode {
   integration = "integration",
@@ -40,6 +47,7 @@ export class CommonWell {
   static PERSON_ENDPOINT = "/v1/person";
   static ORG_ENDPOINT = "/v1/org";
   static PATIENT_ENDPOINT = "/v1/patient";
+  static MEMBER_ENDPOINT = "/v1/member";
 
   private api: AxiosInstance;
   private rsaPrivateKey: string;
@@ -76,6 +84,255 @@ export class CommonWell {
   // TODO: handle errors in API calls as per
   // https://specification.commonwellalliance.org/services/rest-api-reference (8.6.1 Error)
   // Note that also sometimes these calls 404 when things aren't found and etc
+
+  //--------------------------------------------------------------------------------------------
+  // Org Management
+  //--------------------------------------------------------------------------------------------
+
+  /**
+   * Create an org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#post-a-new-organization
+   *
+   * @param meta          Metadata about the request.
+   * @param organization  The org to create.
+   * @returns
+   */
+  async createOrg(meta: RequestMetadata, organization: Organization): Promise<Organization> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org`,
+      organization,
+      {
+        headers,
+      }
+    );
+    return organizationSchema.parse(resp.data);
+  }
+
+  /**
+   * Update an org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#post-a-new-organization
+   *
+   * @param meta          Metadata about the request.
+   * @param organization  The org to update.
+   * @returns
+   */
+  async updateOrg(
+    meta: RequestMetadata,
+    organization: Organization,
+    id: string
+  ): Promise<Organization> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.put(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/`,
+      organization,
+      {
+        headers,
+      }
+    );
+    return organizationSchema.parse(resp.data);
+  }
+
+  /**
+   * Get list of orgs.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-a-list-of-all-organizations
+   *
+   * @param meta     Metadata about the request.
+   * @param summary  Returns only summary data
+   * @param offset   Sets an offset number from which recorded returns will begin
+   * @param limit    Limits the number of returned records
+   * @param sort     Specifies sort order
+   * @returns
+   */
+  async getAllOrgs(
+    meta: RequestMetadata,
+    summary?: boolean,
+    offset?: number,
+    limit?: number,
+    sort?: string
+  ): Promise<OrganizationList> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org`, {
+      headers,
+      params: { summary, offset, limit, sort },
+    });
+    return organizationListSchema.parse(resp.data);
+  }
+
+  /**
+   * Get one org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-a-single-organization
+   *
+   * @param meta     Metadata about the request.
+   * @param id       The org to be found
+   * @returns
+   */
+  async getOneOrg(meta: RequestMetadata, id: string): Promise<Organization> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/`, {
+      headers,
+    });
+    return organizationSchema.parse(resp.data);
+  }
+
+  /**
+   * Add certificate to org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#post-new-certificates-to-organizations
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to add to the org
+   * @param id           The org to add a certificate too
+   * @returns
+   */
+  async addCertificateToOrg(
+    meta: RequestMetadata,
+    certificate: CertificateParam,
+    id: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
+      certificate,
+      {
+        headers,
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Replace certificate for org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#put-a-list-of-certificates-into-an-organization
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to replace for the org
+   * @param id           The org to replace a certificate for
+   * @returns
+   */
+  async replaceCertificateForOrg(
+    meta: RequestMetadata,
+    certificate: CertificateParam,
+    id: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.put(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
+      certificate,
+      {
+        headers,
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Delete certificate from org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#delete-certificates-by-thumbprint
+   *
+   * @param meta         Metadata about the request.
+   * @param id           The org to delete a certificate from
+   * @param thumbprint   The thumbprint from the certificate
+   * @param purpose      The purpose from the certificate
+   * @returns
+   */
+  async deleteCertificateFromOrg(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint: string,
+    purpose: string
+  ): Promise<void> {
+    const headers = await this.buildQueryHeaders(meta);
+    await this.api.delete(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}/purpose/${purpose}`,
+      {
+        headers,
+      }
+    );
+    return;
+  }
+
+  /**
+   * Get certificate from org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-certificates-for-an-organization
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to add to the org
+   * @param id           The org to get a certificate from
+   * @param thumbprint   The thumbprint from the certificate
+   * @param purpose      The purpose from the certificate
+   * @returns
+   */
+  async getCertificateFromOrg(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint?: string,
+    purpose?: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
+      {
+        headers,
+        params: { thumbprint, purpose },
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Get certificate from org (by thumbprint).
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-certificates-by-thumbprint
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to add to the org
+   * @param id           The org to get a certificate from
+   * @param thumbprint   The thumbprint from the certificate
+   * @param purpose      The purpose from the certificate
+   * @returns
+   */
+  async getCertificateFromOrgByThumbprint(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint: string,
+    purpose?: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}`,
+      {
+        headers,
+        params: { purpose },
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Get certificate from org (by thumbprint & purpose).
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-certificates-by-thumbprint-and-purpose
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to add to the org
+   * @param id           The org to get a certificate from
+   * @param thumbprint   The thumbprint from the certificate
+   * @param purpose      The purpose from the certificate
+   * @returns
+   */
+  async getCertificateFromOrgByThumbprintAndPurpose(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint: string,
+    purpose: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}/purpose/${purpose}`,
+      {
+        headers,
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
 
   //--------------------------------------------------------------------------------------------
   // Person Management

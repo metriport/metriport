@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { CommonWell, getPatientId, RequestMetadata, getId } from "@metriport/commonwell-sdk";
+import { CommonWell, getIdTrailingSlash, RequestMetadata, getId } from "@metriport/commonwell-sdk";
 
 import { patient, identifier, personStrongId } from "./payloads";
 
@@ -13,7 +13,7 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
   const personId = getId(person);
 
   const respPatient = await commonWell.registerPatient(queryMeta, patient);
-  const patientId = getPatientId(respPatient);
+  const patientId = getIdTrailingSlash(respPatient);
   const referenceLink = respPatient._links.self.href;
   const respC5a = await commonWell.patientLink(queryMeta, personId, referenceLink);
   console.log(respC5a);

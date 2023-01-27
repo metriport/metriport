@@ -1,5 +1,11 @@
 #!/usr/bin/env node
-import { CommonWell, getPatientId, RequestMetadata, getId, LOLA } from "@metriport/commonwell-sdk";
+import {
+  CommonWell,
+  getIdTrailingSlash,
+  RequestMetadata,
+  getId,
+  LOLA,
+} from "@metriport/commonwell-sdk";
 import { cloneDeep } from "lodash";
 
 import { patient, mergePatient, personStrongId } from "./payloads";
@@ -24,7 +30,7 @@ export async function patientManagement(
 
   console.log(`>>> D2a: Update demographics for a local Patient `);
   patient.details.name[0].family[0] = "Graham";
-  const patientId = getPatientId(respD1b);
+  const patientId = getIdTrailingSlash(respD1b);
   const respD2a = await commonWell.updatePatient(queryMeta, patient, patientId);
   console.log(respD2a);
 
@@ -42,7 +48,7 @@ export async function patientManagement(
   console.log(`>>> D4a: Merge two Patient records`);
   // Create a second patient
   const respPatient2 = await commonWell.registerPatient(queryMeta, mergePatient);
-  const patientId2 = getPatientId(respPatient2);
+  const patientId2 = getIdTrailingSlash(respPatient2);
   const referenceLink = respD1b._links.self.href;
 
   await commonWell.mergePatients(queryMeta, patientId2, referenceLink);
@@ -61,7 +67,7 @@ export async function patientManagement(
   payloadSandboxPatient.identifier[0].assigner = commonwellSandboxOrgName;
   payloadSandboxPatient.identifier[0].label = commonwellSandboxOrgName;
   const sandboxPatient = await commonwellSandbox.registerPatient(queryMeta, payloadSandboxPatient);
-  const sandboxPatientId = getPatientId(sandboxPatient);
+  const sandboxPatientId = getIdTrailingSlash(sandboxPatient);
   const sandboxReferenceLink = sandboxPatient._links.self.href;
   await commonwellSandbox.patientLink(queryMeta, personId, sandboxReferenceLink);
   await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
