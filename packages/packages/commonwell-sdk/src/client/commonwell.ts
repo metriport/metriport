@@ -1,25 +1,25 @@
 import axios, { AxiosInstance } from "axios";
 import { Agent } from "https";
 import { makeJwt } from "../common/make-jwt";
-import { PurposeOfUse } from "../models/purpose-of-use";
+import { Identifier } from "../models/identifier";
+import { NetworkLink, networkLinkSchema, PatientLinkProxy } from "../models/link";
 import {
+  Patient,
+  PatientNetworkLinkResp,
+  patientNetworkLinkRespSchema,
+  patientSchema,
+  PatientSearchResp,
+  patientSearchRespSchema,
+} from "../models/patient";
+import {
+  PatientLink,
+  patientLinkSchema,
   Person,
   personSchema,
   PersonSearchResp,
   personSearchRespSchema,
-  PatientLink,
-  patientLinkSchema,
 } from "../models/person";
-import {
-  Patient,
-  patientSchema,
-  PatientSearchResp,
-  patientSearchRespSchema,
-  patientNetworkLinkRespSchema,
-  PatientNetworkLinkResp,
-} from "../models/patient";
-import { networkLinkSchema, NetworkLink, PatientLinkProxy } from "../models/link";
-import { Identifier } from "../models/identifier";
+import { PurposeOfUse } from "../models/purpose-of-use";
 export enum APIMode {
   integration = "integration",
   production = "production",
@@ -40,6 +40,8 @@ export class CommonWell {
   static PERSON_ENDPOINT = "/v1/person";
   static ORG_ENDPOINT = "/v1/org";
   static PATIENT_ENDPOINT = "/v1/patient";
+
+  static DOCUMENT_QUERY_ENDPOINT = "/v2/XXXXXXX"; // TODO UPDATE
 
   private api: AxiosInstance;
   private rsaPrivateKey: string;
@@ -263,8 +265,8 @@ export class CommonWell {
     fname: string,
     lname: string,
     dob: string,
-    gender: string,
-    zip: string
+    gender?: string,
+    zip?: string
   ): Promise<PatientSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, {
@@ -337,13 +339,21 @@ export class CommonWell {
    */
   async getPatientsLinks(meta: RequestMetadata, id: string): Promise<PatientNetworkLinkResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(
-      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/networkLink`,
-      {
-        headers,
-      }
-    );
-    return patientNetworkLinkRespSchema.parse(resp.data);
+    // Error handling: https://github.com/metriport/metriport-internal/issues/322
+    try {
+      const resp = await this.api.get(
+        `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/networkLink`,
+        {
+          headers,
+        }
+      );
+      return patientNetworkLinkRespSchema.parse(resp.data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      // when there's no NetworkLink, CW's API return 412
+      if (err.response?.status === 412) return {};
+      throw err;
+    }
   }
 
   /**
@@ -362,6 +372,23 @@ export class CommonWell {
 
     return;
   }
+
+  // /**
+  //  * Queries a Document
+  //  * See: LINK LINK LINK
+  //  * See: LINK LINK LINK
+  //  * See: LINK LINK LINK
+  //  *
+  //  * @param meta    Metadata about the request.
+  //  * @param id      The person to be deleted.
+  //  * @returns
+  //  */
+  // async queryDocument(meta: RequestMetadata, id: string): Promise<void> {
+  //   const headers = await this.buildQueryHeaders(meta);
+  //   const res = await this.api.delete(`${CommonWell.DOCUMENT_QUERY_ENDPOINT}/${id}`, { headers });
+  //   // TODO process response
+  //   return;
+  // }
 
   //--------------------------------------------------------------------------------------------
   // Link Management

@@ -20,6 +20,9 @@ After installation, create a `.env` file defining the following variables:
 - `COMMONWELL_OID`: the organization ID.
 - `COMMONWELL_PRIVATE_KEY`: the RSA256 private key corresponding to the specified organization.
 - `COMMONWELL_CERTIFICATE`: the public certificate/key corresponding to the private key.
+- `DOCUMENT_PATIENT_FIRST_NAME`: the first name of a patient created along with the sandbox that has a document associated.
+- `DOCUMENT_PATIENT_LAST_NAME`: their last name
+- `DOCUMENT_PATIENT_DATE_OF_BIRTH`: their date of birth on the format YYYY-MM-DD
 
 Example file content looks like:
 

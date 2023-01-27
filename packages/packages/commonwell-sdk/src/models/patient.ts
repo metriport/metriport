@@ -39,7 +39,7 @@ export const patientNetworkLinkRespSchema = z.object({
   _embedded: z.object({
     networkLink: z.array(networkLinkSchema.optional().nullable()).optional().nullable(),
   }),
-  _links: z.object({ self: linkSchema }),
+  _links: z.object({ self: linkSchema }).optional(),
 });
 
 export type PatientNetworkLinkResp = z.infer<typeof patientNetworkLinkRespSchema>;
