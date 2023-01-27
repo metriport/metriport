@@ -111,7 +111,7 @@ export class CommonWell {
 
   /**
    * Update an org.
-   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#post-a-new-organization
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#put-new-information-into-an-organization
    *
    * @param meta          Metadata about the request.
    * @param organization  The org to update.
@@ -262,7 +262,7 @@ export class CommonWell {
    * @param purpose      The purpose from the certificate
    * @returns
    */
-  async getCertificateFromOrg(
+  async getCertificatesFromOrg(
     meta: RequestMetadata,
     id: string,
     thumbprint?: string,
@@ -290,7 +290,7 @@ export class CommonWell {
    * @param purpose      The purpose from the certificate
    * @returns
    */
-  async getCertificateFromOrgByThumbprint(
+  async getCertificatesFromOrgByThumbprint(
     meta: RequestMetadata,
     id: string,
     thumbprint: string,
@@ -318,7 +318,7 @@ export class CommonWell {
    * @param purpose      The purpose from the certificate
    * @returns
    */
-  async getCertificateFromOrgByThumbprintAndPurpose(
+  async getCertificatesFromOrgByThumbprintAndPurpose(
     meta: RequestMetadata,
     id: string,
     thumbprint: string,

@@ -1,13 +1,21 @@
 import { z } from "zod";
 import { linkSchema } from "./link";
 
+export enum CertificatePurpose {
+  Signing = "Signing",
+  Authentication = "Authentication",
+}
+export const certificatePurposeSchema = z.enum(
+  Object.keys(CertificatePurpose) as [string, ...string[]]
+);
+
 export const certificateSchema = z.object({
-  startDate: z.string(),
-  endDate: z.string(),
-  expirationDate: z.string(),
-  thumbprint: z.string(),
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
+  expirationDate: z.string().optional().nullable(),
+  thumbprint: z.string().optional().nullable(),
   content: z.string().optional().nullable(),
-  purpose: z.string(),
+  purpose: certificatePurposeSchema,
 });
 
 export type Certificate = z.infer<typeof certificateSchema>;

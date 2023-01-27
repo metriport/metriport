@@ -6,11 +6,14 @@ import {
   Person,
 } from "@metriport/commonwell-sdk";
 import * as nanoid from "nanoid";
+import { X509Certificate } from "crypto";
+
 import { uniqueNamesGenerator, adjectives, colors, animals } from "unique-names-generator";
 import { getEnvOrFail } from "./util";
 
 const commonwellOID = getEnvOrFail("COMMONWELL_OID");
-const commonwellCertificate = getEnvOrFail("COMMONWELL_CERTIFICATE_CONTENT");
+const commonwellCertificateContent = getEnvOrFail("COMMONWELL_CERTIFICATE_CONTENT");
+const commonwellCertificate = getEnvOrFail("COMMONWELL_CERTIFICATE");
 const commonwellOrgName = getEnvOrFail("COMMONWELL_ORG_NAME");
 
 // PERSON
@@ -152,8 +155,10 @@ export const organization = {
   ],
 };
 
-export const thumbprint = "11E378F987D1C716B1FD5E08004E996AC806A9F1";
 // CERTIFICATE
+const x509 = new X509Certificate(commonwellCertificate);
+
+export const thumbprint = x509.fingerprint;
 export const certificate = {
   Certificates: [
     {
@@ -161,7 +166,7 @@ export const certificate = {
       endDate: "2023-03-31T12:46:28Z",
       expirationDate: "2023-03-31T12:46:28Z",
       thumbprint: thumbprint,
-      content: commonwellCertificate,
+      content: commonwellCertificateContent,
       purpose: "Authentication",
     },
   ],
