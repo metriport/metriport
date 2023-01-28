@@ -11,7 +11,7 @@ export function validateNPI(npi: string): boolean {
     return false;
   }
   const firstNPIDigit = parseInt(npi.charAt(0), 10);
-  if (firstNPIDigit != 1 && firstNPIDigit != 2) {
+  if (firstNPIDigit !== 1 && firstNPIDigit !== 2) {
     return false;
   }
 
