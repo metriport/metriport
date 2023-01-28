@@ -1,5 +1,7 @@
 /**
- * Checks if the specified NPI is valid as per ISO standard mod 10 Luhn algorithm.
+ * Checks if the specified 10 digit NPI is valid as per ISO standard mod 10 Luhn algorithm.
+ *
+ * See: https://www.cms.gov/Regulations-and-Guidance/Administrative-Simplification/NationalProvIdentStand/Downloads/NPIcheckdigit.pdf
  *
  * @param npi The npi number to validate, must be 10 digits.
  * @returns true if valid; false otherwise.
@@ -10,11 +12,11 @@ export function validateNPI(npi: string): boolean {
   }
 
   let sum = 0;
-  let isEven = false;
-  for (let i = npi.length - 1; i >= 0; i--) {
+  let shouldDouble = true;
+  for (let i = 0; i < npi.length - 1; i++) {
     let digit = parseInt(npi.charAt(i), 10);
 
-    if (isEven) {
+    if (shouldDouble) {
       digit *= 2;
       if (digit > 9) {
         digit -= 9;
@@ -22,8 +24,13 @@ export function validateNPI(npi: string): boolean {
     }
 
     sum += digit;
-    isEven = !isEven;
+    shouldDouble = !shouldDouble;
   }
 
-  return sum % 10 === 0;
+  // account for NPI prefix
+  sum += 24;
+
+  const checkDigit = 10 - (sum % 10);
+  const lastNPIDigit = parseInt(npi.charAt(npi.length - 1), 10);
+  return checkDigit === lastNPIDigit;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/commonwell-jwt-maker",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "CLI to create a JWT for use in CommonWell queries - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -41,8 +41,8 @@
     "typescript": "^4.9.4"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "^1.0.3",
+    "@metriport/commonwell-sdk": "^1.1.0",
     "commander": "^9.5.0"
   },
-  "gitHead": "3f89c1e0d39ed55e180444335ff446e8c67bf8fa"
+  "gitHead": "1dec9673091bde1088841caf74acae00bda41919"
 }
