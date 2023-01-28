@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { Agent } from "https";
 import { makeJwt } from "../common/make-jwt";
-import { DocumentQueryResponse } from "../models/document";
+import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
 import { Identifier } from "../models/identifier";
 import { NetworkLink, networkLinkSchema, PatientLinkProxy } from "../models/link";
 import {
@@ -380,7 +380,7 @@ export class CommonWell {
    * @param meta       Metadata about the request.
    * @param subjectId  The ID as defined by the specification: [system]|[code] where 'system' is the OID
    * of the organization and 'code' is the first (numeric) part of the patient ID.
-   * @returns
+   * @returns instance of DocumentQueryResponse
    */
   async queryDocument(meta: RequestMetadata, subjectId: string): Promise<DocumentQueryResponse> {
     const headers = await this.buildQueryHeaders(meta);
@@ -388,8 +388,7 @@ export class CommonWell {
       `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`,
       { headers }
     );
-    // TODO process response / apply schema
-    return res.data;
+    return documentQueryResponseSchema.parse(res.data);
   }
 
   //--------------------------------------------------------------------------------------------

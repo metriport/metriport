@@ -11,6 +11,12 @@ import { getEnvOrFail } from "./util";
 const commonwellOID = getEnvOrFail("COMMONWELL_OID");
 const commonwellOrgName = getEnvOrFail("COMMONWELL_ORG_NAME");
 
+const docPatientFirstName = getEnvOrFail("DOCUMENT_PATIENT_FIRST_NAME");
+const docPatientLastName = getEnvOrFail("DOCUMENT_PATIENT_LAST_NAME");
+const docPatientDateOfBirth = getEnvOrFail("DOCUMENT_PATIENT_DATE_OF_BIRTH");
+const docPatientGender = getEnvOrFail("DOCUMENT_PATIENT_GENDER");
+const docPatientZip = getEnvOrFail("DOCUMENT_PATIENT_ZIP");
+
 // PERSON
 export const caDriversLicenseUri = "urn:oid:2.16.840.1.113883.4.3.6";
 export const driversLicenseId = nanoid.nanoid();
@@ -108,3 +114,44 @@ export const mergePatient = {
   ],
   details: secondaryDetails,
 };
+
+const docPatientKey = nanoid.nanoid();
+
+export const docIdentifier = {
+  // use: "unspecified",
+  use: IdentifierUseCodes.usual,
+  label: "ISO",
+  system: `urn:oid:${commonwellOID}`,
+  key: docPatientKey,
+};
+export const docMainPayload = {
+  identifier: [docIdentifier],
+  details: {
+    address: [
+      {
+        use: NameUseCodes.usual,
+        zip: docPatientZip,
+        country: "USA",
+      },
+    ],
+    name: [
+      {
+        use: NameUseCodes.usual,
+        family: [docPatientLastName],
+        given: [docPatientFirstName],
+      },
+    ],
+    gender: {
+      code: docPatientGender,
+    },
+    birthDate: docPatientDateOfBirth,
+  },
+};
+export const docPerson = {
+  ...docMainPayload,
+  details: {
+    ...docMainPayload.details,
+    identifier: [],
+  },
+};
+export const docPatient = docMainPayload;
