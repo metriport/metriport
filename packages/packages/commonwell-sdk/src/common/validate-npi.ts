@@ -10,6 +10,10 @@ export function validateNPI(npi: string): boolean {
   if (npi.length !== 10) {
     return false;
   }
+  const firstNPIDigit = parseInt(npi.charAt(0), 10);
+  if (firstNPIDigit != 1 && firstNPIDigit != 2) {
+    return false;
+  }
 
   let sum = 0;
   let shouldDouble = true;
