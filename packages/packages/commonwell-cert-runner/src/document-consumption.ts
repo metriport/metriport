@@ -7,7 +7,7 @@ import {
   isLOLA1,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { docIdentifier, docPatient, docPerson } from "./payloads";
+import { docPatient, docPerson } from "./payloads";
 
 // Document Consumption
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Document-Consumption-(SOAP,-REST).aspx
@@ -35,6 +35,7 @@ export async function documentConsumption(commonWell: CommonWell, queryMeta: Req
     );
     console.log(patientResponse);
     let patient;
+
     // IF THERE'S A PATIENT, GET IT
     if (
       patientResponse._embedded &&
@@ -53,21 +54,21 @@ export async function documentConsumption(commonWell: CommonWell, queryMeta: Req
       patientId = getPatientId(patient);
       console.log(`... patientId: ${patientId}`);
 
-      const networkLinks = await commonWell.getPatientsLinks(queryMeta, patientId);
-      if (!networkLinks._links || !networkLinks._links.self) {
-        // Create/link a patient
-        console.log(`... No network link, building one...`);
-        // const personRes = await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
-        // console.log(personRes);
-        // const personId = getPersonIdFromSearchByPatientDemo(personRes);
-        // console.log(`... [E1c] personId: ${personId}`);
-        const patientLink = patient._links.self.href;
-        console.log(`... patientLink: ${patientLink}`);
-        const linkResponse = await commonWell.patientLink(queryMeta, personId, patientLink);
-        console.log(linkResponse);
-      } else {
-        console.log(`... Already has a network link! `, networkLinks._links.self);
-      }
+      // const networkLinks = await commonWell.getPatientsLinks(queryMeta, patientId);
+      // if (!networkLinks._links || !networkLinks._links.self) {
+      //   // Create/link a patient
+      //   console.log(`... No network link, building one...`);
+      //   // const personRes = await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
+      //   // console.log(personRes);
+      //   // const personId = getPersonIdFromSearchByPatientDemo(personRes);
+      //   // console.log(`... [E1c] personId: ${personId}`);
+      //   const patientLink = patient._links.self.href;
+      //   console.log(`... patientLink: ${patientLink}`);
+      //   const linkResponse = await commonWell.patientLink(queryMeta, personId, patientLink);
+      //   console.log(linkResponse);
+      // } else {
+      //   console.log(`... Already has a network link! `, networkLinks._links.self);
+      // }
 
       //
     } else {
@@ -85,14 +86,14 @@ export async function documentConsumption(commonWell: CommonWell, queryMeta: Req
       const respLink = await commonWell.patientLink(queryMeta, personId, patientLink);
       console.log(respLink);
 
-      console.log(`... Upgrade Patient link from LOLA 2 to LOLA 3 (with Strong ID).`);
-      const respC5b = await commonWell.updatePatientLink(
-        queryMeta,
-        respLink._links.self.href,
-        patientLink,
-        docIdentifier
-      );
-      console.log(respC5b);
+      // console.log(`... Upgrade Patient link from LOLA 2 to LOLA 3 (with Strong ID).`);
+      // const respC5b = await commonWell.updatePatientLink(
+      //   queryMeta,
+      //   respLink._links.self.href,
+      //   patientLink,
+      //   docIdentifier
+      // );
+      // console.log(respC5b);
     }
 
     // const networkLinks = await commonWell.getPatientsLinks(queryMeta, patientId);
@@ -130,6 +131,7 @@ export async function documentConsumption(commonWell: CommonWell, queryMeta: Req
     // const respLink = await commonWell.patientLink(queryMeta, personId, patientLink);
     // console.log(respLink);
 
+    // REMOVED WHEN WORKED
     // console.log(`>>> C5b : Upgrade Patient link from LOLA 2 to LOLA 3 (with Strong ID).`);
     // const respC5b = await commonWell.updatePatientLink(
     //   queryMeta,
@@ -165,6 +167,8 @@ export async function documentConsumption(commonWell: CommonWell, queryMeta: Req
     console.log(`... [E1c] Querying for docs...`);
     const respDocQuery = await commonWell.queryDocument(queryMeta, patientIdForDocQuery);
     console.log(respDocQuery);
+
+    //
   } finally {
     try {
       console.log(`... Delete created person...`);
