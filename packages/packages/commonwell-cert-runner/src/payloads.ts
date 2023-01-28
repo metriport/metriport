@@ -24,7 +24,7 @@ export const identifier = {
   },
 };
 
-const mainDetails = {
+export const mainDetails = {
   address: [
     {
       use: AddressUseCodes.home,

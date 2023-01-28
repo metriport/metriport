@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { Agent } from "https";
 import { makeJwt } from "../common/make-jwt";
+import { DocumentQueryResponse } from "../models/document";
 import { Identifier } from "../models/identifier";
 import { NetworkLink, networkLinkSchema, PatientLinkProxy } from "../models/link";
 import {
@@ -40,8 +41,7 @@ export class CommonWell {
   static PERSON_ENDPOINT = "/v1/person";
   static ORG_ENDPOINT = "/v1/org";
   static PATIENT_ENDPOINT = "/v1/patient";
-
-  static DOCUMENT_QUERY_ENDPOINT = "/v2/XXXXXXX"; // TODO UPDATE
+  static DOCUMENT_QUERY_ENDPOINT = "/v2/documentReference";
 
   private api: AxiosInstance;
   private rsaPrivateKey: string;
@@ -373,22 +373,24 @@ export class CommonWell {
     return;
   }
 
-  // /**
-  //  * Queries a Document
-  //  * See: LINK LINK LINK
-  //  * See: LINK LINK LINK
-  //  * See: LINK LINK LINK
-  //  *
-  //  * @param meta    Metadata about the request.
-  //  * @param id      The person to be deleted.
-  //  * @returns
-  //  */
-  // async queryDocument(meta: RequestMetadata, id: string): Promise<void> {
-  //   const headers = await this.buildQueryHeaders(meta);
-  //   const res = await this.api.delete(`${CommonWell.DOCUMENT_QUERY_ENDPOINT}/${id}`, { headers });
-  //   // TODO process response
-  //   return;
-  // }
+  /**
+   * Queries a Document
+   * See: https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#104-document-query
+   *
+   * @param meta       Metadata about the request.
+   * @param subjectId  The ID as defined by the specification: [system]|[code] where 'system' is the OID
+   * of the organization and 'code' is the first (numeric) part of the patient ID.
+   * @returns
+   */
+  async queryDocument(meta: RequestMetadata, subjectId: string): Promise<DocumentQueryResponse> {
+    const headers = await this.buildQueryHeaders(meta);
+    const res = await this.api.get(
+      `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`,
+      { headers }
+    );
+    // TODO process response / apply schema
+    return res.data;
+  }
 
   //--------------------------------------------------------------------------------------------
   // Link Management

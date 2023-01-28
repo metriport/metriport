@@ -1,5 +1,5 @@
-import { Person, PersonSearchResp } from "../models/person";
 import { Patient } from "../models/patient";
+import { Person, PersonSearchResp } from "../models/person";
 
 function getPersonIdFromUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
@@ -42,3 +42,15 @@ export function getPatientId(object: Patient): string | undefined {
 //   if (!url) return undefined;
 //   return getPatientIdFromUrl(url);
 // }
+
+function buildPatiendIdToDocQuery(code: string, system: string): string {
+  return `${system}|${code}`;
+}
+
+export function convertPatiendIdToDocQuery(patientId: string): string | undefined {
+  const value = decodeURIComponent(decodeURI(patientId));
+  console.log(`[convertPatiendIdToDocQuery] value: ${value}`);
+  const regex = /(.+)\^\^\^(.+)/i;
+  const match = value.match(regex);
+  return match.length > 2 ? buildPatiendIdToDocQuery(match[1], match[2]) : undefined;
+}
