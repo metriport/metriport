@@ -17,8 +17,8 @@ export const mapToSleep = (date: string, withingsSleep: WithingsSleep): Sleep =>
   if (withingsSleep.length) {
     const mainSleep = withingsSleep[0];
 
-    sleep.start_time = dayjs(mainSleep.startdate).format("YYYY-MM-DDTHH:mm:ssZ");
-    sleep.end_time = dayjs(mainSleep.enddate).format("YYYY-MM-DDTHH:mm:ssZ");
+    sleep.start_time = dayjs.unix(mainSleep.startdate).format("YYYY-MM-DDTHH:mm:ssZ");
+    sleep.end_time = dayjs.unix(mainSleep.enddate).format("YYYY-MM-DDTHH:mm:ssZ");
 
     if (mainSleep.data) {
       const {
