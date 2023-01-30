@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios";
 import { Agent } from "https";
 import { makeJwt } from "../common/make-jwt";
 import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
-import { Identifier } from "../models/identifier";
+import { Identifier, StrongId } from "../models/identifier";
 import { NetworkLink, networkLinkSchema, PatientLinkProxy } from "../models/link";
 import {
   Patient,
@@ -125,15 +125,21 @@ export class CommonWell {
    * Searches for a person based on patient demo.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8713-find-persons-matching-patient-demographics
    *
-   * @param meta    Metadata about the request.
-   * @param id      The patient to be updated.
+   * @param meta        Metadata about the request.
+   * @param patientId   The patient ID.
    * @returns
    */
-  async searchPersonByPatientDemo(meta: RequestMetadata, id: string): Promise<PersonSearchResp> {
+  async searchPersonByPatientDemo(
+    meta: RequestMetadata,
+    patientId: string
+  ): Promise<PersonSearchResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/person`, {
-      headers,
-    });
+    const resp = await this.api.get(
+      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${patientId}/person`,
+      {
+        headers,
+      }
+    );
     return personSearchRespSchema.parse(resp.data);
   }
 
@@ -175,17 +181,24 @@ export class CommonWell {
    * Add patient link to person.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8721
    *
-   * @param meta    Metadata about the request.
-   * @param id      The person id to be link to a patient.
-   * @param uri     The patient uri to be link to a person.
-   * @returns
+   * @param meta              Metadata about the request.
+   * @param personId          The person id to be link to a patient.
+   * @param patientUri        The patient uri to be link to a person.
+   * @param [patientStrongId] The patient's strong ID, if available (optional).
+   * @returns {PatientLink}
    */
-  async patientLink(meta: RequestMetadata, id: string, uri: string): Promise<PatientLink> {
+  async patientLink(
+    meta: RequestMetadata,
+    personId: string,
+    patientUri: string,
+    patientStrongId?: StrongId
+  ): Promise<PatientLink> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.post(
-      `${CommonWell.PERSON_ENDPOINT}/${id}/patientLink`,
+      `${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`,
       {
-        patient: uri,
+        patient: patientUri,
+        ...patientStrongId,
       },
       {
         headers,
@@ -380,14 +393,12 @@ export class CommonWell {
    * @param meta       Metadata about the request.
    * @param subjectId  The ID as defined by the specification: [system]|[code] where 'system' is the OID
    * of the organization and 'code' is the first (numeric) part of the patient ID.
-   * @returns instance of DocumentQueryResponse
+   * @returns {DocumentQueryResponse}
    */
   async queryDocument(meta: RequestMetadata, subjectId: string): Promise<DocumentQueryResponse> {
     const headers = await this.buildQueryHeaders(meta);
-    const res = await this.api.get(
-      `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`,
-      { headers }
-    );
+    const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
+    const res = await this.api.get(url, { headers });
     return documentQueryResponseSchema.parse(res.data);
   }
 

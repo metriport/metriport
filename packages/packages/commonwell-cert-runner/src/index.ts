@@ -3,6 +3,9 @@ import { APIMode, CommonWell, PurposeOfUse, RequestMetadata } from "@metriport/c
 import { Command } from "commander";
 import * as dotenv from "dotenv";
 import { documentConsumption } from "./document-consumption";
+import { linkManagement } from "./link-management";
+import { patientManagement } from "./patient-management";
+import { personManagement } from "./person-management";
 import { getEnvOrFail } from "./util";
 
 function metriportBanner(): string {
@@ -74,16 +77,16 @@ async function main() {
   );
 
   // Sandbox Account Org
-  // const commonwellSandboxOID = getEnvOrFail("COMMONWELL_SANDBOX_OID");
-  // const commonwellSandboxOrgName = getEnvOrFail("COMMONWELL_SANDBOX_ORG_NAME");
+  const commonwellSandboxOID = getEnvOrFail("COMMONWELL_SANDBOX_OID");
+  const commonwellSandboxOrgName = getEnvOrFail("COMMONWELL_SANDBOX_ORG_NAME");
 
-  // const commonWellSandbox = new CommonWell(
-  //   commonwellCert,
-  //   commonwellPrivateKey,
-  //   commonwellSandboxOrgName,
-  //   commonwellSandboxOID,
-  //   APIMode.integration
-  // );
+  const commonWellSandbox = new CommonWell(
+    commonwellCert,
+    commonwellPrivateKey,
+    commonwellSandboxOrgName,
+    commonwellSandboxOID,
+    APIMode.integration
+  );
 
   const queryMeta: RequestMetadata = {
     purposeOfUse: PurposeOfUse.TREATMENT,
@@ -93,9 +96,9 @@ async function main() {
 
   // Run through the CommonWell certification test cases
 
-  // await personManagement(commonWell, queryMeta);
-  // await patientManagement(commonWell, commonWellSandbox, queryMeta);
-  // await linkManagement(commonWell, queryMeta);
+  await personManagement(commonWell, queryMeta);
+  await patientManagement(commonWell, commonWellSandbox, queryMeta);
+  await linkManagement(commonWell, queryMeta);
   await documentConsumption(commonWell, queryMeta);
 }
 

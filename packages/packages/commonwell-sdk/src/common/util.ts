@@ -1,3 +1,4 @@
+import { StrongId } from "../models/identifier";
 import { Patient } from "../models/patient";
 import { Person, PersonSearchResp } from "../models/person";
 
@@ -30,18 +31,9 @@ export function getPatientId(object: Patient): string | undefined {
   return removeTrailingSlash.substring(removeTrailingSlash.lastIndexOf("/") + 1);
 }
 
-// export function getPatientIdFromSearch(searchResponse: PatientSearchResp): string | undefined {
-//   if (!searchResponse._embedded || !searchResponse._embedded.patient) return undefined;
-//   const embeddedPatients = searchResponse._embedded.patient.filter(p => p.active);
-//   if (embeddedPatients.length < 1) return undefined;
-//   if (embeddedPatients.length > 1) {
-//     console.log(`Found more than one patient, using the first one: `, searchResponse);
-//   }
-//   const patient = embeddedPatients[0];
-//   const url = patient._links?.self?.href;
-//   if (!url) return undefined;
-//   return getPatientIdFromUrl(url);
-// }
+export function getPatientStrongIds(object: Patient): StrongId[] | undefined {
+  return object.identifier;
+}
 
 function buildPatiendIdToDocQuery(code: string, system: string): string {
   return `${system}|${code}`;
@@ -49,7 +41,6 @@ function buildPatiendIdToDocQuery(code: string, system: string): string {
 
 export function convertPatiendIdToDocQuery(patientId: string): string | undefined {
   const value = decodeURIComponent(decodeURI(patientId));
-  console.log(`[convertPatiendIdToDocQuery] value: ${value}`);
   const regex = /(.+)\^\^\^(.+)/i;
   const match = value.match(regex);
   return match.length > 2 ? buildPatiendIdToDocQuery(match[1], match[2]) : undefined;

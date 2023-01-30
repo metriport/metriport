@@ -11,6 +11,8 @@ import { getEnvOrFail } from "./util";
 const commonwellOID = getEnvOrFail("COMMONWELL_OID");
 const commonwellOrgName = getEnvOrFail("COMMONWELL_ORG_NAME");
 
+export const metriportSystem = `urn:oid:${commonwellOID}`;
+
 const docPatientFirstName = getEnvOrFail("DOCUMENT_PATIENT_FIRST_NAME");
 const docPatientLastName = getEnvOrFail("DOCUMENT_PATIENT_LAST_NAME");
 const docPatientDateOfBirth = getEnvOrFail("DOCUMENT_PATIENT_DATE_OF_BIRTH");
@@ -94,7 +96,7 @@ export const patient = {
     {
       use: "unspecified",
       label: commonwellOrgName,
-      system: `urn:oid:${commonwellOID}`,
+      system: metriportSystem,
       key: nanoid.nanoid(),
       assigner: commonwellOrgName,
     },
@@ -107,7 +109,7 @@ export const mergePatient = {
     {
       use: "unspecified",
       label: commonwellOrgName,
-      system: `urn:oid:${commonwellOID}`,
+      system: metriportSystem,
       key: nanoid.nanoid(),
       assigner: commonwellOrgName,
     },
@@ -120,8 +122,8 @@ const docPatientKey = nanoid.nanoid();
 export const docIdentifier = {
   // use: "unspecified",
   use: IdentifierUseCodes.usual,
-  label: "ISO",
-  system: `urn:oid:${commonwellOID}`,
+  label: commonwellOrgName,
+  system: metriportSystem,
   key: docPatientKey,
 };
 export const docMainPayload = {
