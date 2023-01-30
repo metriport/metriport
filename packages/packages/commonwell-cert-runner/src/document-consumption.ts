@@ -3,7 +3,7 @@ import {
   CommonWell,
   convertPatiendIdToDocQuery,
   getId,
-  getPatientId,
+  getIdTrailingSlash,
   isLOLA1,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
@@ -51,7 +51,7 @@ export async function documentConsumption(commonWell: CommonWell, queryMeta: Req
       console.log(`Found a patient, using it`);
     }
     const patient = embeddedPatients[0];
-    patientId = getPatientId(patient);
+    patientId = getIdTrailingSlash(patient);
     console.log(`... patientId: ${patientId}`);
 
     console.log(`... Search for Person using patient's demographics...`, { patientId: patientId });
@@ -74,7 +74,7 @@ export async function documentConsumption(commonWell: CommonWell, queryMeta: Req
     console.log(`... Register a new Patient...`);
     const respPatientCreate = await commonWell.registerPatient(queryMeta, docPatient);
     console.log(respPatientCreate);
-    patientId = getPatientId(respPatientCreate);
+    patientId = getIdTrailingSlash(respPatientCreate);
     const patientStrongIds = getPatientStrongIds(respPatientCreate);
     const patientStrongId = patientStrongIds
       ? patientStrongIds.find(id => id.system === metriportSystem)

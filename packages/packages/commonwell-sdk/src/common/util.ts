@@ -1,4 +1,5 @@
 import { StrongId } from "../models/identifier";
+import { Organization } from "../models/organization";
 import { Patient } from "../models/patient";
 import { Person, PersonSearchResp } from "../models/person";
 
@@ -24,7 +25,7 @@ export function getPersonIdFromSearchByPatientDemo(object: PersonSearchResp): st
   return getPersonIdFromUrl(url);
 }
 
-export function getPatientId(object: Patient): string | undefined {
+export function getIdTrailingSlash(object: Patient | Organization): string | undefined {
   const url = object._links?.self?.href;
   if (!url) return undefined;
   const removeTrailingSlash = url.substring(0, url.length - 1);

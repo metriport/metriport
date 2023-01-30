@@ -2,8 +2,13 @@ import { z } from "zod";
 import { demographicsSchema } from "./demographics";
 import { identifierSchema } from "./identifier";
 import { linkSchema, networkLinkSchema } from "./link";
-import { organizationSchema } from "./organization";
 import { facilitySchema } from "./facility";
+
+export const patientOrganizationSchema = z.object({
+  type: z.string().optional().nullable(),
+  reference: z.string().optional().nullable(),
+  display: z.string().optional().nullable(),
+});
 
 export const patientLinksSchema = z.object({
   self: linkSchema,
@@ -19,7 +24,7 @@ export const patientLinksSchema = z.object({
 export const patientSchema = z.object({
   active: z.boolean().optional().nullable(),
   identifier: z.array(identifierSchema).optional().nullable(),
-  provider: organizationSchema.optional().nullable(),
+  provider: patientOrganizationSchema.optional().nullable(),
   details: demographicsSchema,
   _links: patientLinksSchema.optional().nullable(),
   facilities: z.array(facilitySchema).optional().nullable(),

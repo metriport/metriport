@@ -4,6 +4,7 @@ import { Command } from "commander";
 import * as dotenv from "dotenv";
 import { documentConsumption } from "./document-consumption";
 import { linkManagement } from "./link-management";
+import { orgManagement } from "./org-management";
 import { patientManagement } from "./patient-management";
 import { personManagement } from "./person-management";
 import { getEnvOrFail } from "./util";
@@ -88,6 +89,17 @@ async function main() {
     APIMode.integration
   );
 
+  // Member Account Org
+  const commonwellMemberOID = getEnvOrFail("COMMONWELL_MEMBER_OID");
+
+  const commonWellMember = new CommonWell(
+    commonwellCert,
+    commonwellPrivateKey,
+    commonwellOrgName,
+    commonwellMemberOID,
+    APIMode.integration
+  );
+
   const queryMeta: RequestMetadata = {
     purposeOfUse: PurposeOfUse.TREATMENT,
     role: "ict",
@@ -96,6 +108,7 @@ async function main() {
 
   // Run through the CommonWell certification test cases
 
+  await orgManagement(commonWellMember, queryMeta);
   await personManagement(commonWell, queryMeta);
   await patientManagement(commonWell, commonWellSandbox, queryMeta);
   await linkManagement(commonWell, queryMeta);
