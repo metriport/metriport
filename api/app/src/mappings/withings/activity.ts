@@ -90,8 +90,8 @@ const formatWorkoutLogs = (
     for (const withingsWorkoutLog of withingsWorkoutLogs) {
       const workoutLog: ActivityLog = {
         metadata: metadata,
-        start_time: dayjs(withingsWorkoutLog.startdate).format("YYYY-MM-DDTHH:mm:ssZ"),
-        end_time: dayjs(withingsWorkoutLog.enddate).format("YYYY-MM-DDTHH:mm:ssZ"),
+        start_time: dayjs.unix(withingsWorkoutLog.startdate).format("YYYY-MM-DDTHH:mm:ssZ"),
+        end_time: dayjs.unix(withingsWorkoutLog.enddate).format("YYYY-MM-DDTHH:mm:ssZ"),
         name: categories[withingsWorkoutLog.category],
       };
 
