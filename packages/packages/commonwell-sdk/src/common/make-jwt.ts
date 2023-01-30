@@ -19,8 +19,8 @@ const payloadHashClaim = "urn:commonwell-alliance:payload-hash";
  *                        public key (certificate) - used for signing the JWT.
  * @param role            The practitioner role of the entity making this request. Valid role
  *                        values: https://hl7.org/fhir/R4/valueset-practitioner-role.html
- * @param subjectId       Free text field used for audit purposes. The value should be user ID or
- *                        user name of staff using the CommonWell enabled system. Can be a system
+ * @param subjectId       Free text field used for audit purposes. The value should be user ID or
+ *                        user name of staff using the CommonWell enabled system. Can be a system
  *                        user if the API call is generated from an automated process instead
  *                        of an actual user.
  * @param orgName         The organization name for the request, should match the OID in the

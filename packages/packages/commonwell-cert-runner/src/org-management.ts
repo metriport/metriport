@@ -42,11 +42,11 @@ export async function orgManagement(commonWell: CommonWell, queryMeta: RequestMe
   console.log(respReplaceCertificateForOrg);
 
   console.log(`>>> Get certificate from org`);
-  const respGetCertificateFromOrg = await commonWell.getCertificateFromOrg(queryMeta, orgId);
+  const respGetCertificateFromOrg = await commonWell.getCertificatesFromOrg(queryMeta, orgId);
   console.log(respGetCertificateFromOrg);
 
   console.log(`>>> Get certificate from org (by thumprint)`);
-  const respGetCertificateFromOrgByThumbprint = await commonWell.getCertificateFromOrgByThumbprint(
+  const respGetCertificateFromOrgByThumbprint = await commonWell.getCertificatesFromOrgByThumbprint(
     queryMeta,
     orgId,
     thumbprint
@@ -55,7 +55,7 @@ export async function orgManagement(commonWell: CommonWell, queryMeta: RequestMe
 
   console.log(`>>> Get certificate from org (by thumprint & purpose)`);
   const respGetCertificateFromOrgByThumbprintAndPurpose =
-    await commonWell.getCertificateFromOrgByThumbprintAndPurpose(
+    await commonWell.getCertificatesFromOrgByThumbprintAndPurpose(
       queryMeta,
       orgId,
       thumbprint,
