@@ -1,4 +1,4 @@
-name: PR Check - Widget
+name: PR Check - Packages
 
 on:
   pull_request:
