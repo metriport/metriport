@@ -539,7 +539,7 @@ export class APIStack extends Stack {
       evaluationPeriods: 1,
     });
 
-    const writeUnitsMetric = table.metricConsumedReadCapacityUnits();
+    const writeUnitsMetric = table.metricConsumedWriteCapacityUnits();
     writeUnitsMetric.createAlarm(this, `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`, {
       threshold: 10000, // units per second
       evaluationPeriods: 1,

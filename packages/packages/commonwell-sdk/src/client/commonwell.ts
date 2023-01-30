@@ -2,8 +2,31 @@ import axios, { AxiosInstance } from "axios";
 import { Agent } from "https";
 import { makeJwt } from "../common/make-jwt";
 import { PurposeOfUse } from "../models/purpose-of-use";
-import { Person, personSchema, PersonSearchResp, personSearchRespSchema } from "../models/person";
-
+import {
+  Person,
+  personSchema,
+  PersonSearchResp,
+  personSearchRespSchema,
+  PatientLink,
+  patientLinkSchema,
+} from "../models/person";
+import {
+  Patient,
+  patientSchema,
+  PatientSearchResp,
+  patientSearchRespSchema,
+  patientNetworkLinkRespSchema,
+  PatientNetworkLinkResp,
+} from "../models/patient";
+import { networkLinkSchema, NetworkLink, PatientLinkProxy } from "../models/link";
+import {
+  Organization,
+  organizationSchema,
+  OrganizationList,
+  organizationListSchema,
+} from "../models/organization";
+import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
+import { Identifier } from "../models/identifier";
 export enum APIMode {
   integration = "integration",
   production = "production",
@@ -22,6 +45,9 @@ export class CommonWell {
   static productionUrl = "https://rest.api.commonwellalliance.org";
 
   static PERSON_ENDPOINT = "/v1/person";
+  static ORG_ENDPOINT = "/v1/org";
+  static PATIENT_ENDPOINT = "/v1/patient";
+  static MEMBER_ENDPOINT = "/v1/member";
 
   private api: AxiosInstance;
   private rsaPrivateKey: string;
@@ -58,6 +84,255 @@ export class CommonWell {
   // TODO: handle errors in API calls as per
   // https://specification.commonwellalliance.org/services/rest-api-reference (8.6.1 Error)
   // Note that also sometimes these calls 404 when things aren't found and etc
+
+  //--------------------------------------------------------------------------------------------
+  // Org Management
+  //--------------------------------------------------------------------------------------------
+
+  /**
+   * Create an org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#post-a-new-organization
+   *
+   * @param meta          Metadata about the request.
+   * @param organization  The org to create.
+   * @returns
+   */
+  async createOrg(meta: RequestMetadata, organization: Organization): Promise<Organization> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org`,
+      organization,
+      {
+        headers,
+      }
+    );
+    return organizationSchema.parse(resp.data);
+  }
+
+  /**
+   * Update an org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#put-new-information-into-an-organization
+   *
+   * @param meta          Metadata about the request.
+   * @param organization  The org to update.
+   * @returns
+   */
+  async updateOrg(
+    meta: RequestMetadata,
+    organization: Organization,
+    id: string
+  ): Promise<Organization> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.put(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/`,
+      organization,
+      {
+        headers,
+      }
+    );
+    return organizationSchema.parse(resp.data);
+  }
+
+  /**
+   * Get list of orgs.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-a-list-of-all-organizations
+   *
+   * @param meta     Metadata about the request.
+   * @param summary  Returns only summary data
+   * @param offset   Sets an offset number from which recorded returns will begin
+   * @param limit    Limits the number of returned records
+   * @param sort     Specifies sort order
+   * @returns
+   */
+  async getAllOrgs(
+    meta: RequestMetadata,
+    summary?: boolean,
+    offset?: number,
+    limit?: number,
+    sort?: string
+  ): Promise<OrganizationList> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org`, {
+      headers,
+      params: { summary, offset, limit, sort },
+    });
+    return organizationListSchema.parse(resp.data);
+  }
+
+  /**
+   * Get one org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-a-single-organization
+   *
+   * @param meta     Metadata about the request.
+   * @param id       The org to be found
+   * @returns
+   */
+  async getOneOrg(meta: RequestMetadata, id: string): Promise<Organization> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/`, {
+      headers,
+    });
+    return organizationSchema.parse(resp.data);
+  }
+
+  /**
+   * Add certificate to org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#post-new-certificates-to-organizations
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to add to the org
+   * @param id           The org to add a certificate too
+   * @returns
+   */
+  async addCertificateToOrg(
+    meta: RequestMetadata,
+    certificate: CertificateParam,
+    id: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
+      certificate,
+      {
+        headers,
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Replace certificate for org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#put-a-list-of-certificates-into-an-organization
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to replace for the org
+   * @param id           The org to replace a certificate for
+   * @returns
+   */
+  async replaceCertificateForOrg(
+    meta: RequestMetadata,
+    certificate: CertificateParam,
+    id: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.put(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
+      certificate,
+      {
+        headers,
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Delete certificate from org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#delete-certificates-by-thumbprint
+   *
+   * @param meta         Metadata about the request.
+   * @param id           The org to delete a certificate from
+   * @param thumbprint   The thumbprint from the certificate
+   * @param purpose      The purpose from the certificate
+   * @returns
+   */
+  async deleteCertificateFromOrg(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint: string,
+    purpose: string
+  ): Promise<void> {
+    const headers = await this.buildQueryHeaders(meta);
+    await this.api.delete(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}/purpose/${purpose}`,
+      {
+        headers,
+      }
+    );
+    return;
+  }
+
+  /**
+   * Get certificate from org.
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-certificates-for-an-organization
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to add to the org
+   * @param id           The org to get a certificate from
+   * @param thumbprint   The thumbprint from the certificate
+   * @param purpose      The purpose from the certificate
+   * @returns
+   */
+  async getCertificatesFromOrg(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint?: string,
+    purpose?: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate`,
+      {
+        headers,
+        params: { thumbprint, purpose },
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Get certificate from org (by thumbprint).
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-certificates-by-thumbprint
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to add to the org
+   * @param id           The org to get a certificate from
+   * @param thumbprint   The thumbprint from the certificate
+   * @param purpose      The purpose from the certificate
+   * @returns
+   */
+  async getCertificatesFromOrgByThumbprint(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint: string,
+    purpose?: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}`,
+      {
+        headers,
+        params: { purpose },
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Get certificate from org (by thumbprint & purpose).
+   * See: https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#get-certificates-by-thumbprint-and-purpose
+   *
+   * @param meta         Metadata about the request.
+   * @param certificate  The certificate to add to the org
+   * @param id           The org to get a certificate from
+   * @param thumbprint   The thumbprint from the certificate
+   * @param purpose      The purpose from the certificate
+   * @returns
+   */
+  async getCertificatesFromOrgByThumbprintAndPurpose(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint: string,
+    purpose: string
+  ): Promise<CertificateResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(
+      `${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/certificate/${thumbprint}/purpose/${purpose}`,
+      {
+        headers,
+      }
+    );
+    return certificateRespSchema.parse(resp.data);
+  }
 
   //--------------------------------------------------------------------------------------------
   // Person Management
@@ -102,6 +377,22 @@ export class CommonWell {
   }
 
   /**
+   * Searches for a person based on patient demo.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8713-find-persons-matching-patient-demographics
+   *
+   * @param meta    Metadata about the request.
+   * @param id      The patient to be updated.
+   * @returns
+   */
+  async searchPersonByPatientDemo(meta: RequestMetadata, id: string): Promise<PersonSearchResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/person`, {
+      headers,
+    });
+    return personSearchRespSchema.parse(resp.data);
+  }
+
+  /**
    * Updates a person.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8741-updating-person-information
    *
@@ -116,6 +407,46 @@ export class CommonWell {
       headers,
     });
     return personSchema.parse(resp.data);
+  }
+
+  /**
+   * Matches a person to a patient.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8732-retrieve-patient-matches
+   *
+   * @param meta    Metadata about the request.
+   * @param id      The person to be matched.
+   * @returns
+   */
+  async patientMatch(meta: RequestMetadata, id: string): Promise<PatientSearchResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.PERSON_ENDPOINT}/${id}/patientMatch`, {
+      headers,
+      params: { orgId: this.oid },
+    });
+    return patientSearchRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Add patient link to person.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8721
+   *
+   * @param meta    Metadata about the request.
+   * @param id      The person id to be link to a patient.
+   * @param uri     The patient uri to be link to a person.
+   * @returns
+   */
+  async patientLink(meta: RequestMetadata, id: string, uri: string): Promise<PatientLink> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      `${CommonWell.PERSON_ENDPOINT}/${id}/patientLink`,
+      {
+        patient: uri,
+      },
+      {
+        headers,
+      }
+    );
+    return patientLinkSchema.parse(resp.data);
   }
 
   /**
@@ -149,6 +480,227 @@ export class CommonWell {
   async deletePerson(meta: RequestMetadata, id: string): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
     await this.api.delete(`${CommonWell.PERSON_ENDPOINT}/${id}`, { headers });
+    return;
+  }
+
+  //--------------------------------------------------------------------------------------------
+  // Patient Management
+  //--------------------------------------------------------------------------------------------
+
+  /**
+   * Register a new patient.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8762-adding-a-local-patient-record
+   *
+   * @param meta    Metadata about the request.
+   * @param patient  The patient to register.
+   * @returns
+   */
+  async registerPatient(meta: RequestMetadata, patient: Patient): Promise<Patient> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, patient, {
+      headers,
+    });
+    return patientSchema.parse(resp.data);
+  }
+
+  /**
+   * Searches for a patient based on params.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8761-search-for-a-patient
+   *
+   * @param meta    Metadata about the request.
+   * @param fname   Patient's first name.
+   * @param lname   Patient's last name.
+   * @param dob     Patient's date of birth.
+   * @param gender  Patient's gender.
+   * @param zip     Patient's zip code.
+   * @returns
+   */
+  async searchPatient(
+    meta: RequestMetadata,
+    fname: string,
+    lname: string,
+    dob: string,
+    gender: string,
+    zip: string
+  ): Promise<PatientSearchResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient`, {
+      headers,
+      params: { fname, lname, dob, gender, zip },
+    });
+    return patientSearchRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Updates a patient.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8763-updating-a-local-patient-record
+   *
+   * @param meta    Metadata about the request.
+   * @param patient  The data to update.
+   * @param id      The patient to be updated.
+   * @returns
+   */
+  async updatePatient(meta: RequestMetadata, patient: Patient, id: string): Promise<Patient> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`,
+      patient,
+      {
+        headers,
+      }
+    );
+    return patientSchema.parse(resp.data);
+  }
+
+  /**
+   * Merges patients.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8765-merging-local-patient-records
+   *
+   * @param meta    Metadata about the request.
+   * @param nonSurvivingPatientId  The local Patient Identifier of the non-surviving Patient Record (This patient gets replaced)
+   * @param referencePatientLink   The patient link for the patient that will replace the non surviving patient
+   * @returns
+   */
+  async mergePatients(
+    meta: RequestMetadata,
+    nonSurvivingPatientId: string,
+    referencePatientLink: string
+  ): Promise<void> {
+    const headers = await this.buildQueryHeaders(meta);
+    await this.api.put(
+      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${nonSurvivingPatientId}/merge`,
+      {
+        link: {
+          other: {
+            reference: referencePatientLink,
+          },
+          type: "replace",
+        },
+      },
+      {
+        headers,
+      }
+    );
+    return;
+  }
+
+  /**
+   * Get Patient's Network Links.
+   * See: https://specification.commonwellalliance.org/services/record-locator-service/protocol-operations-record-locator-service#8771-retrieving-network-links
+   *
+   * @param meta    Metadata about the request.
+   * @param id      Patient to be updated.
+   * @returns
+   */
+  async getPatientsLinks(meta: RequestMetadata, id: string): Promise<PatientNetworkLinkResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(
+      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/networkLink`,
+      {
+        headers,
+      }
+    );
+    return patientNetworkLinkRespSchema.parse(resp.data);
+  }
+
+  /**
+   * Deletes a patient.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8764-deleting-a-local-patient-record
+   *
+   * @param meta    Metadata about the request.
+   * @param id      The patient to be updated.
+   * @returns
+   */
+  async deletePatient(meta: RequestMetadata, id: string): Promise<void> {
+    const headers = await this.buildQueryHeaders(meta);
+    await this.api.delete(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, {
+      headers,
+    });
+
+    return;
+  }
+
+  //--------------------------------------------------------------------------------------------
+  // Link Management
+  //--------------------------------------------------------------------------------------------
+
+  /**
+   * Upgrade or downgrade patient link.
+   * See: https://specification.commonwellalliance.org/services/record-locator-service/protocol-operations-record-locator-service#8772-upgrading-a-network-link
+   *
+   * @param meta    Metadata about the request.
+   * @param href    The href of patient link to be upgraded or downgraded
+   * @param proxy   The proxy for the patient link action.
+   * @returns
+   */
+  async upgradeOrDowngradePatientLink(
+    meta: RequestMetadata,
+    href: string,
+    proxy?: PatientLinkProxy
+  ): Promise<NetworkLink> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      href,
+      {
+        proxy,
+      },
+      {
+        headers,
+      }
+    );
+    return networkLinkSchema.parse(resp.data);
+  }
+
+  /**
+   * Update a patient link.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8722-updating-a-patient-link
+   *
+   * @param meta              Metadata about the request.
+   * @param patientLinkUri    The uri of patient link to be updated
+   * @param patientUri        The uri of patient that belongs to this link
+   * @param identifier        Add identifier information to the patient link
+   * @returns
+   */
+  async updatePatientLink(
+    meta: RequestMetadata,
+    patientLinkUri: string,
+    patientUri?: string,
+    identifier?: Identifier
+  ): Promise<PatientLink> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.post(
+      patientLinkUri,
+      {
+        patient: patientUri,
+        identifier: identifier,
+      },
+      {
+        headers,
+      }
+    );
+
+    return patientLinkSchema.parse(resp.data);
+  }
+
+  /**
+   * Deletes a patient link.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8724-deleting-a-patient-link
+   *
+   * @param meta              Metadata about the request.
+   * @param patientLinkUri    The uri of patient link to be deleted
+   * @returns
+   */
+  async deletePatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<void> {
+    const headers = await this.buildQueryHeaders(meta);
+
+    await this.api.put(
+      `${patientLinkUri}reset`,
+      {},
+      {
+        headers,
+      }
+    );
+
     return;
   }
 

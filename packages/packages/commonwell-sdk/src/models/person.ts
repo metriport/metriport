@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { demographicsSchema } from "./demographics";
 import { enrollmentSummarySchema } from "./enrollment-summary";
-import { linkSchema } from "./link";
+import { linkSchema, lolaSchema } from "./link";
 
 export const personLinksSchema = z.object({
   self: linkSchema,
@@ -29,3 +29,14 @@ export const personSearchRespSchema = z.object({
 });
 
 export type PersonSearchResp = z.infer<typeof personSearchRespSchema>;
+
+// Within the context of a Person resource, a PatientLink represents a confirmed relationship to a Patient Record.
+// See: https://specification.commonwellalliance.org/services/rest-api-reference (8.6.5 PatientLink)
+
+export const patientLinkSchema = z.object({
+  patient: z.string(),
+  assuranceLevel: lolaSchema,
+  _links: personLinksSchema.optional().nullable(),
+});
+
+export type PatientLink = z.infer<typeof patientLinkSchema>;
