@@ -651,12 +651,12 @@ export class CommonWell {
 
   /**
    * Queries a patient's Documents.
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#104-document-query|Use case}
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
    *
    * @param meta       Metadata about the request.
    * @param patientId  The patient's ID.
    * @returns {Promise<DocumentQueryResponse>}
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#104-document-query|Use case}
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
    */
   async queryDocuments(meta: RequestMetadata, patientId: string): Promise<DocumentQueryResponse> {
     const subjectId = convertPatientIdToSubjectId(patientId);
@@ -670,13 +670,13 @@ export class CommonWell {
   }
 
   /**
-   * Retrieves a Document and store it on the local file system.
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#106-document-retrieval|Use case}
-   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8782-retrieve-document|API spec}
+   * Retrieve a Document and pipe its bytes into the outputStream.
    *
    * @param {string} inputUrl - The URL of the file to be downloaded.
    * @param {fs.WriteStream} outputStream - The stream to receive the downloaded file's bytes.
    * @returns {Promise<void>}
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#106-document-retrieval|Use case}
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8782-retrieve-document|API spec}
    */
   async retrieveDocument(
     meta: RequestMetadata,
