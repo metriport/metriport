@@ -7,8 +7,8 @@ import { patient, identifier, personStrongId } from "./payloads";
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Patient-Management-(PIX,-REST).aspx
 
 export async function linkManagement(commonWell: CommonWell, queryMeta: RequestMetadata) {
-  // C5: ​Levels of Link Assurance
-  console.log(`>>> ​C5a : Link a Patient to a Person upgrading from LOLA 1 to LOLA 2.`);
+  // C5: Levels of Link Assurance
+  console.log(`>>> C5a : Link a Patient to a Person upgrading from LOLA 1 to LOLA 2.`);
   const person = await commonWell.enrollPerson(queryMeta, personStrongId);
   const personId = getId(person);
 
@@ -18,7 +18,7 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
   const respC5a = await commonWell.patientLink(queryMeta, personId, referenceLink);
   console.log(respC5a);
 
-  console.log(`>>> ​C5b : ​Upgrade Patient link from LOLA 2 to LOLA 3 (with Strong ID).`);
+  console.log(`>>> C5b : Upgrade Patient link from LOLA 2 to LOLA 3 (with Strong ID).`);
   const respC5b = await commonWell.updatePatientLink(
     queryMeta,
     respC5a._links.self.href,
@@ -27,7 +27,7 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
   );
   console.log(respC5b);
 
-  console.log(`>>> ​C5c : ​Downgrade Patient link from LOLA 3 to LOLA 2 (without Strong ID).`);
+  console.log(`>>> C5c : Downgrade Patient link from LOLA 3 to LOLA 2 (without Strong ID).`);
   const respC5c = await commonWell.updatePatientLink(
     queryMeta,
     respC5a._links.self.href,
@@ -36,7 +36,7 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
   );
   console.log(respC5c);
 
-  console.log(`>>> ​C5a : ​Delete Patient/Person link that exists as LOLA 2.`);
+  console.log(`>>> C5a : Delete Patient/Person link that exists as LOLA 2.`);
   await commonWell.deletePatientLink(queryMeta, respC5c._links.self.href);
 
   // Note: will be deleting patient & person created in this run
