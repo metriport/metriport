@@ -5,16 +5,16 @@ import {
   NameUseCodes,
   Person,
 } from "@metriport/commonwell-sdk";
-import * as nanoid from "nanoid";
 import { X509Certificate } from "crypto";
+import * as nanoid from "nanoid";
 
-import { uniqueNamesGenerator, adjectives, colors, animals } from "unique-names-generator";
-import { getEnvOrFail } from "./util";
+import { adjectives, animals, colors, uniqueNamesGenerator } from "unique-names-generator";
+import { getCertificateContent, getEnvOrFail } from "./util";
 
 const commonwellOID = getEnvOrFail("COMMONWELL_OID");
-const commonwellCertificateContent = getEnvOrFail("COMMONWELL_CERTIFICATE_CONTENT");
-const commonwellCertificate = getEnvOrFail("COMMONWELL_CERTIFICATE");
 const commonwellOrgName = getEnvOrFail("COMMONWELL_ORG_NAME");
+const commonwellCertificate = getEnvOrFail("COMMONWELL_CERTIFICATE");
+const commonwellCertificateContent = getCertificateContent(commonwellCertificate);
 
 export const metriportSystem = `urn:oid:${commonwellOID}`;
 

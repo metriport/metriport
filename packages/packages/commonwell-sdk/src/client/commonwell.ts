@@ -1,5 +1,7 @@
 import axios, { AxiosInstance } from "axios";
+import * as fs from "fs";
 import { Agent } from "https";
+import { downloadFile } from "../common/fileDownload";
 import { makeJwt } from "../common/make-jwt";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
 import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
@@ -28,6 +30,7 @@ import {
   personSearchRespSchema,
 } from "../models/person";
 import { PurposeOfUse } from "../models/purpose-of-use";
+
 export enum APIMode {
   integration = "integration",
   production = "production",
@@ -646,19 +649,43 @@ export class CommonWell {
   }
 
   /**
-   * Queries a Document
-   * See: https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#104-document-query
+   * Queries a patient's Documents.
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#104-document-query|Use case}
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
    *
    * @param meta       Metadata about the request.
    * @param subjectId  The ID as defined by the specification: [system]|[code] where 'system' is the OID
    * of the organization and 'code' is the first (numeric) part of the patient ID.
-   * @returns {DocumentQueryResponse}
+   * @returns {Promise<DocumentQueryResponse>}
    */
   async queryDocument(meta: RequestMetadata, subjectId: string): Promise<DocumentQueryResponse> {
     const headers = await this.buildQueryHeaders(meta);
     const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
     const res = await this.api.get(url, { headers });
     return documentQueryResponseSchema.parse(res.data);
+  }
+
+  /**
+   * Retrieves a Document and store it on the local file system.
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#106-document-retrieval|Use case}
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8782-retrieve-document|API spec}
+   *
+   * @param {string} inputUrl - The URL of the file to be downloaded.
+   * @param {fs.WriteStream} outputStream - The stream to receive the downloaded file's bytes.
+   * @returns {Promise<void>}
+   */
+  async retrieveDocument(
+    meta: RequestMetadata,
+    inputUrl: string,
+    outputStream: fs.WriteStream
+  ): Promise<void> {
+    const headers = await this.buildQueryHeaders(meta);
+    await downloadFile({
+      url: inputUrl,
+      outputStream,
+      client: this.api,
+      headers,
+    });
   }
 
   //--------------------------------------------------------------------------------------------
