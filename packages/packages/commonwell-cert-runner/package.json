@@ -24,10 +24,14 @@
   },
   "scripts": {
     "tsc": "tsc",
-    "test": "echo \"Error: run tests from root\" && exit 1",
     "build": "tsc -p .",
     "install-local": "sudo npm i -g",
-    "start": "ts-node src/index.ts --env-file .env"
+    "start": "ts-node src/index.ts --env-file .env",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "echo \"No test specified yet\""
   },
   "bin": {
     "cw-cert-runner": "lib/index.js"

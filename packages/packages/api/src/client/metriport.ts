@@ -20,7 +20,7 @@ export class Metriport {
    *
    * @param {string} apiKey - Your Metriport API key.
    */
-  constructor(apiKey: string, baseURL: string = "https://api.metriport.com") {
+  constructor(apiKey: string, baseURL = "https://api.metriport.com") {
     this.api = axios.create({
       baseURL,
       headers: { "x-api-key": apiKey },
