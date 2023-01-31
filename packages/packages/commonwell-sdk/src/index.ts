@@ -1,11 +1,6 @@
 export { APIMode, CommonWell, RequestMetadata } from "./client/commonwell";
 export { makeJwt } from "./common/make-jwt";
-export {
-  convertPatiendIdToDocQuery,
-  getId,
-  getIdTrailingSlash,
-  getPersonIdFromSearchByPatientDemo,
-} from "./common/util";
+export { getId, getIdTrailingSlash, getPersonIdFromSearchByPatientDemo } from "./common/util";
 export { Address, AddressUseCodes } from "./models/address";
 export { Contact, ContactSystemCodes, ContactUseCodes } from "./models/contact";
 export { Demographics, GenderCodes } from "./models/demographics";
