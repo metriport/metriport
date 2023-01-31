@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { Activity, Body, Biometrics, Nutrition } from "@metriport/api";
+import { Activity, Body, Biometrics, Nutrition, Sleep } from "@metriport/api";
 
 import { mapDataToActivity } from "./activity";
 import { mapDataToBody } from "./body";
 import { mapDataToBiometrics } from "./biometrics";
 import { mapDataToNutrition } from "./nutrition";
+import { mapDataToSleep } from "./sleep";
 import { PROVIDER_APPLE } from "../../shared/constants";
 
 export type AppleWebhookPayload = {
@@ -12,6 +13,7 @@ export type AppleWebhookPayload = {
   body?: Body[];
   biometrics?: Biometrics[];
   nutrition?: Nutrition[];
+  sleep?: Sleep[]
 };
 
 export function mapData(data: AppleHealth): AppleWebhookPayload {
@@ -32,6 +34,10 @@ export function mapData(data: AppleHealth): AppleWebhookPayload {
   const nutritionData = mapDataToNutrition(data);
 
   if (nutritionData.length) payload.nutrition = nutritionData;
+
+  const sleepData = mapDataToSleep(data);
+
+  if (sleepData.length) payload.sleep = sleepData;
 
   return payload;
 }
@@ -116,6 +122,25 @@ export const appleItem = z.object({
 });
 export type AppleHealthItem = z.infer<typeof appleItem>;
 
+export enum SleepType {
+  inBed = "inBed",
+  awake = "awake",
+  rem = "rem",
+  core = "core",
+  deep = "deep",
+}
+
+export const appleSleepType = z.enum(Object.values(SleepType) as [string, ...string[]]);
+
+export const appleSleepItem = z.object({
+  date: z.string(),
+  value: z.number(),
+  endDate: z.string(),
+  type: appleSleepType
+});
+
+export type AppleHealthSleepItem = z.infer<typeof appleSleepItem>;
+
 export const appleSchema = z.object({
   // ACTIVITY
   HKQuantityTypeIdentifierActiveEnergyBurned: z.array(appleItem).optional(),
@@ -172,6 +197,9 @@ export const appleSchema = z.object({
   HKQuantityTypeIdentifierRespiratoryRate: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierOxygenSaturation: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierBloodGlucose: z.array(appleItem).optional(),
+
+  // SLEEP
+  HKCategoryValueSleepAnalysis: z.array(appleSleepItem).optional(),
 });
 
 export type AppleHealth = z.infer<typeof appleSchema>;
