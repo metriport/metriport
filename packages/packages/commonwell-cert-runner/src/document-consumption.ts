@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import {
   CommonWell,
-  convertPatiendIdToDocQuery,
   Document,
   getId,
   getIdTrailingSlash,
@@ -102,13 +101,8 @@ export async function queryDocuments(
     console.log(respUpgradeLink);
   }
 
-  const patientIdForDocQuery = convertPatiendIdToDocQuery(patientId);
-  if (!patientIdForDocQuery) {
-    throw new Error(`[E1c] Could not determine patient ID for document query`);
-  }
-
   console.log(`>>> [E1c] Querying for docs...`);
-  const respDocQuery = await commonWell.queryDocument(queryMeta, patientIdForDocQuery);
+  const respDocQuery = await commonWell.queryDocuments(queryMeta, patientId);
 
   return respDocQuery.entry;
 }

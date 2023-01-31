@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { Agent } from "https";
 import { downloadFile } from "../common/fileDownload";
 import { makeJwt } from "../common/make-jwt";
+import { convertPatientIdToSubjectId } from "../common/util";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
 import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
 import { Identifier, StrongId } from "../models/identifier";
@@ -555,9 +556,9 @@ export class CommonWell {
    * Updates a patient.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8763-updating-a-local-patient-record
    *
-   * @param meta    Metadata about the request.
+   * @param meta     Metadata about the request.
    * @param patient  The data to update.
-   * @param id      The patient to be updated.
+   * @param id       The patient to be updated.
    * @returns
    */
   async updatePatient(meta: RequestMetadata, patient: Patient, id: string): Promise<Patient> {
@@ -654,11 +655,14 @@ export class CommonWell {
    * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
    *
    * @param meta       Metadata about the request.
-   * @param subjectId  The ID as defined by the specification: [system]|[code] where 'system' is the OID
-   * of the organization and 'code' is the first (numeric) part of the patient ID.
+   * @param patientId  The patient's ID.
    * @returns {Promise<DocumentQueryResponse>}
    */
-  async queryDocument(meta: RequestMetadata, subjectId: string): Promise<DocumentQueryResponse> {
+  async queryDocuments(meta: RequestMetadata, patientId: string): Promise<DocumentQueryResponse> {
+    const subjectId = convertPatientIdToSubjectId(patientId);
+    if (!subjectId) {
+      throw new Error(`Could not determine subject ID for document query`);
+    }
     const headers = await this.buildQueryHeaders(meta);
     const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
     const res = await this.api.get(url, { headers });
