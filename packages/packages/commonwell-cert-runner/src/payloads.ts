@@ -16,6 +16,14 @@ const commonwellCertificateContent = getEnvOrFail("COMMONWELL_CERTIFICATE_CONTEN
 const commonwellCertificate = getEnvOrFail("COMMONWELL_CERTIFICATE");
 const commonwellOrgName = getEnvOrFail("COMMONWELL_ORG_NAME");
 
+export const metriportSystem = `urn:oid:${commonwellOID}`;
+
+const docPatientFirstName = getEnvOrFail("DOCUMENT_PATIENT_FIRST_NAME");
+const docPatientLastName = getEnvOrFail("DOCUMENT_PATIENT_LAST_NAME");
+const docPatientDateOfBirth = getEnvOrFail("DOCUMENT_PATIENT_DATE_OF_BIRTH");
+const docPatientGender = getEnvOrFail("DOCUMENT_PATIENT_GENDER");
+const docPatientZip = getEnvOrFail("DOCUMENT_PATIENT_ZIP");
+
 // PERSON
 export const caDriversLicenseUri = "urn:oid:2.16.840.1.113883.4.3.6";
 export const driversLicenseId = nanoid.nanoid();
@@ -29,7 +37,7 @@ export const identifier = {
   },
 };
 
-const mainDetails = {
+export const mainDetails = {
   address: [
     {
       use: AddressUseCodes.home,
@@ -93,7 +101,7 @@ export const patient = {
     {
       use: "unspecified",
       label: commonwellOrgName,
-      system: `urn:oid:${commonwellOID}`,
+      system: metriportSystem,
       key: nanoid.nanoid(),
       assigner: commonwellOrgName,
     },
@@ -106,13 +114,54 @@ export const mergePatient = {
     {
       use: "unspecified",
       label: commonwellOrgName,
-      system: `urn:oid:${commonwellOID}`,
+      system: metriportSystem,
       key: nanoid.nanoid(),
       assigner: commonwellOrgName,
     },
   ],
   details: secondaryDetails,
 };
+
+const docPatientKey = nanoid.nanoid();
+
+export const docIdentifier = {
+  // use: "unspecified",
+  use: IdentifierUseCodes.usual,
+  label: commonwellOrgName,
+  system: metriportSystem,
+  key: docPatientKey,
+};
+export const docMainPayload = {
+  identifier: [docIdentifier],
+  details: {
+    address: [
+      {
+        use: NameUseCodes.usual,
+        zip: docPatientZip,
+        country: "USA",
+      },
+    ],
+    name: [
+      {
+        use: NameUseCodes.usual,
+        family: [docPatientLastName],
+        given: [docPatientFirstName],
+      },
+    ],
+    gender: {
+      code: docPatientGender,
+    },
+    birthDate: docPatientDateOfBirth,
+  },
+};
+export const docPerson = {
+  ...docMainPayload,
+  details: {
+    ...docMainPayload.details,
+    identifier: [],
+  },
+};
+export const docPatient = docMainPayload;
 
 // ORGANIZATION
 const appendOrgId = nanoid.customAlphabet("1234567890", 18)();

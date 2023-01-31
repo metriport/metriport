@@ -2,10 +2,11 @@
 import { APIMode, CommonWell, PurposeOfUse, RequestMetadata } from "@metriport/commonwell-sdk";
 import { Command } from "commander";
 import * as dotenv from "dotenv";
-import { orgManagement } from "./org-management";
-import { personManagement } from "./person-management";
-import { patientManagement } from "./patient-management";
+import { documentConsumption } from "./document-consumption";
 import { linkManagement } from "./link-management";
+import { orgManagement } from "./org-management";
+import { patientManagement } from "./patient-management";
+import { personManagement } from "./person-management";
 import { getEnvOrFail } from "./util";
 
 function metriportBanner(): string {
@@ -111,6 +112,7 @@ async function main() {
   await personManagement(commonWell, queryMeta);
   await patientManagement(commonWell, commonWellSandbox, queryMeta);
   await linkManagement(commonWell, queryMeta);
+  await documentConsumption(commonWell, queryMeta);
 }
 
 main();

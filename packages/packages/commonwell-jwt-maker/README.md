@@ -8,9 +8,9 @@ CLI to create a JWT for use in CommonWell queries.
 
 To install the program, execute the following command on your terminal:
 
-`npm i -g @metriport/commonwell-jwt-maker`
+`npm i -g @metriport/commonwell-jwt-maker axios`
 
-Note: you may have to run the command with `sudo`.
+Note: you may have to run these commands with `sudo`.
 
 ## Usage
 
@@ -76,18 +76,18 @@ Display help for command.
             ,▄,
           ▄▓███▌
       ▄▀╙   ▀▓▀    ²▄
-    ▄└               ╙▌     
-  ,▀                   ╨▄   
-  ▌                     ║   
-                         ▌  
-                         ▌  
-,▓██▄                 ╔███▄ 
-╙███▌                 ▀███▀ 
-    ▀▄                      
+    ▄└               ╙▌
+  ,▀                   ╨▄
+  ▌                     ║
+                         ▌
+                         ▌
+,▓██▄                 ╔███▄
+╙███▌                 ▀███▀
+    ▀▄
       ▀╗▄         ,▄
          '╙▀▀▀▀▀╙''
 
-     
+
       by Metriport Inc.
 
 ```

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { CommonWell, getIdTrailingSlash, RequestMetadata } from "@metriport/commonwell-sdk";
 
-import { organization, certificate, thumbprint } from "./payloads";
+import { certificate, organization, thumbprint } from "./payloads";
 
 // 4. Org Management
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#overview-and-summary
@@ -42,26 +42,23 @@ export async function orgManagement(commonWell: CommonWell, queryMeta: RequestMe
   console.log(respReplaceCertificateForOrg);
 
   console.log(`>>> Get certificate from org`);
-  const respGetCertificateFromOrg = await commonWell.getCertificatesFromOrg(queryMeta, orgId);
-  console.log(respGetCertificateFromOrg);
+  const respGetCertificatesFromOrg = await commonWell.getCertificatesFromOrg(queryMeta, orgId);
+  console.log(respGetCertificatesFromOrg);
 
   console.log(`>>> Get certificate from org (by thumprint)`);
-  const respGetCertificateFromOrgByThumbprint = await commonWell.getCertificatesFromOrgByThumbprint(
-    queryMeta,
-    orgId,
-    thumbprint
-  );
-  console.log(respGetCertificateFromOrgByThumbprint);
+  const respGetCertificatesFromOrgByThumbprint =
+    await commonWell.getCertificatesFromOrgByThumbprint(queryMeta, orgId, thumbprint);
+  console.log(respGetCertificatesFromOrgByThumbprint);
 
   console.log(`>>> Get certificate from org (by thumprint & purpose)`);
-  const respGetCertificateFromOrgByThumbprintAndPurpose =
+  const respGetCertificatesFromOrgByThumbprintAndPurpose =
     await commonWell.getCertificatesFromOrgByThumbprintAndPurpose(
       queryMeta,
       orgId,
       thumbprint,
       certificate.Certificates[0].purpose
     );
-  console.log(respGetCertificateFromOrgByThumbprintAndPurpose);
+  console.log(respGetCertificatesFromOrgByThumbprintAndPurpose);
 
   console.log(`>>> Delete certificate from org`);
   await commonWell.deleteCertificateFromOrg(

@@ -29,7 +29,7 @@ export const demographicsSchema = z.object({
   telecom: z.array(contactSchema).optional().nullable(),
   gender: genderSchema,
   birthDate: isoDateTimeSchema.or(isoDateSchema),
-  address: z.array(addressSchema).min(1),
+  address: z.array(addressSchema),
   picture: z.any().optional().nullable(), // not supported
 });
 

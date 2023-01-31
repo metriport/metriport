@@ -20,6 +20,11 @@ After installation, create a `.env` file defining the following variables:
 - `COMMONWELL_OID`: the organization ID.
 - `COMMONWELL_PRIVATE_KEY`: the RSA256 private key corresponding to the specified organization.
 - `COMMONWELL_CERTIFICATE`: the public certificate/key corresponding to the private key.
+- `DOCUMENT_PATIENT_FIRST_NAME`: the first name of a patient created along with the sandbox that has a document associated
+- `DOCUMENT_PATIENT_LAST_NAME`: their last name
+- `DOCUMENT_PATIENT_DATE_OF_BIRTH`: their date of birth on the format YYYY-MM-DD
+- `DOCUMENT_PATIENT_GENDER`: their gender (M|F)
+- `DOCUMENT_PATIENT_ZIP`: their address zip code
 
 Example file content looks like:
 
@@ -33,6 +38,11 @@ fkadsjhfhdsakjfhdsakhfkdsahfadshfkhdsfhdsakfdhafkashdfkjhalsdkjf
 COMMONWELL_CERTIFICATE="-----BEGIN CERTIFICATE-----
 asdlkfjladsjflkjdaslkfjdsafjadslfjasdlkfjdsaklfjdkalfjdslfjalkjs
 -----END CERTIFICATE-----
+DOCUMENT_PATIENT_FIRST_NAME="Stephen"
+DOCUMENT_PATIENT_LAST_NAME="Pujols1234"
+DOCUMENT_PATIENT_DATE_OF_BIRTH="1955-10-23"
+DOCUMENT_PATIENT_GENDER="M"
+DOCUMENT_PATIENT_ZIP="62732"
 ```
 
 After the file is created, you can run execute following command on your terminal to run the program:
