@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { CommonWell, getIdTrailingSlash, RequestMetadata } from "@metriport/commonwell-sdk";
 
-import { organization, certificate, thumbprint } from "./payloads";
+import { certificate, organization, thumbprint } from "./payloads";
 
 // 4. Org Management
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#overview-and-summary
