@@ -13,7 +13,7 @@ export type AppleWebhookPayload = {
   body?: Body[];
   biometrics?: Biometrics[];
   nutrition?: Nutrition[];
-  sleep?: Sleep[]
+  sleep?: Sleep[];
 };
 
 export function mapData(data: AppleHealth): AppleWebhookPayload {
@@ -136,7 +136,7 @@ export const appleSleepItem = z.object({
   date: z.string(),
   value: z.number(),
   endDate: z.string(),
-  type: appleSleepType
+  type: appleSleepType,
 });
 
 export type AppleHealthSleepItem = z.infer<typeof appleSleepItem>;
