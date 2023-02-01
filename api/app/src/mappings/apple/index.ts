@@ -141,12 +141,24 @@ export const appleSleepItem = z.object({
 
 export type AppleHealthSleepItem = z.infer<typeof appleSleepItem>;
 
+export const appleWorkoutItem = z.object({
+  startTime: z.string(),
+  endTime: z.string(),
+  distance: z.number().optional().nullable(),
+  type: z.number(),
+  kcal: z.number().optional().nullable(),
+  duration: z.number().optional().nullable(),
+});
+
+export type AppleHealthWorkoutItem = z.infer<typeof appleWorkoutItem>;
+
 export const appleSchema = z.object({
   // ACTIVITY
   HKQuantityTypeIdentifierActiveEnergyBurned: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierStepCount: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierBasalEnergyBurned: z.array(appleItem).optional(),
   HKQuantityTypeIdentifierFlightsClimbed: z.array(appleItem).optional(),
+  HKWorkout: z.array(appleWorkoutItem).optional(),
 
   // BODY
   HKQuantityTypeIdentifierHeight: z.array(appleItem).optional(),
