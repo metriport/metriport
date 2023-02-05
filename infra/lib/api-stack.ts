@@ -192,6 +192,7 @@ export class APIStack extends Stack {
             TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
             API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
             CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
+            SYSTEM_ROOT_OID: props.config.systemRootOID,
             ...(props.config.usageReportUrl && {
               USAGE_URL: props.config.usageReportUrl,
             }),
