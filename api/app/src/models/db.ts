@@ -4,12 +4,20 @@ import updateDB from "../sequelize";
 import { Config, getEnvVarOrFail } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev } from "./db-dev";
+import { Facility } from "./medical/facility";
+import { Organization } from "./medical/organization";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
-const models: ModelSetup[] = [ConnectedUser.setup, Settings.setup, WebhookRequest.setup];
+const models: ModelSetup[] = [
+  ConnectedUser.setup,
+  Settings.setup,
+  WebhookRequest.setup,
+  Organization.setup,
+  Facility.setup,
+];
 
 export type MetriportDB = {
   sequelize: Sequelize;

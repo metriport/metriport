@@ -34,5 +34,6 @@ export const config: EnvConfig = {
     domain: "myhealthapp.com",
     host: "myhealthapp.com",
   },
+  systemRootOID: "2.16.840.1.113883.3.999999",
 };
 export default config;

@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "command": "node ./api/app/app.js",
+            "name": "Run Api App",
+            "request": "launch",
+            "type": "node-terminal"
+        },
+        {
+          "name": "Docker: Attach to Node",
+          "type": "node",
+          "request": "attach",
+          "port": 9229,
+          "address": "0.0.0.0",
+          "sourceMapPathOverrides": {
+            "/usr/src/app/*": "${workspaceRoot}/api/app/*"
+          },
+          "localRoot": "${workspaceFolder}/api/app",
+          "remoteRoot": "/usr/src/app"
+        }
+    ]
+}
