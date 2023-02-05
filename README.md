@@ -379,6 +379,15 @@ $ npm run start -w connect-widget
 
 To debug the Connect Widget, you can attach a run a Chrome window by launching the `Run Chrome` configuration in VS Code.
 
+### Utils
+
+The `./utils` folder contains utilities that help with the development of this and other opensource Metriport projects:
+
+- [mock-webook](https://github.com/metriport/metriport/blob/develop/utils/src/mock-webhook.ts): implements the Metriport webhook protocol, can be used by applications integrating with Metriport API as a reference to the behavior expected from these applications when using the webhook feature.
+- [fhir-uploader](https://github.com/metriport/metriport/blob/develop/utils/src/fhir-uploader.ts): useful to insert synthetic/mock data from [Synthea](https://github.com/synthetichealth/synthea) into [FHIR](https://www.hl7.org/fhir) servers (see https://github.com/metriport/hapi-fhir-jpaserver).
+
+Check the scripts on the folder's [package.json](https://github.com/metriport/metriport/blob/develop/utils/package.json) to see how to run these.
+
 ---
 
 ## **Self-Hosted Deployments**
