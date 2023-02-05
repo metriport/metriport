@@ -262,6 +262,7 @@ $ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
 $ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "SYSTEM_ROOT_OID=<YOUR-OID>" >> api/app/.env
 ```
 
 #### **Optional usage report**

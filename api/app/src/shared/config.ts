@@ -89,4 +89,8 @@ export class Config {
   static getUsageUrl(): string | undefined {
     return getEnvVar("USAGE_URL");
   }
+
+  static getSystemRootOID(): string {
+    return getEnvVarOrFail("SYSTEM_ROOT_OID");
+  }
 }
