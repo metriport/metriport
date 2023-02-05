@@ -28,7 +28,6 @@ export class Organization extends BaseModel<Organization> {
             const curMaxId = (await Organization.max("id", {
               where: { systemRootOid: attributes.systemRootOid },
             })) as number;
-            console.log(curMaxId);
             attributes.id = curMaxId ? (attributes.id = curMaxId + 1) : OID_ID_START;
           },
         },
