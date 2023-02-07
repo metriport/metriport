@@ -92,7 +92,9 @@
         },
         {
           "group": "Medical API",
-          "pages": ["medical-api-reference/coming-soon"]
+          "pages": [
+            "medical-api-reference/coming-soon"
+          ]
         }
       ]
     },
@@ -103,6 +105,7 @@
         "more-info/our-integrations",
         "more-info/webhooks",
         "more-info/apple-health",
+        "more-info/react-native",
         "more-info/models"
       ]
     }
