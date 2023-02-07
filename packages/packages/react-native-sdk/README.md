@@ -1,31 +1,24 @@
-# @metriport/react-native-sdk
+# Metriport-iOS-SDK
 
-a package to consume metriport
+A React Native wrapper around our [iOS package](https://github.com/metriport/metriport-ios-sdk).
 
-## Installation
+## Quickstart
 
-```sh
-npm install @metriport/react-native-sdk
+[See our developer documentation](https://docs.metriport.com/more-info/react-native) to get started.
+
 ```
-
-## Usage
-
-```js
-import { MetriportWidget } from "@metriport/react-native-sdk";
-
-// ...
-
-<MetriportWidget token="CONNECT_TOKEN" clientApiKey="CLIENT_API_KEY" sandbox={false} />;
+            ,▄,
+          ▄▓███▌
+      ▄▀╙   ▀▓▀    ²▄
+    ▄└               ╙▌
+  ,▀                   ╨▄
+  ▌                     ║
+                         ▌
+                         ▌
+,▓██▄                 ╔███▄
+╙███▌                 ▀███▀
+    ▀▄
+      ▀╗▄         ,▄
+         '╙▀▀▀▀▀╙''
+      by Metriport Inc.
 ```
-
-## Contributing
-
-See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the repository and the development workflow.
-
-## License
-
-MIT
-
----
-
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
