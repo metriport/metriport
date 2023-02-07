@@ -77,6 +77,10 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.0)
   - hermes-engine/Pre-built (0.71.0)
   - libevent (2.1.12)
+  - metriport-react-native (0.0.7):
+    - MetriportSDK
+    - React-Core
+  - MetriportSDK (1.0.2)
   - OpenSSL-Universal (1.1.1100)
   - RCT-Folly (2021.07.22.00):
     - boost
@@ -414,6 +418,7 @@ DEPENDENCIES:
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - libevent (~> 2.1.12)
+  - "metriport-react-native (from `../node_modules/@metriport/react-native-sdk`)"
   - OpenSSL-Universal (= 1.1.1100)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTRequired (from `../node_modules/react-native/Libraries/RCTRequired`)
@@ -461,6 +466,7 @@ SPEC REPOS:
     - FlipperKit
     - fmt
     - libevent
+    - MetriportSDK
     - OpenSSL-Universal
     - SocketRocket
     - YogaKit
@@ -478,6 +484,8 @@ EXTERNAL SOURCES:
     :podspec: "../node_modules/react-native/third-party-podspecs/glog.podspec"
   hermes-engine:
     :podspec: "../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
+  metriport-react-native:
+    :path: "../node_modules/@metriport/react-native-sdk"
   RCT-Folly:
     :podspec: "../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec"
   RCTRequired:
@@ -556,6 +564,8 @@ SPEC CHECKSUMS:
   glog: 04b94705f318337d7ead9e6d17c019bd9b1f6b1b
   hermes-engine: f6e715aa6c8bd38de6c13bc85e07b0a337edaa89
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
+  metriport-react-native: f749e0763cc16e9f6a76c8923de8aa8fe2889081
+  MetriportSDK: 954f8bbd8f4b5f2535571da0107e5da3abc9624c
   OpenSSL-Universal: ebc357f1e6bc71fa463ccb2fe676756aff50e88c
   RCT-Folly: 424b8c9a7a0b9ab2886ffe9c3b041ef628fd4fb1
   RCTRequired: dea3e4163184ea57c50288c15c32c1529265c58f
@@ -589,6 +599,6 @@ SPEC CHECKSUMS:
   Yoga: c618b544ff8bd8865cdca602f00cbcdb92fd6d31
   YogaKit: f782866e155069a2cca2517aafea43200b01fd5a
 
-PODFILE CHECKSUM: a1cf565d6acbba84d5dd171017c2138d672ab85f
+PODFILE CHECKSUM: 8e32944d4b21775b5e836aced1b2ef4994ada91a
 
 COCOAPODS: 1.11.3
