@@ -10,8 +10,8 @@ import mountRoutes from "./routes/index";
 
 const app: Application = express();
 app.use(helmet()); // needs to come before any route declaration, including cors()
-app.use(express.json({ limit: 2_000 }));
-app.use(express.urlencoded({ extended: false, limit: 2_000 }));
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 app.use(cors());
 
 mountRoutes(app);
