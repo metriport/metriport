@@ -1,4 +1,3 @@
-Ticket: #_[ticket-number]_
 
 ### Dependencies
 
