@@ -1,8 +1,8 @@
 import express, { Application, Request, Response } from "express";
 
 const app: Application = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
 app.post("/", (req: Request, res: Response) => {
   console.log(`BODY: ${JSON.stringify(req.body, undefined, 2)}`);
