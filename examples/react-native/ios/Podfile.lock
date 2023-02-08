@@ -77,7 +77,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.0)
   - hermes-engine/Pre-built (0.71.0)
   - libevent (2.1.12)
-  - metriport-react-native (0.0.13):
+  - metriport-react-native (0.0.14):
     - MetriportSDK
     - React-Core
   - MetriportSDK (1.0.2)
@@ -564,7 +564,7 @@ SPEC CHECKSUMS:
   glog: 04b94705f318337d7ead9e6d17c019bd9b1f6b1b
   hermes-engine: f6e715aa6c8bd38de6c13bc85e07b0a337edaa89
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  metriport-react-native: 3c56f1126484d73db99e8b3c3d1a4c08bd016968
+  metriport-react-native: a1f906e8f7d516b234624744df221d49ddfdfeba
   MetriportSDK: 954f8bbd8f4b5f2535571da0107e5da3abc9624c
   OpenSSL-Universal: ebc357f1e6bc71fa463ccb2fe676756aff50e88c
   RCT-Folly: 424b8c9a7a0b9ab2886ffe9c3b041ef628fd4fb1

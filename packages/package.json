@@ -12,7 +12,13 @@
     "lerna": "^6.1.0"
   },
   "scripts": {
-    "publish": "lerna run tsc && lerna publish",
+    "build": "lerna run tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "lerna run lint",
+    "lint-fix": "lerna run lint-fix",
+    "prettier-fix": "lerna run prettier-fix",
+    "test": "lerna run test",
+    "publish": "npm build && lerna publish",
     "force-publish": "lerna run tsc && lerna publish --force-publish --no-git-tag-version --no-push"
   },
   "license": "MIT"
