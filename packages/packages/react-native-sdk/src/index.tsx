@@ -33,7 +33,22 @@ export const MetriportWidget = (props: MetriportWidgetProps & WebViewProps) => {
     return <NativeWidget {...props} />;
   }
 
-  const url = props.url ? props.url : "https://connect.metriport.com";
+  let url = props.url ? props.url : "https://connect.metriport.com";
+
+  url = props.sandbox ? `${url}&sandbox=true` : url;
+
+  if (props.colorMode) {
+    url = `${url}&colorMode=${props.colorMode}`;
+  }
+
+  if (props.customColor) {
+    url = `${url}&customColor=${props.customColor}`;
+  }
+
+  if (props.providers) {
+    const providersStr = props.providers.join();
+    url = `${url}&providers=${providersStr}`;
+  }
 
   return <WebView source={{ uri: `${url}?token=${props.token}` }} {...props} />;
 };
