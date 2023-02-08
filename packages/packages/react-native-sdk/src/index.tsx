@@ -35,6 +35,7 @@ export const MetriportWidget = (props: MetriportWidgetProps & WebViewProps) => {
 
   let url = props.url ? props.url : "https://connect.metriport.com";
 
+  url = `${url}?token=${props.token}`;
   url = props.sandbox ? `${url}&sandbox=true` : url;
 
   if (props.colorMode) {
@@ -50,5 +51,5 @@ export const MetriportWidget = (props: MetriportWidgetProps & WebViewProps) => {
     url = `${url}&providers=${providersStr}`;
   }
 
-  return <WebView source={{ uri: `${url}?token=${props.token}` }} {...props} />;
+  return <WebView source={{ uri: url }} {...props} />;
 };

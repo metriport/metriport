@@ -8,7 +8,10 @@ export default function App() {
     <MetriportWidget
       token="CONNECT_TOKEN"
       clientApiKey="CLIENT_API_KEY"
-      sandbox={false}
+      colorMode="dark"
+      customColor="green"
+      sandbox={true}
+      providers={["fitbit", "cronometer"]}
       style={styles.box}
     />
   );
