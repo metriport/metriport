@@ -10,10 +10,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "@metriport/react-native-sdk": "^0.0.7",
+    "@metriport/react-native-sdk": "^0.0.13",
     "react": "18.2.0",
     "react-native": "0.71.0",
-    "react-native-webview": "^11.26.0"
+    "react-native-webview": "^11.26.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",

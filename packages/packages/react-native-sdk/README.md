@@ -1,6 +1,6 @@
-# Metriport-iOS-SDK
+# Metriport React Native SDK
 
-A React Native wrapper around our [iOS package](https://github.com/metriport/metriport-ios-sdk).
+A React Native package to render our widget to be able to connect with available providers.
 
 ## Quickstart
 
