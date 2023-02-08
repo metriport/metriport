@@ -23,6 +23,8 @@ const docPatientLastName = getEnvOrFail("DOCUMENT_PATIENT_LAST_NAME");
 const docPatientDateOfBirth = getEnvOrFail("DOCUMENT_PATIENT_DATE_OF_BIRTH");
 const docPatientGender = getEnvOrFail("DOCUMENT_PATIENT_GENDER");
 const docPatientZip = getEnvOrFail("DOCUMENT_PATIENT_ZIP");
+export const documentOrgOID = getEnvOrFail("DOCUMENT_ORG_OID");
+export const documentOrgName = getEnvOrFail("DOCUMENT_ORG_NAME");
 
 // PERSON
 export const caDriversLicenseUri = "urn:oid:2.16.840.1.113883.4.3.6";
@@ -130,6 +132,7 @@ export const docIdentifier = {
   label: commonwellOrgName,
   system: metriportSystem,
   key: docPatientKey,
+  assigner: commonwellOrgName,
 };
 export const docMainPayload = {
   identifier: [docIdentifier],

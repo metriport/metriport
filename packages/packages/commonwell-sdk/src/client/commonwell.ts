@@ -666,7 +666,12 @@ export class CommonWell {
     const headers = await this.buildQueryHeaders(meta);
     const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
     const res = await this.api.get(url, { headers });
-    return documentQueryResponseSchema.parse(res.data);
+    try {
+      return documentQueryResponseSchema.parse(res.data);
+    } catch (err) {
+      console.log(`[queryDocuments] Failed to parse response: `, JSON.stringify(res.data, undefined, 2));
+      throw err;
+    }
   }
 
   /**

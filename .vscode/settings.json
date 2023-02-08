@@ -1,3 +1,6 @@
 {
-    "dotenv.enableAutocloaking": false
+    "dotenv.enableAutocloaking": false,
+    "workbench.colorCustomizations": {
+      "statusBar.background": "#007acc"
+    }
 }

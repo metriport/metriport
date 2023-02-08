@@ -111,7 +111,10 @@ export type Document = z.infer<typeof documentSchema>;
 
 export const documentQueryResponseSchema = z.object({
   resourceType: resourceTypeSchema,
-  entry: z.array(documentSchema),
+  entry: z.preprocess(entries => {
+    const result = z.array(z.any()).parse(entries);
+    return result.filter(e => e.content?.resourceType === "DocumentReference");
+  }, z.array(documentSchema)),
 });
 
 export type DocumentQueryResponse = z.infer<typeof documentQueryResponseSchema>;
