@@ -9,7 +9,9 @@
     "experimentalDecorators": true,
     "target": "es6",
     "sourceMap": true,
-    "lib": ["es6"]
+    "lib": ["es6"],
+    "types": ["react", "jest"],
+    "skipLibCheck": true
   },
   "exclude": ["node_modules", "**/*.spec.ts"]
 }
