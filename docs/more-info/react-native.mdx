@@ -1,22 +1,18 @@
 ---
 title: "React Native"
-description: "Our package is a wrapper for our iOS SDK."
+description: "A library to integrate with Metriport on React Native - including Apple Health integrations."
 ---
 
 <Info>
   As a prerequisite [visit the apple health docs](/more-info/apple-health#initial-setup) and take a
-  look at the initial setup.
+  look at the initial setup for apple healthkit.
 </Info>
-
-<Warning>
-  This widget is compatible with Apple. If you would like to see how to implement on android [check
-  the example below.](/more-info/react-native#usage)
-</Warning>
 
 ## Installation
 
 ```sh
 npm install metriport-react-native
+npm install react-native-webview
 ```
 
 You'll need to ensure that the MetriportSDK pod is installed as well.
@@ -33,23 +29,18 @@ To use our SDK go to the root of your project and add:
 ```jsx
 import * as React from "react";
 
-import { StyleSheet, Platform } from "react-native";
+import { StyleSheet } from "react-native";
 import { MetriportWidget } from "@metriport/react-native-sdk";
-import { WebView } from "react-native-webview";
 
 export default function App() {
-  if (Platform.OS === "ios") {
-    return (
-      <MetriportWidget
-        token="CONNECT_SESSION_TOKEN"
-        clientApiKey="CLIENT_API_KEY"
-        sandbox={false}
-        style={styles.box}
-      />
-    );
-  }
-
-  return <WebView source={{ uri: "https://connect.metriport.com/?token=demo" }} />;
+  return (
+    <MetriportWidget
+      token="CONNECT_TOKEN"
+      clientApiKey="CLIENT_API_KEY"
+      sandbox={false}
+      style={styles.box}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
@@ -76,6 +67,6 @@ const styles = StyleSheet.create({
   [here](/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app).
 </Info>
 
-## Receiving Data
+## Apple Healthkit
 
-To understand more how to receive data [check out here.](/more-info/apple-health#receiving-data)
+To understand more how to receive data from apple healthkit [check out here.](/more-info/apple-health#receiving-data)
