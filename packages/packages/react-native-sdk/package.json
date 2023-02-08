@@ -41,7 +41,7 @@
   "scripts": {
     "tsc": "tsc",
     "build": "tsc -p .",
-    "test": "node ./__tests__/@metriport/react-native.test.js"
+    "test": "echo \"No test specified yet\""
   },
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
