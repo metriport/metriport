@@ -7,7 +7,6 @@ import { documentContribution } from "./document-contribution";
 import { linkManagement } from "./link-management";
 import { orgManagement } from "./org-management";
 import { patientManagement } from "./patient-management";
-import { documentOrgName, documentOrgOID } from "./payloads";
 import { personManagement } from "./person-management";
 import { getEnvOrFail } from "./util";
 
@@ -91,14 +90,6 @@ async function main() {
     APIMode.integration
   );
 
-  const commonwellDocSandbox = new CommonWell(
-    commonwellCert,
-    commonwellPrivateKey,
-    documentOrgName,
-    documentOrgOID,
-    APIMode.integration
-  );
-
   // Member Account Org
   const commonwellMemberOID = getEnvOrFail("COMMONWELL_MEMBER_OID");
 
@@ -123,7 +114,7 @@ async function main() {
   await patientManagement(commonWell, commonWellSandbox, queryMeta);
   await linkManagement(commonWell, queryMeta);
   await documentConsumption(commonWell, queryMeta);
-  await documentContribution(commonWell, commonwellDocSandbox, queryMeta);
+  await documentContribution(commonWell, commonWellSandbox, queryMeta);
 }
 
 main();

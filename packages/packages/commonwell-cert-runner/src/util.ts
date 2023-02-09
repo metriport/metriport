@@ -1,9 +1,11 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-export function getEnvOrFail(name) {
-  const value = process.env[name];
-  // console.log(process.env);
+export function getEnv(name: string): string | undefined {
+  return process.env[name];
+}
+export function getEnvOrFail(name: string): string {
+  const value = getEnv(name);
   if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
   return value;
 }
