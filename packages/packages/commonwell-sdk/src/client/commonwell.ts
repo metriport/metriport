@@ -525,6 +525,22 @@ export class CommonWell {
   }
 
   /**
+   * Returns a patient based on its ID.
+   *
+   * @param meta    Metadata about the request.
+   * @param id      Patient's ID.
+   * @returns {Promise<Patient>}
+   */
+  async getPatient(meta: RequestMetadata, id: string): Promise<Patient> {
+    const headers = await this.buildQueryHeaders(meta);
+    const suffix = id.endsWith("/") ? "" : "/";
+    const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}${suffix}`, {
+      headers,
+    });
+    return patientSchema.parse(resp.data);
+  }
+
+  /**
    * Searches for a patient based on params.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8761-search-for-a-patient
    *
@@ -666,7 +682,15 @@ export class CommonWell {
     const headers = await this.buildQueryHeaders(meta);
     const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
     const res = await this.api.get(url, { headers });
-    return documentQueryResponseSchema.parse(res.data);
+    try {
+      return documentQueryResponseSchema.parse(res.data);
+    } catch (err) {
+      console.log(
+        `[queryDocuments] Failed to parse response: `,
+        JSON.stringify(res.data, undefined, 2)
+      );
+      throw err;
+    }
   }
 
   /**

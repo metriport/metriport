@@ -130,6 +130,7 @@ export const docIdentifier = {
   label: commonwellOrgName,
   system: metriportSystem,
   key: docPatientKey,
+  assigner: commonwellOrgName,
 };
 export const docMainPayload = {
   identifier: [docIdentifier],

@@ -3,6 +3,7 @@ import { APIMode, CommonWell, PurposeOfUse, RequestMetadata } from "@metriport/c
 import { Command } from "commander";
 import * as dotenv from "dotenv";
 import { documentConsumption } from "./document-consumption";
+import { documentContribution } from "./document-contribution";
 import { linkManagement } from "./link-management";
 import { orgManagement } from "./org-management";
 import { patientManagement } from "./patient-management";
@@ -113,6 +114,7 @@ async function main() {
   await patientManagement(commonWell, commonWellSandbox, queryMeta);
   await linkManagement(commonWell, queryMeta);
   await documentConsumption(commonWell, queryMeta);
+  await documentContribution(commonWell, commonWellSandbox, queryMeta);
 }
 
 main();
