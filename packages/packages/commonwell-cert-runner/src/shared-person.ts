@@ -20,7 +20,7 @@ export async function findOrCreatePerson(
     let personId: string | undefined = undefined;
     let patientId: string | undefined = undefined;
   
-    // IF THERE'S A PATIENT, USE IT IT
+    // IF THERE'S A PATIENT, USE IT
     if (respPatient._embedded?.patient?.length > 0) {
       const embeddedPatients = respPatient._embedded.patient;
       if (embeddedPatients.length > 1) {

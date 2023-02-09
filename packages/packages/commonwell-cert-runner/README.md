@@ -30,7 +30,7 @@ After installation, create a `.env` file defining the following variables:
 - `DOCUMENT_PATIENT_GENDER`: their gender (M|F)
 - `DOCUMENT_PATIENT_ZIP`: their address zip code
 - `DOCUMENT_CONTRIBUTION_PATIENT_ID`: [optional] full ID of an existing patient to be used for the document contribution
-flow - must exist on the 
+flow - must exist on the sandbox organization
 
 Example file content looks like:
 
