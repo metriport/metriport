@@ -1,0 +1,105 @@
+{
+  "id": "urn:uuid:b408e058-bcf3-4513-a22a-2c678402be0f",
+  "content": {
+    "resourceType": "DocumentReference",
+    "contained": [
+      {
+        "resourceType": "Organization",
+        "id": "orgRef1",
+        "name": "Metriport-OrgA-1651"
+      },
+      {
+        "resourceType": "Practitioner",
+        "id": "authRef1",
+        "organization": {
+          "reference": "#orgRef1"
+        }
+      }
+    ],
+    "masterIdentifier": {
+      "system": "urn:ietf:rfc:3986",
+      "value": "2.16.840.1.113883.3.3330.8889429.1651.1^89765..1"
+    },
+    "identifier": [
+      {
+        "use": "official",
+        "system": "urn:ietf:rfc:3986",
+        "value": "urn:uuid:b408e058-bcf3-4513-a22a-2c678402be0f"
+      }
+    ],
+    "subject": {
+      "reference": "#patRef1"
+    },
+    "type": {
+      "coding": [
+        {
+          "system": "http://loinc.org/",
+          "code": "34133-9",
+          "display": "Summarization of episode note"
+        }
+      ]
+    },
+    "author": [
+      {
+        "reference": "#authRef1"
+      }
+    ],
+    "indexed": "2023-02-09T00:01:42+00:00",
+    "status": "current",
+    "description": "Metriport-OrgA-1651 Summarization Of Episode Note",
+    "mimeType": "application/octet-stream",
+    "location": "https://integration.rest.api.commonwellalliance.org/v2/Binary/H4sIAAAAAAAEAJXLMQ6AIAxA0ds4NlRAy2AcnDyAq4s2kQGqCIO3lyuQP778-ZLAi4RQos_fek494ABkFCAgaiINNa0VEJEzvatsK3WJb3l9lvRt0T-FG9ZTjhI45tZxJzcOFgB_QQwPAbUAAAA1",
+    "context": {
+      "event": [
+        {
+          "text": "Problem"
+        },
+        {
+          "text": "drug allergy"
+        },
+        {
+          "text": "Nausea"
+        },
+        {
+          "text": "Depressive disorder"
+        },
+        {
+          "text": "Hypothyroidism"
+        },
+        {
+          "text": "Sinusitis"
+        },
+        {
+          "text": "CT of paranasal sinuses"
+        },
+        {
+          "text": "Left maxillary sinus mass"
+        },
+        {
+          "text": "never a smoker"
+        },
+        {
+          "text": "Vital signs"
+        },
+        {
+          "text": "Neoplasm of accessory sinus"
+        },
+        {
+          "text": "Finding of functional performance and activity"
+        },
+        {
+          "text": "Cane"
+        },
+        {
+          "text": "Cognitive function finding"
+        },
+        {
+          "text": "Short term memory deficit"
+        }
+      ],
+      "period": {
+        "start": "2012-10-02T04:00:00Z"
+      }
+    }
+  }
+}

@@ -63,9 +63,6 @@ export async function documentContribution(
     }
     console.log(`patientId: ${sandboxPatientId}`);
 
-    // const respSearchPerson = await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
-    // console.log(respSearchPerson);
-
     console.log(`Get patients links`);
     const respGetLinks = await commonwellDocSandbox.getPatientsLinks(queryMeta, sandboxPatientId);
     console.log(respGetLinks);
