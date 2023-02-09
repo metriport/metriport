@@ -53,9 +53,6 @@ export async function retrieveDocument(
   console.log(`>>> E2c: Retrieve documents using FHIR (REST)`);
 
   const fileName = `./commonwell_${nanoid()}.file`;
-
-  fs.writeFileSync(fileName + ".response", JSON.stringify(doc, undefined, 2));
-
   const outputStream = fs.createWriteStream(fileName, {
     // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
     encoding: null,
