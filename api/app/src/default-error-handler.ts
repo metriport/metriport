@@ -26,7 +26,8 @@ const zodResponseBody = (err: ZodError): string => {
   });
 };
 
-export const errorHandler: ErrorRequestHandler = (err, req, res) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   if (err instanceof MetriportError) {
     return res.contentType("json").status(err.status).send(metriportResponseBody(err));
   }
