@@ -8,7 +8,6 @@ on:
 jobs:
   widget-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
-    needs: widget-build
     with:
       build_env: "staging"
       deploy_env: "staging"
@@ -21,7 +20,6 @@ jobs:
 
   api-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
-    needs: api-build
     with:
       deploy_env: "staging"
     secrets:
