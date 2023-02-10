@@ -1,15 +1,16 @@
 import { Application } from "express";
+import activity from "./activity";
+import biometrics from "./biometrics";
+import body from "./body";
 import connect from "./connect";
+import fhirProxy from "./fhir-proxy";
+import { requestLogger } from "./helpers/requestLogger";
 import { processAPIKey } from "./middlewares/auth";
 import { reportUsage } from "./middlewares/usage";
 import nutrition from "./nutrition";
-import activity from "./activity";
-import body from "./body";
-import biometrics from "./biometrics";
+import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
-import settings from "./settings";
-import { requestLogger } from "./helpers/requestLogger";
 import webhook from "./webhook";
 
 export default (app: Application) => {
@@ -29,4 +30,5 @@ export default (app: Application) => {
 
   // routes with session token auth
   app.use("/connect", connect);
+  app.use("/fhir", fhirProxy);
 };

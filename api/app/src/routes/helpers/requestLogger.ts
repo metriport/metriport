@@ -4,12 +4,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   const method = req.method;
   const url = req.baseUrl + req.path;
   const query = req.query && Object.keys(req.query).length ? req.query : undefined;
-  console.log(
-    "..........Begins %s %s %s",
-    method,
-    url,
-    query ? `? ${JSON.stringify(req.query)}` : ""
-  );
+  console.log("..........Begins %s %s %s", method, url, query ? `? ${JSON.stringify(query)}` : "");
   const startHrTime = process.hrtime();
   res.on("close", () => {
     const elapsedHrTime = process.hrtime(startHrTime);
