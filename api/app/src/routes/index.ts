@@ -3,11 +3,11 @@ import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
-import fhirProxy from "./fhir-proxy";
 import { requestLogger } from "./helpers/requestLogger";
 import { processAPIKey } from "./middlewares/auth";
 import { reportUsage } from "./middlewares/usage";
 import nutrition from "./nutrition";
+import oauthRoutes from "./oauth-routes";
 import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
@@ -30,5 +30,7 @@ export default (app: Application) => {
 
   // routes with session token auth
   app.use("/connect", connect);
-  app.use("/fhir", fhirProxy);
+
+  // routes with OAuth based authentication
+  app.use("/oauth", oauthRoutes);
 };

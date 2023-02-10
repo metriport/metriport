@@ -1,6 +1,8 @@
 import { Aspects, CfnOutput, Duration, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
@@ -14,7 +16,6 @@ import { Credentials } from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
 import { EnvType } from "./env-type";
@@ -204,6 +205,8 @@ export class APIStack extends Stack {
         publicLoadBalancer: false,
       }
     );
+    const apiServerAddress = fargateService.loadBalancer.loadBalancerDnsName;
+
     // This speeds up deployments so the tasks are swapped quicker.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
     fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
@@ -260,7 +263,7 @@ export class APIStack extends Stack {
         },
       },
       integrationHttpMethod: "ANY",
-      uri: `http://${fargateService.loadBalancer.loadBalancerDnsName}/{proxy}`,
+      uri: `http://${apiServerAddress}/{proxy}`,
     });
 
     //-------------------------------------------
@@ -318,53 +321,15 @@ export class APIStack extends Stack {
     });
 
     // token auth for connect sessions
-    const tokenAuthLambda = new lambda_node.NodejsFunction(this, "APITokenAuthLambda", {
-      runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "../api/lambdas/token-auth/index.js",
-      environment: {
-        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-      },
-    });
-    addErrorAlarmToLambdaFunc(this, tokenAuthLambda, "TokenAuthFunctionAlarm");
-
-    const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
-      handler: tokenAuthLambda,
-      identitySources: ["method.request.querystring.state"],
-      // todo: instead of removing caching, investigate explicitly listing
-      //        the permitted methods in the lambda: "Resource: event.methodArn"
-      //
-      // see: https://forum.serverless.com/t/rest-api-with-custom-authorizer-how-are-you-dealing-with-authorization-and-policy-cache/3310
-      resultsCacheTtl: Duration.minutes(0),
-    });
-    tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
+    const tokenAuth = this.setupTokenAuthLambda(dynamoDBTokenTable);
 
     // setup /token path with token auth
-    const apiTokenResource = api.root.addResource("token");
-    const tokenProxy = new apig.ProxyResource(this, `${id}/token/Proxy`, {
-      parent: apiTokenResource,
-      anyMethod: false,
-    });
-    const integrationToken = new apig.Integration({
-      type: apig.IntegrationType.HTTP_PROXY,
-      options: {
-        connectionType: apig.ConnectionType.VPC_LINK,
-        vpcLink: link,
-        requestParameters: {
-          "integration.request.path.proxy": "method.request.path.proxy",
-          "integration.request.header.api-token": "context.authorizer.api-token",
-          "integration.request.header.cxId": "context.authorizer.cxId",
-          "integration.request.header.userId": "context.authorizer.userId",
-        },
-      },
-      integrationHttpMethod: "ANY",
-      uri: `http://${fargateService.loadBalancer.loadBalancerDnsName}/{proxy}`,
-    });
-    tokenProxy.addMethod("ANY", integrationToken, {
-      requestParameters: {
-        "method.request.path.proxy": true,
-      },
-      authorizer: tokenAuth,
-    });
+    this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiServerAddress);
+
+    const userPool = this.setupOAuthUserPool();
+    this.enableFHIROnUserPool(userPool);
+    const oauthAuth = this.setupOAuthAuthorizer(userPool);
+    this.setupAPIGWOAuthResource(id, api, link, oauthAuth, apiServerAddress);
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
@@ -385,7 +350,7 @@ export class APIStack extends Stack {
         vpcLink: link,
       },
       integrationHttpMethod: "POST",
-      uri: `http://${fargateService.loadBalancer.loadBalancerDnsName}${appleHealthResource.path}`,
+      uri: `http://${apiServerAddress}${appleHealthResource.path}`,
     });
     appleHealthResource.addMethod("POST", integrationApple, {
       apiKeyRequired: true,
@@ -494,6 +459,144 @@ export class APIStack extends Stack {
     // setup $base/garmin path with token auth
     const garminResource = baseResource.addResource("garmin");
     garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
+  }
+
+  private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {
+    const tokenAuthLambda = new lambda_node.NodejsFunction(this, "APITokenAuthLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "../api/lambdas/token-auth/index.js",
+      environment: {
+        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+      },
+    });
+    addErrorAlarmToLambdaFunc(this, tokenAuthLambda, "TokenAuthFunctionAlarm");
+
+    const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
+      handler: tokenAuthLambda,
+      identitySources: ["method.request.querystring.state"],
+      // todo: instead of removing caching, investigate explicitly listing
+      //        the permitted methods in the lambda: "Resource: event.methodArn"
+      //
+      // see: https://forum.serverless.com/t/rest-api-with-custom-authorizer-how-are-you-dealing-with-authorization-and-policy-cache/3310
+      resultsCacheTtl: Duration.minutes(0),
+    });
+    tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
+
+    return tokenAuth;
+  }
+
+  private setupAPIGWApiTokenResource(
+    stackId: string,
+    api: apig.RestApi,
+    link: apig.VpcLink,
+    authorizer: apig.RequestAuthorizer,
+    serverAddress: string
+  ): apig.Resource {
+    const apiTokenResource = api.root.addResource("token");
+    const tokenProxy = new apig.ProxyResource(this, `${stackId}/token/Proxy`, {
+      parent: apiTokenResource,
+      anyMethod: false,
+    });
+    const integrationToken = new apig.Integration({
+      type: apig.IntegrationType.HTTP_PROXY,
+      options: {
+        connectionType: apig.ConnectionType.VPC_LINK,
+        vpcLink: link,
+        requestParameters: {
+          "integration.request.path.proxy": "method.request.path.proxy",
+          "integration.request.header.api-token": "context.authorizer.api-token",
+          "integration.request.header.cxId": "context.authorizer.cxId",
+          "integration.request.header.userId": "context.authorizer.userId",
+        },
+      },
+      integrationHttpMethod: "ANY",
+      uri: `http://${serverAddress}/{proxy}`,
+    });
+    tokenProxy.addMethod("ANY", integrationToken, {
+      requestParameters: {
+        "method.request.path.proxy": true,
+      },
+      authorizer,
+    });
+    return apiTokenResource;
+  }
+
+  private setupOAuthUserPool(): cognito.IUserPool {
+    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool");
+    // TODO make this a custom domain
+    userPool.addDomain("metriport-cognito-domain", {
+      cognitoDomain: {
+        domainPrefix: "metriport", // TODO make this dynamic/config
+      },
+    });
+    return userPool;
+  }
+
+  private enableFHIROnUserPool(userPool: cognito.IUserPool): void {
+    const resourceServerScopes = [
+      {
+        scopeName: "document",
+        scopeDescription: "query and retrieve document references",
+      },
+    ];
+    userPool.addResourceServer("FHIR-resource-server", {
+      identifier: "fhir",
+      scopes: resourceServerScopes,
+    });
+    // Commonwell specific client
+    userPool.addClient("commonwell-client", {
+      generateSecret: true,
+      oAuth: {
+        flows: {
+          clientCredentials: true,
+        },
+        scopes: resourceServerScopes,
+      },
+    });
+  }
+
+  private setupOAuthAuthorizer(userPool: cognito.IUserPool): apig.IAuthorizer {
+    const cognitoAuthorizer = new apig.CognitoUserPoolsAuthorizer(this, `oauth-authorizer`, {
+      cognitoUserPools: [userPool],
+      identitySource: "method.request.header.Authorization",
+    });
+    return cognitoAuthorizer;
+  }
+
+  private setupAPIGWOAuthResource(
+    stackId: string,
+    api: apig.RestApi,
+    vpcLink: apig.VpcLink,
+    authorizer: apig.IAuthorizer,
+    serverAddress: string
+  ): apig.Resource {
+    const oauthResource = api.root.addResource("oauth", {
+      defaultCorsPreflightOptions: { allowOrigins: ["*"] },
+    });
+    const oauthProxy = new apig.ProxyResource(this, `${stackId}/oauth/Proxy`, {
+      parent: oauthResource,
+      anyMethod: false,
+      defaultCorsPreflightOptions: { allowOrigins: ["*"] },
+    });
+    const oauthProxyIntegration = new apig.Integration({
+      type: apig.IntegrationType.HTTP_PROXY,
+      options: {
+        connectionType: apig.ConnectionType.VPC_LINK,
+        vpcLink,
+        requestParameters: {
+          "integration.request.path.proxy": "method.request.path.proxy",
+        },
+      },
+      integrationHttpMethod: "ANY",
+      uri: `http://${serverAddress}/oauth/{proxy}`,
+    });
+    oauthProxy.addMethod("ANY", oauthProxyIntegration, {
+      requestParameters: {
+        "method.request.path.proxy": true,
+      },
+      authorizer,
+    });
+    return oauthResource;
   }
 
   private addDBClusterPerformanceAlarms(dbCluster: rds.DatabaseCluster, dbClusterName: string) {
