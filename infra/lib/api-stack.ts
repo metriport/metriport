@@ -326,9 +326,9 @@ export class APIStack extends Stack {
     // setup /token path with token auth
     this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiServerAddress);
 
-    const userPool = this.setupOAuthUserPool();
-    this.enableFHIROnUserPool(userPool);
-    const oauthAuth = this.setupOAuthAuthorizer(userPool);
+    const userPoolClientSecret = this.setupOAuthUserPool();
+    this.enableFHIROnUserPool(userPoolClientSecret);
+    const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, apiServerAddress);
 
     // WEBHOOKS
@@ -428,6 +428,10 @@ export class APIStack extends Stack {
     new CfnOutput(this, "APIDBCluster", {
       description: "API DB Cluster",
       value: `${dbCluster.clusterEndpoint.hostname} ${dbCluster.clusterEndpoint.port} ${dbCluster.clusterEndpoint.socketAddress}`,
+    });
+    new CfnOutput(this, "ClientSecretUserpoolID", {
+      description: "Userpool for client secret based apps",
+      value: userPoolClientSecret.userPoolId,
     });
   }
 
@@ -533,16 +537,26 @@ export class APIStack extends Stack {
   }
 
   private enableFHIROnUserPool(userPool: cognito.IUserPool): void {
-    const resourceServerScopes = [
+    const scopes = [
       {
         scopeName: "document",
         scopeDescription: "query and retrieve document references",
       },
     ];
-    userPool.addResourceServer("FHIR-resource-server", {
+    const resourceServerScopes = scopes.map(
+      s =>
+        new cognito.ResourceServerScope({
+          scopeName: s.scopeName,
+          scopeDescription: s.scopeDescription,
+        })
+    );
+    const resourceServer = userPool.addResourceServer("FHIR-resource-server", {
       identifier: "fhir",
       scopes: resourceServerScopes,
     });
+    const oauthScopes = resourceServerScopes.map(s =>
+      cognito.OAuthScope.resourceServer(resourceServer, s)
+    );
     // Commonwell specific client
     userPool.addClient("commonwell-client", {
       generateSecret: true,
@@ -550,7 +564,7 @@ export class APIStack extends Stack {
         flows: {
           clientCredentials: true,
         },
-        scopes: resourceServerScopes,
+        scopes: oauthScopes,
       },
     });
   }
