@@ -560,6 +560,7 @@ export class APIStack extends Stack {
     // Commonwell specific client
     userPool.addClient("commonwell-client", {
       generateSecret: true,
+      supportedIdentityProviders: [],
       oAuth: {
         flows: {
           clientCredentials: true,
