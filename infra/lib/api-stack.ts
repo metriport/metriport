@@ -1,4 +1,4 @@
-import { Aspects, CfnOutput, Duration, Stack, StackProps } from "aws-cdk-lib";
+import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -327,9 +327,9 @@ export class APIStack extends Stack {
     this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiServerAddress);
 
     const userPoolClientSecret = this.setupOAuthUserPool();
-    this.enableFHIROnUserPool(userPoolClientSecret);
+    const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
-    this.setupAPIGWOAuthResource(id, api, link, oauthAuth, apiServerAddress);
+    this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiServerAddress);
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
@@ -526,7 +526,10 @@ export class APIStack extends Stack {
   }
 
   private setupOAuthUserPool(): cognito.IUserPool {
-    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool");
+    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool", {
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
     // TODO make this a custom domain
     userPool.addDomain("metriport-cognito-domain", {
       cognitoDomain: {
@@ -536,20 +539,14 @@ export class APIStack extends Stack {
     return userPool;
   }
 
-  private enableFHIROnUserPool(userPool: cognito.IUserPool): void {
+  private enableFHIROnUserPool(userPool: cognito.IUserPool): cognito.OAuthScope[] {
     const scopes = [
       {
         scopeName: "document",
         scopeDescription: "query and retrieve document references",
       },
     ];
-    const resourceServerScopes = scopes.map(
-      s =>
-        new cognito.ResourceServerScope({
-          scopeName: s.scopeName,
-          scopeDescription: s.scopeDescription,
-        })
-    );
+    const resourceServerScopes = scopes.map(s => new cognito.ResourceServerScope(s));
     const resourceServer = userPool.addResourceServer("FHIR-resource-server", {
       identifier: "fhir",
       scopes: resourceServerScopes,
@@ -560,7 +557,7 @@ export class APIStack extends Stack {
     // Commonwell specific client
     userPool.addClient("commonwell-client", {
       generateSecret: true,
-      supportedIdentityProviders: [],
+      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
       oAuth: {
         flows: {
           clientCredentials: true,
@@ -568,6 +565,7 @@ export class APIStack extends Stack {
         scopes: oauthScopes,
       },
     });
+    return oauthScopes;
   }
 
   private setupOAuthAuthorizer(userPool: cognito.IUserPool): apig.IAuthorizer {
@@ -583,6 +581,7 @@ export class APIStack extends Stack {
     api: apig.RestApi,
     vpcLink: apig.VpcLink,
     authorizer: apig.IAuthorizer,
+    oauthScopes: cognito.OAuthScope[],
     serverAddress: string
   ): apig.Resource {
     const oauthResource = api.root.addResource("oauth", {
@@ -610,6 +609,7 @@ export class APIStack extends Stack {
         "method.request.path.proxy": true,
       },
       authorizer,
+      authorizationScopes: oauthScopes.map(s => s.scopeName),
     });
     return oauthResource;
   }
