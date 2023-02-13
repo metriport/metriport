@@ -42,6 +42,18 @@ export class Metriport {
   }
 
   /**
+   * For your given user ID, returns the user's connected providers
+   *
+   * @param {string} userId - The unique ID for the user in your app.
+   * @returns Array of connected providers
+   */
+  async getConnectedProviders(userId: string): Promise<string[]> {
+    const resp = await this.api.get<string[]>(`/user/${userId}/connect`);
+
+    return resp.data;
+  }
+
+  /**
    * For the given user ID, get a token to be used for a Metriport Connect session.
    *
    * @param {string} userId - The user ID of the user that will be using the Connect widget.
