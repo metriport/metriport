@@ -4,11 +4,15 @@ import { Util } from "../../shared/util";
 import convert from "convert-units";
 
 import { PROVIDER_WITHINGS } from "../../shared/constants";
-import { WithingsMeasurements, WithingsMeasurementGrp } from "./models/measurements";
+import {
+  WithingsMeasurements,
+  WithingsMeasurementGrp,
+  WithingsMeasType,
+} from "./models/measurements";
 
-export interface ResultsMeasurements {
+export type ResultsMeasurements = {
   [key: number]: number[];
-}
+};
 
 export const mapToBody = (date: string, withingsMeasurements: WithingsMeasurements): Body => {
   const metadata = {
@@ -25,28 +29,28 @@ export const mapToBody = (date: string, withingsMeasurements: WithingsMeasuremen
     // Below we get the avg's
     const results = getMeasurementResults(withingsMeasurements.measuregrps);
 
-    const withingsWeight = results[1];
+    const withingsWeight = results[WithingsMeasType.weight_kg];
     if (withingsWeight) {
       body.weight_kg = Util.getAvgOfArr(withingsWeight, 2);
     }
 
-    const withingsHeight = results[4];
+    const withingsHeight = results[WithingsMeasType.height_m];
     if (withingsHeight) {
       const avgHeight = Util.getAvgOfArr(withingsHeight, 3);
       body.height_cm = convert(avgHeight).from("m").to("cm");
     }
 
-    const withingsFatFreeMass = results[5];
+    const withingsFatFreeMass = results[WithingsMeasType.lean_mass_kg];
     if (withingsFatFreeMass) {
       body.lean_mass_kg = Util.getAvgOfArr(withingsFatFreeMass, 2);
     }
 
-    const withingsFatRatio = results[6];
+    const withingsFatRatio = results[WithingsMeasType.body_fat_pct];
     if (withingsFatRatio) {
       body.body_fat_pct = Util.getAvgOfArr(withingsFatRatio, 1);
     }
 
-    const withingsBoneMass = results[88];
+    const withingsBoneMass = results[WithingsMeasType.bone_mass_kg];
     if (withingsBoneMass) {
       body.bone_mass_kg = Util.getAvgOfArr(withingsBoneMass, 2);
     }

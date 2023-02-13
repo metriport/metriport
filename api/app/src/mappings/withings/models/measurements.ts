@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+export enum WithingsMeasType {
+  weight_kg = 1,
+  height_m = 4,
+  lean_mass_kg = 5,
+  body_fat_pct = 6,
+  bone_mass_kg = 88,
+  temperature = 12,
+  spo2 = 54,
+  body_temp = 71,
+  skin_temp = 73,
+  vo2 = 123,
+}
+
 export const withingsMeasurementGrp = z.object({
   grpid: z.number(),
   attrib: z.number(),

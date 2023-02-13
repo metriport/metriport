@@ -5,7 +5,7 @@ import { Util } from "../../shared/util";
 
 import { PROVIDER_WITHINGS } from "../../shared/constants";
 import { WithingsHeartRate } from "./models/heart-rate";
-import { WithingsMeasurements } from "./models/measurements";
+import { WithingsMeasurements, WithingsMeasType } from "./models/measurements";
 import { getMeasurementResults } from "./body";
 
 export const mapToBiometrics = (
@@ -39,7 +39,7 @@ export const mapToBiometrics = (
   if (withingsMeasurements && withingsMeasurements.measuregrps.length) {
     const results = getMeasurementResults(withingsMeasurements.measuregrps);
 
-    const withingsSpo2 = results[54];
+    const withingsSpo2 = results[WithingsMeasType.spo2];
     if (withingsSpo2) {
       biometrics.respiration = {
         ...biometrics.respiration,
@@ -49,7 +49,7 @@ export const mapToBiometrics = (
       };
     }
 
-    const withingsTemp = results[12];
+    const withingsTemp = results[WithingsMeasType.temperature];
     if (withingsTemp) {
       biometrics.temperature = {
         ...biometrics.temperature,
@@ -57,7 +57,7 @@ export const mapToBiometrics = (
       };
     }
 
-    const withingsBodyTemp = results[71];
+    const withingsBodyTemp = results[WithingsMeasType.body_temp];
     if (withingsBodyTemp) {
       biometrics.temperature = {
         ...biometrics.temperature,
@@ -67,7 +67,7 @@ export const mapToBiometrics = (
       };
     }
 
-    const withingsSkinTemp = results[73];
+    const withingsSkinTemp = results[WithingsMeasType.skin_temp];
     if (withingsSkinTemp) {
       biometrics.temperature = {
         ...biometrics.temperature,
@@ -77,7 +77,7 @@ export const mapToBiometrics = (
       };
     }
 
-    const withingsVo2 = results[123];
+    const withingsVo2 = results[WithingsMeasType.vo2];
     if (withingsVo2) {
       biometrics.respiration = {
         ...biometrics.respiration,

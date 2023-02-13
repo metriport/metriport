@@ -263,7 +263,7 @@ export class Withings extends Provider implements OAuth2 {
       params,
     });
 
-    return response.data;
+    return response.data.body;
   }
 
   async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
@@ -271,9 +271,7 @@ export class Withings extends Provider implements OAuth2 {
 
     const response = await this.fetchBodyData(accessToken, date);
 
-    console.log(response.body);
-
-    return mapToBody(date, withingsMeasurementResp.parse(response.body));
+    return mapToBody(date, withingsMeasurementResp.parse(response));
   }
 
   async fetchHeartData(accessToken: string, date: string): Promise<WithingsHeartRate> {
@@ -306,7 +304,7 @@ export class Withings extends Provider implements OAuth2 {
     if (!heart && !body) {
       throw new Error("All Requests failed");
     }
-    return mapToBiometrics(date, heart, body.body);
+    return mapToBiometrics(date, heart, body);
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
