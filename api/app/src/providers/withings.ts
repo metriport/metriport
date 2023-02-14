@@ -21,7 +21,10 @@ import {
 } from "../mappings/withings/models/activity";
 import { withingsWorkoutLogsResp, WithingsWorkoutLogs } from "../mappings/withings/models/workouts";
 import { withingsHeartRateResp, WithingsHeartRate } from "../mappings/withings/models/heart-rate";
-import { withingsMeasurementResp } from "../mappings/withings/models/measurements";
+import {
+  withingsMeasurementResp,
+  WithingsMeasurements,
+} from "../mappings/withings/models/measurements";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
 export class Withings extends Provider implements OAuth2 {
   static URL = "https://wbsapi.withings.net";
@@ -249,7 +252,7 @@ export class Withings extends Provider implements OAuth2 {
     return mapToActivity(date, activity, workouts);
   }
 
-  async fetchBodyData(accessToken: string, date: string) {
+  async fetchBodyData(accessToken: string, date: string): Promise<WithingsMeasurements> {
     const params = {
       action: "getmeas",
       startdate: dayjs(date).unix(),
