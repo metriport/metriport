@@ -114,7 +114,7 @@ async function main() {
   await patientManagement(commonWell, commonWellSandbox, queryMeta);
   await linkManagement(commonWell, queryMeta);
   await documentConsumption(commonWell, queryMeta);
-  await documentContribution(commonWell, commonWellSandbox, queryMeta);
+  await documentContribution({ memberManagementApi: commonWellMember, api: commonWell, queryMeta });
 }
 
 main();

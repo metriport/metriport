@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { Agent } from "https";
 import { downloadFile } from "../common/fileDownload";
 import { makeJwt } from "../common/make-jwt";
+import MetriportError from "../common/metriport-error";
 import { convertPatientIdToSubjectId } from "../common/util";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
 import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
@@ -175,12 +176,16 @@ export class CommonWell {
    * @param id       The org to be found
    * @returns
    */
-  async getOneOrg(meta: RequestMetadata, id: string): Promise<Organization> {
+  async getOneOrg(meta: RequestMetadata, id: string): Promise<Organization | undefined> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.get(`${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/`, {
       headers,
+      validateStatus: null, // don't throw on status code > 299
     });
-    return organizationSchema.parse(resp.data);
+    const status = resp.status;
+    if (status === 404) return undefined;
+    if (status >= 200 && status < 300) return organizationSchema.parse(resp.data);
+    throw new MetriportError(`Failed to retrieve Organization`, status);
   }
 
   /**
@@ -534,9 +539,10 @@ export class CommonWell {
   async getPatient(meta: RequestMetadata, id: string): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
     const suffix = id.endsWith("/") ? "" : "/";
-    const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}${suffix}`, {
-      headers,
-    });
+    const resp = await this.api.get(
+      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}${suffix}`,
+      { headers }
+    );
     return patientSchema.parse(resp.data);
   }
 

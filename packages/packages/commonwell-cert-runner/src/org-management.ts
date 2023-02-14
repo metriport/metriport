@@ -8,13 +8,14 @@ import { certificate, organization, thumbprint } from "./payloads";
 
 export async function orgManagement(commonWell: CommonWell, queryMeta: RequestMetadata) {
   console.log(`>>> Create an org`);
-  const respCreateOrg = await commonWell.createOrg(queryMeta, organization);
+  const org = organization();
+  const respCreateOrg = await commonWell.createOrg(queryMeta, org);
   console.log(respCreateOrg);
 
   console.log(`>>> Update an org`);
-  organization.locations[0].city = "Miami";
+  org.locations[0].city = "Miami";
   const orgId = getIdTrailingSlash(respCreateOrg);
-  const respUpdateOrg = await commonWell.updateOrg(queryMeta, organization, orgId);
+  const respUpdateOrg = await commonWell.updateOrg(queryMeta, org, orgId);
   console.log(respUpdateOrg);
 
   console.log(`>>> Get all orgs`);

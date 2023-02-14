@@ -132,37 +132,58 @@ export const docIdentifier = {
   key: docPatientKey,
   assigner: commonwellOrgName,
 };
-export const docMainPayload = {
+export type PersonData = {
+  firstName?: string;
+  lastName?: string;
+  dob?: string;
+  gender?: string;
+  zip?: string;
+};
+export const docMainPayload = (
+  {
+    firstName = docPatientFirstName,
+    lastName = docPatientLastName,
+    dob = docPatientDateOfBirth,
+    gender = docPatientGender,
+    zip = docPatientZip,
+  }: PersonData = {
+    firstName: docPatientFirstName,
+    lastName: docPatientLastName,
+    dob: docPatientDateOfBirth,
+    gender: docPatientGender,
+    zip: docPatientZip,
+  }
+) => ({
   identifier: [docIdentifier],
   details: {
     address: [
       {
         use: NameUseCodes.usual,
-        zip: docPatientZip,
+        zip,
         country: "USA",
       },
     ],
     name: [
       {
         use: NameUseCodes.usual,
-        family: [docPatientLastName],
-        given: [docPatientFirstName],
+        family: [lastName],
+        given: [firstName],
       },
     ],
     gender: {
-      code: docPatientGender,
+      code: gender,
     },
-    birthDate: docPatientDateOfBirth,
+    birthDate: dob,
   },
-};
-export const docPerson = {
-  ...docMainPayload,
+});
+export const docPerson = (init?: PersonData) => ({
+  ...docMainPayload(init),
   details: {
-    ...docMainPayload.details,
+    ...docMainPayload(init).details,
     identifier: [],
   },
-};
-export const docPatient = docMainPayload;
+});
+export const docPatient = (init?: PersonData) => docMainPayload(init);
 
 // ORGANIZATION
 const appendOrgId = nanoid.customAlphabet("1234567890", 18)();
@@ -172,14 +193,14 @@ const shortName: string = uniqueNamesGenerator({
   length: 3,
 });
 
-export const organization = {
-  organizationId: `urn:oid:${commonwellOID}.${appendOrgId}`,
-  homeCommunityId: `urn:oid:${commonwellOID}.${appendOrgId}`,
+export const organization = (suffixId = appendOrgId) => ({
+  organizationId: `urn:oid:${commonwellOID}.${suffixId}`,
+  homeCommunityId: `urn:oid:${commonwellOID}.${suffixId}`,
   name: shortName,
   displayName: shortName,
   memberName: "Metriport",
   type: "Hospital",
-  patientIdAssignAuthority: `urn:oid:${commonwellOID}.${appendOrgId}`,
+  patientIdAssignAuthority: `urn:oid:${commonwellOID}.${suffixId}`,
   securityTokenKeyType: "BearerKey",
   isActive: true,
   locations: [
@@ -203,7 +224,7 @@ export const organization = {
       phone: "303-555-1212",
     },
   ],
-};
+});
 
 // CERTIFICATE
 const x509 = new X509Certificate(commonwellCertificate);
@@ -218,6 +239,14 @@ export const certificate = {
       thumbprint: thumbprint,
       content: commonwellCertificateContent,
       purpose: "Authentication",
+    },
+    {
+      startDate: "2022-12-31T11:46:29Z",
+      endDate: "2023-03-31T12:46:28Z",
+      expirationDate: "2023-03-31T12:46:28Z",
+      thumbprint: thumbprint,
+      content: commonwellCertificateContent,
+      purpose: "Signing",
     },
   ],
 };
