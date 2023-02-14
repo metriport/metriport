@@ -11,6 +11,7 @@ import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
 import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";
 import { mapToActivity } from "../mappings/withings/activity";
+import { mapToBody } from "../mappings/withings/body";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
 import { mapToSleep } from "../mappings/withings/sleep";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
@@ -19,7 +20,11 @@ import {
   WithingsActivityLogs,
 } from "../mappings/withings/models/activity";
 import { withingsWorkoutLogsResp, WithingsWorkoutLogs } from "../mappings/withings/models/workouts";
-import { withingsHeartRateResp } from "../mappings/withings/models/heart-rate";
+import { withingsHeartRateResp, WithingsHeartRate } from "../mappings/withings/models/heart-rate";
+import {
+  withingsMeasurementResp,
+  WithingsMeasurements,
+} from "../mappings/withings/models/measurements";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
 export class Withings extends Provider implements OAuth2 {
   static URL = "https://wbsapi.withings.net";
@@ -48,7 +53,7 @@ export class Withings extends Provider implements OAuth2 {
   ) {
     super({
       [ConsumerHealthDataType.Activity]: true,
-      [ConsumerHealthDataType.Body]: false,
+      [ConsumerHealthDataType.Body]: true,
       [ConsumerHealthDataType.Biometrics]: true,
       [ConsumerHealthDataType.Nutrition]: false,
       [ConsumerHealthDataType.Sleep]: true,
@@ -247,22 +252,62 @@ export class Withings extends Provider implements OAuth2 {
     return mapToActivity(date, activity, workouts);
   }
 
-  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+  async fetchBodyData(accessToken: string, date: string): Promise<WithingsMeasurements> {
+    const params = {
+      action: "getmeas",
+      startdate: dayjs(date).unix(),
+      enddate: dayjs(date).add(1, "day").unix(),
+    };
+
+    const response = await axios.post(`${Withings.URL}/measure`, null, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      params,
+    });
+
+    return withingsMeasurementResp.parse(response.data.body);
+  }
+
+  async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+    const accessToken = await this.getAccessToken(connectedUser);
+
+    const response = await this.fetchBodyData(accessToken, date);
+
+    return mapToBody(date, response);
+  }
+
+  async fetchHeartData(accessToken: string, date: string): Promise<WithingsHeartRate> {
     const params = {
       action: "list",
       startdate: dayjs(date).unix(),
     };
 
-    const accessToken = await this.getAccessToken(connectedUser);
-
-    return this.oauth.fetchProviderData<Biometrics>(
+    return this.oauth.fetchProviderData<WithingsHeartRate>(
       `${Withings.URL}/${Withings.API_PATH}/heart`,
       accessToken,
       async resp => {
-        return mapToBiometrics(date, withingsHeartRateResp.parse(resp.data.body.series));
+        return withingsHeartRateResp.parse(resp.data.body.series);
       },
       params
     );
+  }
+
+  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+    const accessToken = await this.getAccessToken(connectedUser);
+
+    const [resHeart, resBody] = await Promise.allSettled([
+      this.fetchHeartData(accessToken, date),
+      this.fetchBodyData(accessToken, date),
+    ]);
+
+    const heart = resHeart.status === "fulfilled" ? resHeart.value : undefined;
+    const body = resBody.status === "fulfilled" ? resBody.value : undefined;
+
+    if (!heart && !body) {
+      throw new Error("All Requests failed");
+    }
+    return mapToBiometrics(date, heart, body);
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
