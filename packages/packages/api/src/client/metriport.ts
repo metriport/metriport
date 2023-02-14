@@ -45,10 +45,12 @@ export class Metriport {
    * For your given user ID, returns the user's connected providers
    *
    * @param {string} userId - The unique ID for the user in your app.
-   * @returns Array of connected providers
+   * @returns Object containing array of connected providers.
    */
-  async getConnectedProviders(userId: string): Promise<string[]> {
-    const resp = await this.api.get<string[]>(`/user/${userId}/connect`);
+  async getConnectedProviders(userId: string): Promise<{ connectedProviders: string[] }> {
+    const resp = await this.api.get<{ connectedProviders: string[] }>(
+      `/user/${userId}/connected-providers`
+    );
 
     return resp.data;
   }

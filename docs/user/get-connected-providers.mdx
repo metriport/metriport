@@ -17,7 +17,7 @@ import { Metriport } from "@metriport/api";
 
 const metriportClient = new Metriport("YOUR_API_KEY");
 
-const metriportUserId = await metriportClient.getConnectedProviders("metriportUserId");
+const connectedProviders = await metriportClient.getConnectedProviders("metriportUserId");
 ```
 
 </ResponseExample>
