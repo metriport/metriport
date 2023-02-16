@@ -5,6 +5,7 @@ import {
   NameUseCodes,
   Person,
 } from "@metriport/commonwell-sdk";
+import { Demographics } from "@metriport/commonwell-sdk/lib/models/demographics";
 import { X509Certificate } from "crypto";
 import * as nanoid from "nanoid";
 
@@ -16,13 +17,40 @@ const commonwellOrgName = getEnvOrFail("COMMONWELL_ORG_NAME");
 const commonwellCertificate = getEnvOrFail("COMMONWELL_CERTIFICATE");
 const commonwellCertificateContent = getCertificateContent(commonwellCertificate);
 
-export const metriportSystem = `urn:oid:${commonwellOID}`;
-
 const docPatientFirstName = getEnvOrFail("DOCUMENT_PATIENT_FIRST_NAME");
 const docPatientLastName = getEnvOrFail("DOCUMENT_PATIENT_LAST_NAME");
 const docPatientDateOfBirth = getEnvOrFail("DOCUMENT_PATIENT_DATE_OF_BIRTH");
 const docPatientGender = getEnvOrFail("DOCUMENT_PATIENT_GENDER");
 const docPatientZip = getEnvOrFail("DOCUMENT_PATIENT_ZIP");
+
+const ORGANIZATION = "5";
+const LOCATION = "4";
+const PATIENT = "2";
+const idAlphabet = "1234567890";
+
+export function makeId(): string {
+  return nanoid.customAlphabet(idAlphabet, 6)();
+}
+export function makeOrgId(orgId?: string): string {
+  const org = orgId ?? makeId();
+  return `${commonwellOID}.${ORGANIZATION}.${org}`;
+}
+export function makeFacilityId(orgId?: string): string {
+  const facility = makeId();
+  return orgId ? `${orgId}.${LOCATION}.${facility}` : `${makeOrgId()}.${LOCATION}.${facility}`;
+}
+export function makePatientIdPartial() {
+  return `${PATIENT}.${makeId()}`;
+}
+export function makePatientId({
+  orgId,
+  facilityId,
+}: { orgId?: string; facilityId?: never } | { orgId?: never; facilityId?: string } = {}): string {
+  const org = orgId ?? makeOrgId();
+  const facility = facilityId ?? makeFacilityId(org);
+  const patient = makeId();
+  return `${facility}.${PATIENT}.${patient}`;
+}
 
 // PERSON
 export const caDriversLicenseUri = "urn:oid:2.16.840.1.113883.4.3.6";
@@ -96,42 +124,25 @@ export const personNoStrongId: Person = {
 };
 
 // PATIENT
-export const patient = {
+export const makePatient = ({
+  facilityId = makeFacilityId(),
+  details = mainDetails,
+}: { facilityId?: string; details?: Demographics } = {}) => ({
   identifier: [
     {
       use: "unspecified",
       label: commonwellOrgName,
-      system: metriportSystem,
-      key: nanoid.nanoid(),
+      system: `urn:oid:${facilityId}`,
+      key: makePatientIdPartial(),
       assigner: commonwellOrgName,
     },
   ],
-  details: mainDetails,
-};
+  details,
+});
 
-export const mergePatient = {
-  identifier: [
-    {
-      use: "unspecified",
-      label: commonwellOrgName,
-      system: metriportSystem,
-      key: nanoid.nanoid(),
-      assigner: commonwellOrgName,
-    },
-  ],
-  details: secondaryDetails,
-};
+export const makeMergePatient = ({ facilityId = makeFacilityId() }: { facilityId?: string } = {}) =>
+  makePatient({ facilityId, details: secondaryDetails });
 
-const docPatientKey = nanoid.nanoid();
-
-export const docIdentifier = {
-  // use: "unspecified",
-  use: IdentifierUseCodes.usual,
-  label: commonwellOrgName,
-  system: metriportSystem,
-  key: docPatientKey,
-  assigner: commonwellOrgName,
-};
 export type PersonData = {
   firstName?: string;
   lastName?: string;
@@ -139,22 +150,17 @@ export type PersonData = {
   gender?: string;
   zip?: string;
 };
-export const docMainPayload = (
-  {
-    firstName = docPatientFirstName,
-    lastName = docPatientLastName,
-    dob = docPatientDateOfBirth,
-    gender = docPatientGender,
-    zip = docPatientZip,
-  }: PersonData = {
-    firstName: docPatientFirstName,
-    lastName: docPatientLastName,
-    dob: docPatientDateOfBirth,
-    gender: docPatientGender,
-    zip: docPatientZip,
-  }
-) => ({
-  identifier: [docIdentifier],
+type PersonDataOnOrg = PersonData & { facilityId?: string };
+
+export const makeDocPatient = ({
+  firstName = docPatientFirstName,
+  lastName = docPatientLastName,
+  dob = docPatientDateOfBirth,
+  gender = docPatientGender,
+  zip = docPatientZip,
+  facilityId = makeFacilityId(),
+}: PersonDataOnOrg = {}) => ({
+  identifier: makePatient({ facilityId }).identifier,
   details: {
     address: [
       {
@@ -176,55 +182,59 @@ export const docMainPayload = (
     birthDate: dob,
   },
 });
-export const docPerson = (init?: PersonData) => ({
-  ...docMainPayload(init),
-  details: {
-    ...docMainPayload(init).details,
-    identifier: [],
-  },
-});
-export const docPatient = (init?: PersonData) => docMainPayload(init);
+export const makeDocPerson = (init?: PersonDataOnOrg) => {
+  const docPatient = makeDocPatient(init);
+  return {
+    ...docPatient,
+    details: {
+      ...docPatient.details,
+      identifier: [],
+    },
+  };
+};
 
 // ORGANIZATION
-const appendOrgId = nanoid.customAlphabet("1234567890", 18)();
 const shortName: string = uniqueNamesGenerator({
   dictionaries: [adjectives, colors, animals],
   separator: "-",
   length: 3,
 });
 
-export const organization = (suffixId = appendOrgId) => ({
-  organizationId: `urn:oid:${commonwellOID}.${suffixId}`,
-  homeCommunityId: `urn:oid:${commonwellOID}.${suffixId}`,
-  name: shortName,
-  displayName: shortName,
-  memberName: "Metriport",
-  type: "Hospital",
-  patientIdAssignAuthority: `urn:oid:${commonwellOID}.${suffixId}`,
-  securityTokenKeyType: "BearerKey",
-  isActive: true,
-  locations: [
-    {
-      address1: "1 Main Street",
-      address2: "PO Box 123",
-      city: "Denver",
-      state: "CO",
-      postalCode: "80001",
-      country: "USA",
-      phone: "303-555-1212",
-      fax: "303-555-1212",
-      email: "here@dummymail.com",
-    },
-  ],
-  technicalContacts: [
-    {
-      name: "Technician",
-      title: "TechnicalContact",
-      email: "technicalContact@dummymail.com",
-      phone: "303-555-1212",
-    },
-  ],
-});
+export const makeOrganization = (suffixId?: string) => {
+  const orgId = makeOrgId(suffixId);
+  return {
+    organizationId: `urn:oid:${orgId}`,
+    homeCommunityId: `urn:oid:${orgId}`,
+    name: shortName,
+    displayName: shortName,
+    memberName: "Metriport",
+    type: "Hospital",
+    patientIdAssignAuthority: `urn:oid:${orgId}`,
+    securityTokenKeyType: "BearerKey",
+    isActive: true,
+    locations: [
+      {
+        address1: "1 Main Street",
+        address2: "PO Box 123",
+        city: "Denver",
+        state: "CO",
+        postalCode: "80001",
+        country: "USA",
+        phone: "303-555-1212",
+        fax: "303-555-1212",
+        email: "here@dummymail.com",
+      },
+    ],
+    technicalContacts: [
+      {
+        name: "Technician",
+        title: "TechnicalContact",
+        email: "technicalContact@dummymail.com",
+        phone: "303-555-1212",
+      },
+    ],
+  };
+};
 
 // CERTIFICATE
 const x509 = new X509Certificate(commonwellCertificate);

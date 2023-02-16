@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { CommonWell, getIdTrailingSlash, RequestMetadata, getId } from "@metriport/commonwell-sdk";
+import { CommonWell, getId, getIdTrailingSlash, RequestMetadata } from "@metriport/commonwell-sdk";
 
-import { patient, identifier, personStrongId } from "./payloads";
+import { identifier, makePatient, personStrongId } from "./payloads";
 
 // 3. Link Management
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Patient-Management-(PIX,-REST).aspx
@@ -12,7 +12,10 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
   const person = await commonWell.enrollPerson(queryMeta, personStrongId);
   const personId = getId(person);
 
-  const respPatient = await commonWell.registerPatient(queryMeta, patient);
+  const respPatient = await commonWell.registerPatient(
+    queryMeta,
+    makePatient({ facilityId: commonWell.oid })
+  );
   const patientId = getIdTrailingSlash(respPatient);
   const referenceLink = respPatient._links.self.href;
   const respC5a = await commonWell.patientLink(queryMeta, personId, referenceLink);

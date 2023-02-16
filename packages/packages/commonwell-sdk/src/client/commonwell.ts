@@ -61,7 +61,7 @@ export class CommonWell {
   private api: AxiosInstance;
   private rsaPrivateKey: string;
   private orgName: string;
-  private oid: string;
+  private _oid: string;
   private httpsAgent: Agent;
 
   /**
@@ -87,7 +87,11 @@ export class CommonWell {
       httpsAgent: this.httpsAgent,
     });
     this.orgName = orgName;
-    this.oid = oid;
+    this._oid = oid;
+  }
+
+  get oid() {
+    return this._oid;
   }
 
   // TODO: handle errors in API calls as per
