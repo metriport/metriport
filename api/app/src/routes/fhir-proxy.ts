@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import proxy from "express-http-proxy";
 
 const URN_OID_PREFIX = "urn:oid:";
@@ -45,20 +46,20 @@ const router = proxy("http://host.docker.internal:8888", {
     const payload = JSON.parse(updatedPayload);
     if (payload.entry) {
       payload.entry
-        .filter(e => e.resource?.resourceType === `DocumentReference`)
-        .forEach(e => {
+        .filter((e: any) => e.resource?.resourceType === `DocumentReference`)
+        .forEach((e: any) => {
           e.resource.id = URN_OID_PREFIX + e.resource.id;
           // const contained = e.resource?.contained;
           // if (contained) {
           //   contained
-          //     .filter(c => c.resourceType === `Organization`)
-          //     .forEach(c => (c.id = URN_OID_PREFIX + c.id));
+          //     .filter((c: any) => c.resourceType === `Organization`)
+          //     .forEach((c: any) => (c.id = URN_OID_PREFIX + c.id));
           // }
         });
       // payload.entry
-      //   .filter(e => e.resource?.resourceType === `Organization`)
-      //   .map(e => e.resource)
-      //   .forEach(r => (r.id = URN_OID_PREFIX + r.id));
+      //   .filter((e: any) => e.resource?.resourceType === `Organization`)
+      //   .map((e: any) => e.resource)
+      //   .forEach((r: any) => (r.id = URN_OID_PREFIX + r.id));
     }
     console.log(`UPDATED RESPONSE: `, JSON.stringify(payload, undefined, 2));
     return JSON.stringify(payload);
