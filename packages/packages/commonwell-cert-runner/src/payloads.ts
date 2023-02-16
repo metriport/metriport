@@ -39,9 +39,6 @@ export function makeFacilityId(orgId?: string): string {
   const facility = makeId();
   return orgId ? `${orgId}.${LOCATION}.${facility}` : `${makeOrgId()}.${LOCATION}.${facility}`;
 }
-export function makePatientIdPartial() {
-  return `${PATIENT}.${makeId()}`;
-}
 export function makePatientId({
   orgId,
   facilityId,
@@ -133,7 +130,7 @@ export const makePatient = ({
       use: "unspecified",
       label: commonwellOrgName,
       system: `urn:oid:${facilityId}`,
-      key: makePatientIdPartial(),
+      key: makePatientId({ facilityId }),
       assigner: commonwellOrgName,
     },
   ],

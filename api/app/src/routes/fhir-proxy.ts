@@ -9,7 +9,7 @@ const updateDocumentReferenceQueryString = (params: string): string => {
     decodedParams
       .replace(/patient\.identifier/i, "patient")
       // eslint-disable-next-line no-useless-escape
-      .replace(/urn\:oid\:.+\|(2\.\d+)/g, "$1") // remove orgId from doc query's patient id
+      .replace(/urn\:oid\:.+\|(2\.[\.\d]+)/g, "$1")
   );
 };
 const updateQueryString = (path: string, params: string): string | undefined => {
@@ -20,8 +20,8 @@ const updateQueryString = (path: string, params: string): string | undefined => 
 };
 
 // TODO make this dynamic/config/secret
-// const router = proxy("https://fhir.staging.metriport.com", {
-const router = proxy("http://host.docker.internal:8888", {
+const router = proxy("https://fhir.staging.metriport.com", {
+  // const router = proxy("http://host.docker.internal:8888", {
   proxyReqPathResolver: function (req) {
     console.log(`ORIGINAL URL: `, req.url);
     const parts = req.url.split("?");
