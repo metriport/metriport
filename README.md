@@ -405,7 +405,7 @@ TODO
 
 ### **Deployment Steps**
 
-1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
+1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager and create other infra pre-requisites. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
 $ ./deploy.sh -e "production" -s "<config.secretsStackName>"

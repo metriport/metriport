@@ -7,11 +7,12 @@ Help()
    # Display Help
    echo "Script used to deploy the Metriport API."
    echo
-   echo "Syntax: deploy.sh [h|e|s]"
+   echo "Syntax: deploy.sh [h|e|s|d]"
    echo "options:"
    echo "h     Print this Help."
    echo "e     The environment to which to deploy to. Must be one of production|sandbox|staging"
    echo "s     The name of the CDK stack you want to deploy."
+   echo "d     Indicates to issue a 'diff' command instead of deploy."
    echo
    echo "Example: deploy.sh -e \"production\" -s \"APIInfrastructureStack\""
    echo
@@ -22,7 +23,12 @@ Help()
 ############################################################
 Deploy()
 {
-   echo "Deplying to env $env"
+   if [[ "$diff" == "true" ]]; then
+      cmd="diff"
+   else
+      cmd="deploy"
+   fi
+   echo "$cmd'ing to env $env"
    if [[ "$env" == "staging" ]]; then
       npm run prep-deploy-staging
    else
@@ -30,7 +36,7 @@ Deploy()
    fi
    cd ./infra
    cdk bootstrap -c env=$env
-   cdk deploy -c env=$env $stack
+   cdk $cmd -c env=$env $stack
    cd ../
    echo "Done!"
 }
@@ -46,7 +52,7 @@ Deploy()
 # Process the input options.                               #
 ############################################################
 # Get the options
-while getopts ":he:s:" option; do
+while getopts ":he:s:d" option; do
    case $option in
       h) # display Help
          Help
@@ -55,6 +61,8 @@ while getopts ":he:s:" option; do
          env=$OPTARG;;
       s) # the stack to deploy
          stack=$OPTARG;;
+      d) # run a diff instead of deploy
+         diff=true;;
       \?) # Invalid option
           echo "Error: Invalid option"
           exit;;

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
+import { APIStack } from "../lib/api-stack";
+import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 import { EnvConfig } from "../lib/env-config";
 import { EnvType } from "../lib/env-type";
-import { APIStack } from "../lib/api-stack";
 import { SecretsStack } from "../lib/secrets-stack";
-import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 
 const app = new cdk.App();
 //-------------------------------------------
@@ -32,22 +32,23 @@ async function getConfig(): Promise<EnvConfig> {
 //-------------------------------------------
 async function deploy() {
   const config = await getConfig();
-  if (config.secretsStackName) {
-    //---------------------------------------------------------------------------------
-    // 1. Deploy the secrets stack to initialize all secrets.
-    //    Do this first, and then manually set the values in the AWS Secrets Manager.
-    //---------------------------------------------------------------------------------
-    new SecretsStack(app, config.secretsStackName, {
-      env: {
-        // CDK_DEFAULT_ACCOUNT will come from your AWS CLI account profile you've setup.
-        // To specify a different profile, you can use the profile flag. For example:
-        //    cdk synth --profile prod-profile
-        account: process.env.CDK_DEFAULT_ACCOUNT,
-        region: config.region,
-      },
-      config,
-    });
-  }
+  //---------------------------------------------------------------------------------
+  // 1. Deploy the pre-requisites stack - it should be done prior to the other ones.
+  //    Do this first, and then
+  //    - manually set the "secrets" values in the AWS Secrets Manager.
+  //    - deploy the FHIR server image to ECR
+  //---------------------------------------------------------------------------------
+  new SecretsStack(app, config.secretsStackName, {
+    env: {
+      // CDK_DEFAULT_ACCOUNT will come from your AWS CLI account profile you've setup.
+      // To specify a different profile, you can use the profile flag. For example:
+      //    cdk synth --profile prod-profile
+      account: process.env.CDK_DEFAULT_ACCOUNT,
+      region: config.region,
+    },
+    config,
+  });
+
   //---------------------------------------------------------------------------------
   // 2. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
