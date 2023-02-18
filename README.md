@@ -62,11 +62,13 @@ Our [Health Devices API](https://metriport.com/devices), allows you to gain acce
 Out of the box, our Health Devices API supports the following integrations:
 
 - Fitbit
+- Garmin
 - Oura
 - Whoop
 - Withings
 - Cronometer
-- Garmin
+- Apple Health
+- Google Fit
 
 ...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
 
