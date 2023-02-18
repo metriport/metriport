@@ -78,7 +78,7 @@ Out of the box, our Health Devices API supports the following integrations:
 
 ### **Medical API (Coming Soon)**
 
-Open-source with native FHIR support. More info on our Medical API here: https://metriport.com/medical
+Open-source with native FHIR support. More info on our Medical API here: https://metriport.com/medical/
 
 ## **Getting Started**
 
