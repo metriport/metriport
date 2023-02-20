@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import proxy from "express-http-proxy";
 
-const URN_OID_PREFIX = "urn:oid:";
+// const URN_OID_PREFIX = "urn:oid:";
 
 const updateDocumentReferenceQueryString = (params: string): string => {
   const decodedParams = decodeURIComponent(decodeURI(params));
@@ -45,17 +45,17 @@ const router = proxy("https://fhir.staging.metriport.com", {
       .replace(urlRegex, urlReplace);
     const payload = JSON.parse(updatedPayload);
     if (payload.entry) {
-      payload.entry
-        .filter((e: any) => e.resource?.resourceType === `DocumentReference`)
-        .forEach((e: any) => {
-          e.resource.id = URN_OID_PREFIX + e.resource.id;
-          // const contained = e.resource?.contained;
-          // if (contained) {
-          //   contained
-          //     .filter((c: any) => c.resourceType === `Organization`)
-          //     .forEach((c: any) => (c.id = URN_OID_PREFIX + c.id));
-          // }
-        });
+      // payload.entry
+      //   .filter((e: any) => e.resource?.resourceType === `DocumentReference`)
+      //   .forEach((e: any) => {
+      //     e.resource.id = URN_OID_PREFIX + e.resource.id;
+      //     // const contained = e.resource?.contained;
+      //     // if (contained) {
+      //     //   contained
+      //     //     .filter((c: any) => c.resourceType === `Organization`)
+      //     //     .forEach((c: any) => (c.id = URN_OID_PREFIX + c.id));
+      //     // }
+      //   });
       // payload.entry
       //   .filter((e: any) => e.resource?.resourceType === `Organization`)
       //   .map((e: any) => e.resource)
