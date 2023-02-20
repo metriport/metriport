@@ -1,0 +1,38 @@
+---
+title: "Get Connected Providers"
+description: "Returns the specified user's connected providers"
+api: "GET /user/:userId/connected-providers"
+---
+
+## Response
+
+<ResponseField name="connectedProviders" type="array" required>
+  The user's connected providers
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new Metriport("YOUR_API_KEY");
+
+const connectedProviders = await metriportClient.getConnectedProviders("metriportUserId");
+```
+
+</ResponseExample>
+
+```json
+{
+  "connectedProviders": [
+    "apple",
+    "cronometer",
+    "fitbit",
+    "garmin",
+    "google",
+    "oura",
+    "whoop",
+    "withings"
+  ]
+}
+```
