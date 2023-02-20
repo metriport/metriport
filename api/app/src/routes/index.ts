@@ -12,6 +12,7 @@ import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
 import webhook from "./webhook";
+import medical from "./medical";
 
 export default (app: Application) => {
   app.use(requestLogger);
@@ -27,6 +28,9 @@ export default (app: Application) => {
   app.use("/nutrition", processAPIKey, reportUsage, nutrition);
   app.use("/sleep", processAPIKey, reportUsage, sleep);
   app.use("/user", processAPIKey, reportUsage, user);
+
+  // medical routes with API key auth
+  app.use("/medical", processAPIKey, medical);
 
   // routes with session token auth
   app.use("/connect", connect);

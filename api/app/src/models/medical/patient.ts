@@ -4,16 +4,17 @@ import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { Organization } from "./organization";
 
-export class Facility extends BaseModel<Facility> {
-  static NAME = "facility";
+export class Patient extends BaseModel<Patient> {
+  static NAME = "patient";
   declare id: string;
   declare cxId: string;
   declare organizationId: number;
-  declare facilityId: number;
+  declare facilityIds: number[];
+  declare patientId: number;
   declare data: object;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    Facility.init(
+    Patient.init(
       {
         ...BaseModel.baseAttributes(),
         id: {
@@ -27,7 +28,10 @@ export class Facility extends BaseModel<Facility> {
           type: DataTypes.INTEGER,
           references: { model: Organization.NAME, key: "organization_id" },
         },
-        facilityId: {
+        facilityIds: {
+          type: DataTypes.ARRAY(DataTypes.INTEGER),
+        },
+        patientId: {
           type: DataTypes.INTEGER,
         },
         data: {
@@ -36,23 +40,23 @@ export class Facility extends BaseModel<Facility> {
       },
       {
         ...defaultModelOptions(sequelize),
-        tableName: Facility.NAME,
+        tableName: Patient.NAME,
         hooks: {
           async beforeCreate(attributes) {
-            const curMaxId = (await Facility.max("facilityId", {
+            const curMaxId = (await Patient.max("patientId", {
               where: {
                 organizationId: attributes.organizationId,
               },
             })) as number;
-            const facId = curMaxId ? curMaxId + 1 : OID_ID_START;
+            const patientId = curMaxId ? curMaxId + 1 : OID_ID_START;
             attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
               attributes.organizationId
-            }.${OIDNode.locations}.${facId}`;
-            attributes.facilityId = facId;
+            }.${OIDNode.patients}.${patientId}`;
+            attributes.patientId = patientId;
           },
         },
       }
     );
-    Facility.belongsTo(Organization);
+    Patient.belongsTo(Organization);
   };
 }

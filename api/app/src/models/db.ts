@@ -6,6 +6,7 @@ import { ConnectedUser } from "./connected-user";
 import { initDDBDev } from "./db-dev";
 import { Facility } from "./medical/facility";
 import { Organization } from "./medical/organization";
+import { Patient } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
@@ -17,6 +18,7 @@ const models: ModelSetup[] = [
   WebhookRequest.setup,
   Organization.setup,
   Facility.setup,
+  Patient.setup,
 ];
 
 export type MetriportDB = {

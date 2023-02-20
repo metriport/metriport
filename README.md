@@ -262,6 +262,15 @@ $ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
 $ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+```
+
+Additionally, define your System Root [OID](https://en.wikipedia.org/wiki/Object_identifier). This will be the base identifier to represent your system in any medical data you create - such as organizations, facilities, patients, and etc.
+
+Your OID must be registered and assigned by HL7. You can do this [here](http://www.hl7.org/oid/index.cfm).
+
+By default, OIDs in Metriport are managed according to the [recommended standards outlined by HL7](http://www.hl7.org/documentcenter/private/standards/v3/V3_OIDS_R1_INFORM_2011NOV.pdf).
+
+```shell
 $ echo "SYSTEM_ROOT_OID=<YOUR-OID>" >> api/app/.env
 ```
 
