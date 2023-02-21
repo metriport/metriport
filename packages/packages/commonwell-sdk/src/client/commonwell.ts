@@ -1,8 +1,10 @@
 import axios, { AxiosInstance } from "axios";
 import * as fs from "fs";
+import * as httpStatus from "http-status";
 import { Agent } from "https";
 import { downloadFile } from "../common/fileDownload";
 import { makeJwt } from "../common/make-jwt";
+import MetriportError from "../common/metriport-error";
 import { convertPatientIdToSubjectId } from "../common/util";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
 import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
@@ -60,7 +62,7 @@ export class CommonWell {
   private api: AxiosInstance;
   private rsaPrivateKey: string;
   private orgName: string;
-  private oid: string;
+  private _oid: string;
   private httpsAgent: Agent;
 
   /**
@@ -86,7 +88,11 @@ export class CommonWell {
       httpsAgent: this.httpsAgent,
     });
     this.orgName = orgName;
-    this.oid = oid;
+    this._oid = oid;
+  }
+
+  get oid() {
+    return this._oid;
   }
 
   // TODO: handle errors in API calls as per
@@ -175,12 +181,18 @@ export class CommonWell {
    * @param id       The org to be found
    * @returns
    */
-  async getOneOrg(meta: RequestMetadata, id: string): Promise<Organization> {
+  async getOneOrg(meta: RequestMetadata, id: string): Promise<Organization | undefined> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.get(`${CommonWell.MEMBER_ENDPOINT}/${this.oid}/org/${id}/`, {
       headers,
+      validateStatus: null, // don't throw on status code > 299
     });
-    return organizationSchema.parse(resp.data);
+    const status = resp.status;
+    if (status === httpStatus.NOT_FOUND) return undefined;
+    if (httpStatus[`${status}_CLASS`] === httpStatus.classes.SUCCESSFUL) {
+      return organizationSchema.parse(resp.data);
+    }
+    throw new MetriportError(`Failed to retrieve Organization`, status);
   }
 
   /**
@@ -534,9 +546,10 @@ export class CommonWell {
   async getPatient(meta: RequestMetadata, id: string): Promise<Patient> {
     const headers = await this.buildQueryHeaders(meta);
     const suffix = id.endsWith("/") ? "" : "/";
-    const resp = await this.api.get(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}${suffix}`, {
-      headers,
-    });
+    const resp = await this.api.get(
+      `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}${suffix}`,
+      { headers }
+    );
     return patientSchema.parse(resp.data);
   }
 

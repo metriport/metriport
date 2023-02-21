@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import {
   CommonWell,
-  getIdTrailingSlash,
-  RequestMetadata,
   getId,
+  getIdTrailingSlash,
   LOLA,
+  RequestMetadata,
 } from "@metriport/commonwell-sdk";
 import { cloneDeep } from "lodash";
 
-import { patient, mergePatient, personStrongId } from "./payloads";
+import { makeMergePatient, makePatient, personStrongId } from "./payloads";
 
 import { getEnvOrFail } from "./util";
 
@@ -23,6 +23,8 @@ export async function patientManagement(
   commonwellSandbox: CommonWell,
   queryMeta: RequestMetadata
 ) {
+  const patient = makePatient({ facilityId: commonWell.oid });
+
   // PATIENT MANAGEMENT
   console.log(`>>> D1b: Register a new Patient`);
   const respD1b = await commonWell.registerPatient(queryMeta, patient);
@@ -47,7 +49,10 @@ export async function patientManagement(
 
   console.log(`>>> D4a: Merge two Patient records`);
   // Create a second patient
-  const respPatient2 = await commonWell.registerPatient(queryMeta, mergePatient);
+  const respPatient2 = await commonWell.registerPatient(
+    queryMeta,
+    makeMergePatient({ facilityId: commonWell.oid })
+  );
   const patientId2 = getIdTrailingSlash(respPatient2);
   const referenceLink = respD1b._links.self.href;
 

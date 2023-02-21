@@ -29,7 +29,16 @@ After installation, create a `.env` file defining the following variables:
 - `DOCUMENT_PATIENT_DATE_OF_BIRTH`: their date of birth on the format YYYY-MM-DD
 - `DOCUMENT_PATIENT_GENDER`: their gender (M|F)
 - `DOCUMENT_PATIENT_ZIP`: their address zip code
-- `DOCUMENT_CONTRIBUTION_PATIENT_ID`: [optional] full ID of an existing patient to be used for the document contribution
+- `DOCUMENT_CONTRIBUTION_ORGANIZATION_ID`: organization suffix for the document contribution flow (usually in the format
+  "2.dddddd", with 'd' being a digit)
+- `DOCUMENT_CONTRIBUTION_PATIENT_FIRST_NAME`: the first name of the patient to be created on the organization used for the
+  document contribution flow - same for the properties below [optional, defaults to the same name from the document patient
+  above]
+- `DOCUMENT_CONTRIBUTION_PATIENT_LAST_NAME`
+- `DOCUMENT_CONTRIBUTION_PATIENT_DATE_OF_BIRTH`
+- `DOCUMENT_CONTRIBUTION_PATIENT_GENDER`
+- `DOCUMENT_CONTRIBUTION_PATIENT_ZIP`
+
 flow - must exist on the sandbox organization
 
 Example file content looks like:

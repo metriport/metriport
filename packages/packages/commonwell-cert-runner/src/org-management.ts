@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 import { CommonWell, getIdTrailingSlash, RequestMetadata } from "@metriport/commonwell-sdk";
 
-import { certificate, organization, thumbprint } from "./payloads";
+import { certificate, makeOrganization, thumbprint } from "./payloads";
 
 // 4. Org Management
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Organization-Management-API---Overview-and-Summary.aspx#overview-and-summary
 
 export async function orgManagement(commonWell: CommonWell, queryMeta: RequestMetadata) {
   console.log(`>>> Create an org`);
-  const respCreateOrg = await commonWell.createOrg(queryMeta, organization);
+  const org = makeOrganization();
+  const respCreateOrg = await commonWell.createOrg(queryMeta, org);
   console.log(respCreateOrg);
 
   console.log(`>>> Update an org`);
-  organization.locations[0].city = "Miami";
+  org.locations[0].city = "Miami";
   const orgId = getIdTrailingSlash(respCreateOrg);
-  const respUpdateOrg = await commonWell.updateOrg(queryMeta, organization, orgId);
+  const respUpdateOrg = await commonWell.updateOrg(queryMeta, org, orgId);
   console.log(respUpdateOrg);
 
   console.log(`>>> Get all orgs`);
