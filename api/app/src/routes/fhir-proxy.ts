@@ -26,7 +26,7 @@ const router = proxy("https://fhir.staging.metriport.com", {
     console.log(`ORIGINAL URL: `, req.url);
     const parts = req.url.split("?");
     const path = parts[0];
-    const queryString = parts.length ? updateQueryString(path, parts[1]) : undefined;
+    const queryString = parts.length > 1 ? updateQueryString(path, parts[1]) : undefined;
     const updatedURL = "/fhir" + path + (queryString ? "?" + queryString : "");
     console.log(`UPDATED URL: `, updatedURL);
     return updatedURL;
