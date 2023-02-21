@@ -18,34 +18,29 @@ import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
-import { EnvType } from "./env-type";
-import { addErrorAlarmToLambdaFunc } from "./util";
+import { getSecrets } from "./secrets";
+import { addErrorAlarmToLambdaFunc, isProd, mbToBytes } from "./util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
 }
 
 export class APIStack extends Stack {
+  readonly vpc: ec2.IVpc;
+
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
 
     //-------------------------------------------
     // Secrets
     //-------------------------------------------
-    const buildSecret = (name: string): secret.ISecret =>
-      secret.Secret.fromSecretNameV2(this, name, name);
-    const apiSecrets: { [key: string]: ecs.Secret } = {};
-    for (const key of Object.keys(props.config.providerSecretNames)) {
-      apiSecrets[key] = ecs.Secret.fromSecretsManager(
-        buildSecret((props.config.providerSecretNames as { [index: string]: string })[key])
-      );
-    }
+    const secrets = getSecrets(this, props.config);
 
     //-------------------------------------------
     // VPC + NAT Gateway
     //-------------------------------------------
     const vpcConstructId = "APIVpc";
-    const vpc = new ec2.Vpc(this, vpcConstructId, {
+    this.vpc = new ec2.Vpc(this, vpcConstructId, {
       flowLogs: {
         apiVPCFlowLogs: { trafficType: ec2.FlowLogTrafficType.REJECT },
       },
@@ -100,7 +95,7 @@ export class APIStack extends Stack {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
         version: rds.AuroraPostgresEngineVersion.VER_14_4,
       }),
-      instanceProps: { vpc: vpc, instanceType: new InstanceType("serverless") },
+      instanceProps: { vpc: this.vpc, instanceType: new InstanceType("serverless") },
       credentials: dbCreds,
       defaultDatabaseName: dbName,
       clusterIdentifier: dbClusterName,
@@ -159,7 +154,7 @@ export class APIStack extends Stack {
 
     // Create a new Amazon Elastic Container Service (ECS) cluster
     const cluster = new ecs.Cluster(this, "APICluster", {
-      vpc: vpc,
+      vpc: this.vpc,
     });
 
     // Create a Docker image and upload it to the Amazon Elastic Container Registry (ECR)
@@ -186,7 +181,7 @@ export class APIStack extends Stack {
           containerName: "API-Server",
           secrets: {
             DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
-            ...apiSecrets,
+            ...secrets,
           },
           environment: {
             NODE_ENV: "production",
@@ -243,7 +238,7 @@ export class APIStack extends Stack {
 
     // allow the NLB to talk to fargate
     fargateService.service.connections.allowFrom(
-      ec2.Peer.ipv4(vpc.vpcCidrBlock),
+      ec2.Peer.ipv4(this.vpc.vpcCidrBlock),
       ec2.Port.allTraffic(),
       "Allow traffic from within the VPC to the service secure port"
     );
@@ -336,7 +331,7 @@ export class APIStack extends Stack {
 
     this.setupGarminWebhookAuth({
       baseResource: webhookResource,
-      vpc,
+      vpc: this.vpc,
       fargateService,
       dynamoDBTokenTable,
     });
@@ -403,7 +398,7 @@ export class APIStack extends Stack {
     });
     new CfnOutput(this, "VPCID", {
       description: "VPC ID",
-      value: vpc.vpcId,
+      value: this.vpc.vpcId,
     });
     new CfnOutput(this, "DBClusterID", {
       description: "DB Cluster ID",
@@ -617,14 +612,14 @@ export class APIStack extends Stack {
   private addDBClusterPerformanceAlarms(dbCluster: rds.DatabaseCluster, dbClusterName: string) {
     const memoryMetric = dbCluster.metricFreeableMemory();
     memoryMetric.createAlarm(this, `${dbClusterName}FreeableMemoryAlarm`, {
-      threshold: this.mbToBytes(150),
+      threshold: mbToBytes(150),
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
     });
 
     const storageMetric = dbCluster.metricFreeLocalStorage();
     storageMetric.createAlarm(this, `${dbClusterName}FreeLocalStorageAlarm`, {
-      threshold: this.mbToBytes(250),
+      threshold: mbToBytes(250),
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
     });
@@ -648,10 +643,6 @@ export class APIStack extends Stack {
     });
   }
 
-  private mbToBytes(mb: number): number {
-    return mb * 1024 * 1024;
-  }
-
   private addDynamoPerformanceAlarms(table: dynamodb.Table, dynamoConstructName: string) {
     const readUnitsMetric = table.metricConsumedReadCapacityUnits();
     readUnitsMetric.createAlarm(this, `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`, {
@@ -667,6 +658,6 @@ export class APIStack extends Stack {
   }
 
   private isProd(props: APIStackProps): boolean {
-    return props.config.environmentType === EnvType.production;
+    return isProd(props.config);
   }
 }

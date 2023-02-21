@@ -10,7 +10,7 @@ export type ConnectWidgetConfig = {
 
 export type EnvConfig = {
   stackName: string;
-  secretsStackName?: string;
+  secretsStackName: string;
   environmentType: EnvType;
   region: string;
   secretReplicaRegion?: string;

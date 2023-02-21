@@ -35,7 +35,7 @@ jobs:
       - name: Run Linter
         run: npm run lint
       # move to an external file so both this and deploy can use this logic
-      - name: Build/compile PRODUCTION
+      - name: Build/compile
         if: ${{ inputs.build_env == 'production' }}
         run: npm run build
       - name: Build/compile STAGING
