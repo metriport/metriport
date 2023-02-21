@@ -17,13 +17,16 @@ const docIdentifierSchema = z.object({
 });
 
 const codeableConceptSchema = z.object({
-  coding: z.array(
-    z.object({
-      system: z.string().optional().nullable(),
-      code: z.string().optional().nullable(),
-      display: z.string().optional().nullable(),
-    })
-  ),
+  coding: z
+    .array(
+      z.object({
+        system: z.string().optional().nullable(),
+        code: z.string().optional().nullable(),
+        display: z.string().optional().nullable(),
+      })
+    )
+    .optional(),
+  text: z.string().optional(),
 });
 
 const containedSchema = z.object({
@@ -41,9 +44,7 @@ const statusSchema = z.enum(["current", "superceded", "entered in error"]);
 export type DocumentStatus = z.infer<typeof statusSchema>;
 
 // Main Clinical Acts Documented
-const eventSchema = z.object({
-  text: z.string(), // CodeableConcept
-});
+const eventSchema = codeableConceptSchema;
 
 // https://specification.commonwellalliance.org/services/rest-api-reference#8610-documentreference
 export const contentSchema = z.object({
@@ -75,7 +76,7 @@ export const contentSchema = z.object({
   description: z.string().optional().nullable(),
   // confidentiality: ?[], // What's the structure here? Maybe based on codeableConceptSchema?
   // primaryLanguage: ?, // What's the structure here?
-  mimeType: z.string(),
+  mimeType: z.string().optional(),
   format: z.string().optional(), // URI - Format/content rules for the document
   size: z.number().optional(), // Size of the document in bytes
   hash: z.string().optional(), // Base64 representation of SHA-256
