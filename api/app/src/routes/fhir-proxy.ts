@@ -21,7 +21,7 @@ const updateQueryString = (path: string, params: string): string | undefined => 
 
 // TODO make this dynamic/config/secret
 const router = proxy("https://fhir.staging.metriport.com", {
-  // const router = proxy("http://host.docker.internal:8888", {
+  // const router = proxy("http://localhost:8888", {
   proxyReqPathResolver: function (req) {
     console.log(`ORIGINAL URL: `, req.url);
     const parts = req.url.split("?");

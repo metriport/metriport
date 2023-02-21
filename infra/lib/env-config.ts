@@ -37,7 +37,6 @@ export type EnvConfig = {
   };
   usageReportUrl?: string;
   systemRootOID: string;
-  fhirServerECRName: string;
 } & (
   | {
       connectWidget: ConnectWidgetConfig;

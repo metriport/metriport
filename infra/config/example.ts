@@ -35,6 +35,5 @@ export const config: EnvConfig = {
     host: "myhealthapp.com",
   },
   systemRootOID: "2.16.840.1.113883.3.999999",
-  fhirServerECRName: "fhir-server",
 };
 export default config;
