@@ -12,7 +12,12 @@ import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
 import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../shared/constants";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
-import { asyncHandler, getCxIdOrFail, getUserIdFromQueryOrFail } from "./util";
+import {
+  asyncHandler,
+  getCxIdOrFail,
+  getUserIdFromQueryOrFail,
+  getUserIdFromParamsOrFail,
+} from "./util";
 
 const router = Router();
 
@@ -154,6 +159,33 @@ router.delete(
       return res.sendStatus(200);
     } else {
       throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
+    }
+  })
+);
+
+/** ---------------------------------------------------------------------------------------
+ * GET /user/:userId/connected-providers
+ *
+ * Get the user's connected providers
+ *
+ * @param   {string}  req.params.userId      The internal user ID.
+
+ * @return  {{connectedProviders: string[]}}   Array of connected providers
+ */
+router.get(
+  "/:userId/connected-providers",
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = getUserIdFromParamsOrFail(req);
+    const cxId = getCxIdOrFail(req);
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+
+    if (connectedUser.providerMap) {
+      const connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
+        return key;
+      });
+      return res.status(status.OK).json({ connectedProviders });
+    } else {
+      throw new BadRequestError(`User ${userId} has no provider map`);
     }
   })
 );

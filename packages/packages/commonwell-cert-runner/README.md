@@ -31,7 +31,7 @@ After installation, create a `.env` file defining the following variables:
 - `DOCUMENT_PATIENT_ZIP`: their address zip code
 - `DOCUMENT_CONTRIBUTION_ORGANIZATION_ID`: organization suffix for the document contribution flow (usually in the format
   "2.dddddd", with 'd' being a digit)
-- `DOCUMENT_CONTRIBUTION_PATIENT_FIRST_NAME`: the first name of the patient to be created on the Øorganization used for the
+- `DOCUMENT_CONTRIBUTION_PATIENT_FIRST_NAME`: the first name of the patient to be created on the organization used for the
   document contribution flow - same for the properties below [optional, defaults to the same name from the document patient
   above]
 - `DOCUMENT_CONTRIBUTION_PATIENT_LAST_NAME`

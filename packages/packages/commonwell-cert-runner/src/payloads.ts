@@ -26,7 +26,9 @@ const docPatientZip = getEnvOrFail("DOCUMENT_PATIENT_ZIP");
 const ORGANIZATION = "5";
 const LOCATION = "4";
 const PATIENT = "2";
-const idAlphabet = "1234567890";
+const idAlphabet = "123456789";
+
+export const CW_ID_PREFIX = "urn:oid:";
 
 export function makeId(): string {
   return nanoid.customAlphabet(idAlphabet, 6)();
@@ -50,7 +52,7 @@ export function makePatientId({
 }
 
 // PERSON
-export const caDriversLicenseUri = "urn:oid:2.16.840.1.113883.4.3.6";
+export const caDriversLicenseUri = `${CW_ID_PREFIX}2.16.840.1.113883.4.3.6`;
 export const driversLicenseId = nanoid.nanoid();
 
 export const identifier = {
@@ -129,7 +131,7 @@ export const makePatient = ({
     {
       use: "unspecified",
       label: commonwellOrgName,
-      system: `urn:oid:${facilityId}`,
+      system: `${CW_ID_PREFIX}${facilityId}`,
       key: makePatientId({ facilityId }),
       assigner: commonwellOrgName,
     },
@@ -200,13 +202,13 @@ const shortName: string = uniqueNamesGenerator({
 export const makeOrganization = (suffixId?: string) => {
   const orgId = makeOrgId(suffixId);
   return {
-    organizationId: `urn:oid:${orgId}`,
-    homeCommunityId: `urn:oid:${orgId}`,
+    organizationId: `${CW_ID_PREFIX}${orgId}`,
+    homeCommunityId: `${CW_ID_PREFIX}${orgId}`,
     name: shortName,
     displayName: shortName,
     memberName: "Metriport",
     type: "Hospital",
-    patientIdAssignAuthority: `urn:oid:${orgId}`,
+    patientIdAssignAuthority: `${CW_ID_PREFIX}${orgId}`,
     securityTokenKeyType: "BearerKey",
     isActive: true,
     locations: [

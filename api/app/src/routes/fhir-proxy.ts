@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import proxy from "express-http-proxy";
 
-const URN_OID_PREFIX = "urn:oid:";
+// const URN_OID_PREFIX = "urn:oid:";
 
 const updateDocumentReferenceQueryString = (params: string): string => {
   const decodedParams = decodeURIComponent(decodeURI(params));
@@ -21,12 +21,12 @@ const updateQueryString = (path: string, params: string): string | undefined => 
 
 // TODO make this dynamic/config/secret
 const router = proxy("https://fhir.staging.metriport.com", {
-  // const router = proxy("http://localhost:8888", {
+  // const router = proxy("http://host.docker.internal:8888", {
   proxyReqPathResolver: function (req) {
     console.log(`ORIGINAL URL: `, req.url);
     const parts = req.url.split("?");
     const path = parts[0];
-    const queryString = parts.length ? updateQueryString(path, parts[1]) : undefined;
+    const queryString = parts.length > 1 ? updateQueryString(path, parts[1]) : undefined;
     const updatedURL = "/fhir" + path + (queryString ? "?" + queryString : "");
     console.log(`UPDATED URL: `, updatedURL);
     return updatedURL;
@@ -45,17 +45,17 @@ const router = proxy("https://fhir.staging.metriport.com", {
       .replace(urlRegex, urlReplace);
     const payload = JSON.parse(updatedPayload);
     if (payload.entry) {
-      payload.entry
-        .filter((e: any) => e.resource?.resourceType === `DocumentReference`)
-        .forEach((e: any) => {
-          e.resource.id = URN_OID_PREFIX + e.resource.id;
-          // const contained = e.resource?.contained;
-          // if (contained) {
-          //   contained
-          //     .filter((c: any) => c.resourceType === `Organization`)
-          //     .forEach((c: any) => (c.id = URN_OID_PREFIX + c.id));
-          // }
-        });
+      // payload.entry
+      //   .filter((e: any) => e.resource?.resourceType === `DocumentReference`)
+      //   .forEach((e: any) => {
+      //     e.resource.id = URN_OID_PREFIX + e.resource.id;
+      //     // const contained = e.resource?.contained;
+      //     // if (contained) {
+      //     //   contained
+      //     //     .filter((c: any) => c.resourceType === `Organization`)
+      //     //     .forEach((c: any) => (c.id = URN_OID_PREFIX + c.id));
+      //     // }
+      //   });
       // payload.entry
       //   .filter((e: any) => e.resource?.resourceType === `Organization`)
       //   .map((e: any) => e.resource)

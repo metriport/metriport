@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { APIMode, CommonWell, isLOLA1, RequestMetadata } from "@metriport/commonwell-sdk";
+import * as fs from "fs";
 import { cloneDeep } from "lodash";
-
-import { certificate, makeDocPerson, makeOrganization, makePatient } from "./payloads";
+import { certificate, makeDocPerson, makeId, makeOrganization, makePatient } from "./payloads";
 import { findOrCreatePatient, findOrCreatePerson } from "./shared-person";
 import { getEnv, getEnvOrFail } from "./util";
 
@@ -22,7 +22,7 @@ const zip = getEnv("DOCUMENT_CONTRIBUTION_PATIENT_ZIP");
 
 export async function documentContribution({
   memberManagementApi,
-  api,
+  api: apiDefaultOrg,
   queryMeta,
 }: {
   memberManagementApi: CommonWell;
@@ -39,12 +39,12 @@ export async function documentContribution({
     zip,
     gender,
     dob,
-    facilityId: api.oid,
+    facilityId: apiDefaultOrg.oid,
   });
 
   console.log(`Find or create patient and person on main org`);
   const { personId, patientId: patientIdMainOrg } = await findOrCreatePerson(
-    api,
+    apiDefaultOrg,
     queryMeta,
     person
   );
@@ -79,11 +79,18 @@ export async function documentContribution({
   }
 
   console.log(`>>> [E3] Querying for docs from the main org...`);
-  const respDocQuery = await api.queryDocuments(queryMeta, patientIdMainOrg);
+  const respDocQuery = await apiDefaultOrg.queryDocuments(queryMeta, patientIdMainOrg);
   console.log(respDocQuery);
-  const entries = respDocQuery.entry ?? [];
-  for (const entry of entries) {
-    console.log(`DOCUMENT: ${JSON.stringify(entry, undefined, 2)}`);
+  const documents = respDocQuery.entry ?? [];
+  for (const doc of documents) {
+    console.log(`DOCUMENT: ${JSON.stringify(doc, undefined, 2)}`);
+
+    const fileName = `./commonwell_contributed_${doc.id ?? "ID"}_${makeId()}.file`;
+    // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
+    const outputStream = fs.createWriteStream(fileName, { encoding: null });
+    console.log(`File being created at ${process.cwd()}/${fileName}`);
+    const url = doc.content?.location;
+    if (url != null) await apiDefaultOrg.retrieveDocument(queryMeta, url, outputStream);
   }
 }
 

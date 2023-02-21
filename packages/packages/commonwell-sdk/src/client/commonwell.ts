@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 import * as fs from "fs";
+import * as httpStatus from "http-status";
 import { Agent } from "https";
 import { downloadFile } from "../common/fileDownload";
 import { makeJwt } from "../common/make-jwt";
@@ -187,8 +188,10 @@ export class CommonWell {
       validateStatus: null, // don't throw on status code > 299
     });
     const status = resp.status;
-    if (status === 404) return undefined;
-    if (status >= 200 && status < 300) return organizationSchema.parse(resp.data);
+    if (status === httpStatus.NOT_FOUND) return undefined;
+    if (httpStatus[`${status}_CLASS`] === httpStatus.classes.SUCCESSFUL) {
+      return organizationSchema.parse(resp.data);
+    }
     throw new MetriportError(`Failed to retrieve Organization`, status);
   }
 

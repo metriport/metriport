@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import { CommonWell, Document, isLOLA1, RequestMetadata } from "@metriport/commonwell-sdk";
 import * as fs from "fs";
-import { nanoid } from "nanoid";
-import { makeDocPerson } from "./payloads";
+import { makeDocPerson, makeId } from "./payloads";
 import { findOrCreatePerson } from "./shared-person";
 
 // Document Consumption
@@ -52,11 +51,13 @@ export async function retrieveDocument(
   // E2: Document Retrieve
   console.log(`>>> E2c: Retrieve documents using FHIR (REST)`);
 
-  const fileName = `./commonwell_${nanoid()}.file`;
-  const outputStream = fs.createWriteStream(fileName, {
-    // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
-    encoding: null,
-  });
+  // store the query result as well
+  const queryFileName = `./commonwell_queried_${doc.id ?? "ID"}_${makeId()}.query.file`;
+  fs.writeFileSync(queryFileName, JSON.stringify(doc));
+
+  const fileName = `./commonwell_queried_${doc.id ?? "ID"}_${makeId()}.file`;
+  // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
+  const outputStream = fs.createWriteStream(fileName, { encoding: null });
   console.log(`File being created at ${process.cwd()}/${fileName}`);
   const url = doc.content.location;
   await commonWell.retrieveDocument(queryMeta, url, outputStream);
