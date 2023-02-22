@@ -20,9 +20,9 @@ export const up: Migration = async ({ context: queryInterface }) => {
           type: DataTypes.UUID,
           field: "cx_id",
         },
-        organizationId: {
+        organizationNumber: {
           type: DataTypes.INTEGER,
-          field: "organization_id",
+          field: "organization_number",
           unique: true,
         },
         data: {
