@@ -4,15 +4,16 @@ import { Config } from "../../shared/config";
 import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 
-export class Facility extends BaseModel<Facility> {
-  static NAME = "facility";
+export class Patient extends BaseModel<Patient> {
+  static NAME = "patient";
   declare id: string;
   declare cxId: string;
-  declare facilityNumber: number;
+  declare facilityIds: string[];
+  declare patientNumber: number;
   declare data: object;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    Facility.init(
+    Patient.init(
       {
         ...BaseModel.baseAttributes(),
         id: {
@@ -22,7 +23,10 @@ export class Facility extends BaseModel<Facility> {
         cxId: {
           type: DataTypes.UUID,
         },
-        facilityNumber: {
+        facilityIds: {
+          type: DataTypes.ARRAY(DataTypes.STRING),
+        },
+        patientNumber: {
           type: DataTypes.INTEGER,
         },
         data: {
@@ -31,20 +35,20 @@ export class Facility extends BaseModel<Facility> {
       },
       {
         ...defaultModelOptions(sequelize),
-        tableName: Facility.NAME,
+        tableName: Patient.NAME,
         hooks: {
           async beforeCreate(attributes) {
-            const curMaxNumber = (await Facility.max("facilityNumber", {
+            const curMaxNumber = (await Patient.max("patientNumber", {
               where: {
                 cxId: attributes.cxId,
               },
             })) as number;
             const org = await getOrganizationOrFail({ cxId: attributes.cxId });
-            const facNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
+            const patientNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
             attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
               org.organizationNumber
-            }.${OIDNode.locations}.${facNumber}`;
-            attributes.facilityNumber = facNumber;
+            }.${OIDNode.patients}.${patientNumber}`;
+            attributes.patientNumber = patientNumber;
           },
         },
       }

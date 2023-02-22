@@ -18,6 +18,13 @@
           },
           "localRoot": "${workspaceFolder}/api/app",
           "remoteRoot": "/usr/src/app"
+        },
+        {
+          "name": "Run Widget in Chrome",
+          "type": "chrome",
+          "request": "launch",
+          "url": "http://localhost:3001",
+          "webRoot": "${workspaceFolder}/connect-widget/app/"
         }
     ]
 }
