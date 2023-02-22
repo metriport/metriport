@@ -74,7 +74,26 @@ export class Google extends Provider implements OAuth2 {
   }
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
-    return this.oauth.revokeProviderAccess(connectedUser);
+    // const access_token = await this.oauth.getAccessToken(connectedUser);
+
+    try {
+      // await axios.post(
+      //   `${Google.TOKEN_HOST}/revoke`,
+      //   {},
+      //   {
+      //     headers: {
+      //       "Content-Type": "application/x-www-form-urlencoded",
+      //     },
+      //     params: {
+      //       token: access_token,
+      //     },
+      //   }
+      // );
+
+      await this.oauth.revokeLocal(connectedUser);
+    } catch (error) {
+      throw new Error("Google Revoke failed");
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
