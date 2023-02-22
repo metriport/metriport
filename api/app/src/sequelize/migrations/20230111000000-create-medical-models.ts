@@ -68,7 +68,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
           field: "cx_id",
         },
         facilityIds: {
-          type: DataTypes.ARRAY(DataTypes.INTEGER),
+          type: DataTypes.ARRAY(DataTypes.STRING),
           field: "facility_ids",
         },
         patientNumber: {

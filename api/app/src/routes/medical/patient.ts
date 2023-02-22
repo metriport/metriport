@@ -3,7 +3,6 @@ import Router from "express-promise-router";
 import { asyncHandler, getCxIdOrFail, getFacilityIdFromQueryOrFail } from "../util";
 const router = Router();
 import status from "http-status";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Patient } from "../../models/medical/patient";
 import { getPatients } from "../../command/medical/patient/get-patient";
 import { updatePatient } from "../../command/medical/patient/update-patient";
@@ -38,11 +37,9 @@ router.post(
         data,
       });
     } else {
-      const org = await getOrganizationOrFail({ cxId });
       patient = await createPatient({
         cxId,
         data: patientData,
-        organizationNumber: org.organizationNumber,
         facilityId: facilityId,
       });
     }
@@ -68,7 +65,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFacilityIdFromQueryOrFail(req);
-    const patients = await getPatients({ cxId, facilityId: +facilityId });
+    const patients = await getPatients({ cxId, facilityId: facilityId });
     const patientsData = patients.map(patient => {
       return { id: patient.id, facilityIds: patient.facilityIds, ...patient.data };
     });

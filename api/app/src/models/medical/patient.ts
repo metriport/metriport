@@ -1,7 +1,8 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { OID_ID_START } from "../../shared/oid";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { Config } from "../../shared/config";
+import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
-import { Organization } from "./organization";
 
 export class Patient extends BaseModel<Patient> {
   static NAME = "patient";
@@ -42,13 +43,15 @@ export class Patient extends BaseModel<Patient> {
                 cxId: attributes.cxId,
               },
             })) as number;
+            const org = await getOrganizationOrFail({ cxId: attributes.cxId });
             const patientNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-            attributes.id += `${patientNumber}`;
+            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
+              org.organizationNumber
+            }.${OIDNode.patients}.${patientNumber}`;
             attributes.patientNumber = patientNumber;
           },
         },
       }
     );
-    Patient.belongsTo(Organization);
   };
 }

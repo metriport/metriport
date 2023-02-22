@@ -4,7 +4,6 @@ import { asyncHandler, getCxIdOrFail } from "../util";
 const router = Router();
 import status from "http-status";
 import { Facility } from "../../models/medical/facility";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { createFacility } from "../../command/medical/facility/create-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import { getFacilities } from "../../command/medical/facility/get-facility";
@@ -34,11 +33,9 @@ router.post(
         data,
       });
     } else {
-      const org = await getOrganizationOrFail({ cxId });
       facility = await createFacility({
         cxId,
         data: facilityData,
-        organizationNumber: org.organizationNumber,
       });
     }
 

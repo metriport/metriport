@@ -4,7 +4,7 @@ export const getPatients = async ({
   facilityId,
   cxId,
 }: {
-  facilityId: number;
+  facilityId: string;
   cxId: string;
 }): Promise<Patient[]> => {
   const patients = await Patient.findAll({
