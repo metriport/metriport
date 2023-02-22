@@ -46,17 +46,21 @@ export class APIStack extends Stack {
       },
     });
 
+    new r53.PrivateHostedZone(this, "PrivateZone", {
+      vpc: this.vpc,
+      zoneName: props.config.host,
+    });
+    const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
+      domainName: props.config.host,
+    });
+
     //-------------------------------------------
     // Security Setup
     //-------------------------------------------
-
     // Create a cert for HTTPS
-    const zone = r53.HostedZone.fromLookup(this, "Zone", {
-      domainName: props.config.host,
-    });
     const certificate = new cert.DnsValidatedCertificate(this, "APICert", {
       domainName: props.config.domain,
-      hostedZone: zone,
+      hostedZone: publicZone,
       subjectAlternativeNames: [`*.${props.config.domain}`],
     });
 
@@ -284,7 +288,7 @@ export class APIStack extends Stack {
     });
     new r53.ARecord(this, "APIDomainRecord", {
       recordName: apiUrl,
-      zone: zone,
+      zone: publicZone,
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
     });
 
