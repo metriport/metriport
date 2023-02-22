@@ -8,11 +8,11 @@ export type ReportUsageCommand = {
   cxUserId: string;
 };
 
-export const reportUsage = async ({ cxId, cxUserId }: ReportUsageCommand): Promise<void> => {
+export const reportDevicesUsage = async ({ cxId, cxUserId }: ReportUsageCommand): Promise<void> => {
   const url = Config.getUsageUrl();
   if (!url) return;
 
   const payload = { cxId, cxUserId };
 
-  await axios.post(url, payload, { timeout: 1_000 });
+  await axios.post(`${url}/devices`, payload, { timeout: 1_000 });
 };

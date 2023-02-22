@@ -15,7 +15,7 @@ import { getConnectedUsers, getConnectedUserOrFail } from "../connected-user/get
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
-import { reportUsage as reportUsageCmd } from "../usage/report-usage";
+import { reportDevicesUsage as reportUsageCmd } from "../usage/report-usage";
 import { createWebhookRequest, updateWebhookRequestStatus } from "../webhook/webhook-request";
 
 const axios = Axios.create();

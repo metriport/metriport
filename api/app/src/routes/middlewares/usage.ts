@@ -1,5 +1,5 @@
 import { NextFunction, Request } from "express";
-import { reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
+import { reportDevicesUsage as reportUsageCmd } from "../../command/usage/report-usage";
 import { Util } from "../../shared/util";
 import { getCxId, getUserId } from "../util";
 
@@ -9,7 +9,7 @@ const log = Util.log("USAGE");
  * Adds a listener on Response close/finish, executing the logic on 'reportIt'.
  * Thanks to https://stackoverflow.com/questions/20175806/before-and-after-hooks-for-a-request-in-express-to-be-executed-before-any-req-a
  */
-export const reportUsage = async (
+export const reportDevicesUsage = async (
   req: Request,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   res: any, // otherwise we get type error, those Response functions are not mapped on Typescript
