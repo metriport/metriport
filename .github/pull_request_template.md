@@ -1,4 +1,4 @@
-Ticket: #_[ticket-number]_
+Ref: #_[ticket-number]_
 
 ### Dependencies
 
