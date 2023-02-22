@@ -21,7 +21,6 @@ router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const org = await getOrganizationOrFail({ cxId });
     const facilityId = getFacilityIdFromQueryOrFail(req);
 
     // TODO: parse this into model
@@ -31,21 +30,20 @@ router.post(
     if (patientData.id) {
       const data = { ...patientData };
       delete data.id;
-      delete data.organizationId;
       delete data.facilityId;
       patient = await updatePatient({
         id: patientData.id,
         cxId,
-        organizationId: org.organizationId,
-        facilityId: +facilityId,
+        facilityId: facilityId,
         data,
       });
     } else {
+      const org = await getOrganizationOrFail({ cxId });
       patient = await createPatient({
         cxId,
         data: patientData,
-        organizationId: org.organizationId,
-        facilityId: +facilityId,
+        organizationNumber: org.organizationNumber,
+        facilityId: facilityId,
       });
     }
 

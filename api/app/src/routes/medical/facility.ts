@@ -20,7 +20,6 @@ router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const org = await getOrganizationOrFail({ cxId });
 
     // TODO: parse this into model
     const facilityData = req.body;
@@ -29,31 +28,28 @@ router.post(
     if (facilityData.id) {
       const data = { ...facilityData };
       delete data.id;
-      delete data.facilityId;
       facility = await updateFacility({
         id: facilityData.id,
         cxId,
-        organizationId: org.organizationId,
         data,
       });
     } else {
+      const org = await getOrganizationOrFail({ cxId });
       facility = await createFacility({
         cxId,
         data: facilityData,
-        organizationId: org.organizationId,
+        organizationNumber: org.organizationNumber,
       });
     }
 
-    return res
-      .status(status.OK)
-      .json({ id: facility.id, facilityId: facility.facilityId, ...facility.data });
+    return res.status(status.OK).json({ id: facility.id, ...facility.data });
   })
 );
 
 /** ---------------------------------------------------------------------------
  * GET /facility
  *
- * Gets all of the facilities corresponding to the customer's organization.
+ * Gets all of the facilities corresponding to the customer.
  *
  * @return  {Facility[]}  The facilities.
  */
@@ -61,10 +57,9 @@ router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const org = await getOrganizationOrFail({ cxId });
-    const facilities = await getFacilities({ cxId, organizationId: org.organizationId });
+    const facilities = await getFacilities({ cxId });
     const facilitiesData = facilities.map(facility => {
-      return { id: facility.id, facilityId: facility.facilityId, ...facility.data };
+      return { id: facility.id, ...facility.data };
     });
 
     return res.status(status.OK).json({ facilities: facilitiesData });

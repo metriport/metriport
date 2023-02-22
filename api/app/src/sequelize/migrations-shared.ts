@@ -7,8 +7,10 @@ import {
   Model,
   ModelAttributes,
   QueryInterface,
+  QueryInterfaceCreateTableOptions,
   Transaction,
 } from "sequelize";
+import { DeepNonNullable } from "ts-essentials";
 
 export const updateUpdatedAtFnName = "update_trigger_fn";
 
@@ -51,11 +53,14 @@ export const addUpdatedAtTrigger = (
     { transaction }
   );
 
+export type CreateTableOptions = Omit<QueryInterfaceCreateTableOptions, "transaction"> &
+  DeepNonNullable<Required<Pick<QueryInterfaceCreateTableOptions, "transaction">>>;
+
 export const createTable = async (
   queryInterface: QueryInterface,
-  transaction: Transaction,
   tableName: string,
-  tableDefinitions: ModelAttributes
+  tableDefinitions: ModelAttributes,
+  options: CreateTableOptions
 ) => {
   await queryInterface.createTable(
     tableName,
@@ -63,7 +68,7 @@ export const createTable = async (
       ...tableDefinitions,
       ...defaultColumnsDef(),
     },
-    { transaction }
+    options
   );
-  await addUpdatedAtTrigger(queryInterface, transaction, tableName);
+  await addUpdatedAtTrigger(queryInterface, options.transaction, tableName);
 };

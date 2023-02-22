@@ -7,7 +7,7 @@ export class Organization extends BaseModel<Organization> {
   static NAME = "organization";
   declare id: string;
   declare cxId: string;
-  declare organizationId: number;
+  declare organizationNumber: number;
   declare data: object;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -21,7 +21,7 @@ export class Organization extends BaseModel<Organization> {
         cxId: {
           type: DataTypes.UUID,
         },
-        organizationId: {
+        organizationNumber: {
           type: DataTypes.INTEGER,
           unique: true,
         },
@@ -34,10 +34,10 @@ export class Organization extends BaseModel<Organization> {
         tableName: Organization.NAME,
         hooks: {
           async beforeCreate(attributes) {
-            const curMaxId = (await Organization.max("organizationId")) as number;
-            const orgId = curMaxId ? curMaxId + 1 : OID_ID_START;
-            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgId}`;
-            attributes.organizationId = orgId;
+            const curMaxNumber = (await Organization.max("organizationNumber")) as number;
+            const orgNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
+            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}`;
+            attributes.organizationNumber = orgNumber;
           },
         },
       }

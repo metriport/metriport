@@ -3,14 +3,12 @@ import { Patient } from "../../../models/medical/patient";
 
 export const updatePatient = async ({
   id,
-  organizationId,
   facilityId,
   cxId,
   data,
 }: {
   id: string;
-  organizationId: number;
-  facilityId: number;
+  facilityId: string;
   cxId: string;
   data: object;
 }): Promise<Patient> => {
@@ -18,11 +16,11 @@ export const updatePatient = async ({
     {
       data,
     },
-    { where: { id, organizationId, facilityIds: [facilityId], cxId }, returning: true }
+    { where: { id, facilityIds: [facilityId], cxId }, returning: true }
   );
   if (count != 1)
     throw new BadRequestError(
-      `More than one facility found for id: ${id} and cxId: ${cxId} and organizationId: ${organizationId} and facilityId: ${facilityId}`
+      `Expected a single patient to be updated, but ${count} were updated for id: ${id} and cxId: ${cxId} and facilityId: ${facilityId}`
     );
   return rows[0];
 };

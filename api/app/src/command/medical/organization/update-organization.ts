@@ -17,6 +17,8 @@ export const updateOrganization = async ({
     { where: { id, cxId }, returning: true }
   );
   if (count != 1)
-    throw new BadRequestError(`More than one org found for id: ${id} and cxId: ${cxId}`);
+    throw new BadRequestError(
+      `Expected a single org to be updated, but ${count} were updated for id: ${id} and cxId: ${cxId}`
+    );
   return rows[0];
 };

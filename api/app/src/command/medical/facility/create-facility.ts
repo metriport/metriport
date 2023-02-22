@@ -1,19 +1,22 @@
 import { Facility } from "../../../models/medical/facility";
+import { Config } from "../../../shared/config";
+import { OIDNode } from "../../../shared/oid";
 
 export const createFacility = async ({
-  organizationId,
+  organizationNumber,
   cxId,
   data,
 }: {
-  organizationId: number;
+  organizationNumber: number;
   cxId: string;
   data: object;
 }): Promise<Facility> => {
   const facility = await Facility.create({
-    id: "", // this will be generated on the beforeCreate hook
+    id: `${Config.getSystemRootOID()}.${OIDNode.organizations}.${organizationNumber}.${
+      OIDNode.locations
+    }.`, // the facility number will be generated on the beforeCreate hook
     cxId,
-    facilityId: 0, // this will be generated on the beforeCreate hook
-    organizationId,
+    facilityNumber: 0, // this will be generated on the beforeCreate hook
     data,
   });
   return facility;

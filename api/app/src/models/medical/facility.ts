@@ -1,6 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
+import { OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { Organization } from "./organization";
 
@@ -8,8 +7,7 @@ export class Facility extends BaseModel<Facility> {
   static NAME = "facility";
   declare id: string;
   declare cxId: string;
-  declare organizationId: number;
-  declare facilityId: number;
+  declare facilityNumber: number;
   declare data: object;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -23,11 +21,7 @@ export class Facility extends BaseModel<Facility> {
         cxId: {
           type: DataTypes.UUID,
         },
-        organizationId: {
-          type: DataTypes.INTEGER,
-          references: { model: Organization.NAME, key: "organization_id" },
-        },
-        facilityId: {
+        facilityNumber: {
           type: DataTypes.INTEGER,
         },
         data: {
@@ -39,16 +33,13 @@ export class Facility extends BaseModel<Facility> {
         tableName: Facility.NAME,
         hooks: {
           async beforeCreate(attributes) {
-            const curMaxId = (await Facility.max("facilityId", {
+            const curMaxNumber = (await Facility.max("facilityNumber", {
               where: {
-                organizationId: attributes.organizationId,
+                cxId: attributes.cxId,
               },
             })) as number;
-            const facId = curMaxId ? curMaxId + 1 : OID_ID_START;
-            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
-              attributes.organizationId
-            }.${OIDNode.locations}.${facId}`;
-            attributes.facilityId = facId;
+            const facId = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
+            attributes.id += `${facId}`;
           },
         },
       }

@@ -13,7 +13,7 @@ export const createOrganization = async ({
     defaults: {
       id: "", // this will be generated on the beforeCreate hook
       cxId,
-      organizationId: 0, // this will be generated on the beforeCreate hook
+      organizationNumber: 0, // this will be generated on the beforeCreate hook
       data,
     },
   });
