@@ -16,7 +16,7 @@ export class MetriportDevicesApi {
   private api: AxiosInstance;
 
   /**
-   * Creates a new instance of the Metriport API client.
+   * Creates a new instance of the Metriport Devices API client.
    *
    * @param {string} apiKey - Your Metriport API key.
    */

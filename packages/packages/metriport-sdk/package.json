@@ -1,5 +1,5 @@
 {
-  "name": "@metriport/metriport-sdk",
+  "name": "@metriport/api",
   "version": "1.0.6",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
