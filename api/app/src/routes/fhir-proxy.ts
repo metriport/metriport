@@ -20,7 +20,7 @@ const updateQueryString = (path: string, params: string): string | undefined => 
 };
 
 // TODO make this dynamic/config/secret
-const router = proxy("https://fhir.staging.metriport.com", {
+const router = proxy("http://fhir.staging.metriport.com", {
   // const router = proxy("http://host.docker.internal:8888", {
   proxyReqPathResolver: function (req) {
     console.log(`ORIGINAL URL: `, req.url);
@@ -38,11 +38,12 @@ const router = proxy("https://fhir.staging.metriport.com", {
     // const orgRegex = /"Organization\/(.+)"/g;
     // const orgReplace = `"Organization/urn:oid:$1"`;
     // eslint-disable-next-line no-useless-escape
-    const urlRegex = /https\:\/\/fhir\.staging\.metriport\.com/g;
-    const urlReplace = `https://api.staging.metriport.com`;
-    const updatedPayload = payloadString
-      // .replace(orgRegex, orgReplace)
-      .replace(urlRegex, urlReplace);
+    // const urlRegex = /https\:\/\/fhir\.staging\.metriport\.com/g;
+    // const urlReplace = `https://api.staging.metriport.com`;
+    const updatedPayload = payloadString;
+    // const updatedPayload = payloadString
+    //   // .replace(orgRegex, orgReplace)
+    //   .replace(urlRegex, urlReplace);
     const payload = JSON.parse(updatedPayload);
     if (payload.entry) {
       // payload.entry
