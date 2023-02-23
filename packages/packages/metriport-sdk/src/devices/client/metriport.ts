@@ -12,7 +12,7 @@ import { GetMetriportUserIDResponse } from "./models/get-metriport-user-id-respo
 import { SettingsResponse } from "./models/settings-response";
 import { WebhookStatusResponse } from "./models/webhook-status-response";
 
-export class Metriport {
+export class MetriportDevicesApi {
   private api: AxiosInstance;
 
   /**

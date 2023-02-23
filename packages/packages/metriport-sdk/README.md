@@ -9,7 +9,7 @@ Get started: https://docs.metriport.com/getting-started/connect-quickstart
 #### Installation
 
 ```
-npm install --save @metriport/api
+npm install --save @metriport/metriport-sdk
 ```
 
 #### Setup
@@ -18,7 +18,7 @@ npm install --save @metriport/api
 sandbox mode add https://api.sandbox.metriport.com.
 
 ```
-import { Metriport } from "@metriport/api";
+import { Metriport } from "@metriport/metriport-sdk";
 
 const metriportClient = new Metriport("YOUR_API_KEY", "ENVIRONMENT_URL");
 ```
@@ -27,18 +27,18 @@ const metriportClient = new Metriport("YOUR_API_KEY", "ENVIRONMENT_URL");
             ,▄,
           ▄▓███▌
       ▄▀╙   ▀▓▀    ²▄
-    ▄└               ╙▌     
-  ,▀                   ╨▄   
-  ▌                     ║   
-                         ▌  
-                         ▌  
-,▓██▄                 ╔███▄ 
-╙███▌                 ▀███▀ 
-    ▀▄                      
+    ▄└               ╙▌
+  ,▀                   ╨▄
+  ▌                     ║
+                         ▌
+                         ▌
+,▓██▄                 ╔███▄
+╙███▌                 ▀███▀
+    ▀▄
       ▀╗▄         ,▄
          '╙▀▀▀▀▀╙''
 
-     
+
       by Metriport Inc.
 
 ```
