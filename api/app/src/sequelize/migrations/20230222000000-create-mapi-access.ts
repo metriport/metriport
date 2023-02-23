@@ -10,7 +10,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       queryInterface,
       MAPIAccess.NAME,
       {
-        id: {
+        cxId: {
           type: DataTypes.STRING,
           primaryKey: true,
         },
