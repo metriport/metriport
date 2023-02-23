@@ -1,5 +1,7 @@
 import base64url from "base64url";
 import { NextFunction, Request, Response } from "express";
+import { MAPIAccess } from "../../models/medical/mapi-access";
+import status from "http-status";
 
 /**
  * Process the API key and get the customer id.
@@ -18,4 +20,28 @@ export const processAPIKey = (req: Request, res: Response, next: NextFunction): 
     // noop - auth is done on API GW level, this is just to make data available downstream
   }
   next();
+};
+
+/**
+ * Validates the customer making the request was granted access
+ * to the Medical API.
+ */
+export const checkMAPIAccess = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  let hasMAPIAccess = false;
+  try {
+    const mapiAccess = await MAPIAccess.findOne({ where: { id: req.cxId } });
+    hasMAPIAccess = mapiAccess != null;
+  } catch (error) {
+    console.error(`Failed checking MAPI access with error ${error}`);
+  }
+  if (hasMAPIAccess) {
+    next();
+  } else {
+    res.status(status.FORBIDDEN);
+    res.end();
+  }
 };

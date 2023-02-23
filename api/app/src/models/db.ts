@@ -5,6 +5,7 @@ import { Config, getEnvVarOrFail } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev } from "./db-dev";
 import { Facility } from "./medical/facility";
+import { MAPIAccess } from "./medical/mapi-access";
 import { Organization } from "./medical/organization";
 import { Patient } from "./medical/patient";
 import { Settings } from "./settings";
@@ -19,6 +20,7 @@ const models: ModelSetup[] = [
   Organization.setup,
   Facility.setup,
   Patient.setup,
+  MAPIAccess.setup,
 ];
 
 export type MetriportDB = {
