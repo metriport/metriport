@@ -4,7 +4,7 @@ import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
 import { requestLogger } from "./helpers/requestLogger";
-import { processAPIKey } from "./middlewares/auth";
+import { checkMAPIAccess, processAPIKey } from "./middlewares/auth";
 import { reportUsage } from "./middlewares/usage";
 import nutrition from "./nutrition";
 import oauthRoutes from "./oauth-routes";
@@ -30,7 +30,7 @@ export default (app: Application) => {
   app.use("/user", processAPIKey, reportUsage, user);
 
   // medical routes with API key auth
-  app.use("/medical", processAPIKey, medical);
+  app.use("/medical", processAPIKey, checkMAPIAccess, medical);
 
   // routes with session token auth
   app.use("/connect", connect);
