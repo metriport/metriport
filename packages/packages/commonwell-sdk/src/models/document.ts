@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { humanNameSchema } from "./human-name";
 import { identifierUseCodesSchema } from "./identifier";
 import { isoDateTimeSchema } from "./iso-datetime";
 import { periodSchema } from "./period";
@@ -10,7 +11,7 @@ import { periodSchema } from "./period";
 // Bundle, DocumentReference, Organization, Practitioner
 const resourceTypeSchema = z.string().optional();
 
-const docIdentifierSchema = z.object({
+const identifierSchema = z.object({
   use: identifierUseCodesSchema.optional(),
   system: z.string().optional(),
   value: z.string(),
@@ -32,7 +33,8 @@ const codeableConceptSchema = z.object({
 const containedSchema = z.object({
   resourceType: resourceTypeSchema,
   id: z.string(),
-  name: z.string().optional(),
+  identifier: z.array(identifierSchema).optional(),
+  name: z.string().or(z.array(humanNameSchema)).optional(),
   organization: z
     .object({
       reference: z.string(),
@@ -51,8 +53,8 @@ export const contentSchema = z.object({
   // _links: resourceTypeSchema, // What's the structure here? -	A reserved property for presenting the link relations for this resource.
   resourceType: resourceTypeSchema,
   contained: z.array(containedSchema),
-  masterIdentifier: docIdentifierSchema,
-  identifier: z.array(docIdentifierSchema).optional(),
+  masterIdentifier: identifierSchema,
+  identifier: z.array(identifierSchema).optional(),
   subject: z.object({
     reference: z.string(), // Supposed to be one of these, but sandbox doesn't match it: Patient | Practitioner | Group | Device
   }),
