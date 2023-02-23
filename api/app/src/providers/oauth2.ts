@@ -23,6 +23,7 @@ export interface UriParams {
   redirect_uri: string;
   state: string;
   access_type?: string;
+  prompt?: string;
 }
 
 export interface AuthCodeUriParams {
@@ -75,10 +76,6 @@ export class OAuth2DefaultImpl implements OAuth2 {
       params.scope = this.scopes;
     }
 
-    if (this.providerName === "google") {
-      params.access_type = "offline";
-    }
-
     const accessToken = await client.getToken(params);
 
     return JSON.stringify(accessToken);
@@ -98,6 +95,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
 
     if (this.providerName === "google") {
       uriParams.access_type = "offline";
+      uriParams.prompt = "consent";
     }
 
     const authorizationUri = client.authorizeURL(uriParams);
