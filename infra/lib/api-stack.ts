@@ -1,6 +1,7 @@
 import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
+import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
@@ -328,7 +329,7 @@ export class APIStack extends Stack {
     // setup /token path with token auth
     this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiServerAddress);
 
-    const userPoolClientSecret = this.setupOAuthUserPool();
+    const userPoolClientSecret = this.setupOAuthUserPool(props.config, certificate);
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiServerAddress);
@@ -527,7 +528,8 @@ export class APIStack extends Stack {
     return apiTokenResource;
   }
 
-  private setupOAuthUserPool(): cognito.IUserPool {
+  private setupOAuthUserPool(config: EnvConfig, certificate: ICertificate): cognito.IUserPool {
+    // TODO remove `userPool` once `newUserPool` is proven to be working
     const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool", {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: RemovalPolicy.DESTROY,
@@ -536,6 +538,16 @@ export class APIStack extends Stack {
     userPool.addDomain("metriport-cognito-domain", {
       cognitoDomain: {
         domainPrefix: "metriport", // TODO make this dynamic/config
+      },
+    });
+    const newUserPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+    newUserPool.addDomain("metriport-custom-cognito-domain", {
+      customDomain: {
+        domainName: `${config.authSubdomain}.${config.domain}`,
+        certificate,
       },
     });
     return userPool;

@@ -14,9 +14,10 @@ export type EnvConfig = {
   environmentType: EnvType;
   region: string;
   secretReplicaRegion?: string;
-  subdomain: string;
-  host: string;
-  domain: string;
+  host: string; // DNS Zone
+  domain: string; // Base domain
+  subdomain: string; // API subdomain
+  authSubdomain: string; // Authentication subdomain
   dbName: string;
   dbUsername: string;
   providerSecretNames: {
