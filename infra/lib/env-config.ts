@@ -36,6 +36,7 @@ export type EnvConfig = {
     WHOOP_CLIENT_SECRET: string;
   };
   usageReportUrl?: string;
+  fhirServerUrl?: string;
   systemRootOID: string;
 } & (
   | {
