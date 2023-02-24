@@ -52,10 +52,10 @@ export async function retrieveDocument(
   console.log(`>>> E2c: Retrieve documents using FHIR (REST)`);
 
   // store the query result as well
-  const queryFileName = `./commonwell_queried_${doc.id ?? "ID"}_${makeId()}.query.file`;
+  const queryFileName = `./cw_consumption_${doc.id ?? "ID"}_${makeId()}.response.file`;
   fs.writeFileSync(queryFileName, JSON.stringify(doc));
 
-  const fileName = `./commonwell_queried_${doc.id ?? "ID"}_${makeId()}.file`;
+  const fileName = `./cw_consumption_${doc.id ?? "ID"}_${makeId()}.contents.file`;
   // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
   const outputStream = fs.createWriteStream(fileName, { encoding: null });
   console.log(`File being created at ${process.cwd()}/${fileName}`);

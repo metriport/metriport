@@ -90,6 +90,10 @@ export class Config {
     return getEnvVar("USAGE_URL");
   }
 
+  static getFHIRServerUrl(): string | undefined {
+    return getEnvVar("FHIR_SERVER_URL");
+  }
+
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }

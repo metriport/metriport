@@ -188,7 +188,7 @@ export class APIStack extends Stack {
             ...secrets,
           },
           environment: {
-            NODE_ENV: "production",
+            NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
             ENV_TYPE: props.config.environmentType,
             TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
             API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
@@ -196,6 +196,9 @@ export class APIStack extends Stack {
             SYSTEM_ROOT_OID: props.config.systemRootOID,
             ...(props.config.usageReportUrl && {
               USAGE_URL: props.config.usageReportUrl,
+            }),
+            ...(props.config.fhirServerUrl && {
+              FHIR_SERVER_URL: props.config.fhirServerUrl,
             }),
           },
         },
