@@ -529,22 +529,11 @@ export class APIStack extends Stack {
   }
 
   private setupOAuthUserPool(config: EnvConfig, certificate: ICertificate): cognito.IUserPool {
-    // TODO remove `userPool` once `newUserPool` is proven to be working
-    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool", {
+    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: RemovalPolicy.DESTROY,
     });
-    // TODO make this a custom domain
-    userPool.addDomain("metriport-cognito-domain", {
-      cognitoDomain: {
-        domainPrefix: "metriport", // TODO make this dynamic/config
-      },
-    });
-    const newUserPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
-      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
-    newUserPool.addDomain("metriport-custom-cognito-domain", {
+    userPool.addDomain("metriport-custom-cognito-domain", {
       customDomain: {
         domainName: `${config.authSubdomain}.${config.domain}`,
         certificate,
