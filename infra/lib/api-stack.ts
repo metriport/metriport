@@ -1,7 +1,6 @@
 import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
-import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
@@ -329,7 +328,7 @@ export class APIStack extends Stack {
     // setup /token path with token auth
     this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiServerAddress);
 
-    const userPoolClientSecret = this.setupOAuthUserPool(props.config, certificate);
+    const userPoolClientSecret = this.setupOAuthUserPool(props.config, publicZone);
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiServerAddress);
@@ -528,7 +527,7 @@ export class APIStack extends Stack {
     return apiTokenResource;
   }
 
-  private setupOAuthUserPool(config: EnvConfig, certificate: ICertificate): cognito.IUserPool {
+  private setupOAuthUserPool(config: EnvConfig, dnsZone: r53.IHostedZone): cognito.IUserPool {
     // TODO remove `userPool` once `newUserPool` is proven to be working
     const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool", {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
@@ -540,15 +539,23 @@ export class APIStack extends Stack {
         domainPrefix: "metriport", // TODO make this dynamic/config
       },
     });
+    const domainName = `${config.authSubdomain}.${config.domain}`;
     const newUserPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: RemovalPolicy.DESTROY,
     });
-    newUserPool.addDomain("metriport-custom-cognito-domain", {
-      customDomain: {
-        domainName: `${config.authSubdomain}.${config.domain}`,
-        certificate,
-      },
+    const certificate = new cert.DnsValidatedCertificate(this, `UserPoolCertificate`, {
+      domainName,
+      hostedZone: dnsZone,
+      region: "us-east-1", // Required by Cognito for custom certs - https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-add-custom-domain.html
+    });
+    const userPoolDomain = newUserPool.addDomain("metriport-custom-cognito-domain", {
+      customDomain: { domainName, certificate },
+    });
+    new r53.ARecord(this, "AuthSubdomainRecord", {
+      recordName: domainName,
+      zone: dnsZone,
+      target: r53.RecordTarget.fromAlias(new r53_targets.UserPoolDomainTarget(userPoolDomain)),
     });
     return userPool;
   }
