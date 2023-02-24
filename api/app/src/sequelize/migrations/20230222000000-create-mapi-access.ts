@@ -12,6 +12,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       {
         cxId: {
           type: DataTypes.STRING,
+          field: "cx_id",
           primaryKey: true,
         },
       },
