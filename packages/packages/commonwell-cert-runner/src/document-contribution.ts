@@ -89,7 +89,7 @@ export async function documentContribution({
     const queryFileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.response.file`;
     fs.writeFileSync(queryFileName, JSON.stringify(doc));
 
-    const fileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.contentsfile`;
+    const fileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.contents.file`;
     // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
     const outputStream = fs.createWriteStream(fileName, { encoding: null });
     console.log(`File being created at ${process.cwd()}/${fileName}`);
