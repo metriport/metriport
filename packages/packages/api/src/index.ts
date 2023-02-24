@@ -1,8 +1,12 @@
-export { Activity } from "./models/activity";
-export { Biometrics } from "./models/biometrics";
-export { Body } from "./models/body";
-export { Metriport } from "./client/metriport";
-export { Nutrition } from "./models/nutrition";
-export { Sleep } from "./models/sleep";
-export { User } from "./models/user";
-export { ProviderSource } from "./models/common/provider-source";
+// Devices API
+export { Activity } from "./devices/models/activity";
+export { Biometrics } from "./devices/models/biometrics";
+export { Body } from "./devices/models/body";
+export { MetriportDevicesApi } from "./devices/client/metriport";
+export { Nutrition } from "./devices/models/nutrition";
+export { Sleep } from "./devices/models/sleep";
+export { User } from "./devices/models/user";
+export { ProviderSource } from "./devices/models/common/provider-source";
+
+// Medical API
+export { MetriportMedicalApi } from "./medical/client/metriport";
