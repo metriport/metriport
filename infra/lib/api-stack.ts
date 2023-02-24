@@ -559,7 +559,7 @@ export class APIStack extends Stack {
     ];
     const resourceServerScopes = scopes.map(s => new cognito.ResourceServerScope(s));
     const resourceServer = userPool.addResourceServer("FHIR-resource-server2", {
-      identifier: "fhir2",
+      identifier: "fhir",
       scopes: resourceServerScopes,
     });
     const oauthScopes = resourceServerScopes.map(s =>
