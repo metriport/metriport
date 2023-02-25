@@ -331,7 +331,6 @@ export class APIStack extends Stack {
     const userPoolClientSecret = this.setupOAuthUserPool(props.config, publicZone);
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
-    // TODO #228 point this to oauthAuth2
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiServerAddress);
 
     // WEBHOOKS
@@ -530,7 +529,7 @@ export class APIStack extends Stack {
 
   private setupOAuthUserPool(config: EnvConfig, dnsZone: r53.IHostedZone): cognito.IUserPool {
     const domainName = `${config.authSubdomain}.${config.domain}`;
-    const newUserPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
+    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool", {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: RemovalPolicy.DESTROY,
     });
@@ -539,7 +538,7 @@ export class APIStack extends Stack {
       hostedZone: dnsZone,
       region: "us-east-1", // Required by Cognito for custom certs - https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-add-custom-domain.html
     });
-    const userPoolDomain = newUserPool.addDomain("metriport-custom-cognito-domain", {
+    const userPoolDomain = userPool.addDomain("metriport-custom-cognito-domain", {
       customDomain: { domainName, certificate },
     });
     new r53.ARecord(this, "AuthSubdomainRecord", {
@@ -547,7 +546,7 @@ export class APIStack extends Stack {
       zone: dnsZone,
       target: r53.RecordTarget.fromAlias(new r53_targets.UserPoolDomainTarget(userPoolDomain)),
     });
-    return newUserPool;
+    return userPool;
   }
 
   private enableFHIROnUserPool(userPool: cognito.IUserPool): cognito.OAuthScope[] {
@@ -558,7 +557,7 @@ export class APIStack extends Stack {
       },
     ];
     const resourceServerScopes = scopes.map(s => new cognito.ResourceServerScope(s));
-    const resourceServer = userPool.addResourceServer("FHIR-resource-server2", {
+    const resourceServer = userPool.addResourceServer("FHIR-resource-server", {
       identifier: "fhir",
       scopes: resourceServerScopes,
     });
@@ -566,7 +565,7 @@ export class APIStack extends Stack {
       cognito.OAuthScope.resourceServer(resourceServer, s)
     );
     // Commonwell specific client
-    userPool.addClient("commonwell-client2", {
+    userPool.addClient("commonwell-client", {
       generateSecret: true,
       supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
       oAuth: {
