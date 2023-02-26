@@ -328,16 +328,9 @@ export class APIStack extends Stack {
     // setup /token path with token auth
     this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiServerAddress);
 
-    const { old: userPoolClientSecret, new: userPoolClientSecret2 } = this.setupOAuthUserPool(
-      props.config,
-      publicZone
-    );
-    // TODO #228 remove this one
+    const userPoolClientSecret = this.setupOAuthUserPool(props.config, publicZone);
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
-    // TODO #228 keep this one
-    this.enableFHIROnUserPool2(userPoolClientSecret2);
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
-    // TODO #228 point this to oauthAuth2
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiServerAddress);
 
     // WEBHOOKS
@@ -534,24 +527,9 @@ export class APIStack extends Stack {
     return apiTokenResource;
   }
 
-  private setupOAuthUserPool(
-    config: EnvConfig,
-    dnsZone: r53.IHostedZone
-  ): { old: cognito.IUserPool; new: cognito.IUserPool } {
-    // TODO #228 remove `userPool` once `newUserPool` is proven to be working
-    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool", {
-      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
-    // TODO make this a custom domain
-    userPool.addDomain("metriport-cognito-domain", {
-      cognitoDomain: {
-        domainPrefix: "metriport", // TODO make this dynamic/config
-      },
-    });
-    // TDOO #228 new one (remove this comment)
+  private setupOAuthUserPool(config: EnvConfig, dnsZone: r53.IHostedZone): cognito.IUserPool {
     const domainName = `${config.authSubdomain}.${config.domain}`;
-    const newUserPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
+    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool", {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: RemovalPolicy.DESTROY,
     });
@@ -560,7 +538,7 @@ export class APIStack extends Stack {
       hostedZone: dnsZone,
       region: "us-east-1", // Required by Cognito for custom certs - https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-add-custom-domain.html
     });
-    const userPoolDomain = newUserPool.addDomain("metriport-custom-cognito-domain", {
+    const userPoolDomain = userPool.addDomain("metriport-custom-cognito-domain", {
       customDomain: { domainName, certificate },
     });
     new r53.ARecord(this, "AuthSubdomainRecord", {
@@ -568,10 +546,9 @@ export class APIStack extends Stack {
       zone: dnsZone,
       target: r53.RecordTarget.fromAlias(new r53_targets.UserPoolDomainTarget(userPoolDomain)),
     });
-    return { old: userPool, new: newUserPool };
+    return userPool;
   }
 
-  // TODO #228 remove this
   private enableFHIROnUserPool(userPool: cognito.IUserPool): cognito.OAuthScope[] {
     const scopes = [
       {
@@ -589,35 +566,6 @@ export class APIStack extends Stack {
     );
     // Commonwell specific client
     userPool.addClient("commonwell-client", {
-      generateSecret: true,
-      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
-      oAuth: {
-        flows: {
-          clientCredentials: true,
-        },
-        scopes: oauthScopes,
-      },
-    });
-    return oauthScopes;
-  }
-  // TODO #228 rename this
-  private enableFHIROnUserPool2(userPool: cognito.IUserPool): cognito.OAuthScope[] {
-    const scopes = [
-      {
-        scopeName: "document",
-        scopeDescription: "query and retrieve document references",
-      },
-    ];
-    const resourceServerScopes = scopes.map(s => new cognito.ResourceServerScope(s));
-    const resourceServer = userPool.addResourceServer("FHIR-resource-server2", {
-      identifier: "fhir2",
-      scopes: resourceServerScopes,
-    });
-    const oauthScopes = resourceServerScopes.map(s =>
-      cognito.OAuthScope.resourceServer(resourceServer, s)
-    );
-    // Commonwell specific client
-    userPool.addClient("commonwell-client2", {
       generateSecret: true,
       supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
       oAuth: {
