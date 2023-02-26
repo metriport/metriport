@@ -529,7 +529,7 @@ export class APIStack extends Stack {
 
   private setupOAuthUserPool(config: EnvConfig, dnsZone: r53.IHostedZone): cognito.IUserPool {
     const domainName = `${config.authSubdomain}.${config.domain}`;
-    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool", {
+    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: RemovalPolicy.DESTROY,
     });
@@ -557,7 +557,7 @@ export class APIStack extends Stack {
       },
     ];
     const resourceServerScopes = scopes.map(s => new cognito.ResourceServerScope(s));
-    const resourceServer = userPool.addResourceServer("FHIR-resource-server", {
+    const resourceServer = userPool.addResourceServer("FHIR-resource-server2", {
       identifier: "fhir",
       scopes: resourceServerScopes,
     });
@@ -565,7 +565,7 @@ export class APIStack extends Stack {
       cognito.OAuthScope.resourceServer(resourceServer, s)
     );
     // Commonwell specific client
-    userPool.addClient("commonwell-client", {
+    userPool.addClient("commonwell-client2", {
       generateSecret: true,
       supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
       oAuth: {
