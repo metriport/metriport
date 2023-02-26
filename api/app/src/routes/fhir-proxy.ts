@@ -52,12 +52,18 @@ const router = fhirServerUrl
       },
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       userResDecorator: function (proxyRes, proxyResData, userReq, userRes) {
-        const payloadString = proxyResData.toString("utf8");
-        console.log(`ORIGINAL RESPONSE: `, JSON.stringify(JSON.parse(payloadString)));
-        const updatedPayload = payloadString;
-        const payload = JSON.parse(updatedPayload);
-        console.log(`UPDATED RESPONSE: `, JSON.stringify(payload));
-        return JSON.stringify(payload);
+        try {
+          const payloadString = proxyResData.toString("utf8");
+          console.log(`ORIGINAL RESPONSE: `, JSON.stringify(JSON.parse(payloadString)));
+          const updatedPayload = payloadString;
+          const payload = JSON.parse(updatedPayload);
+          console.log(`UPDATED RESPONSE: `, JSON.stringify(payload));
+          return JSON.stringify(payload);
+        } catch (err) {
+          console.log(`Error parsing/transforming response: `, err);
+          console.log(`RAW, ORIGINAL RESPONSE: `, proxyResData);
+          return proxyResData;
+        }
       },
     })
   : dummyRouter;
