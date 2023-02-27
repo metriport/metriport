@@ -9,7 +9,7 @@ echo "Checking updates on package.json files..."
 
 if changed 'package.json' || changed 'api/app/package.json' || changed 'connect-widget/app/package.json' || changed 'infra/package.json'; then
   echo " "
-  echo "⚠  One or more package.json changed. You should run 'node install' on the root folder"
+  echo "⚠  One or more package.json changed. You should run 'npm install' on the root folder"
   echo " "
 else
   echo "No updates detected on package.json files."
