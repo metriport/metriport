@@ -6,7 +6,8 @@ changed() {
 }
 
 echo "Checking updates on package.json files..."
-if [[ changed 'package.json' || changed 'api/app/package.json' || changed 'connect-widget/app/package.json' || changed 'infra/package.json']]; then
+
+if changed 'package.json' || changed 'api/app/package.json' || changed 'connect-widget/app/package.json' || changed 'infra/package.json'; then
   echo " "
   echo "⚠  One or more package.json changed. You should run 'node install' on the root folder"
   echo " "
@@ -15,6 +16,7 @@ else
 fi
 
 echo "Checking updates on DB migration files..."
+
 if changed 'api/app/src/sequelize/migrations'; then
   echo " "
   echo "⚠  DB updates detected. You should run 'npm run db-local:up' on ./api/app"
