@@ -84,14 +84,14 @@ export async function patientManagement(
   const getLola1Link = respD5a._embedded.networkLink.find(
     link => link.assuranceLevel === LOLA.level_1
   );
-  const respD6a = await commonWell.upgradeOrDowngradePatientLink(
+  const respD6a = await commonWell.upgradeOrDowngradeNetworkLink(
     queryMeta,
     getLola1Link._links.upgrade.href
   );
   console.log(respD6a);
 
   console.log(`>>> D6b: Downgrade link from LOLA 2 to LOLA 0`);
-  const respD6b = await commonWell.upgradeOrDowngradePatientLink(
+  const respD6b = await commonWell.upgradeOrDowngradeNetworkLink(
     queryMeta,
     respD6a._links.downgrade.href
   );

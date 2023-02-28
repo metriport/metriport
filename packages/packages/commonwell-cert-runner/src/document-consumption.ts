@@ -30,7 +30,7 @@ export async function queryDocuments(
   const lola1Links = allLinks.filter(isLOLA1);
   console.log(`Found ${allLinks.length} network links, ${lola1Links.length} are LOLA 1`);
   for (const link of lola1Links) {
-    const respUpgradeLink = await commonWell.upgradeOrDowngradePatientLink(
+    const respUpgradeLink = await commonWell.upgradeOrDowngradeNetworkLink(
       queryMeta,
       link._links.upgrade.href
     );
