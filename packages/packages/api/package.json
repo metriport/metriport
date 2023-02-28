@@ -1,6 +1,6 @@
 {
   "name": "@metriport/api",
-  "version": "1.0.16",
+  "version": "1.0.23",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -34,7 +34,6 @@
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
   },
-  "gitHead": "1c16cbb9f40a7cb58b4c0d4b7943f5c430d9cfb4",
   "dependencies": {
     "axios": "^1.3.4"
   }

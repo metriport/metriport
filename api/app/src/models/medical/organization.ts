@@ -1,9 +1,8 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Organization as OrganizationType } from "@metriport/api";
+import { Organization as OrganizationType } from "../../routes/medical/models/organization";
 
-import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { createOrgId } from "../../shared/oid";
 
 export type OrganizationData = Omit<OrganizationType, "id">;
 export class Organization extends BaseModel<Organization> {
@@ -37,9 +36,9 @@ export class Organization extends BaseModel<Organization> {
         tableName: Organization.NAME,
         hooks: {
           async beforeCreate(attributes) {
-            const curMaxNumber = (await Organization.max("organizationNumber")) as number;
-            const orgNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}`;
+            const { orgId, orgNumber } = await createOrgId();
+
+            attributes.id = orgId;
             attributes.organizationNumber = orgNumber;
           },
         },

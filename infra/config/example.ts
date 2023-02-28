@@ -36,5 +36,14 @@ export const config: EnvConfig = {
     host: "myhealthapp.com",
   },
   systemRootOID: "2.16.840.1.113883.3.999999",
+  cwOrgName: "Test",
+  cwMemberOid: "1.1.1.1.1.1.28.12.12.1234.123",
+  cwOrgManagementKey: "-----BEGIN PRIVATE KEY-----example-----END PRIVATE KEY-----",
+  cwOrgManagementCertification: "-----BEGIN CERTIFICATE-----example-----END CERTIFICATE-----",
+  cwOrgMemberKey: "-----BEGIN PRIVATE KEY-----example-----END PRIVATE KEY-----",
+  cwOrgMemberCertificate: "-----BEGIN CERTIFICATE-----example-----END CERTIFICATE-----",
+  gatewayAuthorizationServerEndpoint: "https://test.auth.env.amazoncognito.com/oauth2/token",
+  gatewayAuthorizationClientId: "abcd",
+  gatewayAuthorizationClientSecret: "abcd",
 };
 export default config;

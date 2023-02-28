@@ -1,4 +1,4 @@
-import { ProviderSource } from "@metriport/api/lib/models/common/provider-source";
+import { ProviderSource } from "@metriport/api/lib/devices/models/common/provider-source";
 import { z } from "zod";
 import { Apple } from "../providers/apple";
 import { Cronometer } from "../providers/cronometer";
@@ -47,18 +47,18 @@ export class Constants {
   static readonly PROVIDER_OAUTH1_MAP: {
     [k in ProviderOAuth1Options]: OAuth1;
   } = {
-      garmin: new Garmin(),
-    };
+    garmin: new Garmin(),
+  };
   static readonly PROVIDER_OAUTH2_MAP: {
     [k in ProviderOAuth2Options]: OAuth2;
   } = {
-      cronometer: new Cronometer(),
-      oura: new Oura(),
-      google: new Google(),
-      fitbit: new Fitbit(),
-      whoop: new Whoop(),
-      withings: new Withings(),
-    };
+    cronometer: new Cronometer(),
+    oura: new Oura(),
+    google: new Google(),
+    fitbit: new Fitbit(),
+    whoop: new Whoop(),
+    withings: new Withings(),
+  };
   static readonly PROVIDER_MAP: { [k in ProviderOptions]: Provider } = {
     apple: new Apple(),
     cronometer: new Cronometer(),

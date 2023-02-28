@@ -194,7 +194,6 @@ export class APIStack extends Stack {
             API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
             CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
             SYSTEM_ROOT_OID: props.config.systemRootOID,
-            GATEWAY_ENDPOINT_LOCATION: props.config.gatewayEndpointLocation,
             GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: props.config.gatewayAuthorizationServerEndpoint,
             GATEWAY_AUTHORIZATION_CLIENT_ID: props.config.gatewayAuthorizationClientId,
             GATEWAY_AUTHORIZATION_CLIENT_SECRET: props.config.gatewayAuthorizationClientSecret,

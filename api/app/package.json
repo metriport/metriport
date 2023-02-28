@@ -14,13 +14,13 @@
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "echo \"No test specified yet\"",
     "db-local": "DB_CREDS='{\"username\":\"admin\",\"password\":\"admin\",\"dbname\":\"db\",\"engine\":\"postgres\",\"host\":\"localhost\",\"port\":5432}' ts-node src/sequelize/cli",
-    "db-local:up": "db-local --up" 
+    "db-local:up": "db-local --up"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/api": "^1.0.16",
+    "@metriport/api": "^1.0.21",
     "@metriport/commonwell-sdk": "^1.1.3",
     "aws-sdk": "^2.1243.0",
     "axios": "^0.27.2",

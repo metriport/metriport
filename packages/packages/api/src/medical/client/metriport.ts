@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosInstance, AxiosStatic } from "axios";
 
 import { Organization } from "../models/organization";
 
@@ -11,16 +11,22 @@ export class MetriportMedicalApi {
    *
    * @param {string} apiKey - Your Metriport API key.
    */
-  constructor(apiKey: string, baseURL = "https://api.metriport.com/medical/v1", secondaryAxios?) {
+  constructor(
+    apiKey: string,
+    baseURL = "https://api.metriport.com/medical/v1",
+    secondaryAxios?: AxiosStatic
+  ) {
+    const headers = { "x-api-key": apiKey };
+
     if (axios) {
       this.api = axios.create({
         baseURL,
-        headers: { "x-api-key": apiKey },
+        headers,
       });
     } else {
       this.api = secondaryAxios.create({
         baseURL,
-        headers: { "x-api-key": apiKey },
+        headers,
       });
     }
   }

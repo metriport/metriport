@@ -45,7 +45,6 @@ export type EnvConfig = {
   cwOrgManagementCertification: string;
   cwOrgMemberKey: string;
   cwOrgMemberCertificate: string;
-  gatewayEndpointLocation: string;
   gatewayAuthorizationServerEndpoint: string;
   gatewayAuthorizationClientId: string;
   gatewayAuthorizationClientSecret: string;
