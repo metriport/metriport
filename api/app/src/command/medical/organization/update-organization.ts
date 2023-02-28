@@ -1,5 +1,5 @@
 import BadRequestError from "../../../errors/bad-request";
-import { Organization } from "../../../models/medical/organization";
+import { Organization, OrganizationData } from "../../../models/medical/organization";
 
 export const updateOrganization = async ({
   id,
@@ -8,7 +8,7 @@ export const updateOrganization = async ({
 }: {
   id: string;
   cxId: string;
-  data: object;
+  data: OrganizationData;
 }): Promise<Organization> => {
   const [count, rows] = await Organization.update(
     {
