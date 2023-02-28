@@ -1,7 +1,7 @@
 import { Body } from "@metriport/api";
 import dayjs from "dayjs";
 
-import { AppleHealth, AppleHealthItem, createMetadata } from "../../mappings/apple";
+import { AppleHealth, AppleHealthItem, createMetadata } from ".";
 import { ISO_DATE } from "../../shared/date";
 
 export function mapDataToBody(data: AppleHealth) {

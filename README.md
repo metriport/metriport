@@ -276,6 +276,8 @@ By default, OIDs in Metriport are managed according to the [recommended standard
 $ echo "SYSTEM_ROOT_OID=<YOUR-OID>" >> api/app/.env
 ```
 
+<!-- TODO: ADD A BLURB ABOUT THE FHIR SERVER ENVS AND CERTIFICATE ENVS -->
+
 #### **Optional usage report**
 
 The API server reports endpoint usage to an external service. This is optional.

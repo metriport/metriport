@@ -2,7 +2,7 @@ import { Activity } from "@metriport/api";
 import { ActivityLog } from "@metriport/api/lib/models/common/activity-log";
 import dayjs from "dayjs";
 
-import { AppleHealth, createMetadata } from "../../mappings/apple";
+import { AppleHealth, createMetadata } from ".";
 import { ISO_DATE } from "../../shared/date";
 import { activityTypeMapping } from "./activity-types";
 

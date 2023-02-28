@@ -1,14 +1,17 @@
 import { DataTypes, Sequelize } from "sequelize";
+import { Organization as OrganizationType } from "@metriport/api";
+
 import { Config } from "../../shared/config";
 import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 
+export type OrganizationData = Omit<OrganizationType, "id">;
 export class Organization extends BaseModel<Organization> {
   static NAME = "organization";
   declare id: string;
   declare cxId: string;
   declare organizationNumber: number;
-  declare data: object;
+  declare data: OrganizationData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Organization.init(

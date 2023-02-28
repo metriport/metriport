@@ -37,6 +37,16 @@ export type EnvConfig = {
   };
   usageReportUrl?: string;
   systemRootOID: string;
+  cwOrgName: string;
+  cwMemberOid: string;
+  cwOrgManagementKey: string;
+  cwOrgManagementCertification: string;
+  cwOrgMemberKey: string;
+  cwOrgMemberCertificate: string;
+  gatewayEndpointLocation: string;
+  gatewayAuthorizationServerEndpoint: string;
+  gatewayAuthorizationClientId: string;
+  gatewayAuthorizationClientSecret: string;
 } & (
   | {
       connectWidget: ConnectWidgetConfig;
