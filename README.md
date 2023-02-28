@@ -264,6 +264,7 @@ $ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
 $ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "FHIR_SERVER_URL=<FHIR-SERVER-URL>" >> api/app/.env # optional
 ```
 
 Additionally, define your System Root [OID](https://en.wikipedia.org/wiki/Object_identifier). This will be the base identifier to represent your system in any medical data you create - such as organizations, facilities, patients, and etc.
@@ -342,6 +343,14 @@ $ npm i -g ts-node # only needs to be run once
 $ cd api/app
 $ ts-node src/sequelize/cli
 ```
+
+Alternatively, you can use a shortcut for migrations on local environment:
+
+```shell
+$ npm run db-local -- <cmd>
+```
+
+> Note: the double dash `--` is required so parameters after it go to sequelize cli; without it, parameters go to `npm`
 
 Umzug's CLI is still in development at the time of this writing, so that's how one uses it:
 

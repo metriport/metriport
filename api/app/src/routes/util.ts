@@ -20,6 +20,24 @@ export const asyncHandler =
     }
   };
 
+// https://www.rfc-editor.org/rfc/rfc7807
+export type HttpResponseBody = { status: number; title: string; detail?: string };
+export const httpResponseBody = ({
+  status,
+  title,
+  detail,
+}: {
+  status: number;
+  title: string;
+  detail?: string;
+}): HttpResponseBody => {
+  return {
+    status,
+    title,
+    detail,
+  };
+};
+
 export const getCxId = (req: Request): string | undefined => req.cxId;
 export const getCxIdOrFail = (req: Request): string => {
   const cxId = getCxId(req);

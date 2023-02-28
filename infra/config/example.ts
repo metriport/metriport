@@ -6,9 +6,10 @@ export const config: EnvConfig = {
   secretsStackName: "MetriportSecretsStack",
   environmentType: EnvType.production,
   region: "us-east-1",
-  subdomain: "api",
   host: "myhealthapp.com",
   domain: "myhealthapp.com",
+  subdomain: "api",
+  authSubdomain: "auth",
   dbName: "my_db",
   dbUsername: "my_db_user",
   providerSecretNames: {
