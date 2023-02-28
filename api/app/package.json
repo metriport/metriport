@@ -14,7 +14,7 @@
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "echo \"No test specified yet\"",
     "db-local": "DB_CREDS='{\"username\":\"admin\",\"password\":\"admin\",\"dbname\":\"db\",\"engine\":\"postgres\",\"host\":\"localhost\",\"port\":5432}' ts-node src/sequelize/cli",
-    "db-local:up": "db-local --up" 
+    "db-local:up": "npm run db-local -- up" 
   },
   "keywords": [],
   "author": "",

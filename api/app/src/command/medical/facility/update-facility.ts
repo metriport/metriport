@@ -1,4 +1,4 @@
-import BadRequestError from "../../../errors/bad-request";
+import NotFoundError from "../../../errors/not-found";
 import { Facility } from "../../../models/medical/facility";
 
 export const updateFacility = async ({
@@ -16,9 +16,8 @@ export const updateFacility = async ({
     },
     { where: { id, cxId }, returning: true }
   );
-  if (count != 1)
-    throw new BadRequestError(
-      `Expected a single facility to be updated, but ${count} were updated for id: ${id} and cxId: ${cxId}`
-    );
+  if (count < 1) throw new NotFoundError();
+  // TODO #156 Send this to Sentry
+  if (count > 1) console.error(`Updated ${count} facilities for id ${id} and cxId ${cxId}`);
   return rows[0];
 };

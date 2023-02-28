@@ -9,12 +9,11 @@ export const createPatient = async ({
   cxId: string;
   data: object;
 }): Promise<Patient> => {
-  const patient = await Patient.create({
+  return Patient.create({
     id: "", // the patient id will be generated on the beforeCreate hook
     cxId,
     facilityIds: [facilityId],
     patientNumber: 0, // this will be generated on the beforeCreate hook
     data,
   });
-  return patient;
 };
