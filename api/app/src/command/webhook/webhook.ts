@@ -1,4 +1,4 @@
-import { MetriportData } from "@metriport/api/lib/models/metriport-data";
+import { MetriportData } from "@metriport/api/lib/devices/models/metriport-data";
 import Axios from "axios";
 import dayjs from "dayjs";
 import { chunk, groupBy } from "lodash";

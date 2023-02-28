@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { Metadata } from "@metriport/api/lib/models/common/metadata";
+import { Metadata } from "@metriport/api/lib/devices/models/common/metadata";
 
 import { getConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
 import { ConsumerHealthDataType } from "../../providers/provider";
