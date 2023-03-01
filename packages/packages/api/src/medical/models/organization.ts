@@ -12,5 +12,5 @@ export interface Organization {
   id?: string | null;
   name: string;
   type: OrgType;
-  locations: Address[];
+  location: Address;
 }

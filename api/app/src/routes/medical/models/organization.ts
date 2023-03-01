@@ -16,7 +16,7 @@ export const organizationSchema = z.object({
   id: z.string().optional().nullable(),
   name: z.string().min(1),
   type: orgTypeSchema,
-  locations: z.array(addressSchema),
+  location: addressSchema,
 });
 
 export type Organization = z.infer<typeof organizationSchema>;

@@ -29,7 +29,7 @@ router.post(
     const localOrgPayload: Organization = {
       name: reqOrgData.name,
       type: reqOrgData.type,
-      locations: reqOrgData.locations,
+      location: reqOrgData.location,
     };
 
     await createOrUpdateCWOrg({

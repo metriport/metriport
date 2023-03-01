@@ -36,16 +36,16 @@ export const createOrUpdateCWOrg = async ({
   const cwOrgPayload: CWOrganization = {
     name: localOrgPayload.name,
     type: localOrgPayload.type,
-    locations: localOrgPayload.locations.map(location => {
-      return {
-        address1: location.addressLine1,
-        address2: location.addressLine2,
-        city: location.city,
-        state: location.state,
-        postalCode: location.postalCode,
-        country: location.country,
-      };
-    }),
+    locations: [
+      {
+        address1: localOrgPayload.location.addressLine1,
+        address2: localOrgPayload.location.addressLine2,
+        city: localOrgPayload.location.city,
+        state: localOrgPayload.location.state,
+        postalCode: localOrgPayload.location.postalCode,
+        country: localOrgPayload.location.country,
+      },
+    ],
     // NOTE: IN STAGING IF THE ID ALREADY EXISTS IT WILL SAY INVALID ORG WHEN CREATING
     organizationId: cwId,
     homeCommunityId: cwId,
