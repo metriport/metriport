@@ -61,6 +61,14 @@ export const getFacilityIdFromQueryOrFail = (req: Request): string => {
   return facilityId;
 };
 
+export const getPatientIdFromQuery = (req: Request): string | undefined =>
+  req.query.patientId as string | undefined;
+export const getPatientIdFromQueryOrFail = (req: Request): string => {
+  const patientId = getPatientIdFromQuery(req);
+  if (!patientId) throw new BadRequestError("Missing patientId query param");
+  return patientId;
+};
+
 export const getCxIdFromHeaders = (req: Request): string | undefined =>
   req.header("cxId") as string | undefined;
 
