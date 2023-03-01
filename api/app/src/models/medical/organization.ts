@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Organization as OrganizationType } from "../../routes/medical/models/organization";
+import { Organization as OrganizationType } from "../../routes/medical/schemas/organization";
 
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { createOrgId } from "../../shared/oid";

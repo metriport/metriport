@@ -1,10 +1,10 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 
-import { Config, getEnvVarOrFail } from "../../shared/config";
-import { commonWellMember, queryMeta, CW_ID_PREFIX } from "../../shared/commonwell";
 import BadRequestError from "../../errors/bad-request";
+import { Organization } from "../../routes/medical/schemas/organization";
+import { commonWellMember, CW_ID_PREFIX, queryMeta } from "../../shared/commonwell";
+import { Config, getEnvVarOrFail } from "../../shared/config";
 import { createOrgId } from "../../shared/oid";
-import { Organization } from "../../routes/medical/models/organization";
 
 const memberName = getEnvVarOrFail("CW_MEMBER_NAME");
 
@@ -15,42 +15,32 @@ const technicalContact = {
   phone: getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE"),
 };
 
-export const createOrUpdateCWOrg = async ({
-  orgId,
-  name,
-  localOrgPayload,
-}: {
-  orgId?: string | null;
-  name: string;
-  localOrgPayload: Organization;
-}): Promise<void> => {
-  let cwId = `${CW_ID_PREFIX}`;
+type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
+  Required<Pick<CWOrganization, "organizationId">>;
 
-  if (orgId) {
-    cwId = cwId.concat(orgId);
-  } else {
-    const { orgId: localOrgId } = await createOrgId();
-    cwId = cwId.concat(localOrgId);
-  }
-
-  const cwOrgPayload: CWOrganization = {
-    name: localOrgPayload.name,
-    type: localOrgPayload.type,
+export async function organizationToCommonwell(
+  org: Organization
+): Promise<CWOrganizationWithOrgId> {
+  const orgId = org.id;
+  const cwId = CW_ID_PREFIX.concat(orgId ? orgId : (await createOrgId()).orgId);
+  return {
+    name: org.name,
+    type: org.type,
     locations: [
       {
-        address1: localOrgPayload.location.addressLine1,
-        address2: localOrgPayload.location.addressLine2,
-        city: localOrgPayload.location.city,
-        state: localOrgPayload.location.state,
-        postalCode: localOrgPayload.location.postalCode,
-        country: localOrgPayload.location.country,
+        address1: org.location.addressLine1,
+        address2: org.location.addressLine2,
+        city: org.location.city,
+        state: org.location.state,
+        postalCode: org.location.postalCode,
+        country: org.location.country,
       },
     ],
     // NOTE: IN STAGING IF THE ID ALREADY EXISTS IT WILL SAY INVALID ORG WHEN CREATING
     organizationId: cwId,
     homeCommunityId: cwId,
     patientIdAssignAuthority: cwId,
-    displayName: name,
+    displayName: org.name,
     memberName: memberName,
     securityTokenKeyType: "BearerKey",
     isActive: true,
@@ -70,10 +60,13 @@ export const createOrUpdateCWOrg = async ({
     },
     technicalContacts: [technicalContact],
   };
+}
 
+export const createOrUpdateCWOrg = async (localOrgPayload: Organization): Promise<void> => {
+  const cwOrgPayload = await organizationToCommonwell(localOrgPayload);
   try {
-    if (orgId) {
-      await commonWellMember.updateOrg(queryMeta, cwOrgPayload, cwId);
+    if (localOrgPayload.id) {
+      await commonWellMember.updateOrg(queryMeta, cwOrgPayload, cwOrgPayload.organizationId);
     } else {
       await commonWellMember.createOrg(queryMeta, cwOrgPayload);
     }
