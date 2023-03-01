@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { asyncHandler, getCxIdOrFail, getFacilityIdFromQueryOrFail } from "../util";
-const router = Router();
 import status from "http-status";
-import { Patient } from "../../models/medical/patient";
+import { createPatient } from "../../command/medical/patient/create-patient";
 import { getPatients } from "../../command/medical/patient/get-patient";
 import { updatePatient } from "../../command/medical/patient/update-patient";
-import { createPatient } from "../../command/medical/patient/create-patient";
+import { Patient } from "../../models/medical/patient";
+import { asyncHandler, getCxIdOrFail, getFacilityIdFromQueryOrFail } from "../util";
+
+const router = Router();
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -14,7 +15,7 @@ import { createPatient } from "../../command/medical/patient/create-patient";
  * Updates or creates the patient corresponding to the specified facility at the
  * customer's organization if it doesn't exist already.
  *
- * @return  {Facility}  The facility.
+ * @return  {Patient}  The patient.
  */
 router.post(
   "/",
@@ -33,7 +34,6 @@ router.post(
       patient = await updatePatient({
         id: patientData.id,
         cxId,
-        facilityId: facilityId,
         data,
       });
     } else {
@@ -58,7 +58,11 @@ router.post(
  * Gets all of the patients corresponding to the specified facility at the
  * customer's organization.
  *
- * @return  {Patient[]}  The patients.
+ * @param   {string}        req.cxId              The customer ID.
+ * @param   {string}        req.query.facilityId  The ID of the facility the user patient
+ * is associated with.
+ *
+ * @return  {Patient[]} The customer's patients associated with the given facility.
  */
 router.get(
   "/",

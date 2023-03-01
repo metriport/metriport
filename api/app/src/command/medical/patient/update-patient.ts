@@ -1,14 +1,12 @@
-import BadRequestError from "../../../errors/bad-request";
+import NotFoundError from "../../../errors/not-found";
 import { Patient } from "../../../models/medical/patient";
 
 export const updatePatient = async ({
   id,
-  facilityId,
   cxId,
   data,
 }: {
   id: string;
-  facilityId: string;
   cxId: string;
   data: object;
 }): Promise<Patient> => {
@@ -16,11 +14,10 @@ export const updatePatient = async ({
     {
       data,
     },
-    { where: { id, facilityIds: [facilityId], cxId }, returning: true }
+    { where: { id, cxId }, returning: true }
   );
-  if (count != 1)
-    throw new BadRequestError(
-      `Expected a single patient to be updated, but ${count} were updated for id: ${id} and cxId: ${cxId} and facilityId: ${facilityId}`
-    );
+  if (count < 1) throw new NotFoundError();
+  // TODO #156 Send this to Sentry
+  if (count > 1) console.error(`Updated ${count} patients for id ${id} and cxId ${cxId}`);
   return rows[0];
 };
