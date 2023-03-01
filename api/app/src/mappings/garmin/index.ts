@@ -1,4 +1,4 @@
-import { MetriportData } from "@metriport/api/lib/models/metriport-data";
+import { MetriportData } from "@metriport/api/lib/devices/models/metriport-data";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { z } from "zod";

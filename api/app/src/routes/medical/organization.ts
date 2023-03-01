@@ -1,41 +1,55 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { asyncHandler, getCxIdOrFail } from "../util";
-const router = Router();
+
 import status from "http-status";
-import { updateOrganization } from "../../command/medical/organization/update-organization";
 import { createOrganization } from "../../command/medical/organization/create-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
-import { Organization } from "../../models/medical/organization";
+import { updateOrganization } from "../../command/medical/organization/update-organization";
+import { createOrUpdateCWOrg } from "../../external/commonwell/organization";
+import { Organization, OrganizationData } from "../../models/medical/organization";
+import { asyncHandler, getCxIdOrFail } from "../util";
+import { Organization as OrganizationSchema, organizationSchema } from "./schemas/organization";
+
+const router = Router();
+
+type OrganizationDTO = Pick<Organization, "id"> & OrganizationData;
 
 /** ---------------------------------------------------------------------------
  * POST /organization
  *
  * Updates or creates the organization if it doesn't exist already.
  *
- * @return  {Organization}  The organization.
+ * @return  {OrganizationDTO}  The organization.
  */
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
 
-    // TODO: parse this into model
-    const orgData = req.body;
+    const reqOrgData = organizationSchema.parse(req.body);
+
+    const localOrgPayload: OrganizationSchema = {
+      id: reqOrgData.id,
+      name: reqOrgData.name,
+      type: reqOrgData.type,
+      location: reqOrgData.location,
+    };
+
+    await createOrUpdateCWOrg(localOrgPayload);
 
     // update if this is an existing org
-    let org: Organization;
-    if (orgData.id) {
-      const data = { ...orgData };
+    let localOrg: Organization;
+
+    if (reqOrgData.id) {
+      const data = { ...reqOrgData };
       delete data.id;
-      org = await updateOrganization({ id: orgData.id, cxId, data });
+      localOrg = await updateOrganization({ id: reqOrgData.id, cxId, data });
     } else {
-      org = await createOrganization({ cxId, data: orgData });
+      localOrg = await createOrganization({ cxId, data: localOrgPayload });
     }
 
-    // TODO: create or update organization in CW as well
-
-    return res.status(status.OK).json({ id: org.id, ...org.data });
+    const responsePayload: OrganizationDTO = { id: localOrg.id, ...localOrg.data };
+    return res.status(status.OK).json(responsePayload);
   })
 );
 
@@ -44,7 +58,7 @@ router.post(
  *
  * Gets the org corresponding to the customer ID.
  *
- * @return  {Organization}  The organization.
+ * @return  {LocalOrg}  The organization.
  */
 router.get(
   "/",

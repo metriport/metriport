@@ -1,14 +1,16 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
-import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { Organization as OrganizationType } from "../../routes/medical/schemas/organization";
 
+import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { createOrgId } from "../../shared/oid";
+
+export type OrganizationData = Omit<OrganizationType, "id">;
 export class Organization extends BaseModel<Organization> {
   static NAME = "organization";
   declare id: string;
   declare cxId: string;
   declare organizationNumber: number;
-  declare data: object;
+  declare data: OrganizationData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Organization.init(
@@ -34,9 +36,9 @@ export class Organization extends BaseModel<Organization> {
         tableName: Organization.NAME,
         hooks: {
           async beforeCreate(attributes) {
-            const curMaxNumber = (await Organization.max("organizationNumber")) as number;
-            const orgNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}`;
+            const { orgId, orgNumber } = await createOrgId();
+
+            attributes.id = orgId;
             attributes.organizationNumber = orgNumber;
           },
         },

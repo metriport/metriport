@@ -31,5 +31,15 @@ export class SecretsStack extends Stack {
         value: secret.secretArn,
       });
     }
+
+    for (const secretName of Object.values(props.config.cwSecretNames)) {
+      const secret = makeSecret(secretName);
+      //-------------------------------------------
+      // Output
+      //-------------------------------------------
+      new CfnOutput(this, `${secretName} ARN`, {
+        value: secret.secretArn,
+      });
+    }
   }
 }

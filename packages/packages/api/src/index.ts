@@ -10,3 +10,4 @@ export { ProviderSource } from "./devices/models/common/provider-source";
 
 // Medical API
 export { MetriportMedicalApi } from "./medical/client/metriport";
+export { Organization, OrgType } from "./medical/models/organization";

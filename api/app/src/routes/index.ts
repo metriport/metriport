@@ -30,7 +30,7 @@ export default (app: Application) => {
   app.use("/user", processAPIKey, reportUsage, user);
 
   // medical routes with API key auth
-  app.use("/medical", processAPIKey, checkMAPIAccess, medical);
+  app.use("/medical/v1", processAPIKey, checkMAPIAccess, medical);
 
   // routes with session token auth
   app.use("/connect", connect);
