@@ -7,7 +7,6 @@ export enum OrgType {
   labSystems = "labSystems",
   pharmacy = "pharmacy",
   postAcuteCare = "postAcuteCare",
-  testing = "testing",
 }
 export interface Organization {
   id?: string | null;

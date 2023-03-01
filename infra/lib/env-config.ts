@@ -20,6 +20,9 @@ export type EnvConfig = {
   authSubdomain: string; // Authentication subdomain
   dbName: string;
   dbUsername: string;
+  usageReportUrl?: string;
+  fhirServerUrl?: string;
+  systemRootOID: string;
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: string;
     CRONOMETER_CLIENT_SECRET: string;
@@ -36,18 +39,22 @@ export type EnvConfig = {
     WHOOP_CLIENT_ID: string;
     WHOOP_CLIENT_SECRET: string;
   };
-  usageReportUrl?: string;
-  fhirServerUrl?: string;
-  systemRootOID: string;
-  cwOrgName: string;
-  cwMemberOid: string;
-  cwOrgManagementKey: string;
-  cwOrgManagementCertification: string;
-  cwOrgMemberKey: string;
-  cwOrgMemberCertificate: string;
-  gatewayAuthorizationServerEndpoint: string;
-  gatewayAuthorizationClientId: string;
-  gatewayAuthorizationClientSecret: string;
+  cwSecretNames: {
+    CW_MEMBER_NAME: string;
+    CW_ORG_NAME: string;
+    CW_MEMBER_OID: string;
+    CW_ORG_MANAGEMENT_PRIVATE_KEY: string;
+    CW_ORG_MANAGEMENT_CERTIFICATE: string;
+    CW_MEMBER_PRIVATE_KEY: string;
+    CW_MEMBER_CERTIFICATE: string;
+    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
+    CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
+    CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
+    CW_TECHNICAL_CONTACT_NAME: string;
+    CW_TECHNICAL_CONTACT_TITLE: string;
+    CW_TECHNICAL_CONTACT_EMAIL: string;
+    CW_TECHNICAL_CONTACT_PHONE: string;
+  };
 } & (
   | {
       connectWidget: ConnectWidgetConfig;

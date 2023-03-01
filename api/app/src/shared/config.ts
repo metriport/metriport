@@ -99,14 +99,14 @@ export class Config {
   }
 
   static getGatewayAuthorizationServerEndpoint(): string {
-    return getEnvVarOrFail("GATEWAY_AUTHORIZATION_SERVER_ENDPOINT");
+    return getEnvVarOrFail("CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT");
   }
 
   static getGatewayAuthorizationClientId(): string {
-    return getEnvVarOrFail("GATEWAY_AUTHORIZATION_CLIENT_ID");
+    return getEnvVarOrFail("CW_GATEWAY_AUTHORIZATION_CLIENT_ID");
   }
 
   static getGatewayAuthorizationClientSecret(): string {
-    return getEnvVarOrFail("GATEWAY_AUTHORIZATION_CLIENT_SECRET");
+    return getEnvVarOrFail("CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET");
   }
 }

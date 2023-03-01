@@ -1,17 +1,17 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 
-import { Config } from "../../shared/config";
+import { Config, getEnvVarOrFail } from "../../shared/config";
 import { commonWellMember, queryMeta, CW_ID_PREFIX } from "../../shared/commonwell";
 import BadRequestError from "../../errors/bad-request";
 import { createOrgId } from "../../shared/oid";
 
-const memberName = "Metriport";
+const memberName = getEnvVarOrFail("CW_MEMBER_NAME");
 
 const technicalContact = {
-  name: "Metriport Team",
-  title: "Engineering",
-  email: "support@metriport.com",
-  phone: "(415)-941-3282",
+  name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
+  title: getEnvVarOrFail("CW_TECHNICAL_CONTACT_TITLE"),
+  email: getEnvVarOrFail("CW_TECHNICAL_CONTACT_EMAIL"),
+  phone: getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE"),
 };
 
 export const createOrUpdateCWOrg = async ({
