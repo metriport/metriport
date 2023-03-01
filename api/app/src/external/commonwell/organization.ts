@@ -1,6 +1,5 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 
-import BadRequestError from "../../errors/bad-request";
 import { Organization } from "../../routes/medical/schemas/organization";
 import { commonWellMember, CW_ID_PREFIX, queryMeta } from "../../shared/commonwell";
 import { Config, getEnvVarOrFail } from "../../shared/config";
@@ -71,6 +70,6 @@ export const createOrUpdateCWOrg = async (localOrgPayload: Organization): Promis
       await commonWellMember.createOrg(queryMeta, cwOrgPayload);
     }
   } catch (error) {
-    throw new BadRequestError(`Failure creating or updating org with payload ${cwOrgPayload}`);
+    throw new Error(`Failure creating or updating org with payload ${cwOrgPayload}`);
   }
 };
