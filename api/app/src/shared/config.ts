@@ -98,6 +98,10 @@ export class Config {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
 
+  static getGatewayEndpoint(): string {
+    return getEnvVarOrFail("CW_GATEWAY_ENDPOINT");
+  }
+
   static getGatewayAuthorizationServerEndpoint(): string {
     return getEnvVarOrFail("CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT");
   }

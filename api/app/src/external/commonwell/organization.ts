@@ -47,7 +47,7 @@ export async function organizationToCommonwell(
       {
         serviceType: "XCA_Query",
         gatewayType: "R4",
-        endpointLocation: Config.getFHIRServerUrl(),
+        endpointLocation: Config.getGatewayEndpoint(),
       },
     ],
     authorizationInformation: {
