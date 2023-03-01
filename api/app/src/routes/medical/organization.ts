@@ -43,7 +43,7 @@ router.post(
     if (reqOrgData.id) {
       const data = { ...reqOrgData };
       delete data.id;
-      localOrg = await updateOrganization({ id: reqOrgData.id, cxId, data: localOrgPayload });
+      localOrg = await updateOrganization({ id: reqOrgData.id, cxId, data });
     } else {
       localOrg = await createOrganization({ cxId, data: localOrgPayload });
     }
