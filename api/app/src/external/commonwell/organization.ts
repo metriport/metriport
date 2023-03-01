@@ -1,9 +1,9 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 
 import { Organization } from "../../routes/medical/schemas/organization";
-import { commonWellMember, CW_ID_PREFIX, queryMeta } from "../../shared/commonwell";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { createOrgId } from "../../shared/oid";
+import { commonWellMember, CW_ID_PREFIX, metriportQueryMeta } from "./api";
 
 const memberName = getEnvVarOrFail("CW_MEMBER_NAME");
 
@@ -65,9 +65,13 @@ export const createOrUpdateCWOrg = async (localOrgPayload: Organization): Promis
   const cwOrgPayload = await organizationToCommonwell(localOrgPayload);
   try {
     if (localOrgPayload.id) {
-      await commonWellMember.updateOrg(queryMeta, cwOrgPayload, cwOrgPayload.organizationId);
+      await commonWellMember.updateOrg(
+        metriportQueryMeta,
+        cwOrgPayload,
+        cwOrgPayload.organizationId
+      );
     } else {
-      await commonWellMember.createOrg(queryMeta, cwOrgPayload);
+      await commonWellMember.createOrg(metriportQueryMeta, cwOrgPayload);
     }
   } catch (error) {
     throw new Error(`Failure creating or updating org with payload ${cwOrgPayload}`);

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-
 import status from "http-status";
 import { createOrganization } from "../../command/medical/organization/create-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
@@ -14,6 +13,7 @@ const router = Router();
 
 type OrganizationDTO = Pick<Organization, "id"> & OrganizationData;
 
+// TODO split this in two, one to create "POST /" and another to update "POST /:id"
 /** ---------------------------------------------------------------------------
  * POST /organization
  *
@@ -37,7 +37,6 @@ router.post(
 
     await createOrUpdateCWOrg(localOrgPayload);
 
-    // update if this is an existing org
     let localOrg: Organization;
 
     if (reqOrgData.id) {

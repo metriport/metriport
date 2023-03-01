@@ -1,5 +1,7 @@
 import { CommonWell, APIMode, PurposeOfUse, RequestMetadata } from "@metriport/commonwell-sdk";
-import { getEnvVarOrFail, Config } from "./config";
+import { getEnvVarOrFail, Config } from "../../shared/config";
+
+// TODO move this to CW's folder, likely most of it to the api.ts file?
 
 const commonwellPrivateKey = getEnvVarOrFail("CW_MEMBER_PRIVATE_KEY");
 const commonwellCert = getEnvVarOrFail("CW_MEMBER_CERTIFICATE");
@@ -17,7 +19,7 @@ export const commonWellMember = new CommonWell(
   apiMode
 );
 
-export const queryMeta: RequestMetadata = {
+export const metriportQueryMeta: RequestMetadata = {
   purposeOfUse: PurposeOfUse.TREATMENT,
   role: "ict",
   subjectId: "Metriport System User",
