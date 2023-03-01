@@ -264,6 +264,20 @@ $ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
 $ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_TECHNICAL_CONTACT_NAME=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_TECHNICAL_CONTACT_TITLE=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_TECHNICAL_CONTACT_EMAIL=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_TECHNICAL_CONTACT_PHONE=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_ORG_NAME=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_MEMBER_NAME=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_MEMBER_OID=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_ORG_MANAGEMENT_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_ORG_MANAGEMENT_CERTIFICATE=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_MEMBER_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_MEMBER_CERTIFICATE=<YOUR-SECRET>" >> api/app/.env
 $ echo "FHIR_SERVER_URL=<FHIR-SERVER-URL>" >> api/app/.env # optional
 ```
 

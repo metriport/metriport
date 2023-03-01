@@ -1,6 +1,6 @@
 export interface Address {
-  address1: string;
-  address2?: string | null;
+  addressLine1: string;
+  addressLine2?: string | null;
   city: string;
   state: string;
   postalCode: string;

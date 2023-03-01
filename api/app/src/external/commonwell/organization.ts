@@ -4,6 +4,7 @@ import { Config, getEnvVarOrFail } from "../../shared/config";
 import { commonWellMember, queryMeta, CW_ID_PREFIX } from "../../shared/commonwell";
 import BadRequestError from "../../errors/bad-request";
 import { createOrgId } from "../../shared/oid";
+import { Organization } from "../../routes/medical/models/organization";
 
 const memberName = getEnvVarOrFail("CW_MEMBER_NAME");
 
@@ -21,7 +22,7 @@ export const createOrUpdateCWOrg = async ({
 }: {
   orgId?: string | null;
   name: string;
-  localOrgPayload: object;
+  localOrgPayload: Organization;
 }): Promise<void> => {
   let cwId = `${CW_ID_PREFIX}`;
 
@@ -33,7 +34,18 @@ export const createOrUpdateCWOrg = async ({
   }
 
   const cwOrgPayload: CWOrganization = {
-    ...localOrgPayload,
+    name: localOrgPayload.name,
+    type: localOrgPayload.type,
+    locations: localOrgPayload.locations.map(location => {
+      return {
+        address1: location.addressLine1,
+        address2: location.addressLine2,
+        city: location.city,
+        state: location.state,
+        postalCode: location.postalCode,
+        country: location.country,
+      };
+    }),
     // NOTE: IN STAGING IF THE ID ALREADY EXISTS IT WILL SAY INVALID ORG WHEN CREATING
     organizationId: cwId,
     homeCommunityId: cwId,

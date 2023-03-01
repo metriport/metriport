@@ -8,7 +8,8 @@ import status from "http-status";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
 import { createOrganization } from "../../command/medical/organization/create-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
-import { Organization } from "../../models/medical/organization";
+import { Organization as LocalOrg } from "../../models/medical/organization";
+import { Organization } from "./models/organization";
 import { createOrUpdateCWOrg } from "../../external/commonwell/organization";
 
 /** ---------------------------------------------------------------------------
@@ -16,7 +17,7 @@ import { createOrUpdateCWOrg } from "../../external/commonwell/organization";
  *
  * Updates or creates the organization if it doesn't exist already.
  *
- * @return  {Organization}  The organization.
+ * @return  {LocalOrg}  The organization.
  */
 router.post(
   "/",
@@ -25,7 +26,7 @@ router.post(
 
     const reqOrgData = organizationSchema.parse(req.body);
 
-    const localOrgPayload = {
+    const localOrgPayload: Organization = {
       name: reqOrgData.name,
       type: reqOrgData.type,
       locations: reqOrgData.locations,
@@ -38,7 +39,7 @@ router.post(
     });
 
     // update if this is an existing org
-    let localOrg: Organization;
+    let localOrg: LocalOrg;
 
     if (reqOrgData.id) {
       const data = { ...reqOrgData };
@@ -57,7 +58,7 @@ router.post(
  *
  * Gets the org corresponding to the customer ID.
  *
- * @return  {Organization}  The organization.
+ * @return  {LocalOrg}  The organization.
  */
 router.get(
   "/",
