@@ -5,7 +5,7 @@ import { createOrgId } from "../../shared/oid";
 import { commonWellMember, CW_ID_PREFIX, metriportQueryMeta } from "./api";
 
 // TODO move these "getEnvVarOrFail" to Config
-const metriportOrgName = getEnvVarOrFail("CW_ORG_NAME");
+const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
   title: getEnvVarOrFail("CW_TECHNICAL_CONTACT_TITLE"),

@@ -3,7 +3,7 @@ import { Config, getEnvVarOrFail } from "../../shared/config";
 
 // TODO move these getEnvVarOrFail to Config
 const metriportOID = getEnvVarOrFail("SYSTEM_ROOT_OID");
-const metriportOrgName = getEnvVarOrFail("CW_ORG_NAME");
+const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
 const metriportPrivateKey = getEnvVarOrFail("CW_PRIVATE_KEY");
 const metriportCert = getEnvVarOrFail("CW_CERTIFICATE");
 
