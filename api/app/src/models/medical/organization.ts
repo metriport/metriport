@@ -1,10 +1,26 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Organization as OrganizationType } from "../../routes/medical/schemas/organization";
 
-import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { createOrgId } from "../../shared/oid";
+import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { Address } from "./address";
 
-export type OrganizationData = Omit<OrganizationType, "id">;
+export enum OrgType {
+  acuteCare = "acuteCare",
+  ambulatory = "ambulatory",
+  hospital = "hospital",
+  labSystems = "labSystems",
+  pharmacy = "pharmacy",
+  postAcuteCare = "postAcuteCare",
+}
+
+export type OrganizationData = {
+  name: string;
+  type: OrgType;
+  location: Address;
+};
+
+export type OrganizationCreate = Omit<Organization, "id">;
+
 export class Organization extends BaseModel<Organization> {
   static NAME = "organization";
   declare id: string;

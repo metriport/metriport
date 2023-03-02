@@ -1,12 +1,11 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
-
-import { Organization } from "../../routes/medical/schemas/organization";
+import { Organization, OrganizationCreate } from "../../models/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { createOrgId } from "../../shared/oid";
 import { commonWellMember, CW_ID_PREFIX, metriportQueryMeta } from "./api";
 
-const memberName = getEnvVarOrFail("CW_MEMBER_NAME");
-
+// TODO move these "getEnvVarOrFail" to Config
+const memberName = getEnvVarOrFail("CW_ORG_NAME");
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
   title: getEnvVarOrFail("CW_TECHNICAL_CONTACT_TITLE"),
@@ -18,28 +17,30 @@ type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
   Required<Pick<CWOrganization, "organizationId">>;
 
 export async function organizationToCommonwell(
-  org: Organization
+  org: Organization | OrganizationCreate
 ): Promise<CWOrganizationWithOrgId> {
-  const orgId = org.id;
+  const orgId = org instanceof Organization ? org.id : undefined;
   const cwId = CW_ID_PREFIX.concat(orgId ? orgId : (await createOrgId()).orgId);
   return {
-    name: org.name,
-    type: org.type,
+    name: org.data.name,
+    type: org.data.type,
     locations: [
       {
-        address1: org.location.addressLine1,
-        address2: org.location.addressLine2,
-        city: org.location.city,
-        state: org.location.state,
-        postalCode: org.location.postalCode,
-        country: org.location.country,
+        address1: org.data.location.addressLine1,
+        ...(org.data.location.addressLine2
+          ? { address2: org.data.location.addressLine2 }
+          : undefined),
+        city: org.data.location.city,
+        state: org.data.location.state,
+        postalCode: org.data.location.zip,
+        country: org.data.location.country,
       },
     ],
     // NOTE: IN STAGING IF THE ID ALREADY EXISTS IT WILL SAY INVALID ORG WHEN CREATING
     organizationId: cwId,
     homeCommunityId: cwId,
     patientIdAssignAuthority: cwId,
-    displayName: org.name,
+    displayName: org.data.name,
     memberName: memberName,
     securityTokenKeyType: "BearerKey",
     isActive: true,
@@ -61,19 +62,26 @@ export async function organizationToCommonwell(
   };
 }
 
-export const createOrUpdateCWOrg = async (localOrgPayload: Organization): Promise<void> => {
-  const cwOrgPayload = await organizationToCommonwell(localOrgPayload);
+export const createOrgAtCommonwell = async (org: OrganizationCreate): Promise<void> => {
+  const cwOrg = await organizationToCommonwell(org);
   try {
-    if (localOrgPayload.id) {
-      await commonWellMember.updateOrg(
-        metriportQueryMeta,
-        cwOrgPayload,
-        cwOrgPayload.organizationId
-      );
-    } else {
-      await commonWellMember.createOrg(metriportQueryMeta, cwOrgPayload);
-    }
+    await commonWellMember.createOrg(metriportQueryMeta, cwOrg);
   } catch (error) {
-    throw new Error(`Failure creating or updating org with payload ${cwOrgPayload}`);
+    const msg = `Failure creating Org`;
+    console.log(`${msg} - payload: `, cwOrg);
+    console.log(msg, error);
+    throw new Error(msg);
+  }
+};
+
+export const updateOrgAtCommonwell = async (org: Organization): Promise<void> => {
+  const cwOrg = await organizationToCommonwell(org);
+  try {
+    await commonWellMember.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
+  } catch (error) {
+    const msg = `Failure updating Org`;
+    console.log(`${msg} - payload: `, cwOrg);
+    console.log(msg, error);
+    throw new Error(msg);
   }
 };
