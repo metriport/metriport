@@ -1,14 +1,6 @@
 import { z } from "zod";
+import { OrgType } from "../../../models/medical/organization";
 import { addressSchema } from "./address";
-
-export enum OrgType {
-  acuteCare = "acuteCare",
-  ambulatory = "ambulatory",
-  hospital = "hospital",
-  labSystems = "labSystems",
-  pharmacy = "pharmacy",
-  postAcuteCare = "postAcuteCare",
-}
 
 export const orgTypeSchema = z.nativeEnum(OrgType);
 

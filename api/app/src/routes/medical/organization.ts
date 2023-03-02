@@ -1,19 +1,22 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-
 import status from "http-status";
 import { createOrganization } from "../../command/medical/organization/create-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
-import { createOrUpdateCWOrg } from "../../external/commonwell/organization";
+import {
+  createOrgAtCommonwell,
+  updateOrgAtCommonwell,
+} from "../../external/commonwell/organization";
 import { Organization, OrganizationData } from "../../models/medical/organization";
 import { asyncHandler, getCxIdOrFail } from "../util";
-import { Organization as OrganizationSchema, organizationSchema } from "./schemas/organization";
+import { organizationSchema } from "./schemas/organization";
 
 const router = Router();
 
 type OrganizationDTO = Pick<Organization, "id"> & OrganizationData;
 
+// TODO split this in two, one to create "POST /" and another to update "POST /:id"
 /** ---------------------------------------------------------------------------
  * POST /organization
  *
@@ -27,25 +30,24 @@ router.post(
     const cxId = getCxIdOrFail(req);
 
     const reqOrgData = organizationSchema.parse(req.body);
-
-    const localOrgPayload: OrganizationSchema = {
-      id: reqOrgData.id,
-      name: reqOrgData.name,
-      type: reqOrgData.type,
-      location: reqOrgData.location,
+    const org = {
+      ...reqOrgData,
+      location: {
+        ...reqOrgData.location,
+        addressLine2: reqOrgData.location.addressLine2 ?? null,
+      },
     };
 
-    await createOrUpdateCWOrg(localOrgPayload);
-
-    // update if this is an existing org
     let localOrg: Organization;
 
-    if (reqOrgData.id) {
-      const data = { ...reqOrgData };
+    if (org.id) {
+      const data = { ...org };
       delete data.id;
-      localOrg = await updateOrganization({ id: reqOrgData.id, cxId, data });
+      localOrg = await updateOrganization({ id: org.id, cxId, data });
+      await updateOrgAtCommonwell(localOrg);
     } else {
-      localOrg = await createOrganization({ cxId, data: localOrgPayload });
+      localOrg = await createOrganization({ cxId, data: org });
+      await createOrgAtCommonwell(localOrg);
     }
 
     const responsePayload: OrganizationDTO = { id: localOrg.id, ...localOrg.data };

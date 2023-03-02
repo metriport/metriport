@@ -40,11 +40,10 @@ export type EnvConfig = {
     WHOOP_CLIENT_SECRET: string;
   };
   cwSecretNames: {
+    CW_PRIVATE_KEY: string;
+    CW_CERTIFICATE: string;
     CW_MEMBER_NAME: string;
-    CW_ORG_NAME: string;
     CW_MEMBER_OID: string;
-    CW_ORG_MANAGEMENT_PRIVATE_KEY: string;
-    CW_ORG_MANAGEMENT_CERTIFICATE: string;
     CW_MEMBER_PRIVATE_KEY: string;
     CW_MEMBER_CERTIFICATE: string;
     CW_GATEWAY_ENDPOINT: string;
