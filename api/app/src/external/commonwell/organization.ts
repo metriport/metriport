@@ -5,7 +5,7 @@ import { createOrgId } from "../../shared/oid";
 import { commonWellMember, CW_ID_PREFIX, metriportQueryMeta } from "./api";
 
 // TODO move these "getEnvVarOrFail" to Config
-const memberName = getEnvVarOrFail("CW_ORG_NAME");
+const metriportOrgName = getEnvVarOrFail("CW_ORG_NAME");
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
   title: getEnvVarOrFail("CW_TECHNICAL_CONTACT_TITLE"),
@@ -41,7 +41,7 @@ export async function organizationToCommonwell(
     homeCommunityId: cwId,
     patientIdAssignAuthority: cwId,
     displayName: org.data.name,
-    memberName: memberName,
+    memberName: metriportOrgName,
     securityTokenKeyType: "BearerKey",
     isActive: true,
     gateways: [

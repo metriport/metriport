@@ -1,16 +1,15 @@
 import { APIMode, CommonWell, PurposeOfUse, RequestMetadata } from "@metriport/commonwell-sdk";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 
-// TODO move this to Config
-const metriportOrgName = getEnvVarOrFail("CW_ORG_NAME");
-
+// TODO move these getEnvVarOrFail to Config
 const metriportOID = getEnvVarOrFail("SYSTEM_ROOT_OID");
+const metriportOrgName = getEnvVarOrFail("CW_ORG_NAME");
 const metriportPrivateKey = getEnvVarOrFail("CW_PRIVATE_KEY");
 const metriportCert = getEnvVarOrFail("CW_CERTIFICATE");
 
+const memberManagementOID = getEnvVarOrFail("CW_MEMBER_OID");
 const memberManagementPrivateKey = getEnvVarOrFail("CW_MEMBER_PRIVATE_KEY");
 const memberManagementCert = getEnvVarOrFail("CW_MEMBER_CERTIFICATE");
-const memberManagementOID = getEnvVarOrFail("CW_MEMBER_OID");
 
 const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
 
