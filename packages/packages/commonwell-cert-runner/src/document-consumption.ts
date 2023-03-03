@@ -21,7 +21,11 @@ export async function queryDocuments(
   // E1: Document Query
   console.log(`>>> E1c: Query for documents using FHIR (REST)`);
 
-  const { personId, patientId } = await findOrCreatePerson(commonWell, queryMeta, makeDocPerson());
+  const { personId, patientId } = await findOrCreatePerson(
+    commonWell,
+    queryMeta,
+    makeDocPerson({ facilityId: commonWell.oid })
+  );
 
   if (!personId) throw new Error(`[E1c] personId is undefined before calling getPatientsLinks()`);
   const respLinks = await commonWell.getPatientsLinks(queryMeta, patientId);
