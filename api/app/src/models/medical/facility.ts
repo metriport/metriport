@@ -9,7 +9,8 @@ export class Facility extends BaseModel<Facility> {
   declare id: string;
   declare cxId: string;
   declare facilityNumber: number;
-  declare data: object;
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  declare data: any; // TODO #369 move to strong type
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Facility.init(

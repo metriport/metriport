@@ -1,7 +1,8 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { Organization } from "../../models/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
-import { commonWellMember, CW_ID_PREFIX, metriportQueryMeta } from "./api";
+import { OID_PREFIX } from "../../shared/oid";
+import { certificate, commonWellManagement, metriportQueryMeta } from "./api";
 
 // TODO move these "getEnvVarOrFail" to Config
 const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
@@ -18,7 +19,7 @@ type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
 export async function organizationToCommonwell(
   org: Organization
 ): Promise<CWOrganizationWithOrgId> {
-  const cwId = CW_ID_PREFIX.concat(org.id);
+  const cwId = OID_PREFIX.concat(org.id);
   return {
     name: org.data.name,
     type: org.data.type,
@@ -60,10 +61,11 @@ export async function organizationToCommonwell(
   };
 }
 
-export const createOrgAtCommonwell = async (org: Organization): Promise<void> => {
+export const create = async (org: Organization): Promise<void> => {
   const cwOrg = await organizationToCommonwell(org);
   try {
-    await commonWellMember.createOrg(metriportQueryMeta, cwOrg);
+    await commonWellManagement.createOrg(metriportQueryMeta, cwOrg);
+    await commonWellManagement.addCertificateToOrg(metriportQueryMeta, certificate, org.id);
   } catch (error) {
     const msg = `Failure creating Org`;
     console.log(`${msg} - payload: `, cwOrg);
@@ -72,10 +74,10 @@ export const createOrgAtCommonwell = async (org: Organization): Promise<void> =>
   }
 };
 
-export const updateOrgAtCommonwell = async (org: Organization): Promise<void> => {
+export const update = async (org: Organization): Promise<void> => {
   const cwOrg = await organizationToCommonwell(org);
   try {
-    await commonWellMember.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
+    await commonWellManagement.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
   } catch (error) {
     const msg = `Failure updating Org`;
     console.log(`${msg} - payload: `, cwOrg);

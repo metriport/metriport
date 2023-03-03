@@ -4,6 +4,7 @@ import status from "http-status";
 import { createPatient } from "../../command/medical/patient/create-patient";
 import { getPatients } from "../../command/medical/patient/get-patient";
 import { updatePatient } from "../../command/medical/patient/update-patient";
+import cwCommands from "../../external/commonwell";
 import { Patient, PatientData } from "../../models/medical/patient";
 import { asyncHandler, getCxIdOrFail, getFacilityIdFromQueryOrFail } from "../util";
 import { patientCreateSchema, patientUpdateSchema } from "./schemas/patient";
@@ -42,12 +43,11 @@ router.post(
 
     // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
     // Intentionally asynchronous - it takes too long to perform
-    // cwCommands.patient.createOrUpdate(patient).then(success => {
-    //   // update the patient with the ID from CW
-    // }, err => {
-    //   // TODO #156 Send this to Sentry
-    //   console.error(`Failed to createOrUpdate patient ${patient.id} @ Commonwell: `, err);
-    // });
+    // cwCommands.patient.create({ orgName, facilityNPI, patient }).then(undefined, (err: unknown) => {
+    cwCommands.patient.create(patient, facilityId).then(undefined, (err: unknown) => {
+      // TODO #156 Send this to Sentry
+      console.error(`Failure while creating patient ${patient.id} @ Commonwell: `, err);
+    });
 
     const responsePayload: PatientDTO = {
       ...patient.data,

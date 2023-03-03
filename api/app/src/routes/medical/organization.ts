@@ -4,10 +4,7 @@ import status from "http-status";
 import { createOrganization } from "../../command/medical/organization/create-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
-import {
-  createOrgAtCommonwell,
-  updateOrgAtCommonwell,
-} from "../../external/commonwell/organization";
+import cwCommands from "../../external/commonwell";
 import { Organization, OrganizationData } from "../../models/medical/organization";
 import { asyncHandler, getCxIdOrFail } from "../util";
 import { organizationSchema } from "./schemas/organization";
@@ -44,10 +41,10 @@ router.post(
       const data = { ...org };
       delete data.id;
       localOrg = await updateOrganization({ id: org.id, cxId, data });
-      await updateOrgAtCommonwell(localOrg);
+      await cwCommands.organization.update(localOrg);
     } else {
       localOrg = await createOrganization({ cxId, data: org });
-      await createOrgAtCommonwell(localOrg);
+      await cwCommands.organization.create(localOrg);
     }
 
     const responsePayload: OrganizationDTO = { id: localOrg.id, ...localOrg.data };

@@ -1,5 +1,5 @@
-import { Organization } from "../models/medical/organization";
-import { Config } from "./config";
+export const OID_ID_START = 100;
+export const OID_PREFIX = "urn:oid:";
 
 export enum OIDNode {
   documents = 1,
@@ -17,14 +17,14 @@ export enum OIDNode {
   other = 13,
 }
 
-export const OID_ID_START = 100;
+export function oid(id: string): string {
+  return `${OID_PREFIX}${id}`;
+}
 
-export const createOrgId = async () => {
-  const curMaxNumber = (await Organization.max("organizationNumber")) as number;
-  const orgNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
+export enum states {
+  CA = "CA",
+}
 
-  return {
-    orgId: `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}`,
-    orgNumber,
-  };
+export const driversLicenseURIs: { [k in states]: string } = {
+  CA: `${OID_PREFIX}2.16.840.1.113883.4.3.6`,
 };
