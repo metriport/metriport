@@ -8,7 +8,7 @@ import { Address } from "./address";
 import { Contact } from "./contact";
 
 export abstract class PatientDataExternal {
-  constructor(public id: string) {}
+  // constructor(public id: string) {}
 }
 
 export type PatientData = {

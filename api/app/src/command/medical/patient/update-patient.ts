@@ -34,21 +34,24 @@ export const updatePatient = async (patient: PatientUpdate): Promise<Patient> =>
   return updatedPatient;
 };
 
+// TODO #369 move this to a CW specific command
 export const setCommonwellId = async ({
   patientId,
   cxId,
   commonwellPatientId,
+  commonwellPersonId,
 }: {
   patientId: string;
   cxId: string;
   commonwellPatientId: string;
+  commonwellPersonId: string;
 }): Promise<Patient> => {
   const updatedPatient = await getPatient({ id: patientId, cxId });
 
   const data = updatedPatient.data;
   data.externalData = {
     ...data.externalData,
-    COMMONWELL: new PatientDataCommonwell(commonwellPatientId),
+    COMMONWELL: new PatientDataCommonwell(commonwellPersonId, commonwellPatientId),
   };
 
   const [count] = await Patient.update(
