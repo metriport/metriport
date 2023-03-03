@@ -1,7 +1,6 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
-import { Organization, OrganizationCreate } from "../../models/medical/organization";
+import { Organization } from "../../models/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
-import { createOrgId } from "../../shared/oid";
 import { commonWellMember, CW_ID_PREFIX, metriportQueryMeta } from "./api";
 
 // TODO move these "getEnvVarOrFail" to Config
@@ -17,10 +16,9 @@ type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
   Required<Pick<CWOrganization, "organizationId">>;
 
 export async function organizationToCommonwell(
-  org: Organization | OrganizationCreate
+  org: Organization
 ): Promise<CWOrganizationWithOrgId> {
-  const orgId = org instanceof Organization ? org.id : undefined;
-  const cwId = CW_ID_PREFIX.concat(orgId ? orgId : (await createOrgId()).orgId);
+  const cwId = CW_ID_PREFIX.concat(org.id);
   return {
     name: org.data.name,
     type: org.data.type,
@@ -62,7 +60,7 @@ export async function organizationToCommonwell(
   };
 }
 
-export const createOrgAtCommonwell = async (org: OrganizationCreate): Promise<void> => {
+export const createOrgAtCommonwell = async (org: Organization): Promise<void> => {
   const cwOrg = await organizationToCommonwell(org);
   try {
     await commonWellMember.createOrg(metriportQueryMeta, cwOrg);

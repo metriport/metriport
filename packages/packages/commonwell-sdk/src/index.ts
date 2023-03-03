@@ -11,4 +11,5 @@ export { Organization } from "./models/organization";
 export { Identifier, IdentifierUseCodes } from "./models/identifier";
 export { isLOLA1, isLOLA2, isLOLA3, isLOLA4, LOLA } from "./models/link";
 export { Person } from "./models/person";
+export { Patient } from "./models/patient";
 export { PurposeOfUse } from "./models/purpose-of-use";

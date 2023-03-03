@@ -4,59 +4,104 @@ import status from "http-status";
 import { createPatient } from "../../command/medical/patient/create-patient";
 import { getPatients } from "../../command/medical/patient/get-patient";
 import { updatePatient } from "../../command/medical/patient/update-patient";
-import { Patient } from "../../models/medical/patient";
+import { Patient, PatientData } from "../../models/medical/patient";
 import { asyncHandler, getCxIdOrFail, getFacilityIdFromQueryOrFail } from "../util";
+import { patientCreateSchema, patientUpdateSchema } from "./schemas/patient";
 
 const router = Router();
+
+type PatientDTO = Pick<Patient, "id" | "facilityIds"> & PatientData;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
  *
- * Updates or creates the patient corresponding to the specified facility at the
+ * Creates the patient corresponding to the specified facility at the
  * customer's organization if it doesn't exist already.
  *
- * @return  {Patient}  The patient.
+ * @param {string} facilityId The ID of the Facility the Patient should be associated with.
+ *
+ * @return {Patient} The newly created patient.
  */
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFacilityIdFromQueryOrFail(req);
+    const facilityId = getFacilityIdFromQueryOrFail(req); // TODO needs this? If so, add to Doc ^
 
-    // TODO: parse this into model
-    const patientData = req.body;
+    const patientInput = patientCreateSchema.parse(req.body);
 
-    let patient: Patient;
-    if (patientData.id) {
-      const data = { ...patientData };
-      delete data.id;
-      delete data.facilityId;
-      patient = await updatePatient({
-        id: patientData.id,
-        cxId,
-        data,
-      });
-    } else {
-      patient = await createPatient({
-        cxId,
-        data: patientData,
-        facilityId: facilityId,
-      });
-    }
+    const patient = await createPatient({
+      ...patientInput,
+      cxId,
+      facilityId: facilityId,
+      address: {
+        ...patientInput.address,
+        addressLine2: patientInput.address.addressLine2 ?? null,
+      },
+    });
 
-    // TODO: create or update patient in CW as well
+    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // Intentionally asynchronous - it takes too long to perform
+    // cwCommands.patient.createOrUpdate(patient).then(success => {
+    //   // update the patient with the ID from CW
+    // }, err => {
+    //   // TODO #156 Send this to Sentry
+    //   console.error(`Failed to createOrUpdate patient ${patient.id} @ Commonwell: `, err);
+    // });
 
-    return res
-      .status(status.OK)
-      .json({ id: patient.id, facilityIds: patient.facilityIds, ...patient.data });
+    const responsePayload: PatientDTO = {
+      ...patient.data,
+      id: patient.id,
+      facilityIds: patient.facilityIds,
+    };
+    return res.status(status.OK).json(responsePayload);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * PUT /patient/:id
+ *
+ * Updates the patient corresponding to the specified facility at the customer's organization.
+ * Note: this is not a PATCH, so requests must include all patient data in the payload.
+ *
+ * @return  {Patient} The patient to be updated
+ */
+router.put(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+
+    const patientInput = patientUpdateSchema.parse(req.body);
+
+    const patient = await updatePatient({
+      ...patientInput,
+      cxId,
+      address: {
+        ...patientInput.address,
+        addressLine2: patientInput.address.addressLine2 ?? null,
+      },
+    });
+
+    // // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // // Intentionally asynchronous - it takes too long to perform
+    // cwCommands.patient.createOrUpdate(patient).then(undefined, err => {
+    //   // TODO #156 Send this to Sentry
+    //   console.error(`Failed to createOrUpdate patient ${patient.id} @ Commonwell: `, err);
+    // });
+
+    const responsePayload: PatientDTO = {
+      ...patient.data,
+      id: patient.id,
+      facilityIds: patient.facilityIds,
+    };
+    return res.status(status.OK).json(responsePayload);
   })
 );
 
 /** ---------------------------------------------------------------------------
  * GET /patient
  *
- * Gets all of the patients corresponding to the specified facility at the
- * customer's organization.
+ * Gets all patients corresponding to the specified facility at the customer's organization.
  *
  * @param   {string}        req.cxId              The customer ID.
  * @param   {string}        req.query.facilityId  The ID of the facility the user patient

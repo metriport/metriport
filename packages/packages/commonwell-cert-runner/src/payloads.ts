@@ -6,6 +6,7 @@ import {
   Person,
 } from "@metriport/commonwell-sdk";
 import { Demographics } from "@metriport/commonwell-sdk/lib/models/demographics";
+import { Patient } from "@metriport/commonwell-sdk/lib/models/patient";
 import { X509Certificate } from "crypto";
 import * as nanoid from "nanoid";
 
@@ -126,7 +127,7 @@ export const personNoStrongId: Person = {
 export const makePatient = ({
   facilityId = makeFacilityId(),
   details = mainDetails,
-}: { facilityId?: string; details?: Demographics } = {}) => ({
+}: { facilityId?: string; details?: Demographics } = {}): Patient => ({
   identifier: [
     {
       use: "unspecified",
