@@ -3,9 +3,7 @@ import { Config, getEnvVarOrFail } from "../../shared/config";
 
 // TODO move this to Config
 const metriportOrgName = getEnvVarOrFail("CW_ORG_NAME");
-const metriportSandboxOrgName = getEnvVarOrFail("SANDBOX_CW_ORG_NAME");
 
-const metriportSandboxOID = getEnvVarOrFail("SANDBOX_SYSTEM_ROOT_OID");
 const metriportOID = getEnvVarOrFail("SYSTEM_ROOT_OID");
 const metriportPrivateKey = getEnvVarOrFail("CW_PRIVATE_KEY");
 const metriportCert = getEnvVarOrFail("CW_CERTIFICATE");
@@ -28,13 +26,6 @@ export const commonWell = new CommonWell(
   metriportOrgName,
   metriportOID,
   apiMode
-);
-export const commonWellSandbox = new CommonWell(
-  metriportCert,
-  metriportPrivateKey,
-  metriportSandboxOrgName,
-  metriportSandboxOID,
-  APIMode.integration
 );
 
 export const commonWellMember = new CommonWell(

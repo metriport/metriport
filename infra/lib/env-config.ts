@@ -54,6 +54,8 @@ export type EnvConfig = {
     CW_TECHNICAL_CONTACT_TITLE: string;
     CW_TECHNICAL_CONTACT_EMAIL: string;
     CW_TECHNICAL_CONTACT_PHONE: string;
+    CW_PRODUCTION_URL: string;
+    CW_INTEGRATION_URL: string;
   };
 } & (
   | {
