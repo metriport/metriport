@@ -21,10 +21,12 @@ export function oid(id: string): string {
   return `${OID_PREFIX}${id}`;
 }
 
-export enum states {
+// TODO  #369 Add remaining
+export enum USState {
   CA = "CA",
 }
 
-export const driversLicenseURIs: { [k in states]: string } = {
+// TODO  #369 update this
+export const driversLicenseURIs: { [k in USState]: string } = {
   CA: `${OID_PREFIX}2.16.840.1.113883.4.3.6`,
 };

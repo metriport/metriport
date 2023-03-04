@@ -1,21 +1,25 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
+import { OIDNode, OID_ID_START, USState } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { ExternalMedicalPartners } from "./../../external";
 import { Address } from "./address";
 import { Contact } from "./contact";
 
-export abstract class PatientDataExternal {
-  // constructor(public id: string) {}
-}
+export abstract class PatientDataExternal {}
+
+export type DriversLicense = {
+  value: string;
+  state: USState;
+};
 
 export type PatientData = {
   firstName: string;
   lastName: string;
   dob: string;
-  // gender: Gender; // TODO Add this
+  gender: string; // TODO #369 do we need to support CW SDK's genderSchema?
+  driversLicense?: DriversLicense;
   address: Address;
   contact?: Contact;
   externalData?: {

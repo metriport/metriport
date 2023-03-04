@@ -43,10 +43,9 @@ router.post(
 
     // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
     // Intentionally asynchronous - it takes too long to perform
-    // cwCommands.patient.create({ orgName, facilityNPI, patient }).then(undefined, (err: unknown) => {
     cwCommands.patient.create(patient, facilityId).then(undefined, (err: unknown) => {
       // TODO #156 Send this to Sentry
-      console.error(`Failure while creating patient ${patient.id} @ Commonwell: `, err);
+      console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
     });
 
     const responsePayload: PatientDTO = {
@@ -82,12 +81,15 @@ router.put(
       },
     });
 
-    // // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
-    // // Intentionally asynchronous - it takes too long to perform
-    // cwCommands.patient.createOrUpdate(patient).then(undefined, err => {
-    //   // TODO #156 Send this to Sentry
-    //   console.error(`Failed to createOrUpdate patient ${patient.id} @ Commonwell: `, err);
-    // });
+    // TODO #369 make this dynamic, add a request param
+    const facilityId = patient.facilityIds[0];
+
+    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // Intentionally asynchronous - it takes too long to perform
+    cwCommands.patient.update(patient, facilityId).then(undefined, err => {
+      // TODO #156 Send this to Sentry
+      console.error(`Failed to update patient ${patient.id} @ CW: `, err);
+    });
 
     const responsePayload: PatientDTO = {
       ...patient.data,

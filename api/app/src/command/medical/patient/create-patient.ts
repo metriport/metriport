@@ -20,6 +20,8 @@ export const createPatient = async (patient: PatientCreate): Promise<Patient> =>
       firstName: patient.firstName,
       lastName: patient.lastName,
       dob: patient.dob,
+      gender: patient.gender,
+      driversLicense: patient.driversLicense,
       address: patient.address,
       contact: patient.contact,
     },
