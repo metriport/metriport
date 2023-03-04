@@ -52,6 +52,5 @@
     "lodash": "^4.17.21",
     "nanoid": "^3.3.4",
     "unique-names-generator": "^4.7.1"
-  },
-  "gitHead": "2549d725d5b9bcab35616f9566533421a5f35edc"
+  }
 }
