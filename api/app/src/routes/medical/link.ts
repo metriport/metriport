@@ -1,34 +1,65 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { asyncHandler, getCxIdOrFail, getPatientIdFromQueryOrFail } from "../util";
-const router = Router();
 import status from "http-status";
+import {
+  asyncHandler,
+  getCxIdOrFail,
+  getPatientIdFromQueryOrFail,
+  getEntityIdFromQueryOrFail,
+  getLinkIdFromQueryOrFail,
+} from "../util";
+const router = Router();
 import { getPatient } from "../../command/medical/patient/get-patient";
+import { updatePatient } from "../../command/medical/patient/update-patient";
+import {
+  getPersonsAtCommonwell,
+  getLinkFromCommonwell,
+  linkPatientToCommonwellPerson,
+  resetCommonwellLink,
+} from "../../external/commonwell/link";
+import { Config } from "../../shared/config";
+import { PatientLinks } from "./schemas/link";
+import { LinkSource } from "./schemas/link";
 
 /** ---------------------------------------------------------------------------
  * POST /link
  *
  * Creates link to the specified entity.
+ * @param   req.query.patientId     Patient ID to link to a person.
+ * @param   req.query.entityId      Person ID to link to the patient.
+ * @param   req.query.linkSource    HIE from where the link is made too.
  *
- * @return  {Link}  The created link.
+ * @return  status 200. Let user know the link has been made.
  */
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getPatientIdFromQueryOrFail(req);
+    const entityId = getEntityIdFromQueryOrFail(req);
+
     const patient = await getPatient({ id: patientId, cxId });
-    // get linkSource from query params -> this should be "CommonWell"
-    console.log(patient);
+    const linkSource = req.query.linkSource;
 
-    // CommonWell.patientLink();
-    // store the following data in our DB in the patient:
-    //    - link ID
-    //    - person ID
-    // can put this into a JSONB column `link_data` with structure:
-    //    {["CommonWell"]: {cw_link_id, cw_person_id}}
+    // TODO: HANDLE OTHER HIE's
+    if (linkSource === LinkSource.commonWell) {
+      const linkId = await linkPatientToCommonwellPerson(entityId, patient.patientNumber);
 
-    return res.status(status.OK).json({});
+      await updatePatient({
+        id: patientId,
+        cxId,
+        linkData: {
+          ...patient.linkData,
+          [linkSource]: {
+            cw_link_id: linkId,
+            cw_person_id: entityId,
+          },
+        },
+      });
+      return res.status(status.OK).json(linkId);
+    }
+
+    throw new Error("Link source not found");
   })
 );
 
@@ -36,7 +67,9 @@ router.post(
  * DELETE /link
  *
  * Removes the specified HIE link from the specified patient.
- *
+ * @param   req.query.patientId     Patient ID to remove link from.
+ * @param   req.query.linkId        Link ID to remove.
+ * @param   req.query.linkSource    HIE to remove the link from.
  * @return  200
  */
 router.delete(
@@ -44,13 +77,24 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getPatientIdFromQueryOrFail(req);
+    const linkId = getLinkIdFromQueryOrFail(req);
     const patient = await getPatient({ id: patientId, cxId });
-    // get linkSource from query params -> this should be "CommonWell"
-    console.log(patient);
-    // build link string from patient.linkData["CommonWell"]
-    // CommonWell.resetPatientLink();
+    const linkSource = req.query.linkSource;
 
-    return res.status(status.OK);
+    if (linkSource === LinkSource.commonWell) {
+      await resetCommonwellLink(linkId);
+
+      await updatePatient({
+        id: patientId,
+        cxId,
+        linkData: {
+          ...patient.linkData,
+          [linkSource]: {},
+        },
+      });
+    }
+
+    return res.sendStatus(status.OK);
   })
 );
 
@@ -59,8 +103,8 @@ router.delete(
  *
  * Builds and returns the current state of a patient's links across HIEs.
  *
- * @param   req.query.patientId Patient ID for which to retrieve links.
- * @return  {Link[]}            The patient's current and potential links.
+ * @param   req.query.patientId     Patient ID for which to retrieve links.
+ * @return  {PatientLinks}          The patient's current and potential links.
  */
 router.get(
   "/",
@@ -68,29 +112,56 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getPatientIdFromQueryOrFail(req);
 
-    // TODO: Here's some pseudocode for how we can do this for CommonWell
-    // (#374 will implement):
-
     const patient = await getPatient({ id: patientId, cxId });
-    console.log(patient);
-    //  - initialize currentLinks, potentialLinks
-    //  - if the patient already has a link to a person
-    //      - need to verify link is still valid
-    //      - get the patient link -> CommonWell.getPatientLink()
-    //      - if the link exists and is >= LOLA 2
-    //        - add to currentLinks
-    //      - else
-    //        - this means the person was removed from CW
-    //        - TODO: ideas on how to handle this?
-    //  - if currentLinks is still empty
-    //      - initialize personResultsList
-    //      - if strong id is available
-    //        - add to personResultsList from strong ID search -> CommonWell.searchPerson()
-    //      - add to personResultsList from demo search & remove duplicates from strong ID search -> CommonWell.searchPersonByPatientDemo()
-    //      - add to potentialLinks from personResultsList
 
-    return res.status(status.OK).json([]);
+    //  - initialize currentLinks, potentialLinks
+    const links: PatientLinks = {
+      currentLinks: [],
+      potentialLinks: [],
+    };
+
+    //  - if the patient already has a link to a person
+    if (
+      patient.linkData[LinkSource.commonWell]?.cw_link_id &&
+      patient.linkData[LinkSource.commonWell]?.cw_person_id
+    ) {
+      const { cw_person_id, cw_link_id } = patient.linkData[LinkSource.commonWell];
+      const personLink = await getLinkFromCommonwell(cw_person_id, cw_link_id);
+
+      if (personLink) {
+        links.currentLinks = [...links.currentLinks, personLink];
+      } else {
+        // - Remove from link data
+        await updatePatient({
+          id: patientId,
+          cxId,
+          linkData: {
+            ...patient.linkData,
+            [LinkSource.commonWell]: {},
+          },
+        });
+      }
+    }
+
+    if (!links.currentLinks.length) {
+      //      - initialize personResultsList
+      //      - if strong id is available
+      //        - add to personResultsList from strong ID search -> CommonWell.searchPerson()
+
+      const cwPatientId = `${patient.patientNumber}^^^urn:oid:${Config.getSystemRootOID()}`;
+
+      const personLinks = await getPersonsAtCommonwell(cwPatientId);
+
+      //      - add to potentialLinks from personResultsList
+      links.potentialLinks = [...links.potentialLinks, ...personLinks];
+    }
+
+    //      - add to personResultsList from demo search & remove duplicates from strong ID search -> CommonWell.searchPersonByPatientDemo()
+
+    return res.status(status.OK).json(links);
   })
 );
+
+// WE ARE ONLY LINKING TO A PERSON AND THEN ALL NETWORK LINKS ARE TREATED IN THE BACKGROUND AUTO TO LOLA 2
 
 export default router;

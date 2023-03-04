@@ -23,6 +23,8 @@ import {
   patientSchema,
   PatientSearchResp,
   patientSearchRespSchema,
+  patientLinkRespSchema,
+  PatientLinkResp,
 } from "../models/patient";
 import {
   PatientLink,
@@ -419,6 +421,22 @@ export class CommonWell {
   }
 
   /**
+   * Searches for a person based on person id.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8713-find-persons-matching-patient-demographics
+   *
+   * @param meta        Metadata about the request.
+   * @param personId   The person ID.
+   * @returns
+   */
+  async searchPersonByUri(meta: RequestMetadata, personId: string): Promise<Person> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}`, {
+      headers,
+    });
+    return personSchema.parse(resp.data);
+  }
+
+  /**
    * Updates a person.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8741-updating-person-information
    *
@@ -803,13 +821,13 @@ export class CommonWell {
    * @param patientLinkUri    The uri of patient link to get
    * @returns
    */
-  async getPatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<PatientLink> {
+  async getPatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<PatientLinkResp> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.get(patientLinkUri, {
       headers,
     });
 
-    return patientLinkSchema.parse(resp.data);
+    return patientLinkRespSchema.parse(resp.data);
   }
 
   /**

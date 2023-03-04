@@ -3,6 +3,16 @@ import { getOrganizationOrFail } from "../../command/medical/organization/get-or
 import { Config } from "../../shared/config";
 import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { LinkSource } from "../../routes/medical/schemas/link";
+
+export type LinkMapItem = {
+  cw_link_id: string;
+  cw_person_id: string;
+};
+
+export type LinkData = {
+  [k in LinkSource]?: LinkMapItem;
+};
 
 export class Patient extends BaseModel<Patient> {
   static NAME = "patient";
@@ -11,6 +21,7 @@ export class Patient extends BaseModel<Patient> {
   declare facilityIds: string[];
   declare patientNumber: number;
   declare data: object;
+  declare linkData: LinkData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Patient.init(
@@ -30,6 +41,9 @@ export class Patient extends BaseModel<Patient> {
           type: DataTypes.INTEGER,
         },
         data: {
+          type: DataTypes.JSONB,
+        },
+        linkData: {
           type: DataTypes.JSONB,
         },
       },

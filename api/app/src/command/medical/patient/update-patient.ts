@@ -5,14 +5,17 @@ export const updatePatient = async ({
   id,
   cxId,
   data,
+  linkData,
 }: {
   id: string;
   cxId: string;
-  data: object;
+  data?: object;
+  linkData?: object;
 }): Promise<Patient> => {
   const [count, rows] = await Patient.update(
     {
       data,
+      linkData,
     },
     { where: { id, cxId }, returning: true }
   );

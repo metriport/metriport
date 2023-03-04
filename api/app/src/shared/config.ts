@@ -94,6 +94,14 @@ export class Config {
     return getEnvVar("FHIR_SERVER_URL");
   }
 
+  static getCWIntegrationUrl(): string {
+    return getEnvVarOrFail("CW_INTEGRATION_URL");
+  }
+
+  static getCWProductionUrl(): string {
+    return getEnvVarOrFail("CW_PRODUCTION_URL");
+  }
+
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
