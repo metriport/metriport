@@ -29,7 +29,7 @@ import { LinkSource } from "./schemas/link";
  * @param   req.query.entityId      Person ID to link to the patient.
  * @param   req.query.linkSource    HIE from where the link is made too.
  *
- * @return  status 200. Let user know the link has been made.
+ * @return  linkId
  */
 router.post(
   "/",
@@ -112,15 +112,14 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getPatientIdFromQueryOrFail(req);
 
+    // TODO: USE GET PATIENT BY DEPENCIES
     const patient = await getPatient({ id: patientId, cxId });
 
-    //  - initialize currentLinks, potentialLinks
     const links: PatientLinks = {
       currentLinks: [],
       potentialLinks: [],
     };
 
-    //  - if the patient already has a link to a person
     if (
       patient.linkData[LinkSource.commonWell]?.cw_link_id &&
       patient.linkData[LinkSource.commonWell]?.cw_person_id
@@ -131,7 +130,6 @@ router.get(
       if (personLink) {
         links.currentLinks = [...links.currentLinks, personLink];
       } else {
-        // - Remove from link data
         await updatePatient({
           id: patientId,
           cxId,
@@ -148,11 +146,11 @@ router.get(
       //      - if strong id is available
       //        - add to personResultsList from strong ID search -> CommonWell.searchPerson()
 
+      // TODO: Config.getSystemRootOID() needs to change to org id of the patient
       const cwPatientId = `${patient.patientNumber}^^^urn:oid:${Config.getSystemRootOID()}`;
 
       const personLinks = await getPersonsAtCommonwell(cwPatientId);
 
-      //      - add to potentialLinks from personResultsList
       links.potentialLinks = [...links.potentialLinks, ...personLinks];
     }
 
@@ -161,7 +159,5 @@ router.get(
     return res.status(status.OK).json(links);
   })
 );
-
-// WE ARE ONLY LINKING TO A PERSON AND THEN ALL NETWORK LINKS ARE TREATED IN THE BACKGROUND AUTO TO LOLA 2
 
 export default router;

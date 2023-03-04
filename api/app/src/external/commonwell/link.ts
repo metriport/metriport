@@ -1,4 +1,4 @@
-import { Person, getId, LOLA } from "@metriport/commonwell-sdk";
+import { Person, getId, LOLA, NetworkLink } from "@metriport/commonwell-sdk";
 
 import { commonWell, metriportQueryMeta, apiUrl, CW_ID_URL_ENCODED_PREFIX } from "./api";
 import { Link, LinkSource } from "../../routes/medical/schemas/link";
@@ -23,14 +23,17 @@ export const linkPatientToCommonwellPerson = async (
         link => link.assuranceLevel === LOLA.level_1
       );
 
+      const requests: Promise<NetworkLink>[] = [];
+
       lola1Links.forEach(async link => {
         if (link._links?.upgrade?.href) {
-          await commonWell.upgradeOrDowngradeNetworkLink(
-            metriportQueryMeta,
-            link._links?.upgrade?.href
+          requests.push(
+            commonWell.upgradeOrDowngradeNetworkLink(metriportQueryMeta, link._links?.upgrade?.href)
           );
         }
       });
+
+      await Promise.allSettled(requests);
     }
 
     return link._links?.self?.href;
@@ -62,7 +65,6 @@ export const getLinkFromCommonwell = async (
   linkId: string
 ): Promise<Link | void> => {
   try {
-    // - get the patient link -> CommonWell.getPatientLink()
     const allPatientLinksToPerson = await commonWell.getPatientLink(metriportQueryMeta, linkId);
 
     if (
@@ -73,12 +75,10 @@ export const getLinkFromCommonwell = async (
         link => link._links?.self?.href === linkId
       );
 
-      //      - if the link exists
       if (correctLink.length && correctLink[0].assuranceLevel) {
         const assuranceLevel = parseInt(correctLink[0].assuranceLevel);
 
-        //      - if is >= LOLA 2
-        if (assuranceLevel >= 2) {
+        if (assuranceLevel >= parseInt(LOLA.level_2)) {
           const person = await commonWell.searchPersonByUri(metriportQueryMeta, personId);
           const personLink = convertPersonToLink(person, linkId);
 

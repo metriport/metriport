@@ -9,6 +9,6 @@ export { HumanName, NameUseCodes } from "./models/human-name";
 export * from "./models/document";
 export { Organization } from "./models/organization";
 export { Identifier, IdentifierUseCodes } from "./models/identifier";
-export { isLOLA1, isLOLA2, isLOLA3, isLOLA4, LOLA } from "./models/link";
+export { NetworkLink, isLOLA1, isLOLA2, isLOLA3, isLOLA4, LOLA } from "./models/link";
 export { Person, PersonSearchResp } from "./models/person";
 export { PurposeOfUse } from "./models/purpose-of-use";
