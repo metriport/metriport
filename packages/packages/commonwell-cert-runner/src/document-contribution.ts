@@ -443,6 +443,10 @@ async function addDocumentRefAndBinaryToFHIRServer(
             "resourceType": "Organization",
             "id": "${orgId}",
             "name": "${orgName}"
+        },
+        {
+            "resourceType": "Patient",
+            "id": "${patientId}"
         }
     ],
     "masterIdentifier": {
@@ -472,7 +476,7 @@ async function addDocumentRefAndBinaryToFHIRServer(
     },
     "author": [
         {
-            "reference": "Organization/${orgId}",
+            "reference": "#${orgId}",
             "type": "Organization"
         }
     ],
@@ -501,6 +505,10 @@ async function addDocumentRefAndBinaryToFHIRServer(
         "period": {
             "start": "2022-10-05T22:00:00.000Z",
             "end": "2022-10-05T23:00:00.000Z"
+        },
+        "sourcePatientInfo": {
+            "reference": "#${patientId}",
+            "type": "Patient"
         }
     }
 }`;
