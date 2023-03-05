@@ -131,6 +131,9 @@ const commonwellToLinks = (persons: Person[]): Link[] => {
 const convertPersonToLink = (person: Person, linkId?: string): Link | null => {
   const personId = getId(person);
 
+  const address = person.details?.address?.length ? person.details?.address[0] : undefined;
+  const personName = person.details?.name?.length ? person.details?.name[0] : undefined;
+
   if (personId) {
     const personLink: Link = {
       ...(linkId ? { id: linkId } : undefined),
@@ -139,36 +142,15 @@ const convertPersonToLink = (person: Person, linkId?: string): Link | null => {
       source: LinkSource.commonWell,
       patient: {
         id: personId,
-        firstName:
-          person.details?.name?.length && person.details?.name[0].given?.length
-            ? person.details.name[0].given[0]
-            : "",
-        lastName:
-          person.details?.name?.length && person.details?.name[0].family?.length
-            ? person.details.name[0].family[0]
-            : "",
+        firstName: personName && personName.given?.length ? personName.given[0] : "",
+        lastName: personName && personName.family?.length ? personName.family[0] : "",
         dob: person.details?.birthDate ? person.details?.birthDate : "", // YYYY-MM-DD
         address: {
-          addressLine1:
-            person.details?.address?.length && person.details?.address[0].line
-              ? person.details.address[0].line[0]
-              : "",
-          city:
-            person.details?.address?.length && person.details?.address[0].city
-              ? person.details.address[0].city
-              : "",
-          state:
-            person.details?.address?.length && person.details?.address[0].state
-              ? person.details.address[0].state
-              : "",
-          zip:
-            person.details?.address?.length && person.details?.address[0].zip
-              ? person.details.address[0].zip
-              : "",
-          country:
-            person.details?.address?.length && person.details?.address[0].country
-              ? person.details.address[0].country
-              : "",
+          addressLine1: address && address.line ? address.line[0] : "",
+          city: address && address.city ? address.city : "",
+          state: address && address.state ? address.state : "",
+          zip: address && address.zip ? address.zip : "",
+          country: address && address.country ? address.country : "",
         },
         contact: {},
       },
