@@ -7,7 +7,7 @@ export const patientCreateSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   dob: z.string().length(10), // YYYY-MM-DD
-  // gender: z.enum(["F", "M", "UN"]), // UN = Unspecified
+  gender: z.enum(["F", "M", "UN"]), // UN = Unspecified
   driversLicense: z
     .object({
       value: z.string(),
