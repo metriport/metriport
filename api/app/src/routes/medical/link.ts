@@ -8,14 +8,9 @@ import {
   getEntityIdFromQueryOrFail,
 } from "../util";
 const router = Router();
-import { getPatient } from "../../command/medical/patient/get-patient";
+import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import { updatePatientLinks } from "../../command/medical/patient/update-patient-link";
-import {
-  getPersonsAtCommonwell,
-  getLinkFromCommonwell,
-  linkPatientToCommonwellPerson,
-  resetCommonwellLink,
-} from "../../external/commonwell/link";
+import cwCommands from "../../external/commonwell";
 import { PatientLinks } from "./schemas/link";
 import { LinkSource } from "./schemas/link";
 
@@ -36,12 +31,12 @@ router.post(
     const patientId = getPatientIdFromQueryOrFail(req);
     const entityId = getEntityIdFromQueryOrFail(req);
 
-    const patient = await getPatient({ id: patientId, cxId });
+    const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
     const linkSource = req.query.linkSource;
 
     // TODO: HANDLE OTHER HIE's
     if (linkSource === LinkSource.commonWell) {
-      await linkPatientToCommonwellPerson(entityId, patient);
+      await cwCommands.link.create(entityId, patient, organization);
 
       await updatePatientLinks({
         id: patientId,
@@ -73,14 +68,14 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getPatientIdFromQueryOrFail(req);
-    const patient = await getPatient({ id: patientId, cxId });
+    const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
     const linkSource = req.query.linkSource;
 
     if (linkSource === LinkSource.commonWell) {
       const hasPersonId = patient.linkData && patient.linkData[LinkSource.commonWell]?.cw_person_id;
 
       if (hasPersonId) {
-        await resetCommonwellLink(patient, hasPersonId);
+        await cwCommands.link.reset(patient, organization, hasPersonId);
 
         await updatePatientLinks({
           id: patientId,
@@ -113,7 +108,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getPatientIdFromQueryOrFail(req);
 
-    const patient = await getPatient({ id: patientId, cxId });
+    const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
 
     const links: PatientLinks = {
       currentLinks: [],
@@ -122,7 +117,7 @@ router.get(
 
     if (patient.linkData && patient.linkData[LinkSource.commonWell]?.cw_person_id) {
       const { cw_person_id } = patient.linkData[LinkSource.commonWell];
-      const personLink = await getLinkFromCommonwell(cw_person_id, patient);
+      const personLink = await cwCommands.link.findOne(cw_person_id, organization, patient);
 
       if (personLink) {
         links.currentLinks = [...links.currentLinks, personLink];
@@ -143,7 +138,7 @@ router.get(
       //      - if strong id is available
       //        - add to personResultsList from strong ID search -> CommonWell.searchPerson()
 
-      const personLinks = await getPersonsAtCommonwell(patient);
+      const personLinks = await cwCommands.link.findAllPersons(patient, organization);
 
       links.potentialLinks = [...links.potentialLinks, ...personLinks];
     }

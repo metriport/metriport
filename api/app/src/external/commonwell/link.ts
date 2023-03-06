@@ -3,20 +3,16 @@ import { Person, getId, LOLA, NetworkLink } from "@metriport/commonwell-sdk";
 import { makeCommonWellAPI, metriportQueryMeta, apiUrl } from "./api";
 import { OIDNode, OID_PREFIX, OID_URL_ENCODED_PREFIX } from "../../shared/oid";
 import { Link, LinkSource } from "../../routes/medical/schemas/link";
-import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import { oid } from "../../shared/oid";
 import { Patient } from "../../models/medical/patient";
+import { Organization } from "../../models/medical/organization";
 
-export const linkPatientToCommonwellPerson = async (
+export const create = async (
   personId: string,
-  patient: Patient
+  patient: Patient,
+  organization: Organization
 ): Promise<void> => {
   try {
-    const { organization } = await getPatientWithDependencies({
-      id: patient.id,
-      cxId: patient.cxId,
-    });
-
     const referenceLink = createReferenceLink(patient.patientNumber, organization.id);
 
     const orgName = organization.data.name;
@@ -67,13 +63,8 @@ const createReferenceLink = (patientNumber: number, orgId: string) => {
   return `${apiUrl}/v1/org/${OID_PREFIX}${orgId}/patient/${orgId}.${OIDNode.patients}.${patientNumber}${OID_URL_ENCODED_PREFIX}${orgId}`;
 };
 
-export const resetCommonwellLink = async (patient: Patient, personId: string) => {
+export const reset = async (patient: Patient, organization: Organization, personId: string) => {
   try {
-    const { organization } = await getPatientWithDependencies({
-      id: patient.id,
-      cxId: patient.cxId,
-    });
-
     const referenceLink = createPatientLink(personId, organization.id, patient.patientNumber);
 
     const orgName = organization.data.name;
@@ -89,16 +80,12 @@ export const resetCommonwellLink = async (patient: Patient, personId: string) =>
   }
 };
 
-export const getLinkFromCommonwell = async (
+export const findOne = async (
   personId: string,
+  organization: Organization,
   patient: Patient
 ): Promise<Link | void> => {
   try {
-    const { organization } = await getPatientWithDependencies({
-      id: patient.id,
-      cxId: patient.cxId,
-    });
-
     const orgName = organization.data.name;
     const orgId = organization.id;
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
@@ -140,13 +127,11 @@ const createPatientLink = (personId: string, orgId: string, patientNumber: numbe
   return `${apiUrl}/v1/person/${personId}/patientLink/${orgId}.${OIDNode.patients}.${patientNumber}${OID_URL_ENCODED_PREFIX}${orgId}/`;
 };
 
-export const getPersonsAtCommonwell = async (patient: Patient): Promise<Link[]> => {
+export const findAllPersons = async (
+  patient: Patient,
+  organization: Organization
+): Promise<Link[]> => {
   try {
-    const { organization } = await getPatientWithDependencies({
-      id: patient.id,
-      cxId: patient.cxId,
-    });
-
     const orgName = organization.data.name;
     const orgId = organization.id;
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));

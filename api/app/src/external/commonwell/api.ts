@@ -4,7 +4,7 @@ import { X509Certificate } from "crypto";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 
 // TODO move this to Config
-const metriportOrgName = getEnvVarOrFail("CW_ORG_NAME");
+const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
 const metriportPrivateKey = getEnvVarOrFail("CW_PRIVATE_KEY");
 const metriportCert = getEnvVarOrFail("CW_CERTIFICATE");
 
