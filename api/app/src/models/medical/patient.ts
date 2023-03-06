@@ -1,7 +1,8 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START, USState } from "../../shared/oid";
+import { USState } from "../../shared/geographic-locations";
+import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { ExternalMedicalPartners } from "./../../external";
 import { Address } from "./address";
@@ -9,17 +10,46 @@ import { Contact } from "./contact";
 
 export abstract class PatientDataExternal {}
 
+export const generalTypes = ["passport", "ssn", "medicare"] as const;
+export const driversLicenseType = ["driversLicense"] as const;
+export type GeneralTypes = (typeof generalTypes)[number];
+export type DriverLicenseType = (typeof driversLicenseType)[number];
+
+export type Period =
+  | {
+      start: string;
+      end?: string;
+    }
+  | {
+      start?: string;
+      end: string;
+    };
+
+export type BaseIdentifier = {
+  period?: Period;
+  assigner?: string;
+};
+export type Identifier = BaseIdentifier &
+  (
+    | { type: GeneralTypes; value: string; state?: never }
+    | { type: DriverLicenseType; value: string; state: USState }
+  );
+
 export type DriversLicense = {
   value: string;
   state: USState;
 };
 
+// https://www.hl7.org/fhir/valueset-administrative-gender.html
+export const genderTypes = ["F", "M", "O", "U"] as const;
+export type Gender = (typeof genderTypes)[number];
+
 export type PatientData = {
   firstName: string;
   lastName: string;
   dob: string;
-  gender: string; // TODO #369 do we need to support CW SDK's genderSchema?
-  driversLicense?: DriversLicense;
+  gender: Gender;
+  personalIdentifiers: Identifier[];
   address: Address;
   contact?: Contact;
   externalData?: {
