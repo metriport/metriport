@@ -288,7 +288,6 @@ $ echo "CW_GATEWAY_ENDPOINT=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_ORG_NAME=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_MEMBER_NAME=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_MEMBER_OID=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_ORG_MANAGEMENT_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env

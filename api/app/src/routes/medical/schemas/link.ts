@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { patientSchema } from "./patient";
+import { patientUpdateSchema } from "./patient";
 
 export enum LinkSource {
   commonWell = "CommonWell",
@@ -13,7 +13,7 @@ export const linkSchema = z.object({
   entityId: z.string(), // the entity the link is referencing, in case of CW this will be the person ID
   potential: z.boolean(),
   source: linkSourceSchema, // will be important soon, want to add this ahead of time
-  patient: patientSchema, // can be patient or person in the case of CW
+  patient: patientUpdateSchema, // can be patient or person in the case of CW
 });
 export type Link = z.infer<typeof linkSchema>;
 

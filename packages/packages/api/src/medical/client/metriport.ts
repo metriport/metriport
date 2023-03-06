@@ -112,11 +112,10 @@ export class MetriportMedicalApi {
    *
    * @returns 200
    */
-  async removeLink(patientId: string, linkId: string, linkSource: LinkSource): Promise<void> {
+  async removeLink(patientId: string, linkSource: LinkSource): Promise<void> {
     await this.api.delete(this.LINK_URL, {
       params: {
         patientId,
-        linkId,
         linkSource,
       },
     });

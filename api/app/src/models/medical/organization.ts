@@ -53,7 +53,6 @@ export class Organization extends BaseModel<Organization> {
         hooks: {
           async beforeCreate(attributes) {
             const { orgId, orgNumber } = await createOrgId();
-
             attributes.id = orgId;
             attributes.organizationNumber = orgNumber;
           },

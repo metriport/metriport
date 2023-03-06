@@ -1,60 +1,89 @@
 import { Person, getId, LOLA, NetworkLink } from "@metriport/commonwell-sdk";
 
-import { commonWell, metriportQueryMeta, apiUrl, CW_ID_URL_ENCODED_PREFIX } from "./api";
+import { makeCommonWellAPI, metriportQueryMeta, apiUrl } from "./api";
+import { OIDNode, OID_PREFIX, OID_URL_ENCODED_PREFIX } from "../../shared/oid";
 import { Link, LinkSource } from "../../routes/medical/schemas/link";
-import { Config } from "../../shared/config";
-
-const rootId = Config.getSystemRootOID();
+import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
+import { oid } from "../../shared/oid";
+import { Patient } from "../../models/medical/patient";
 
 export const linkPatientToCommonwellPerson = async (
   personId: string,
-  patientNumber: number
-): Promise<string | undefined> => {
-  const referenceLink = createReferenceLink(patientNumber);
+  patient: Patient
+): Promise<void> => {
   try {
-    const link = await commonWell.patientLink(metriportQueryMeta, personId, referenceLink);
-    const networkLinks = await commonWell.getPatientsLinks(
-      metriportQueryMeta,
-      `${patientNumber}${CW_ID_URL_ENCODED_PREFIX}${rootId}`
-    );
+    const { organization } = await getPatientWithDependencies({
+      id: patient.id,
+      cxId: patient.cxId,
+    });
 
-    if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
-      const lola1Links = networkLinks._embedded.networkLink.filter(
-        link => link.assuranceLevel === LOLA.level_1
+    const referenceLink = createReferenceLink(patient.patientNumber, organization.id);
+
+    const orgName = organization.data.name;
+    const orgId = organization.id;
+    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+    const link = await commonWell.patientLink(metriportQueryMeta, personId, referenceLink);
+
+    if (link._links?.self?.href) {
+      const networkLinks = await commonWell.getPatientsLinks(
+        metriportQueryMeta,
+        `${orgId}.${OIDNode.patients}.${patient.patientNumber}${OID_URL_ENCODED_PREFIX}${orgId}`
       );
 
-      const requests: Promise<NetworkLink>[] = [];
+      if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
+        const lola1Links = networkLinks._embedded.networkLink.filter(
+          link => link.assuranceLevel === LOLA.level_1
+        );
 
-      lola1Links.forEach(async link => {
-        if (link._links?.upgrade?.href) {
-          requests.push(
-            commonWell.upgradeOrDowngradeNetworkLink(metriportQueryMeta, link._links?.upgrade?.href)
-          );
-        }
-      });
+        const requests: Promise<NetworkLink>[] = [];
 
-      await Promise.allSettled(requests);
+        lola1Links.forEach(async link => {
+          if (link._links?.upgrade?.href) {
+            requests.push(
+              commonWell.upgradeOrDowngradeNetworkLink(
+                metriportQueryMeta,
+                link._links?.upgrade?.href
+              )
+            );
+          }
+        });
+
+        await Promise.allSettled(requests);
+      }
+
+      return;
     }
 
-    return link._links?.self?.href;
+    throw new Error("Link has no href");
   } catch (error) {
     const msg = `Failure linking`;
-    console.log(`${msg} - person id:`, personId, "to reference link:", referenceLink);
+    console.log(`${msg} - person id:`, personId);
     console.log(msg, error);
     throw new Error(msg);
   }
 };
 
-const createReferenceLink = (patientNumber: number) => {
-  return `${apiUrl}/v1/org/${rootId}/patient/${patientNumber}${CW_ID_URL_ENCODED_PREFIX}${rootId}/`;
+const createReferenceLink = (patientNumber: number, orgId: string) => {
+  return `${apiUrl}/v1/org/${OID_PREFIX}${orgId}/patient/${orgId}.${OIDNode.patients}.${patientNumber}${OID_URL_ENCODED_PREFIX}${orgId}`;
 };
 
-export const resetCommonwellLink = async (linkId: string) => {
+export const resetCommonwellLink = async (patient: Patient, personId: string) => {
   try {
-    await commonWell.resetPatientLink(metriportQueryMeta, linkId);
+    const { organization } = await getPatientWithDependencies({
+      id: patient.id,
+      cxId: patient.cxId,
+    });
+
+    const referenceLink = createPatientLink(personId, organization.id, patient.patientNumber);
+
+    const orgName = organization.data.name;
+    const orgId = organization.id;
+    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+
+    await commonWell.resetPatientLink(metriportQueryMeta, `${referenceLink}/`);
   } catch (error) {
     const msg = `Failure resetting`;
-    console.log(`${msg} - link id:`, linkId);
+    console.log(`${msg} - patient id:`, patient.id);
     console.log(msg, error);
     throw new Error(msg);
   }
@@ -62,17 +91,30 @@ export const resetCommonwellLink = async (linkId: string) => {
 
 export const getLinkFromCommonwell = async (
   personId: string,
-  linkId: string
+  patient: Patient
 ): Promise<Link | void> => {
   try {
-    const allPatientLinksToPerson = await commonWell.getPatientLink(metriportQueryMeta, linkId);
+    const { organization } = await getPatientWithDependencies({
+      id: patient.id,
+      cxId: patient.cxId,
+    });
+
+    const orgName = organization.data.name;
+    const orgId = organization.id;
+    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+
+    const patientLink = createPatientLink(personId, orgId, patient.patientNumber);
+    const allPatientLinksToPerson = await commonWell.getPatientLink(
+      metriportQueryMeta,
+      patientLink
+    );
 
     if (
       allPatientLinksToPerson._embedded &&
       allPatientLinksToPerson._embedded.patientLink?.length
     ) {
       const correctLink = allPatientLinksToPerson._embedded.patientLink.filter(
-        link => link._links?.self?.href === linkId
+        link => link._links?.self?.href === patientLink
       );
 
       if (correctLink.length && correctLink[0].assuranceLevel) {
@@ -80,7 +122,7 @@ export const getLinkFromCommonwell = async (
 
         if (assuranceLevel >= parseInt(LOLA.level_2)) {
           const person = await commonWell.searchPersonByUri(metriportQueryMeta, personId);
-          const personLink = convertPersonToLink(person, linkId);
+          const personLink = convertPersonToLink(person, patientLink);
 
           if (personLink) return personLink;
         }
@@ -88,15 +130,29 @@ export const getLinkFromCommonwell = async (
     }
   } catch (error) {
     const msg = `Failure retrieving`;
-    console.log(`${msg} - link id:`, linkId);
+    console.log(`${msg} - link for person id:`, personId);
     console.log(msg, error);
     throw new Error(msg);
   }
 };
 
-export const getPersonsAtCommonwell = async (patientId: string): Promise<Link[]> => {
+const createPatientLink = (personId: string, orgId: string, patientNumber: number): string => {
+  return `${apiUrl}/v1/person/${personId}/patientLink/${orgId}.${OIDNode.patients}.${patientNumber}${OID_URL_ENCODED_PREFIX}${orgId}/`;
+};
+
+export const getPersonsAtCommonwell = async (patient: Patient): Promise<Link[]> => {
   try {
-    const personsResp = await commonWell.searchPersonByPatientDemo(metriportQueryMeta, patientId);
+    const { organization } = await getPatientWithDependencies({
+      id: patient.id,
+      cxId: patient.cxId,
+    });
+
+    const orgName = organization.data.name;
+    const orgId = organization.id;
+    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+
+    const cwPatientId = `${organization.id}.${OIDNode.patients}.${patient.patientNumber}^^^urn:oid:${organization.id}`;
+    const personsResp = await commonWell.searchPersonByPatientDemo(metriportQueryMeta, cwPatientId);
 
     if (
       personsResp &&
@@ -107,10 +163,10 @@ export const getPersonsAtCommonwell = async (patientId: string): Promise<Link[]>
       return commonwellToLinks(personsResp._embedded.person);
     }
 
-    throw new Error("No persons received");
+    return [];
   } catch (error) {
     const msg = `Failure retrieving persons`;
-    console.log(`${msg} - patient id:`, patientId);
+    console.log(`${msg} - patient id:`, patient.id);
     console.log(msg, error);
     throw new Error(msg);
   }

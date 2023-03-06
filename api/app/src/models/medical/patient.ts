@@ -1,18 +1,34 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
+import { OIDNode, OID_ID_START, USState } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
-import { LinkSource } from "../../routes/medical/schemas/link";
+import { ExternalMedicalPartners } from "./../../external";
+import { Address } from "./address";
+import { Contact } from "./contact";
+import { LinkData } from "./link";
 
-export type LinkMapItem = {
-  cw_link_id: string;
-  cw_person_id: string;
+export abstract class PatientDataExternal {}
+
+export type DriversLicense = {
+  value: string;
+  state: USState;
 };
 
-export type LinkData = {
-  [k in LinkSource]?: LinkMapItem;
+export type PatientData = {
+  firstName: string;
+  lastName: string;
+  dob: string;
+  gender: string; // TODO #369 do we need to support CW SDK's genderSchema?
+  driversLicense?: DriversLicense;
+  address: Address;
+  contact?: Contact;
+  externalData?: {
+    [k in ExternalMedicalPartners]: PatientDataExternal;
+  };
 };
+
+export type PatientCreate = Pick<Patient, "cxId" | "facilityIds" | "patientNumber" | "data">;
 
 export class Patient extends BaseModel<Patient> {
   static NAME = "patient";
@@ -20,8 +36,8 @@ export class Patient extends BaseModel<Patient> {
   declare cxId: string;
   declare facilityIds: string[];
   declare patientNumber: number;
-  declare data: object;
-  declare linkData: LinkData;
+  declare data: PatientData;
+  declare linkData?: LinkData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Patient.init(
@@ -52,20 +68,27 @@ export class Patient extends BaseModel<Patient> {
         tableName: Patient.NAME,
         hooks: {
           async beforeCreate(attributes) {
-            const curMaxNumber = (await Patient.max("patientNumber", {
-              where: {
-                cxId: attributes.cxId,
-              },
-            })) as number;
-            const org = await getOrganizationOrFail({ cxId: attributes.cxId });
-            const patientNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
-              org.organizationNumber
-            }.${OIDNode.patients}.${patientNumber}`;
+            const { patientId, patientNumber } = await createPatientId(attributes.cxId);
+            attributes.id = patientId;
             attributes.patientNumber = patientNumber;
           },
         },
       }
     );
+  };
+}
+
+async function createPatientId(cxId: string) {
+  const curMaxNumber = (await Patient.max("patientNumber", {
+    where: { cxId },
+  })) as number;
+  const org = await getOrganizationOrFail({ cxId });
+  const patientNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
+  const patientId = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
+    org.organizationNumber
+  }.${OIDNode.patients}.${patientNumber}`;
+  return {
+    patientId,
+    patientNumber,
   };
 }
