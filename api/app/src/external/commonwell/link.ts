@@ -201,6 +201,8 @@ const convertPersonToLink = (person: Person, linkId?: string): Link | null => {
         firstName: personName && personName.given?.length ? personName.given[0] : "",
         lastName: personName && personName.family?.length ? personName.family[0] : "",
         dob: person.details?.birthDate ? person.details?.birthDate : "", // YYYY-MM-DD
+        // TODO: WILL NEED TO FIX
+        gender: "M",
         address: {
           addressLine1: address && address.line ? address.line[0] : "",
           city: address && address.city ? address.city : "",
