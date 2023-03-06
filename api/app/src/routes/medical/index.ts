@@ -9,8 +9,7 @@ const routes = Router();
 
 routes.use("/facility", facility);
 routes.use("/organization", organization);
-routes.use("/patient", patient);
-routes.use("/link", link);
+routes.use("/patient", patient, link);
 routes.use("/document", document);
 
 export default routes;

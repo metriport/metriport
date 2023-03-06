@@ -6,6 +6,7 @@ import { PatientLinks, LinkSource } from "../models/link";
 export class MetriportMedicalApi {
   private api: AxiosInstance;
   private ORGANIZATION_URL = `/organization`;
+  private PATIENT_URL = `/patient`;
   private LINK_URL = `/link`;
 
   /**
@@ -67,11 +68,9 @@ export class MetriportMedicalApi {
    * @returns {PatientLinks}         The patient's current and potential links.
    */
   async getLinks(patientId: string): Promise<PatientLinks> {
-    const resp = await this.api.get<PatientLinks>(this.LINK_URL, {
-      params: {
-        patientId,
-      },
-    });
+    const resp = await this.api.get<PatientLinks>(
+      `${this.PATIENT_URL}/${patientId}${this.LINK_URL}`
+    );
 
     if (!resp.data) throw new Error(`Get didn't return Links`);
     return resp.data;
@@ -88,14 +87,9 @@ export class MetriportMedicalApi {
    */
   async createLink(patientId: string, entityId: string, linkSource: LinkSource): Promise<string> {
     const resp = await this.api.post<string>(
-      this.LINK_URL,
-      {},
+      `${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`,
       {
-        params: {
-          patientId,
-          entityId,
-          linkSource,
-        },
+        entityId,
       }
     );
 
@@ -104,20 +98,14 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Creates link to the specified entity.
+   * Removes link to the specified entity.
    *
    * @param {string}        patientId     Patient ID to remove link from.
-   * @param {string}        linkId        Link ID to remove.
    * @param {LinkSource}    linkSource    HIE to remove the link from.
    *
    * @returns 200
    */
   async removeLink(patientId: string, linkSource: LinkSource): Promise<void> {
-    await this.api.delete(this.LINK_URL, {
-      params: {
-        patientId,
-        linkSource,
-      },
-    });
+    await this.api.delete(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`);
   }
 }

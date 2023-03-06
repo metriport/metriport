@@ -69,10 +69,18 @@ export const getPatientIdFromQueryOrFail = (req: Request): string => {
   return patientId;
 };
 
-export const getEntityIdFromQuery = (req: Request): string | undefined =>
-  req.query.entityId as string | undefined;
-export const getEntityIdFromQueryOrFail = (req: Request): string => {
-  const entityId = getEntityIdFromQuery(req);
+export const getPatientIdFromParams = (req: Request): string | undefined =>
+  req.params.patientId as string | undefined;
+export const getPatientIdFromParamsOrFail = (req: Request): string => {
+  const patientId = getPatientIdFromParams(req);
+  if (!patientId) throw new BadRequestError("Missing patientId query param");
+  return patientId;
+};
+
+export const getEntityIdFromBody = (req: Request): string | undefined =>
+  req.body.entityId as string | undefined;
+export const getEntityIdFromBodyOrFail = (req: Request): string => {
+  const entityId = getEntityIdFromBody(req);
   if (!entityId) throw new BadRequestError("Missing entityId query param");
   return entityId;
 };
