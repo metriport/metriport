@@ -3,13 +3,17 @@ import {
   PatientCreate as PatientCreateModel,
   PatientData,
 } from "../../../models/medical/patient";
+import { sanitize, validate } from "./shared";
 
 type Identifier = Pick<Patient, "cxId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
-type PatientCreate = PatientNoExternalData & Identifier;
+export type PatientCreate = PatientNoExternalData & Identifier;
 
 export const createPatient = async (patient: PatientCreate): Promise<Patient> => {
   const { cxId, facilityId } = patient;
+
+  const sanitized = sanitize(patient);
+  validate(sanitized);
 
   const newPatient: PatientCreateModel & Pick<Patient, "id"> = {
     id: "", // the patient id will be generated on the beforeCreate hook
@@ -17,13 +21,13 @@ export const createPatient = async (patient: PatientCreate): Promise<Patient> =>
     cxId,
     facilityIds: [facilityId],
     data: {
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      dob: patient.dob,
-      gender: patient.gender,
-      driversLicense: patient.driversLicense,
-      address: patient.address,
-      contact: patient.contact,
+      firstName: sanitized.firstName,
+      lastName: sanitized.lastName,
+      dob: sanitized.dob,
+      gender: sanitized.gender,
+      personalIdentifiers: sanitized.personalIdentifiers,
+      address: sanitized.address,
+      contact: sanitized.contact,
     },
   };
 

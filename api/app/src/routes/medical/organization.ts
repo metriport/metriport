@@ -31,7 +31,7 @@ router.post(
       ...reqOrgData,
       location: {
         ...reqOrgData.location,
-        addressLine2: reqOrgData.location.addressLine2 ?? null,
+        addressLine2: reqOrgData.location.addressLine2 ?? undefined,
       },
     };
 

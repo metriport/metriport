@@ -10,16 +10,28 @@ import {
   Person as CommonwellPerson,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import dayjs from "dayjs";
 import { ExternalMedicalPartners } from "..";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import { setCommonwellId } from "../../command/medical/patient/update-patient";
 import { Facility } from "../../models/medical/facility";
 import { Organization } from "../../models/medical/organization";
-import { Patient, PatientData, PatientDataExternal } from "../../models/medical/patient";
-import { driversLicenseURIs, oid } from "../../shared/oid";
+import {
+  Gender,
+  generalTypes,
+  Patient,
+  PatientData,
+  PatientDataExternal,
+} from "../../models/medical/patient";
+import { driversLicenseURIs, medicareURI, oid, passportURI, ssnURI } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "./api";
+
+const genderMapping: { [k in Gender]: string } = {
+  F: "F",
+  M: "M",
+  O: "UN",
+  U: "UN",
+};
 
 export class PatientDataCommonwell extends PatientDataExternal {
   constructor(public personId: string, public patientId: string) {
@@ -32,7 +44,7 @@ export async function create(patient: Patient, facilityId: string): Promise<void
 
   const orgName = organization.data.name;
   const orgId = organization.id;
-  const facilityNPI = facility.data["npi"] as string; // TODO #369 move to strong type - remove `as string`
+  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
   const { commonwellPatientId, commonwellPersonId } = await createPatientAtCommonwell({
     patient,
@@ -129,8 +141,6 @@ async function findOrCreatePerson({
 }): Promise<string> {
   // SEARCH PERSON WITH STRONG ID OR DEMOGRAPHICS
   // TODO #369
-  // TODO #369
-  // TODO #369
 
   // IF NOT FOUND - ENROLL PERSON
   console.log(`Enrolling this person: ${JSON.stringify(person, null, 2)}`); // TODO #369 remove this
@@ -159,7 +169,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
   const { organization, facility } = await getPatientData(patient, facilityId);
   const orgName = organization.data.name;
   const orgId = organization.id;
-  const facilityNPI = facility.data["npi"] as string; // TODO #369 move to strong type - remove `as string`
+  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
   const cwPatient = patientToCommonwell({ patient, orgName, orgId });
@@ -199,18 +209,23 @@ export async function update(patient: Patient, facilityId: string): Promise<void
   }
 }
 
-function getStrongIdentifier(data: PatientData): Identifier | undefined {
-  if (data.driversLicense) {
-    return {
-      use: IdentifierUseCodes.usual,
-      key: data.driversLicense.value,
-      system: driversLicenseURIs[data.driversLicense.state],
-      period: {
-        start: dayjs().toISOString(), // TODO #369 get this form the UI as well, or is it the current date / datetime?
-      },
-    };
-  }
+const identifierSytemByType: Record<(typeof generalTypes)[number], string> = {
+  ssn: ssnURI,
+  passport: passportURI,
+  medicare: medicareURI,
+};
+
+function getStrongIdentifiers(data: PatientData): Identifier[] {
+  return data.personalIdentifiers.map(id => ({
+    use: IdentifierUseCodes.usual,
+    key: id.value,
+    system:
+      id.type === "driversLicense" ? driversLicenseURIs[id.state] : identifierSytemByType[id.type],
+    period: id.period,
+    ...(id.assigner ? { assigner: id.assigner } : undefined),
+  }));
 }
+
 function patientToCommonwell({
   patient,
   orgName,
@@ -227,7 +242,7 @@ function patientToCommonwell({
     key: patient.id,
     assigner: orgName,
   };
-  const strongIdentifier = getStrongIdentifier(patient.data);
+  const strongIdentifiers = getStrongIdentifiers(patient.data);
   return {
     identifier: [identifier],
     details: {
@@ -248,10 +263,10 @@ function patientToCommonwell({
         },
       ],
       gender: {
-        code: "M", // TODO #369 ADD THIS
+        code: genderMapping[patient.data.gender],
       },
       birthDate: patient.data.dob,
-      ...(strongIdentifier ? { identifier: [strongIdentifier] } : undefined),
+      ...(strongIdentifiers.length > 0 ? { identifier: strongIdentifiers } : undefined),
     },
   };
 }

@@ -2,24 +2,30 @@ import NotFoundError from "../../../errors/not-found";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient";
 import { Patient, PatientData } from "../../../models/medical/patient";
 import { getPatient } from "./get-patient";
+import { sanitize, validate } from "./shared";
 
 type PatientIdentifier = Pick<Patient, "id" | "cxId">;
 type PatientNoExternalData = Omit<PatientData, "externalData">;
-type PatientUpdate = PatientNoExternalData & PatientIdentifier;
+export type PatientUpdate = PatientNoExternalData & PatientIdentifier;
 
 export const updatePatient = async (patient: PatientUpdate): Promise<Patient> => {
   const { id, cxId } = patient;
+
+  const sanitized = sanitize(patient);
+  validate(sanitized);
 
   // We don't want to update other fields, nor require the caller to send
   // data that's not going to be updated, like `externalData`
   const updatedPatient = await getPatient({ id, cxId });
 
   const data = updatedPatient.data;
-  data.firstName = patient.firstName;
-  data.lastName = patient.lastName;
-  data.dob = patient.dob;
-  data.address = patient.address;
-  data.contact = patient.contact;
+  data.firstName = sanitized.firstName;
+  data.lastName = sanitized.lastName;
+  data.dob = sanitized.dob;
+  data.gender = sanitized.gender;
+  data.personalIdentifiers = sanitized.personalIdentifiers;
+  data.address = sanitized.address;
+  data.contact = sanitized.contact;
 
   const [count] = await Patient.update(
     {
