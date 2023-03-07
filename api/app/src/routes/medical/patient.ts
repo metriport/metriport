@@ -30,7 +30,7 @@ router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFacilityIdFromQueryOrFail(req); // TODO needs this? If so, add to Doc ^
+    const facilityId = getFacilityIdFromQueryOrFail(req);
 
     const input = patientCreateSchema.parse(req.body);
     const patientCreate = schemaToPatientCreate(input, cxId, facilityId);

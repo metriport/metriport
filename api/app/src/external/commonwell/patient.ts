@@ -44,7 +44,7 @@ export async function create(patient: Patient, facilityId: string): Promise<void
 
   const orgName = organization.data.name;
   const orgId = organization.id;
-  const facilityNPI = facility.data["npi"] as string; // TODO move to strong type - remove `as string`
+  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
   const { commonwellPatientId, commonwellPersonId } = await createPatientAtCommonwell({
     patient,
@@ -169,7 +169,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
   const { organization, facility } = await getPatientData(patient, facilityId);
   const orgName = organization.data.name;
   const orgId = organization.id;
-  const facilityNPI = facility.data["npi"] as string; // TODO move to strong type - remove `as string`
+  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
   const cwPatient = patientToCommonwell({ patient, orgName, orgId });
