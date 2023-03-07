@@ -4,7 +4,7 @@ import { makeCommonWellAPI, metriportQueryMeta, apiUrl } from "./api";
 import { OIDNode, OID_PREFIX, OID_URL_ENCODED_PREFIX } from "../../shared/oid";
 import { Link, LinkSource } from "../../routes/medical/schemas/link";
 import { oid } from "../../shared/oid";
-import { Patient } from "../../models/medical/patient";
+import { Patient, Gender } from "../../models/medical/patient";
 import { Organization } from "../../models/medical/organization";
 
 export const create = async (
@@ -109,7 +109,7 @@ export const findOne = async (
 
         if (assuranceLevel >= parseInt(LOLA.level_2)) {
           const person = await commonWell.searchPersonByUri(metriportQueryMeta, personId);
-          const personLink = convertPersonToLink(person, patientLink);
+          const personLink = convertPersonToLink(person);
 
           if (personLink) return personLink;
         }
@@ -169,7 +169,7 @@ const commonwellToLinks = (persons: Person[]): Link[] => {
   return links;
 };
 
-const convertPersonToLink = (person: Person, linkId?: string): Link | null => {
+const convertPersonToLink = (person: Person): Link | null => {
   const personId = getId(person);
 
   const address = person.details?.address?.length ? person.details?.address[0] : undefined;
@@ -177,7 +177,6 @@ const convertPersonToLink = (person: Person, linkId?: string): Link | null => {
 
   if (personId) {
     const personLink: Link = {
-      ...(linkId ? { id: linkId } : undefined),
       entityId: personId,
       potential: true,
       source: LinkSource.commonWell,
@@ -185,9 +184,10 @@ const convertPersonToLink = (person: Person, linkId?: string): Link | null => {
         id: personId,
         firstName: personName && personName.given?.length ? personName.given[0] : "",
         lastName: personName && personName.family?.length ? personName.family[0] : "",
-        dob: person.details?.birthDate ? person.details?.birthDate : "", // YYYY-MM-DD
-        // TODO: WILL NEED TO FIX
-        gender: "M",
+        dob: person.details?.birthDate ? person.details.birthDate : "", // YYYY-MM-DD
+        gender: displayGender(person),
+        // TODO: ADD PERSON IDENTIFIERS
+        personalIdentifiers: [],
         address: {
           addressLine1: address && address.line ? address.line[0] : "",
           city: address && address.city ? address.city : "",
@@ -203,4 +203,42 @@ const convertPersonToLink = (person: Person, linkId?: string): Link | null => {
   }
 
   return null;
+};
+
+const displayGender = (person: Person): Gender => {
+  const genderCode = person.details?.gender?.code;
+  if (genderCode && genderCode === "F") return "F";
+  if (genderCode && genderCode === "M") return "M";
+
+  return "U";
+};
+
+export const findAllPersonsStrongId = async (
+  key: string,
+  system: string,
+  organization: Organization
+): Promise<Link[]> => {
+  try {
+    const orgName = organization.data.name;
+    const orgId = organization.id;
+    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+
+    const personsResp = await commonWell.searchPerson(metriportQueryMeta, key, system);
+
+    if (
+      personsResp &&
+      personsResp._embedded &&
+      personsResp._embedded.person &&
+      personsResp._embedded.person.length
+    ) {
+      return commonwellToLinks(personsResp._embedded.person);
+    }
+
+    return [];
+  } catch (error) {
+    const msg = `Failure retrieving persons`;
+    console.log(`${msg} - key and system:`, key, system);
+    console.log(msg, error);
+    throw new Error(msg);
+  }
 };

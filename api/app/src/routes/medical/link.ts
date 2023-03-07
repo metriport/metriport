@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import { uniqBy } from "lodash";
+
 import {
   asyncHandler,
   getCxIdOrFail,
@@ -13,6 +15,8 @@ import { updatePatientLinks } from "../../command/medical/patient/update-patient
 import cwCommands from "../../external/commonwell";
 import { PatientLinks } from "./schemas/link";
 import { LinkSource } from "./schemas/link";
+import { driversLicenseURIs } from "../../shared/oid";
+import { Link } from "./schemas/link";
 
 /** ---------------------------------------------------------------------------
  * POST /patient/:patientId/link/:source
@@ -134,16 +138,26 @@ router.get(
     }
 
     if (!links.currentLinks.length) {
-      //      - initialize personResultsList
-      //      - if strong id is available
-      //        - add to personResultsList from strong ID search -> CommonWell.searchPerson()
+      let personResultsList: Link[] = [];
 
-      const personLinks = await cwCommands.link.findAllPersons(patient, organization);
+      if (
+        patient.data.personalIdentifiers.length &&
+        patient.data.personalIdentifiers[0].state &&
+        patient.data.personalIdentifiers[0].value
+      ) {
+        const state = patient.data.personalIdentifiers[0].state;
+        const key = patient.data.personalIdentifiers[0].value;
 
-      links.potentialLinks = [...links.potentialLinks, ...personLinks];
+        const system = driversLicenseURIs[state];
+        personResultsList = await cwCommands.link.findAllPersonsStrongId(key, system, organization);
+      }
+
+      const personResultsByDemo = await cwCommands.link.findAllPersons(patient, organization);
+
+      personResultsList = uniqBy([...personResultsList, ...personResultsByDemo], "entityId");
+
+      links.potentialLinks = [...links.potentialLinks, ...personResultsList];
     }
-
-    //      - add to personResultsList from demo search & remove duplicates from strong ID search -> CommonWell.searchPersonByPatientDemo()
 
     return res.status(status.OK).json(links);
   })
