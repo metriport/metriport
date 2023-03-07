@@ -40,15 +40,14 @@ export type DriversLicense = {
   state: USState;
 };
 
-// https://www.hl7.org/fhir/valueset-administrative-gender.html
-export const genderTypes = ["F", "M", "O", "U"] as const;
-export type Gender = (typeof genderTypes)[number];
+export const genderAtBirthTypes = ["F", "M"] as const;
+export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
 export type PatientData = {
   firstName: string;
   lastName: string;
   dob: string;
-  gender: Gender;
+  genderAtBirth: GenderAtBirth;
   personalIdentifiers: Identifier[];
   address: Address;
   contact?: Contact;

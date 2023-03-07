@@ -24,7 +24,7 @@ export const createPatient = async (patient: PatientCreate): Promise<Patient> =>
       firstName: sanitized.firstName,
       lastName: sanitized.lastName,
       dob: sanitized.dob,
-      gender: sanitized.gender,
+      genderAtBirth: sanitized.genderAtBirth,
       personalIdentifiers: sanitized.personalIdentifiers,
       address: sanitized.address,
       contact: sanitized.contact,
