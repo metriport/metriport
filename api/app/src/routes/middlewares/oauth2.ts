@@ -11,8 +11,8 @@ export const processOAuth2 = async (
   cxId: string | undefined,
   userId: string | undefined
 ): Promise<void> => {
-  // get the cx/user ids from DDB if this isn't prod mode
-  if (!Config.isProdEnv()) {
+  // get the cx/user ids from DDB if this isn't cloud mode
+  if (!Config.isCloudEnv()) {
     const useToken = await getUserToken({ token: state });
     cxId = useToken.cxId;
     userId = useToken.userId;
