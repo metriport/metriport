@@ -1,5 +1,4 @@
 import { Application } from "express";
-
 import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
@@ -7,7 +6,6 @@ import connect from "./connect";
 import { requestLogger } from "./helpers/requestLogger";
 import { checkMAPIAccess, processAPIKey } from "./middlewares/auth";
 import { reportUsage } from "./middlewares/usage";
-import { ApiTypes } from "../command/usage/report-usage";
 import nutrition from "./nutrition";
 import oauthRoutes from "./oauth-routes";
 import settings from "./settings";
@@ -24,15 +22,15 @@ export default (app: Application) => {
 
   // routes with API key auth
   app.use("/settings", processAPIKey, settings);
-  app.use("/activity", processAPIKey, reportUsage(ApiTypes.devices), activity);
-  app.use("/body", processAPIKey, reportUsage(ApiTypes.devices), body);
-  app.use("/biometrics", processAPIKey, reportUsage(ApiTypes.devices), biometrics);
-  app.use("/nutrition", processAPIKey, reportUsage(ApiTypes.devices), nutrition);
-  app.use("/sleep", processAPIKey, reportUsage(ApiTypes.devices), sleep);
-  app.use("/user", processAPIKey, reportUsage(ApiTypes.devices), user);
+  app.use("/activity", processAPIKey, reportUsage, activity);
+  app.use("/body", processAPIKey, reportUsage, body);
+  app.use("/biometrics", processAPIKey, reportUsage, biometrics);
+  app.use("/nutrition", processAPIKey, reportUsage, nutrition);
+  app.use("/sleep", processAPIKey, reportUsage, sleep);
+  app.use("/user", processAPIKey, reportUsage, user);
 
   // medical routes with API key auth
-  app.use("/medical/v1", processAPIKey, checkMAPIAccess, reportUsage(ApiTypes.medical), medical);
+  app.use("/medical/v1", processAPIKey, checkMAPIAccess, medical);
 
   // routes with session token auth
   app.use("/connect", connect);

@@ -17,7 +17,6 @@ import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { reportUsage as reportUsageCmd } from "../usage/report-usage";
 import { createWebhookRequest, updateWebhookRequestStatus } from "../webhook/webhook-request";
-import { ApiTypes } from "../usage/report-usage";
 
 const axios = Axios.create();
 
@@ -156,7 +155,7 @@ export const processAppleData = async (
 
 const reportUsage = async (cxId: string, cxUserIds: string[]): Promise<void> => {
   cxUserIds.forEach(cxUserId => [
-    reportUsageCmd({ cxId, cxUserId, apiType: ApiTypes.devices }).catch(err => {
+    reportUsageCmd({ cxId, cxUserId }).catch(err => {
       // TODO #156 report to monitoring app instead
       log(`Failed to report usage, cxId ${cxId}, cxUserId ${cxUserId}`, err);
     }),
