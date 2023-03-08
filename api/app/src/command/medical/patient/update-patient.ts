@@ -22,7 +22,7 @@ export const updatePatient = async (patient: PatientUpdate): Promise<Patient> =>
   data.firstName = sanitized.firstName;
   data.lastName = sanitized.lastName;
   data.dob = sanitized.dob;
-  data.gender = sanitized.gender;
+  data.genderAtBirth = sanitized.genderAtBirth;
   data.personalIdentifiers = sanitized.personalIdentifiers;
   data.address = sanitized.address;
   data.contact = sanitized.contact;

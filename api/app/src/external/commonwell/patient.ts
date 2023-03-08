@@ -16,7 +16,7 @@ import { setCommonwellId } from "../../command/medical/patient/update-patient";
 import { Facility } from "../../models/medical/facility";
 import { Organization } from "../../models/medical/organization";
 import {
-  Gender,
+  GenderAtBirth,
   generalTypes,
   Patient,
   PatientData,
@@ -26,11 +26,9 @@ import { driversLicenseURIs, medicareURI, oid, passportURI, ssnURI } from "../..
 import { Util } from "../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "./api";
 
-const genderMapping: { [k in Gender]: string } = {
+const genderMapping: { [k in GenderAtBirth]: string } = {
   F: "F",
   M: "M",
-  O: "UN",
-  U: "UN",
 };
 
 export class PatientDataCommonwell extends PatientDataExternal {
@@ -263,7 +261,7 @@ function patientToCommonwell({
         },
       ],
       gender: {
-        code: genderMapping[patient.data.gender],
+        code: genderMapping[patient.data.genderAtBirth],
       },
       birthDate: patient.data.dob,
       ...(strongIdentifiers.length > 0 ? { identifier: strongIdentifiers } : undefined),
