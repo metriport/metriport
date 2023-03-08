@@ -4,7 +4,7 @@ import { Config } from "../shared/config";
 
 let umzug: Umzug<QueryInterface> | undefined = undefined;
 
-const migrations = Config.isProdEnv()
+const migrations = Config.isCloudEnv()
   ? "sequelize/migrations/*.js"
   : "src/sequelize/migrations/*.ts";
 

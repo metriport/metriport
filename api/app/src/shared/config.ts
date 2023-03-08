@@ -14,8 +14,11 @@ export class Config {
   static readonly DEV_ENV: string = "dev";
   static readonly SANDBOX_ENV: string = "sandbox";
   static readonly SANDBOX_USER_LIMIT: number = 10;
-  static isProdEnv(): boolean {
+  static isCloudEnv(): boolean {
     return process.env.NODE_ENV === this.PROD_ENV;
+  }
+  static isProdEnv(): boolean {
+    return process.env.ENV_TYPE === this.PROD_ENV;
   }
   static isSandbox(): boolean {
     return process.env.ENV_TYPE === this.SANDBOX_ENV;
