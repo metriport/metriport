@@ -5,7 +5,8 @@ import {
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
 import { ExternalMedicalPartners } from "..";
-import { Patient } from "../../models/medical/patient";
+import { Patient, PatientExternalData } from "../../models/medical/patient";
+import { PatientLinkStatusDTO } from "../../routes/medical/dtos/linkDTO";
 import { debug } from "../../shared/log";
 import { oid } from "../../shared/oid";
 import { Util } from "../../shared/util";
@@ -13,6 +14,14 @@ import { makeCommonWellAPI, organizationQueryMeta } from "./api";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { setCommonwellId } from "./patient-external-data";
 import { findOrCreatePerson, getPatientData, PatientDataCommonwell } from "./patient-shared";
+
+export function mapPatientExternal(data: PatientExternalData | undefined): PatientLinkStatusDTO {
+  return data
+    ? (data[ExternalMedicalPartners.COMMONWELL] as PatientDataCommonwell).personId
+      ? "linked"
+      : "needs-review"
+    : "needs-review";
+}
 
 export async function create(patient: Patient, facilityId: string): Promise<void> {
   const { organization, facility } = await getPatientData(patient, facilityId);

@@ -8,12 +8,12 @@ import {
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import { Facility } from "../../models/medical/facility";
 import { Organization } from "../../models/medical/organization";
-import { Patient, PatientDataExternal } from "../../models/medical/patient";
+import { Patient, PatientExternalDataEntry } from "../../models/medical/patient";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { Util } from "../../shared/util";
 import { makePersonForPatient } from "./patient-conversion";
 
-export class PatientDataCommonwell extends PatientDataExternal {
+export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(public patientId: string, public personId?: string | undefined) {
     super();
   }
