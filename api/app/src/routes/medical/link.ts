@@ -14,7 +14,7 @@ import { getPatientWithDependencies } from "../../command/medical/patient/get-pa
 import { updatePatientLinks } from "../../command/medical/patient/update-patient-link";
 import cwCommands from "../../external/commonwell";
 import { PatientLinks } from "./schemas/link";
-import { LinkSource } from "./schemas/link";
+import { LinkSource } from "../../models/medical/link";
 import { driversLicenseURIs } from "../../shared/oid";
 import { Link } from "./schemas/link";
 

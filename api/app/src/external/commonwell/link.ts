@@ -1,8 +1,9 @@
-import { Person, getId, LOLA, NetworkLink } from "@metriport/commonwell-sdk";
+import { Person, getId, LOLA, NetworkLink, isLOLA1 } from "@metriport/commonwell-sdk";
 
 import { makeCommonWellAPI, metriportQueryMeta, apiUrl } from "./api";
 import { OIDNode, OID_PREFIX, OID_URL_ENCODED_PREFIX } from "../../shared/oid";
-import { Link, LinkSource } from "../../routes/medical/schemas/link";
+import { Link } from "../../routes/medical/schemas/link";
+import { LinkSource } from "../../models/medical/link";
 import { oid } from "../../shared/oid";
 import { Patient, Gender } from "../../models/medical/patient";
 import { Organization } from "../../models/medical/organization";
@@ -27,19 +28,14 @@ export const create = async (
       );
 
       if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
-        const lola1Links = networkLinks._embedded.networkLink.filter(
-          link => link.assuranceLevel === LOLA.level_1
-        );
+        const lola1Links = networkLinks._embedded.networkLink.filter(isLOLA1);
 
         const requests: Promise<NetworkLink>[] = [];
 
         lola1Links.forEach(async link => {
           if (link._links?.upgrade?.href) {
             requests.push(
-              commonWell.upgradeOrDowngradeNetworkLink(
-                metriportQueryMeta,
-                link._links?.upgrade?.href
-              )
+              commonWell.upgradeOrDowngradeNetworkLink(metriportQueryMeta, link._links.upgrade.href)
             );
           }
         });
@@ -84,31 +80,23 @@ export const findOne = async (
   personId: string,
   organization: Organization,
   patient: Patient
-): Promise<Link | void> => {
+): Promise<Link | undefined> => {
   try {
     const orgName = organization.data.name;
     const orgId = organization.id;
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
 
     const patientLink = createPatientLink(personId, orgId, patient.patientNumber);
-    const allPatientLinksToPerson = await commonWell.getPatientLink(
-      metriportQueryMeta,
-      patientLink
-    );
+    const patientLinkToPerson = await commonWell.getPatientLink(metriportQueryMeta, patientLink);
 
-    if (
-      allPatientLinksToPerson._embedded &&
-      allPatientLinksToPerson._embedded.patientLink?.length
-    ) {
-      const correctLink = allPatientLinksToPerson._embedded.patientLink.filter(
-        link => link._links?.self?.href === patientLink
-      );
+    if (patientLinkToPerson._embedded && patientLinkToPerson._embedded.patientLink?.length) {
+      const correctLink = patientLinkToPerson._embedded.patientLink[0];
 
-      if (correctLink.length && correctLink[0].assuranceLevel) {
-        const assuranceLevel = parseInt(correctLink[0].assuranceLevel);
+      if (correctLink.assuranceLevel) {
+        const assuranceLevel = parseInt(correctLink.assuranceLevel);
 
         if (assuranceLevel >= parseInt(LOLA.level_2)) {
-          const person = await commonWell.searchPersonByUri(metriportQueryMeta, personId);
+          const person = await commonWell.getPersonByUri(metriportQueryMeta, personId);
           const personLink = convertPersonToLink(person);
 
           if (personLink) return personLink;

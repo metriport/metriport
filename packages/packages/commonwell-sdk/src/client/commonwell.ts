@@ -428,7 +428,7 @@ export class CommonWell {
    * @param personId   The person ID.
    * @returns
    */
-  async searchPersonByUri(meta: RequestMetadata, personId: string): Promise<Person> {
+  async getPersonByUri(meta: RequestMetadata, personId: string): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
     const resp = await this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}`, {
       headers,

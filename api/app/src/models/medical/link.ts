@@ -1,4 +1,8 @@
-import { LinkSource } from "../../routes/medical/schemas/link";
+export enum LinkSource {
+  commonWell = "CommonWell",
+  careQuality = "CareQuality",
+  eHealthExchange = "eHealthExchange",
+}
 
 export type LinkMapItem = {
   cw_person_id?: string;

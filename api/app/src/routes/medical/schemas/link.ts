@@ -1,11 +1,7 @@
 import { z } from "zod";
 import { patientUpdateSchema } from "./patient";
+import { LinkSource } from "../../../models/medical/link";
 
-export enum LinkSource {
-  commonWell = "CommonWell",
-  careQuality = "CareQuality",
-  eHealthExchange = "eHealthExchange",
-}
 export const linkSourceSchema = z.enum(Object.keys(LinkSource) as [string, ...string[]]);
 
 export const linkSchema = z.object({
