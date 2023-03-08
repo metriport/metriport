@@ -20,8 +20,10 @@ import {
   generalTypes,
   Patient,
   PatientData,
-  PatientDataExternal,
+  PatientExternalData,
+  PatientExternalDataEntry,
 } from "../../models/medical/patient";
+import { PatientLinkStatusDTO } from "../../routes/medical/dtos/linkDTO";
 import { driversLicenseURIs, medicareURI, oid, passportURI, ssnURI } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "./api";
@@ -31,10 +33,18 @@ const genderMapping: { [k in GenderAtBirth]: string } = {
   M: "M",
 };
 
-export class PatientDataCommonwell extends PatientDataExternal {
+export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(public personId: string, public patientId: string) {
     super();
   }
+}
+
+export function mapPatientExternal(data: PatientExternalData | undefined): PatientLinkStatusDTO {
+  return data
+    ? (data[ExternalMedicalPartners.COMMONWELL] as PatientDataCommonwell).personId
+      ? "linked"
+      : "needs-review"
+    : "needs-review";
 }
 
 export async function create(patient: Patient, facilityId: string): Promise<void> {

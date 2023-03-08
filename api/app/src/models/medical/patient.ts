@@ -8,8 +8,6 @@ import { ExternalMedicalPartners } from "./../../external";
 import { Address } from "./address";
 import { Contact } from "./contact";
 
-export abstract class PatientDataExternal {}
-
 export const generalTypes = ["passport", "ssn", "medicare"] as const;
 export const driversLicenseType = ["driversLicense"] as const;
 export type GeneralTypes = (typeof generalTypes)[number];
@@ -43,6 +41,12 @@ export type DriversLicense = {
 export const genderAtBirthTypes = ["F", "M"] as const;
 export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
+export abstract class PatientExternalDataEntry {}
+
+export type PatientExternalData = {
+  [k in ExternalMedicalPartners]: PatientExternalDataEntry;
+};
+
 export type PatientData = {
   firstName: string;
   lastName: string;
@@ -51,9 +55,7 @@ export type PatientData = {
   personalIdentifiers: Identifier[];
   address: Address;
   contact?: Contact;
-  externalData?: {
-    [k in ExternalMedicalPartners]: PatientDataExternal;
-  };
+  externalData?: PatientExternalData;
 };
 
 export type PatientCreate = Pick<Patient, "cxId" | "facilityIds" | "patientNumber" | "data">;
