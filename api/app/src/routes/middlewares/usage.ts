@@ -10,6 +10,10 @@ const log = Util.log("USAGE");
  * Adds a listener on Response close/finish, executing the logic on 'reportIt'.
  * Thanks to https://stackoverflow.com/questions/20175806/before-and-after-hooks-for-a-request-in-express-to-be-executed-before-any-req-a
  */
+
+export const reportDeviceUsage = () => reportUsage(ApiTypes.devices);
+export const reportMedicalUsage = () => reportUsage(ApiTypes.medical);
+
 export const reportUsage = (apiType: ApiTypes) => {
   return async (
     req: Request,
