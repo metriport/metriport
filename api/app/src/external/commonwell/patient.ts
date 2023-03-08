@@ -48,8 +48,13 @@ export async function create(patient: Patient, facilityId: string): Promise<void
 export async function update(patient: Patient, facilityId: string): Promise<void> {
   const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
 
+  const updateData = await setupUpdate(patient, facilityId);
+  if (!updateData) {
+    log(`WARN - Could not find external data on Patient, not updating @ CW`);
+    return;
+  }
   const { commonWell, queryMeta, commonwellPatient, commonwellPatientId, commonwellPersonId } =
-    await setupUpdate(patient, facilityId);
+    updateData;
 
   const { patientRefLink } = await updatePatient({
     commonWell,
@@ -70,7 +75,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       patientRefLink,
     });
     if (!newCommonwellPersonId) {
-      log(`Called findOrCreatePerson after update but still no CW person ID`);
+      log(`WARN - Called findOrCreatePerson after update but still no CW person ID`);
       return;
     }
     await setCommonwellId({
@@ -91,7 +96,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     // TODO #369 if the error is a 404, we should try to insert a person
 
     log(
-      `Failed to update patient - Patient updated @ CW but not the Person - ` +
+      `ERR - Failed to update patient - Patient updated @ CW but not the Person - ` +
         `Patient @ CW: ${commonwellPatientId}, ` +
         `Person @ CW: ${commonwellPersonId}`
     );
@@ -105,7 +110,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     log(
-      `Failed to validate patient/person link - ` +
+      `ERR - Failed to validate patient/person link - ` +
         `Patient @ CW: ${commonwellPatientId}, ` +
         `Person @ CW: ${commonwellPersonId}`
     );
@@ -120,17 +125,20 @@ export async function update(patient: Patient, facilityId: string): Promise<void
 async function setupUpdate(
   patient: Patient,
   facilityId: string
-): Promise<{
-  commonWell: CommonWell;
-  queryMeta: RequestMetadata;
-  commonwellPatient: CommonwellPatient;
-  commonwellPatientId: string;
-  commonwellPersonId: string | undefined;
-}> {
+): Promise<
+  | {
+      commonWell: CommonWell;
+      queryMeta: RequestMetadata;
+      commonwellPatient: CommonwellPatient;
+      commonwellPatientId: string;
+      commonwellPersonId: string | undefined;
+    }
+  | undefined
+> {
   const commonwellData = patient.data.externalData
     ? (patient.data.externalData[ExternalMedicalPartners.COMMONWELL] as PatientDataCommonwell) // TODO validate the type
     : undefined;
-  if (!commonwellData) throw new Error(`Missing commonwell data on patient ${patient.id}`);
+  if (!commonwellData) return undefined;
   const commonwellPatientId = commonwellData.patientId;
   const commonwellPersonId = commonwellData.personId;
 
@@ -212,7 +220,7 @@ async function findOrCreatePersonAndLink({
   try {
     await commonWell.patientLink(queryMeta, commonwellPersonId, patientRefLink);
   } catch (err) {
-    log(`Patient created @ CW but could not link w/ Person`);
+    log(`ERR - Patient created @ CW but could not link w/ Person`);
     throw err;
   }
 
@@ -238,7 +246,7 @@ async function registerPatient({
   if (!commonwellPatientId) {
     const msg = `Could not determine the patient ID from CW`;
     log(
-      `${msg} - Patient created @ CW but not the Person - ` +
+      `ERR - ${msg} - Patient created @ CW but not the Person - ` +
         `Patient @ Commonwell: ${JSON.stringify(respPatient)}`
     );
     throw new Error(msg);
@@ -247,7 +255,7 @@ async function registerPatient({
   if (!patientRefLink) {
     const msg = `Could not determine the patient ref link`;
     log(
-      `${msg} - Patient created @ CW but not the Person - ` +
+      `ERR - ${msg} - Patient created @ CW but not the Person - ` +
         `Patient @ Commonwell: ${JSON.stringify(respPatient)}`
     );
     throw new Error(msg);
@@ -279,7 +287,7 @@ async function updatePatient({
   if (!patientRefLink) {
     const msg = `Could not determine the patient ref link`;
     log(
-      `${msg} - Patient updated @ CW but failed to get refLink - ` +
+      `ERR - ${msg} - Patient updated @ CW but failed to get refLink - ` +
         `respUpdate: ${JSON.stringify(respUpdate)}`
     );
     throw new Error(msg);
