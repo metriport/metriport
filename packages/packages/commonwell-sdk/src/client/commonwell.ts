@@ -421,7 +421,7 @@ export class CommonWell {
   }
 
   /**
-   * Gets a person based on person id.
+   * Searches for a person based on person id.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8713-find-persons-matching-patient-demographics
    *
    * @param meta        Metadata about the request.
