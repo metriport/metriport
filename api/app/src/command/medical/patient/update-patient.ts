@@ -26,15 +26,15 @@ export const updatePatient = async (patient: PatientUpdate): Promise<Patient> =>
   data.address = sanitized.address;
   data.contact = sanitized.contact;
 
-  const [count] = await Patient.update(
+  const [count, rows] = await Patient.update(
     {
       data,
     },
-    { where: { id, cxId } }
+    { where: { id, cxId }, returning: true }
   );
   if (count < 1) throw new NotFoundError();
   // TODO #156 Send this to Sentry
   if (count > 1) console.error(`Updated ${count} patients for id ${id} and cxId ${cxId}`);
 
-  return updatedPatient;
+  return rows[0];
 };
