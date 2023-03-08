@@ -138,7 +138,7 @@ router.get("/user/providers", async (req: Request, res: Response) => {
   let cxId;
   let userId;
 
-  if (!Config.isProdEnv()) {
+  if (!Config.isCloudEnv()) {
     const useToken = await getUserToken({ token });
     cxId = useToken.cxId;
     userId = useToken.userId;
@@ -176,7 +176,7 @@ router.get("/user/apple", async (req: Request, res: Response) => {
   let cxId;
   let userId;
 
-  if (!Config.isProdEnv()) {
+  if (!Config.isCloudEnv()) {
     const useToken = await getUserToken({ token });
     cxId = useToken.cxId;
     userId = useToken.userId;
