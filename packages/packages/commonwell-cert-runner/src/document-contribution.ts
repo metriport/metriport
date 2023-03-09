@@ -64,7 +64,7 @@ export async function documentContribution({
   console.log(`patientId: ${patientIdNewOrg}`);
 
   console.log(`Get patients links`);
-  const respGetLinks = await apiNewOrg.getPatientsLinks(queryMeta, patientIdNewOrg);
+  const respGetLinks = await apiNewOrg.getNetworkLinks(queryMeta, patientIdNewOrg);
   console.log(respGetLinks);
 
   const allLinks = respGetLinks._embedded.networkLink;

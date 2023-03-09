@@ -26,7 +26,7 @@ export async function findOrCreatePerson(
     console.log(respPerson);
     const personId = getId(respPerson);
 
-    const respLink = await commonWell.patientLink(
+    const respLink = await commonWell.addPatientLink(
       queryMeta,
       personId,
       patientLink,
@@ -103,7 +103,7 @@ export async function findOrCreatePatient(
       : undefined;
     if (personId) {
       // Link the patient to the person
-      const respLink = await commonWell.patientLink(
+      const respLink = await commonWell.addPatientLink(
         queryMeta,
         personId,
         patientLink,
