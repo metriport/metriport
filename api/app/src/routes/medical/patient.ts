@@ -2,78 +2,126 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createPatient } from "../../command/medical/patient/create-patient";
-import { getPatients } from "../../command/medical/patient/get-patient";
+import { getPatient, getPatients } from "../../command/medical/patient/get-patient";
 import { updatePatient } from "../../command/medical/patient/update-patient";
-import { Patient } from "../../models/medical/patient";
-import { asyncHandler, getCxIdOrFail, getFacilityIdFromQueryOrFail } from "../util";
+import cwCommands from "../../external/commonwell";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQueryOrFail } from "../util";
+import { dtoFromModel } from "./dtos/patientDTO";
+import {
+  patientCreateSchema,
+  patientUpdateSchema,
+  schemaToPatientCreate,
+  schemaToPatientUpdate,
+} from "./schemas/patient";
 
 const router = Router();
 
 /** ---------------------------------------------------------------------------
  * POST /patient
  *
- * Updates or creates the patient corresponding to the specified facility at the
+ * Creates the patient corresponding to the specified facility at the
  * customer's organization if it doesn't exist already.
  *
- * @return  {Patient}  The patient.
+ * @param {string} facilityId The ID of the Facility the Patient should be associated with.
+ *
+ * @return {PatientDTO} The newly created patient.
  */
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFacilityIdFromQueryOrFail(req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
 
-    // TODO: parse this into model
-    const patientData = req.body;
+    const input = patientCreateSchema.parse(req.body);
+    const patientCreate = schemaToPatientCreate(input, cxId, facilityId);
 
-    let patient: Patient;
-    if (patientData.id) {
-      const data = { ...patientData };
-      delete data.id;
-      delete data.facilityId;
-      patient = await updatePatient({
-        id: patientData.id,
-        cxId,
-        data,
-      });
-    } else {
-      patient = await createPatient({
-        cxId,
-        data: patientData,
-        facilityId: facilityId,
-      });
-    }
+    const patient = await createPatient(patientCreate);
 
-    // TODO: create or update patient in CW as well
+    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // Intentionally asynchronous - it takes too long to perform
+    cwCommands.patient.create(patient, facilityId).then(undefined, (err: unknown) => {
+      // TODO #156 Send this to Sentry
+      console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
+    });
 
-    return res
-      .status(status.OK)
-      .json({ id: patient.id, facilityIds: patient.facilityIds, ...patient.data });
+    return res.status(status.OK).json(dtoFromModel(patient));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * PUT /patient/:id
+ *
+ * Updates the patient corresponding to the specified facility at the customer's organization.
+ * Note: this is not a PATCH, so requests must include all patient data in the payload.
+ *
+ * @param  {string} req.query.facilityId The ID of the facility the user patient
+ *
+ * @return {PatientDTO} The patient to be updated
+ */
+router.put(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+
+    const input = patientUpdateSchema.parse({
+      ...req.body,
+      id: getFromParamsOrFail("id", req),
+    });
+    const patientUpdate = schemaToPatientUpdate(input, cxId);
+
+    const patient = await updatePatient(patientUpdate);
+
+    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // Intentionally asynchronous - it takes too long to perform
+    cwCommands.patient.update(patient, facilityId).then(undefined, err => {
+      // TODO #156 Send this to Sentry
+      console.error(`Failed to update patient ${patient.id} @ CW: `, err);
+    });
+
+    return res.status(status.OK).json(dtoFromModel(patient));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient:id
+ *
+ * Returns a patient corresponding to the specified facility at the customer's organization.
+ *
+ * @param   {string}  req.cxId      The customer ID.
+ * @param   {string}  req.param.id  The ID of the patient to be returned
+ * is associated with.
+ *
+ * @return  {PatientDTO[]} The customer's patients associated with the given facility.
+ */
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromParamsOrFail("id", req);
+    const patient = await getPatient({ id: patientId, cxId });
+    return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
 
 /** ---------------------------------------------------------------------------
  * GET /patient
  *
- * Gets all of the patients corresponding to the specified facility at the
- * customer's organization.
+ * Gets all patients corresponding to the specified facility at the customer's organization.
  *
  * @param   {string}        req.cxId              The customer ID.
  * @param   {string}        req.query.facilityId  The ID of the facility the user patient
  * is associated with.
  *
- * @return  {Patient[]} The customer's patients associated with the given facility.
+ * @return  {PatientDTO[]} The customer's patients associated with the given facility.
  */
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFacilityIdFromQueryOrFail(req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
     const patients = await getPatients({ cxId, facilityId: facilityId });
-    const patientsData = patients.map(patient => {
-      return { id: patient.id, facilityIds: patient.facilityIds, ...patient.data };
-    });
-
+    const patientsData = patients.map(dtoFromModel);
     return res.status(status.OK).json({ patients: patientsData });
   })
 );

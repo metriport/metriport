@@ -21,7 +21,7 @@
   "license": "ISC",
   "dependencies": {
     "@metriport/api": "^1.0.21",
-    "@metriport/commonwell-sdk": "^1.1.3",
+    "@metriport/commonwell-sdk": "^1.2.0",
     "aws-sdk": "^2.1243.0",
     "axios": "^0.27.2",
     "base64url": "^3.0.1",

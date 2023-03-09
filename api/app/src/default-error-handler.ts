@@ -18,11 +18,12 @@ const metriportResponseBody = (err: MetriportError): string => {
 };
 
 const zodResponseBody = (err: ZodError): string => {
+  const formatted = err.issues.map(i => `${i.message}, on [${i.path}]`);
   return JSON.stringify({
     ...httpResponseBody({
       status: status.BAD_REQUEST,
       title: "Missing or invalid parameters",
-      detail: JSON.stringify(err.issues),
+      detail: formatted.join(", "),
     }),
     name: status[status.BAD_REQUEST],
   });
