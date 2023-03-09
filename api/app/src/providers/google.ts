@@ -127,7 +127,7 @@ export class Google extends Provider implements OAuth2 {
     const biometrics = await this.fetchGoogleData(connectedUser, date, {
       aggregateBy: [
         {
-          dataTypeName: "	com.google.blood_pressure",
+          dataTypeName: "com.google.blood_pressure",
         },
         {
           dataTypeName: "com.google.blood_glucose",
