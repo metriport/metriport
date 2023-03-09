@@ -518,7 +518,7 @@ export class CommonWell {
    *
    * @param meta    Metadata about the request.
    * @param id      The person to be re-enrolled.
-   * @returns       Commonwell response with enrollment information
+   * @returns       Person with enrollment information
    */
   async reenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
     const headers = await this.buildQueryHeaders(meta);
