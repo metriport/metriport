@@ -1,5 +1,4 @@
 import NotFoundError from "../../../errors/not-found";
-import { PatientDataCommonwell } from "../../../external/commonwell/patient";
 import { Patient, PatientData } from "../../../models/medical/patient";
 import { getPatient } from "./get-patient";
 import { sanitize, validate } from "./shared";
@@ -36,39 +35,6 @@ export const updatePatient = async (patient: PatientUpdate): Promise<Patient> =>
   if (count < 1) throw new NotFoundError();
   // TODO #156 Send this to Sentry
   if (count > 1) console.error(`Updated ${count} patients for id ${id} and cxId ${cxId}`);
-
-  return rows[0];
-};
-
-// TODO #369 move this to a CW specific command
-export const setCommonwellId = async ({
-  patientId,
-  cxId,
-  commonwellPatientId,
-  commonwellPersonId,
-}: {
-  patientId: string;
-  cxId: string;
-  commonwellPatientId: string;
-  commonwellPersonId: string;
-}): Promise<Patient> => {
-  const updatedPatient = await getPatient({ id: patientId, cxId });
-
-  const data = updatedPatient.data;
-  data.externalData = {
-    ...data.externalData,
-    COMMONWELL: new PatientDataCommonwell(commonwellPersonId, commonwellPatientId),
-  };
-
-  const [count, rows] = await Patient.update(
-    {
-      data,
-    },
-    { where: { id: patientId, cxId }, returning: true }
-  );
-  if (count < 1) throw new NotFoundError();
-  // TODO #156 Send this to Sentry
-  if (count > 1) console.error(`Updated ${count} patients for id ${patientId} and cxId ${cxId}`);
 
   return rows[0];
 };

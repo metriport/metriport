@@ -52,6 +52,11 @@ export class Util {
     (msg: string, ...optionalParams: any[]): void =>
       debug(`[${prefix}] ${msg}`, ...optionalParams);
 
+  static out = (prefix: string) => ({
+    log: Util.log(prefix),
+    debug: Util.debug(prefix),
+  });
+
   static sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));
 
   static kilojoulesToKilocalories(kilojoules: number): number {
