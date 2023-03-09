@@ -27,6 +27,8 @@ import {
 import {
   PatientLink,
   patientLinkSchema,
+  PatientLinkSearchResp,
+  patientLinkSearchRespSchema,
   Person,
   personSchema,
   PersonSearchResp,
@@ -59,7 +61,7 @@ export class CommonWell {
   // V2
   static DOCUMENT_QUERY_ENDPOINT = "/v2/documentReference";
 
-  private api: AxiosInstance;
+  readonly api: AxiosInstance;
   private rsaPrivateKey: string;
   private orgName: string;
   private _oid: string;
@@ -453,6 +455,18 @@ export class CommonWell {
   }
 
   /**
+   * @deprecated use addPatientLink() instead
+   */
+  async patientLink(
+    meta: RequestMetadata,
+    personId: string,
+    patientUri: string,
+    patientStrongId?: StrongId
+  ): Promise<PatientLink> {
+    return this.addPatientLink(meta, personId, patientUri, patientStrongId);
+  }
+
+  /**
    * Add patient link to person.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8721
    *
@@ -462,7 +476,7 @@ export class CommonWell {
    * @param [patientStrongId] The patient's strong ID, if available (optional).
    * @returns {PatientLink}
    */
-  async patientLink(
+  async addPatientLink(
     meta: RequestMetadata,
     personId: string,
     patientUri: string,
@@ -473,11 +487,9 @@ export class CommonWell {
       `${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`,
       {
         patient: patientUri,
-        ...patientStrongId,
+        ...(patientStrongId ? { identifier: patientStrongId } : undefined),
       },
-      {
-        headers,
-      }
+      { headers }
     );
     return patientLinkSchema.parse(resp.data);
   }
@@ -495,10 +507,22 @@ export class CommonWell {
     const resp = await this.api.put(
       `${CommonWell.PERSON_ENDPOINT}/${id}/unenroll`,
       {},
-      {
-        headers,
-      }
+      { headers }
     );
+    return personSchema.parse(resp.data);
+  }
+
+  /**
+   * Re-enrolls a person.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#875-person-unenrollment
+   *
+   * @param meta    Metadata about the request.
+   * @param id      The person to be re-enrolled.
+   * @returns       Person with enrollment information
+   */
+  async reenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.put(`${CommonWell.PERSON_ENDPOINT}/${id}/enroll`, {}, { headers });
     return personSchema.parse(resp.data);
   }
 
@@ -638,16 +662,16 @@ export class CommonWell {
    * Get Patient's Network Links.
    * See: https://specification.commonwellalliance.org/services/record-locator-service/protocol-operations-record-locator-service#8771-retrieving-network-links
    *
-   * @param meta    Metadata about the request.
-   * @param id      Patient for which to get the network links.
+   * @param meta        Metadata about the request.
+   * @param patientId   Patient for which to get the network links.
    * @returns
    */
-  async getPatientsLinks(meta: RequestMetadata, id: string): Promise<PatientNetworkLinkResp> {
+  async getNetworkLinks(meta: RequestMetadata, patientId: string): Promise<PatientNetworkLinkResp> {
     const headers = await this.buildQueryHeaders(meta);
     // Error handling: https://github.com/metriport/metriport-internal/issues/322
     try {
       const resp = await this.api.get(
-        `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/networkLink`,
+        `${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${patientId}/networkLink`,
         {
           headers,
         }
@@ -656,7 +680,7 @@ export class CommonWell {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       // when there's no NetworkLink, CW's API return 412
-      if (err.response?.status === 412) return {};
+      if (err.response?.status === 412) return { _embedded: { networkLink: [] } };
       throw err;
     }
   }
@@ -674,7 +698,6 @@ export class CommonWell {
     await this.api.delete(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, {
       headers,
     });
-
     return;
   }
 
@@ -699,15 +722,7 @@ export class CommonWell {
     const headers = await this.buildQueryHeaders(meta);
     const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
     const res = await this.api.get(url, { headers });
-    try {
-      return documentQueryResponseSchema.parse(res.data);
-    } catch (err) {
-      console.log(
-        `[queryDocuments] Failed to parse response: `,
-        JSON.stringify(res.data, undefined, 2)
-      );
-      throw err;
-    }
+    return documentQueryResponseSchema.parse(res.data);
   }
 
   /**
@@ -793,6 +808,30 @@ export class CommonWell {
     );
 
     return patientLinkSchema.parse(resp.data);
+  }
+
+  /**
+   * Get a person's links to patients.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8721
+   *
+   * @param meta                Metadata about the request.
+   * @param personId            The person id to be link to a patient.
+   * @param [limitToOrg=true]   Whether to limit the search to the current organization (optional).
+   * @returns Response with list of links to Patients
+   */
+  async getPatientLinks(
+    meta: RequestMetadata,
+    personId: string,
+    limitToOrg = true
+  ): Promise<PatientLinkSearchResp> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`, {
+      headers,
+      params: {
+        ...(limitToOrg ? { orgId: this.oid } : undefined),
+      },
+    });
+    return patientLinkSearchRespSchema.parse(resp.data);
   }
 
   /**

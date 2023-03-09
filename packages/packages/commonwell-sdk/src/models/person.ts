@@ -40,3 +40,10 @@ export const patientLinkSchema = z.object({
 });
 
 export type PatientLink = z.infer<typeof patientLinkSchema>;
+
+export const patientLinkSearchRespSchema = z.object({
+  _embedded: z.object({ patientLink: z.array(patientLinkSchema) }),
+  _links: z.object({ self: linkSchema }),
+});
+
+export type PatientLinkSearchResp = z.infer<typeof patientLinkSearchRespSchema>;
