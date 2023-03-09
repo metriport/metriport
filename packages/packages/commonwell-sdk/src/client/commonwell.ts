@@ -61,7 +61,7 @@ export class CommonWell {
   // V2
   static DOCUMENT_QUERY_ENDPOINT = "/v2/documentReference";
 
-  private api: AxiosInstance;
+  readonly api: AxiosInstance;
   private rsaPrivateKey: string;
   private orgName: string;
   private _oid: string;
