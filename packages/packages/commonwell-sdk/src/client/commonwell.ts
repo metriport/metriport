@@ -487,7 +487,7 @@ export class CommonWell {
       `${CommonWell.PERSON_ENDPOINT}/${personId}/patientLink`,
       {
         patient: patientUri,
-        ...patientStrongId,
+        ...(patientStrongId ? { identifier: patientStrongId } : undefined),
       },
       { headers }
     );
