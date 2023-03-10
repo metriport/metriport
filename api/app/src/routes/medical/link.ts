@@ -1,19 +1,15 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { differenceBy } from "lodash";
 
-import {
-  asyncHandler,
-  getCxIdOrFail,
-  getPatientIdFromParamsOrFail,
-  getEntityIdFromBodyOrFail,
-} from "../util";
+import { asyncHandler, getCxIdOrFail, getPatientIdFromParamsOrFail } from "../util";
 const router = Router();
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import cwCommands from "../../external/commonwell";
 import { PatientLinks } from "./schemas/link";
 import { ExternalMedicalPartners } from "../../external";
+import { linkCreateSchema } from "./schemas/link";
+import { dtoFromCW } from "./dtos/linkDTO";
 
 /** ---------------------------------------------------------------------------
  * POST /patient/:patientId/link/:source
@@ -30,13 +26,13 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getPatientIdFromParamsOrFail(req);
-    const entityId = getEntityIdFromBodyOrFail(req);
+    const linkCreate = linkCreateSchema.parse(req.body);
 
     const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
     const linkSource = req.params.source;
 
     if (linkSource === ExternalMedicalPartners.COMMONWELL) {
-      await cwCommands.link.create(entityId, patient, organization);
+      await cwCommands.link.create(linkCreate.entityId, patient, organization);
     }
 
     return res.sendStatus(status.OK);
@@ -88,25 +84,14 @@ router.get(
       potentialLinks: [],
     };
 
-    // current links
-    if (patient.data.externalData) {
-      const cwLink = await cwCommands.link.findOne(patient, organization);
-      if (cwLink) links.currentLinks = [...links.currentLinks, cwLink];
-    }
+    const cwPersonLinks = await cwCommands.link.get(patient, organization);
+    const cwConvertedLinks = dtoFromCW({
+      cwPotentialPersons: cwPersonLinks.potentialLinks,
+      cwCurrentPersons: cwPersonLinks.currentLinks,
+    });
 
-    // potential links
-    const potentialCWLinks = await cwCommands.link.findAllPotentialLinks(patient, organization);
-    links.potentialLinks = [...links.potentialLinks, ...potentialCWLinks];
-
-    if (links.currentLinks.length) {
-      const removePotentialLinksDuplicates = differenceBy(
-        links.potentialLinks,
-        links.currentLinks,
-        "entityId"
-      );
-
-      links.potentialLinks = removePotentialLinksDuplicates;
-    }
+    links.potentialLinks = [...links.potentialLinks, ...cwConvertedLinks.potentialLinks];
+    links.currentLinks = [...links.currentLinks, ...cwConvertedLinks.currentLinks];
 
     return res.status(status.OK).json(links);
   })

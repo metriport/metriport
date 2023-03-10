@@ -1,0 +1,184 @@
+import { Person, LOLA } from "@metriport/commonwell-sdk";
+import { uniq } from "lodash";
+
+import { makeCommonWellAPI, metriportQueryMeta } from "../api";
+
+import { oid } from "../../../shared/oid";
+import { Patient } from "../../../models/medical/patient";
+import { Organization } from "../../../models/medical/organization";
+import { PatientDataCommonwell } from "../patient-shared";
+import { setCommonwellId } from "../patient-external-data";
+import { createPatientLink } from "./shared";
+import { getPersonalIdentifiersFromPatient, searchPersons } from "../patient-shared";
+import { commonwellPersonLinks } from "./shared";
+
+type CWPersonLinks = {
+  currentLinks: Person[];
+  potentialLinks: Person[];
+};
+
+export const get = async (patient: Patient, organization: Organization): Promise<CWPersonLinks> => {
+  const links: CWPersonLinks = {
+    currentLinks: [],
+    potentialLinks: [],
+  };
+
+  if (patient.data.externalData?.COMMONWELL) {
+    const cwLink = await findCurrentLink(patient, organization);
+    if (cwLink) links.currentLinks = [...links.currentLinks, cwLink];
+  }
+
+  const potentialCWLinks = await findAllPotentialLinks(patient, organization);
+  links.potentialLinks = [...links.potentialLinks, ...potentialCWLinks];
+
+  return links;
+};
+
+export const findCurrentLink = async (
+  patient: Patient,
+  organization: Organization
+): Promise<Person | undefined> => {
+  if (!patient.data.externalData?.COMMONWELL) {
+    console.log(`No CW data for patient`, patient.id);
+    return;
+  }
+
+  const patientCWExternalData = patient.data.externalData?.COMMONWELL as PatientDataCommonwell;
+
+  if (!patientCWExternalData.personId) {
+    return;
+  }
+
+  try {
+    let link;
+
+    const orgName = organization.data.name;
+    const orgId = organization.id;
+    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+
+    const patientCWId = patientCWExternalData.patientId;
+    const patientLink = createPatientLink(patientCWExternalData.personId, patientCWId);
+    const patientLinkToPerson = await commonWell.getPatientLink(metriportQueryMeta, patientLink);
+
+    if (!patientLinkToPerson._embedded?.patientLink?.length) {
+      console.log(`No patient linked to person`, patientLinkToPerson);
+
+      await setCommonwellId({
+        patientId: patient.id,
+        cxId: patient.cxId,
+        commonwellPatientId: patientCWId,
+        commonwellPersonId: undefined,
+      });
+
+      return;
+    }
+
+    const correctLink = patientLinkToPerson._embedded.patientLink[0];
+
+    if (!correctLink.assuranceLevel) {
+      console.log(`Link has no assurance level`, patientCWId);
+      return;
+    }
+
+    const assuranceLevel = parseInt(correctLink.assuranceLevel);
+
+    if (assuranceLevel >= parseInt(LOLA.level_2)) {
+      const cwPerson = await commonWell.getPersonByUri(
+        metriportQueryMeta,
+        patientCWExternalData.personId
+      );
+
+      if (!cwPerson) {
+        console.log(`No person id for cw person`);
+        return;
+      }
+
+      return cwPerson;
+    }
+
+    if (link) return link;
+  } catch (error) {
+    const msg = `Failure retrieving`;
+    console.log(`${msg} - link for person id:`, patientCWExternalData.personId);
+    console.log(msg, error);
+    throw new Error(msg);
+  }
+};
+
+export const findAllPotentialLinks = async (
+  patient: Patient,
+  organization: Organization
+): Promise<Person[]> => {
+  const personResultsStrongId = await findAllPersonsStrongId(patient, organization);
+  const personResultsByDemo = await findAllPersons(patient, organization);
+
+  const uniqueResults = uniq([...personResultsStrongId, ...personResultsByDemo]);
+
+  return uniqueResults;
+};
+
+const findAllPersons = async (patient: Patient, organization: Organization): Promise<Person[]> => {
+  try {
+    const orgName = organization.data.name;
+    const orgId = organization.id;
+    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+
+    if (!patient.data.externalData?.COMMONWELL) {
+      return [];
+    }
+
+    const patientCWExternalData = patient.data.externalData.COMMONWELL as PatientDataCommonwell;
+    const cwPatientId = patientCWExternalData.patientId;
+
+    const personsResp = await commonWell.searchPersonByPatientDemo(metriportQueryMeta, cwPatientId);
+
+    if (
+      personsResp &&
+      personsResp._embedded &&
+      personsResp._embedded.person &&
+      personsResp._embedded.person.length
+    ) {
+      return commonwellPersonLinks(personsResp._embedded.person);
+    }
+
+    return [];
+  } catch (error) {
+    const msg = `Failure retrieving persons`;
+    console.log(`${msg} - patient id:`, patient.id);
+    console.log(msg, error);
+    throw new Error(msg);
+  }
+};
+
+const findAllPersonsStrongId = async (
+  patient: Patient,
+  organization: Organization
+): Promise<Person[]> => {
+  const strongIds = getPersonalIdentifiersFromPatient(patient);
+  if (!strongIds.length) {
+    return [];
+  }
+
+  try {
+    const orgName = organization.data.name;
+    const orgId = organization.id;
+    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+
+    const persons = await searchPersons({
+      commonWell,
+      queryMeta: metriportQueryMeta,
+      strongIds,
+    });
+
+    if (persons.length) {
+      return commonwellPersonLinks(persons);
+    }
+
+    return [];
+  } catch (error) {
+    const msg = `Failure retrieving persons`;
+    console.log(`${msg} - patient:`, patient.id);
+    console.log(msg, error);
+    throw new Error(msg);
+  }
+};

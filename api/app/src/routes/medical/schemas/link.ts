@@ -2,6 +2,10 @@ import { z } from "zod";
 import { patientUpdateSchema } from "./patient";
 import { ExternalMedicalPartners } from "../../../external";
 
+export const linkCreateSchema = z.object({
+  entityId: z.string(),
+});
+
 export const linkSourceSchema = z.enum(
   Object.keys(ExternalMedicalPartners) as [string, ...string[]]
 );
