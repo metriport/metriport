@@ -2,10 +2,10 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createPatient } from "../../command/medical/patient/create-patient";
-import { getPatients } from "../../command/medical/patient/get-patient";
+import { getPatient, getPatients } from "../../command/medical/patient/get-patient";
 import { updatePatient } from "../../command/medical/patient/update-patient";
 import cwCommands from "../../external/commonwell";
-import { asyncHandler, getCxIdOrFail, getFacilityIdFromQueryOrFail } from "../util";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQueryOrFail } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import {
   patientCreateSchema,
@@ -30,7 +30,7 @@ router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFacilityIdFromQueryOrFail(req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
 
     const input = patientCreateSchema.parse(req.body);
     const patientCreate = schemaToPatientCreate(input, cxId, facilityId);
@@ -62,9 +62,12 @@ router.put(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFacilityIdFromQueryOrFail(req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
 
-    const input = patientUpdateSchema.parse(req.body);
+    const input = patientUpdateSchema.parse({
+      ...req.body,
+      id: getFromParamsOrFail("id", req),
+    });
     const patientUpdate = schemaToPatientUpdate(input, cxId);
 
     const patient = await updatePatient(patientUpdate);
@@ -76,6 +79,27 @@ router.put(
       console.error(`Failed to update patient ${patient.id} @ CW: `, err);
     });
 
+    return res.status(status.OK).json(dtoFromModel(patient));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient:id
+ *
+ * Returns a patient corresponding to the specified facility at the customer's organization.
+ *
+ * @param   {string}  req.cxId      The customer ID.
+ * @param   {string}  req.param.id  The ID of the patient to be returned
+ * is associated with.
+ *
+ * @return  {PatientDTO[]} The customer's patients associated with the given facility.
+ */
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromParamsOrFail("id", req);
+    const patient = await getPatient({ id: patientId, cxId });
     return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
@@ -95,7 +119,7 @@ router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFacilityIdFromQueryOrFail(req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
     const patients = await getPatients({ cxId, facilityId: facilityId });
     const patientsData = patients.map(dtoFromModel);
     return res.status(status.OK).json({ patients: patientsData });

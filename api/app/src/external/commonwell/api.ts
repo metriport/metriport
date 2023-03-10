@@ -3,7 +3,7 @@ import { CertificatePurpose } from "@metriport/commonwell-sdk/lib/models/certifi
 import { X509Certificate } from "crypto";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 
-// TODO move this to Config
+// TODO move these getEnvVarOrFail to Config
 const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
 const metriportPrivateKey = getEnvVarOrFail("CW_PRIVATE_KEY");
 const metriportCert = getEnvVarOrFail("CW_CERTIFICATE");
@@ -26,7 +26,6 @@ export const apiUrl = Config.isProdEnv()
 export function makeCommonWellAPI(orgName: string, orgId: string): CommonWell {
   return new CommonWell(metriportCert, metriportPrivateKey, orgName, orgId, apiMode);
 }
-
 export const commonWellManagement = new CommonWell(
   memberManagementCert,
   memberManagementPrivateKey,

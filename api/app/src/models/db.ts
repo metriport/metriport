@@ -72,7 +72,7 @@ const initDB = async (): Promise<void> => {
 
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client
-    if (Config.isProdEnv()) {
+    if (Config.isCloudEnv()) {
       doc = new AWS.DynamoDB.DocumentClient({
         apiVersion: "2012-08-10",
       });

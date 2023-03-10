@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { patientUpdateSchema } from "./patient";
-import { LinkSource } from "../../../models/medical/link";
+import { ExternalMedicalPartners } from "../../../external";
 
-export const linkSourceSchema = z.enum(Object.keys(LinkSource) as [string, ...string[]]);
+export const linkSourceSchema = z.enum(
+  Object.keys(ExternalMedicalPartners) as [string, ...string[]]
+);
 
 export const linkSchema = z.object({
   id: z.string().optional().nullable(), // id of the actual link, returned empty from the API if this is a potential link

@@ -11,5 +11,5 @@ export { ProviderSource } from "./devices/models/common/provider-source";
 // Medical API
 export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Organization, OrgType } from "./medical/models/organization";
-export { PatientLinks, Link, LinkSource } from "./medical/models/link";
+export { PatientLinks, Link, ExternalMedicalPartners } from "./medical/models/link";
 export { Patient } from "./medical/models/patient";

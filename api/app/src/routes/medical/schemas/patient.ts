@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { PatientCreate as PatientCreateCmd } from "../../../command/medical/patient/create-patient";
 import { PatientUpdate as PatientUpdateCmd } from "../../../command/medical/patient/update-patient";
-import { driversLicenseType, genderTypes, generalTypes } from "../../../models/medical/patient";
+import {
+  driversLicenseType,
+  genderAtBirthTypes,
+  generalTypes,
+} from "../../../models/medical/patient";
 import { USState } from "../../../shared/geographic-locations";
 import { addressSchema } from "./address";
 import { optionalString } from "./shared";
@@ -41,7 +45,7 @@ export const patientCreateSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   dob: z.string().length(10), // YYYY-MM-DD
-  gender: z.enum(genderTypes),
+  genderAtBirth: z.enum(genderAtBirthTypes),
   personalIdentifiers: z.array(personalIdentifierSchema),
   address: addressSchema,
   contact: z.object({

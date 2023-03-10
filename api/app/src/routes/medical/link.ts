@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { uniqBy } from "lodash";
+import { differenceBy } from "lodash";
 
 import {
   asyncHandler,
@@ -11,12 +11,9 @@ import {
 } from "../util";
 const router = Router();
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
-import { updatePatientLinks } from "../../command/medical/patient/update-patient-link";
 import cwCommands from "../../external/commonwell";
 import { PatientLinks } from "./schemas/link";
-import { LinkSource } from "../../models/medical/link";
-import { driversLicenseURIs } from "../../shared/oid";
-import { Link } from "./schemas/link";
+import { ExternalMedicalPartners } from "../../external";
 
 /** ---------------------------------------------------------------------------
  * POST /patient/:patientId/link/:source
@@ -38,24 +35,11 @@ router.post(
     const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
     const linkSource = req.params.source;
 
-    // TODO: HANDLE OTHER HIE's
-    if (linkSource === LinkSource.commonWell) {
+    if (linkSource === ExternalMedicalPartners.COMMONWELL) {
       await cwCommands.link.create(entityId, patient, organization);
-
-      await updatePatientLinks({
-        id: patientId,
-        cxId,
-        linkData: {
-          ...patient.linkData,
-          [linkSource]: {
-            cw_person_id: entityId,
-          },
-        },
-      });
-      return res.sendStatus(status.OK);
     }
 
-    throw new Error("Link source not found");
+    return res.sendStatus(status.OK);
   })
 );
 
@@ -73,25 +57,10 @@ router.delete(
     const cxId = getCxIdOrFail(req);
     const patientId = getPatientIdFromParamsOrFail(req);
     const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
-    const linkSource = req.query.source;
+    const linkSource = req.params.source;
 
-    if (linkSource === LinkSource.commonWell) {
-      const hasPersonId = patient.linkData && patient.linkData[LinkSource.commonWell]?.cw_person_id;
-
-      if (hasPersonId) {
-        await cwCommands.link.reset(patient, organization, hasPersonId);
-
-        await updatePatientLinks({
-          id: patientId,
-          cxId,
-          linkData: {
-            ...patient.linkData,
-            [linkSource]: {},
-          },
-        });
-      } else {
-        throw new Error(`No person link for source: ${LinkSource.commonWell}`);
-      }
+    if (linkSource === ExternalMedicalPartners.COMMONWELL) {
+      await cwCommands.link.reset(patient, organization);
     }
 
     return res.sendStatus(status.OK);
@@ -119,44 +88,24 @@ router.get(
       potentialLinks: [],
     };
 
-    if (patient.linkData && patient.linkData[LinkSource.commonWell]?.cw_person_id) {
-      const { cw_person_id } = patient.linkData[LinkSource.commonWell];
-      const personLink = await cwCommands.link.findOne(cw_person_id, organization, patient);
-
-      if (personLink) {
-        links.currentLinks = [...links.currentLinks, personLink];
-      } else {
-        await updatePatientLinks({
-          id: patientId,
-          cxId,
-          linkData: {
-            ...patient.linkData,
-            [LinkSource.commonWell]: {},
-          },
-        });
-      }
+    // current links
+    if (patient.data.externalData) {
+      const cwLink = await cwCommands.link.findOne(patient, organization);
+      if (cwLink) links.currentLinks = [...links.currentLinks, cwLink];
     }
 
-    if (!links.currentLinks.length) {
-      let personResultsList: Link[] = [];
+    // potential links
+    const potentialCWLinks = await cwCommands.link.findAllPotentialLinks(patient, organization);
+    links.potentialLinks = [...links.potentialLinks, ...potentialCWLinks];
 
-      if (
-        patient.data.personalIdentifiers.length &&
-        patient.data.personalIdentifiers[0].state &&
-        patient.data.personalIdentifiers[0].value
-      ) {
-        const state = patient.data.personalIdentifiers[0].state;
-        const key = patient.data.personalIdentifiers[0].value;
+    if (links.currentLinks.length) {
+      const removePotentialLinksDuplicates = differenceBy(
+        links.potentialLinks,
+        links.currentLinks,
+        "entityId"
+      );
 
-        const system = driversLicenseURIs[state];
-        personResultsList = await cwCommands.link.findAllPersonsStrongId(key, system, organization);
-      }
-
-      const personResultsByDemo = await cwCommands.link.findAllPersons(patient, organization);
-
-      personResultsList = uniqBy([...personResultsList, ...personResultsByDemo], "entityId");
-
-      links.potentialLinks = [...links.potentialLinks, ...personResultsList];
+      links.potentialLinks = removePotentialLinksDuplicates;
     }
 
     return res.status(status.OK).json(links);

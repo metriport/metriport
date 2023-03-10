@@ -1,6 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
-
-import { createOrgId } from "../../shared/oid";
+import { Config } from "../../shared/config";
+import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { Address } from "./address";
 
@@ -59,5 +59,15 @@ export class Organization extends BaseModel<Organization> {
         },
       }
     );
+  };
+}
+
+async function createOrgId() {
+  const curMaxNumber = (await Organization.max("organizationNumber")) as number;
+  const orgNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
+
+  return {
+    orgId: `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}`,
+    orgNumber,
   };
 }

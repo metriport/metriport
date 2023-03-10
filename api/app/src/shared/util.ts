@@ -1,4 +1,5 @@
 import { mean } from "lodash";
+import { debug } from "./log";
 
 interface MinMaxItem {
   min_item: number;
@@ -39,8 +40,22 @@ export class Util {
 
   static log =
     (prefix: string) =>
-    (msg: string, err?: unknown): void =>
-      err ? console.log(`[${prefix}] ${msg}`, err) : console.log(`[${prefix}] ${msg}`);
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (msg: string, ...optionalParams: any[]): void =>
+      optionalParams
+        ? console.log(`[${prefix}] ${msg}`, ...optionalParams)
+        : console.log(`[${prefix}] ${msg}`);
+
+  static debug =
+    (prefix: string) =>
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (msg: string, ...optionalParams: any[]): void =>
+      debug(`[${prefix}] ${msg}`, ...optionalParams);
+
+  static out = (prefix: string) => ({
+    log: Util.log(prefix),
+    debug: Util.debug(prefix),
+  });
 
   static sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));
 

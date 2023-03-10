@@ -1,10 +1,7 @@
-import { Organization } from "../models/medical/organization";
-import { Config } from "./config";
 import { USState } from "./geographic-locations";
 
 export const OID_ID_START = 100;
 export const OID_PREFIX = "urn:oid:";
-export const OID_URL_ENCODED_PREFIX = `%5E%5E%5Eurn%3aoid%3a`;
 
 export enum OIDNode {
   documents = 1,
@@ -78,16 +75,6 @@ export const driversLicenseURIs: { [k in USState]: string } = {
   WI: `${OID_PREFIX}2.16.840.1.113883.4.3.55`,
   WV: `${OID_PREFIX}2.16.840.1.113883.4.3.54`,
   WY: `${OID_PREFIX}2.16.840.1.113883.4.3.56`,
-};
-
-export const createOrgId = async () => {
-  const curMaxNumber = (await Organization.max("organizationNumber")) as number;
-  const orgNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-
-  return {
-    orgId: `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}`,
-    orgNumber,
-  };
 };
 export const ssnURI = `${OID_PREFIX}2.16.840.1.113883.4.1`;
 export const medicareURI = `${OID_PREFIX}2.16.840.1.113883.4.572`;

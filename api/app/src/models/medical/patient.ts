@@ -7,9 +7,6 @@ import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { ExternalMedicalPartners } from "./../../external";
 import { Address } from "./address";
 import { Contact } from "./contact";
-import { LinkData } from "./link";
-
-export abstract class PatientDataExternal {}
 
 export const generalTypes = ["passport", "ssn", "medicare"] as const;
 export const driversLicenseType = ["driversLicense"] as const;
@@ -41,21 +38,24 @@ export type DriversLicense = {
   state: USState;
 };
 
-// https://www.hl7.org/fhir/valueset-administrative-gender.html
-export const genderTypes = ["F", "M", "O", "U"] as const;
-export type Gender = (typeof genderTypes)[number];
+export const genderAtBirthTypes = ["F", "M"] as const;
+export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
+
+export abstract class PatientExternalDataEntry {}
+
+export type PatientExternalData = {
+  [k in ExternalMedicalPartners]: PatientExternalDataEntry;
+};
 
 export type PatientData = {
   firstName: string;
   lastName: string;
   dob: string;
-  gender: Gender;
+  genderAtBirth: GenderAtBirth;
   personalIdentifiers: Identifier[];
   address: Address;
   contact?: Contact;
-  externalData?: {
-    [k in ExternalMedicalPartners]: PatientDataExternal;
-  };
+  externalData?: PatientExternalData;
 };
 
 export type PatientCreate = Pick<Patient, "cxId" | "facilityIds" | "patientNumber" | "data">;
@@ -67,7 +67,6 @@ export class Patient extends BaseModel<Patient> {
   declare facilityIds: string[];
   declare patientNumber: number;
   declare data: PatientData;
-  declare linkData?: LinkData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Patient.init(
@@ -87,9 +86,6 @@ export class Patient extends BaseModel<Patient> {
           type: DataTypes.INTEGER,
         },
         data: {
-          type: DataTypes.JSONB,
-        },
-        linkData: {
           type: DataTypes.JSONB,
         },
       },

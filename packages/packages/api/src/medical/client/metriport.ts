@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosStatic } from "axios";
 
 import { Organization } from "../models/organization";
-import { PatientLinks, LinkSource } from "../models/link";
+import { PatientLinks, ExternalMedicalPartners } from "../models/link";
 
 export class MetriportMedicalApi {
   private api: AxiosInstance;
@@ -79,13 +79,17 @@ export class MetriportMedicalApi {
   /**
    * Creates link to the specified entity.
    *
-   * @param {string}    patientId    Patient ID for which to retrieve links.
-   * @param {string}    entityId     Entity ID to link to the patient.
-   * @param {LinkSource}    linkSource   HIE from where the link is made too..
+   * @param {string}                     patientId    Patient ID for which to retrieve links.
+   * @param {string}                     entityId     Entity ID to link to the patient.
+   * @param {ExternalMedicalPartners}    linkSource   HIE from where the link is made too..
    *
    * @returns link id
    */
-  async createLink(patientId: string, entityId: string, linkSource: LinkSource): Promise<string> {
+  async createLink(
+    patientId: string,
+    entityId: string,
+    linkSource: ExternalMedicalPartners
+  ): Promise<string> {
     const resp = await this.api.post<string>(
       `${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`,
       {
@@ -100,12 +104,12 @@ export class MetriportMedicalApi {
   /**
    * Removes link to the specified entity.
    *
-   * @param {string}        patientId     Patient ID to remove link from.
-   * @param {LinkSource}    linkSource    HIE to remove the link from.
+   * @param {string}                     patientId     Patient ID to remove link from.
+   * @param {ExternalMedicalPartners}    linkSource    HIE to remove the link from.
    *
    * @returns 200
    */
-  async removeLink(patientId: string, linkSource: LinkSource): Promise<void> {
+  async removeLink(patientId: string, linkSource: ExternalMedicalPartners): Promise<void> {
     await this.api.delete(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`);
   }
 }
