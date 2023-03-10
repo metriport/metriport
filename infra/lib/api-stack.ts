@@ -194,12 +194,7 @@ export class APIStack extends Stack {
             API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
             CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
             SYSTEM_ROOT_OID: props.config.systemRootOID,
-            ...(props.config.slackAlertUrl && {
-              SLACK_ALERT_URL: props.config.slackAlertUrl,
-            }),
-            ...(props.config.slackNotificationUrl && {
-              SLACK_NOTIFICATION_URL: props.config.slackNotificationUrl,
-            }),
+            ...(props.config.slack ? props.config.slack : undefined),
             ...(props.config.usageReportUrl && {
               USAGE_URL: props.config.usageReportUrl,
             }),

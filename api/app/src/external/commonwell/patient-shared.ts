@@ -44,10 +44,7 @@ export async function findOrCreatePerson({
     if (personIds.length === 1) return { personId: personIds[0], person };
     if (personIds.length > 1) {
       const subject = "Found more than one person for patient personal IDs";
-      const message =
-        `Patient CW ID: ${commonwellPatientId}\n` +
-        `Personal IDs: ${strongIds.map(id => id.key).join(", ")}` +
-        `Person CW IDs: ${personIds.join(", ")}`;
+      const message = idsToAlertMessage(commonwellPatientId, personIds);
       sendAlert({ subject, message });
       // TODO #156 SENTRY
       log(`${subject}: ${message}`);
@@ -63,9 +60,7 @@ export async function findOrCreatePerson({
     if (personIds.length === 1) return { personId: personIds[0], person };
     if (personIds.length > 1) {
       const subject = "Found more than one person for patient demographics";
-      const message = `Patient CW ID: ${commonwellPatientId}\nPerson CW IDs: ${personIds.join(
-        ", "
-      )}`;
+      const message = idsToAlertMessage(commonwellPatientId, personIds);
       log(`${subject}: ${message}`);
       return undefined;
     }
@@ -83,6 +78,10 @@ export async function findOrCreatePerson({
     throw new Error(msg);
   }
   return { personId, person };
+}
+
+function idsToAlertMessage(cwPatientId: string, personIds: string[]): string {
+  return `Patient CW ID: ${cwPatientId}\nPerson IDs:\n- ${personIds.join("\n- ")}`;
 }
 
 export async function getPatientData(
