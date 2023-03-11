@@ -1,11 +1,13 @@
 import { Person } from "@metriport/commonwell-sdk";
 import { apiUrl } from "../api";
-
-import { OID_PREFIX } from "../../../shared/oid";
-
-export const createReferenceLink = (patientId: string, orgId: string) => {
-  return `${apiUrl}/v1/org/${OID_PREFIX}${orgId}/patient/${patientId}`;
-};
+import {
+  Patient,
+  PatientData,
+  PatientExternalData,
+  PatientExternalDataEntry,
+} from "../../../models/medical/patient";
+import { PatientDataCommonwell } from "../patient-shared";
+import { ExternalMedicalPartners } from "../..";
 
 export const createPatientLink = (personId: string, patientId: string): string => {
   return `${apiUrl}/v1/person/${personId}/patientLink/${patientId}/`;
@@ -20,3 +22,27 @@ export const commonwellPersonLinks = (persons: Person[]): Person[] => {
 
   return links;
 };
+
+export type PatientWithCW = Omit<Patient, "data"> & {
+  data: Omit<PatientData, "externalData"> & {
+    externalData: Omit<PatientExternalData, "COMMONWELL"> & {
+      [ExternalMedicalPartners.COMMONWELL]: PatientDataCommonwell;
+    };
+  };
+};
+
+export function patientWithCWData(
+  patient: Patient,
+  cwEntry: PatientExternalDataEntry
+): PatientWithCW {
+  const patientWithCW: PatientWithCW = Object.assign(patient, {
+    data: {
+      ...patient.data,
+      externalData: {
+        ...patient.data.externalData,
+        [ExternalMedicalPartners.COMMONWELL]: cwEntry as PatientDataCommonwell,
+      },
+    },
+  });
+  return patientWithCW;
+}

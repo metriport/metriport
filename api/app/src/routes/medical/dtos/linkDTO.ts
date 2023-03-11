@@ -2,12 +2,23 @@ import { Person, getId } from "@metriport/commonwell-sdk";
 import { differenceBy } from "lodash";
 
 import { ExternalMedicalPartners } from "../../../external";
-import { Link } from "../schemas/link";
 import { GenderAtBirth } from "../../../models/medical/patient";
-import { PatientLinks } from "../schemas/link";
+import { PatientUpdate } from "../schemas/patient";
 
 export type PatientLinkStatusDTO = "linked" | "needs-review";
 export type PatientLinksDTO = { [k in ExternalMedicalPartners]: PatientLinkStatusDTO };
+
+export type Link = {
+  id?: string | null;
+  entityId: string;
+  potential: boolean;
+  source: ExternalMedicalPartners;
+  patient: PatientUpdate;
+};
+export type PatientLinks = {
+  potentialLinks: Link[];
+  currentLinks: Link[];
+};
 
 export function dtoFromCW({
   cwPotentialPersons,

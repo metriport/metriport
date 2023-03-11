@@ -2,20 +2,21 @@ import { makeCommonWellAPI, metriportQueryMeta } from "../api";
 import { oid } from "../../../shared/oid";
 import { Patient } from "../../../models/medical/patient";
 import { Organization } from "../../../models/medical/organization";
-import { PatientDataCommonwell } from "../patient-shared";
 import { setCommonwellId } from "../patient-external-data";
-import { createPatientLink } from "./shared";
+import { createPatientLink, patientWithCWData } from "./shared";
 
 export const reset = async (patient: Patient, organization: Organization) => {
-  if (!patient.data.externalData?.COMMONWELL) {
+  const externalData = patient.data.externalData;
+
+  if (externalData === undefined || externalData.COMMONWELL === undefined) {
     throw new Error("Patient has no external data");
   }
 
-  const patientCWExternalData = patient.data.externalData.COMMONWELL as PatientDataCommonwell;
-  const cwPatientId = patientCWExternalData.patientId;
-  const cwPersonId = patientCWExternalData.personId;
+  const patientCWExternalData = patientWithCWData(patient, externalData.COMMONWELL);
+  const cwPatientId = patientCWExternalData.data.externalData.COMMONWELL.patientId;
+  const cwPersonId = patientCWExternalData.data.externalData.COMMONWELL.personId;
 
-  if (!cwPersonId) throw new Error(`No person id for patient: ${cwPatientId}`);
+  if (!cwPersonId) throw new Error(`No person id for patient: ${patient.id}`);
 
   try {
     const referenceLink = createPatientLink(cwPersonId, cwPatientId);

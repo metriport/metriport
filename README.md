@@ -294,8 +294,6 @@ $ echo "CW_ORG_MANAGEMENT_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_ORG_MANAGEMENT_CERTIFICATE=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_MEMBER_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_MEMBER_CERTIFICATE=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_PRODUCTION_URL=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_INTEGRATION_URL=<YOUR-SECRET>" >> api/app/.env
 ```
 
 #### **Optional usage report**

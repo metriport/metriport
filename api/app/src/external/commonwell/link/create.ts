@@ -4,25 +4,31 @@ import { makeCommonWellAPI, metriportQueryMeta } from "../api";
 import { oid } from "../../../shared/oid";
 import { Patient } from "../../../models/medical/patient";
 import { Organization } from "../../../models/medical/organization";
-import { PatientDataCommonwell } from "../patient-shared";
+import { patientWithCWData } from "./shared";
 import { setCommonwellId } from "../patient-external-data";
 import { reset } from "../link";
-import { createReferenceLink } from "./shared";
 
 export const create = async (
   personId: string,
   patient: Patient,
   organization: Organization
 ): Promise<void> => {
-  if (!patient.data.externalData?.COMMONWELL) {
-    throw new Error("Patient has no external data");
+  const externalData = patient.data.externalData;
+
+  if (externalData === undefined || externalData.COMMONWELL === undefined) {
+    throw new Error(`No external data for patient: ${patient.id}`);
   }
 
-  const patientCWExternalData = patient.data.externalData.COMMONWELL as PatientDataCommonwell;
-  const cwPatientId = patientCWExternalData.patientId;
+  const patientCWExternalData = patientWithCWData(patient, externalData.COMMONWELL);
+  const cwPatientId = patientCWExternalData.data.externalData.COMMONWELL.patientId;
+  const cwPersonId = patientCWExternalData.data.externalData.COMMONWELL.personId;
 
   try {
-    if (patientCWExternalData.personId) {
+    if (cwPersonId === personId) {
+      return;
+    }
+
+    if (cwPersonId) {
       await reset(patient, organization);
 
       await setCommonwellId({
@@ -33,12 +39,27 @@ export const create = async (
       });
     }
 
-    const referenceLink = createReferenceLink(cwPatientId, organization.id);
-
     const orgName = organization.data.name;
     const orgId = organization.id;
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
-    const link = await commonWell.patientLink(metriportQueryMeta, personId, referenceLink);
+    const cwPatient = await commonWell.getPatient(metriportQueryMeta, cwPatientId);
+
+    if (!cwPatient._links?.self?.href) {
+      throw new Error(`No patient uri for cw patient: ${cwPatientId}`);
+    }
+
+    const link = await commonWell.patientLink(
+      metriportQueryMeta,
+      personId,
+      cwPatient._links.self.href
+    );
+
+    await setCommonwellId({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      commonwellPatientId: cwPatientId,
+      commonwellPersonId: personId,
+    });
 
     if (!link._links?.self?.href) {
       throw new Error("Link has no href");
@@ -70,13 +91,6 @@ export const create = async (
         );
       }
     }
-
-    await setCommonwellId({
-      patientId: patient.id,
-      cxId: patient.cxId,
-      commonwellPatientId: cwPatientId,
-      commonwellPersonId: personId,
-    });
   } catch (error) {
     const msg = `Failure linking`;
     console.log(`${msg} - person id:`, personId);

@@ -2,15 +2,14 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 
-import { asyncHandler, getCxIdOrFail, getPatientIdFromParamsOrFail } from "../util";
-const router = Router();
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import cwCommands from "../../external/commonwell";
-import { PatientLinks } from "./schemas/link";
 import { ExternalMedicalPartners } from "../../external";
 import { linkCreateSchema } from "./schemas/link";
-import { dtoFromCW } from "./dtos/linkDTO";
+import { dtoFromCW, PatientLinks } from "./dtos/linkDTO";
 
+const router = Router();
 /** ---------------------------------------------------------------------------
  * POST /patient/:patientId/link/:source
  *
@@ -25,11 +24,11 @@ router.post(
   "/:patientId/link/:source",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const patientId = getPatientIdFromParamsOrFail(req);
+    const patientId = getFromParamsOrFail("patientId", req);
+    const linkSource = getFromParamsOrFail("source", req);
     const linkCreate = linkCreateSchema.parse(req.body);
 
     const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
-    const linkSource = req.params.source;
 
     if (linkSource === ExternalMedicalPartners.COMMONWELL) {
       await cwCommands.link.create(linkCreate.entityId, patient, organization);
@@ -51,7 +50,7 @@ router.delete(
   "/:patientId/link/:source",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const patientId = getPatientIdFromParamsOrFail(req);
+    const patientId = getFromParamsOrFail("patientId", req);
     const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
     const linkSource = req.params.source;
 
@@ -75,7 +74,7 @@ router.get(
   "/:patientId/link",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const patientId = getPatientIdFromParamsOrFail(req);
+    const patientId = getFromParamsOrFail("patientId", req);
 
     const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
 
