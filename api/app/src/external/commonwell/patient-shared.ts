@@ -53,7 +53,7 @@ export async function findOrCreatePerson({
   } else {
     // Search by demographics
     const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, commonwellPatientId);
-    debug(`resp searchPersonByPatientDemo: `, respSearch);
+    debug(`resp searchPersonByPatientDemo: ${JSON.stringify(respSearch, null, 2)}`);
     const personIds = respSearch._embedded?.person
       ? respSearch._embedded.person.map(getId).flatMap(filterTruthy)
       : [];
@@ -64,13 +64,12 @@ export async function findOrCreatePerson({
       log(`${subject}: ${message}`);
       return undefined;
     }
-    return;
   }
 
   // If not found, enroll/add person
   debug(`Enrolling this person: ${JSON.stringify(person, null, 2)}`);
   const respPerson = await commonWell.enrollPerson(queryMeta, person);
-  debug(`resp enrollPerson: `, respPerson);
+  debug(`resp enrollPerson: ${JSON.stringify(respPerson, null, 2)}`);
   const personId = getId(respPerson);
   if (!personId) {
     const msg = `Could not get person ID from CW response`;
@@ -118,19 +117,16 @@ async function searchPersonIds({
   queryMeta: RequestMetadata;
   personalIds: SimplifiedPersonalId[];
 }): Promise<string[]> {
+  const { log } = Util.out(`CW searchPersonIds`);
   const respSearches = await Promise.allSettled(
-    personalIds.map(id => commonWell.searchPerson(queryMeta, id.key, id.system))
+    personalIds.map(id =>
+      commonWell.searchPerson(queryMeta, id.key, id.system).catch(err => {
+        // TODO #156 SENTRY
+        log(`Failure searching person @ CW by personal ID`, err);
+        throw err;
+      })
+    )
   );
-  const rejectedReasons = respSearches.flatMap(r => (r.status === "rejected" ? r.reason : []));
-  if (rejectedReasons.length > 0) {
-    // TODO #156 SENTRY
-    const subject = `Failure searching person @ CW by personal ID`;
-    const message =
-      `Personal IDs: ${personalIds.map(id => id.key).join(", ")}\n` +
-      `Failures (${rejectedReasons.length}):\n- ${rejectedReasons.join("\n- ")}`;
-    sendAlert({ subject, message });
-    console.log(`${subject}: ${message}`);
-  }
   const fulfilledPersons = respSearches
     .flatMap(r => (r.status === "fulfilled" ? r.value._embedded?.person : []))
     .flatMap(filterTruthy);
