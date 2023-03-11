@@ -4,7 +4,7 @@ import { Config } from "../../shared/config";
 import { USState } from "../../shared/geographic-locations";
 import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
-import { ExternalMedicalPartners } from "./../../external";
+import { MedicalDataSource } from "./../../external";
 import { Address } from "./address";
 import { Contact } from "./contact";
 
@@ -43,9 +43,7 @@ export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
 export abstract class PatientExternalDataEntry {}
 
-export type PatientExternalData = Partial<
-  Record<ExternalMedicalPartners, PatientExternalDataEntry>
->;
+export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;
 
 export type PatientData = {
   firstName: string;

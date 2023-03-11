@@ -7,7 +7,7 @@ import {
   PatientExternalDataEntry,
 } from "../../../models/medical/patient";
 import { PatientDataCommonwell } from "../patient-shared";
-import { ExternalMedicalPartners } from "../..";
+import { MedicalDataSource } from "../..";
 
 export const createPatientLink = (personId: string, patientId: string): string => {
   return `${apiUrl}/v1/person/${personId}/patientLink/${patientId}/`;
@@ -26,7 +26,7 @@ export const commonwellPersonLinks = (persons: Person[]): Person[] => {
 export type PatientWithCW = Omit<Patient, "data"> & {
   data: Omit<PatientData, "externalData"> & {
     externalData: Omit<PatientExternalData, "COMMONWELL"> & {
-      [ExternalMedicalPartners.COMMONWELL]: PatientDataCommonwell;
+      [MedicalDataSource.COMMONWELL]: PatientDataCommonwell;
     };
   };
 };
@@ -40,7 +40,7 @@ export function patientWithCWData(
       ...patient.data,
       externalData: {
         ...patient.data.externalData,
-        [ExternalMedicalPartners.COMMONWELL]: cwEntry as PatientDataCommonwell,
+        [MedicalDataSource.COMMONWELL]: cwEntry as PatientDataCommonwell,
       },
     },
   });

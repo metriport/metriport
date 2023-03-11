@@ -5,7 +5,7 @@ import status from "http-status";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import cwCommands from "../../external/commonwell";
-import { ExternalMedicalPartners } from "../../external";
+import { MedicalDataSource } from "../../external";
 import { linkCreateSchema } from "./schemas/link";
 import { dtoFromCW, PatientLinks } from "./dtos/linkDTO";
 
@@ -30,7 +30,7 @@ router.post(
 
     const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
 
-    if (linkSource === ExternalMedicalPartners.COMMONWELL) {
+    if (linkSource === MedicalDataSource.COMMONWELL) {
       await cwCommands.link.create(linkCreate.entityId, patient, organization);
     }
 
@@ -54,7 +54,7 @@ router.delete(
     const { patient, organization } = await getPatientWithDependencies({ id: patientId, cxId });
     const linkSource = req.params.source;
 
-    if (linkSource === ExternalMedicalPartners.COMMONWELL) {
+    if (linkSource === MedicalDataSource.COMMONWELL) {
       await cwCommands.link.reset(patient, organization);
     }
 
@@ -89,8 +89,8 @@ router.get(
       cwCurrentPersons: cwPersonLinks.currentLinks,
     });
 
-    links.potentialLinks = [...links.potentialLinks, ...cwConvertedLinks.potentialLinks];
-    links.currentLinks = [...links.currentLinks, ...cwConvertedLinks.currentLinks];
+    links.potentialLinks = [...cwConvertedLinks.potentialLinks];
+    links.currentLinks = [...cwConvertedLinks.currentLinks];
 
     return res.status(status.OK).json(links);
   })

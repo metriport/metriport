@@ -1,6 +1,6 @@
 import { Patient } from "./patient";
 
-export enum ExternalMedicalPartners {
+export enum MedicalDataSource {
   COMMONWELL = "COMMONWELL",
 }
 
@@ -13,6 +13,6 @@ export interface Link {
   id?: string | null;
   entityId: string;
   potential: boolean;
-  source: ExternalMedicalPartners;
+  source: MedicalDataSource;
   patient: Patient;
 }

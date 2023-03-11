@@ -4,7 +4,7 @@ import {
   Patient as CommonwellPatient,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { ExternalMedicalPartners } from "..";
+import { MedicalDataSource } from "..";
 import { Patient, PatientExternalData } from "../../models/medical/patient";
 import { PatientLinkStatusDTO } from "../../routes/medical/dtos/linkDTO";
 import { debug } from "../../shared/log";
@@ -17,7 +17,7 @@ import { findOrCreatePerson, getPatientData, PatientDataCommonwell } from "./pat
 
 export function mapPatientExternal(data: PatientExternalData | undefined): PatientLinkStatusDTO {
   return data
-    ? (data[ExternalMedicalPartners.COMMONWELL] as PatientDataCommonwell).personId
+    ? (data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell).personId
       ? "linked"
       : "needs-review"
     : "needs-review";
@@ -136,7 +136,7 @@ async function setupUpdate(
   | undefined
 > {
   const commonwellData = patient.data.externalData
-    ? (patient.data.externalData[ExternalMedicalPartners.COMMONWELL] as PatientDataCommonwell) // TODO validate the type
+    ? (patient.data.externalData[MedicalDataSource.COMMONWELL] as PatientDataCommonwell) // TODO validate the type
     : undefined;
   if (!commonwellData) return undefined;
   const commonwellPatientId = commonwellData.patientId;

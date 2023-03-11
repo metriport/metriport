@@ -1,5 +1,5 @@
 import { Person, LOLA } from "@metriport/commonwell-sdk";
-import { uniq } from "lodash";
+import { uniqBy } from "lodash";
 
 import { makeCommonWellAPI, metriportQueryMeta } from "../api";
 
@@ -50,8 +50,6 @@ export const findCurrentLink = async (
   }
 
   try {
-    let link;
-
     const orgName = organization.data.name;
     const orgId = organization.id;
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
@@ -83,7 +81,7 @@ export const findCurrentLink = async (
     const assuranceLevel = parseInt(correctLink.assuranceLevel);
 
     if (assuranceLevel >= parseInt(LOLA.level_2)) {
-      const cwPerson = await commonWell.getPersonByUri(
+      const cwPerson = await commonWell.getPersonById(
         metriportQueryMeta,
         patientCWExternalData.personId
       );
@@ -95,8 +93,6 @@ export const findCurrentLink = async (
 
       return cwPerson;
     }
-
-    if (link) return link;
   } catch (error) {
     const msg = `Failure retrieving`;
     console.log(`${msg} - link for person id:`, patientCWExternalData.personId);
@@ -112,7 +108,7 @@ export const findAllPotentialLinks = async (
   const personResultsStrongId = await findAllPersonsStrongId(patient, organization);
   const personResultsByDemo = await findAllPersons(patient, organization);
 
-  const uniqueResults = uniq([...personResultsStrongId, ...personResultsByDemo]);
+  const uniqueResults = uniqBy([...personResultsStrongId, ...personResultsByDemo], "_links.self");
 
   return uniqueResults;
 };

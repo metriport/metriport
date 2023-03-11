@@ -76,7 +76,7 @@ export async function patientManagement(
   const sandboxReferenceLink = sandboxPatient._links.self.href;
   await commonwellSandbox.patientLink(queryMeta, personId, sandboxReferenceLink);
   await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
-  const respD5a = await commonWell.getPatientsLinks(queryMeta, patientId);
+  const respD5a = await commonWell.getNetworkLinks(queryMeta, patientId);
   console.log(respD5a);
 
   // D6: Upgrade/Downgrade a Network link

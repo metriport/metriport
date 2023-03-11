@@ -1,18 +1,18 @@
 import { Person, getId } from "@metriport/commonwell-sdk";
 import { differenceBy } from "lodash";
 
-import { ExternalMedicalPartners } from "../../../external";
+import { MedicalDataSource } from "../../../external";
 import { GenderAtBirth } from "../../../models/medical/patient";
 import { PatientUpdate } from "../schemas/patient";
 
 export type PatientLinkStatusDTO = "linked" | "needs-review";
-export type PatientLinksDTO = { [k in ExternalMedicalPartners]: PatientLinkStatusDTO };
+export type PatientLinksDTO = { [k in MedicalDataSource]: PatientLinkStatusDTO };
 
 export type Link = {
   id?: string | null;
   entityId: string;
   potential: boolean;
-  source: ExternalMedicalPartners;
+  source: MedicalDataSource;
   patient: PatientUpdate;
 };
 export type PatientLinks = {
@@ -64,7 +64,7 @@ export function convertFromCWPersonToLink(person: Person): Link | null {
     const personLink: Link = {
       entityId: personId,
       potential: true,
-      source: ExternalMedicalPartners.COMMONWELL,
+      source: MedicalDataSource.COMMONWELL,
       patient: {
         id: personId,
         firstName: personName && personName.given?.length ? personName.given[0] : "",

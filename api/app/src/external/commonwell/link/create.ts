@@ -65,7 +65,7 @@ export const create = async (
       throw new Error("Link has no href");
     }
 
-    const networkLinks = await commonWell.getPatientsLinks(metriportQueryMeta, cwPatientId);
+    const networkLinks = await commonWell.getNetworkLinks(metriportQueryMeta, cwPatientId);
 
     if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
       const lola1Links = networkLinks._embedded.networkLink.filter(isLOLA1);
