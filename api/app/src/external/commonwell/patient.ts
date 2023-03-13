@@ -20,6 +20,8 @@ import {
   getPatientData,
   PatientDataCommonwell,
 } from "./patient-shared";
+import { Config } from "../../shared/config";
+import { registerPatient as sbRegisterPatient } from "./sandbox-payloads";
 
 export function mapPatientExternal(data: PatientExternalData | undefined): PatientLinkStatusDTO {
   return data
@@ -122,6 +124,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       debug(`resp updatePerson: ${JSON.stringify(respPerson, null, 2)}`);
 
       if (!respPerson.enrolled) {
+        // DUMMY MOCK THIS
         const respReenroll = await commonWell.reenrollPerson(queryMeta, personId);
         debug(`resp reenrolPerson: ${JSON.stringify(respReenroll, null, 2)}`);
       }
@@ -154,6 +157,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
 
   // Try to get the Person<>Patient link to LOLA3
   try {
+    // DUMMY MOCK THIS
     const respLinks = await commonWell.getPatientLinks(queryMeta, personId);
     debug(`resp getPatientLinks: ${JSON.stringify(respLinks)}`);
     const linkToPatient = respLinks._embedded?.patientLink
@@ -167,6 +171,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       ![LOLA.level_3, LOLA.level_4].map(toString).includes(linkToPatient.assuranceLevel)
     ) {
       const strongIds = getMatchingStrongIds(person, commonwellPatient);
+      // DUMMY MOCK THIS
       const respLink = await commonWell.addPatientLink(
         queryMeta,
         personId,
@@ -296,7 +301,11 @@ async function registerPatient({
   const debug = Util.debug(fnName);
 
   // DUMMY MOCK THIS
-  const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
+  const respPatient = await sandBoxWrapper<CommonwellPatient>(
+    async () => await commonWell.registerPatient(queryMeta, commonwellPatient),
+    sbRegisterPatient
+  );
+
   debug(`resp registerPatient: ${JSON.stringify(respPatient, null, 2)}`);
   const commonwellPatientId = getIdTrailingSlash(respPatient);
   const log = Util.log(`${fnName} - CW patientId ${commonwellPatientId}`);
@@ -322,15 +331,6 @@ async function registerPatient({
   }
   return { commonwellPatientId, patientRefLink };
 }
-
-// // eslint-disable-next-line @typescript-eslint/no-explicit-any
-// const sandBoxWrapper = async (cwCb: () => any, sandboxPayload: any) => {
-//   if (Config.isSandbox()) {
-//     return sandboxPayload;
-//   }
-
-//   return cwCb();
-// };
 
 async function updatePatient({
   commonWell,
@@ -364,3 +364,11 @@ async function updatePatient({
   }
   return { patientRefLink };
 }
+
+const sandBoxWrapper = async <T>(cwCb: () => Promise<T>, sandboxPayload: T): Promise<T> => {
+  if (Config.isSandbox()) {
+    return sandboxPayload;
+  }
+
+  return await cwCb();
+};
