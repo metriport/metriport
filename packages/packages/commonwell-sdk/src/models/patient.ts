@@ -12,7 +12,7 @@ export const patientOrganizationSchema = z.object({
 
 export const patientLinksSchema = z.object({
   self: linkSchema,
-  networkLink: networkLinkSchema.optional().nullable(),
+  networkLink: linkSchema.optional().nullable(),
   person: linkSchema.optional().nullable(),
   personMatch: linkSchema.optional().nullable(),
   upgrade: linkSchema.optional().nullable(),
