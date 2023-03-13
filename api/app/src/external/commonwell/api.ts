@@ -67,7 +67,7 @@ const x509 = new X509Certificate(commonwellCertificate);
 
 const thumbprint = x509.fingerprint;
 
-// TODO #413 gotta make these dynamic
+// TODO #219 #413 gotta make these dynamic
 export const certificate = {
   Certificates: [
     {

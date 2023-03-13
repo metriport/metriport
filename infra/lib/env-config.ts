@@ -55,6 +55,10 @@ export type EnvConfig = {
     CW_TECHNICAL_CONTACT_EMAIL: string;
     CW_TECHNICAL_CONTACT_PHONE: string;
   };
+  slack?: {
+    SLACK_ALERT_URL?: string;
+    SLACK_NOTIFICATION_URL?: string;
+  };
 } & (
   | {
       connectWidget: ConnectWidgetConfig;

@@ -43,9 +43,9 @@ export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
 export abstract class PatientExternalDataEntry {}
 
-export type PatientExternalData = {
-  [k in ExternalMedicalPartners]: PatientExternalDataEntry;
-};
+export type PatientExternalData = Partial<
+  Record<ExternalMedicalPartners, PatientExternalDataEntry>
+>;
 
 export type PatientData = {
   firstName: string;

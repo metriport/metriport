@@ -23,6 +23,14 @@ export class Config {
   static isSandbox(): boolean {
     return process.env.ENV_TYPE === this.SANDBOX_ENV;
   }
+
+  static getSlackAlertUrl(): string | undefined {
+    return getEnvVar("SLACK_ALERT_URL");
+  }
+  static getSlackNotificationUrl(): string | undefined {
+    return getEnvVar("SLACK_NOTIFICATION_URL");
+  }
+
   static getConnectWidgetUrl(): string {
     return getEnvVarOrFail("CONNECT_WIDGET_URL");
   }
