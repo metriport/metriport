@@ -48,7 +48,7 @@ export const create = async (
       throw new Error(`No patient uri for cw patient: ${cwPatientId}`);
     }
 
-    const link = await commonWell.patientLink(
+    const link = await commonWell.addPatientLink(
       metriportQueryMeta,
       personId,
       cwPatient._links.self.href

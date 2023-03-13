@@ -8,7 +8,6 @@ import { Patient } from "../../../models/medical/patient";
 import { Organization } from "../../../models/medical/organization";
 import { PatientDataCommonwell } from "../patient-shared";
 import { setCommonwellId } from "../patient-external-data";
-import { createPatientLink } from "./shared";
 import { getPersonalIdentifiersFromPatient, searchPersons } from "../patient-shared";
 import { commonwellPersonLinks } from "./shared";
 
@@ -56,8 +55,11 @@ export const findCurrentLink = async (
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
 
     const patientCWId = patientCWExternalData.patientId;
-    const patientLink = createPatientLink(patientCWExternalData.personId, patientCWId);
-    const patientLinkToPerson = await commonWell.getPatientLink(metriportQueryMeta, patientLink);
+    const patientLinkToPerson = await commonWell.getPatientLink(
+      metriportQueryMeta,
+      patientCWExternalData.personId,
+      patientCWId
+    );
 
     if (!patientLinkToPerson._embedded?.patientLink?.length) {
       console.log(`No patient linked to person`, patientLinkToPerson);

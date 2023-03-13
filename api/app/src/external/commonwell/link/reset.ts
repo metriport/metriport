@@ -3,7 +3,7 @@ import { oid } from "../../../shared/oid";
 import { Patient } from "../../../models/medical/patient";
 import { Organization } from "../../../models/medical/organization";
 import { setCommonwellId } from "../patient-external-data";
-import { createPatientLink, patientWithCWData } from "./shared";
+import { patientWithCWData } from "./shared";
 
 export const reset = async (patient: Patient, organization: Organization) => {
   const externalData = patient.data.externalData;
@@ -19,13 +19,11 @@ export const reset = async (patient: Patient, organization: Organization) => {
   if (!cwPersonId) throw new Error(`No person id for patient: ${patient.id}`);
 
   try {
-    const referenceLink = createPatientLink(cwPersonId, cwPatientId);
-
     const orgName = organization.data.name;
     const orgId = organization.id;
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
 
-    await commonWell.resetPatientLink(metriportQueryMeta, `${referenceLink}/`);
+    await commonWell.resetPatientLink(metriportQueryMeta, cwPersonId, cwPatientId);
 
     await setCommonwellId({
       patientId: patient.id,

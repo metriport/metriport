@@ -9,10 +9,6 @@ import { PatientDataCommonwell } from "../patient-shared";
 import { MedicalDataSource } from "../..";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 
-export const createPatientLink = (personId: string, patientId: string): string => {
-  return `/v1/person/${personId}/patientLink/${patientId}/`;
-};
-
 export const commonwellPersonLinks = (persons: Person[]): Person[] => {
   return persons.flatMap<Person>(filterTruthy);
 };
