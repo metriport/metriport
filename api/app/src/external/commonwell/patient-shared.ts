@@ -15,7 +15,7 @@ import { filterTruthy } from "../../shared/filter-map-utils";
 import { sendAlert } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { makePersonForPatient } from "./patient-conversion";
-
+import { driversLicenseURIs } from "../../shared/oid";
 export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(public patientId: string, public personId?: string | undefined) {
     super();
@@ -108,7 +108,7 @@ export function getMatchingStrongIds(
   return _.intersectionBy(personIds, patientIds, id => `${id.system}|${id.key}`);
 }
 
-async function searchPersonIds({
+export async function searchPersonIds({
   commonWell,
   queryMeta,
   personalIds,
@@ -134,10 +134,46 @@ async function searchPersonIds({
   return Array.from(new Set(duplicatedPersonIds));
 }
 
-function getPersonalIdentifiers(
+export function getPersonalIdentifiers(
   person: CommonwellPatient | CommonwellPerson
 ): SimplifiedPersonalId[] {
   return (person.details?.identifier ?? []).flatMap(id =>
     id.key !== undefined && id.system !== undefined ? { key: id.key, system: id.system } : []
+  );
+}
+
+// TODO: REFACTOR WITH ABOVE
+export async function searchPersons({
+  commonWell,
+  queryMeta,
+  strongIds,
+}: {
+  commonWell: CommonWell;
+  queryMeta: RequestMetadata;
+  strongIds: SimplifiedPersonalId[];
+}): Promise<CommonwellPerson[]> {
+  const respSearches = await Promise.allSettled(
+    strongIds.map(id => commonWell.searchPerson(queryMeta, id.key, id.system))
+  );
+  const rejected = respSearches.flatMap(r => (r.status === "rejected" ? r.reason : []));
+  if (rejected.length > 0) {
+    // TODO #369 also send ONE message to Slack?
+    rejected.forEach(reason =>
+      // TODO #156 SENTRY
+      console.log(`Failed to search for person with strongId: ${reason}`)
+    );
+  }
+  const fulfilled = respSearches
+    .flatMap(r => (r.status === "fulfilled" ? r.value._embedded?.person : []))
+    .flatMap(filterTruthy);
+
+  return fulfilled;
+}
+
+export function getPersonalIdentifiersFromPatient(patient: Patient): SimplifiedPersonalId[] {
+  return (patient.data.personalIdentifiers ?? []).flatMap(id =>
+    id.value !== undefined && id.state !== undefined
+      ? { key: id.value, system: driversLicenseURIs[id.state] }
+      : []
   );
 }

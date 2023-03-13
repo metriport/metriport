@@ -23,6 +23,8 @@ import {
   patientSchema,
   PatientSearchResp,
   patientSearchRespSchema,
+  patientLinkRespSchema,
+  PatientLinkResp,
 } from "../models/patient";
 import {
   PatientLink,
@@ -421,6 +423,22 @@ export class CommonWell {
   }
 
   /**
+   * Gets a person based on person id.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8713-find-persons-matching-patient-demographics
+   *
+   * @param meta        Metadata about the request.
+   * @param personId   The person ID.
+   * @returns
+   */
+  async getPersonById(meta: RequestMetadata, personId: string): Promise<Person> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.get(`${CommonWell.PERSON_ENDPOINT}/${personId}`, {
+      headers,
+    });
+    return personSchema.parse(resp.data);
+  }
+
+  /**
    * Updates a person.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8741-updating-person-information
    *
@@ -495,6 +513,20 @@ export class CommonWell {
   }
 
   /**
+   * Re-enrolls a person.
+   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#875-person-unenrollment
+   *
+   * @param meta    Metadata about the request.
+   * @param id      The person to be re-enrolled.
+   * @returns       Person with enrollment information
+   */
+  async reenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
+    const headers = await this.buildQueryHeaders(meta);
+    const resp = await this.api.put(`${CommonWell.PERSON_ENDPOINT}/${id}/enroll`, {}, { headers });
+    return personSchema.parse(resp.data);
+  }
+
+  /**
    * Unenrolls a person.
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#875-person-unenrollment
    *
@@ -507,22 +539,10 @@ export class CommonWell {
     const resp = await this.api.put(
       `${CommonWell.PERSON_ENDPOINT}/${id}/unenroll`,
       {},
-      { headers }
+      {
+        headers,
+      }
     );
-    return personSchema.parse(resp.data);
-  }
-
-  /**
-   * Re-enrolls a person.
-   * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#875-person-unenrollment
-   *
-   * @param meta    Metadata about the request.
-   * @param id      The person to be re-enrolled.
-   * @returns       Person with enrollment information
-   */
-  async reenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
-    const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.put(`${CommonWell.PERSON_ENDPOINT}/${id}/enroll`, {}, { headers });
     return personSchema.parse(resp.data);
   }
 
@@ -698,6 +718,7 @@ export class CommonWell {
     await this.api.delete(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, {
       headers,
     });
+
     return;
   }
 
@@ -839,16 +860,21 @@ export class CommonWell {
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8723-getting-a-patient-link
    *
    * @param meta              Metadata about the request.
-   * @param patientLinkUri    The uri of patient link to get
+   * @param personId          Person that is linked
+   * @param patientId         Patient that is linked
    * @returns
    */
-  async getPatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<PatientLink> {
+  async getPatientLink(
+    meta: RequestMetadata,
+    personId: string,
+    patientId: string
+  ): Promise<PatientLinkResp> {
     const headers = await this.buildQueryHeaders(meta);
-    const resp = await this.api.get(patientLinkUri, {
+    const resp = await this.api.get(`/v1/person/${personId}/patientLink/${patientId}/`, {
       headers,
     });
 
-    return patientLinkSchema.parse(resp.data);
+    return patientLinkRespSchema.parse(resp.data);
   }
 
   /**
@@ -876,14 +902,19 @@ export class CommonWell {
    * See: https://specification.commonwellalliance.org/services/patient-identity-and-linking/protocol-operations#8725-resetting-a-patient-link
    *
    * @param meta              Metadata about the request.
-   * @param patientLinkUri    The uri of patient link to be reset
+   * @param personId          Person that is linked
+   * @param patientId         Patient that is linked
    * @returns
    */
-  async resetPatientLink(meta: RequestMetadata, patientLinkUri: string): Promise<void> {
+  async resetPatientLink(
+    meta: RequestMetadata,
+    personId: string,
+    patientId: string
+  ): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
 
     await this.api.put(
-      `${patientLinkUri}reset`,
+      `/v1/person/${personId}/patientLink/${patientId}/reset`,
       {},
       {
         headers,

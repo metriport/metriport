@@ -30,7 +30,6 @@ export const commonWellManagement = new CommonWell(
   memberManagementOID,
   apiMode
 );
-
 const baseQueryMeta = (orgName: string) => ({
   purposeOfUse: PurposeOfUse.TREATMENT,
   role: "ict",

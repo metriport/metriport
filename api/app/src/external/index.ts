@@ -1,3 +1,3 @@
-export enum ExternalMedicalPartners {
+export enum MedicalDataSource {
   COMMONWELL = "COMMONWELL",
 }
