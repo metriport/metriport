@@ -23,7 +23,7 @@ export async function queryDocuments(
 
   const { personId, patientId } = await findOrCreatePerson(commonWell, queryMeta, makeDocPerson());
 
-  if (!personId) throw new Error(`[E1c] personId is undefined before calling getPatientLinks()`);
+  if (!personId) throw new Error(`[E1c] personId is undefined before calling getNetworkLinks()`);
   const respLinks = await commonWell.getNetworkLinks(queryMeta, patientId);
   console.log(respLinks);
   const allLinks = respLinks._embedded.networkLink;

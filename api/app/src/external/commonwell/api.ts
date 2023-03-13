@@ -13,9 +13,6 @@ const memberManagementPrivateKey = getEnvVarOrFail("CW_MEMBER_PRIVATE_KEY");
 const memberManagementCert = getEnvVarOrFail("CW_MEMBER_CERTIFICATE");
 
 const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
-export const apiUrl = Config.isProdEnv()
-  ? "https://rest.api.commonwellalliance.org"
-  : "https://integration.rest.api.commonwellalliance.org";
 
 /**
  *

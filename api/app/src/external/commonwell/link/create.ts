@@ -6,7 +6,7 @@ import { Patient } from "../../../models/medical/patient";
 import { Organization } from "../../../models/medical/organization";
 import { patientWithCWData } from "./shared";
 import { setCommonwellId } from "../patient-external-data";
-import { reset } from "../link";
+import { reset } from ".";
 
 export const create = async (
   personId: string,
@@ -65,6 +65,7 @@ export const create = async (
       throw new Error("Link has no href");
     }
 
+    // TODO: Convert this into a function
     const networkLinks = await commonWell.getNetworkLinks(metriportQueryMeta, cwPatientId);
 
     if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {

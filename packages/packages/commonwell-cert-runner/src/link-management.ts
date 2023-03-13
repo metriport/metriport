@@ -18,7 +18,7 @@ export async function linkManagement(commonWell: CommonWell, queryMeta: RequestM
   );
   const patientId = getIdTrailingSlash(respPatient);
   const referenceLink = respPatient._links.self.href;
-  const respC5a = await commonWell.patientLink(queryMeta, personId, referenceLink);
+  const respC5a = await commonWell.addPatientLink(queryMeta, personId, referenceLink);
   console.log(respC5a);
 
   console.log(`>>> C5b : Upgrade Patient link from LOLA 2 to LOLA 3 (with Strong ID).`);

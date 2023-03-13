@@ -4,7 +4,7 @@ import { Config } from "../../shared/config";
 import { USState } from "../../shared/geographic-locations";
 import { OIDNode, OID_ID_START } from "../../shared/oid";
 import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
-import { MedicalDataSource } from "./../../external";
+import { MedicalDataSource } from "../../external";
 import { Address } from "./address";
 import { Contact } from "./contact";
 

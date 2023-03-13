@@ -43,6 +43,7 @@ export const findCurrentLink = async (
     return;
   }
 
+  // IMPORT AS PARAM INSTEAD OF CONVERT
   const patientCWExternalData = patient.data.externalData?.COMMONWELL as PatientDataCommonwell;
 
   if (!patientCWExternalData.personId) {
@@ -94,8 +95,8 @@ export const findCurrentLink = async (
       return cwPerson;
     }
   } catch (error) {
-    const msg = `Failure retrieving`;
-    console.log(`${msg} - link for person id:`, patientCWExternalData.personId);
+    const msg = `Failure retrieving link`;
+    console.log(`${msg} - for person id:`, patientCWExternalData.personId);
     console.log(msg, error);
     throw new Error(msg);
   }
@@ -108,7 +109,10 @@ export const findAllPotentialLinks = async (
   const personResultsStrongId = await findAllPersonsStrongId(patient, organization);
   const personResultsByDemo = await findAllPersons(patient, organization);
 
-  const uniqueResults = uniqBy([...personResultsStrongId, ...personResultsByDemo], "_links.self");
+  const uniqueResults = uniqBy(
+    [...personResultsStrongId, ...personResultsByDemo],
+    "_links.self.href"
+  );
 
   return uniqueResults;
 };

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/commonwell-cert-runner",
-  "version": "1.2.0-alpha.0",
+  "version": "1.2.3",
   "description": "Tool to run through Edge System CommonWell certification test cases - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -46,11 +46,12 @@
     "typescript": "^4.9.4"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "^1.2.4-alpha.0",
+    "@metriport/commonwell-sdk": "^2.0.1-alpha.3",
     "commander": "^9.5.0",
     "dotenv": "^16.0.3",
     "lodash": "^4.17.21",
     "nanoid": "^3.3.4",
     "unique-names-generator": "^4.7.1"
-  }
+  },
+  "gitHead": "39b03e5b094a75968ddbc4a14b44f935234bcc7c"
 }

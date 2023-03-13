@@ -97,7 +97,7 @@ export class MetriportMedicalApi {
       }
     );
 
-    if (!resp.data) throw new Error(`Didnt connect link`);
+    if (!resp.data) throw new Error(`Link not created between patient and entity`);
     return resp.data;
   }
 
@@ -105,9 +105,9 @@ export class MetriportMedicalApi {
    * Removes link to the specified entity.
    *
    * @param {string}                     patientId     Patient ID to remove link from.
-   * @param {MedicalDataSource}    linkSource    HIE to remove the link from.
+   * @param {MedicalDataSource}          linkSource    HIE to remove the link from.
    *
-   * @returns 200
+   * @returns void
    */
   async removeLink(patientId: string, linkSource: MedicalDataSource): Promise<void> {
     await this.api.delete(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`);

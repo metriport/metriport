@@ -1,5 +1,4 @@
 import { Person } from "@metriport/commonwell-sdk";
-import { apiUrl } from "../api";
 import {
   Patient,
   PatientData,
@@ -8,19 +7,14 @@ import {
 } from "../../../models/medical/patient";
 import { PatientDataCommonwell } from "../patient-shared";
 import { MedicalDataSource } from "../..";
+import { filterTruthy } from "../../../shared/filter-map-utils";
 
 export const createPatientLink = (personId: string, patientId: string): string => {
-  return `${apiUrl}/v1/person/${personId}/patientLink/${patientId}/`;
+  return `/v1/person/${personId}/patientLink/${patientId}/`;
 };
 
 export const commonwellPersonLinks = (persons: Person[]): Person[] => {
-  const links: Person[] = [];
-
-  persons.forEach(person => {
-    if (person) links.push(person);
-  });
-
-  return links;
+  return persons.flatMap<Person>(filterTruthy);
 };
 
 export type PatientWithCW = Omit<Patient, "data"> & {
