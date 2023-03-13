@@ -14,6 +14,8 @@ import { makeCommonWellAPI, organizationQueryMeta } from "./api";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { setCommonwellId } from "./patient-external-data";
 import { findOrCreatePerson, getPatientData, PatientDataCommonwell } from "./patient-shared";
+import { Config } from "../../shared/config";
+import { registerPatient as sbRegisterPatient } from "./sandbox-payloads";
 
 export function mapPatientExternal(data: PatientExternalData | undefined): PatientLinkStatusDTO {
   return data
@@ -89,6 +91,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
 
   const person = makePersonForPatient(commonwellPatient);
   try {
+    // DUMMY MOCK THIS
     const respPerson = await commonWell.updatePerson(queryMeta, person, commonwellPersonId);
     debug(`resp updatePerson: `, respPerson);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -218,6 +221,7 @@ async function findOrCreatePersonAndLink({
   if (!commonwellPersonId) return undefined;
 
   try {
+    // DUMMY MOCK THIS
     await commonWell.patientLink(queryMeta, commonwellPersonId, patientRefLink);
   } catch (err) {
     log(`ERR - Patient created @ CW but could not link w/ Person`);
@@ -239,7 +243,11 @@ async function registerPatient({
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
 }): Promise<{ commonwellPatientId: string; patientRefLink: string }> {
-  const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
+  // DUMMY MOCK THIS
+  const respPatient = await sandBoxWrapper(
+    async () => await commonWell.registerPatient(queryMeta, commonwellPatient),
+    sbRegisterPatient
+  );
   debug(`resp registerPatient: `, respPatient);
   const commonwellPatientId = getIdTrailingSlash(respPatient);
   const log = Util.log(`CW registerPatient - CW patientId ${commonwellPatientId}`);
@@ -263,6 +271,15 @@ async function registerPatient({
   return { commonwellPatientId, patientRefLink };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sandBoxWrapper = async (cwCb: () => any, sandboxPayload: any) => {
+  if (Config.isSandbox()) {
+    return sandboxPayload;
+  }
+
+  return cwCb();
+};
+
 async function updatePatient({
   commonWell,
   queryMeta,
@@ -276,6 +293,7 @@ async function updatePatient({
 }): Promise<{ patientRefLink: string }> {
   const { log, debug } = Util.out(`CW updatePatient - CW patientId ${commonwellPatientId}`);
 
+  // DUMMY MOCK THIS
   const respUpdate = await commonWell.updatePatient(
     queryMeta,
     commonwellPatient,

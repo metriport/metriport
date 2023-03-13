@@ -62,6 +62,10 @@ export async function organizationToCommonwell(
 }
 
 export const create = async (org: Organization): Promise<void> => {
+  if (Config.isSandbox()) {
+    return;
+  }
+
   const cwOrg = await organizationToCommonwell(org);
   try {
     await commonWellManagement.createOrg(metriportQueryMeta, cwOrg);
@@ -75,6 +79,10 @@ export const create = async (org: Organization): Promise<void> => {
 };
 
 export const update = async (org: Organization): Promise<void> => {
+  if (Config.isSandbox()) {
+    return;
+  }
+
   const cwOrg = await organizationToCommonwell(org);
   try {
     await commonWellManagement.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
