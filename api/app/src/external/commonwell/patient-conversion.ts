@@ -66,7 +66,7 @@ export function patientToCommonwell({
         code: genderMapping[patient.data.genderAtBirth],
       },
       birthDate: patient.data.dob,
-      ...(strongIdentifiers.length > 0 ? { identifier: strongIdentifiers } : undefined),
+      identifier: strongIdentifiers,
     },
   };
 }
