@@ -97,7 +97,7 @@ export class CommonWell {
     return this._oid;
   }
 
-  // TODO: handle errors in API calls as per
+  // TODO: #322 handle errors in API calls as per
   // https://specification.commonwellalliance.org/services/rest-api-reference (8.6.1 Error)
   // Note that also sometimes these calls 404 when things aren't found and etc
 
