@@ -76,7 +76,6 @@ export const driversLicenseURIs: { [k in USState]: string } = {
   WV: `${OID_PREFIX}2.16.840.1.113883.4.3.54`,
   WY: `${OID_PREFIX}2.16.840.1.113883.4.3.56`,
 };
-
 export const ssnURI = `${OID_PREFIX}2.16.840.1.113883.4.1`;
 export const medicareURI = `${OID_PREFIX}2.16.840.1.113883.4.572`;
 export const passportURI = `${OID_PREFIX}2.16.840.1.113883.4.330`;
