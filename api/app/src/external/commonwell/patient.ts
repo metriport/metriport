@@ -303,7 +303,7 @@ async function registerPatient({
 
   let respPatient;
 
-  if (!Config.isSandbox()) {
+  if (Config.isSandbox()) {
     respPatient = {
       ...commonwellPatient,
       _links: createPatientLinks(commonwellPatient.identifier),
