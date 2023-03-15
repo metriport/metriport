@@ -7,6 +7,8 @@ import { Organization } from "../../../models/medical/organization";
 import { patientWithCWData } from "./shared";
 import { setCommonwellId } from "../patient-external-data";
 import { reset } from ".";
+import { Config } from "../../../shared/config";
+import { createPatient as sbCreatePatient } from "../sandbox-payloads";
 
 export const create = async (
   personId: string,
@@ -30,29 +32,23 @@ export const create = async (
 
     if (cwPersonId) {
       await reset(patient, organization);
-
-      await setCommonwellId({
-        patientId: patient.id,
-        cxId: patient.cxId,
-        commonwellPatientId: cwPatientId,
-        commonwellPersonId: undefined,
-      });
     }
 
     const orgName = organization.data.name;
     const orgId = organization.id;
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
-    const cwPatient = await commonWell.getPatient(metriportQueryMeta, cwPatientId);
+
+    let cwPatient;
+
+    if (Config.isSandbox()) {
+      cwPatient = sbCreatePatient(patient, orgId, orgName);
+    } else {
+      cwPatient = await commonWell.getPatient(metriportQueryMeta, cwPatientId);
+    }
 
     if (!cwPatient._links?.self?.href) {
       throw new Error(`No patient uri for cw patient: ${cwPatientId}`);
     }
-
-    const link = await commonWell.addPatientLink(
-      metriportQueryMeta,
-      personId,
-      cwPatient._links.self.href
-    );
 
     await setCommonwellId({
       patientId: patient.id,
@@ -60,6 +56,16 @@ export const create = async (
       commonwellPatientId: cwPatientId,
       commonwellPersonId: personId,
     });
+
+    if (Config.isSandbox()) {
+      return;
+    }
+
+    const link = await commonWell.addPatientLink(
+      metriportQueryMeta,
+      personId,
+      cwPatient._links.self.href
+    );
 
     if (!link._links?.self?.href) {
       throw new Error("Link has no href");
