@@ -2,12 +2,14 @@ import axios, { AxiosInstance, AxiosStatic } from "axios";
 
 import { Organization } from "../models/organization";
 import { PatientLinks, MedicalDataSource } from "../models/link";
+import { DocumentReference, documentReferenceSchema } from "../models/document";
 
 export class MetriportMedicalApi {
-  private api: AxiosInstance;
+  readonly api: AxiosInstance;
   private ORGANIZATION_URL = `/organization`;
   private PATIENT_URL = `/patient`;
   private LINK_URL = `/link`;
+  private DOCUMENT_URL = `/document`;
 
   /**
    * Creates a new instance of the Metriport Medical API client.
@@ -26,11 +28,13 @@ export class MetriportMedicalApi {
         baseURL,
         headers,
       });
-    } else {
+    } else if (secondaryAxios) {
       this.api = secondaryAxios.create({
         baseURL,
         headers,
       });
+    } else {
+      throw new Error(`Failed to initialize Axios`);
     }
   }
 
@@ -111,5 +115,46 @@ export class MetriportMedicalApi {
    */
   async removeLink(patientId: string, linkSource: MedicalDataSource): Promise<void> {
     await this.api.delete(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`);
+  }
+
+  /**
+   * Returns document references for the given patient across HIEs.
+   *
+   * @param patientId Patient ID for which to retrieve document metadata.
+   * @param facilityId The facility providing NPI for the document query.
+   * @return The metadata of available documents.
+   */
+  async searchDocuments(patientId: string, facilityId: string): Promise<DocumentReference[]> {
+    const resp = await this.api.get(`${this.DOCUMENT_URL}`, {
+      params: {
+        patientId,
+        facilityId,
+      },
+    });
+    if (!resp.data) [];
+    return documentReferenceSchema.array().parse(resp.data);
+  }
+
+  /**
+   * Returns document references for the given patient across HIEs.
+   * Usually called after a successful call to `getDocuments`, which provides
+   * a Document location.
+   *
+   * @param patientId Patient ID for which to retrieve document metadata.
+   * @param facilityId The facility providing NPI for the document query.
+   * @param location The location of the document.
+   * @return The document's contents (bytes).
+   */
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async getDocument(patientId: string, facilityId: string, location: string): Promise<any> {
+    const resp = await this.api.get(`${this.DOCUMENT_URL}/download`, {
+      params: {
+        patientId,
+        facilityId,
+        location,
+      },
+      responseType: "blob",
+    });
+    return resp.data;
   }
 }

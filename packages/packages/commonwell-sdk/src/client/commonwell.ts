@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from "axios";
-import * as fs from "fs";
 import * as httpStatus from "http-status";
 import { Agent } from "https";
+import * as stream from "stream";
 import { downloadFile } from "../common/fileDownload";
 import { makeJwt } from "../common/make-jwt";
 import MetriportError from "../common/metriport-error";
@@ -18,13 +18,13 @@ import {
 } from "../models/organization";
 import {
   Patient,
+  PatientLinkResp,
+  patientLinkRespSchema,
   PatientNetworkLinkResp,
   patientNetworkLinkRespSchema,
   patientSchema,
   PatientSearchResp,
   patientSearchRespSchema,
-  patientLinkRespSchema,
-  PatientLinkResp,
 } from "../models/patient";
 import {
   PatientLink,
@@ -758,7 +758,7 @@ export class CommonWell {
   async retrieveDocument(
     meta: RequestMetadata,
     inputUrl: string,
-    outputStream: fs.WriteStream
+    outputStream: stream.Writable
   ): Promise<void> {
     const headers = await this.buildQueryHeaders(meta);
     await downloadFile({
