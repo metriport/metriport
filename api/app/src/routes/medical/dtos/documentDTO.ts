@@ -2,7 +2,7 @@ import { DocumentContent } from "@metriport/commonwell-sdk";
 import { DocumentWithLocation } from "../../../external/commonwell/document";
 
 export type DocumentReferenceDTO = {
-  id: string | undefined;
+  id: string;
   fileName: string;
   location: string;
   description: string | undefined;
@@ -12,7 +12,7 @@ export type DocumentReferenceDTO = {
   size: number | undefined; // bytes
 } & Partial<Pick<DocumentContent, "type">>; // TODO build our own representation
 
-export function dtoFromModel(doc: DocumentWithLocation): DocumentReferenceDTO | undefined {
+export function dtoFromModel(doc: DocumentWithLocation): DocumentReferenceDTO {
   const { id, description, type, status, location, fileName, indexed, mimeType, size } = doc;
   return {
     id,

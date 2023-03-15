@@ -82,7 +82,7 @@ router.put(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /patient:id
+ * GET /patient/:id
  *
  * Returns a patient corresponding to the specified facility at the customer's organization.
  *
@@ -95,7 +95,9 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromParamsOrFail("id", req);
+
     const patient = await getPatient({ id: patientId, cxId });
+
     return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
@@ -114,7 +116,9 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+
     const patients = await getPatients({ cxId, facilityId: facilityId });
+
     const patientsData = patients.map(dtoFromModel);
     return res.status(status.OK).json({ patients: patientsData });
   })
