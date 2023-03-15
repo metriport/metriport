@@ -8,7 +8,6 @@ import {
 } from "../../../models/medical/patient";
 import { USState } from "../../../shared/geographic-locations";
 import { addressSchema } from "./address";
-import { optionalString } from "./shared";
 
 const usStateSchema = z.nativeEnum(USState);
 
@@ -51,8 +50,8 @@ export const patientCreateSchema = z.object({
   personalIdentifiers: z.array(personalIdentifierSchema),
   address: addressSchema,
   contact: z.object({
-    phone: optionalString(z.string().length(10)),
-    email: optionalString(z.string().email()),
+    phone: z.string().length(10).or(z.undefined()),
+    email: z.string().email().or(z.undefined()),
   }),
 });
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
