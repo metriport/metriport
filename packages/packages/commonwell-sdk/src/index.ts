@@ -1,4 +1,5 @@
-export { APIMode, CommonWell, CommonWellType, RequestMetadata } from "./client/commonwell";
+export { APIMode, CommonWell, RequestMetadata } from "./client/commonwell";
+export { CommonWellType } from "./models/commonwell";
 export { makeJwt } from "./common/make-jwt";
 export { getId, getIdTrailingSlash, getPersonIdFromSearchByPatientDemo } from "./common/util";
 export { Address, AddressUseCodes } from "./models/address";
