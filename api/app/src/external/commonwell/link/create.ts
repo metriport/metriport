@@ -41,18 +41,18 @@ export const create = async (
       throw new Error(`No patient uri for cw patient: ${cwPatientId}`);
     }
 
+    const link = await commonWell.addPatientLink(
+      metriportQueryMeta,
+      personId,
+      cwPatient._links.self.href
+    );
+
     await setCommonwellId({
       patientId: patient.id,
       cxId: patient.cxId,
       commonwellPatientId: cwPatientId,
       commonwellPersonId: personId,
     });
-
-    const link = await commonWell.addPatientLink(
-      metriportQueryMeta,
-      personId,
-      cwPatient._links.self.href
-    );
 
     if (!link._links?.self?.href) {
       throw new Error("Link has no href");
