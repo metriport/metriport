@@ -14,16 +14,18 @@ import {
 
 import * as nanoid from "nanoid";
 
-import { createPerson, createPatient, createPatientWithLinks } from "./sandbox-payloads";
+import {
+  createPerson,
+  createPatient,
+  createPatientWithLinks,
+  createPatientLink,
+} from "./sandbox-payloads";
 
 const cwURL = "https://sandbox.rest.api.commonwellalliance.org";
 const idAlphabet = "123456789";
 export const primaryPatientId = nanoid.customAlphabet(idAlphabet, 6)();
 
 export class CommonWellMock implements CommonWellType {
-  static integrationUrl = "https://integration.rest.api.commonwellalliance.org";
-  static productionUrl = "https://rest.api.commonwellalliance.org";
-
   // V1
   static PERSON_ENDPOINT = "/v1/person";
   static ORG_ENDPOINT = "/v1/org";
@@ -114,7 +116,7 @@ export class CommonWellMock implements CommonWellType {
     const person = createPerson(this._oid, this.orgName, mockPersonId);
 
     return {
-      message: "CommonWell found one Person matching your search criteria.",
+      message: "CommonWell found 1 Person matching your search criteria.",
       _links: {
         self: {
           href: `${cwURL}${CommonWellMock.PERSON_ENDPOINT}?key=${key}&system=urn%3Aoid%3A${system}`,
@@ -249,21 +251,13 @@ export class CommonWellMock implements CommonWellType {
       _embedded: {
         networkLink: [
           {
-            _links: {
-              downgrade: {
-                href: "",
-              },
-            },
+            _links: {},
             assuranceLevel: "2",
             patient: patient,
           },
         ],
       },
-      _links: {
-        self: {
-          href: "",
-        },
-      },
+      _links: {},
     };
   }
 
@@ -293,11 +287,7 @@ export class CommonWellMock implements CommonWellType {
   // USED BUT DOESNT RETURN ANYTHING
   async upgradeOrDowngradeNetworkLink() {
     return {
-      _links: {
-        downgrade: {
-          href: "",
-        },
-      },
+      _links: {},
       assuranceLevel: "2",
       patient: {},
     };
@@ -309,30 +299,10 @@ export class CommonWellMock implements CommonWellType {
   }
 
   async getPatientLinks(meta: RequestMetadata, personId: string): Promise<PatientLinkSearchResp> {
-    const patientLink = `${cwURL}${CommonWellMock.PERSON_ENDPOINT}/${personId}/patientLink`;
-    return {
-      _links: {
-        self: {
-          href: patientLink,
-        },
-      },
-      _embedded: {
-        patientLink: [
-          {
-            patient: `${cwURL}${CommonWellMock.ORG_ENDPOINT}/${this.oid}/patient/${primaryPatientId}`,
-            assuranceLevel: "2",
-            _links: {
-              self: {
-                href: `${patientLink}/${primaryPatientId}/`,
-              },
-              reset: {
-                href: `${patientLink}/${primaryPatientId}/Reset`,
-              },
-            },
-          },
-        ],
-      },
-    };
+    const patientLinkUrl = `${cwURL}${CommonWellMock.PERSON_ENDPOINT}/${personId}/patientLink`;
+    const patientLink = createPatientLink(patientLinkUrl, primaryPatientId, this.oid);
+
+    return patientLink;
   }
 
   async getPatientLink(
@@ -340,31 +310,10 @@ export class CommonWellMock implements CommonWellType {
     personId: string,
     patientId: string
   ): Promise<PatientLinkResp> {
-    const patientLink = `${cwURL}${CommonWellMock.PERSON_ENDPOINT}/${personId}/patientLink`;
+    const patientLinkUrl = `${cwURL}${CommonWellMock.PERSON_ENDPOINT}/${personId}/patientLink`;
+    const patientLink = createPatientLink(patientLinkUrl, patientId, this.oid);
 
-    return {
-      _links: {
-        self: {
-          href: patientLink,
-        },
-      },
-      _embedded: {
-        patientLink: [
-          {
-            patient: `${cwURL}${CommonWellMock.ORG_ENDPOINT}/${this.oid}/patient/${patientId}`,
-            assuranceLevel: "2",
-            _links: {
-              self: {
-                href: `${patientLink}/${patientId}/`,
-              },
-              reset: {
-                href: `${patientLink}/${patientId}/Reset`,
-              },
-            },
-          },
-        ],
-      },
-    };
+    return patientLink;
   }
 
   // NOT USED YET

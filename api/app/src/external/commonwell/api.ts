@@ -7,17 +7,8 @@ import {
 } from "@metriport/commonwell-sdk";
 import { CertificatePurpose } from "@metriport/commonwell-sdk/lib/models/certificates";
 import { X509Certificate } from "crypto";
-import { Config, getEnvVarOrFail } from "../../shared/config";
+import { Config } from "../../shared/config";
 import { CommonWellMock } from "./mock";
-
-// TODO move these getEnvVarOrFail to Config
-const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
-const metriportPrivateKey = getEnvVarOrFail("CW_PRIVATE_KEY");
-const metriportCert = getEnvVarOrFail("CW_CERTIFICATE");
-
-const memberManagementOID = getEnvVarOrFail("CW_MEMBER_OID");
-const memberManagementPrivateKey = getEnvVarOrFail("CW_MEMBER_PRIVATE_KEY");
-const memberManagementCert = getEnvVarOrFail("CW_MEMBER_CERTIFICATE");
 
 const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
 
@@ -29,22 +20,26 @@ const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
  */
 export function makeCommonWellAPI(orgName: string, orgId: string): CommonWellType {
   if (Config.isSandbox()) {
-    return new CommonWellMock(metriportOrgName, memberManagementOID);
+    return new CommonWellMock(orgName, orgId);
   }
 
-  return new CommonWell(metriportCert, metriportPrivateKey, orgName, orgId, apiMode);
-}
+  const isMember = orgId === Config.getMemberManagementOID();
 
-export function makeCommonWelMemberAPI(): CommonWellType {
-  if (Config.isSandbox()) {
-    return new CommonWellMock(metriportOrgName, memberManagementOID);
+  if (isMember) {
+    return new CommonWell(
+      Config.getMemberManagementCert(),
+      Config.getMemberManagementPrivateKey(),
+      orgName,
+      orgId,
+      apiMode
+    );
   }
 
   return new CommonWell(
-    memberManagementCert,
-    memberManagementPrivateKey,
-    metriportOrgName,
-    memberManagementOID,
+    Config.getMetriportCert(),
+    Config.getMetriportPrivateKey(),
+    orgName,
+    orgId,
     apiMode
   );
 }
@@ -79,7 +74,7 @@ export const metriportQueryMeta: RequestMetadata = baseQueryMeta("Metriport");
 
 // CERTIFICATE
 
-const commonwellCertificate = metriportCert;
+const commonwellCertificate = Config.getMetriportCert();
 const commonwellCertificateContent = getCertificateContent(commonwellCertificate);
 const x509 = new X509Certificate(commonwellCertificate);
 

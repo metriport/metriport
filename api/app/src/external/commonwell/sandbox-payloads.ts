@@ -132,3 +132,29 @@ export const createPerson = (orgId: string, orgName: string, personId: string) =
     },
   };
 };
+
+export const createPatientLink = (patientLink: string, patientId: string, orgId: string) => {
+  return {
+    _links: {
+      self: {
+        href: patientLink,
+      },
+    },
+    _embedded: {
+      patientLink: [
+        {
+          patient: `${cwURL}/${orgRoute}/${orgId}/patient/${patientId}`,
+          assuranceLevel: "2",
+          _links: {
+            self: {
+              href: `${patientLink}/${patientId}/`,
+            },
+            reset: {
+              href: `${patientLink}/${patientId}/Reset`,
+            },
+          },
+        },
+      ],
+    },
+  };
+};
