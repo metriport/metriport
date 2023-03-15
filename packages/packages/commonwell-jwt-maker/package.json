@@ -47,6 +47,5 @@
   "dependencies": {
     "@metriport/commonwell-sdk": "^2.1.0-alpha.2",
     "commander": "^9.5.0"
-  },
-  "gitHead": "d5210260765cd739437a5fd28ddc106834cce689"
+  }
 }

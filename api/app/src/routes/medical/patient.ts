@@ -22,7 +22,7 @@ const router = Router();
  * Creates the patient corresponding to the specified facility at the
  * customer's organization if it doesn't exist already.
  *
- * @param  facilityId The ID of the Facility the Patient should be associated with.
+ * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
  * @return The newly created patient.
  */
 router.post(
