@@ -1,5 +1,5 @@
 import {
-  CommonWellType,
+  CommonWellAPI,
   RequestMetadata,
   Organization,
   Person,
@@ -25,7 +25,7 @@ const cwURL = "https://sandbox.rest.api.commonwellalliance.org";
 const idAlphabet = "123456789";
 export const primaryPatientId = nanoid.customAlphabet(idAlphabet, 6)();
 
-export class CommonWellMock implements CommonWellType {
+export class CommonWellMock implements CommonWellAPI {
   // V1
   static PERSON_ENDPOINT = "/v1/person";
   static ORG_ENDPOINT = "/v1/org";

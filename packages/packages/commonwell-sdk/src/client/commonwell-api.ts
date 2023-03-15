@@ -1,15 +1,19 @@
-import * as fs from "fs";
-import { RequestMetadata } from "../client/commonwell";
-import { CertificateParam, CertificateResp } from "./certificates";
-import { DocumentQueryResponse } from "./document";
-import { Identifier, StrongId } from "./identifier";
-import { NetworkLink, PatientLinkProxy } from "./link";
-import { Organization, OrganizationList } from "./organization";
-import { Patient, PatientNetworkLinkResp, PatientSearchResp, PatientLinkResp } from "./patient";
-import { PatientLink, PatientLinkSearchResp, Person, PersonSearchResp } from "./person";
+import * as stream from "stream";
+import { RequestMetadata } from "./commonwell";
+import { CertificateParam, CertificateResp } from "../models/certificates";
+import { DocumentQueryResponse } from "../models/document";
+import { Identifier, StrongId } from "../models/identifier";
+import { NetworkLink, PatientLinkProxy } from "../models/link";
+import { Organization, OrganizationList } from "../models/organization";
+import {
+  Patient,
+  PatientNetworkLinkResp,
+  PatientSearchResp,
+  PatientLinkResp,
+} from "../models/patient";
+import { PatientLink, PatientLinkSearchResp, Person, PersonSearchResp } from "../models/person";
 
-export interface CommonWellType {
-  get oid(): string;
+export interface CommonWellAPI {
   createOrg(meta: RequestMetadata, organization: Organization): Promise<Organization>;
   updateOrg(meta: RequestMetadata, organization: Organization, id: string): Promise<Organization>;
   getAllOrgs(
@@ -97,7 +101,7 @@ export interface CommonWellType {
   retrieveDocument(
     meta: RequestMetadata,
     inputUrl: string,
-    outputStream: fs.WriteStream
+    outputStream: stream.Writable
   ): Promise<void>;
   upgradeOrDowngradeNetworkLink(
     meta: RequestMetadata,

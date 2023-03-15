@@ -37,7 +37,7 @@ import {
   personSearchRespSchema,
 } from "../models/person";
 import { PurposeOfUse } from "../models/purpose-of-use";
-import { CommonWellType } from "..";
+import { CommonWellAPI } from "..";
 
 export enum APIMode {
   integration = "integration",
@@ -52,7 +52,7 @@ export interface RequestMetadata {
   payloadHash?: string;
 }
 
-export class CommonWell implements CommonWellType {
+export class CommonWell implements CommonWellAPI {
   static integrationUrl = "https://integration.rest.api.commonwellalliance.org";
   static productionUrl = "https://rest.api.commonwellalliance.org";
 

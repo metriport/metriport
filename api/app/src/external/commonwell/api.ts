@@ -1,7 +1,7 @@
 import {
   APIMode,
   CommonWell,
-  CommonWellType,
+  CommonWellAPI,
   PurposeOfUse,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
@@ -18,7 +18,7 @@ const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
  * @param orgId Organization ID without 'urn:oid:' namespace
  * @returns CommonWell API
  */
-export function makeCommonWellAPI(orgName: string, orgId: string): CommonWellType {
+export function makeCommonWellAPI(orgName: string, orgId: string): CommonWellAPI {
   if (Config.isSandbox()) {
     return new CommonWellMock(orgName, orgId);
   }

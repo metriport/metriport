@@ -3,7 +3,7 @@ import {
   LOLA,
   Patient as CommonwellPatient,
   RequestMetadata,
-  CommonWellType,
+  CommonWellAPI,
 } from "@metriport/commonwell-sdk";
 
 import { MedicalDataSource } from "..";
@@ -196,7 +196,7 @@ async function setupUpdate(
   facilityId: string
 ): Promise<
   | {
-      commonWell: CommonWellType;
+      commonWell: CommonWellAPI;
       queryMeta: RequestMetadata;
       commonwellPatient: CommonwellPatient;
       commonwellPatientId: string;
@@ -231,7 +231,7 @@ async function findOrCreatePersonAndLink({
   patientRefLink,
   storeIds,
 }: {
-  commonWell: CommonWellType;
+  commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
@@ -287,7 +287,7 @@ async function registerPatient({
   commonwellPatient,
   storeIds,
 }: {
-  commonWell: CommonWellType;
+  commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   storeIds: StoreIdsFunction;
@@ -329,7 +329,7 @@ async function updatePatient({
   commonwellPatient,
   commonwellPatientId,
 }: {
-  commonWell: CommonWellType;
+  commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
