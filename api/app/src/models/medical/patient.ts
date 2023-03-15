@@ -1,10 +1,9 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { Config } from "../../shared/config";
-import { USState } from "../../shared/geographic-locations";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
-import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { MedicalDataSource } from "../../external";
+import { USState } from "../../shared/geographic-locations";
+import { OID_ID_START, patientId as makePatientId } from "../../shared/oid";
+import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 import { Address } from "./address";
 import { Contact } from "./contact";
 
@@ -108,9 +107,7 @@ async function createPatientId(cxId: string) {
   })) as number;
   const org = await getOrganizationOrFail({ cxId });
   const patientNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-  const patientId = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
-    org.organizationNumber
-  }.${OIDNode.patients}.${patientNumber}`;
+  const patientId = makePatientId(org.id, patientNumber);
   return {
     patientId,
     patientNumber,

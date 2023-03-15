@@ -23,6 +23,10 @@ export function oid(id: string): string {
   return `${OID_PREFIX}${id}`;
 }
 
+export function patientId(orgId: string, patientNumber: string | number): string {
+  return `${orgId}.${OIDNode.patients}.${patientNumber}`;
+}
+
 export const driversLicenseURIs: { [k in USState]: string } = {
   AK: `${OID_PREFIX}2.16.840.1.113883.4.3.2`,
   AL: `${OID_PREFIX}2.16.840.1.113883.4.3.1`,
