@@ -1,30 +1,32 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { asyncHandler, getCxIdOrFail, getPatientIdFromQueryOrFail } from "../util";
-const router = Router();
 import status from "http-status";
-import { getPatient } from "../../command/medical/patient/get-patient";
+import { downloadDocument, getDocuments } from "../../external/commonwell/document";
+import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
+import { dtoFromModel } from "./dtos/documentDTO";
+
+const router = Router();
 
 /** ---------------------------------------------------------------------------
  * GET /document
  *
  * Queries for all available document metadata for the specified patient across HIEs.
  *
- * @param   req.query.patientId Patient ID for which to retrieve document metadata.
- * @return  {DocumentRef[]}     The available documents.
+ * @param req.query.patientId Patient ID for which to retrieve document metadata.
+ * @param req.query.facilityId The facility providing NPI for the document query.
+ * @return The metadata of available documents.
  */
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const patientId = getPatientIdFromQueryOrFail(req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
 
-    const patient = await getPatient({ id: patientId, cxId });
-    console.log(patient);
-    // TODO: #374 will implement
-    // CommonWell.queryDocuments()
+    const documents = await getDocuments({ cxId, patientId, facilityId });
 
-    return res.status(status.OK).json([]);
+    const result = documents.map(dtoFromModel);
+    return res.status(status.OK).json(result);
   })
 );
 
@@ -33,23 +35,30 @@ router.get(
  *
  * Downloads the specified document for the specified patient.
  *
- * @param   req.query.patientId Patient ID for which to retrieve document metadata.
- * @return  {docUrl: string}     The available documents.
+ * @param req.query.patientId Patient ID for which to retrieve document metadata.
+ * @param req.query.facilityId The facility providing NPI for the document download.
+ * @param req.query.location The document URL.
+ * @param [req.query.mimeType] The mime type of the document.
+ * @param [req.query.fileName] The file name of the document.
+ * @return The document content.
  */
 router.get(
   "/download",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const patientId = getPatientIdFromQueryOrFail(req);
-    // get document url from query params
+    const patientId = getFromQueryOrFail("patientId", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
 
-    const patient = await getPatient({ id: patientId, cxId });
-    console.log(patient);
+    const location = getFromQueryOrFail("location", req);
+    const mimeType = getFromQuery("mimeType", req);
+    const fileName = getFromQuery("fileName", req);
 
-    // TODO: #374 will implement
-    // CommonWell.retrieveDocument()
+    fileName && res.attachment(fileName);
+    mimeType && res.header("Content-Type", mimeType);
 
-    return res.status(status.OK).json([]);
+    await downloadDocument({ patientId, cxId, facilityId, location, stream: res });
+
+    return res;
   })
 );
 

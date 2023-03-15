@@ -84,7 +84,10 @@ function idsToAlertMessage(cwPatientId: string, personIds: string[]): string {
 }
 
 export async function getPatientData(
-  patient: Patient,
+  patient: {
+    id: string;
+    cxId: string;
+  },
   facilityId: string
 ): Promise<{
   organization: Organization;

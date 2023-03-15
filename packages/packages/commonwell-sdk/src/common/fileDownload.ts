@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import * as fs from "fs";
 import * as httpStatus from "http-status";
 import * as stream from "stream";
 import * as util from "util";
@@ -13,7 +12,7 @@ export async function downloadFile({
   headers,
 }: {
   url: string;
-  outputStream: fs.WriteStream;
+  outputStream: stream.Writable;
   client?: AxiosInstance;
   headers?: {
     [index: string]: string;

@@ -22,9 +22,8 @@ const router = Router();
  * Creates the patient corresponding to the specified facility at the
  * customer's organization if it doesn't exist already.
  *
- * @param {string} facilityId The ID of the Facility the Patient should be associated with.
- *
- * @return {PatientDTO} The newly created patient.
+ * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
+ * @return The newly created patient.
  */
 router.post(
   "/",
@@ -54,9 +53,8 @@ router.post(
  * Updates the patient corresponding to the specified facility at the customer's organization.
  * Note: this is not a PATCH, so requests must include all patient data in the payload.
  *
- * @param  {string} req.query.facilityId The ID of the facility the user patient
- *
- * @return {PatientDTO} The patient to be updated
+ * @param req.query.facilityId The facility providing NPI for the patient update
+ * @return The patient to be updated
  */
 router.put(
   "/:id",
@@ -88,11 +86,9 @@ router.put(
  *
  * Returns a patient corresponding to the specified facility at the customer's organization.
  *
- * @param   {string}  req.cxId      The customer ID.
- * @param   {string}  req.param.id  The ID of the patient to be returned
- * is associated with.
- *
- * @return  {PatientDTO[]} The customer's patients associated with the given facility.
+ * @param   req.cxId      The customer ID.
+ * @param   req.param.id  The ID of the patient to be returned is associated with.
+ * @return  The customer's patients associated with the given facility.
  */
 router.get(
   "/:id",
@@ -109,11 +105,9 @@ router.get(
  *
  * Gets all patients corresponding to the specified facility at the customer's organization.
  *
- * @param   {string}        req.cxId              The customer ID.
- * @param   {string}        req.query.facilityId  The ID of the facility the user patient
- * is associated with.
- *
- * @return  {PatientDTO[]} The customer's patients associated with the given facility.
+ * @param   req.cxId              The customer ID.
+ * @param   req.query.facilityId  The ID of the facility the user patient is associated with.
+ * @return  The customer's patients associated with the given facility.
  */
 router.get(
   "/",
