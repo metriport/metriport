@@ -1,6 +1,5 @@
-import { Identifier } from "@metriport/commonwell-sdk";
-import { Patient } from "../../models/medical/patient";
 import * as nanoid from "nanoid";
+import { Patient } from "@metriport/commonwell-sdk";
 import { driversLicenseURIs } from "../../shared/oid";
 
 const cwURL = "https://sandbox.rest.api.commonwellalliance.org";
@@ -12,7 +11,54 @@ const personRoute = "v1/person";
 const idAlphabet = "123456789";
 export const primaryPersonId = nanoid.customAlphabet(idAlphabet, 6)();
 
-export const createPatient = (patient: Patient, localOrgId: string, localOrgName: string) => {
+export const details = {
+  address: [
+    {
+      use: "home",
+      line: ["123"],
+      city: "Miami",
+      state: "FL",
+      zip: "12345",
+    },
+  ],
+  name: [
+    {
+      use: "usual",
+      family: ["Doe"],
+      given: ["John"],
+    },
+  ],
+  gender: {
+    code: "M",
+    display: "Male",
+  },
+  birthDate: "1950-01-01T00:00:00Z",
+  identifier: [],
+};
+
+export const createPatientWithLinks = (patient: Patient) => {
+  const patientId =
+    patient.identifier?.length && patient.identifier[0].key ? patient.identifier[0].key : "";
+  const orgId =
+    patient.identifier?.length && patient.identifier[0].system ? patient.identifier[0].system : "";
+
+  return {
+    ...patient,
+    _links: {
+      person: {
+        href: `${cwURL}/${personRoute}/${primaryPersonId}`,
+      },
+      networkLink: {
+        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${orgId}/patient/${patientId}/networkLink`,
+      },
+      self: {
+        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${orgId}/patient/${patientId}/`,
+      },
+    },
+  };
+};
+
+export const createPatient = (localOrgId: string, localOrgName: string, patientId: string) => {
   return {
     active: true,
     identifier: [
@@ -37,19 +83,7 @@ export const createPatient = (patient: Patient, localOrgId: string, localOrgName
       display: localOrgName,
     },
     details: {
-      address: [patient.data.address],
-      name: [
-        {
-          use: "usual",
-          family: [patient.data.lastName],
-          given: [patient.data.firstName],
-        },
-      ],
-      gender: {
-        code: patient.data.genderAtBirth,
-        display: "Male",
-      },
-      birthDate: patient.data.dob,
+      ...details,
       identifier: [
         {
           use: "usual",
@@ -63,170 +97,38 @@ export const createPatient = (patient: Patient, localOrgId: string, localOrgName
         href: `${cwURL}/${personRoute}/${primaryPersonId}`,
       },
       networkLink: {
-        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${localOrgId}/patient/${patient.id}/networkLink`,
+        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${localOrgId}/patient/${patientId}/networkLink`,
       },
       self: {
-        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${localOrgId}/patient/${patient.id}/`,
+        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${localOrgId}/patient/${patientId}/`,
       },
     },
   };
 };
 
-export const createPatientLinks = (patientIdentifier: Identifier[] | undefined) => {
-  const patientId =
-    patientIdentifier?.length && patientIdentifier[0].key ? patientIdentifier[0].key : "";
-
-  const orgId =
-    patientIdentifier?.length && patientIdentifier[0].system ? patientIdentifier[0].system : "";
+export const createPerson = (orgId: string, orgName: string, personId: string) => {
+  const personUrl = `${cwURL}/${personRoute}/${personId}`;
 
   return {
-    networkLink: {
-      href: `${cwURL}/${orgRoute}/${orgId}/patient/${patientId}/networkLink`,
-    },
-    self: {
-      href: `${cwURL}/${orgRoute}/${orgId}/patient/${patientId}/`,
-    },
-  };
-};
-
-export const createPerson = (patient: Patient, localOrgName: string) => {
-  const personUrl = `${cwURL}/${personRoute}/${primaryPersonId}`;
-  return {
-    details: {
-      address: [patient.data.address],
-      name: [
-        {
-          use: "usual",
-          family: [patient.data.lastName],
-          given: [patient.data.firstName],
-        },
-      ],
-      gender: {
-        code: patient.data.genderAtBirth,
-        display: "Male",
-      },
-      birthDate: patient.data.dob,
-    },
+    details: details,
     enrolled: true,
     enrollmentSummary: {
-      dateEnrolled: "2023-03-05T16:17:10.074Z",
-      enroller: localOrgName,
+      dateEnrolled: "2023-03-09T20:26:37.458Z",
+      enroller: orgName,
     },
     _links: {
       self: {
-        href: personUrl,
+        href: `${personUrl}`,
+      },
+      patientMatch: {
+        href: `${personUrl}/patientMatch?orgId=${orgId}`,
       },
       patientLink: {
         href: `${personUrl}/patientLink`,
-      },
-      patientMatch: {
-        href: `${personUrl}/patientMatch?orgId=${patient.id}`,
       },
       unenroll: {
         href: `${personUrl}/unenroll`,
       },
     },
   };
-};
-
-export const createPatientLink = (patientId: string, localOrgId: string) => {
-  const linkUrl = `${cwURL}/${personRoute}/${primaryPersonId}/patientLink/${patientId}`;
-  return {
-    _links: {
-      self: {
-        href: linkUrl,
-      },
-    },
-    _embedded: {
-      patientLink: [
-        {
-          patient: `${cwURL}/${orgRoute}/urn%3aoid%3a${localOrgId}/patient/${patientId}/`,
-          assuranceLevel: "2",
-          _links: {
-            self: {
-              href: linkUrl,
-            },
-            reset: {
-              href: `${linkUrl}/reset`,
-            },
-          },
-        },
-      ],
-    },
-  };
-};
-
-const secondaryPersonId = nanoid.customAlphabet(idAlphabet, 6)();
-export const searchPersonByPatientDemo = (
-  patient: Patient,
-  orgId: string,
-  localOrgName: string
-) => {
-  const person = createPerson(patient, localOrgName);
-  const personUrl = `${cwURL}/${personRoute}/${secondaryPersonId}`;
-
-  return {
-    message: "CommonWell found 1 Persons matching your search criteria.",
-    _links: {
-      self: {
-        href: `${cwURL}/${orgRoute}/${orgId}/patient/${patient.id}/person`,
-      },
-    },
-    _embedded: {
-      person: [
-        {
-          ...person,
-          details: {
-            ...person.details,
-            address: [
-              {
-                use: "home",
-                line: ["543 sw 61th ave"],
-                city: "Cleveland",
-                state: "OH",
-                zip: "54321",
-              },
-            ],
-          },
-          _links: {
-            self: {
-              href: personUrl,
-            },
-            patientLink: {
-              href: `${personUrl}/patientLink`,
-            },
-            patientMatch: {
-              href: `${personUrl}/patientMatch?orgId=${patient.id}`,
-            },
-            unenroll: {
-              href: `${personUrl}/unenroll`,
-            },
-          },
-        },
-      ],
-    },
-  };
-};
-
-export const searchPersonByStrongId = (patient: Patient, localOrgName: string) => {
-  const person = createPerson(patient, localOrgName);
-  const state = patient.data.personalIdentifiers[0].state
-    ? patient.data.personalIdentifiers[0].state
-    : "FL";
-
-  return [
-    {
-      ...person,
-      details: {
-        ...person.details,
-        identifier: [
-          {
-            use: "usual",
-            system: driversLicenseURIs[state],
-            key: patient.data.personalIdentifiers[0].value,
-          },
-        ],
-      },
-    },
-  ];
 };

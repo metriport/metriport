@@ -1,7 +1,14 @@
-import { APIMode, CommonWell, PurposeOfUse, RequestMetadata } from "@metriport/commonwell-sdk";
+import {
+  APIMode,
+  CommonWell,
+  CommonWellType,
+  PurposeOfUse,
+  RequestMetadata,
+} from "@metriport/commonwell-sdk";
 import { CertificatePurpose } from "@metriport/commonwell-sdk/lib/models/certificates";
 import { X509Certificate } from "crypto";
 import { Config, getEnvVarOrFail } from "../../shared/config";
+import { CommonWellMock } from "./mock";
 
 // TODO move these getEnvVarOrFail to Config
 const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
@@ -20,16 +27,28 @@ const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
  * @param orgId Organization ID without 'urn:oid:' namespace
  * @returns CommonWell API
  */
-export function makeCommonWellAPI(orgName: string, orgId: string): CommonWell {
+export function makeCommonWellAPI(orgName: string, orgId: string): CommonWellType {
+  if (!Config.isSandbox()) {
+    return new CommonWellMock(metriportOrgName, memberManagementOID);
+  }
+
   return new CommonWell(metriportCert, metriportPrivateKey, orgName, orgId, apiMode);
 }
-export const commonWellManagement = new CommonWell(
-  memberManagementCert,
-  memberManagementPrivateKey,
-  metriportOrgName,
-  memberManagementOID,
-  apiMode
-);
+
+export function makeCommonWelMemberAPI(): CommonWellType {
+  if (!Config.isSandbox()) {
+    return new CommonWellMock(metriportOrgName, memberManagementOID);
+  }
+
+  return new CommonWell(
+    memberManagementCert,
+    memberManagementPrivateKey,
+    metriportOrgName,
+    memberManagementOID,
+    apiMode
+  );
+}
+
 const baseQueryMeta = (orgName: string) => ({
   purposeOfUse: PurposeOfUse.TREATMENT,
   role: "ict",

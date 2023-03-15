@@ -10,13 +10,6 @@ import { PatientDataCommonwell } from "../patient-shared";
 import { setCommonwellId } from "../patient-external-data";
 import { getPersonalIdentifiersFromPatient, searchPersons } from "../patient-shared";
 import { commonwellPersonLinks } from "./shared";
-import { Config } from "../../../shared/config";
-import {
-  createPerson as sbCreateCurrentLink,
-  searchPersonByPatientDemo as sbSearchPersonByPatientDemo,
-  searchPersonByStrongId as sbSearchPersonByStrongId,
-  createPatientLink as sbCreatePatientLink,
-} from "../sandbox-payloads";
 
 type CWPersonLinks = {
   currentLinks: Person[];
@@ -63,17 +56,11 @@ export const findCurrentLink = async (
 
     const patientCWId = patientCWExternalData.patientId;
 
-    let patientLinkToPerson;
-
-    if (Config.isSandbox()) {
-      patientLinkToPerson = sbCreatePatientLink(patient.id, organization.id);
-    } else {
-      patientLinkToPerson = await commonWell.getPatientLink(
-        metriportQueryMeta,
-        patientCWExternalData.personId,
-        patientCWId
-      );
-    }
+    const patientLinkToPerson = await commonWell.getPatientLink(
+      metriportQueryMeta,
+      patientCWExternalData.personId,
+      patientCWId
+    );
 
     if (!patientLinkToPerson._embedded?.patientLink?.length) {
       console.log(`No patient linked to person`, patientLinkToPerson);
@@ -98,16 +85,10 @@ export const findCurrentLink = async (
     const assuranceLevel = parseInt(correctLink.assuranceLevel);
 
     if (assuranceLevel >= parseInt(LOLA.level_2)) {
-      let cwPerson;
-
-      if (Config.isSandbox()) {
-        cwPerson = sbCreateCurrentLink(patient, orgName);
-      } else {
-        cwPerson = await commonWell.getPersonById(
-          metriportQueryMeta,
-          patientCWExternalData.personId
-        );
-      }
+      const cwPerson = await commonWell.getPersonById(
+        metriportQueryMeta,
+        patientCWExternalData.personId
+      );
 
       if (!cwPerson) {
         console.log(`No person id for cw person`);
@@ -152,13 +133,7 @@ const findAllPersons = async (patient: Patient, organization: Organization): Pro
     const patientCWExternalData = patient.data.externalData.COMMONWELL as PatientDataCommonwell;
     const cwPatientId = patientCWExternalData.patientId;
 
-    let personsResp;
-
-    if (Config.isSandbox()) {
-      personsResp = sbSearchPersonByPatientDemo(patient, orgId, orgName);
-    } else {
-      personsResp = await commonWell.searchPersonByPatientDemo(metriportQueryMeta, cwPatientId);
-    }
+    const personsResp = await commonWell.searchPersonByPatientDemo(metriportQueryMeta, cwPatientId);
 
     if (
       personsResp &&
@@ -192,17 +167,11 @@ const findAllPersonsStrongId = async (
     const orgId = organization.id;
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
 
-    let persons;
-
-    if (Config.isSandbox()) {
-      persons = sbSearchPersonByStrongId(patient, orgName);
-    } else {
-      persons = await searchPersons({
-        commonWell,
-        queryMeta: metriportQueryMeta,
-        strongIds,
-      });
-    }
+    const persons = await searchPersons({
+      commonWell,
+      queryMeta: metriportQueryMeta,
+      strongIds,
+    });
 
     if (persons.length) {
       return commonwellPersonLinks(persons);

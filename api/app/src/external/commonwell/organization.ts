@@ -2,7 +2,7 @@ import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { Organization } from "../../models/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { OID_PREFIX } from "../../shared/oid";
-import { certificate, commonWellManagement, metriportQueryMeta } from "./api";
+import { certificate, metriportQueryMeta, makeCommonWelMemberAPI } from "./api";
 
 // TODO move these "getEnvVarOrFail" to Config
 const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
@@ -62,14 +62,11 @@ export async function organizationToCommonwell(
 }
 
 export const create = async (org: Organization): Promise<void> => {
-  if (Config.isSandbox()) {
-    return;
-  }
-
   const cwOrg = await organizationToCommonwell(org);
   try {
-    await commonWellManagement.createOrg(metriportQueryMeta, cwOrg);
-    await commonWellManagement.addCertificateToOrg(metriportQueryMeta, certificate, org.id);
+    const commonWell = makeCommonWelMemberAPI();
+    await commonWell.createOrg(metriportQueryMeta, cwOrg);
+    await commonWell.addCertificateToOrg(metriportQueryMeta, certificate, org.id);
   } catch (error) {
     const msg = `Failure creating Org`;
     console.log(`${msg} - payload: `, cwOrg);
@@ -79,13 +76,10 @@ export const create = async (org: Organization): Promise<void> => {
 };
 
 export const update = async (org: Organization): Promise<void> => {
-  if (Config.isSandbox()) {
-    return;
-  }
-
   const cwOrg = await organizationToCommonwell(org);
   try {
-    await commonWellManagement.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
+    const commonWell = makeCommonWelMemberAPI();
+    await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
   } catch (error) {
     const msg = `Failure updating Org`;
     console.log(`${msg} - payload: `, cwOrg);

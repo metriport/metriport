@@ -1,9 +1,9 @@
 import {
-  CommonWell,
   getIdTrailingSlash,
   LOLA,
   Patient as CommonwellPatient,
   RequestMetadata,
+  CommonWellType,
 } from "@metriport/commonwell-sdk";
 
 import { MedicalDataSource } from "..";
@@ -21,8 +21,6 @@ import {
   getPatientData,
   PatientDataCommonwell,
 } from "./patient-shared";
-import { Config } from "../../shared/config";
-import { createPatientLinks } from "./sandbox-payloads";
 
 export function mapPatientExternal(data: PatientExternalData | undefined): PatientLinkStatusDTO {
   return data
@@ -76,17 +74,14 @@ export async function create(patient: Patient, facilityId: string): Promise<void
     storeIds,
   });
 
-  // Note; Elaborate in PR
-  if (!Config.isSandbox()) {
-    await findOrCreatePersonAndLink({
-      commonWell,
-      queryMeta,
-      commonwellPatient,
-      commonwellPatientId,
-      patientRefLink,
-      storeIds,
-    });
-  }
+  await findOrCreatePersonAndLink({
+    commonWell,
+    queryMeta,
+    commonwellPatient,
+    commonwellPatientId,
+    patientRefLink,
+    storeIds,
+  });
 }
 
 export async function update(patient: Patient, facilityId: string): Promise<void> {
@@ -107,8 +102,37 @@ export async function update(patient: Patient, facilityId: string): Promise<void
   });
 
   // No person yet, try to find/create with new patient demographics
-  if (!Config.isSandbox()) {
-    if (!personId) {
+
+  if (!personId) {
+    await findOrCreatePersonAndLink({
+      commonWell,
+      queryMeta,
+      commonwellPatient,
+      commonwellPatientId,
+      patientRefLink,
+      storeIds: getStoreIdsFn(patient.id, patient.cxId),
+    });
+    return;
+  }
+
+  // Already has a matching person, so update that person's demographics as well
+  const person = makePersonForPatient(commonwellPatient);
+  try {
+    try {
+      const respPerson = await commonWell.updatePerson(queryMeta, person, personId);
+      debug(`resp updatePerson: ${JSON.stringify(respPerson, null, 2)}`);
+
+      if (!respPerson.enrolled) {
+        const respReenroll = await commonWell.reenrollPerson(queryMeta, personId);
+        debug(`resp reenrolPerson: ${JSON.stringify(respReenroll, null, 2)}`);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.response?.status !== 404) throw err;
+      const subject = "Got 404 when trying to update person @ CW";
+      const message = `CW Person ID ${personId}\nTrying to find/create it...`;
+      sendAlert({ subject, message });
+      log(`${subject} - ${message}`);
       await findOrCreatePersonAndLink({
         commonWell,
         queryMeta,
@@ -119,90 +143,60 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       });
       return;
     }
-
-    // Already has a matching person, so update that person's demographics as well
-    const person = makePersonForPatient(commonwellPatient);
-    try {
-      try {
-        const respPerson = await commonWell.updatePerson(queryMeta, person, personId);
-        debug(`resp updatePerson: ${JSON.stringify(respPerson, null, 2)}`);
-
-        if (!respPerson.enrolled) {
-          const respReenroll = await commonWell.reenrollPerson(queryMeta, personId);
-          debug(`resp reenrolPerson: ${JSON.stringify(respReenroll, null, 2)}`);
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        if (err.response?.status !== 404) throw err;
-        const subject = "Got 404 when trying to update person @ CW";
-        const message = `CW Person ID ${personId}\nTrying to find/create it...`;
-        sendAlert({ subject, message });
-        log(`${subject} - ${message}`);
-        await findOrCreatePersonAndLink({
-          commonWell,
-          queryMeta,
-          commonwellPatient,
-          commonwellPatientId,
-          patientRefLink,
-          storeIds: getStoreIdsFn(patient.id, patient.cxId),
-        });
-        return;
-      }
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      log(
-        `ERR - Failed to update person - ` +
-          `Patient @ CW: ${commonwellPatientId}, ` +
-          `Person @ CW: ${personId}`
-      );
-      throw err;
-    }
-
-    // Try to get the Person<>Patient link to LOLA3
-    try {
-      const respLinks = await commonWell.getPatientLinks(queryMeta, personId);
-      debug(`resp getPatientLinks: ${JSON.stringify(respLinks)}`);
-      const linkToPatient = respLinks._embedded?.patientLink
-        ? respLinks._embedded.patientLink.find(l =>
-            l.patient ? l.patient.includes(commonwellPatientId) : false
-          )
-        : undefined;
-      if (
-        !linkToPatient ||
-        !linkToPatient.assuranceLevel ||
-        ![LOLA.level_3, LOLA.level_4].map(toString).includes(linkToPatient.assuranceLevel)
-      ) {
-        const strongIds = getMatchingStrongIds(person, commonwellPatient);
-        const respLink = await commonWell.addPatientLink(
-          queryMeta,
-          personId,
-          patientRefLink,
-          // safe to get the first one, just need to match one of the person's strong IDs
-          strongIds.length ? strongIds[0] : undefined
-        );
-        debug(`resp patientLink: ${JSON.stringify(respLink, null, 2)}`);
-      }
-    } catch (err) {
-      log(
-        `ERR - Failed to updgrade patient/person link - ` +
-          `Patient @ CW: ${commonwellPatientId}, ` +
-          `Person @ CW: ${personId}`
-      );
-      throw err;
-    }
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    log(
+      `ERR - Failed to update person - ` +
+        `Patient @ CW: ${commonwellPatientId}, ` +
+        `Person @ CW: ${personId}`
+    );
+    throw err;
   }
 
-  // REVIEW NETWORK LINKS? - this might be a good opportunity to update link to new Patients
-  // added to CW we didn't know about when we first added this Patient
-  // TODO #415
+  // Try to get the Person<>Patient link to LOLA3
+  try {
+    const respLinks = await commonWell.getPatientLinks(queryMeta, personId);
+    debug(`resp getPatientLinks: ${JSON.stringify(respLinks)}`);
+    const linkToPatient = respLinks._embedded?.patientLink
+      ? respLinks._embedded.patientLink.find(l =>
+          l.patient ? l.patient.includes(commonwellPatientId) : false
+        )
+      : undefined;
+    if (
+      !linkToPatient ||
+      !linkToPatient.assuranceLevel ||
+      ![LOLA.level_3, LOLA.level_4].map(toString).includes(linkToPatient.assuranceLevel)
+    ) {
+      const strongIds = getMatchingStrongIds(person, commonwellPatient);
+      const respLink = await commonWell.addPatientLink(
+        queryMeta,
+        personId,
+        patientRefLink,
+        // safe to get the first one, just need to match one of the person's strong IDs
+        strongIds.length ? strongIds[0] : undefined
+      );
+      debug(`resp patientLink: ${JSON.stringify(respLink, null, 2)}`);
+    }
+  } catch (err) {
+    log(
+      `ERR - Failed to updgrade patient/person link - ` +
+        `Patient @ CW: ${commonwellPatientId}, ` +
+        `Person @ CW: ${personId}`
+    );
+    throw err;
+  }
 }
+
+// REVIEW NETWORK LINKS? - this might be a good opportunity to update link to new Patients
+// added to CW we didn't know about when we first added this Patient
+// TODO #415
 
 async function setupUpdate(
   patient: Patient,
   facilityId: string
 ): Promise<
   | {
-      commonWell: CommonWell;
+      commonWell: CommonWellType;
       queryMeta: RequestMetadata;
       commonwellPatient: CommonwellPatient;
       commonwellPatientId: string;
@@ -237,7 +231,7 @@ async function findOrCreatePersonAndLink({
   patientRefLink,
   storeIds,
 }: {
-  commonWell: CommonWell;
+  commonWell: CommonWellType;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
@@ -293,7 +287,7 @@ async function registerPatient({
   commonwellPatient,
   storeIds,
 }: {
-  commonWell: CommonWell;
+  commonWell: CommonWellType;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   storeIds: StoreIdsFunction;
@@ -301,16 +295,7 @@ async function registerPatient({
   const fnName = `CW registerPatient`;
   const debug = Util.debug(fnName);
 
-  let respPatient;
-
-  if (Config.isSandbox()) {
-    respPatient = {
-      ...commonwellPatient,
-      _links: createPatientLinks(commonwellPatient.identifier),
-    };
-  } else {
-    respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
-  }
+  const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
 
   debug(`resp registerPatient: ${JSON.stringify(respPatient, null, 2)}`);
   const commonwellPatientId = getIdTrailingSlash(respPatient);
@@ -344,23 +329,19 @@ async function updatePatient({
   commonwellPatient,
   commonwellPatientId,
 }: {
-  commonWell: CommonWell;
+  commonWell: CommonWellType;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
 }): Promise<{ patientRefLink: string }> {
   const { log, debug } = Util.out(`CW updatePatient - CW patientId ${commonwellPatientId}`);
 
-  let respUpdate;
+  const respUpdate = await commonWell.updatePatient(
+    queryMeta,
+    commonwellPatient,
+    commonwellPatientId
+  );
 
-  if (Config.isSandbox()) {
-    respUpdate = {
-      ...commonwellPatient,
-      _links: createPatientLinks(commonwellPatient.identifier),
-    };
-  } else {
-    respUpdate = await commonWell.updatePatient(queryMeta, commonwellPatient, commonwellPatientId);
-  }
   debug(`resp updatePatient: ${JSON.stringify(respUpdate, null, 2)}`);
 
   const patientRefLink = respUpdate._links?.self?.href;

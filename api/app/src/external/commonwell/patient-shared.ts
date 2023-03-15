@@ -1,5 +1,5 @@
 import {
-  CommonWell,
+  CommonWellType,
   getId,
   Patient as CommonwellPatient,
   Person as CommonwellPerson,
@@ -30,7 +30,7 @@ export async function findOrCreatePerson({
   commonwellPatient,
   commonwellPatientId,
 }: {
-  commonWell: CommonWell;
+  commonWell: CommonWellType;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
@@ -113,7 +113,7 @@ export async function searchPersonIds({
   queryMeta,
   personalIds,
 }: {
-  commonWell: CommonWell;
+  commonWell: CommonWellType;
   queryMeta: RequestMetadata;
   personalIds: SimplifiedPersonalId[];
 }): Promise<string[]> {
@@ -148,7 +148,7 @@ export async function searchPersons({
   queryMeta,
   strongIds,
 }: {
-  commonWell: CommonWell;
+  commonWell: CommonWellType;
   queryMeta: RequestMetadata;
   strongIds: SimplifiedPersonalId[];
 }): Promise<CommonwellPerson[]> {
