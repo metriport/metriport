@@ -28,7 +28,7 @@ const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
  * @returns CommonWell API
  */
 export function makeCommonWellAPI(orgName: string, orgId: string): CommonWellType {
-  if (!Config.isSandbox()) {
+  if (Config.isSandbox()) {
     return new CommonWellMock(metriportOrgName, memberManagementOID);
   }
 
@@ -36,7 +36,7 @@ export function makeCommonWellAPI(orgName: string, orgId: string): CommonWellTyp
 }
 
 export function makeCommonWelMemberAPI(): CommonWellType {
-  if (!Config.isSandbox()) {
+  if (Config.isSandbox()) {
     return new CommonWellMock(metriportOrgName, memberManagementOID);
   }
 
