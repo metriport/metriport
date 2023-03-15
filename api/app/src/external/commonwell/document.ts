@@ -8,9 +8,10 @@ import { Util } from "../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "./api";
 import { getPatientData, PatientDataCommonwell } from "./patient-shared";
 
+// TODO #340 When we fix tsconfig on CW SDK we can remove the `Required` for `id`
 export type DocumentWithLocation = Required<Pick<Document, "id">> &
   Omit<DocumentContent, "location"> &
-  Required<Pick<DocumentContent, "location" | "description">> & {
+  Required<Pick<DocumentContent, "location">> & {
     fileName: string;
   };
 
@@ -24,8 +25,8 @@ export async function getDocuments({
   facilityId: string;
 }): Promise<DocumentWithLocation[]> {
   const { debug } = Util.out(`getDocuments - M patient ${patientId}`);
-  const patient = await getPatient({ id: patientId, cxId });
 
+  const patient = await getPatient({ id: patientId, cxId });
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return [];
   const cwData = externalData as PatientDataCommonwell;
@@ -34,9 +35,9 @@ export async function getDocuments({
   const orgName = organization.data.name;
   const orgId = organization.id;
   const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-
   const commonWell = makeCommonWellAPI(orgName, oid(orgId));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+
   const docs = await commonWell.queryDocuments(queryMeta, cwData.patientId);
   debug(`resp queryDocuments: ${JSON.stringify(docs, null, 2)}`);
 
@@ -50,7 +51,7 @@ export async function getDocuments({
         .map(d => ({
           id: d.id,
           fileName: getFileName(patient, d),
-          description: d.content.description ?? "N/A",
+          description: d.content.description,
           type: d.content.type,
           status: d.content.status,
           location: d.content.location,

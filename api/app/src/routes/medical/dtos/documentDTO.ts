@@ -4,8 +4,8 @@ import { DocumentWithLocation } from "../../../external/commonwell/document";
 export type DocumentReferenceDTO = {
   id: string | undefined;
   fileName: string;
-  description: string;
   location: string;
+  description: string | undefined;
   status: string | undefined;
   indexed: string | undefined; // ISO-8601
   mimeType: string | undefined;

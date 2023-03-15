@@ -3,8 +3,8 @@ import { z } from "zod";
 export const documentReferenceSchema = z.object({
   id: z.string(),
   fileName: z.string(),
-  description: z.string(),
   location: z.string(),
+  description: z.string().optional(),
   status: z.string().optional(),
   indexed: z.string().optional(), // ISO-8601
   mimeType: z.string().optional(),
