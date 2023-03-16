@@ -5,12 +5,15 @@ import {
   Person,
   Patient,
 } from "@metriport/commonwell-sdk";
+import { downloadFile } from "@metriport/commonwell-sdk/lib/common/fileDownload";
 import { PersonSearchResp } from "@metriport/commonwell-sdk/lib/models/person";
 import { PatientLink, PatientLinkSearchResp } from "@metriport/commonwell-sdk/lib/models/person";
 import {
   PatientNetworkLinkResp,
   PatientLinkResp,
 } from "@metriport/commonwell-sdk/lib/models/patient";
+import { DocumentQueryResponse } from "@metriport/commonwell-sdk";
+import * as stream from "stream";
 
 import * as nanoid from "nanoid";
 
@@ -19,6 +22,7 @@ import {
   createPatient,
   createPatientWithLinks,
   createPatientLink,
+  createDocument,
 } from "./sandbox-payloads";
 
 const cwURL = "https://sandbox.rest.api.commonwellalliance.org";
@@ -270,13 +274,22 @@ export class CommonWellMock implements CommonWellAPI {
   // Document Management
   //--------------------------------------------------------------------------------------------
 
-  // NOT USED YET
-  async queryDocuments() {
-    return {};
+  async queryDocuments(): Promise<DocumentQueryResponse> {
+    const document = createDocument(this.oid, this.orgName);
+
+    return document;
   }
 
-  // NOT USED YET
-  async retrieveDocument() {
+  async retrieveDocument(
+    meta: RequestMetadata,
+    inputUrl: string,
+    outputStream: stream.Writable
+  ): Promise<void> {
+    await downloadFile({
+      url: inputUrl,
+      outputStream,
+    });
+
     return;
   }
 

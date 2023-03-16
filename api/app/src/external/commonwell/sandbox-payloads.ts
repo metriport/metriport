@@ -1,6 +1,7 @@
 import * as nanoid from "nanoid";
 import { Patient } from "@metriport/commonwell-sdk";
 import { driversLicenseURIs } from "../../shared/oid";
+import { DocumentQueryResponse } from "@metriport/commonwell-sdk";
 
 const cwURL = "https://sandbox.rest.api.commonwellalliance.org";
 const cwLabel = "abcd123-1234-dedee-asd9-cnil132uil3n";
@@ -156,5 +157,122 @@ export const createPatientLink = (patientLink: string, patientId: string, orgId:
         },
       ],
     },
+  };
+};
+
+export const createDocument = (orgId: string, orgName: string): DocumentQueryResponse => {
+  return {
+    resourceType: "Bundle",
+    entry: [
+      {
+        id: `urn:uuid:${orgId}`,
+        content: {
+          resourceType: "DocumentReference",
+          contained: [
+            {
+              resourceType: "Organization",
+              id: "orgRef1",
+              name: orgName,
+            },
+            {
+              resourceType: "Practitioner",
+              id: "authRef1",
+              organization: {
+                reference: "#orgRef1",
+              },
+            },
+            {
+              resourceType: "Patient",
+              id: "patRef1",
+              identifier: [
+                {
+                  system: "urn:oid:https://github.com/synthetichealth/synthea",
+                  value: "e48c330b-d0d9-4bbd-9811-9c63cde19c7e",
+                },
+                {
+                  system: "urn:oid:1.2.3.4.5.6.7.8.9Test Org2",
+                  value: "1.2.3.4.5.6.7.8.9.2.118",
+                },
+              ],
+              name: [
+                {
+                  family: ["Doe"],
+                  given: ["John"],
+                },
+              ],
+              gender: {
+                coding: [
+                  {
+                    system:
+                      "http://hl7.org/implement/standards/fhir/valueset-administrative-gender.html",
+                    code: "M",
+                  },
+                ],
+              },
+              birthDate: "1975-05-05",
+              address: [
+                {
+                  line: ["Brasil St"],
+                  city: "Brasil",
+                  state: "California",
+                  zip: "12345",
+                  country: "USA",
+                },
+              ],
+            },
+          ],
+          masterIdentifier: {
+            system: "urn:ietf:rfc:1234",
+            value: `${orgId}`,
+          },
+          identifier: [
+            {
+              use: "official",
+              system: "urn:ietf:rfc:1234",
+              value: `urn:uuid:${orgId}`,
+            },
+          ],
+          subject: {
+            reference: "#patRef1",
+          },
+          type: {
+            coding: [
+              {
+                system: "http://loinc.org/",
+                code: "1234-1",
+                display: "HIV 1 and 2 tests - Meaningful Use set",
+              },
+            ],
+          },
+          author: [
+            {
+              reference: "#authRef1",
+            },
+          ],
+          indexed: "2023-03-16T01:22:20+00:00",
+          status: "current",
+          description: "Summarization Of Episode Notes - provided by Metriport",
+          mimeType: "application/pdf",
+          location: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+          context: {
+            event: [
+              {
+                coding: [
+                  {
+                    system: "http://snomed.info/sct",
+                    code: "62479008",
+                    display: "AIDS",
+                  },
+                ],
+              },
+            ],
+            period: {
+              start: "2022-10-05T22:00:00Z",
+              end: "2022-10-05T23:00:00Z",
+            },
+          },
+        },
+      },
+    ],
   };
 };
