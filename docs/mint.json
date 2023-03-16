@@ -5,10 +5,7 @@
     "dark": "/logo/dark.png"
   },
   "api": {
-    "baseUrl": [
-      "https://api.metriport.com",
-      "http://api.sandbox.metriport.com"
-    ],
+    "baseUrl": ["https://api.metriport.com", "https://api.sandbox.metriport.com"],
     "auth": {
       "method": "key",
       "name": "x-api-key"
@@ -22,6 +19,10 @@
     "ultraLight": "#E6EAFB",
     "ultraDark": "#1E2362"
   },
+  "topAnchor": {
+    "name": "Home",
+    "icon": "house"
+  },
   "topbarCtaButton": {
     "name": "Get Started",
     "url": "https://dash.metriport.com"
@@ -33,6 +34,16 @@
     }
   ],
   "anchors": [
+    {
+      "name": "Medical API",
+      "icon": "file-medical",
+      "url": "medical-api"
+    },
+    {
+      "name": "Devices API",
+      "icon": "watch-apple",
+      "url": "devices-api"
+    },
     {
       "name": "Website",
       "icon": "globe",
@@ -46,11 +57,28 @@
   ],
   "navigation": [
     {
+      "group": "Home",
+      "pages": ["home/welcome"]
+    },
+    {
+      "group": "API Info",
+      "pages": [
+        "home/api-info/api-keys"
+      ]
+    },
+    {
       "group": "Getting Started",
       "pages": [
-        "getting-started/introduction",
-        "getting-started/connect-quickstart",
-        "getting-started/connect-widget"
+        "medical-api/getting-started/quickstart",
+        "medical-api/getting-started/concepts",
+        "medical-api/getting-started/get-access"
+      ]
+    },
+    {
+      "group": "Getting Started",
+      "pages": [
+        "devices-api/getting-started/connect-quickstart",
+        "devices-api/getting-started/connect-widget"
       ]
     },
     {
@@ -62,39 +90,32 @@
             {
               "group": "User",
               "pages": [
-                "user/create-user",
-                "user/create-connect-token",
-                "user/revoke-provider-access",
-                "user/get-connected-providers"
+                "devices-api/api-reference/user/create-user",
+                "devices-api/api-reference/user/create-connect-token",
+                "devices-api/api-reference/user/revoke-provider-access",
+                "devices-api/api-reference/user/get-connected-providers"
               ]
             },
             {
               "group": "Settings",
               "pages": [
-                "settings/get-settings",
-                "settings/post-settings",
-                "settings/get-webhook",
-                "settings/retry-webhook"
+                "devices-api/api-reference/settings/get-settings",
+                "devices-api/api-reference/settings/post-settings",
+                "devices-api/api-reference/settings/get-webhook",
+                "devices-api/api-reference/settings/retry-webhook"
               ]
-            },
-            "settings/dash"
+            }
           ]
         },
         {
           "group": "Health Device API",
           "pages": [
-            "health-device-api-reference/get-activity-data",
-            "health-device-api-reference/get-biometrics-data",
-            "health-device-api-reference/get-body-data",
-            "health-device-api-reference/get-nutrition-data",
-            "health-device-api-reference/get-sleep-data",
-            "health-device-api-reference/get-user-data"
-          ]
-        },
-        {
-          "group": "Medical API",
-          "pages": [
-            "medical-api-reference/coming-soon"
+            "devices-api/api-reference/get-activity-data",
+            "devices-api/api-reference/get-biometrics-data",
+            "devices-api/api-reference/get-body-data",
+            "devices-api/api-reference/get-nutrition-data",
+            "devices-api/api-reference/get-sleep-data",
+            "devices-api/api-reference/get-user-data"
           ]
         }
       ]
@@ -102,12 +123,11 @@
     {
       "group": "More Info",
       "pages": [
-        "more-info/api-keys",
-        "more-info/our-integrations",
-        "more-info/webhooks",
-        "more-info/apple-health",
-        "more-info/react-native",
-        "more-info/models"
+        "devices-api/more-info/our-integrations",
+        "devices-api/more-info/webhooks",
+        "devices-api/more-info/apple-health",
+        "devices-api/more-info/react-native",
+        "devices-api/more-info/models"
       ]
     }
   ],

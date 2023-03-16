@@ -15,7 +15,7 @@ api: "GET /user/:userId/connected-providers"
 ```javascript Metriport SDK
 import { Metriport } from "@metriport/api";
 
-const metriportClient = new Metriport("YOUR_API_KEY");
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
 const connectedProviders = await metriportClient.getConnectedProviders("metriportUserId");
 ```

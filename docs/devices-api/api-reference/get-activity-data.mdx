@@ -30,7 +30,7 @@ api: "GET /activity"
 ```javascript Metriport SDK
 import { Metriport } from "@metriport/api";
 
-const metriportClient = new Metriport("YOUR_API_KEY");
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
 const response = await metriportClient.getActivityData(
   "metriportUserId",

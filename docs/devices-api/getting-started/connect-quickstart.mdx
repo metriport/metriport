@@ -1,13 +1,13 @@
 ---
 title: "Quickstart"
-description: "Follow this guide to get up and running with Metriport in minutes."
+description: "Follow this guide to get started accessing your users' wearable, RPM device, and mHealth app data."
 ---
 
 <img className="h-40" src="/images/integrations.svg" />
 
 ## Overview
 
-Getting started with Metriport is pretty easy, you'll just need take the following steps:
+Getting started with our Devices API is pretty easy, you'll just need take the following steps:
 
 1. [Create a developer account](#1-create-a-developer-account).
 2. [Generate an API key](#2-generate-an-api-key).
@@ -39,7 +39,7 @@ Let's get into it! 🤘
 
 <Tip>
   To demo the app without having to use your production enviroment simply head over to the settings
-  page and toggle "sandbox". This will allow you to try out metriport with up to 10 connected users.
+  page and toggle "sandbox". This will allow you to try out the Devices API with up to 10 connected users.
 </Tip>
 
 ## 2. Generate an API key
@@ -54,7 +54,7 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 <Info>
   This Secret Key will allow you to start making requests to the entire Metriport API on your
   behalf. Treat this like a password, and keep it somewhere safe! You can read the [API
-  Keys](/more-info/api-keys) page to learn more about API key security best practices.
+  Keys](/home/api-info/api-keys) page to learn more about API key security best practices.
 </Info>
 
 <Tip>
@@ -89,7 +89,7 @@ key, and you're good to start making requests to the Metriport API from your ser
 ```typescript
 import { Metriport } from "@metriport/api";
 
-const metriportClient = new Metriport("YOUR_API_KEY", "ENVIRONMENT_URL");
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY", "ENVIRONMENT_URL");
 ```
 
 <Info>
@@ -103,7 +103,7 @@ This allows your application to receive user data as soon as it becomes availabl
 
 It's the only and required way to get information from Garmin.
 
-Head to the [webhook page](/more-info/webhooks) to learn how to setup this integration with Metriport.
+Head to the [webhook page](/devices-api/more-info/webhooks) to learn how to setup this integration with Metriport.
 
 ## 4. Link to the Metriport Connect widget in your app
 
@@ -150,7 +150,7 @@ window.open(`https://connect.metriport.com/?token=${connectToken}`);
   ```
 </Info>
 
-Head to the [Connect Widget page](/getting-started/connect-widget) to learn more about the various Widget customization options, and view some code samples for integrating the Widget on different platforms such as iOS and Android.
+Head to the [Connect Widget page](/devices-api/getting-started/connect-widget) to learn more about the various Widget customization options, and view some code samples for integrating the Widget on different platforms such as iOS and Android.
 
 ## 5. Access your user's health data 🎉🎉🎉
 
@@ -159,6 +159,6 @@ Head to the [Connect Widget page](/getting-started/connect-widget) to learn more
   sources they've connected to your app!
 </Check>
 
-<Card title="API reference" icon="terminal" href="/user/create-user">
+<Card title="API reference" icon="terminal" href="/devices-api/api-reference/user/create-user">
   Check out our API reference for example data requests and responses.
 </Card>

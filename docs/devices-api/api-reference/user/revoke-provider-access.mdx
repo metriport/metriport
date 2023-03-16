@@ -22,7 +22,7 @@ api: "DELETE /user/revoke"
 import { Metriport } from "@metriport/api";
 import { ProviderSource } from "@metriport/api";
 
-const metriportClient = new Metriport("YOUR_API_KEY");
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
 await metriportClient.revokeUserAccessToProvider("metriportUserId", ProviderSource.fitbit);
 ```

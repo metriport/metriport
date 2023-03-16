@@ -1,8 +1,14 @@
 ---
-title: "Get Settings"
-description: "Gets the settings for your account."
-api: "GET /settings"
+title: "Update Settings"
+description: "Updates your account's settings."
+api: "POST /settings"
 ---
+
+## Body
+
+<ParamField body="webhookUrl" type="string" required>
+  The webhook URL to be stored with your settings.  It should be a valid URL.
+</ParamField>
 
 ## Response
 
@@ -23,9 +29,9 @@ api: "GET /settings"
 ```javascript Metriport SDK
 import { Metriport } from "@metriport/api";
 
-const metriportClient = new Metriport("YOUR_API_KEY");
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
-const response = await metriportClient.getSettings();
+const response = await metriportClient.updateSettings("https://api.health.com/webhook");
 ```
 
 </ResponseExample>
