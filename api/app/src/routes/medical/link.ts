@@ -69,7 +69,7 @@ router.delete(
  *
  * @param   req.params.patientId     Patient ID for which to retrieve links.
  * @param   req.query.facilityId     The ID of the facility to provide the NPI to get links for patient.
- * @return  {PatientLinks}           The patient's current and potential links.
+ * @return  The patient's current and potential links.
  */
 router.get(
   "/:patientId/link",
