@@ -1,33 +1,47 @@
-import { Person, LOLA } from "@metriport/commonwell-sdk";
+import { Person, LOLA, CommonWellAPI, RequestMetadata } from "@metriport/commonwell-sdk";
 import { uniqBy } from "lodash";
 
-import { makeCommonWellAPI, metriportQueryMeta } from "../api";
+import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 
 import { oid } from "../../../shared/oid";
 import { Patient } from "../../../models/medical/patient";
-import { Organization } from "../../../models/medical/organization";
 import { PatientDataCommonwell } from "../patient-shared";
 import { setCommonwellId } from "../patient-external-data";
 import { getPersonalIdentifiersFromPatient, searchPersons } from "../patient-shared";
 import { commonwellPersonLinks } from "./shared";
+import { getPatientData } from "../patient-shared";
+import { getPatient } from "../../../command/medical/patient/get-patient";
 
 type CWPersonLinks = {
   currentLinks: Person[];
   potentialLinks: Person[];
 };
 
-export const get = async (patient: Patient, organization: Organization): Promise<CWPersonLinks> => {
+export const get = async (
+  patientId: string,
+  cxId: string,
+  facilityId: string
+): Promise<CWPersonLinks> => {
+  const patient = await getPatient({ id: patientId, cxId });
+  const { organization, facility } = await getPatientData(patient, facilityId);
+
   const links: CWPersonLinks = {
     currentLinks: [],
     potentialLinks: [],
   };
 
+  const orgName = organization.data.name;
+  const orgId = organization.id;
+  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
+  const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+
   if (patient.data.externalData?.COMMONWELL) {
-    const cwLink = await findCurrentLink(patient, organization);
+    const cwLink = await findCurrentLink(patient, commonWell, queryMeta);
     if (cwLink) links.currentLinks = [...links.currentLinks, cwLink];
   }
 
-  const potentialCWLinks = await findAllPotentialLinks(patient, organization);
+  const potentialCWLinks = await findAllPotentialLinks(patient, commonWell, queryMeta);
   links.potentialLinks = [...links.potentialLinks, ...potentialCWLinks];
 
   return links;
@@ -35,7 +49,8 @@ export const get = async (patient: Patient, organization: Organization): Promise
 
 export const findCurrentLink = async (
   patient: Patient,
-  organization: Organization
+  commonWell: CommonWellAPI,
+  queryMeta: RequestMetadata
 ): Promise<Person | undefined> => {
   if (!patient.data.externalData?.COMMONWELL) {
     console.log(`No CW data for patient`, patient.id);
@@ -50,14 +65,10 @@ export const findCurrentLink = async (
   }
 
   try {
-    const orgName = organization.data.name;
-    const orgId = organization.id;
-    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
-
     const patientCWId = patientCWExternalData.patientId;
 
     const patientLinkToPerson = await commonWell.getPatientLink(
-      metriportQueryMeta,
+      queryMeta,
       patientCWExternalData.personId,
       patientCWId
     );
@@ -85,10 +96,7 @@ export const findCurrentLink = async (
     const assuranceLevel = parseInt(correctLink.assuranceLevel);
 
     if (assuranceLevel >= parseInt(LOLA.level_2)) {
-      const cwPerson = await commonWell.getPersonById(
-        metriportQueryMeta,
-        patientCWExternalData.personId
-      );
+      const cwPerson = await commonWell.getPersonById(queryMeta, patientCWExternalData.personId);
 
       if (!cwPerson) {
         console.log(`No person id for cw person`);
@@ -107,10 +115,11 @@ export const findCurrentLink = async (
 
 export const findAllPotentialLinks = async (
   patient: Patient,
-  organization: Organization
+  commonWell: CommonWellAPI,
+  queryMeta: RequestMetadata
 ): Promise<Person[]> => {
-  const personResultsStrongId = await findAllPersonsStrongId(patient, organization);
-  const personResultsByDemo = await findAllPersons(patient, organization);
+  const personResultsStrongId = await findAllPersonsStrongId(patient, commonWell, queryMeta);
+  const personResultsByDemo = await findAllPersons(patient, commonWell, queryMeta);
 
   const uniqueResults = uniqBy(
     [...personResultsStrongId, ...personResultsByDemo],
@@ -120,12 +129,12 @@ export const findAllPotentialLinks = async (
   return uniqueResults;
 };
 
-const findAllPersons = async (patient: Patient, organization: Organization): Promise<Person[]> => {
+const findAllPersons = async (
+  patient: Patient,
+  commonWell: CommonWellAPI,
+  queryMeta: RequestMetadata
+): Promise<Person[]> => {
   try {
-    const orgName = organization.data.name;
-    const orgId = organization.id;
-    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
-
     if (!patient.data.externalData?.COMMONWELL) {
       return [];
     }
@@ -133,7 +142,7 @@ const findAllPersons = async (patient: Patient, organization: Organization): Pro
     const patientCWExternalData = patient.data.externalData.COMMONWELL as PatientDataCommonwell;
     const cwPatientId = patientCWExternalData.patientId;
 
-    const personsResp = await commonWell.searchPersonByPatientDemo(metriportQueryMeta, cwPatientId);
+    const personsResp = await commonWell.searchPersonByPatientDemo(queryMeta, cwPatientId);
 
     if (
       personsResp &&
@@ -155,7 +164,8 @@ const findAllPersons = async (patient: Patient, organization: Organization): Pro
 
 const findAllPersonsStrongId = async (
   patient: Patient,
-  organization: Organization
+  commonWell: CommonWellAPI,
+  queryMeta: RequestMetadata
 ): Promise<Person[]> => {
   const strongIds = getPersonalIdentifiersFromPatient(patient);
   if (!strongIds.length) {
@@ -163,13 +173,9 @@ const findAllPersonsStrongId = async (
   }
 
   try {
-    const orgName = organization.data.name;
-    const orgId = organization.id;
-    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
-
     const persons = await searchPersons({
       commonWell,
-      queryMeta: metriportQueryMeta,
+      queryMeta,
       strongIds,
     });
 

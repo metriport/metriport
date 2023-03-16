@@ -188,11 +188,15 @@ export class MetriportMedicalApi {
    * Builds and returns the current state of a patient's links across HIEs.
    *
    * @param patientId Patient ID for which to retrieve links.
+   * @param facilityId The ID of the facility to provide the NPI to get links for patient.
    * @returns The patient's current and potential links.
    */
-  async getLinks(patientId: string): Promise<PatientLinks> {
+  async getLinks(patientId: string, facilityId: string): Promise<PatientLinks> {
     const resp = await this.api.get<PatientLinks>(
-      `${this.PATIENT_URL}/${patientId}${this.LINK_URL}`
+      `${this.PATIENT_URL}/${patientId}${this.LINK_URL}`,
+      {
+        params: { facilityId },
+      }
     );
 
     if (!resp.data) throw new Error(`Get didn't return Links`);
@@ -203,12 +207,14 @@ export class MetriportMedicalApi {
    * Creates link to the specified entity.
    *
    * @param patientId Patient ID for which to retrieve links.
+   * @param facilityId The ID of the facility to provide the NPI to create link for patient.
    * @param entityId Entity ID to link to the patient.
    * @param linkSource Data source to link to.
    * @returns link id
    */
   async createLink(
     patientId: string,
+    facilityId: string,
     entityId: string,
     linkSource: MedicalDataSource
   ): Promise<string> {
@@ -216,6 +222,9 @@ export class MetriportMedicalApi {
       `${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`,
       {
         entityId,
+      },
+      {
+        params: { facilityId },
       }
     );
 
@@ -227,11 +236,18 @@ export class MetriportMedicalApi {
    * Removes link to the specified entity.
    *
    * @param patientId Patient ID to remove link from.
+   * @param facilityId The ID of the facility to provide the NPI to remove link from patient.
    * @param linkSource HIE to remove the link from.
    * @returns void
    */
-  async removeLink(patientId: string, linkSource: MedicalDataSource): Promise<void> {
-    await this.api.delete(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`);
+  async removeLink(
+    patientId: string,
+    facilityId: string,
+    linkSource: MedicalDataSource
+  ): Promise<void> {
+    await this.api.delete(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`, {
+      params: { facilityId },
+    });
   }
 
   /**

@@ -1,17 +1,21 @@
 import { NetworkLink, isLOLA1 } from "@metriport/commonwell-sdk";
-import { makeCommonWellAPI, metriportQueryMeta } from "../api";
+import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { oid } from "../../../shared/oid";
-import { Patient } from "../../../models/medical/patient";
-import { Organization } from "../../../models/medical/organization";
 import { patientWithCWData } from "./shared";
 import { setCommonwellId } from "../patient-external-data";
 import { reset } from ".";
+import { getPatientData } from "../patient-shared";
+import { getPatient } from "../../../command/medical/patient/get-patient";
 
 export const create = async (
   personId: string,
-  patient: Patient,
-  organization: Organization
+  patientId: string,
+  cxId: string,
+  facilityId: string
 ): Promise<void> => {
+  const patient = await getPatient({ id: patientId, cxId });
+  const { organization, facility } = await getPatientData(patient, facilityId);
+
   const externalData = patient.data.externalData;
 
   if (externalData === undefined || externalData.COMMONWELL === undefined) {
@@ -28,24 +32,22 @@ export const create = async (
     }
 
     if (cwPersonId) {
-      await reset(patient, organization);
+      await reset(patientId, cxId, facilityId);
     }
 
     const orgName = organization.data.name;
     const orgId = organization.id;
+    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
-    const cwPatient = await commonWell.getPatient(metriportQueryMeta, cwPatientId);
+    const cwPatient = await commonWell.getPatient(queryMeta, cwPatientId);
 
     if (!cwPatient._links?.self?.href) {
       throw new Error(`No patient uri for cw patient: ${cwPatientId}`);
     }
 
-    const link = await commonWell.addPatientLink(
-      metriportQueryMeta,
-      personId,
-      cwPatient._links.self.href
-    );
+    const link = await commonWell.addPatientLink(queryMeta, personId, cwPatient._links.self.href);
 
     await setCommonwellId({
       patientId: patient.id,
@@ -59,7 +61,7 @@ export const create = async (
     }
 
     // TODO: Convert this into a function
-    const networkLinks = await commonWell.getNetworkLinks(metriportQueryMeta, cwPatientId);
+    const networkLinks = await commonWell.getNetworkLinks(queryMeta, cwPatientId);
 
     if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
       const lola1Links = networkLinks._embedded.networkLink.filter(isLOLA1);
@@ -69,7 +71,7 @@ export const create = async (
       lola1Links.forEach(async link => {
         if (link._links?.upgrade?.href) {
           requests.push(
-            commonWell.upgradeOrDowngradeNetworkLink(metriportQueryMeta, link._links.upgrade.href)
+            commonWell.upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
           );
         }
       });
