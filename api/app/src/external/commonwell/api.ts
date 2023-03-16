@@ -82,21 +82,23 @@ const x509 = new X509Certificate(commonwellCertificate);
 
 const thumbprint = x509.fingerprint;
 
-// TODO #219 #413 gotta make these dynamic
+const validFrom = dayjs(x509.validFrom).toString();
+const validTo = dayjs(x509.validTo).toString();
+
 export const certificate = {
   Certificates: [
     {
-      startDate: dayjs(x509.validFrom).format("YYYY-MM-DDTHH:mm:ssZ"),
-      endDate: dayjs(x509.validTo).format("YYYY-MM-DDTHH:mm:ssZ"),
-      expirationDate: dayjs(x509.validTo).format("YYYY-MM-DDTHH:mm:ssZ"),
+      startDate: validFrom,
+      endDate: validTo,
+      expirationDate: validTo,
       thumbprint: thumbprint,
       content: commonwellCertificateContent,
       purpose: CertificatePurpose.Authentication,
     },
     {
-      startDate: dayjs(x509.validFrom).format("YYYY-MM-DDTHH:mm:ssZ"),
-      endDate: dayjs(x509.validTo).format("YYYY-MM-DDTHH:mm:ssZ"),
-      expirationDate: dayjs(x509.validTo).format("YYYY-MM-DDTHH:mm:ssZ"),
+      startDate: validFrom,
+      endDate: validTo,
+      expirationDate: validTo,
       thumbprint: thumbprint,
       content: commonwellCertificateContent,
       purpose: CertificatePurpose.Signing,
