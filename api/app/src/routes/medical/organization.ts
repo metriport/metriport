@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createOrganization } from "../../command/medical/organization/create-organization";
-import { getOrganization } from "../../command/medical/organization/get-organization";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
 import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
@@ -17,7 +17,7 @@ const router = Router();
  * Creates a new organization at Metroport and HIEs.
  *
  * @param req.body The data to create the organization.
- * @return The newly created organization.
+ * @returns The newly created organization.
  */
 router.post(
   "/",
@@ -43,7 +43,7 @@ router.post(
  * Updates the organization at Metriport and HIEs.
  *
  * @param req.body The data to udpate the organization.
- * @return The updated organization.
+ * @returns The updated organization.
  */
 router.put(
   "/:id",
@@ -69,16 +69,16 @@ router.put(
  *
  * Gets the org corresponding to the customer ID.
  *
- * @return  {LocalOrg}  The organization.
+ * @returns The organization.
  */
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
 
-    const org = await getOrganization({ cxId });
+    const org = await getOrganizationOrFail({ cxId });
 
-    return res.status(status.OK).json(org ? { id: org.id, ...org.data } : undefined);
+    return res.status(status.OK).json(dtoFromModel(org));
   })
 );
 
