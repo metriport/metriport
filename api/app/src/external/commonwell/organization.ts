@@ -63,8 +63,8 @@ export const create = async (org: Organization): Promise<void> => {
   const cwOrg = await organizationToCommonwell(org);
   try {
     const commonWell = makeCommonWellAPI(
-      Config.getMemberManagementOID(),
-      Config.getMetriportOrgName()
+      Config.getMetriportOrgName(),
+      Config.getMemberManagementOID()
     );
     await commonWell.createOrg(metriportQueryMeta, cwOrg);
     await commonWell.addCertificateToOrg(metriportQueryMeta, certificate, org.id);
@@ -80,8 +80,8 @@ export const update = async (org: Organization): Promise<void> => {
   const cwOrg = await organizationToCommonwell(org);
   try {
     const commonWell = makeCommonWellAPI(
-      Config.getMemberManagementOID(),
-      Config.getMetriportOrgName()
+      Config.getMetriportOrgName(),
+      Config.getMemberManagementOID()
     );
     await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
   } catch (error) {

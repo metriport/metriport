@@ -7,6 +7,8 @@ import {
 } from "@metriport/commonwell-sdk";
 import { CertificatePurpose } from "@metriport/commonwell-sdk/lib/models/certificates";
 import { X509Certificate } from "crypto";
+import dayjs from "dayjs";
+
 import { Config } from "../../shared/config";
 import { CommonWellMock } from "./mock";
 
@@ -84,17 +86,17 @@ const thumbprint = x509.fingerprint;
 export const certificate = {
   Certificates: [
     {
-      startDate: "2022-12-31T11:46:29Z",
-      endDate: "2023-03-31T12:46:28Z",
-      expirationDate: "2023-03-31T12:46:28Z",
+      startDate: dayjs(x509.validFrom).format("YYYY-MM-DDTHH:mm:ssZ"),
+      endDate: dayjs(x509.validTo).format("YYYY-MM-DDTHH:mm:ssZ"),
+      expirationDate: dayjs(x509.validTo).format("YYYY-MM-DDTHH:mm:ssZ"),
       thumbprint: thumbprint,
       content: commonwellCertificateContent,
       purpose: CertificatePurpose.Authentication,
     },
     {
-      startDate: "2022-12-31T11:46:29Z",
-      endDate: "2023-03-31T12:46:28Z",
-      expirationDate: "2023-03-31T12:46:28Z",
+      startDate: dayjs(x509.validFrom).format("YYYY-MM-DDTHH:mm:ssZ"),
+      endDate: dayjs(x509.validTo).format("YYYY-MM-DDTHH:mm:ssZ"),
+      expirationDate: dayjs(x509.validTo).format("YYYY-MM-DDTHH:mm:ssZ"),
       thumbprint: thumbprint,
       content: commonwellCertificateContent,
       purpose: CertificatePurpose.Signing,
