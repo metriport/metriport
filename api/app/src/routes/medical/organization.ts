@@ -2,53 +2,65 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createOrganization } from "../../command/medical/organization/create-organization";
-import { getOrganization } from "../../command/medical/organization/get-organization";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
 import cwCommands from "../../external/commonwell";
-import { Organization, OrganizationData } from "../../models/medical/organization";
-import { asyncHandler, getCxIdOrFail } from "../util";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
+import { dtoFromModel } from "./dtos/organizationDTO";
 import { organizationSchema } from "./schemas/organization";
 
 const router = Router();
 
-type OrganizationDTO = Pick<Organization, "id"> & OrganizationData;
-
-// TODO split this in two, one to create "POST /" and another to update "POST /:id"
 /** ---------------------------------------------------------------------------
  * POST /organization
  *
- * Updates or creates the organization if it doesn't exist already.
+ * Creates a new organization at Metroport and HIEs.
  *
- * @return  {OrganizationDTO}  The organization.
+ * @param req.body The data to create the organization.
+ * @returns The newly created organization.
  */
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    const data = organizationSchema.parse(req.body);
 
-    const reqOrgData = organizationSchema.parse(req.body);
-    const org = {
-      ...reqOrgData,
-      location: {
-        ...reqOrgData.location,
-        addressLine2: reqOrgData.location.addressLine2 ?? undefined,
-      },
-    };
+    const org = await createOrganization({ cxId, data });
 
-    let localOrg: Organization;
+    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    cwCommands.organization.create(org).then(undefined, (err: unknown) => {
+      // TODO #156 Send this to Sentry
+      console.error(`Failure while creating organization ${org.id} @ CW: `, err);
+    });
 
-    if (org.id) {
-      const data = { ...org };
-      delete data.id;
-      localOrg = await updateOrganization({ id: org.id, cxId, data });
-      await cwCommands.organization.update(localOrg);
-    } else {
-      localOrg = await createOrganization({ cxId, data: org });
-      await cwCommands.organization.create(localOrg);
-    }
+    return res.status(status.CREATED).json(dtoFromModel(org));
+  })
+);
 
-    const responsePayload: OrganizationDTO = { id: localOrg.id, ...localOrg.data };
-    return res.status(status.OK).json(responsePayload);
+/** ---------------------------------------------------------------------------
+ * PUT /organization/:id
+ *
+ * Updates the organization at Metriport and HIEs.
+ *
+ * @param req.body The data to udpate the organization.
+ * @returns The updated organization.
+ */
+router.put(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const orgId = getFromParamsOrFail("id", req);
+    const data = organizationSchema.parse(req.body);
+
+    const org = await updateOrganization({ id: orgId, cxId, data });
+
+    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    cwCommands.organization.update(org).then(undefined, (err: unknown) => {
+      // TODO #156 Send this to Sentry
+      console.error(`Failure while updating organization ${org.id} @ CW: `, err);
+    });
+
+    return res.status(status.OK).json(dtoFromModel(org));
   })
 );
 
@@ -57,16 +69,16 @@ router.post(
  *
  * Gets the org corresponding to the customer ID.
  *
- * @return  {LocalOrg}  The organization.
+ * @returns The organization.
  */
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
 
-    const org = await getOrganization({ cxId });
+    const org = await getOrganizationOrFail({ cxId });
 
-    return res.status(status.OK).json(org ? { id: org.id, ...org.data } : undefined);
+    return res.status(status.OK).json(dtoFromModel(org));
   })
 );
 

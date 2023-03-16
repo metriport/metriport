@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosStatic } from "axios";
 import { DocumentReference, documentReferenceSchema } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks } from "../models/link";
-import { Organization } from "../models/organization";
+import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   Patient,
   PatientCreate,
@@ -48,15 +48,32 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Creates an org or updates one if it already exists
+   * Creates a new organization.
    *
-   * @param organization The org you want to create or update
-   * @returns The created or updated org.
+   * @param data The data to be used to create a new organization.
+   * @returns The created organization.
    */
-  async createOrUpdateOrganization(organization: Organization): Promise<Organization> {
-    const resp = await this.api.post<Organization>(this.ORGANIZATION_URL, organization);
-    if (!resp.data) throw new Error(`Create or update didn't return Organization`);
-    return resp.data;
+  async createOrganization(data: OrganizationCreate): Promise<Organization> {
+    const resp = await this.api.post(this.ORGANIZATION_URL, data);
+    if (!resp.data) throw new Error(`Did not receive an organization from the server`);
+    return organizationSchema.parse(resp.data);
+  }
+
+  /**
+   * Updates an organization.
+   *
+   * @param organization The organization data to be updated.
+   * @return The updated organization.
+   */
+  async updateOrganization(organization: Organization): Promise<Organization> {
+    type FieldsToOmit = "id";
+    const payload: Omit<Organization, FieldsToOmit> & Partial<Pick<Organization, FieldsToOmit>> = {
+      ...organization,
+      id: undefined,
+    };
+    const resp = await this.api.put(`${this.ORGANIZATION_URL}/${organization.id}`, payload);
+    if (!resp.data) throw new Error(`Did not receive an organization from the server`);
+    return organizationSchema.parse(resp.data);
   }
 
   /**
@@ -65,9 +82,9 @@ export class MetriportMedicalApi {
    * @returns The organization, or undefined if no organization has been created.
    */
   async getOrganization(): Promise<Organization | undefined> {
-    const resp = await this.api.get<Organization | undefined>(this.ORGANIZATION_URL);
+    const resp = await this.api.get(this.ORGANIZATION_URL);
     if (!resp.data) return undefined;
-    return resp.data;
+    return organizationSchema.parse(resp.data);
   }
 
   /**
