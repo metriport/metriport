@@ -1,16 +1,14 @@
-import { APIMode, CommonWell, PurposeOfUse, RequestMetadata } from "@metriport/commonwell-sdk";
+import {
+  APIMode,
+  CommonWell,
+  CommonWellAPI,
+  PurposeOfUse,
+  RequestMetadata,
+} from "@metriport/commonwell-sdk";
 import { CertificatePurpose } from "@metriport/commonwell-sdk/lib/models/certificates";
 import { X509Certificate } from "crypto";
-import { Config, getEnvVarOrFail } from "../../shared/config";
-
-// TODO move these getEnvVarOrFail to Config
-const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
-const metriportPrivateKey = getEnvVarOrFail("CW_PRIVATE_KEY");
-const metriportCert = getEnvVarOrFail("CW_CERTIFICATE");
-
-const memberManagementOID = getEnvVarOrFail("CW_MEMBER_OID");
-const memberManagementPrivateKey = getEnvVarOrFail("CW_MEMBER_PRIVATE_KEY");
-const memberManagementCert = getEnvVarOrFail("CW_MEMBER_CERTIFICATE");
+import { Config } from "../../shared/config";
+import { CommonWellMock } from "./mock";
 
 const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
 
@@ -20,16 +18,32 @@ const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
  * @param orgId Organization ID without 'urn:oid:' namespace
  * @returns CommonWell API
  */
-export function makeCommonWellAPI(orgName: string, orgId: string): CommonWell {
-  return new CommonWell(metriportCert, metriportPrivateKey, orgName, orgId, apiMode);
+export function makeCommonWellAPI(orgName: string, orgId: string): CommonWellAPI {
+  if (Config.isSandbox()) {
+    return new CommonWellMock(orgName, orgId);
+  }
+
+  const isMember = orgId === Config.getMemberManagementOID();
+
+  if (isMember) {
+    return new CommonWell(
+      Config.getMemberManagementCert(),
+      Config.getMemberManagementPrivateKey(),
+      orgName,
+      orgId,
+      apiMode
+    );
+  }
+
+  return new CommonWell(
+    Config.getMetriportCert(),
+    Config.getMetriportPrivateKey(),
+    orgName,
+    orgId,
+    apiMode
+  );
 }
-export const commonWellManagement = new CommonWell(
-  memberManagementCert,
-  memberManagementPrivateKey,
-  metriportOrgName,
-  memberManagementOID,
-  apiMode
-);
+
 const baseQueryMeta = (orgName: string) => ({
   purposeOfUse: PurposeOfUse.TREATMENT,
   role: "ict",
@@ -60,7 +74,7 @@ export const metriportQueryMeta: RequestMetadata = baseQueryMeta("Metriport");
 
 // CERTIFICATE
 
-const commonwellCertificate = metriportCert;
+const commonwellCertificate = Config.getMetriportCert();
 const commonwellCertificateContent = getCertificateContent(commonwellCertificate);
 const x509 = new X509Certificate(commonwellCertificate);
 

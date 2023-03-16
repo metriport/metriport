@@ -1,11 +1,14 @@
-import { makeCommonWellAPI, metriportQueryMeta } from "../api";
+import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { oid } from "../../../shared/oid";
-import { Patient } from "../../../models/medical/patient";
-import { Organization } from "../../../models/medical/organization";
 import { setCommonwellId } from "../patient-external-data";
 import { patientWithCWData } from "./shared";
+import { getPatientData } from "../patient-shared";
+import { getPatient } from "../../../command/medical/patient/get-patient";
 
-export const reset = async (patient: Patient, organization: Organization) => {
+export const reset = async (patientId: string, cxId: string, facilityId: string) => {
+  const patient = await getPatient({ id: patientId, cxId });
+  const { organization, facility } = await getPatientData(patient, facilityId);
+
   const externalData = patient.data.externalData;
 
   if (externalData === undefined || externalData.COMMONWELL === undefined) {
@@ -21,9 +24,11 @@ export const reset = async (patient: Patient, organization: Organization) => {
   try {
     const orgName = organization.data.name;
     const orgId = organization.id;
+    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
     const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
-    await commonWell.resetPatientLink(metriportQueryMeta, cwPersonId, cwPatientId);
+    await commonWell.resetPatientLink(queryMeta, cwPersonId, cwPatientId);
 
     await setCommonwellId({
       patientId: patient.id,
