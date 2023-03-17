@@ -21,11 +21,11 @@
 </p>
 
 <p align="center">
-   <a href="https://metriport.statuspage.io/"><img src="https://betteruptime.com/status-badges/v1/monitor/a9kf.svg" alt="Uptime"></a>
+   <a href="https://metriport.statuspage.io/"><img src="https://img.shields.io/badge/status-up-green" alt="Uptime"></a>
    <a href="https://github.com/metriport/metriport/stargazers"><img src="https://img.shields.io/github/stars/metriport/metriport" alt="Github Stars"></a>
    <a href="https://github.com/metriport/metriport/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
    <a href="https://github.com/metriport/metriport/pulse"><img src="https://img.shields.io/github/commit-activity/m/metriport/metriport" alt="Commits-per-month"></a>
-   <a href="https://twitter.com/metriport"><img src="https://img.shields.io/twitter/follow/metriport?style=flat"></a>
+   <a href="https://twitter.com/metriport"><img src="https://img.shields.io/twitter/follow/metriport?style=social"></a>
    <a href="https://www.linkedin.com/company/metriport"><img src="https://img.shields.io/static/v1?label=LinkedIn&message=Metriport (YC S22)&color=blue" alt="LinkedIn"></a>
    <a href="https://www.ycombinator.com/companies/metriport"><img src="https://img.shields.io/static/v1?label=Y Combinator&message=Metriport&color=orange" alt="YC"></a>
 </p>
@@ -62,11 +62,13 @@ Our [Health Devices API](https://metriport.com/devices), allows you to gain acce
 Out of the box, our Health Devices API supports the following integrations:
 
 - Fitbit
+- Garmin
 - Oura
 - Whoop
 - Withings
 - Cronometer
-- Garmin
+- Apple Health
+- Google Fit
 
 ...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
 
@@ -76,7 +78,7 @@ Out of the box, our Health Devices API supports the following integrations:
 
 ### **Medical API (Coming Soon)**
 
-Open-source with native FHIR support. More info on our Medical API here: https://metriport.com/medical
+Open-source with native FHIR support. More info on our Medical API here: https://metriport.com/medical/
 
 ## **Getting Started**
 
@@ -262,6 +264,36 @@ $ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
 $ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
 $ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "FHIR_SERVER_URL=<FHIR-SERVER-URL>" >> api/app/.env # optional
+```
+
+Additionally, define your System Root [OID](https://en.wikipedia.org/wiki/Object_identifier). This will be the base identifier to represent your system in any medical data you create - such as organizations, facilities, patients, and etc.
+
+Your OID must be registered and assigned by HL7. You can do this [here](http://www.hl7.org/oid/index.cfm).
+
+By default, OIDs in Metriport are managed according to the [recommended standards outlined by HL7](http://www.hl7.org/documentcenter/private/standards/v3/V3_OIDS_R1_INFORM_2011NOV.pdf).
+
+```shell
+$ echo "SYSTEM_ROOT_OID=<YOUR-OID>" >> api/app/.env
+```
+
+These envs are specific to Commonwell and are necessary in sending requests to their platform.
+
+```shell
+$ echo "CW_TECHNICAL_CONTACT_NAME=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_TECHNICAL_CONTACT_TITLE=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_TECHNICAL_CONTACT_EMAIL=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_TECHNICAL_CONTACT_PHONE=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_GATEWAY_ENDPOINT=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_MEMBER_NAME=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_MEMBER_OID=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_ORG_MANAGEMENT_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_ORG_MANAGEMENT_CERTIFICATE=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_MEMBER_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_MEMBER_CERTIFICATE=<YOUR-SECRET>" >> api/app/.env
 ```
 
 #### **Optional usage report**
@@ -329,6 +361,14 @@ $ cd api/app
 $ ts-node src/sequelize/cli
 ```
 
+Alternatively, you can use a shortcut for migrations on local environment:
+
+```shell
+$ npm run db-local -- <cmd>
+```
+
+> Note: the double dash `--` is required so parameters after it go to sequelize cli; without it, parameters go to `npm`
+
 Umzug's CLI is still in development at the time of this writing, so that's how one uses it:
 
 - it will print the commands being sent to the DB
@@ -379,6 +419,15 @@ $ npm run start -w connect-widget
 
 To debug the Connect Widget, you can attach a run a Chrome window by launching the `Run Chrome` configuration in VS Code.
 
+### Utils
+
+The `./utils` folder contains utilities that help with the development of this and other opensource Metriport projects:
+
+- [mock-webhook](https://github.com/metriport/metriport/blob/develop/utils/src/mock-webhook.ts): implements the Metriport webhook protocol, can be used by applications integrating with Metriport API as a reference to the behavior expected from these applications when using the webhook feature.
+- [fhir-uploader](https://github.com/metriport/metriport/blob/develop/utils/src/fhir-uploader.ts): useful to insert synthetic/mock data from [Synthea](https://github.com/synthetichealth/synthea) into [FHIR](https://www.hl7.org/fhir) servers (see https://github.com/metriport/hapi-fhir-jpaserver).
+
+Check the scripts on the folder's [package.json](https://github.com/metriport/metriport/blob/develop/utils/package.json) to see how to run these.
+
 ---
 
 ## **Self-Hosted Deployments**
@@ -395,7 +444,7 @@ TODO
 
 ### **Deployment Steps**
 
-1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
+1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager and create other infra pre-requisites. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
 $ ./deploy.sh -e "production" -s "<config.secretsStackName>"

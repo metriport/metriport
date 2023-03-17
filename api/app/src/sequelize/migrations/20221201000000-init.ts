@@ -16,24 +16,29 @@ export const up: Migration = async ({ context: queryInterface }) => {
       undefined,
       { transaction }
     );
-    await shared.createTable(queryInterface, transaction, ConnectedUser.NAME, {
-      id: {
-        type: DataTypes.UUID,
-        primaryKey: true,
+    await shared.createTable(
+      queryInterface,
+      ConnectedUser.NAME,
+      {
+        id: {
+          type: DataTypes.UUID,
+          primaryKey: true,
+        },
+        cxId: {
+          type: DataTypes.UUID,
+          field: "cx_id",
+        },
+        cxUserId: {
+          type: DataTypes.STRING,
+          field: "cx_user_id",
+        },
+        providerMap: {
+          type: DataTypes.JSONB,
+          field: "provider_map",
+        },
       },
-      cxId: {
-        type: DataTypes.UUID,
-        field: "cx_id",
-      },
-      cxUserId: {
-        type: DataTypes.STRING,
-        field: "cx_user_id",
-      },
-      providerMap: {
-        type: DataTypes.JSONB,
-        field: "provider_map",
-      },
-    });
+      { transaction }
+    );
   });
 };
 

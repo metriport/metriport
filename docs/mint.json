@@ -64,7 +64,8 @@
               "pages": [
                 "user/create-user",
                 "user/create-connect-token",
-                "user/revoke-provider-access"
+                "user/revoke-provider-access",
+                "user/get-connected-providers"
               ]
             },
             {

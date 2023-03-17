@@ -9,11 +9,11 @@ import {
 import * as nanoid from "nanoid";
 
 import {
-  driversLicenseId,
   caDriversLicenseUri,
-  personStrongId,
+  driversLicenseId,
+  makePatient,
   personNoStrongId,
-  patient,
+  personStrongId,
 } from "./payloads";
 
 // 1. Person Management
@@ -36,7 +36,10 @@ export async function personManagement(commonWell: CommonWell, queryMeta: Reques
 
   console.log(`>>> C2b: Search for a Person using the local Patient demographics.`);
   const personId = getId(respC1a);
-  const newPatient = await commonWell.registerPatient(queryMeta, patient);
+  const newPatient = await commonWell.registerPatient(
+    queryMeta,
+    makePatient({ facilityId: commonWell.oid })
+  );
   const patientId = getIdTrailingSlash(newPatient);
   const respC2b = await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
   console.log(respC2b);

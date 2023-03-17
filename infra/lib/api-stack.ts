@@ -1,6 +1,8 @@
-import { Aspects, CfnOutput, Duration, Stack, StackProps } from "aws-cdk-lib";
+import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
@@ -14,53 +16,51 @@ import { Credentials } from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
-import { EnvType } from "./env-type";
-import { addErrorAlarmToLambdaFunc } from "./util";
+import { getSecrets } from "./secrets";
+import { addErrorAlarmToLambdaFunc, isProd, mbToBytes } from "./util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
 }
 
 export class APIStack extends Stack {
+  readonly vpc: ec2.IVpc;
+
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
 
     //-------------------------------------------
     // Secrets
     //-------------------------------------------
-    const buildSecret = (name: string): secret.ISecret =>
-      secret.Secret.fromSecretNameV2(this, name, name);
-    const apiSecrets: { [key: string]: ecs.Secret } = {};
-    for (const key of Object.keys(props.config.providerSecretNames)) {
-      apiSecrets[key] = ecs.Secret.fromSecretsManager(
-        buildSecret((props.config.providerSecretNames as { [index: string]: string })[key])
-      );
-    }
+    const secrets = getSecrets(this, props.config);
 
     //-------------------------------------------
     // VPC + NAT Gateway
     //-------------------------------------------
     const vpcConstructId = "APIVpc";
-    const vpc = new ec2.Vpc(this, vpcConstructId, {
+    this.vpc = new ec2.Vpc(this, vpcConstructId, {
       flowLogs: {
         apiVPCFlowLogs: { trafficType: ec2.FlowLogTrafficType.REJECT },
       },
     });
 
+    new r53.PrivateHostedZone(this, "PrivateZone", {
+      vpc: this.vpc,
+      zoneName: props.config.host,
+    });
+    const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
+      domainName: props.config.host,
+    });
+
     //-------------------------------------------
     // Security Setup
     //-------------------------------------------
-
     // Create a cert for HTTPS
-    const zone = r53.HostedZone.fromLookup(this, "Zone", {
-      domainName: props.config.host,
-    });
     const certificate = new cert.DnsValidatedCertificate(this, "APICert", {
       domainName: props.config.domain,
-      hostedZone: zone,
+      hostedZone: publicZone,
       subjectAlternativeNames: [`*.${props.config.domain}`],
     });
 
@@ -99,7 +99,7 @@ export class APIStack extends Stack {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
         version: rds.AuroraPostgresEngineVersion.VER_14_4,
       }),
-      instanceProps: { vpc: vpc, instanceType: new InstanceType("serverless") },
+      instanceProps: { vpc: this.vpc, instanceType: new InstanceType("serverless") },
       credentials: dbCreds,
       defaultDatabaseName: dbName,
       clusterIdentifier: dbClusterName,
@@ -158,7 +158,7 @@ export class APIStack extends Stack {
 
     // Create a new Amazon Elastic Container Service (ECS) cluster
     const cluster = new ecs.Cluster(this, "APICluster", {
-      vpc: vpc,
+      vpc: this.vpc,
     });
 
     // Create a Docker image and upload it to the Amazon Elastic Container Registry (ECR)
@@ -185,16 +185,21 @@ export class APIStack extends Stack {
           containerName: "API-Server",
           secrets: {
             DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
-            ...apiSecrets,
+            ...secrets,
           },
           environment: {
-            NODE_ENV: "production",
+            NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
             ENV_TYPE: props.config.environmentType,
             TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
             API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
             CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
+            SYSTEM_ROOT_OID: props.config.systemRootOID,
+            ...(props.config.slack ? props.config.slack : undefined),
             ...(props.config.usageReportUrl && {
               USAGE_URL: props.config.usageReportUrl,
+            }),
+            ...(props.config.fhirServerUrl && {
+              FHIR_SERVER_URL: props.config.fhirServerUrl,
             }),
           },
         },
@@ -203,6 +208,8 @@ export class APIStack extends Stack {
         publicLoadBalancer: false,
       }
     );
+    const apiServerAddress = fargateService.loadBalancer.loadBalancerDnsName;
+
     // This speeds up deployments so the tasks are swapped quicker.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
     fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
@@ -239,7 +246,7 @@ export class APIStack extends Stack {
 
     // allow the NLB to talk to fargate
     fargateService.service.connections.allowFrom(
-      ec2.Peer.ipv4(vpc.vpcCidrBlock),
+      ec2.Peer.ipv4(this.vpc.vpcCidrBlock),
       ec2.Port.allTraffic(),
       "Allow traffic from within the VPC to the service secure port"
     );
@@ -259,7 +266,7 @@ export class APIStack extends Stack {
         },
       },
       integrationHttpMethod: "ANY",
-      uri: `http://${fargateService.loadBalancer.loadBalancerDnsName}/{proxy}`,
+      uri: `http://${apiServerAddress}/{proxy}`,
     });
 
     //-------------------------------------------
@@ -285,7 +292,7 @@ export class APIStack extends Stack {
     });
     new r53.ARecord(this, "APIDomainRecord", {
       recordName: apiUrl,
-      zone: zone,
+      zone: publicZone,
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
     });
 
@@ -317,60 +324,22 @@ export class APIStack extends Stack {
     });
 
     // token auth for connect sessions
-    const tokenAuthLambda = new lambda_node.NodejsFunction(this, "APITokenAuthLambda", {
-      runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "../api/lambdas/token-auth/index.js",
-      environment: {
-        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-      },
-    });
-    addErrorAlarmToLambdaFunc(this, tokenAuthLambda, "TokenAuthFunctionAlarm");
-
-    const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
-      handler: tokenAuthLambda,
-      identitySources: ["method.request.querystring.state"],
-      // todo: instead of removing caching, investigate explicitly listing
-      //        the permitted methods in the lambda: "Resource: event.methodArn"
-      //
-      // see: https://forum.serverless.com/t/rest-api-with-custom-authorizer-how-are-you-dealing-with-authorization-and-policy-cache/3310
-      resultsCacheTtl: Duration.minutes(0),
-    });
-    tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
+    const tokenAuth = this.setupTokenAuthLambda(dynamoDBTokenTable);
 
     // setup /token path with token auth
-    const apiTokenResource = api.root.addResource("token");
-    const tokenProxy = new apig.ProxyResource(this, `${id}/token/Proxy`, {
-      parent: apiTokenResource,
-      anyMethod: false,
-    });
-    const integrationToken = new apig.Integration({
-      type: apig.IntegrationType.HTTP_PROXY,
-      options: {
-        connectionType: apig.ConnectionType.VPC_LINK,
-        vpcLink: link,
-        requestParameters: {
-          "integration.request.path.proxy": "method.request.path.proxy",
-          "integration.request.header.api-token": "context.authorizer.api-token",
-          "integration.request.header.cxId": "context.authorizer.cxId",
-          "integration.request.header.userId": "context.authorizer.userId",
-        },
-      },
-      integrationHttpMethod: "ANY",
-      uri: `http://${fargateService.loadBalancer.loadBalancerDnsName}/{proxy}`,
-    });
-    tokenProxy.addMethod("ANY", integrationToken, {
-      requestParameters: {
-        "method.request.path.proxy": true,
-      },
-      authorizer: tokenAuth,
-    });
+    this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiServerAddress);
+
+    const userPoolClientSecret = this.setupOAuthUserPool(props.config, publicZone);
+    const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
+    const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
+    this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiServerAddress);
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
 
     this.setupGarminWebhookAuth({
       baseResource: webhookResource,
-      vpc,
+      vpc: this.vpc,
       fargateService,
       dynamoDBTokenTable,
     });
@@ -384,7 +353,7 @@ export class APIStack extends Stack {
         vpcLink: link,
       },
       integrationHttpMethod: "POST",
-      uri: `http://${fargateService.loadBalancer.loadBalancerDnsName}${appleHealthResource.path}`,
+      uri: `http://${apiServerAddress}${appleHealthResource.path}`,
     });
     appleHealthResource.addMethod("POST", integrationApple, {
       apiKeyRequired: true,
@@ -437,7 +406,7 @@ export class APIStack extends Stack {
     });
     new CfnOutput(this, "VPCID", {
       description: "VPC ID",
-      value: vpc.vpcId,
+      value: this.vpc.vpcId,
     });
     new CfnOutput(this, "DBClusterID", {
       description: "DB Cluster ID",
@@ -462,6 +431,10 @@ export class APIStack extends Stack {
     new CfnOutput(this, "APIDBCluster", {
       description: "API DB Cluster",
       value: `${dbCluster.clusterEndpoint.hostname} ${dbCluster.clusterEndpoint.port} ${dbCluster.clusterEndpoint.socketAddress}`,
+    });
+    new CfnOutput(this, "ClientSecretUserpoolID", {
+      description: "Userpool for client secret based apps",
+      value: userPoolClientSecret.userPoolId,
     });
   }
 
@@ -495,17 +468,174 @@ export class APIStack extends Stack {
     garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
   }
 
+  private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {
+    const tokenAuthLambda = new lambda_node.NodejsFunction(this, "APITokenAuthLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "../api/lambdas/token-auth/index.js",
+      environment: {
+        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+      },
+    });
+    addErrorAlarmToLambdaFunc(this, tokenAuthLambda, "TokenAuthFunctionAlarm");
+
+    const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
+      handler: tokenAuthLambda,
+      identitySources: ["method.request.querystring.state"],
+      // todo: instead of removing caching, investigate explicitly listing
+      //        the permitted methods in the lambda: "Resource: event.methodArn"
+      //
+      // see: https://forum.serverless.com/t/rest-api-with-custom-authorizer-how-are-you-dealing-with-authorization-and-policy-cache/3310
+      resultsCacheTtl: Duration.minutes(0),
+    });
+    tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
+
+    return tokenAuth;
+  }
+
+  private setupAPIGWApiTokenResource(
+    stackId: string,
+    api: apig.RestApi,
+    link: apig.VpcLink,
+    authorizer: apig.RequestAuthorizer,
+    serverAddress: string
+  ): apig.Resource {
+    const apiTokenResource = api.root.addResource("token");
+    const tokenProxy = new apig.ProxyResource(this, `${stackId}/token/Proxy`, {
+      parent: apiTokenResource,
+      anyMethod: false,
+    });
+    const integrationToken = new apig.Integration({
+      type: apig.IntegrationType.HTTP_PROXY,
+      options: {
+        connectionType: apig.ConnectionType.VPC_LINK,
+        vpcLink: link,
+        requestParameters: {
+          "integration.request.path.proxy": "method.request.path.proxy",
+          "integration.request.header.api-token": "context.authorizer.api-token",
+          "integration.request.header.cxId": "context.authorizer.cxId",
+          "integration.request.header.userId": "context.authorizer.userId",
+        },
+      },
+      integrationHttpMethod: "ANY",
+      uri: `http://${serverAddress}/{proxy}`,
+    });
+    tokenProxy.addMethod("ANY", integrationToken, {
+      requestParameters: {
+        "method.request.path.proxy": true,
+      },
+      authorizer,
+    });
+    return apiTokenResource;
+  }
+
+  private setupOAuthUserPool(config: EnvConfig, dnsZone: r53.IHostedZone): cognito.IUserPool {
+    const domainName = `${config.authSubdomain}.${config.domain}`;
+    const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+    const certificate = new cert.DnsValidatedCertificate(this, `UserPoolCertificate`, {
+      domainName,
+      hostedZone: dnsZone,
+      region: "us-east-1", // Required by Cognito for custom certs - https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-add-custom-domain.html
+    });
+    const userPoolDomain = userPool.addDomain("metriport-custom-cognito-domain", {
+      customDomain: { domainName, certificate },
+    });
+    new r53.ARecord(this, "AuthSubdomainRecord", {
+      recordName: domainName,
+      zone: dnsZone,
+      target: r53.RecordTarget.fromAlias(new r53_targets.UserPoolDomainTarget(userPoolDomain)),
+    });
+    return userPool;
+  }
+
+  private enableFHIROnUserPool(userPool: cognito.IUserPool): cognito.OAuthScope[] {
+    const scopes = [
+      {
+        scopeName: "document",
+        scopeDescription: "query and retrieve document references",
+      },
+    ];
+    const resourceServerScopes = scopes.map(s => new cognito.ResourceServerScope(s));
+    const resourceServer = userPool.addResourceServer("FHIR-resource-server2", {
+      identifier: "fhir",
+      scopes: resourceServerScopes,
+    });
+    const oauthScopes = resourceServerScopes.map(s =>
+      cognito.OAuthScope.resourceServer(resourceServer, s)
+    );
+    // Commonwell specific client
+    userPool.addClient("commonwell-client2", {
+      generateSecret: true,
+      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
+      oAuth: {
+        flows: {
+          clientCredentials: true,
+        },
+        scopes: oauthScopes,
+      },
+    });
+    return oauthScopes;
+  }
+
+  private setupOAuthAuthorizer(userPool: cognito.IUserPool): apig.IAuthorizer {
+    const cognitoAuthorizer = new apig.CognitoUserPoolsAuthorizer(this, `oauth-authorizer`, {
+      cognitoUserPools: [userPool],
+      identitySource: "method.request.header.Authorization",
+    });
+    return cognitoAuthorizer;
+  }
+
+  private setupAPIGWOAuthResource(
+    stackId: string,
+    api: apig.RestApi,
+    vpcLink: apig.VpcLink,
+    authorizer: apig.IAuthorizer,
+    oauthScopes: cognito.OAuthScope[],
+    serverAddress: string
+  ): apig.Resource {
+    const oauthResource = api.root.addResource("oauth", {
+      defaultCorsPreflightOptions: { allowOrigins: ["*"] },
+    });
+    const oauthProxy = new apig.ProxyResource(this, `${stackId}/oauth/Proxy`, {
+      parent: oauthResource,
+      anyMethod: false,
+      defaultCorsPreflightOptions: { allowOrigins: ["*"] },
+    });
+    const oauthProxyIntegration = new apig.Integration({
+      type: apig.IntegrationType.HTTP_PROXY,
+      options: {
+        connectionType: apig.ConnectionType.VPC_LINK,
+        vpcLink,
+        requestParameters: {
+          "integration.request.path.proxy": "method.request.path.proxy",
+        },
+      },
+      integrationHttpMethod: "ANY",
+      uri: `http://${serverAddress}/oauth/{proxy}`,
+    });
+    oauthProxy.addMethod("ANY", oauthProxyIntegration, {
+      requestParameters: {
+        "method.request.path.proxy": true,
+      },
+      authorizer,
+      authorizationScopes: oauthScopes.map(s => s.scopeName),
+    });
+    return oauthResource;
+  }
+
   private addDBClusterPerformanceAlarms(dbCluster: rds.DatabaseCluster, dbClusterName: string) {
     const memoryMetric = dbCluster.metricFreeableMemory();
     memoryMetric.createAlarm(this, `${dbClusterName}FreeableMemoryAlarm`, {
-      threshold: this.mbToBytes(150),
+      threshold: mbToBytes(150),
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
     });
 
     const storageMetric = dbCluster.metricFreeLocalStorage();
     storageMetric.createAlarm(this, `${dbClusterName}FreeLocalStorageAlarm`, {
-      threshold: this.mbToBytes(250),
+      threshold: mbToBytes(250),
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
     });
@@ -529,10 +659,6 @@ export class APIStack extends Stack {
     });
   }
 
-  private mbToBytes(mb: number): number {
-    return mb * 1024 * 1024;
-  }
-
   private addDynamoPerformanceAlarms(table: dynamodb.Table, dynamoConstructName: string) {
     const readUnitsMetric = table.metricConsumedReadCapacityUnits();
     readUnitsMetric.createAlarm(this, `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`, {
@@ -548,6 +674,6 @@ export class APIStack extends Stack {
   }
 
   private isProd(props: APIStackProps): boolean {
-    return props.config.environmentType === EnvType.production;
+    return isProd(props.config);
   }
 }

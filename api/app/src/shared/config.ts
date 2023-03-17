@@ -14,12 +14,23 @@ export class Config {
   static readonly DEV_ENV: string = "dev";
   static readonly SANDBOX_ENV: string = "sandbox";
   static readonly SANDBOX_USER_LIMIT: number = 10;
-  static isProdEnv(): boolean {
+  static isCloudEnv(): boolean {
     return process.env.NODE_ENV === this.PROD_ENV;
+  }
+  static isProdEnv(): boolean {
+    return process.env.ENV_TYPE === this.PROD_ENV;
   }
   static isSandbox(): boolean {
     return process.env.ENV_TYPE === this.SANDBOX_ENV;
   }
+
+  static getSlackAlertUrl(): string | undefined {
+    return getEnvVar("SLACK_ALERT_URL");
+  }
+  static getSlackNotificationUrl(): string | undefined {
+    return getEnvVar("SLACK_NOTIFICATION_URL");
+  }
+
   static getConnectWidgetUrl(): string {
     return getEnvVarOrFail("CONNECT_WIDGET_URL");
   }
@@ -88,5 +99,50 @@ export class Config {
 
   static getUsageUrl(): string | undefined {
     return getEnvVar("USAGE_URL");
+  }
+
+  static getFHIRServerUrl(): string | undefined {
+    return getEnvVar("FHIR_SERVER_URL");
+  }
+
+  static getSystemRootOID(): string {
+    return getEnvVarOrFail("SYSTEM_ROOT_OID");
+  }
+
+  static getGatewayEndpoint(): string {
+    return getEnvVarOrFail("CW_GATEWAY_ENDPOINT");
+  }
+
+  static getGatewayAuthorizationServerEndpoint(): string {
+    return getEnvVarOrFail("CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT");
+  }
+
+  static getGatewayAuthorizationClientId(): string {
+    return getEnvVarOrFail("CW_GATEWAY_AUTHORIZATION_CLIENT_ID");
+  }
+
+  static getGatewayAuthorizationClientSecret(): string {
+    return getEnvVarOrFail("CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET");
+  }
+
+  static getMetriportPrivateKey(): string {
+    return getEnvVarOrFail("CW_PRIVATE_KEY");
+  }
+  static getMetriportCert(): string {
+    return getEnvVarOrFail("CW_CERTIFICATE");
+  }
+
+  static getMemberManagementPrivateKey(): string {
+    return getEnvVarOrFail("CW_MEMBER_PRIVATE_KEY");
+  }
+  static getMemberManagementCert(): string {
+    return getEnvVarOrFail("CW_MEMBER_CERTIFICATE");
+  }
+
+  static getMetriportOrgName(): string {
+    return getEnvVarOrFail("CW_MEMBER_NAME");
+  }
+  static getMemberManagementOID(): string {
+    return getEnvVarOrFail("CW_MEMBER_OID");
   }
 }

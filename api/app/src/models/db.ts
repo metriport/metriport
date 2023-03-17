@@ -4,12 +4,24 @@ import updateDB from "../sequelize";
 import { Config, getEnvVarOrFail } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev } from "./db-dev";
+import { Facility } from "./medical/facility";
+import { MAPIAccess } from "./medical/mapi-access";
+import { Organization } from "./medical/organization";
+import { Patient } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
-const models: ModelSetup[] = [ConnectedUser.setup, Settings.setup, WebhookRequest.setup];
+const models: ModelSetup[] = [
+  ConnectedUser.setup,
+  Settings.setup,
+  WebhookRequest.setup,
+  Organization.setup,
+  Facility.setup,
+  Patient.setup,
+  MAPIAccess.setup,
+];
 
 export type MetriportDB = {
   sequelize: Sequelize;
@@ -60,7 +72,7 @@ const initDB = async (): Promise<void> => {
 
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client
-    if (Config.isProdEnv()) {
+    if (Config.isCloudEnv()) {
       doc = new AWS.DynamoDB.DocumentClient({
         apiVersion: "2012-08-10",
       });

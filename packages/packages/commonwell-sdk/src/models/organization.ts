@@ -53,8 +53,9 @@ export const organizationSchema = z.object({
       z.object({
         serviceType: z.string(),
         gatewayType: z.string(),
-        isAsync: z.boolean(),
-        gatewayTimeout: z.number(),
+        isAsync: z.boolean().optional(),
+        gatewayTimeout: z.number().optional(),
+        endpointLocation: z.string().optional(),
       })
     )
     .optional()

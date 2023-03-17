@@ -1,0 +1,31 @@
+name: Branch to Staging
+
+# Used to manually deploy a branch to staging
+
+on:
+  workflow_dispatch: # manually executed by a user
+
+jobs:
+  widget-deploy:
+    uses: ./.github/workflows/_reusable_deploy.yml
+    with:
+      build_env: "staging"
+      deploy_env: "staging"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
+      CDK_STACK: ${{ secrets.WIDGET_STACK_NAME_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+
+  api-deploy:
+    uses: ./.github/workflows/_reusable_deploy.yml
+    with:
+      deploy_env: "staging"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.API_REGION_STAGING }}
+      CDK_STACK: ${{ secrets.API_STACK_NAME_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+

@@ -33,6 +33,8 @@ services:
       - "9229:9229"
     volumes:
       - ./src:/usr/src/app/src
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   # Config for dynamoDB table for auth token management
   # To access admin GUI:
   #   npm install -g dynamodb-admin

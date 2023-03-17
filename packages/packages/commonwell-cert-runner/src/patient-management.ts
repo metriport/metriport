@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import {
   CommonWell,
-  getIdTrailingSlash,
-  RequestMetadata,
   getId,
+  getIdTrailingSlash,
   LOLA,
+  RequestMetadata,
 } from "@metriport/commonwell-sdk";
 import { cloneDeep } from "lodash";
 
-import { patient, mergePatient, personStrongId } from "./payloads";
+import { makeMergePatient, makePatient, personStrongId } from "./payloads";
 
 import { getEnvOrFail } from "./util";
 
@@ -23,6 +23,8 @@ export async function patientManagement(
   commonwellSandbox: CommonWell,
   queryMeta: RequestMetadata
 ) {
+  const patient = makePatient({ facilityId: commonWell.oid });
+
   // PATIENT MANAGEMENT
   console.log(`>>> D1b: Register a new Patient`);
   const respD1b = await commonWell.registerPatient(queryMeta, patient);
@@ -34,7 +36,7 @@ export async function patientManagement(
   const respD2a = await commonWell.updatePatient(queryMeta, patient, patientId);
   console.log(respD2a);
 
-  console.log(`>>> D3a: ​Search for a Patient`);
+  console.log(`>>> D3a: Search for a Patient`);
   const respD3a = await commonWell.searchPatient(
     queryMeta,
     patient.details.name[0].given[0],
@@ -47,7 +49,10 @@ export async function patientManagement(
 
   console.log(`>>> D4a: Merge two Patient records`);
   // Create a second patient
-  const respPatient2 = await commonWell.registerPatient(queryMeta, mergePatient);
+  const respPatient2 = await commonWell.registerPatient(
+    queryMeta,
+    makeMergePatient({ facilityId: commonWell.oid })
+  );
   const patientId2 = getIdTrailingSlash(respPatient2);
   const referenceLink = respD1b._links.self.href;
 
@@ -60,18 +65,18 @@ export async function patientManagement(
   // Main Account Link
   const person = await commonWell.enrollPerson(queryMeta, personStrongId);
   const personId = getId(person);
-  await commonWell.patientLink(queryMeta, personId, referenceLink);
+  await commonWell.addPatientLink(queryMeta, personId, referenceLink);
   // Sandbox Account Link
-  let payloadSandboxPatient = cloneDeep(patient);
+  const payloadSandboxPatient = cloneDeep(patient);
   payloadSandboxPatient.identifier[0].system = `urn:oid:${commonwellSandboxOID}`;
   payloadSandboxPatient.identifier[0].assigner = commonwellSandboxOrgName;
   payloadSandboxPatient.identifier[0].label = commonwellSandboxOrgName;
   const sandboxPatient = await commonwellSandbox.registerPatient(queryMeta, payloadSandboxPatient);
   const sandboxPatientId = getIdTrailingSlash(sandboxPatient);
   const sandboxReferenceLink = sandboxPatient._links.self.href;
-  await commonwellSandbox.patientLink(queryMeta, personId, sandboxReferenceLink);
+  await commonwellSandbox.addPatientLink(queryMeta, personId, sandboxReferenceLink);
   await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
-  const respD5a = await commonWell.getPatientsLinks(queryMeta, patientId);
+  const respD5a = await commonWell.getNetworkLinks(queryMeta, patientId);
   console.log(respD5a);
 
   // D6: Upgrade/Downgrade a Network link
@@ -79,14 +84,14 @@ export async function patientManagement(
   const getLola1Link = respD5a._embedded.networkLink.find(
     link => link.assuranceLevel === LOLA.level_1
   );
-  const respD6a = await commonWell.upgradeOrDowngradePatientLink(
+  const respD6a = await commonWell.upgradeOrDowngradeNetworkLink(
     queryMeta,
     getLola1Link._links.upgrade.href
   );
   console.log(respD6a);
 
   console.log(`>>> D6b: Downgrade link from LOLA 2 to LOLA 0`);
-  const respD6b = await commonWell.upgradeOrDowngradePatientLink(
+  const respD6b = await commonWell.upgradeOrDowngradeNetworkLink(
     queryMeta,
     respD6a._links.downgrade.href
   );

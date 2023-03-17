@@ -12,15 +12,15 @@ import { GetMetriportUserIDResponse } from "./models/get-metriport-user-id-respo
 import { SettingsResponse } from "./models/settings-response";
 import { WebhookStatusResponse } from "./models/webhook-status-response";
 
-export class Metriport {
+export class MetriportDevicesApi {
   private api: AxiosInstance;
 
   /**
-   * Creates a new instance of the Metriport API client.
+   * Creates a new instance of the Metriport Devices API client.
    *
    * @param {string} apiKey - Your Metriport API key.
    */
-  constructor(apiKey: string, baseURL: string = "https://api.metriport.com") {
+  constructor(apiKey: string, baseURL = "https://api.metriport.com") {
     this.api = axios.create({
       baseURL,
       headers: { "x-api-key": apiKey },
@@ -39,6 +39,20 @@ export class Metriport {
       params: { appUserId: appUserId },
     });
     return resp.data.userId;
+  }
+
+  /**
+   * For your given user ID, returns the user's connected providers
+   *
+   * @param {string} userId - The unique ID for the user in your app.
+   * @returns Object containing array of connected providers.
+   */
+  async getConnectedProviders(userId: string): Promise<{ connectedProviders: string[] }> {
+    const resp = await this.api.get<{ connectedProviders: string[] }>(
+      `/user/${userId}/connected-providers`
+    );
+
+    return resp.data;
   }
 
   /**

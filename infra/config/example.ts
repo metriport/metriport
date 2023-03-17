@@ -6,9 +6,10 @@ export const config: EnvConfig = {
   secretsStackName: "MetriportSecretsStack",
   environmentType: EnvType.production,
   region: "us-east-1",
-  subdomain: "api",
   host: "myhealthapp.com",
   domain: "myhealthapp.com",
+  subdomain: "api",
+  authSubdomain: "auth",
   dbName: "my_db",
   dbUsername: "my_db_user",
   providerSecretNames: {
@@ -27,6 +28,22 @@ export const config: EnvConfig = {
     WHOOP_CLIENT_ID: "WHOOP_CLIENT_ID",
     WHOOP_CLIENT_SECRET: "WHOOP_CLIENT_SECRET",
   },
+  cwSecretNames: {
+    CW_PRIVATE_KEY: "CW_PRIVATE_KEY",
+    CW_CERTIFICATE: "CW_CERTIFICATE",
+    CW_MEMBER_NAME: "CW_MEMBER_NAME",
+    CW_MEMBER_OID: "CW_MEMBER_OID",
+    CW_MEMBER_PRIVATE_KEY: "CW_MEMBER_PRIVATE_KEY",
+    CW_MEMBER_CERTIFICATE: "CW_MEMBER_CERTIFICATE",
+    CW_GATEWAY_ENDPOINT: "CW_GATEWAY_ENDPOINT",
+    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: "CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT",
+    CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
+    CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
+    CW_TECHNICAL_CONTACT_NAME: "CW_TECHNICAL_CONTACT_NAME",
+    CW_TECHNICAL_CONTACT_TITLE: "CW_TECHNICAL_CONTACT_TITLE",
+    CW_TECHNICAL_CONTACT_EMAIL: "CW_TECHNICAL_CONTACT_EMAIL",
+    CW_TECHNICAL_CONTACT_PHONE: "CW_TECHNICAL_CONTACT_PHONE",
+  },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
     region: "us-east-1",
@@ -34,5 +51,6 @@ export const config: EnvConfig = {
     domain: "myhealthapp.com",
     host: "myhealthapp.com",
   },
+  systemRootOID: "2.16.840.1.113883.3.999999",
 };
 export default config;

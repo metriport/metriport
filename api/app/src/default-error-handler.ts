@@ -1,28 +1,31 @@
 import { ErrorRequestHandler } from "express";
 import status from "http-status";
-import MetriportError from "./errors/metriport-error";
 import { ZodError } from "zod";
+import MetriportError from "./errors/metriport-error";
+import { httpResponseBody } from "./routes/util";
 
 // https://www.rfc-editor.org/rfc/rfc7807
-const defaultResponseBody = ({ status, title }: { status: number; title: string }): string => {
-  return JSON.stringify({
-    status,
-    title,
-  });
-};
+const defaultResponseBody = httpResponseBody;
+
 const metriportResponseBody = (err: MetriportError): string => {
   return JSON.stringify({
-    status: err.status,
-    title: err.message,
+    ...httpResponseBody({
+      status: err.status,
+      title: err.message,
+    }),
     name: err.name,
   });
 };
+
 const zodResponseBody = (err: ZodError): string => {
+  const formatted = err.issues.map(i => `${i.message}, on [${i.path}]`);
   return JSON.stringify({
-    status: status.BAD_REQUEST,
+    ...httpResponseBody({
+      status: status.BAD_REQUEST,
+      title: "Missing or invalid parameters",
+      detail: formatted.join(", "),
+    }),
     name: status[status.BAD_REQUEST],
-    title: "Missing or invalid parameters",
-    details: err.issues,
   });
 };
 

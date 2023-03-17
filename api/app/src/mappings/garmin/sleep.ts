@@ -1,5 +1,5 @@
 import { Sleep } from "@metriport/api";
-import { SleepBiometrics, SleepDurations } from "@metriport/api/lib/models/sleep";
+import { SleepBiometrics, SleepDurations } from "@metriport/api/lib/devices/models/sleep";
 import { groupBy } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, garminTypes, User, UserData } from ".";

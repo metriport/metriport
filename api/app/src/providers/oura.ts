@@ -1,5 +1,4 @@
 import { Activity, Biometrics, Body, Sleep, User } from "@metriport/api";
-import axios, { AxiosResponse } from "axios";
 
 import {
   mapToActivity,

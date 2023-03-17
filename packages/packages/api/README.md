@@ -27,18 +27,18 @@ const metriportClient = new Metriport("YOUR_API_KEY", "ENVIRONMENT_URL");
             ,▄,
           ▄▓███▌
       ▄▀╙   ▀▓▀    ²▄
-    ▄└               ╙▌     
-  ,▀                   ╨▄   
-  ▌                     ║   
-                         ▌  
-                         ▌  
-,▓██▄                 ╔███▄ 
-╙███▌                 ▀███▀ 
-    ▀▄                      
+    ▄└               ╙▌
+  ,▀                   ╨▄
+  ▌                     ║
+                         ▌
+                         ▌
+,▓██▄                 ╔███▄
+╙███▌                 ▀███▀
+    ▀▄
       ▀╗▄         ,▄
          '╙▀▀▀▀▀╙''
 
-     
+
       by Metriport Inc.
 
 ```

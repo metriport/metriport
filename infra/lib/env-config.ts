@@ -10,15 +10,19 @@ export type ConnectWidgetConfig = {
 
 export type EnvConfig = {
   stackName: string;
-  secretsStackName?: string;
+  secretsStackName: string;
   environmentType: EnvType;
   region: string;
   secretReplicaRegion?: string;
-  subdomain: string;
-  host: string;
-  domain: string;
+  host: string; // DNS Zone
+  domain: string; // Base domain
+  subdomain: string; // API subdomain
+  authSubdomain: string; // Authentication subdomain
   dbName: string;
   dbUsername: string;
+  usageReportUrl?: string;
+  fhirServerUrl?: string;
+  systemRootOID: string;
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: string;
     CRONOMETER_CLIENT_SECRET: string;
@@ -35,7 +39,26 @@ export type EnvConfig = {
     WHOOP_CLIENT_ID: string;
     WHOOP_CLIENT_SECRET: string;
   };
-  usageReportUrl?: string;
+  cwSecretNames: {
+    CW_PRIVATE_KEY: string;
+    CW_CERTIFICATE: string;
+    CW_MEMBER_NAME: string;
+    CW_MEMBER_OID: string;
+    CW_MEMBER_PRIVATE_KEY: string;
+    CW_MEMBER_CERTIFICATE: string;
+    CW_GATEWAY_ENDPOINT: string;
+    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
+    CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
+    CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
+    CW_TECHNICAL_CONTACT_NAME: string;
+    CW_TECHNICAL_CONTACT_TITLE: string;
+    CW_TECHNICAL_CONTACT_EMAIL: string;
+    CW_TECHNICAL_CONTACT_PHONE: string;
+  };
+  slack?: {
+    SLACK_ALERT_URL?: string;
+    SLACK_NOTIFICATION_URL?: string;
+  };
 } & (
   | {
       connectWidget: ConnectWidgetConfig;

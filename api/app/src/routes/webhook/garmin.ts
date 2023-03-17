@@ -1,4 +1,4 @@
-import { MetriportData } from "@metriport/api/lib/models/metriport-data";
+import { MetriportData } from "@metriport/api/lib/devices/models/metriport-data";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { processData } from "../../command/webhook/webhook";

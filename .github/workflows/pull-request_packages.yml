@@ -1,0 +1,13 @@
+name: PR Check - Packages
+
+on:
+  pull_request:
+    paths:
+      - "packages/**"
+  workflow_dispatch:
+
+jobs:
+  check-pr:
+    uses: ./.github/workflows/_reusable_build.yml
+    with:
+      path: "packages"
