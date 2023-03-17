@@ -1,10 +1,11 @@
 import {
-  CommonWell,
   getIdTrailingSlash,
   LOLA,
   Patient as CommonwellPatient,
   RequestMetadata,
+  CommonWellAPI,
 } from "@metriport/commonwell-sdk";
+
 import { MedicalDataSource } from "..";
 import { Patient, PatientExternalData } from "../../models/medical/patient";
 import { PatientLinkStatusDTO } from "../../routes/medical/dtos/linkDTO";
@@ -101,6 +102,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
   });
 
   // No person yet, try to find/create with new patient demographics
+
   if (!personId) {
     await findOrCreatePersonAndLink({
       commonWell,
@@ -183,18 +185,18 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     );
     throw err;
   }
-
-  // REVIEW NETWORK LINKS? - this might be a good opportunity to update link to new Patients
-  // added to CW we didn't know about when we first added this Patient
-  // TODO #415
 }
+
+// REVIEW NETWORK LINKS? - this might be a good opportunity to update link to new Patients
+// added to CW we didn't know about when we first added this Patient
+// TODO #415
 
 async function setupUpdate(
   patient: Patient,
   facilityId: string
 ): Promise<
   | {
-      commonWell: CommonWell;
+      commonWell: CommonWellAPI;
       queryMeta: RequestMetadata;
       commonwellPatient: CommonwellPatient;
       commonwellPatientId: string;
@@ -229,7 +231,7 @@ async function findOrCreatePersonAndLink({
   patientRefLink,
   storeIds,
 }: {
-  commonWell: CommonWell;
+  commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
@@ -259,6 +261,7 @@ async function findOrCreatePersonAndLink({
   // Link Person to Patient
   try {
     const strongIds = getMatchingStrongIds(person, commonwellPatient);
+
     const respLink = await commonWell.addPatientLink(
       queryMeta,
       personId,
@@ -284,7 +287,7 @@ async function registerPatient({
   commonwellPatient,
   storeIds,
 }: {
-  commonWell: CommonWell;
+  commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   storeIds: StoreIdsFunction;
@@ -293,6 +296,7 @@ async function registerPatient({
   const debug = Util.debug(fnName);
 
   const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
+
   debug(`resp registerPatient: ${JSON.stringify(respPatient, null, 2)}`);
   const commonwellPatientId = getIdTrailingSlash(respPatient);
   const log = Util.log(`${fnName} - CW patientId ${commonwellPatientId}`);
@@ -325,7 +329,7 @@ async function updatePatient({
   commonwellPatient,
   commonwellPatientId,
 }: {
-  commonWell: CommonWell;
+  commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
@@ -337,6 +341,7 @@ async function updatePatient({
     commonwellPatient,
     commonwellPatientId
   );
+
   debug(`resp updatePatient: ${JSON.stringify(respUpdate, null, 2)}`);
 
   const patientRefLink = respUpdate._links?.self?.href;

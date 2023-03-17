@@ -19,7 +19,14 @@ export {
   facilitySchema,
 } from "./medical/models/facility";
 export { Link, MedicalDataSource, PatientLinks } from "./medical/models/link";
-export { Organization, OrgType } from "./medical/models/organization";
+export {
+  Organization,
+  OrganizationCreate,
+  organizationCreateSchema,
+  organizationSchema,
+  OrgType,
+  orgTypeSchema,
+} from "./medical/models/organization";
 export {
   Patient,
   PatientCreate,

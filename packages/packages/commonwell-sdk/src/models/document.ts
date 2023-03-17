@@ -3,6 +3,8 @@ import { humanNameSchema } from "./human-name";
 import { identifierUseCodesSchema } from "./identifier";
 import { isoDateTimeSchema } from "./iso-datetime";
 import { periodSchema } from "./period";
+import { addressSchema } from "./address";
+import { genderSchema } from "./demographics";
 
 // Used as a reference, but not exactly the actual definition:
 // https://specification.commonwellalliance.org/services/rest-api-reference#8610-documentreference
@@ -40,6 +42,13 @@ const containedSchema = z.object({
       reference: z.string(),
     })
     .optional(),
+  gender: z
+    .object({
+      coding: z.array(genderSchema).optional(),
+    })
+    .optional(),
+  birthDate: z.string().optional(),
+  address: z.array(addressSchema).optional(),
 });
 
 const statusSchema = z.enum(["current", "superceded", "entered in error"]);

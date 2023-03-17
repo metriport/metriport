@@ -2,10 +2,8 @@ import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { Organization } from "../../models/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { OID_PREFIX } from "../../shared/oid";
-import { certificate, commonWellManagement, metriportQueryMeta } from "./api";
+import { certificate, metriportQueryMeta, makeCommonWellAPI } from "./api";
 
-// TODO move these "getEnvVarOrFail" to Config
-const metriportOrgName = getEnvVarOrFail("CW_MEMBER_NAME");
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
   title: getEnvVarOrFail("CW_TECHNICAL_CONTACT_TITLE"),
@@ -40,7 +38,7 @@ export async function organizationToCommonwell(
     homeCommunityId: cwId,
     patientIdAssignAuthority: cwId,
     displayName: org.data.name,
-    memberName: metriportOrgName,
+    memberName: Config.getMetriportOrgName(),
     securityTokenKeyType: "BearerKey",
     isActive: true,
     gateways: [
@@ -64,8 +62,12 @@ export async function organizationToCommonwell(
 export const create = async (org: Organization): Promise<void> => {
   const cwOrg = await organizationToCommonwell(org);
   try {
-    await commonWellManagement.createOrg(metriportQueryMeta, cwOrg);
-    await commonWellManagement.addCertificateToOrg(metriportQueryMeta, certificate, org.id);
+    const commonWell = makeCommonWellAPI(
+      Config.getMetriportOrgName(),
+      Config.getMemberManagementOID()
+    );
+    await commonWell.createOrg(metriportQueryMeta, cwOrg);
+    await commonWell.addCertificateToOrg(metriportQueryMeta, certificate, org.id);
   } catch (error) {
     const msg = `Failure creating Org`;
     console.log(`${msg} - payload: `, cwOrg);
@@ -77,7 +79,11 @@ export const create = async (org: Organization): Promise<void> => {
 export const update = async (org: Organization): Promise<void> => {
   const cwOrg = await organizationToCommonwell(org);
   try {
-    await commonWellManagement.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
+    const commonWell = makeCommonWellAPI(
+      Config.getMetriportOrgName(),
+      Config.getMemberManagementOID()
+    );
+    await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
   } catch (error) {
     const msg = `Failure updating Org`;
     console.log(`${msg} - payload: `, cwOrg);
