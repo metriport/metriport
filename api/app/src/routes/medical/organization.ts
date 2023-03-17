@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createOrganization } from "../../command/medical/organization/create-organization";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { getOrganization } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
 import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
@@ -76,9 +76,8 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
 
-    const org = await getOrganizationOrFail({ cxId });
-
-    return res.status(status.OK).json(dtoFromModel(org));
+    const org = await getOrganization({ cxId });
+    return res.status(status.OK).json(org ? dtoFromModel(org) : undefined);
   })
 );
 
