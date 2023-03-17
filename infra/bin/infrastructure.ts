@@ -56,7 +56,10 @@ async function deploy() {
   // 3. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
   if (config.connectWidget) {
-    new ConnectWidgetStack(app, config.connectWidget.stackName, { env, config });
+    new ConnectWidgetStack(app, config.connectWidget.stackName, {
+      env: { ...env, region: config.connectWidget.region },
+      config,
+    });
   }
 
   //---------------------------------------------------------------------------------
