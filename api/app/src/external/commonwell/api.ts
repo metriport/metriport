@@ -7,6 +7,8 @@ import {
 } from "@metriport/commonwell-sdk";
 import { CertificatePurpose } from "@metriport/commonwell-sdk/lib/models/certificates";
 import { X509Certificate } from "crypto";
+import dayjs from "dayjs";
+
 import { Config } from "../../shared/config";
 import { CommonWellMock } from "./mock";
 
@@ -80,21 +82,23 @@ const x509 = new X509Certificate(commonwellCertificate);
 
 const thumbprint = x509.fingerprint;
 
-// TODO #219 #413 gotta make these dynamic
+const validFrom = dayjs(x509.validFrom).toString();
+const validTo = dayjs(x509.validTo).toString();
+
 export const certificate = {
   Certificates: [
     {
-      startDate: "2022-12-31T11:46:29Z",
-      endDate: "2023-03-31T12:46:28Z",
-      expirationDate: "2023-03-31T12:46:28Z",
+      startDate: validFrom,
+      endDate: validTo,
+      expirationDate: validTo,
       thumbprint: thumbprint,
       content: commonwellCertificateContent,
       purpose: CertificatePurpose.Authentication,
     },
     {
-      startDate: "2022-12-31T11:46:29Z",
-      endDate: "2023-03-31T12:46:28Z",
-      expirationDate: "2023-03-31T12:46:28Z",
+      startDate: validFrom,
+      endDate: validTo,
+      expirationDate: validTo,
       thumbprint: thumbprint,
       content: commonwellCertificateContent,
       purpose: CertificatePurpose.Signing,
