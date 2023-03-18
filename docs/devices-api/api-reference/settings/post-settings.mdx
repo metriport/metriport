@@ -1,0 +1,47 @@
+---
+title: "Update Settings"
+description: "Updates your account's settings."
+api: "POST /settings"
+---
+
+## Body
+
+<ParamField body="webhookUrl" type="string" required>
+  The webhook URL to be stored with your settings.  It should be a valid URL.
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string" required>
+  The settings ID.
+</ResponseField>
+
+<ResponseField name="webhookUrl" type="string" required>
+  Your application's webhook URL.
+</ResponseField>
+
+<ResponseField name="webhookKey" type="string" required>
+  The key used to authenticate webhook calls to your app.
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+
+const response = await metriportClient.updateSettings("https://api.health.com/webhook");
+```
+
+</ResponseExample>
+
+Example response:
+
+```json
+{
+  "id": "<settings-id>",
+  "webhookUrl": "https://server.domain.com/webhook/endpoint",
+  "webhookKey": "<webhook-key>"
+}
+```
