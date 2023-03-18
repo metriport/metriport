@@ -1,8 +1,10 @@
 import { patientExternalDataToLinks } from "../../../external/patient-external";
 import { Patient, PatientData } from "../../../models/medical/patient";
+import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { PatientLinksDTO } from "./linkDTO";
 
-export type PatientDTO = Pick<Patient, "id" | "facilityIds"> &
+export type PatientDTO = BaseDTO &
+  Pick<Patient, "id" | "facilityIds"> &
   Pick<
     PatientData,
     | "firstName"
@@ -29,6 +31,7 @@ export function dtoFromModel(patient: Patient): PatientDTO {
   } = patient.data;
   const links = patientExternalDataToLinks(externalData);
   return {
+    ...toBaseDTO(patient),
     id: patient.id,
     facilityIds: patient.facilityIds,
     firstName,

@@ -23,7 +23,6 @@ export type OrganizationCreate = Omit<Organization, "id">;
 
 export class Organization extends BaseModel<Organization> {
   static NAME = "organization";
-  declare id: string;
   declare cxId: string;
   declare organizationNumber: number;
   declare data: OrganizationData;
@@ -32,10 +31,6 @@ export class Organization extends BaseModel<Organization> {
     Organization.init(
       {
         ...BaseModel.baseAttributes(),
-        id: {
-          type: DataTypes.STRING,
-          primaryKey: true,
-        },
         cxId: {
           type: DataTypes.UUID,
         },

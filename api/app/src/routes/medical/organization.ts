@@ -1,13 +1,20 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { createOrganization } from "../../command/medical/organization/create-organization";
+import {
+  createOrganization,
+  OrganizationCreateCmd,
+} from "../../command/medical/organization/create-organization";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { updateOrganization } from "../../command/medical/organization/update-organization";
+import {
+  OrganizationUpdateCmd,
+  updateOrganization,
+} from "../../command/medical/organization/update-organization";
 import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
-import { organizationSchema } from "./schemas/organization";
+import { baseUpdateSchemaToCmd } from "./schemas/base-update";
+import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
 
 const router = Router();
 
@@ -23,11 +30,13 @@ router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const data = organizationSchema.parse(req.body);
+    const data = organizationCreateSchema.parse(req.body);
 
-    const org = await createOrganization({ cxId, data });
+    const createOrg: OrganizationCreateCmd = { cxId, ...data };
+    const org = await createOrganization(createOrg);
 
     // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // Intentionally asynchronous
     cwCommands.organization.create(org).then(undefined, (err: unknown) => {
       // TODO #156 Send this to Sentry
       console.error(`Failure while creating organization ${org.id} @ CW: `, err);
@@ -49,12 +58,19 @@ router.put(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const orgId = getFromParamsOrFail("id", req);
-    const data = organizationSchema.parse(req.body);
+    const id = getFromParamsOrFail("id", req);
+    const payload = organizationUpdateSchema.parse(req.body);
 
-    const org = await updateOrganization({ id: orgId, cxId, data });
+    const updateCmd: OrganizationUpdateCmd = {
+      ...baseUpdateSchemaToCmd(payload),
+      ...payload,
+      id,
+      cxId,
+    };
+    const org = await updateOrganization(updateCmd);
 
     // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // Intentionally asynchronous
     cwCommands.organization.update(org).then(undefined, (err: unknown) => {
       // TODO #156 Send this to Sentry
       console.error(`Failure while updating organization ${org.id} @ CW: `, err);

@@ -1,6 +1,4 @@
 import { z } from "zod";
-import { PatientCreate as PatientCreateCmd } from "../../../command/medical/patient/create-patient";
-import { PatientUpdate as PatientUpdateCmd } from "../../../command/medical/patient/update-patient";
 import {
   driversLicenseType,
   genderAtBirthTypes,
@@ -8,6 +6,7 @@ import {
 } from "../../../models/medical/patient";
 import { USState } from "../../../shared/geographic-locations";
 import { addressSchema } from "./address";
+import { baseUpdateSchema } from "./base-update";
 
 const usStateSchema = z.nativeEnum(USState);
 
@@ -56,17 +55,10 @@ export const patientCreateSchema = z.object({
 });
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
 
-export const patientUpdateSchema = patientCreateSchema.extend({
-  id: z.string(),
-});
+export const patientUpdateSchema = patientCreateSchema.merge(baseUpdateSchema);
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 
-export const patientSchema = patientUpdateSchema.extend({
-  facilityIds: z.array(z.string()),
-});
-export type Patient = z.infer<typeof patientSchema>;
-
-function schemaToPatient(input: PatientCreate, cxId: string) {
+export function schemaToPatient(input: PatientCreate, cxId: string) {
   return {
     ...input,
     cxId,
@@ -74,25 +66,5 @@ function schemaToPatient(input: PatientCreate, cxId: string) {
       ...input.address,
       addressLine2: input.address.addressLine2 ?? undefined,
     },
-  };
-}
-
-export function schemaToPatientCreate(
-  input: PatientCreate,
-  cxId: string,
-  facilityId: string
-): PatientCreateCmd {
-  const base = schemaToPatient(input, cxId);
-  return {
-    ...base,
-    facilityId,
-  };
-}
-
-export function schemaToPatientUpdate(input: PatientUpdate, cxId: string): PatientUpdateCmd {
-  const base = schemaToPatient(input, cxId);
-  return {
-    ...base,
-    id: input.id,
   };
 }

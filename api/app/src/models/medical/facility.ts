@@ -6,7 +6,6 @@ import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
 
 export class Facility extends BaseModel<Facility> {
   static NAME = "facility";
-  declare id: string;
   declare cxId: string;
   declare facilityNumber: number;
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -16,10 +15,6 @@ export class Facility extends BaseModel<Facility> {
     Facility.init(
       {
         ...BaseModel.baseAttributes(),
-        id: {
-          type: DataTypes.STRING,
-          primaryKey: true,
-        },
         cxId: {
           type: DataTypes.UUID,
         },

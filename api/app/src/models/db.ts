@@ -7,7 +7,7 @@ import { initDDBDev } from "./db-dev";
 import { Facility } from "./medical/facility";
 import { MAPIAccess } from "./medical/mapi-access";
 import { Organization } from "./medical/organization";
-import { Patient } from "./medical/patient";
+import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
@@ -19,7 +19,7 @@ const models: ModelSetup[] = [
   WebhookRequest.setup,
   Organization.setup,
   Facility.setup,
-  Patient.setup,
+  PatientModel.setup,
   MAPIAccess.setup,
 ];
 
@@ -42,6 +42,7 @@ const initDB = async (): Promise<void> => {
   // make sure we have the env vars we need
   const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
   const tokenTableName = getEnvVarOrFail("TOKEN_TABLE_NAME");
+  const logDBOperations = Config.isProdEnv() || Config.isSandbox() ? false : true;
 
   docTableNames = {
     token: tokenTableName,
@@ -60,6 +61,8 @@ const initDB = async (): Promise<void> => {
       acquire: 30000,
       idle: 10000,
     },
+    logging: logDBOperations,
+    logQueryParameters: logDBOperations,
   });
   try {
     await sequelize.authenticate();

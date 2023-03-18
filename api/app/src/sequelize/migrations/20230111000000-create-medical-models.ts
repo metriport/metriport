@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize";
 import type { Migration } from "..";
 import { Facility } from "../../models/medical/facility";
 import { Organization } from "../../models/medical/organization";
-import { Patient } from "../../models/medical/patient";
+import { PatientModel } from "../../models/medical/patient";
 import * as shared from "../migrations-shared";
 
 // Use 'Promise.all' when changes are independent of each other
@@ -57,7 +57,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
     await shared.createTable(
       queryInterface,
-      Patient.NAME,
+      PatientModel.NAME,
       {
         id: {
           type: DataTypes.STRING,
@@ -86,7 +86,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.dropTable(Patient.NAME, { transaction });
+    await queryInterface.dropTable(PatientModel.NAME, { transaction });
     await queryInterface.dropTable(Facility.NAME, { transaction });
     await queryInterface.dropTable(Organization.NAME, { transaction });
   });

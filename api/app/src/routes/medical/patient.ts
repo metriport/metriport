@@ -1,18 +1,14 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { getPatient, getPatients } from "../../command/medical/patient/get-patient";
-import { updatePatient } from "../../command/medical/patient/update-patient";
+import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQueryOrFail } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
-import {
-  patientCreateSchema,
-  patientUpdateSchema,
-  schemaToPatientCreate,
-  schemaToPatientUpdate,
-} from "./schemas/patient";
+import { baseUpdateSchemaToCmd } from "./schemas/base-update";
+import { patientCreateSchema, patientUpdateSchema, schemaToPatient } from "./schemas/patient";
 
 const router = Router();
 
@@ -30,10 +26,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const payload = patientCreateSchema.parse(req.body);
 
-    const input = patientCreateSchema.parse(req.body);
-    const patientCreate = schemaToPatientCreate(input, cxId, facilityId);
-
+    const patientCreate: PatientCreateCmd = {
+      ...schemaToPatient(payload, cxId),
+      facilityId,
+    };
     const patient = await createPatient(patientCreate);
 
     // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
@@ -43,7 +41,7 @@ router.post(
       console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
     });
 
-    return res.status(status.OK).json(dtoFromModel(patient));
+    return res.status(status.CREATED).json(dtoFromModel(patient));
   })
 );
 
@@ -60,14 +58,15 @@ router.put(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const payload = patientUpdateSchema.parse(req.body);
 
-    const input = patientUpdateSchema.parse({
-      ...req.body,
-      id: getFromParamsOrFail("id", req),
-    });
-    const patientUpdate = schemaToPatientUpdate(input, cxId);
-
+    const patientUpdate: PatientUpdateCmd = {
+      ...baseUpdateSchemaToCmd(payload),
+      ...schemaToPatient(payload, cxId),
+      id,
+    };
     const patient = await updatePatient(patientUpdate);
 
     // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393

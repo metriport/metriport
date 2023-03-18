@@ -1,23 +1,24 @@
 import { Organization, OrganizationData } from "../../../models/medical/organization";
-import NotFoundError from "../../../errors/not-found";
+import { validateVersionForUpdate } from "../../../models/_default";
+import { getOrganizationOrFail } from "./get-organization";
 
-export const updateOrganization = async ({
-  id,
-  cxId,
-  data,
-}: {
-  id: string;
-  cxId: string;
-  data: OrganizationData;
-}): Promise<Organization> => {
-  const [count, rows] = await Organization.update(
-    {
-      data,
+export type OrganizationUpdateCmd = Pick<Organization, "id" | "cxId"> &
+  Partial<Pick<Organization, "version">> &
+  OrganizationData;
+
+export const updateOrganization = async (
+  orgUpdate: OrganizationUpdateCmd
+): Promise<Organization> => {
+  const { id, cxId, version, name, type, location } = orgUpdate;
+
+  const org = await getOrganizationOrFail({ id, cxId });
+  validateVersionForUpdate(org, version);
+
+  return org.update({
+    data: {
+      name,
+      type,
+      location,
     },
-    { where: { id, cxId }, returning: true }
-  );
-  if (count < 1) throw new NotFoundError();
-  // TODO #156 Send this to Sentry
-  if (count > 1) console.error(`Updated ${count} Orgs for id ${id} and cxId ${cxId}`);
-  return rows[0];
+  });
 };

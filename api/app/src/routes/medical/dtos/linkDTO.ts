@@ -1,23 +1,37 @@
-import { Person, getId } from "@metriport/commonwell-sdk";
+import { getId, Person } from "@metriport/commonwell-sdk";
 import { differenceBy } from "lodash";
 
 import { MedicalDataSource } from "../../../external";
 import { GenderAtBirth } from "../../../models/medical/patient";
-import { PatientUpdate } from "../schemas/patient";
 
 export type PatientLinkStatusDTO = "linked" | "needs-review";
 export type PatientLinksDTO = { [k in MedicalDataSource]: PatientLinkStatusDTO };
 
-export type Link = {
+// TODO can we reuse PatientDTO?
+export type PatientLinkDTO = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  genderAtBirth: GenderAtBirth;
+  address: {
+    addressLine1: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+};
+export type LinkDTO = {
   id?: string | null;
   entityId: string;
   potential: boolean;
   source: MedicalDataSource;
-  patient: PatientUpdate;
+  patient: PatientLinkDTO;
 };
 export type PatientLinks = {
-  potentialLinks: Link[];
-  currentLinks: Link[];
+  potentialLinks: LinkDTO[];
+  currentLinks: LinkDTO[];
 };
 
 export function dtoFromCW({
@@ -27,8 +41,8 @@ export function dtoFromCW({
   cwPotentialPersons: Person[];
   cwCurrentPersons: Person[];
 }): PatientLinks {
-  let potentialLinks: Link[] = [];
-  const currentLinks: Link[] = [];
+  let potentialLinks: LinkDTO[] = [];
+  const currentLinks: LinkDTO[] = [];
 
   cwPotentialPersons.forEach(person => {
     const personLink = convertFromCWPersonToLink(person);
@@ -54,14 +68,14 @@ export function dtoFromCW({
   };
 }
 
-export function convertFromCWPersonToLink(person: Person): Link | null {
+export function convertFromCWPersonToLink(person: Person): LinkDTO | null {
   const personId = getId(person);
 
   const address = person.details?.address?.length ? person.details?.address[0] : undefined;
   const personName = person.details?.name?.length ? person.details?.name[0] : undefined;
 
   if (personId) {
-    const personLink: Link = {
+    const personLink: LinkDTO = {
       entityId: personId,
       potential: true,
       source: MedicalDataSource.COMMONWELL,
@@ -71,7 +85,6 @@ export function convertFromCWPersonToLink(person: Person): Link | null {
         lastName: personName && personName.family?.length ? personName.family[0] : "",
         dob: person.details?.birthDate ? person.details.birthDate : "",
         genderAtBirth: displayGender(person),
-        personalIdentifiers: [],
         address: {
           addressLine1: address && address.line ? address.line[0] : "",
           city: address && address.city ? address.city : "",
@@ -79,7 +92,6 @@ export function convertFromCWPersonToLink(person: Person): Link | null {
           zip: address && address.zip ? address.zip : "",
           country: address && address.country ? address.country : "",
         },
-        contact: {},
       },
     };
 
