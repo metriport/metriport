@@ -5,7 +5,7 @@ import {
   createOrganization,
   OrganizationCreateCmd,
 } from "../../command/medical/organization/create-organization";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { getOrganization } from "../../command/medical/organization/get-organization";
 import {
   OrganizationUpdateCmd,
   updateOrganization,
@@ -92,9 +92,8 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
 
-    const org = await getOrganizationOrFail({ cxId });
-
-    return res.status(status.OK).json(dtoFromModel(org));
+    const org = await getOrganization({ cxId });
+    return res.status(status.OK).json(org ? dtoFromModel(org) : undefined);
   })
 );
 
