@@ -1,0 +1,72 @@
+---
+title: "React Native"
+description: "A library to integrate with Metriport on React Native - including Apple Health integrations."
+---
+
+<Info>
+  Before getting started, visit the [Apple Health docs](/more-info/apple-health#initial-setup) and
+  follow the Initial Setup section to configure HealthKit."
+</Info>
+
+## Installation
+
+```sh
+npm install @metriport/react-native-sdk
+npm install react-native-webview
+```
+
+You'll need to ensure that the MetriportSDK pod is installed as well.
+
+```sh
+cd ios
+pod install
+```
+
+## Usage
+
+To use our SDK go to the root of your project and add:
+
+```jsx
+import * as React from "react";
+
+import { StyleSheet } from "react-native";
+import { MetriportWidget } from "@metriport/react-native-sdk";
+
+export default function App() {
+  return (
+    <MetriportWidget
+      token="CONNECT_TOKEN"
+      clientApiKey="CLIENT_API_KEY"
+      sandbox={false}
+      style={styles.box}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  box: {
+    width: "100%",
+    height: "100%",
+  },
+});
+```
+
+<Warning>
+  Ensure you use your Client Key here, and not your Secret Key. You can read more about the
+  differences between the two in our [API Keys guide](/home/api-info/api-keys).
+</Warning>
+
+<Info>
+  As per the guide, we recommend to store your Client Key in environment secrets, and not commit it
+  in plain text to your repository.
+</Info>
+
+<Info>
+  As per the Quickstart guide, you'll need to generate a token on your server before opening the
+  Connect Widget. You can read more about this
+  [here](/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app).
+</Info>
+
+## Apple Health
+
+For details about receiving Apple Health data via webhooks, see the guide [here.](/more-info/apple-health#receiving-data)
