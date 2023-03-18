@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosStatic } from "axios";
 
 import { DocumentReference, documentReferenceSchema } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
-import { MedicalDataSource, PatientLinks } from "../models/link";
+import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   Patient,
@@ -11,6 +11,8 @@ import {
   patientSchema,
   PatientUpdate,
 } from "../models/patient";
+
+const NO_DATA_MESSAGE = "No data returned from API";
 
 export class MetriportMedicalApi {
   readonly api: AxiosInstance;
@@ -55,7 +57,7 @@ export class MetriportMedicalApi {
    */
   async createOrganization(data: OrganizationCreate): Promise<Organization> {
     const resp = await this.api.post(this.ORGANIZATION_URL, data);
-    if (!resp.data) throw new Error(`Did not receive an organization from the server`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return organizationSchema.parse(resp.data);
   }
 
@@ -72,7 +74,7 @@ export class MetriportMedicalApi {
       id: undefined,
     };
     const resp = await this.api.put(`${this.ORGANIZATION_URL}/${organization.id}`, payload);
-    if (!resp.data) throw new Error(`Did not receive an organization from the server`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return organizationSchema.parse(resp.data);
   }
 
@@ -95,7 +97,7 @@ export class MetriportMedicalApi {
    */
   async createFacility(data: FacilityCreate): Promise<Facility> {
     const resp = await this.api.post(`${this.FACILITY_URL}`, data);
-    if (!resp.data) throw new Error(`Did not receive a facility from the server`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return facilitySchema.parse(resp.data);
   }
 
@@ -107,7 +109,7 @@ export class MetriportMedicalApi {
    */
   async getFacility(id: string): Promise<Facility> {
     const resp = await this.api.get(`${this.FACILITY_URL}/${id}`);
-    if (!resp.data) throw new Error(`Did not receive a facility from the server`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return facilitySchema.parse(resp.data);
   }
 
@@ -124,7 +126,7 @@ export class MetriportMedicalApi {
       id: undefined,
     };
     const resp = await this.api.put(`${this.FACILITY_URL}/${facility.id}`, payload);
-    if (!resp.data) throw new Error(`Did not receive a facility from the server`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return facilitySchema.parse(resp.data);
   }
 
@@ -143,14 +145,14 @@ export class MetriportMedicalApi {
    * Creates a new patient at Metriport and HIEs.
    *
    * @param data The data to be used to create a new patient.
-   * @param facilityId The ID of the facility to provide the NPI to create the patient.
+   * @param facilityId The facility providing the NPI to support this operation.
    * @return The newly created patient.
    */
   async createPatient(data: PatientCreate, facilityId: string): Promise<Patient> {
     const resp = await this.api.post(`${this.PATIENT_URL}`, data, {
       params: { facilityId },
     });
-    if (!resp.data) throw new Error(`Did not receive a patient from the server`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return patientSchema.parse(resp.data);
   }
 
@@ -162,7 +164,7 @@ export class MetriportMedicalApi {
    */
   async getPatient(id: string): Promise<Patient> {
     const resp = await this.api.get(`${this.PATIENT_URL}/${id}`);
-    if (!resp.data) throw new Error(`Did not receive a patient from the server`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return patientSchema.parse(resp.data);
   }
 
@@ -170,20 +172,24 @@ export class MetriportMedicalApi {
    * Updates a patient at Metriport and at HIEs the patient is linked to.
    *
    * @param patient The patient data to be updated.
-   * @param facilityId The ID of the facility to provide the NPI to update the patient.
+   * @param facilityId The facility providing the NPI to support this operation.
    * @return The updated patient.
    */
   async updatePatient(patient: PatientUpdate, facilityId: string): Promise<Patient> {
-    type FieldsToOmit = "id" | "facilityIds";
-    const payload: Omit<Patient, FieldsToOmit> & Partial<Pick<Patient, FieldsToOmit>> = {
-      ...patient,
+    const fieldsToRemove = {
       id: undefined,
       facilityIds: undefined,
+      links: undefined,
+    };
+    type FieldsToOmit = keyof typeof fieldsToRemove;
+    const payload: Omit<Patient, FieldsToOmit> & Partial<Pick<Patient, FieldsToOmit>> = {
+      ...patient,
+      ...fieldsToRemove,
     };
     const resp = await this.api.put(`${this.PATIENT_URL}/${patient.id}`, payload, {
       params: { facilityId },
     });
-    if (!resp.data) throw new Error(`Did not receive a patient from the server`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return patientSchema.parse(resp.data);
   }
 
@@ -202,60 +208,49 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Builds and returns the current state of a patient's links across HIEs.
+   * Returns the current state of a patient's links across HIEs.
    *
-   * @param patientId Patient ID for which to retrieve links.
-   * @param facilityId The ID of the facility to provide the NPI to get links for patient.
+   * @param patientId The ID of the patient for which to retrieve links.
+   * @param facilityId The facility providing the NPI to support this operation.
    * @returns The patient's current and potential links.
    */
   async getLinks(patientId: string, facilityId: string): Promise<PatientLinks> {
-    const resp = await this.api.get<PatientLinks>(
-      `${this.PATIENT_URL}/${patientId}${this.LINK_URL}`,
-      {
-        params: { facilityId },
-      }
-    );
-
-    if (!resp.data) throw new Error(`Get didn't return Links`);
-    return resp.data;
+    const resp = await this.api.get(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}`, {
+      params: { facilityId },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return patientLinksSchema.parse(resp.data);
   }
 
   /**
-   * Creates link to the specified entity.
+   * Creates link between a patient at Metriport and an entity (person/patient) on an
+   * HIE (medical data source).
    *
-   * @param patientId Patient ID for which to retrieve links.
-   * @param facilityId The ID of the facility to provide the NPI to create link for patient.
-   * @param entityId Entity ID to link to the patient.
-   * @param linkSource Data source to link to.
-   * @returns link id
+   * @param patientId The ID of the patient at Metriport.
+   * @param facilityId The facility providing the NPI to support this operation.
+   * @param entityId The ID of the entity to link to the patient.
+   * @param linkSource The HIE containing the entity to be linked with.
    */
   async createLink(
     patientId: string,
     facilityId: string,
     entityId: string,
     linkSource: MedicalDataSource
-  ): Promise<string> {
-    const resp = await this.api.post<string>(
+  ): Promise<void> {
+    await this.api.post(
       `${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`,
-      {
-        entityId,
-      },
-      {
-        params: { facilityId },
-      }
+      { entityId },
+      { params: { facilityId } }
     );
-
-    if (!resp.data) throw new Error(`Link not created between patient and entity`);
-    return resp.data;
   }
 
   /**
-   * Removes link to the specified entity.
+   * Removes a link between a patient at Metriport and an entity (person/patient) on
+   * an HIE (medical data source).
    *
-   * @param patientId Patient ID to remove link from.
-   * @param facilityId The ID of the facility to provide the NPI to remove link from patient.
-   * @param linkSource HIE to remove the link from.
-   * @returns void
+   * @param patientId The ID of the patient at Metriport.
+   * @param facilityId The facility providing the NPI to support this operation.
+   * @param linkSource The HIE to remove the link from.
    */
   async removeLink(
     patientId: string,
@@ -271,7 +266,7 @@ export class MetriportMedicalApi {
    * Returns document references for the given patient across HIEs.
    *
    * @param patientId Patient ID for which to retrieve document metadata.
-   * @param facilityId The facility providing NPI for the document query.
+   * @param facilityId The facility providing the NPI to support this operation.
    * @return The metadata of available documents.
    */
   async listDocuments(patientId: string, facilityId: string): Promise<DocumentReference[]> {
@@ -292,7 +287,7 @@ export class MetriportMedicalApi {
    * a Document location.
    *
    * @param patientId Patient ID for which to retrieve document metadata.
-   * @param facilityId The facility providing NPI for the document query.
+   * @param facilityId The facility providing the NPI to support this operation.
    * @param location The location of the document.
    * @return The document's contents (bytes).
    */
