@@ -31,39 +31,36 @@ import { Metriport, USState } from "@metriport/api";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
-const facility = await metriportClient.updateFacility({
-  id: "2.16.840.1.113883.3.666.123",
-  name: "Care Facility, LLC",
-  npi: "1234567891",
-  tin: "12-3456789",
-  active: true,
-  address: {
-    addressLine1: "2261 Market Street",
-    addressLine2: "#4818",
-    city: "San Francisco",
-    state: USState.CA,
-    zip: "94114",
-    country: "USA",
+const patient = await metriportClient.updatePatient(
+  {
+    id: "2.16.840.1.113883.3.666.777",
+    firstName: "Joselito",
+    lastName: "Muambero",
+    dob: "1951-05-05",
+    genderAtBirth: "M",
+    personalIdentifiers: [
+      {
+        type: "driversLicense",
+        state: USState.CA,
+        value: "51227265",
+      },
+    ],
+    address: {
+      zip: "12345",
+      city: "San Diego",
+      state: USState.CA,
+      country: "USA",
+      addressLine1: "Guadalajara Sreet",
+    },
+    contact: {
+      phone: "1234567899",
+      email: "jose@tutanota.com",
+    },
   },
-});
+  "2.16.840.1.113883.3.666.5.2004.4.2005"
+);
 ```
 
 </ResponseExample>
 
-```json
-{
-  "id": "2.16.840.1.113883.3.666.123",
-  "name": "Care Facility, LLC",
-  "npi": "1234567891",
-  "tin": "12-3456789",
-  "active": true,
-  "address": {
-    "addressLine1": "2261 Market Street",
-    "addressLine2": "#4818",
-    "city": "San Francisco",
-    "state": "CA",
-    "zip": "94114",
-    "country": "USA"
-  }
-}
-```
+<Snippet file="patient-response-json.mdx" />
