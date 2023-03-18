@@ -17,7 +17,7 @@ application to request data exposed through webhooks.
 To enable this integration approach with Metriport:
 
 1. Expose a public endpoint on your app;
-1. Set this endpoint URL on the [settings page](https://dash.metriport.com/settings) in the developer dashboard;
+1. Set this endpoint URL on the [Developers page](https://dash.metriport.com/developers) in the developer dashboard;
 1. This will generate a webhook key that should be used to authenticate requests on
    your app's endpoint (webhook).
 
@@ -38,14 +38,14 @@ General requirements for the endpoint:
 
 Validate requests to your public endpoint by comparing the webhook key with each request's HTTP header.
 
-The webhook key is accessible on [settings page](https://dash.metriport.com/settings) in the developer 
+The webhook key is accessible on [Developers page](https://dash.metriport.com/developers) in the developer 
 dashboard - see how to enable webhooks on the [overview section](#overview).
 
 The HTTP header will contain a header named `x-webhook-key` - it should contain the webhook key above.
 Your app is expected to disregard requests if those don't match. We suggest returning a HTTP status code
 `401` with no body in such cases.
 
-If you want to generate a new webhook key, delete your webhook URL on the settings page, save, and enter it again.
+If you want to generate a new webhook key, delete your webhook URL on the Developers page, save, and enter it again.
 
 ## Format
 

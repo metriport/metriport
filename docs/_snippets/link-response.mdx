@@ -1,0 +1,26 @@
+<Expandable title="Link properties">
+
+    <ResponseField name="id" type="string">
+      The Link ID - `null` if this is a potential link.
+    </ResponseField>
+
+    <ResponseField name="entityId" type="string" required>
+      The ID of the entity in the HIE this Patient links to.
+    </ResponseField>
+
+    <ResponseField name="potential" type="bool" required>
+      `true` if this is a potential link.
+    </ResponseField>
+
+    <ResponseField name="source" type="string" required>
+      The HIE this Link is for - currently `COMMONWELL` is supported.
+    </ResponseField>
+
+    <ResponseField name="patient" type="Patient" required>
+      The Patient found in the HIE.
+      <Expandable title="Patient properties">
+        <Snippet file="patient-response.mdx" />
+      </Expandable>
+    </ResponseField>
+
+  </Expandable>

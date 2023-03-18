@@ -75,6 +75,52 @@
       ]
     },
     {
+      "group": "API Reference",
+      "pages": [
+        {
+          "group": "Organization",
+          "pages": [
+            "medical-api/api-reference/organization/create-organization",
+            "medical-api/api-reference/organization/get-organization",
+            "medical-api/api-reference/organization/update-organization"
+          ]
+        },
+        {
+          "group": "Facility",
+          "pages": [
+            "medical-api/api-reference/facility/create-facility",
+            "medical-api/api-reference/facility/get-facility",
+            "medical-api/api-reference/facility/update-facility",
+            "medical-api/api-reference/facility/list-facilities"
+          ]
+        },
+        {
+          "group": "Patient",
+          "pages": [
+            "medical-api/api-reference/patient/create-patient",
+            "medical-api/api-reference/patient/get-patient",
+            "medical-api/api-reference/patient/update-patient",
+            "medical-api/api-reference/patient/list-patients"
+          ]
+        },
+        {
+          "group": "Link",
+          "pages": [
+            "medical-api/api-reference/link/get-links",
+            "medical-api/api-reference/link/create-link",
+            "medical-api/api-reference/link/remove-link"
+          ]
+        },
+        {
+          "group": "Document",
+          "pages": [
+            "medical-api/api-reference/document/list-documents",
+            "medical-api/api-reference/document/get-document"
+          ]
+        }
+      ]
+    },
+    {
       "group": "Getting Started",
       "pages": [
         "devices-api/getting-started/connect-quickstart",
@@ -108,7 +154,7 @@
           ]
         },
         {
-          "group": "Health Device API",
+          "group": "Devices API",
           "pages": [
             "devices-api/api-reference/get-activity-data",
             "devices-api/api-reference/get-biometrics-data",

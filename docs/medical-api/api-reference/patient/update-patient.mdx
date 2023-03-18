@@ -1,0 +1,69 @@
+---
+title: "Update Patient"
+description: "Updates the specified Patient."
+api: "PUT /medical/v1/patient/{id}"
+---
+
+## Query Params
+
+<ParamField query="facilityId" type="string" required>
+  The ID of the Facility where the patient is receiving care.
+</ParamField>
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient to update.
+</ParamField>
+
+## Body
+
+<Snippet file="patient.mdx" />
+
+## Response
+
+<Snippet file="patient-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport, USState } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const facility = await metriportClient.updateFacility({
+  id: "2.16.840.1.113883.3.666.123",
+  name: "Care Facility, LLC",
+  npi: "1234567891",
+  tin: "12-3456789",
+  active: true,
+  address: {
+    addressLine1: "2261 Market Street",
+    addressLine2: "#4818",
+    city: "San Francisco",
+    state: USState.CA,
+    zip: "94114",
+    country: "USA",
+  },
+});
+```
+
+</ResponseExample>
+
+```json
+{
+  "id": "2.16.840.1.113883.3.666.123",
+  "name": "Care Facility, LLC",
+  "npi": "1234567891",
+  "tin": "12-3456789",
+  "active": true,
+  "address": {
+    "addressLine1": "2261 Market Street",
+    "addressLine2": "#4818",
+    "city": "San Francisco",
+    "state": "CA",
+    "zip": "94114",
+    "country": "USA"
+  }
+}
+```

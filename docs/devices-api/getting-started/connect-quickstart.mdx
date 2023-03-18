@@ -38,7 +38,7 @@ Let's get into it! 🤘
 </Card>
 
 <Tip>
-  To demo the app without having to use your production enviroment simply head over to the settings
+  To demo the app without having to use your production enviroment simply head over to the `Developers`
   page and toggle "sandbox". This will allow you to try out the Devices API with up to 10 connected users.
 </Tip>
 
@@ -47,9 +47,10 @@ Let's get into it! 🤘
 Once you've created an account and confirmed your email, you'll be taken to the [dashboard
 home page](https://dash.metriport.com/). From here, take the following steps to get your API key:
 
-- In the left hand menu, click "Settings".
-- On the Settings page, click the "Create Subscription" button, and add your payment info.
-- After that's done, back on the Settings page, you'll be able to click the "Generate Secret Key" button.
+- In the left hand menu, click `Products & Billing`.
+- Click `Get Started` on the Device API product, and add your payment info.
+- In the left hand menu, click `Developers`.
+- On the Developers page, you'll be able to click the `Generate Secret Key` button.
 
 <Info>
   This Secret Key will allow you to start making requests to the entire Metriport API on your
@@ -59,7 +60,7 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 
 <Tip>
   If you believe your key has been compromised, you can always revoke it and then generate a new one
-  on the Settings page by clicking the trash button beside the key.
+  on the Developers page by clicking the trash button beside the key.
 </Tip>
 
 ## 3. Integrate your app with Metriport
@@ -87,7 +88,7 @@ From here, all you need to do is to initialize a Metriport client instance using
 key, and you're good to start making requests to the Metriport API from your server:
 
 ```typescript
-import { Metriport } from "@metriport/api";
+import { MetriportDevicesApi } from "@metriport/api";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY", "ENVIRONMENT_URL");
 ```
