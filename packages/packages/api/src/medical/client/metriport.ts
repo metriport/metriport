@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosStatic } from "axios";
+import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
 
 import { DocumentReference, documentReferenceSchema } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
@@ -13,6 +14,20 @@ import {
 } from "../models/patient";
 
 const NO_DATA_MESSAGE = "No data returned from API";
+const BASE_PATH = "/medical/v1";
+
+export type Options = {
+  axios?: AxiosStatic; // Set axios if it fails to load
+} & (
+  | {
+      sandbox?: boolean;
+      baseAddress?: never;
+    }
+  | {
+      sandbox?: never;
+      baseAddress?: string;
+    }
+);
 
 export class MetriportMedicalApi {
   readonly api: AxiosInstance;
@@ -27,20 +42,19 @@ export class MetriportMedicalApi {
    *
    * @param apiKey Your Metriport API key.
    */
-  constructor(
-    apiKey: string,
-    baseURL = "https://api.metriport.com/medical/v1",
-    secondaryAxios?: AxiosStatic
-  ) {
+  constructor(apiKey: string, options: Options = { sandbox: false }) {
     const headers = { "x-api-key": apiKey };
+
+    const baseURL =
+      (options.baseAddress || (options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
 
     if (axios) {
       this.api = axios.create({
         baseURL,
         headers,
       });
-    } else if (secondaryAxios) {
-      this.api = secondaryAxios.create({
+    } else if (options.axios) {
+      this.api = options.axios.create({
         baseURL,
         headers,
       });
