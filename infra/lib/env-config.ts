@@ -23,10 +23,12 @@ export type EnvConfig = {
   usageReportUrl?: string;
   fhirServerUrl?: string;
   systemRootOID: string;
-  cwMemberName: string;
-  cwMemberOID: string;
-  cwGatewayEndpoint: string;
-  cwGatewayAuthorizationServerEndpoint: string;
+  commonwell: {
+    CW_MEMBER_NAME: string;
+    CW_MEMBER_OID: string;
+    CW_GATEWAY_ENDPOINT: string;
+    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
+  };
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: string;
     CRONOMETER_CLIENT_SECRET: string;

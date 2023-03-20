@@ -47,11 +47,13 @@ export const config: EnvConfig = {
     domain: "myhealthapp.com",
     host: "myhealthapp.com",
   },
+  commonwell: {
+    CW_MEMBER_NAME: "Test Org",
+    CW_MEMBER_OID: "1.2.3.1.4.1.11.12.29.2022.123",
+    CW_GATEWAY_ENDPOINT: "https://api.myhealthapp.com/oauth/fhir",
+    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT:
+      "https://myhealthapp.auth.us-east-1.amazoncognito.com/oauth2/token",
+  },
   systemRootOID: "2.16.840.1.113883.3.999999",
-  cwMemberName: "Test Org",
-  cwMemberOID: "1.2.3.1.4.1.11.12.29.2022.123",
-  cwGatewayEndpoint: "https://api.myhealthapp.com/oauth/fhir",
-  cwGatewayAuthorizationServerEndpoint:
-    "https://myhealthapp.auth.us-east-1.amazoncognito.com/oauth2/token",
 };
 export default config;
