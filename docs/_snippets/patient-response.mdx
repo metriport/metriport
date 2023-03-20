@@ -1,61 +1,24 @@
-<ResponseField name="id" type="string" required>
-  The OID assigned to this Patient. This OID will be used to uniquely identify this Patient in
-  medical documents.
-</ResponseField>
+<Snippet file="patient-response-no-facilities-or-links.mdx" />
 
 <ResponseField name="facilityIds" type="string[]" required>
   Array of the IDs of the Facilities where the Patient is receiving care.
 </ResponseField>
 
-<ResponseField name="firstName" type="string" required>
-  The Patient's first name.
-</ResponseField>
-
-<ResponseField name="lastName" type="string" required>
-  The Patient's last name.
-</ResponseField>
-
-<ResponseField name="dob" type="string" required>
-  The Patient's date of birth (DOB), formatted `YYYY-MM-DD`.
-</ResponseField>
-
-<ResponseField name="genderAtBirth" type="string" required>
-  The Patient's gender at birth, can be one of `M` or `F`.
-</ResponseField>
-
-<ResponseField name="personalIdentifiers" type="PersonalIdentifier[]" required>
-  An array of the Patient's personal IDs, such as a driver's license. May be empty.
-
-  <Expandable title="PersonalIdentifier properties">
-    <ResponseField name="type" type="string" required>
-      The ID type - currently `driversLicense` is supported.
-    </ResponseField>
-
-    <ResponseField name="state" type="string" required>
-      The 2 letter state acronym where this ID was issued, for example: `CA`.
-    </ResponseField>
-
-    <ResponseField name="value" type="string" required>
-      The ID number.
-    </ResponseField>
-
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="address" type="Address" required>
-  <Snippet file="address.mdx" />
-</ResponseField>
-
-<ResponseField name="contact" type="Contact">
+<ResponseField name="links" type="LinkStatusAcrossHIEs" required>
+  A map with the Patient link's status across HIEs. Each HIE is a property, and the status is the value.
+  
   <Expandable title="properties">
-    <ResponseField name="phone" type="string">
-      The Patient's 10 digit phone number, formatted `1234567899`.
-    </ResponseField>
 
-    <ResponseField name="email" type="string">
-      The Patient's email address.
+    For HIE, currently only `COMMONWELL` is supported.
+
+    For status, these are the possible values:
+    - `linked`: the Patient is successfully linked to an entity on the respective HIE;
+    - `needs-review`: we couldn't automatically link the patient to an entity on the respective HIE - 
+    see the [Links section of the API](/medical-api/api-reference/link/get-links) to learn how to manage links.
+
+    <ResponseField name="COMMONWELL" type="string">
+      The status of this Patient's link with CommonWell.
     </ResponseField>
 
   </Expandable>
-
 </ResponseField>

@@ -16,9 +16,12 @@ api: "GET /medical/v1/document"
 
 ## Response
 
-<ResponseField type="DocumentReference[]">
-  An array of objects describing the Documents that can be retrieved for the Patient.
-  <Snippet file="document-reference-response.mdx" />
+An array of objects describing the Documents that can be retrieved for the Patient.
+
+<ResponseField name="documents" type="DocumentReference[]">
+  <Expandable title="DocumentReference properties">
+    <Snippet file="document-reference-response.mdx" />
+  </Expandable>
 </ResponseField>
 
 <ResponseExample>
@@ -37,26 +40,28 @@ const documents = await metriportClient.listDocuments(
 </ResponseExample>
 
 ```json
-[
-  {
-    "id": "1.2.543.1.34.1.34.134",
-    "fileName": "CCDA_Diag.xml",
-    "location": "https://fhir.metriport.com/oauth/fhir/Binary/2.16.840.1.113883.3.777.666.5.700009.969696",
-    "description": "Patient Diagnoses",
-    "status": "current",
-    "indexed": "2019-09-07T15:50:00.000Z",
-    "mimeType": "application/xml",
-    "size": "17344007",
-    "type": {
-      "coding": [
-        {
-          "system": "http://snomed.info/sct",
-          "code": "62479008",
-          "display": "Diagnoses"
-        }
-      ],
-      "text": "Diagnoses"
+{
+  "documents": [
+    {
+      "id": "1.2.543.1.34.1.34.134",
+      "fileName": "CCDA_Diag.xml",
+      "location": "https://fhir.metriport.com/oauth/fhir/Binary/2.16.840.1.113883.3.777.666.5.700009.969696",
+      "description": "Patient Diagnoses",
+      "status": "current",
+      "indexed": "2019-09-07T15:50:00.000Z",
+      "mimeType": "application/xml",
+      "size": "17344007",
+      "type": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "62479008",
+            "display": "Diagnoses"
+          }
+        ],
+        "text": "Diagnoses"
+      }
     }
-  }
-]
+  ]
+}
 ```

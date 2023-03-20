@@ -1,9 +1,11 @@
 import { PatientExternalData } from "../models/medical/patient";
-import { PatientLinksDTO } from "../routes/medical/dtos/linkDTO";
-import { mapPatientExternal as commonwellMapPatientExternal } from "./commonwell/patient";
+import { getLinkStatus as getLinkStatusCW } from "./commonwell/patient";
+import { LinkStatusAcrossHIEs } from "./patient-link";
 
-export function patientExternalDataToLinks(data: PatientExternalData | undefined): PatientLinksDTO {
+export function getLinkStatusAcrossHIEs(
+  externalData: PatientExternalData | undefined
+): LinkStatusAcrossHIEs {
   return {
-    COMMONWELL: commonwellMapPatientExternal(data),
+    COMMONWELL: getLinkStatusCW(externalData),
   };
 }

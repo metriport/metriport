@@ -34,8 +34,8 @@ const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 const patient = await metriportClient.updatePatient(
   {
     id: "2.16.840.1.113883.3.666.777",
-    firstName: "Joselito",
-    lastName: "Muambero",
+    firstName: "Jose",
+    lastName: "Juarez",
     dob: "1951-05-05",
     genderAtBirth: "M",
     personalIdentifiers: [
@@ -54,7 +54,7 @@ const patient = await metriportClient.updatePatient(
     },
     contact: {
       phone: "1234567899",
-      email: "jose@tutanota.com",
+      email: "jose@domain.com",
     },
   },
   "2.16.840.1.113883.3.666.5.2004.4.2005"
