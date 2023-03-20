@@ -1,0 +1,59 @@
+---
+title: "Update Organization"
+description: "Updates your Organization's details."
+api: "PUT /medical/v1/organization/{id}"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The OID of your organization.
+</ParamField>
+
+## Body
+
+<Snippet file="organization.mdx" />
+
+## Response
+
+<Snippet file="organization-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport, OrgType, USState } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const org = await metriportClient.updateOrganization({
+  id: "2.16.840.1.113883.3.666.123",
+  type: OrgType.postAcuteCare,
+  name: "Metriport Inc.",
+  location: {
+    addressLine1: "2261 Market Street",
+    addressLine2: "#4818",
+    city: "San Francisco",
+    state: USState.CA,
+    zip: "94114",
+    country: "USA",
+  },
+});
+```
+
+</ResponseExample>
+
+```json
+{
+    "id": "2.16.840.1.113883.3.666.123",
+    "type": "postAcuteCare",
+    "name": "Metriport Inc.",
+    "location": {
+        "addressLine1": "2261 Market Street",
+        "addressLine2": "#4818",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94114",
+        "country": "USA"
+    }
+}
+```
