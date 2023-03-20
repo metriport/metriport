@@ -22,5 +22,8 @@ export const documentReferenceSchema = z.object({
     text: z.string().optional(),
   }),
 });
-
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
+
+export const documentListSchema = z.object({
+  documents: z.array(documentReferenceSchema),
+});

@@ -1,0 +1,29 @@
+---
+title: "Get Patient"
+description: "Gets a Patient."
+api: "GET /medical/v1/patient/{id}"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The OID of the Patient.
+</ParamField>
+
+## Response
+
+<Snippet file="patient-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patient = await metriportClient.getPatient("2.16.840.1.113883.3.666.777");
+```
+
+</ResponseExample>
+
+<Snippet file="patient-response-json.mdx" />

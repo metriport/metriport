@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosStatic } from "axios";
+import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
 
-import { DocumentReference, documentReferenceSchema } from "../models/document";
+import { documentListSchema, DocumentReference } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
@@ -13,6 +14,20 @@ import {
 } from "../models/patient";
 
 const NO_DATA_MESSAGE = "No data returned from API";
+const BASE_PATH = "/medical/v1";
+
+export type Options = {
+  axios?: AxiosStatic; // Set axios if it fails to load
+} & (
+  | {
+      sandbox?: boolean;
+      baseAddress?: never;
+    }
+  | {
+      sandbox?: never;
+      baseAddress?: string;
+    }
+);
 
 export class MetriportMedicalApi {
   readonly api: AxiosInstance;
@@ -27,20 +42,19 @@ export class MetriportMedicalApi {
    *
    * @param apiKey Your Metriport API key.
    */
-  constructor(
-    apiKey: string,
-    baseURL = "https://api.metriport.com/medical/v1",
-    secondaryAxios?: AxiosStatic
-  ) {
+  constructor(apiKey: string, options: Options = { sandbox: false }) {
     const headers = { "x-api-key": apiKey };
+
+    const baseURL =
+      (options.baseAddress || (options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
 
     if (axios) {
       this.api = axios.create({
         baseURL,
         headers,
       });
-    } else if (secondaryAxios) {
-      this.api = secondaryAxios.create({
+    } else if (options.axios) {
+      this.api = options.axios.create({
         baseURL,
         headers,
       });
@@ -69,7 +83,7 @@ export class MetriportMedicalApi {
    */
   async updateOrganization(organization: Organization): Promise<Organization> {
     type FieldsToOmit = "id";
-    const payload: Omit<Organization, FieldsToOmit> & Partial<Pick<Organization, FieldsToOmit>> = {
+    const payload: Omit<Organization, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...organization,
       id: undefined,
     };
@@ -121,7 +135,7 @@ export class MetriportMedicalApi {
    */
   async updateFacility(facility: Facility): Promise<Facility> {
     type FieldsToOmit = "id";
-    const payload: Omit<Facility, FieldsToOmit> & Partial<Pick<Facility, FieldsToOmit>> = {
+    const payload: Omit<Facility, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...facility,
       id: undefined,
     };
@@ -176,15 +190,10 @@ export class MetriportMedicalApi {
    * @return The updated patient.
    */
   async updatePatient(patient: PatientUpdate, facilityId: string): Promise<Patient> {
-    const fieldsToRemove = {
-      id: undefined,
-      facilityIds: undefined,
-      links: undefined,
-    };
-    type FieldsToOmit = keyof typeof fieldsToRemove;
-    const payload: Omit<Patient, FieldsToOmit> & Partial<Pick<Patient, FieldsToOmit>> = {
+    type FieldsToOmit = "id";
+    const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...patient,
-      ...fieldsToRemove,
+      id: undefined,
     };
     const resp = await this.api.put(`${this.PATIENT_URL}/${patient.id}`, payload, {
       params: { facilityId },
@@ -277,7 +286,7 @@ export class MetriportMedicalApi {
       },
     });
     if (!resp.data) [];
-    return documentReferenceSchema.array().parse(resp.data);
+    return documentListSchema.parse(resp.data).documents;
   }
 
   // TODO #435 review the return type of this function

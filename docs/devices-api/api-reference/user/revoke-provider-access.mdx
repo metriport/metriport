@@ -1,0 +1,30 @@
+---
+title: "Revoke Provider Access"
+description: "Revokes the access token for a given provider."
+api: "DELETE /user/revoke"
+---
+
+## Query Params
+
+<ParamField query="userId" type="string" required>
+  The Metriport user ID to revoke access for.
+</ParamField>
+
+<ParamField query="provider" type="string" required>
+  The provider you would like to revoke access to.
+
+  Can be one of: `apple`, `cronometer`, `fitbit`, `oura`, `whoop`, or `withings`.
+</ParamField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+import { ProviderSource } from "@metriport/api";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+
+await metriportClient.revokeUserAccessToProvider("metriportUserId", ProviderSource.fitbit);
+```
+
+</ResponseExample>

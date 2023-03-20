@@ -1,0 +1,48 @@
+---
+title: "Create Link"
+description: "Creates link to the specified entity in the specified HIE."
+api: "POST /medical/v1/patient/{id}/link/{linkSource}"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The OID of the Patient that will be linked to the entity in the HIE.
+</ParamField>
+
+<ParamField path="linkSource" type="string" required>
+  The HIE to link to - currently `COMMONWELL` is supported.
+</ParamField>
+
+## Query Params
+
+<ParamField query="facilityId" type="string" required>
+  The OID of the Facility that is currently providing the Patient care.
+</ParamField>
+
+## Body
+
+<ParamField body="entityId" type="string" required>
+  The ID of the entity in the HIE to link the Patient to.
+</ParamField>
+
+## Response
+
+`201` on success.
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+await metriportClient.createLink(
+  "2.16.840.1.113883.3.666.777",
+  "2.16.840.1.113883.3.666.123",
+  "1.23.1234.123.3333",
+  "COMMONWELL"
+);
+```
+
+</ResponseExample>

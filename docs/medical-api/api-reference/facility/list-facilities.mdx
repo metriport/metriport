@@ -1,0 +1,64 @@
+---
+title: "List Facilities"
+description: "Lists all of your Facilities."
+api: "GET /medical/v1/facility"
+---
+
+## Response
+
+Array of all of the Facilities created under your Organization.
+
+<ResponseField name="facilities" type="Facility[]">
+  <Expandable title="Facility properties">
+    <Snippet file="facility-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const facilities = await metriportClient.listFacilities();
+```
+
+</ResponseExample>
+
+```json
+{
+  "facilities":[
+    {
+      "id": "2.16.840.1.113883.3.666.123",
+      "name": "Care Facility, LLC",
+      "npi": "1234567891",
+      "tin": "12-3456789",
+      "active": true,
+      "address": {
+        "addressLine1": "2261 Market Street",
+        "addressLine2": "#4818",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94114",
+        "country": "USA"
+      }
+    },
+    {
+      "id": "2.16.840.1.113883.3.666.456",
+      "name": "Care Facility 2, LLC",
+      "npi": "1789123456",
+      "tin": "12-6789345",
+      "active": true,
+      "address": {
+        "addressLine1": "451 Care Street",
+        "addressLine2": "#320",
+        "city": "Austin",
+        "state": "TX",
+        "zip": "78617",
+        "country": "USA"
+      }
+    }
+  ]
+}
+```

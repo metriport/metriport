@@ -1,0 +1,59 @@
+---
+title: "Create Patient"
+description: "Creates a Patient in Metriport for the specified Facility where the patient is receiving care."
+api: "POST /medical/v1/patient"
+---
+
+## Query Params
+
+<ParamField query="facilityId" type="string" required>
+  The ID of the Facility where the Patient is receiving care.
+</ParamField>
+
+## Body
+
+<Snippet file="patient.mdx" />
+
+## Response
+
+<Snippet file="patient-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport, USState } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patient = await metriportClient.createPatient(
+  {
+    firstName: "Jose",
+    lastName: "Juarez",
+    dob: "1951-05-05",
+    genderAtBirth: "M",
+    personalIdentifiers: [
+      {
+        type: "driversLicense",
+        state: USState.CA,
+        value: "51227265",
+      },
+    ],
+    address: {
+      zip: "12345",
+      city: "San Diego",
+      state: USState.CA,
+      country: "USA",
+      addressLine1: "Guadalajara Sreet",
+    },
+    contact: {
+      phone: "1234567899",
+      email: "jose@domain.com",
+    },
+  },
+  "2.16.840.1.113883.3.666.5.2004.4.2005"
+);
+```
+
+</ResponseExample>
+
+<Snippet file="patient-response-json.mdx" />
