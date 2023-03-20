@@ -61,6 +61,7 @@ export async function findOrCreatePerson({
     if (personIds.length > 1) {
       const subject = "Found more than one person for patient demographics";
       const message = idsToAlertMessage(commonwellPatientId, personIds);
+      sendAlert({ subject, message });
       log(`${subject}: ${message}`);
       return undefined;
     }
