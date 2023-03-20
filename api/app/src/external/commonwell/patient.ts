@@ -3,8 +3,10 @@ import {
   getIdTrailingSlash,
   LOLA,
   Patient as CommonwellPatient,
+  Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import { StrongId } from "@metriport/commonwell-sdk/lib/models/identifier";
 
 import { MedicalDataSource } from "..";
 import { Patient, PatientExternalData } from "../../models/medical/patient";
@@ -154,19 +156,15 @@ export async function update(patient: Patient, facilityId: string): Promise<void
 
   // Try to get the Person<>Patient link to LOLA3
   try {
-    const respLinks = await commonWell.getPatientLinks(queryMeta, personId);
-    debug(`resp getPatientLinks: ${JSON.stringify(respLinks)}`);
-    const linkToPatient = respLinks._embedded?.patientLink
-      ? respLinks._embedded.patientLink.find(l =>
-          l.patient ? l.patient.includes(commonwellPatientId) : false
-        )
-      : undefined;
-    if (
-      !linkToPatient ||
-      !linkToPatient.assuranceLevel ||
-      ![LOLA.level_3, LOLA.level_4].map(toString).includes(linkToPatient.assuranceLevel)
-    ) {
-      const strongIds = getMatchingStrongIds(person, commonwellPatient);
+    const { hasLink, isLinkLola3Plus, strongIds } = await getLinkInfo({
+      commonWell,
+      queryMeta,
+      person,
+      personId,
+      commonwellPatient,
+      commonwellPatientId,
+    });
+    if (!hasLink || (!isLinkLola3Plus && strongIds.length > 0)) {
       const respLink = await commonWell.addPatientLink(
         queryMeta,
         personId,
@@ -353,4 +351,37 @@ async function updatePatient({
     throw new Error(msg);
   }
   return { patientRefLink };
+}
+
+async function getLinkInfo({
+  commonWell,
+  queryMeta,
+  person,
+  personId,
+  commonwellPatient,
+  commonwellPatientId,
+}: {
+  commonWell: CommonWellAPI;
+  queryMeta: RequestMetadata;
+  person: Person;
+  personId: string;
+  commonwellPatient: CommonwellPatient;
+  commonwellPatientId: string;
+}): Promise<{ hasLink: boolean; isLinkLola3Plus: boolean; strongIds: StrongId[] }> {
+  const { debug } = Util.out(`CW getLinkInfo - CW patientId ${commonwellPatientId}`);
+
+  const respLinks = await commonWell.getPatientLinks(queryMeta, personId);
+  debug(`resp getPatientLinks: ${JSON.stringify(respLinks)}`);
+
+  const linkToPatient = respLinks._embedded?.patientLink
+    ? respLinks._embedded.patientLink.find(l =>
+        l.patient ? l.patient.includes(commonwellPatientId) : false
+      )
+    : undefined;
+  const strongIds = getMatchingStrongIds(person, commonwellPatient);
+  const hasLink = Boolean(linkToPatient && linkToPatient.assuranceLevel);
+  const isLinkLola3Plus = linkToPatient?.assuranceLevel
+    ? [LOLA.level_3, LOLA.level_4].map(toString).includes(linkToPatient.assuranceLevel)
+    : false;
+  return { hasLink, isLinkLola3Plus, strongIds };
 }
