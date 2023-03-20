@@ -90,12 +90,11 @@ key, and you're good to start making requests to the Metriport API from your ser
 ```typescript
 import { MetriportDevicesApi } from "@metriport/api";
 
-const metriportClient = new MetriportDevicesApi("YOUR_API_KEY", "ENVIRONMENT_URL");
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY", options);
 ```
 
 <Info>
-  ENVIRONMENT_URL is optional and defaults to https://api.metriport.com. For sandbox mode add
-  https://api.sandbox.metriport.com.
+  `options` allows you to set the `sandbox` property to access our sandbox environment (optional parameter).
 </Info>
 
 ### 3.2. Webhook: expose an endpoint to be called by Metriport

@@ -12,8 +12,9 @@ api: "GET /medical/v1/patient"
 
 ## Response
 
-<ResponseField type="Patient[]">
-  All Patients receiving care at the specified Facility.
+All Patients receiving care at the specified Facility.
+
+<ResponseField name="patients" type="Patient[]">
   <Expandable title="Patient properties">
     <Snippet file="patient-response.mdx" />
   </Expandable>
@@ -32,52 +33,54 @@ const patients = await metriportClient.listPatients("2.16.840.1.113883.3.666.5.2
 </ResponseExample>
 
 ```json
-[
-  {
-    "id": "2.16.840.1.113883.3.666.777",
-    "facilityIds": ["2.16.840.1.113883.3.666.5.2004.4.2005"],
-    "firstName": "Joselito",
-    "lastName": "Muambero",
-    "dob": "1951-05-05",
-    "genderAtBirth": "M",
-    "personalIdentifiers": [
-      {
-        "type": "driversLicense",
+{
+  "patients": [
+    {
+      "id": "2.16.840.1.113883.3.666.777",
+      "facilityIds": ["2.16.840.1.113883.3.666.5.2004.4.2005"],
+      "firstName": "Jose",
+      "lastName": "Juarez",
+      "dob": "1951-05-05",
+      "genderAtBirth": "M",
+      "personalIdentifiers": [
+        {
+          "type": "driversLicense",
+          "state": "CA",
+          "value": "51227265"
+        }
+      ],
+      "address": {
+        "zip": "12345",
+        "city": "San Diego",
         "state": "CA",
-        "value": "51227265"
+        "country": "USA",
+        "addressLine1": "Guadalajara St"
+      },
+      "contact": {
+        "phone": "1234567899",
+        "email": "jose@domain.com"
       }
-    ],
-    "address": {
-      "zip": "12345",
-      "city": "San Diego",
-      "state": "CA",
-      "country": "USA",
-      "addressLine1": "Guadalajara St"
     },
-    "contact": {
-      "phone": "1234567899",
-      "email": "jose@tutanota.com"
+    {
+      "id": "2.16.840.1.113883.3.666.888",
+      "facilityIds": ["2.16.840.1.113883.3.666.5.2004.4.2005"],
+      "firstName": "Josita",
+      "lastName": "Juarez",
+      "dob": "1949-06-09",
+      "genderAtBirth": "F",
+      "personalIdentifiers": [],
+      "address": {
+        "zip": "12345",
+        "city": "San Diego",
+        "state": "CA",
+        "country": "USA",
+        "addressLine1": "Guadalajara St"
+      },
+      "contact": {
+        "phone": "1234569999",
+        "email": "josita@domain.com"
+      }
     }
-  },
-  {
-    "id": "2.16.840.1.113883.3.666.888",
-    "facilityIds": ["2.16.840.1.113883.3.666.5.2004.4.2005"],
-    "firstName": "Josita",
-    "lastName": "Muambero",
-    "dob": "1949-06-09",
-    "genderAtBirth": "F",
-    "personalIdentifiers": [],
-    "address": {
-      "zip": "12345",
-      "city": "San Diego",
-      "state": "CA",
-      "country": "USA",
-      "addressLine1": "Guadalajara St"
-    },
-    "contact": {
-      "phone": "1234569999",
-      "email": "josita@tutanota.com"
-    }
-  }
-]
+  ]
+}
 ```

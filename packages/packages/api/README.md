@@ -32,7 +32,7 @@ new MetriportMedicalApi("YOUR_API_KEY", { sandbox: true });
 
 #### Devices API
 
-To use the Medical API, create a new instance of the `MetriportDevicesApi` class:
+To use the Devices API, create a new instance of the `MetriportDevicesApi` class:
 
 ```ts
 import { MetriportDevicesApi } from "@metriport/api";
