@@ -28,6 +28,10 @@ export type EnvConfig = {
     CW_MEMBER_OID: string;
     CW_GATEWAY_ENDPOINT: string;
     CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
+    CW_TECHNICAL_CONTACT_NAME: string;
+    CW_TECHNICAL_CONTACT_TITLE: string;
+    CW_TECHNICAL_CONTACT_EMAIL: string;
+    CW_TECHNICAL_CONTACT_PHONE: string;
   };
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: string;
@@ -52,10 +56,6 @@ export type EnvConfig = {
     CW_MEMBER_CERTIFICATE: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
-    CW_TECHNICAL_CONTACT_NAME: string;
-    CW_TECHNICAL_CONTACT_TITLE: string;
-    CW_TECHNICAL_CONTACT_EMAIL: string;
-    CW_TECHNICAL_CONTACT_PHONE: string;
   };
   slack?: {
     SLACK_ALERT_URL?: string;
