@@ -26,7 +26,7 @@ router.get(
     const documents = await getDocuments({ cxId, patientId, facilityId });
 
     const result = documents.map(dtoFromModel);
-    return res.status(status.OK).json(result);
+    return res.status(status.OK).json({ documents: result });
   })
 );
 

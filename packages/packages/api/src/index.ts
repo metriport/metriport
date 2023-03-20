@@ -12,6 +12,14 @@ export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Address, addressSchema } from "./medical/models/common/address";
 export { USState, usStateSchema } from "./medical/models/common/us-data";
 export {
+  contactSchema,
+  Demographics,
+  demographicsSchema,
+  genderAtBirthSchema,
+  PersonalIdentifier,
+  personalIdentifierSchema,
+} from "./medical/models/demographics";
+export {
   Facility,
   FacilityCreate,
   facilityCreateSchema,
@@ -35,5 +43,4 @@ export {
   patientSchema,
   PatientUpdate,
   patientUpdateSchema,
-  PersonalIdentifier,
 } from "./medical/models/patient";

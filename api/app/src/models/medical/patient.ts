@@ -26,11 +26,17 @@ export type BaseIdentifier = {
   period?: Period;
   assigner?: string;
 };
-export type Identifier = BaseIdentifier &
-  (
-    | { type: GeneralTypes; value: string; state?: never }
-    | { type: DriverLicenseType; value: string; state: USState }
-  );
+// TODO #425 reenable this when we manage to work with diff systems @ CW
+// export type PersonalIdentifier = BaseIdentifier &
+//   (
+//     | { type: GeneralTypes; value: string; state?: never }
+//     | { type: DriverLicenseType; value: string; state: USState }
+//   );
+export type PersonalIdentifier = BaseIdentifier & {
+  type: DriverLicenseType;
+  value: string;
+  state: USState;
+};
 
 export type DriversLicense = {
   value: string;
@@ -49,7 +55,7 @@ export type PatientData = {
   lastName: string;
   dob: string;
   genderAtBirth: GenderAtBirth;
-  personalIdentifiers: Identifier[];
+  personalIdentifiers: PersonalIdentifier[];
   address: Address;
   contact?: Contact;
   externalData?: PatientExternalData;

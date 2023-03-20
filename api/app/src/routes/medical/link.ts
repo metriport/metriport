@@ -1,24 +1,24 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQueryOrFail } from "../util";
-import cwCommands from "../../external/commonwell";
+import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
+import cwCommands from "../../external/commonwell";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQueryOrFail } from "../util";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
-import { dtoFromCW, PatientLinks } from "./dtos/linkDTO";
 
 const router = Router();
+
 /** ---------------------------------------------------------------------------
  * POST /patient/:patientId/link/:source
  *
  * Creates link to the specified entity.
- * @param   req.params.patientId   Patient ID to link to a person.
- * @param   req.query.facilityId   The ID of the facility to provide the NPI to remove link from patient.
- * @param   req.params.source      HIE from where the link is made too.
- * @param   req.body.entityId      Person ID to link to the patient.
  *
- * @return  200
+ * @param req.params.patientId Patient ID to link to a person.
+ * @param req.params.source HIE from where the link is made to.
+ * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
+ * @returns 201 upon success.
  */
 router.post(
   "/:patientId/link/:source",
@@ -31,9 +31,9 @@ router.post(
 
     if (linkSource === MedicalDataSource.COMMONWELL) {
       await cwCommands.link.create(linkCreate.entityId, patientId, cxId, facilityId);
+      return res.sendStatus(status.CREATED);
     }
-
-    return res.sendStatus(status.OK);
+    throw new BadRequestError(`Unsupported link source: ${linkSource}`);
   })
 );
 
@@ -41,10 +41,11 @@ router.post(
  * DELETE /patient/:patientId/link/:source
  *
  * Removes the specified HIE link from the specified patient.
- * @param   req.params.patientId     Patient ID to remove link from.
- * @param   req.query.facilityId     The ID of the facility to provide the NPI to remove link from patient.
- * @param   req.params.linkSource    HIE to remove the link from.
- * @return  200
+ *
+ * @param req.params.patientId Patient ID to remove link from.
+ * @param req.params.linkSource HIE to remove the link from.
+ * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
+ * @returns 204 upon successful link delete.
  */
 router.delete(
   "/:patientId/link/:source",
@@ -58,7 +59,7 @@ router.delete(
       await cwCommands.link.reset(patientId, cxId, facilityId);
     }
 
-    return res.sendStatus(status.OK);
+    return res.sendStatus(status.NO_CONTENT);
   })
 );
 
@@ -67,9 +68,9 @@ router.delete(
  *
  * Builds and returns the current state of a patient's links across HIEs.
  *
- * @param   req.params.patientId     Patient ID for which to retrieve links.
- * @param   req.query.facilityId     The ID of the facility to provide the NPI to get links for patient.
- * @return  The patient's current and potential links.
+ * @param req.params.patientId Patient ID for which to retrieve links.
+ * @param req.query.facilityId The ID of the facility to provide the NPI to get links for patient.
+ * @returns The patient's current and potential links.
  */
 router.get(
   "/:patientId/link",
@@ -78,7 +79,7 @@ router.get(
     const patientId = getFromParamsOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
 
-    const links: PatientLinks = {
+    const links: PatientLinksDTO = {
       currentLinks: [],
       potentialLinks: [],
     };

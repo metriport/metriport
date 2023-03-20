@@ -4,23 +4,46 @@ A package to get started using [Metriport](https://metriport.com/) - universal a
 
 ## Usage
 
-Get started: https://docs.metriport.com/getting-started/connect-quickstart
+Check out the documentation at https://docs.metriport.com
 
-#### Installation
+### Installation
 
 ```
 npm install --save @metriport/api
 ```
 
-#### Setup
+### Setup
 
-`ENVIRONMENT_URL` is optional and defaults to https://api.metriport.com. For
-sandbox mode add https://api.sandbox.metriport.com.
+#### Medical API
 
+To use the Medical API, create a new instance of the `MetriportMedicalApi` class:
+
+```ts
+import { MetriportMedicalApi } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 ```
-import { Metriport } from "@metriport/api";
 
-const metriportClient = new Metriport("YOUR_API_KEY", "ENVIRONMENT_URL");
+To connect to the sandbox:
+
+```ts
+new MetriportMedicalApi("YOUR_API_KEY", { sandbox: true });
+```
+
+#### Devices API
+
+To use the Devices API, create a new instance of the `MetriportDevicesApi` class:
+
+```ts
+import { MetriportDevicesApi } from "@metriport/api";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+```
+
+To connect to the sandbox:
+
+```ts
+new MetriportDevicesApi("YOUR_API_KEY", { sandbox: true });
 ```
 
 ```

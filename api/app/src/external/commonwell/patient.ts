@@ -1,17 +1,17 @@
 import {
+  CommonWellAPI,
   getIdTrailingSlash,
   LOLA,
   Patient as CommonwellPatient,
   RequestMetadata,
-  CommonWellAPI,
 } from "@metriport/commonwell-sdk";
 
 import { MedicalDataSource } from "..";
 import { Patient, PatientExternalData } from "../../models/medical/patient";
-import { PatientLinkStatusDTO } from "../../routes/medical/dtos/linkDTO";
 import { sendAlert } from "../../shared/notifications";
 import { oid } from "../../shared/oid";
 import { Util } from "../../shared/util";
+import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI, organizationQueryMeta } from "./api";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { setCommonwellId } from "./patient-external-data";
@@ -22,11 +22,10 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 
-export function mapPatientExternal(data: PatientExternalData | undefined): PatientLinkStatusDTO {
-  return data
-    ? (data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell).personId
-      ? "linked"
-      : "needs-review"
+export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus {
+  if (!data) return "needs-review";
+  return (data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell).personId
+    ? "linked"
     : "needs-review";
 }
 
