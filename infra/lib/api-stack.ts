@@ -194,6 +194,11 @@ export class APIStack extends Stack {
             API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
             CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
             SYSTEM_ROOT_OID: props.config.systemRootOID,
+            CW_MEMBER_NAME: props.config.cwMemberName,
+            CW_MEMBER_OID: props.config.cwMemberOID,
+            CW_GATEWAY_ENDPOINT: props.config.cwGatewayEndpoint,
+            CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT:
+              props.config.cwGatewayAuthorizationServerEndpoint,
             ...(props.config.slack ? props.config.slack : undefined),
             ...(props.config.usageReportUrl && {
               USAGE_URL: props.config.usageReportUrl,

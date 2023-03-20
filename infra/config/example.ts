@@ -31,12 +31,8 @@ export const config: EnvConfig = {
   cwSecretNames: {
     CW_PRIVATE_KEY: "CW_PRIVATE_KEY",
     CW_CERTIFICATE: "CW_CERTIFICATE",
-    CW_MEMBER_NAME: "CW_MEMBER_NAME",
-    CW_MEMBER_OID: "CW_MEMBER_OID",
     CW_MEMBER_PRIVATE_KEY: "CW_MEMBER_PRIVATE_KEY",
     CW_MEMBER_CERTIFICATE: "CW_MEMBER_CERTIFICATE",
-    CW_GATEWAY_ENDPOINT: "CW_GATEWAY_ENDPOINT",
-    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: "CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT",
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
     CW_TECHNICAL_CONTACT_NAME: "CW_TECHNICAL_CONTACT_NAME",
@@ -52,5 +48,10 @@ export const config: EnvConfig = {
     host: "myhealthapp.com",
   },
   systemRootOID: "2.16.840.1.113883.3.999999",
+  cwMemberName: "Test Org",
+  cwMemberOID: "1.2.3.1.4.1.11.12.29.2022.123",
+  cwGatewayEndpoint: "https://api.myhealthapp.com/oauth/fhir",
+  cwGatewayAuthorizationServerEndpoint:
+    "https://myhealthapp.auth.us-east-1.amazoncognito.com/oauth2/token",
 };
 export default config;
