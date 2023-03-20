@@ -1,0 +1,115 @@
+---
+title: "Get Nutrition Data"
+description: "Returns nutrition data from all of the specified users' connected providers."
+api: "GET /nutrition"
+---
+
+## Query Params
+
+<ParamField query="userId" type="string" required>
+  The Metriport user ID to create a session token for.
+</ParamField>
+
+<ParamField query="date" type="string" required>
+  Day for which to pull the data. Formatted YYYY-MM-DD.
+
+  <Info>
+    For simplicity, all queries assume the UTC timezone for the specified date
+    starting at 00:00 to 23:59.
+  </Info>
+</ParamField>
+
+## Response
+
+<ResponseField name="nutrition" type="Nutrition[]">
+  An array of nutrition objects for each of the user's connected providers
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+
+const response = await metriportClient.getNutritionData(
+  "metriportUserId",
+  "date"
+);
+```
+
+</ResponseExample>
+
+```json
+[
+  {
+    "metadata": {
+      "date": "2022-12-21",
+      "source": "cronometer"
+    },
+    "summary": {
+      "macros": {
+        "alcohol_g": 0,
+        "carbs_g": 220,
+        "cholesterol_mg": 340,
+        "energy": 2342,
+        "fat_g": 56,
+        "fiber_g": 82,
+        "protein_g": 156,
+        "sodium_mg": 1430,
+        "sugar_g": 12,
+        "trans_fat_g": 0
+      },
+      "micros": {
+        "biotin_mg": 52,
+        "caffeine_mg": 240,
+        "calcium_mg": 564,
+        "copper_mg": 134,
+        "folate_mg": 84,
+        "folic_acid_mg": 12,
+        "iodine_mg": 435,
+        "iron_mg": 232,
+        "magnesium_mg": 4543,
+        "manganese_mg": 198,
+        "phosphorus_mg": 124,
+        "potassium_mg": 128,
+        "selenium_mg": 192,
+        "vitamin_A_mg": 76,
+        "vitamin_B12_mg": 346,
+        "vitamin_B1_mg": 234,
+        "vitamin_B2_mg": 598,
+        "vitamin_B3_mg": 34,
+        "vitamin_B5_mg": 198,
+        "vitamin_B6_mg": 234,
+        "vitamin_C_mg": 654,
+        "vitamin_D_mg": 23,
+        "vitamin_E_mg": 546,
+        "vitamin_K_mg": 432,
+        "zinc_mg": 124
+      },
+      "aminos": {
+        "alanine_g": 0,
+        "arginine_g": 0,
+        "asparagine_g": 0,
+        "aspartic_acid_g": 0,
+        "cysteine_g": 0,
+        "glutamic_acid_g": 0,
+        "glutamine_g": 0,
+        "glycine_g": 0,
+        "histidine_g": 0,
+        "isoleucine_g": 0,
+        "leucine_g": 0,
+        "lysine_g": 0,
+        "methionine_g": 0,
+        "phenylalanine_g": 0,
+        "proline_g": 0,
+        "serine_g": 0,
+        "threonine_g": 0,
+        "tryptophan_g": 0,
+        "tyrosine_g": 0,
+        "valine_g": 0
+      }
+    }
+  }
+]
+```

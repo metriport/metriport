@@ -1,0 +1,56 @@
+---
+title: "Create Facility"
+description: "Creates a Facility in Metriport where your patients receive care."
+api: "POST /medical/v1/facility"
+---
+
+## Body
+
+<Snippet file="facility.mdx" />
+
+## Response
+
+<Snippet file="facility-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport, USState } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const facility = await metriportClient.createFacility({
+  name: "Care Facility, LLC",
+  npi: "1234567891",
+  tin: "12-3456789",
+  active: true,
+  address: {
+    addressLine1: "2261 Market Street",
+    addressLine2: "#4818",
+    city: "San Francisco",
+    state: USState.CA,
+    zip: "94114",
+    country: "USA",
+  },
+});
+```
+
+</ResponseExample>
+
+```json
+{
+  "id": "2.16.840.1.113883.3.666.123",
+  "name": "Care Facility, LLC",
+  "npi": "1234567891",
+  "tin": "12-3456789",
+  "active": true,
+  "address": {
+    "addressLine1": "2261 Market Street",
+    "addressLine2": "#4818",
+    "city": "San Francisco",
+    "state": "CA",
+    "zip": "94114",
+    "country": "USA"
+  }
+}
+```

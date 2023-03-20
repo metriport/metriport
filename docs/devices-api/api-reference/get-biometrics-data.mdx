@@ -1,0 +1,139 @@
+---
+title: "Get Biometrics Data"
+description: "Returns biometrics data from all of the specified users' connected providers."
+api: "GET /biometrics"
+---
+
+## Query Params
+
+<ParamField query="userId" type="string" required>
+  The Metriport user ID to create a session token for.
+</ParamField>
+
+<ParamField query="date" type="string" required>
+  Day for which to pull the data. Formatted YYYY-MM-DD.
+</ParamField>
+
+## Response
+
+<ResponseField name="biometrics" type="Biometrics[]">
+  An array of biometrics objects for each of the user's connected providers
+
+  <Info>
+    For simplicity, all queries assume the UTC timezone for the specified date
+    starting at 00:00 to 23:59.
+  </Info>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+
+const response = await metriportClient.getBiometricsData(
+  "metriportUserId",
+  "date"
+);
+```
+
+</ResponseExample>
+
+```json
+[
+  {
+    "metadata": {
+      "date": "2022-12-21",
+      "source": "oura"
+    },
+    "heart_rate": {
+      "avg_bpm": 70,
+      "max_bpm": 220,
+      "min_bpm": 45,
+      "resting_bpm": 45,
+      "samples_bpm": [
+        {
+          "time": "2022-12-13T06:15:40Z",
+          "value": 140
+        }
+      ]
+    },
+    "hrv": {
+      "rmssd": {
+        "avg_millis": 540,
+        "samples_millis": [
+          {
+            "time": "2022-12-13T06:15:40Z",
+            "value": 140
+          }
+        ]
+      },
+      "sdnn": {
+        "avg_millis": 340,
+        "samples_millis": [
+          {
+            "time": "2022-12-13T06:15:40Z",
+            "value": 140
+          }
+        ]
+      }
+    },
+    "respiration": {
+      "avg_breaths_per_minute": 44,
+      "spo2": {
+        "avg_pct": 97,
+        "max_pct": 99,
+        "min_pct": 95
+      },
+      "vo2_max": 390
+    },
+    "blood_glucose": {
+      "avg_mg_dL": 132,
+      "samples_mg_dL": [
+        {
+          "time": "2022-12-13T06:15:40Z",
+          "value": 123
+        }
+      ]
+    },
+    "blood_pressure": {
+      "diastolic_mm_Hg": {
+        "samples": [
+          {
+            "time": "2022-12-13T06:15:40Z",
+            "value": 123
+          }
+        ]
+      },
+      "systolic_mm_Hg": {
+        "samples": [
+          {
+            "time": "2022-12-13T06:15:40Z",
+            "value": 123
+          }
+        ]
+      }
+    },
+    "temperature": {
+      "core": {
+        "samples_celcius": [
+          {
+            "time": "2022-12-13T06:15:40Z",
+            "value": 36
+          }
+        ]
+      },
+      "delta_celcius": 23,
+      "skin": {
+        "samples_celcius": [
+          {
+            "time": "2022-12-13T06:15:40Z",
+            "value": 36
+          }
+        ]
+      }
+    }
+  }
+]
+```
