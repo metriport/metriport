@@ -85,16 +85,16 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 </Info>
 
 <Info>
-  Pro-tip: you can use our handy npm package on your server if you're using Node:
+  Pro-tip: you can use our handy [npm package](https://www.npmjs.com/package/@metriport/api) on your server
+  if you're using Node:
 
 ```typescript
 import { MetriportMedicalApi } from "@metriport/api";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY", "ENVIRONMENT_URL");
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY", options);
 ```
 
-`ENVIRONMENT_URL` is optional and defaults to `https://api.metriport.com/medical/v1`. For sandbox mode use `https://api.sandbox.metriport.com/medical/v1`.
-
+`options` allows you to set the `sandbox` property to access our sandbox environment (optional parameter).
 </Info>
 
 First, you'll need to register an `Organization` in Metriport.

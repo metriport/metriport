@@ -8,14 +8,15 @@ import {
 import { StrongId } from "@metriport/commonwell-sdk/lib/models/identifier";
 import _ from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
+import BadRequestError from "../../errors/bad-request";
 import { Facility } from "../../models/medical/facility";
 import { Organization } from "../../models/medical/organization";
 import { Patient, PatientExternalDataEntry } from "../../models/medical/patient";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { sendAlert } from "../../shared/notifications";
+import { driversLicenseURIs } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makePersonForPatient } from "./patient-conversion";
-import { driversLicenseURIs } from "../../shared/oid";
 export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(public patientId: string, public personId?: string | undefined) {
     super();
@@ -61,6 +62,7 @@ export async function findOrCreatePerson({
     if (personIds.length > 1) {
       const subject = "Found more than one person for patient demographics";
       const message = idsToAlertMessage(commonwellPatientId, personIds);
+      sendAlert({ subject, message });
       log(`${subject}: ${message}`);
       return undefined;
     }
@@ -96,7 +98,7 @@ export async function getPatientData(
   const { organization, facilities } = await getPatientWithDependencies(patient);
   const facility = facilities.find(f => f.id === facilityId);
   if (!facility) {
-    throw new Error(`Could not find facility ${facilityId} with patient ${patient.id}`);
+    throw new BadRequestError(`Patient not associated with given facility`);
   }
   return { organization, facility };
 }

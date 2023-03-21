@@ -1,16 +1,21 @@
-import { Person, LOLA, CommonWellAPI, RequestMetadata } from "@metriport/commonwell-sdk";
+import { CommonWellAPI, LOLA, Person, RequestMetadata } from "@metriport/commonwell-sdk";
 import { uniqBy } from "lodash";
 
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 
-import { oid } from "../../../shared/oid";
-import { Patient } from "../../../models/medical/patient";
-import { PatientDataCommonwell } from "../patient-shared";
-import { setCommonwellId } from "../patient-external-data";
-import { getPersonalIdentifiersFromPatient, searchPersons } from "../patient-shared";
-import { commonwellPersonLinks } from "./shared";
-import { getPatientData } from "../patient-shared";
+import { PatientLinkResp } from "@metriport/commonwell-sdk/lib/models/patient";
 import { getPatient } from "../../../command/medical/patient/get-patient";
+import { Patient } from "../../../models/medical/patient";
+import { sendAlert } from "../../../shared/notifications";
+import { oid } from "../../../shared/oid";
+import { setCommonwellId } from "../patient-external-data";
+import {
+  getPatientData,
+  getPersonalIdentifiersFromPatient,
+  PatientDataCommonwell,
+  searchPersons,
+} from "../patient-shared";
+import { commonwellPersonLinks } from "./shared";
 
 type CWPersonLinks = {
   currentLinks: Person[];
@@ -59,19 +64,34 @@ export const findCurrentLink = async (
 
   // IMPORT AS PARAM INSTEAD OF CONVERT
   const patientCWExternalData = patient.data.externalData?.COMMONWELL as PatientDataCommonwell;
-
-  if (!patientCWExternalData.personId) {
-    return;
-  }
+  const personId = patientCWExternalData.personId;
+  if (!personId) return;
 
   try {
     const patientCWId = patientCWExternalData.patientId;
 
-    const patientLinkToPerson = await commonWell.getPatientLink(
-      queryMeta,
-      patientCWExternalData.personId,
-      patientCWId
-    );
+    let patientLinkToPerson: PatientLinkResp;
+    try {
+      patientLinkToPerson = await commonWell.getPatientLink(queryMeta, personId, patientCWId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.response?.status !== 404) throw err;
+      const subject = "Got 404 when trying to query person's patient links @ CW";
+      const message =
+        `Patient ID ${patient.id}\n` +
+        `CW Patient ID ${patientCWId}\n` +
+        `CW Person ID ${personId}\n` +
+        `Removing person ID from DB...`;
+      sendAlert({ subject, message });
+      console.log(`${subject} - ${message}`);
+      await setCommonwellId({
+        patientId: patient.id,
+        cxId: patient.cxId,
+        commonwellPatientId: patientCWId,
+        commonwellPersonId: undefined,
+      });
+      return;
+    }
 
     if (!patientLinkToPerson._embedded?.patientLink?.length) {
       console.log(`No patient linked to person`, patientLinkToPerson);
@@ -96,7 +116,7 @@ export const findCurrentLink = async (
     const assuranceLevel = parseInt(correctLink.assuranceLevel);
 
     if (assuranceLevel >= parseInt(LOLA.level_2)) {
-      const cwPerson = await commonWell.getPersonById(queryMeta, patientCWExternalData.personId);
+      const cwPerson = await commonWell.getPersonById(queryMeta, personId);
 
       if (!cwPerson) {
         console.log(`No person id for cw person`);
@@ -107,7 +127,7 @@ export const findCurrentLink = async (
     }
   } catch (error) {
     const msg = `Failure retrieving link`;
-    console.log(`${msg} - for person id:`, patientCWExternalData.personId);
+    console.log(`${msg} - for person id:`, personId);
     console.log(msg, error);
     throw new Error(msg);
   }
