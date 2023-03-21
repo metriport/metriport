@@ -11,6 +11,8 @@ type SleepSession = {
   endTime: string;
 };
 
+const maxTimeBetweenSleepSamples = 30;
+
 export const mapToSleep = (googleSleep: GoogleSleep, date: string): Sleep => {
   const metadata = {
     date: date,
@@ -32,19 +34,20 @@ export const mapToSleep = (googleSleep: GoogleSleep, date: string): Sleep => {
 
           const timeDifference = currDate.diff(lastItem.endTime, "minutes");
 
-          if (timeDifference >= 30) {
+          if (timeDifference >= maxTimeBetweenSleepSamples) {
             return acc;
           }
         }
 
         const startTimeNanos = Number(curr.startTimeNanos);
+        const startTime = dayjs(convert(startTimeNanos).from("ns").to("ms"));
+
         const endTimeNanos = Number(curr.endTimeNanos);
+        const endTime = dayjs(convert(endTimeNanos).from("ns").to("ms"));
 
         acc.push({
-          startTime: dayjs(convert(startTimeNanos).from("ns").to("ms")).format(
-            "YYYY-MM-DDTHH:mm:ssZ"
-          ),
-          endTime: dayjs(convert(endTimeNanos).from("ns").to("ms")).format("YYYY-MM-DDTHH:mm:ssZ"),
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
         });
 
         return acc;
