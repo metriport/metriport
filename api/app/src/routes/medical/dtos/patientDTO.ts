@@ -5,7 +5,6 @@ import { toBaseDTO } from "./baseDTO";
 import { DemographicsDTO } from "./demographicsDTO";
 
 export type PatientDTO = {
-  id: string;
   facilityIds: string[];
   links: LinkStatusAcrossHIEs;
 } & DemographicsDTO;
@@ -16,7 +15,6 @@ export function dtoFromModel(patient: Patient): PatientDTO {
   const links = getLinkStatusAcrossHIEs(patient.data.externalData);
   return {
     ...toBaseDTO(patient),
-    id: patient.id,
     facilityIds: patient.facilityIds,
     firstName,
     lastName,

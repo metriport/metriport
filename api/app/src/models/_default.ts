@@ -8,6 +8,7 @@ import {
   Sequelize,
 } from "sequelize";
 import VersionMismatchError from "../errors/version-mismatch";
+import { Util } from "../shared/util";
 
 export type ModelSetup = (sequelize: Sequelize) => void;
 
@@ -25,7 +26,7 @@ export interface IBaseModel {
   id: string;
   createdAt: CreationOptional<Date>;
   updatedAt: CreationOptional<Date>;
-  version: CreationOptional<number>;
+  eTag: CreationOptional<string>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,11 +37,8 @@ export abstract class BaseModel<T extends Model<any, any>>
   declare id: string;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
-  // TODO #410 use get/set to have this string on the app and number in the DB
-  // TODO #410 consider renaming the column/prop to eTag so we don't have to convert
-  // on the route/API layer
-  // https://sequelize.org/docs/v6/core-concepts/getters-setters-virtuals/
-  declare version: CreationOptional<number>;
+  private declare version: CreationOptional<number>;
+  declare eTag: CreationOptional<string>;
 
   static baseAttributes() {
     return {
@@ -60,6 +58,13 @@ export abstract class BaseModel<T extends Model<any, any>>
         allowNull: false,
         defaultValue: 0,
       },
+      eTag: {
+        type: DataTypes.VIRTUAL,
+        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+        get<T extends Model<any, any>>(this: BaseModel<T>): string {
+          return Util.md5(this.id + "_" + this.version);
+        },
+      },
     };
   }
 }
@@ -67,10 +72,10 @@ export abstract class BaseModel<T extends Model<any, any>>
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateVersionForUpdate<T extends Model<any, any>>(
   entity: BaseModel<T>,
-  version: number | undefined
+  eTag: string | undefined
 ) {
-  if (version != null && version !== entity.version) {
+  if (eTag != null && eTag !== entity.eTag) {
     const name = entity.constructor.name ?? "entity";
-    throw new VersionMismatchError(`Version mismatch for ${name} ${entity.id}`);
+    throw new VersionMismatchError(`eTag mismatch for ${name} ${entity.id}`);
   }
 }

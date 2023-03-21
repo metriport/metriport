@@ -58,7 +58,7 @@ export type PatientCreate = z.infer<typeof patientCreateSchema>;
 export const patientUpdateSchema = patientCreateSchema.merge(baseUpdateSchema);
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 
-export function schemaToPatient(input: PatientCreate, cxId: string) {
+export function schemaCreateToPatient(input: PatientCreate, cxId: string) {
   return {
     ...input,
     cxId,
@@ -66,5 +66,12 @@ export function schemaToPatient(input: PatientCreate, cxId: string) {
       ...input.address,
       addressLine2: input.address.addressLine2 ?? undefined,
     },
+  };
+}
+
+export function schemaUpdateToPatient(input: PatientUpdate, cxId: string) {
+  return {
+    ...schemaCreateToPatient(input, cxId),
+    eTag: input.eTag,
   };
 }

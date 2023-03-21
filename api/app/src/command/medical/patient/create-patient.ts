@@ -1,9 +1,4 @@
-import {
-  Patient,
-  PatientCreate as PatientCreateModel,
-  PatientData,
-  PatientModel,
-} from "../../../models/medical/patient";
+import { Patient, PatientCreate, PatientData, PatientModel } from "../../../models/medical/patient";
 import { sanitize, validate } from "./shared";
 
 type Identifier = Pick<Patient, "cxId"> & { facilityId: string };
@@ -18,7 +13,7 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
 
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     sanitized;
-  const patientCreate: PatientCreateModel & Pick<Patient, "id"> = {
+  const patientCreate: PatientCreate & Pick<Patient, "id"> = {
     id: "", // the patient id will be generated on the beforeCreate hook
     patientNumber: 0, // this will be generated on the beforeCreate hook
     cxId,

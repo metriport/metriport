@@ -13,7 +13,6 @@ import {
 import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
-import { baseUpdateSchemaToCmd } from "./schemas/base-update";
 import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
 
 const router = Router();
@@ -62,7 +61,6 @@ router.put(
     const payload = organizationUpdateSchema.parse(req.body);
 
     const updateCmd: OrganizationUpdateCmd = {
-      ...baseUpdateSchemaToCmd(payload),
       ...payload,
       id,
       cxId,

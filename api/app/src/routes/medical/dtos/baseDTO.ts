@@ -1,9 +1,11 @@
 export type BaseDTO = {
+  id: string;
   eTag: string;
 };
 
-export function toBaseDTO(model: { version: number }): BaseDTO {
+export function toBaseDTO(model: { id: string; eTag: string }): BaseDTO {
   return {
-    eTag: String(model.version),
+    id: model.id,
+    eTag: model.eTag,
   };
 }

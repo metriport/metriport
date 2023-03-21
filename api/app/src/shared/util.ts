@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { mean } from "lodash";
 import { debug } from "./log";
 
@@ -6,6 +7,10 @@ interface MinMaxItem {
   max_item: number;
 }
 export class Util {
+  static md5(value: string): string {
+    return crypto.createHash("md5").update(value).digest("hex");
+  }
+
   static curSecSinceEpoch(): number {
     const now = new Date();
     const utcMilllisecondsSinceEpoch = now.getTime() + now.getTimezoneOffset() * 60 * 1000;

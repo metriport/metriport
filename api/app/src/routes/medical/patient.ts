@@ -7,8 +7,12 @@ import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/u
 import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQueryOrFail } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
-import { baseUpdateSchemaToCmd } from "./schemas/base-update";
-import { patientCreateSchema, patientUpdateSchema, schemaToPatient } from "./schemas/patient";
+import {
+  patientCreateSchema,
+  patientUpdateSchema,
+  schemaCreateToPatient,
+  schemaUpdateToPatient,
+} from "./schemas/patient";
 
 const router = Router();
 
@@ -29,7 +33,7 @@ router.post(
     const payload = patientCreateSchema.parse(req.body);
 
     const patientCreate: PatientCreateCmd = {
-      ...schemaToPatient(payload, cxId),
+      ...schemaCreateToPatient(payload, cxId),
       facilityId,
     };
     const patient = await createPatient(patientCreate);
@@ -63,8 +67,7 @@ router.put(
     const payload = patientUpdateSchema.parse(req.body);
 
     const patientUpdate: PatientUpdateCmd = {
-      ...baseUpdateSchemaToCmd(payload),
-      ...schemaToPatient(payload, cxId),
+      ...schemaUpdateToPatient(payload, cxId),
       id,
     };
     const patient = await updatePatient(patientUpdate);
