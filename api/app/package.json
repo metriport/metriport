@@ -47,7 +47,7 @@
     "ts-essentials": "^9.3.0",
     "umzug": "^3.2.1",
     "uuid": "^8.3.2",
-    "zod": "^3.20.0"
+    "zod": "^3.20.2"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
