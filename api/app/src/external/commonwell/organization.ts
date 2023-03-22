@@ -2,7 +2,8 @@ import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { Organization } from "../../models/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { OID_PREFIX } from "../../shared/oid";
-import { certificate, metriportQueryMeta, makeCommonWellAPI } from "./api";
+import { Util } from "../../shared/util";
+import { certificate, makeCommonWellAPI, metriportQueryMeta } from "./api";
 
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
@@ -60,6 +61,7 @@ export async function organizationToCommonwell(
 }
 
 export const create = async (org: Organization): Promise<void> => {
+  const { log } = Util.out(`CW create - M orgId ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
   try {
     const commonWell = makeCommonWellAPI(
@@ -70,24 +72,26 @@ export const create = async (org: Organization): Promise<void> => {
     await commonWell.addCertificateToOrg(metriportQueryMeta, certificate, org.id);
   } catch (error) {
     const msg = `Failure creating Org`;
-    console.log(`${msg} - payload: `, cwOrg);
-    console.log(msg, error);
+    log(`${msg} - payload: `, cwOrg);
+    log(msg, error);
     throw new Error(msg);
   }
 };
 
 export const update = async (org: Organization): Promise<void> => {
+  const { log, debug } = Util.out(`CW update - M orgId ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
   try {
     const commonWell = makeCommonWellAPI(
       Config.getMetriportOrgName(),
       Config.getMemberManagementOID()
     );
-    await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
+    const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
+    debug(`resp respUpdate: ${JSON.stringify(respUpdate, null, 2)}`);
   } catch (error) {
     const msg = `Failure updating Org`;
-    console.log(`${msg} - payload: `, cwOrg);
-    console.log(msg, error);
+    log(`${msg} - payload: `, cwOrg);
+    log(msg, error);
     throw new Error(msg);
   }
 };

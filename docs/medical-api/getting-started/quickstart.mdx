@@ -1,5 +1,5 @@
 ---
-title: "Quickstart"
+title: "Medical API"
 description: "Follow this guide to get started accessing your patients' medical data."
 ---
 
@@ -73,8 +73,8 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 
 <Tip>
   After you get access to the Medical API, you can go to the Developers page and toggle the switch
-  under the `Sandbox` section. This will allow you to try out the Medical API in Sandbox mode with
-  some dummy data. Note that you'll have to generate a separate Sandbox Secret Key for this!
+  under the `Sandbox` section. Learn more about it [here](/medical-api/more-info/sandbox).
+
 </Tip>
 
 ## 4. Register your Organization
@@ -85,16 +85,10 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 </Info>
 
 <Info>
-  Pro-tip: you can use our handy [npm package](https://www.npmjs.com/package/@metriport/api) on your server
+  Pro-tip: you can use our handy [SDK](/medical-api/more-info/sdk) on your server
   if you're using Node:
 
-```typescript
-import { MetriportMedicalApi } from "@metriport/api";
-
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY", options);
-```
-
-`options` allows you to set the `sandbox` property to access our sandbox environment (optional parameter).
+  <Snippet file="medical-api-init.mdx" />
 </Info>
 
 First, you'll need to register an `Organization` in Metriport.

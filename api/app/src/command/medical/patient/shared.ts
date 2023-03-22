@@ -2,16 +2,16 @@ import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
 import { Period } from "../../../models/medical/patient";
-import { PatientCreate } from "./create-patient";
-import { PatientUpdate } from "./update-patient";
+import { PatientCreateCmd } from "./create-patient";
+import { PatientUpdateCmd } from "./update-patient";
 
-export function sanitize<T extends PatientCreate | PatientUpdate>(patient: T): T {
+export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd>(patient: T): T {
   const result = cloneDeep(patient);
   result.personalIdentifiers = result.personalIdentifiers.filter(id => id.value.trim().length > 0);
   return result;
 }
 
-export function validate<T extends PatientCreate | PatientUpdate>(patient: T): boolean {
+export function validate<T extends PatientCreateCmd | PatientUpdateCmd>(patient: T): boolean {
   patient.personalIdentifiers.forEach(pid => pid.period && validatePeriod(pid.period));
   return true;
 }

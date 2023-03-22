@@ -3,10 +3,10 @@ import { oid } from "../../../shared/oid";
 import { setCommonwellId } from "../patient-external-data";
 import { patientWithCWData } from "./shared";
 import { getPatientData } from "../patient-shared";
-import { getPatient } from "../../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 export const reset = async (patientId: string, cxId: string, facilityId: string) => {
-  const patient = await getPatient({ id: patientId, cxId });
+  const patient = await getPatientOrFail({ id: patientId, cxId });
   const { organization, facility } = await getPatientData(patient, facilityId);
 
   const externalData = patient.data.externalData;
