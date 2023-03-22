@@ -4,9 +4,9 @@ import updateDB from "../sequelize";
 import { Config, getEnvVarOrFail } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev } from "./db-dev";
-import { Facility } from "./medical/facility";
+import { FacilityModel } from "./medical/facility";
 import { MAPIAccess } from "./medical/mapi-access";
-import { Organization } from "./medical/organization";
+import { OrganizationModel } from "./medical/organization";
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
@@ -17,8 +17,8 @@ const models: ModelSetup[] = [
   ConnectedUser.setup,
   Settings.setup,
   WebhookRequest.setup,
-  Organization.setup,
-  Facility.setup,
+  OrganizationModel.setup,
+  FacilityModel.setup,
   PatientModel.setup,
   MAPIAccess.setup,
 ];

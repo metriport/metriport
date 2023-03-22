@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosStatic } from "axios";
 import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
-
+import { getETagHeader } from "../models/common/base-update";
 import { documentListSchema, DocumentReference } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
@@ -87,7 +87,9 @@ export class MetriportMedicalApi {
       ...organization,
       id: undefined,
     };
-    const resp = await this.api.put(`${this.ORGANIZATION_URL}/${organization.id}`, payload);
+    const resp = await this.api.put(`${this.ORGANIZATION_URL}/${organization.id}`, payload, {
+      headers: { ...getETagHeader(organization) },
+    });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return organizationSchema.parse(resp.data);
   }
@@ -139,7 +141,9 @@ export class MetriportMedicalApi {
       ...facility,
       id: undefined,
     };
-    const resp = await this.api.put(`${this.FACILITY_URL}/${facility.id}`, payload);
+    const resp = await this.api.put(`${this.FACILITY_URL}/${facility.id}`, payload, {
+      headers: { ...getETagHeader(facility) },
+    });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return facilitySchema.parse(resp.data);
   }
@@ -197,6 +201,7 @@ export class MetriportMedicalApi {
     };
     const resp = await this.api.put(`${this.PATIENT_URL}/${patient.id}`, payload, {
       params: { facilityId },
+      headers: { ...getETagHeader(patient) },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return patientSchema.parse(resp.data);

@@ -1,7 +1,8 @@
 import { Facility } from "../../../models/medical/facility";
 import { AddressDTO } from "./addressDTO";
+import { BaseDTO, toBaseDTO } from "./baseDTO";
 
-export type FacilityDTO = {
+export type FacilityDTO = BaseDTO & {
   id: string;
   name: string;
   npi: string;
@@ -13,6 +14,7 @@ export type FacilityDTO = {
 export function dtoFromModel(facility: Facility): FacilityDTO {
   const { name, npi, tin, active, address } = facility.data;
   return {
+    ...toBaseDTO(facility),
     id: facility.id,
     name,
     npi,

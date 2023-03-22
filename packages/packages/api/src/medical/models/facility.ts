@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { addressSchema } from "./common/address";
+import { baseUpdateSchema } from "./common/base-update";
 
 export const facilityCreateSchema = z.object({
   name: z.string(),
@@ -10,11 +11,7 @@ export const facilityCreateSchema = z.object({
 });
 export type FacilityCreate = z.infer<typeof facilityCreateSchema>;
 
-export const facilitySchema = facilityCreateSchema.merge(
-  z.object({
-    id: z.string(),
-  })
-);
+export const facilitySchema = facilityCreateSchema.merge(baseUpdateSchema);
 export type Facility = z.infer<typeof facilitySchema>;
 
 export const facilityListSchema = z.object({

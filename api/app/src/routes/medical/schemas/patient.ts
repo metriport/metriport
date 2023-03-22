@@ -6,7 +6,6 @@ import {
 } from "../../../models/medical/patient";
 import { USState } from "../../../shared/geographic-locations";
 import { addressSchema } from "./address";
-import { baseUpdateSchema } from "./base-update";
 
 const usStateSchema = z.nativeEnum(USState);
 
@@ -55,7 +54,7 @@ export const patientCreateSchema = z.object({
 });
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
 
-export const patientUpdateSchema = patientCreateSchema.merge(baseUpdateSchema);
+export const patientUpdateSchema = patientCreateSchema;
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 
 export function schemaCreateToPatient(input: PatientCreate, cxId: string) {
@@ -70,8 +69,5 @@ export function schemaCreateToPatient(input: PatientCreate, cxId: string) {
 }
 
 export function schemaUpdateToPatient(input: PatientUpdate, cxId: string) {
-  return {
-    ...schemaCreateToPatient(input, cxId),
-    eTag: input.eTag,
-  };
+  return schemaCreateToPatient(input, cxId);
 }

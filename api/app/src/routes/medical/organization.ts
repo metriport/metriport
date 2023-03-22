@@ -11,7 +11,7 @@ import {
   updateOrganization,
 } from "../../command/medical/organization/update-organization";
 import cwCommands from "../../external/commonwell";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
+import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
 
@@ -62,6 +62,7 @@ router.put(
 
     const updateCmd: OrganizationUpdateCmd = {
       ...payload,
+      ...getETag(req),
       id,
       cxId,
     };

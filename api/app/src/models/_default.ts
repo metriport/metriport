@@ -69,13 +69,11 @@ export abstract class BaseModel<T extends Model<any, any>>
   }
 }
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function validateVersionForUpdate<T extends Model<any, any>>(
-  entity: BaseModel<T>,
+export function validateVersionForUpdate(
+  entity: Pick<IBaseModel, "id" | "eTag">,
   eTag: string | undefined
 ) {
   if (eTag != null && eTag !== entity.eTag) {
-    const name = entity.constructor.name ?? "entity";
-    throw new VersionMismatchError(`eTag mismatch for ${name} ${entity.id}`);
+    throw new VersionMismatchError(`eTag mismatch - reload the data and try again`);
   }
 }

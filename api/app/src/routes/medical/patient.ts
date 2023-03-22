@@ -2,10 +2,16 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
-import { getPatient, getPatients } from "../../command/medical/patient/get-patient";
+import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import cwCommands from "../../external/commonwell";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQueryOrFail } from "../util";
+import {
+  asyncHandler,
+  getCxIdOrFail,
+  getETag,
+  getFromParamsOrFail,
+  getFromQueryOrFail,
+} from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import {
   patientCreateSchema,
@@ -68,6 +74,7 @@ router.put(
 
     const patientUpdate: PatientUpdateCmd = {
       ...schemaUpdateToPatient(payload, cxId),
+      ...getETag(req),
       id,
     };
     const patient = await updatePatient(patientUpdate);
@@ -98,7 +105,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFromParamsOrFail("id", req);
 
-    const patient = await getPatient({ id: patientId, cxId });
+    const patient = await getPatientOrFail({ id: patientId, cxId });
 
     return res.status(status.OK).json(dtoFromModel(patient));
   })

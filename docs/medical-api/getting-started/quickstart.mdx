@@ -73,8 +73,8 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 
 <Tip>
   After you get access to the Medical API, you can go to the Developers page and toggle the switch
-  under the `Sandbox` section. This will allow you to try out the Medical API in Sandbox mode with
-  some dummy data. Note that you'll have to generate a separate Sandbox Secret Key for this!
+  under the `Sandbox` section. Learn more about it [here](#sandbox-mode).
+
 </Tip>
 
 ## 4. Register your Organization
@@ -85,16 +85,10 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 </Info>
 
 <Info>
-  Pro-tip: you can use our handy [npm package](https://www.npmjs.com/package/@metriport/api) on your server
+  Pro-tip: you can use our handy [npm package](#sdk-software-development-kit) on your server
   if you're using Node:
 
-```typescript
-import { MetriportMedicalApi } from "@metriport/api";
-
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY", options);
-```
-
-`options` allows you to set the `sandbox` property to access our sandbox environment (optional parameter).
+  <Snippet file="medical-api-init.mdx" />
 </Info>
 
 First, you'll need to register an `Organization` in Metriport.
@@ -193,3 +187,65 @@ That's it! You're now well equiped to use the Metriport API to access and manage
 
 As next steps, we'd recommend scoping out our [Medical API Reference](/medical-api/api-reference/organization/create-organization)
 in further detail to see the other things you can do with the API.
+
+## Additional Notes
+
+These are additional information that might help you get the most out of our Medical API.
+
+The base URL for the API is https://api.metriport.com
+
+The URL for the Sandbox is https://api.sandbox.metriport.com (more about Sandbox [here](#sandbox-mode))
+
+### SDK - Software Development Kit
+
+We've developed a SDK to help you get access to our API without the HTTP plumbing. It's currently only available for
+Node-based applications ([let us know](https://www.metriport.com/contact-us) what other languages you'd like to see it available on):
+
+<Snippet file="medical-api-init.mdx" />
+
+The SDK is available as a NPM package and you can access it [here](https://www.npmjs.com/package/@metriport/api).
+
+### Sandbox Mode
+
+Metriport offers a Sandbox environment so you can develop your medical applications more easily. This will allow you to try out
+the Medical API with some dummy data.
+
+After you get access to the Medical API, you can go to the Developers page and toggle the switch under the Sandbox section.
+
+Note that you’ll have to generate a separate Sandbox Secret Key.
+
+To connect to the sandbox using the SDK just provide the `options` parameter with `sandbox = true`:
+
+<Snippet file="medical-api-init-with-options.mdx" />
+
+### Updating Data and Mid-air Collisions
+
+To prevent updating stale data - which can lead to data loss, we recommend the usage of
+[ETag](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag).
+
+Resources returned by Metriport's Medical API include an `eTag` property, which can later on be sent back to the API
+when performing an update on said data.
+
+The API will then compare that ETag with the one on the repository: if they don't
+match it means data was updated by another process and the server will abort the update and respond with
+[412 - Precondition Failed](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/412); otherwise it will proceed
+updating the resource.
+
+To send the ETag to an `update` endpoint, you can use the `If-Match` HTTP header, or include an `eTag` property
+on the request body. The header takes precedence if both are informed.
+
+The SDK implements this automatically, as long as the data obtained from a `get` or `list` function is updated and sent to
+the respective `update` function. Example:
+
+```typescript
+const await patient = metriportClient.getPatient("...");
+// logic that updates the patient
+...
+// this update will automatically send the ETag if present on patient
+await metriportClient.updatePatient(patient, facilityId);
+```
+
+If no ETag is provided the API will perform updates without checking for mid-air collisions. This is also called
+[Optimistic Locking](https://en.wikipedia.org/wiki/Optimistic_concurrency_control#Web_usage).
+
+Note that currently we only support ETag to prevent mid-air collisions, not for caching purposes.

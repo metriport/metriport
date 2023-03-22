@@ -10,6 +10,7 @@ export { User } from "./devices/models/user";
 // Medical API
 export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Address, addressSchema } from "./medical/models/common/address";
+export { BaseUpdate, baseUpdateSchema } from "./medical/models/common/base-update";
 export { USState, usStateSchema } from "./medical/models/common/us-data";
 export {
   contactSchema,

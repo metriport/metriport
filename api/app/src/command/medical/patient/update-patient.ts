@@ -1,11 +1,11 @@
 import { Patient, PatientData } from "../../../models/medical/patient";
 import { validateVersionForUpdate } from "../../../models/_default";
-import { getPatient } from "./get-patient";
+import { BaseUpdateCmdWithCustomer } from "../base-update-command";
+import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
 
-type PatientBasic = Pick<Patient, "id" | "cxId" | "eTag">;
 type PatientNoExternalData = Omit<PatientData, "externalData">;
-export type PatientUpdateCmd = PatientBasic & PatientNoExternalData;
+export type PatientUpdateCmd = BaseUpdateCmdWithCustomer & PatientNoExternalData;
 
 export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Patient> => {
   const { id, cxId, eTag } = patientUpdate;
@@ -13,11 +13,12 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
   const sanitized = sanitize(patientUpdate);
   validate(sanitized);
 
-  const patient = await getPatient({ id, cxId });
+  const patient = await getPatientOrFail({ id, cxId });
   validateVersionForUpdate(patient, eTag);
 
   return patient.update({
     data: {
+      ...patient.data,
       firstName: sanitized.firstName,
       lastName: sanitized.lastName,
       dob: sanitized.dob,

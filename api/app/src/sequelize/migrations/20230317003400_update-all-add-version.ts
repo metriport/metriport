@@ -1,12 +1,5 @@
 import { DataTypes } from "sequelize";
 import type { Migration } from "..";
-import { ConnectedUser } from "../../models/connected-user";
-import { Facility } from "../../models/medical/facility";
-import { MAPIAccess } from "../../models/medical/mapi-access";
-import { Organization } from "../../models/medical/organization";
-import { PatientModel } from "../../models/medical/patient";
-import { Settings } from "../../models/settings";
-import { WebhookRequest } from "../../models/webhook-request";
 
 const columnName = "version";
 const columnDef = {
@@ -20,13 +13,13 @@ const columnDef = {
 export const up: Migration = async ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
     return Promise.all([
-      queryInterface.addColumn(ConnectedUser.NAME, columnName, columnDef, { transaction }),
-      queryInterface.addColumn(Settings.NAME, columnName, columnDef, { transaction }),
-      queryInterface.addColumn(WebhookRequest.NAME, columnName, columnDef, { transaction }),
-      queryInterface.addColumn(MAPIAccess.NAME, columnName, columnDef, { transaction }),
-      queryInterface.addColumn(Organization.NAME, columnName, columnDef, { transaction }),
-      queryInterface.addColumn(Facility.NAME, columnName, columnDef, { transaction }),
-      queryInterface.addColumn(PatientModel.NAME, columnName, columnDef, { transaction }),
+      queryInterface.addColumn("connected_user", columnName, columnDef, { transaction }),
+      queryInterface.addColumn("settings", columnName, columnDef, { transaction }),
+      queryInterface.addColumn("webhook_request", columnName, columnDef, { transaction }),
+      queryInterface.addColumn("mapi_access", columnName, columnDef, { transaction }),
+      queryInterface.addColumn("organization", columnName, columnDef, { transaction }),
+      queryInterface.addColumn("facility", columnName, columnDef, { transaction }),
+      queryInterface.addColumn("patient", columnName, columnDef, { transaction }),
     ]);
   });
 };
@@ -34,13 +27,13 @@ export const up: Migration = async ({ context: queryInterface }) => {
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
     return Promise.all([
-      queryInterface.removeColumn(PatientModel.NAME, columnName, { transaction }),
-      queryInterface.removeColumn(Facility.NAME, columnName, { transaction }),
-      queryInterface.removeColumn(Organization.NAME, columnName, { transaction }),
-      queryInterface.removeColumn(MAPIAccess.NAME, columnName, { transaction }),
-      queryInterface.removeColumn(WebhookRequest.NAME, columnName, { transaction }),
-      queryInterface.removeColumn(Settings.NAME, columnName, { transaction }),
-      queryInterface.removeColumn(ConnectedUser.NAME, columnName, { transaction }),
+      queryInterface.removeColumn("patient", columnName, { transaction }),
+      queryInterface.removeColumn("facility", columnName, { transaction }),
+      queryInterface.removeColumn("organization", columnName, { transaction }),
+      queryInterface.removeColumn("mapi_access", columnName, { transaction }),
+      queryInterface.removeColumn("webhook_request", columnName, { transaction }),
+      queryInterface.removeColumn("settings", columnName, { transaction }),
+      queryInterface.removeColumn("connected_user", columnName, { transaction }),
     ]);
   });
 };

@@ -3,8 +3,7 @@ import { z } from "zod";
 import { addressSchema } from "./address";
 import { optionalString } from "./shared";
 
-// TODO share this with the SDK
-export const facilitySchema = z.object({
+export const facilityCreateSchema = z.object({
   name: z.string().min(1),
   npi: z
     .string()
@@ -14,3 +13,5 @@ export const facilitySchema = z.object({
   active: z.boolean().optional().nullable(),
   address: addressSchema,
 });
+
+export const facilityUpdateSchema = facilityCreateSchema;
