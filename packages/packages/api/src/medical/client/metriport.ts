@@ -228,12 +228,18 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation.
    * @returns The patient's current and potential links.
    */
-  async getLinks(patientId: string, facilityId: string): Promise<PatientLinks> {
+  async listLinks(patientId: string, facilityId: string): Promise<PatientLinks> {
     const resp = await this.api.get(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}`, {
       params: { facilityId },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return patientLinksSchema.parse(resp.data);
+  }
+  /**
+   * @deprecated Use listLinks() instead.
+   */
+  async getLinks(patientId: string, facilityId: string): Promise<PatientLinks> {
+    return this.listLinks(patientId, facilityId);
   }
 
   /**
