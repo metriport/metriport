@@ -12,6 +12,7 @@ export class Config {
   // env config
   static readonly PROD_ENV: string = "production";
   static readonly DEV_ENV: string = "dev";
+  static readonly STAGING_ENV: string = "staging";
   static readonly SANDBOX_ENV: string = "sandbox";
   static readonly SANDBOX_USER_LIMIT: number = 10;
   static isCloudEnv(): boolean {
@@ -22,6 +23,19 @@ export class Config {
   }
   static isSandbox(): boolean {
     return process.env.ENV_TYPE === this.SANDBOX_ENV;
+  }
+  static getEnvironment(): string | undefined {
+    switch (process.env.ENV_TYPE) {
+      case this.PROD_ENV:
+        return this.PROD_ENV;
+      case this.STAGING_ENV:
+        return this.STAGING_ENV;
+      case this.SANDBOX_ENV:
+        return this.SANDBOX_ENV;
+
+      default:
+        return this.DEV_ENV;
+    }
   }
 
   static getSlackAlertUrl(): string | undefined {
@@ -144,5 +158,9 @@ export class Config {
   }
   static getMemberManagementOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
+  }
+
+  static getPostHogApiKey(): string {
+    return getEnvVarOrFail("POSTHOG_API_KEY");
   }
 }

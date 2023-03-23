@@ -20,8 +20,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/commonwell-sdk": "^3.1.1",
     "@metriport/api": "^2.3.0",
+    "@metriport/commonwell-sdk": "^3.1.1",
     "aws-sdk": "^2.1243.0",
     "axios": "^0.27.2",
     "base64url": "^3.0.1",
@@ -41,6 +41,7 @@
     "oauth-signature": "^1.5.0",
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
+    "posthog-node": "^2.6.0",
     "reflect-metadata": "^0.1.13",
     "sequelize": "^6.26.0",
     "simple-oauth2": "^5.0.0",

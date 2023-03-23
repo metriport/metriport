@@ -1,7 +1,10 @@
 import base64url from "base64url";
 import { NextFunction, Request, Response } from "express";
-import { MAPIAccess } from "../../models/medical/mapi-access";
 import status from "http-status";
+
+import { MAPIAccess } from "../../models/medical/mapi-access";
+import { queryAnalytics } from "../../shared/analytics";
+import { ApiTypes } from "../../command/usage/report-usage";
 
 /**
  * Process the API key and get the customer id.
@@ -41,6 +44,11 @@ export const checkMAPIAccess = async (
   if (hasMAPIAccess) {
     next();
   } else {
+    queryAnalytics({
+      message: "no mapi access",
+      req,
+      apiType: ApiTypes.medical,
+    });
     res.status(status.FORBIDDEN);
     res.end();
   }
