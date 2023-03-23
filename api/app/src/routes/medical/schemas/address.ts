@@ -2,10 +2,10 @@ import { z } from "zod";
 import { optionalString } from "./shared";
 
 export const addressSchema = z.object({
-  addressLine1: z.string().min(1),
+  addressLine1: z.string(),
   addressLine2: optionalString(z.string()),
-  city: z.string().min(1),
-  state: z.string().min(1),
+  city: z.string(),
+  state: z.string(),
   zip: z.string().length(5),
-  country: z.string().min(1).default("USA"),
+  country: z.string().default("USA"),
 });
