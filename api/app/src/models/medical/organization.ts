@@ -1,7 +1,7 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { Config } from "../../shared/config";
 import { OIDNode, OID_ID_START } from "../../shared/oid";
-import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { BaseModel, defaultModelOptions, IBaseModel, ModelSetup } from "../_default";
 import { Address } from "./address";
 
 export enum OrgType {
@@ -19,23 +19,24 @@ export type OrganizationData = {
   location: Address;
 };
 
-export type OrganizationCreate = Omit<Organization, "id">;
+export type OrganizationCreate = Omit<OrganizationModel, "id">;
 
-export class Organization extends BaseModel<Organization> {
+export interface Organization extends IBaseModel {
+  cxId: string;
+  organizationNumber: number;
+  data: OrganizationData;
+}
+
+export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {
   static NAME = "organization";
-  declare id: string;
   declare cxId: string;
   declare organizationNumber: number;
   declare data: OrganizationData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    Organization.init(
+    OrganizationModel.init(
       {
         ...BaseModel.baseAttributes(),
-        id: {
-          type: DataTypes.STRING,
-          primaryKey: true,
-        },
         cxId: {
           type: DataTypes.UUID,
         },
@@ -49,7 +50,7 @@ export class Organization extends BaseModel<Organization> {
       },
       {
         ...defaultModelOptions(sequelize),
-        tableName: Organization.NAME,
+        tableName: OrganizationModel.NAME,
         hooks: {
           async beforeCreate(attributes) {
             const { orgId, orgNumber } = await createOrgId();
@@ -63,7 +64,7 @@ export class Organization extends BaseModel<Organization> {
 }
 
 async function createOrgId() {
-  const curMaxNumber = (await Organization.max("organizationNumber")) as number;
+  const curMaxNumber = (await OrganizationModel.max("organizationNumber")) as number;
   const orgNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
 
   return {

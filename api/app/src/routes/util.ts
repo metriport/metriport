@@ -132,3 +132,13 @@ export const getCustomerEmailOrFail = (req: Request): string => {
   if (!email) throw new BadRequestError("Missing email");
   return email;
 };
+
+export function getETag(req: Request): {
+  eTag: string | undefined;
+} {
+  const eTagHeader = req.header("If-Match");
+  const eTagPayload = req.body.eTag;
+  return {
+    eTag: eTagHeader ?? eTagPayload,
+  };
+}
