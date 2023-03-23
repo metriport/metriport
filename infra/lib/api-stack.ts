@@ -281,6 +281,7 @@ export class APIStack extends Stack {
       defaultIntegration: integration,
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
+        allowHeaders: ["*"],
       },
     });
 
