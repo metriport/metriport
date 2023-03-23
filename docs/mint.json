@@ -69,9 +69,7 @@
     {
       "group": "Getting Started",
       "pages": [
-        "medical-api/getting-started/quickstart",
-        "medical-api/getting-started/concepts",
-        "medical-api/getting-started/get-access"
+        "medical-api/getting-started/quickstart"
       ]
     },
     {
@@ -118,6 +116,15 @@
             "medical-api/api-reference/document/get-document"
           ]
         }
+      ]
+    },
+    {
+      "group": "More Info",
+      "pages": [
+        "medical-api/more-info/general-info",
+        "medical-api/more-info/sdk",
+        "medical-api/more-info/sandbox",
+        "medical-api/more-info/etag"
       ]
     },
     {

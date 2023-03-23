@@ -1,7 +1,7 @@
-import { getPatient } from "../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import NotFoundError from "../../errors/not-found";
 import { PatientDataCommonwell } from "./patient-shared";
-import { Patient } from "../../models/medical/patient";
+import { Patient, PatientModel } from "../../models/medical/patient";
 
 export const setCommonwellId = async ({
   patientId,
@@ -14,7 +14,7 @@ export const setCommonwellId = async ({
   commonwellPatientId: string;
   commonwellPersonId: string | undefined;
 }): Promise<Patient> => {
-  const updatedPatient = await getPatient({ id: patientId, cxId });
+  const updatedPatient = await getPatientOrFail({ id: patientId, cxId });
 
   const data = updatedPatient.data;
   data.externalData = {
@@ -22,7 +22,7 @@ export const setCommonwellId = async ({
     COMMONWELL: new PatientDataCommonwell(commonwellPatientId, commonwellPersonId),
   };
 
-  const [count, rows] = await Patient.update(
+  const [count, rows] = await PatientModel.update(
     {
       data,
     },

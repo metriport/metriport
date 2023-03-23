@@ -1,8 +1,5 @@
 import { DataTypes } from "sequelize";
 import type { Migration } from "..";
-import { Facility } from "../../models/medical/facility";
-import { Organization } from "../../models/medical/organization";
-import { Patient } from "../../models/medical/patient";
 import * as shared from "../migrations-shared";
 
 // Use 'Promise.all' when changes are independent of each other
@@ -10,7 +7,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
     await shared.createTable(
       queryInterface,
-      Organization.NAME,
+      "organization",
       {
         id: {
           type: DataTypes.STRING,
@@ -34,7 +31,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
     await shared.createTable(
       queryInterface,
-      Facility.NAME,
+      "facility",
       {
         id: {
           type: DataTypes.STRING,
@@ -57,7 +54,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
     await shared.createTable(
       queryInterface,
-      Patient.NAME,
+      "patient",
       {
         id: {
           type: DataTypes.STRING,
@@ -86,8 +83,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.dropTable(Patient.NAME, { transaction });
-    await queryInterface.dropTable(Facility.NAME, { transaction });
-    await queryInterface.dropTable(Organization.NAME, { transaction });
+    await queryInterface.dropTable("patient", { transaction });
+    await queryInterface.dropTable("facility", { transaction });
+    await queryInterface.dropTable("organization", { transaction });
   });
 };

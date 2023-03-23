@@ -1,23 +1,23 @@
-import NotFoundError from "../../../errors/not-found";
-import { Facility } from "../../../models/medical/facility";
+import { FacilityData, FacilityModel } from "../../../models/medical/facility";
+import { validateVersionForUpdate } from "../../../models/_default";
+import { BaseUpdateCmdWithCustomer } from "../base-update-command";
+import { getFacilityOrFail } from "./get-facility";
 
-export const updateFacility = async ({
-  id,
-  cxId,
-  data,
-}: {
-  id: string;
-  cxId: string;
-  data: object;
-}): Promise<Facility> => {
-  const [count, rows] = await Facility.update(
-    {
-      data,
+export type FacilityUpdateCmd = BaseUpdateCmdWithCustomer & FacilityData;
+
+export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise<FacilityModel> => {
+  const { id, cxId, eTag, name, npi, tin, active, address } = facilityUpdate;
+
+  const facility = await getFacilityOrFail({ id, cxId });
+  validateVersionForUpdate(facility, eTag);
+
+  return facility.update({
+    data: {
+      name,
+      npi,
+      tin,
+      active,
+      address,
     },
-    { where: { id, cxId }, returning: true }
-  );
-  if (count < 1) throw new NotFoundError();
-  // TODO #156 Send this to Sentry
-  if (count > 1) console.error(`Updated ${count} facilities for id ${id} and cxId ${cxId}`);
-  return rows[0];
+  });
 };

@@ -4,7 +4,7 @@ import { uniqBy } from "lodash";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 
 import { PatientLinkResp } from "@metriport/commonwell-sdk/lib/models/patient";
-import { getPatient } from "../../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "../../../models/medical/patient";
 import { sendAlert } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
@@ -27,7 +27,7 @@ export const get = async (
   cxId: string,
   facilityId: string
 ): Promise<CWPersonLinks> => {
-  const patient = await getPatient({ id: patientId, cxId });
+  const patient = await getPatientOrFail({ id: patientId, cxId });
   const { organization, facility } = await getPatientData(patient, facilityId);
 
   const links: CWPersonLinks = {

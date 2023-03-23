@@ -5,9 +5,9 @@ import { createFacility } from "../../command/medical/facility/create-facility";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import NotFoundError from "../../errors/not-found";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
+import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/facilityDTO";
-import { facilitySchema } from "./schemas/facility";
+import { facilityCreateSchema, facilityUpdateSchema } from "./schemas/facility";
 
 const router = Router();
 
@@ -22,11 +22,15 @@ router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityData = facilitySchema.parse(req.body);
+    const facilityData = facilityCreateSchema.parse(req.body);
 
     const facility = await createFacility({
       cxId,
-      data: facilityData,
+      data: {
+        ...facilityData,
+        tin: facilityData.tin ?? undefined,
+        active: facilityData.active ?? undefined,
+      },
     });
 
     return res.status(status.CREATED).json(dtoFromModel(facility));
@@ -45,12 +49,15 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromParamsOrFail("id", req);
-    const facilityData = facilitySchema.parse(req.body);
+    const facilityData = facilityUpdateSchema.parse(req.body);
 
     const facility = await updateFacility({
+      ...facilityData,
+      ...getETag(req),
       id: facilityId,
       cxId,
-      data: facilityData,
+      tin: facilityData.tin ?? undefined,
+      active: facilityData.active ?? undefined,
     });
 
     return res.status(status.OK).json(dtoFromModel(facility));

@@ -5,7 +5,7 @@ import { patientWithCWData } from "./shared";
 import { setCommonwellId } from "../patient-external-data";
 import { reset } from ".";
 import { getPatientData } from "../patient-shared";
-import { getPatient } from "../../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 export const create = async (
   personId: string,
@@ -13,7 +13,7 @@ export const create = async (
   cxId: string,
   facilityId: string
 ): Promise<void> => {
-  const patient = await getPatient({ id: patientId, cxId });
+  const patient = await getPatientOrFail({ id: patientId, cxId });
   const { organization, facility } = await getPatientData(patient, facilityId);
 
   const externalData = patient.data.externalData;
