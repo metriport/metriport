@@ -36,7 +36,7 @@ export const checkMAPIAccess = async (
 ): Promise<void> => {
   let hasMAPIAccess = false;
   try {
-    const mapiAccess = await MAPIAccess.findOne({ where: { cxId: req.cxId } });
+    const mapiAccess = await MAPIAccess.findOne({ where: { id: req.cxId } });
     hasMAPIAccess = mapiAccess != null;
   } catch (error) {
     console.error(`Failed checking MAPI access with error ${error}`);

@@ -1,8 +1,8 @@
 import { Organization, OrgType } from "../../../models/medical/organization";
 import { AddressDTO } from "./addressDTO";
+import { BaseDTO, toBaseDTO } from "./baseDTO";
 
-export type OrganizationDTO = {
-  id: string;
+export type OrganizationDTO = BaseDTO & {
   name: string;
   type: OrgType;
   location: AddressDTO;
@@ -11,7 +11,7 @@ export type OrganizationDTO = {
 export function dtoFromModel(org: Organization): OrganizationDTO {
   const { name, type, location } = org.data;
   return {
-    id: org.id,
+    ...toBaseDTO(org),
     name,
     type,
     location,

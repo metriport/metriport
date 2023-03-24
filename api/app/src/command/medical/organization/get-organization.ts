@@ -1,17 +1,17 @@
 import NotFoundError from "../../../errors/not-found";
-import { Organization } from "../../../models/medical/organization";
+import { OrganizationModel } from "../../../models/medical/organization";
 
-export const getOrganization = async ({ cxId }: { cxId: string }): Promise<Organization | null> => {
-  const org = await Organization.findOne({
-    where: { cxId },
+type Filter = Pick<OrganizationModel, "cxId"> & Partial<Pick<OrganizationModel, "id">>;
+
+export const getOrganization = async ({ cxId, id }: Filter): Promise<OrganizationModel | null> => {
+  const org = await OrganizationModel.findOne({
+    where: { cxId, ...(id ? { id } : undefined) },
   });
   return org;
 };
 
-export const getOrganizationOrFail = async ({ cxId }: { cxId: string }): Promise<Organization> => {
-  const org = await Organization.findOne({
-    where: { cxId },
-  });
-  if (!org) throw new NotFoundError(`Could not find organization for customer ${cxId}`);
+export const getOrganizationOrFail = async (filter: Filter): Promise<OrganizationModel> => {
+  const org = await getOrganization(filter);
+  if (!org) throw new NotFoundError(`Could not find organization`);
   return org;
 };

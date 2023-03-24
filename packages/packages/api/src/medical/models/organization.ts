@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { addressSchema } from "./common/address";
+import { baseUpdateSchema } from "./common/base-update";
 
 export enum OrgType {
   acuteCare = "acuteCare",
@@ -19,9 +20,5 @@ export const organizationCreateSchema = z.object({
 });
 export type OrganizationCreate = z.infer<typeof organizationCreateSchema>;
 
-export const organizationSchema = organizationCreateSchema.merge(
-  z.object({
-    id: z.string(),
-  })
-);
+export const organizationSchema = organizationCreateSchema.merge(baseUpdateSchema);
 export type Organization = z.infer<typeof organizationSchema>;

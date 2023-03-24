@@ -7,7 +7,7 @@ api: "DELETE /medical/v1/patient/{id}/link/{linkSource}"
 ## Path Params
 
 <ParamField path="id" type="string" required>
-  The OID of the Patient that will be unlinked from the HIE.
+  The ID of the Patient that will be unlinked from the HIE.
 </ParamField>
 
 <ParamField path="linkSource" type="string" required>
@@ -17,7 +17,7 @@ api: "DELETE /medical/v1/patient/{id}/link/{linkSource}"
 ## Query Params
 
 <ParamField query="facilityId" type="string" required>
-  The OID of the Facility that is currently providing the Patient care.
+  The ID of the Facility that is currently providing the Patient care.
 </ParamField>
 
 ## Response

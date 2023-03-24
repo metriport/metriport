@@ -20,6 +20,7 @@ export const details = {
       city: "Miami",
       state: "FL",
       zip: "12345",
+      country: "USA",
     },
   ],
   name: [

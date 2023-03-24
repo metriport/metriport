@@ -1,7 +1,7 @@
 import { Document, DocumentContent } from "@metriport/commonwell-sdk";
 import mime from "mime-types";
 import * as stream from "stream";
-import { getPatient } from "../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "../../models/medical/patient";
 import { oid, patientId as makePatientId } from "../../shared/oid";
 import { Util } from "../../shared/util";
@@ -26,7 +26,7 @@ export async function getDocuments({
 }): Promise<DocumentWithLocation[]> {
   const { debug } = Util.out(`getDocuments - M patient ${patientId}`);
 
-  const patient = await getPatient({ id: patientId, cxId });
+  const patient = await getPatientOrFail({ id: patientId, cxId });
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return [];
   const cwData = externalData as PatientDataCommonwell;
