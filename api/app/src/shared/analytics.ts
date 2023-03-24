@@ -1,6 +1,5 @@
 import { PostHog } from "posthog-node";
 import { Request } from "express";
-import url from "url";
 
 import { Config } from "./config";
 import { getCxId } from "../routes/util";
@@ -20,16 +19,14 @@ export const queryAnalytics = ({
     return;
   }
 
-  client.capture({
+  analytics.capture({
     distinctId: cxId,
     event: message,
     properties: {
-      method: req.method,
-      url: url.parse(req.url).pathname,
       environment: Config.getEnvironment(),
       apiType,
     },
   });
 };
 
-export const client = new PostHog(Config.getPostHogApiKey());
+export const analytics = new PostHog(Config.getPostHogApiKey());

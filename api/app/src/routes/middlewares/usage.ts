@@ -3,7 +3,6 @@ import { reportUsage as reportUsageCmd } from "../../command/usage/report-usage"
 import { Util } from "../../shared/util";
 import { getCxId, getUserId } from "../util";
 import { ApiTypes } from "../../command/usage/report-usage";
-import { queryAnalytics } from "../../shared/analytics";
 
 const log = Util.log("USAGE");
 
@@ -18,12 +17,6 @@ export const reportUsage = (apiType: ApiTypes) => {
     res: any, // otherwise we get type error, those Response functions are not mapped on Typescript
     next: NextFunction
   ): Promise<void> => {
-    queryAnalytics({
-      message: "query",
-      req,
-      apiType,
-    });
-
     function afterResponse() {
       res.removeListener("finish", afterResponse);
       res.removeListener("close", afterResponse);
