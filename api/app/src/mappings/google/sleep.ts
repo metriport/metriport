@@ -1,10 +1,8 @@
 import { Sleep } from "@metriport/api";
 import dayjs from "dayjs";
-import convert from "convert-units";
-import { sortBy } from "lodash";
 
 import { PROVIDER_GOOGLE } from "../../shared/constants";
-import { GoogleSleep, sourceIdSleep } from "./models/sleep";
+import { GoogleSleep } from "./models/sleep";
 
 type SleepSession = {
   startTime: string;
@@ -23,42 +21,38 @@ export const mapToSleep = (googleSleep: GoogleSleep, date: string): Sleep => {
     metadata: metadata,
   };
 
-  googleSleep.bucket[0].dataset.forEach(data => {
-    if (data.point.length) {
-      const sortedDates = sortBy(data.point, "startTimeNanos");
+  const sleepSession = googleSleep.session.reduce((acc: SleepSession[], curr) => {
+    if (acc.length) {
+      const lastItem = acc[acc.length - 1];
+      const currDate = dayjs(Number(curr.startTimeMillis));
 
-      const sleepSession = sortedDates.reduce((acc: SleepSession[], curr) => {
-        if (acc.length) {
-          const lastItem = acc[acc.length - 1];
-          const currDate = dayjs(convert(Number(curr.startTimeNanos)).from("ns").to("ms"));
+      const timeDifference = currDate.diff(lastItem.endTime, "minutes");
 
-          const timeDifference = currDate.diff(lastItem.endTime, "minutes");
-
-          if (timeDifference >= maxTimeBetweenSleepSamples) {
-            return acc;
-          }
-        }
-
-        const startTimeNanos = Number(curr.startTimeNanos);
-        const startTime = dayjs(convert(startTimeNanos).from("ns").to("ms"));
-
-        const endTimeNanos = Number(curr.endTimeNanos);
-        const endTime = dayjs(convert(endTimeNanos).from("ns").to("ms"));
-
-        acc.push({
-          startTime: startTime.toISOString(),
-          endTime: endTime.toISOString(),
-        });
-
+      if (timeDifference >= maxTimeBetweenSleepSamples) {
         return acc;
-      }, []);
-
-      if (data.dataSourceId === sourceIdSleep) {
-        sleep.start_time = sleepSession[0].startTime;
-        sleep.end_time = sleepSession[sleepSession.length - 1].endTime;
       }
     }
-  });
+
+    const startTimeNanos = Number(curr.startTimeMillis);
+    const startTime = dayjs(startTimeNanos);
+
+    const endTimeNanos = Number(curr.endTimeMillis);
+    const endTime = dayjs(endTimeNanos);
+
+    acc.push({
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+    });
+
+    return acc;
+  }, []);
+
+  sleep.start_time = sleepSession[0].startTime;
+  sleep.end_time = sleepSession[sleepSession.length - 1].endTime;
+
+  sleep.durations = {
+    total_seconds: dayjs(sleep.end_time).diff(dayjs(sleep.start_time), "seconds"),
+  };
 
   return sleep;
 };

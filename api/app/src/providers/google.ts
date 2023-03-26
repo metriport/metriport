@@ -180,14 +180,19 @@ export class Google extends Provider implements OAuth2 {
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
-    const sleep = await this.fetchGoogleData(connectedUser, date, {
-      aggregateBy: [
-        {
-          dataTypeName: "com.google.sleep.segment",
-        },
-      ],
+    const access_token = await this.oauth.getAccessToken(connectedUser);
+
+    const resp = await axios.get(`${Google.URL}${Google.API_PATH}/users/me/sessions`, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+      params: {
+        startTime: dayjs(date).toISOString(),
+        endTime: dayjs(date).add(24, "hours").toISOString(),
+        activityType: 72,
+      },
     });
 
-    return mapToSleep(googleSleepResp.parse(sleep), date);
+    return mapToSleep(googleSleepResp.parse(resp.data), date);
   }
 }
