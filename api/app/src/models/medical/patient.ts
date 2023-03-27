@@ -1,9 +1,7 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { MedicalDataSource } from "../../external";
 import { USState } from "../../shared/geographic-locations";
-import { OID_ID_START, patientId as makePatientId } from "../../shared/oid";
-import { BaseModel, defaultModelOptions, IBaseModel, ModelSetup } from "../_default";
+import { IBaseModelCreate, IBaseModel, ModelSetup, BaseModel } from "../_default";
 import { Address } from "./address";
 import { Contact } from "./contact";
 
@@ -61,14 +59,14 @@ export type PatientData = {
   externalData?: PatientExternalData;
 };
 
-export type PatientCreate = Pick<Patient, "cxId" | "facilityIds" | "patientNumber" | "data">;
-
-export interface Patient extends IBaseModel {
+export interface PatientCreate extends IBaseModelCreate {
   cxId: string;
   facilityIds: string[];
   patientNumber: number;
   data: PatientData;
 }
+
+export interface Patient extends IBaseModel, PatientCreate {}
 
 export class PatientModel extends BaseModel<PatientModel> implements Patient {
   static NAME = "patient";
@@ -80,7 +78,7 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientModel.init(
       {
-        ...BaseModel.baseAttributes(),
+        ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
         },
@@ -95,29 +93,9 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
         },
       },
       {
-        ...defaultModelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: PatientModel.NAME,
-        hooks: {
-          async beforeCreate(attributes) {
-            const { patientId, patientNumber } = await createPatientId(attributes.cxId);
-            attributes.id = patientId;
-            attributes.patientNumber = patientNumber;
-          },
-        },
       }
     );
-  };
-}
-
-async function createPatientId(cxId: string) {
-  const curMaxNumber = (await PatientModel.max("patientNumber", {
-    where: { cxId },
-  })) as number;
-  const org = await getOrganizationOrFail({ cxId });
-  const patientNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-  const patientId = makePatientId(org.id, patientNumber);
-  return {
-    patientId,
-    patientNumber,
   };
 }

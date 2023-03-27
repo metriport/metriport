@@ -2,6 +2,7 @@ import base64url from "base64url";
 import { NextFunction, Request, Response } from "express";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import status from "http-status";
+import { getCxIdOrFail } from "../util";
 
 /**
  * Process the API key and get the customer id.
@@ -33,7 +34,8 @@ export const checkMAPIAccess = async (
 ): Promise<void> => {
   let hasMAPIAccess = false;
   try {
-    const mapiAccess = await MAPIAccess.findOne({ where: { id: req.cxId } });
+    const cxId = getCxIdOrFail(req);
+    const mapiAccess = await MAPIAccess.findOne({ where: { id: cxId } });
     hasMAPIAccess = mapiAccess != null;
   } catch (error) {
     console.error(`Failed checking MAPI access with error ${error}`);

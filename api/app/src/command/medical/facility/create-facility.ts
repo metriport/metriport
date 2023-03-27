@@ -1,4 +1,5 @@
 import { FacilityData, FacilityModel } from "../../../models/medical/facility";
+import { createFacilityId } from "../customer-sequence/create-id";
 
 export const createFacility = async ({
   cxId,
@@ -7,9 +8,10 @@ export const createFacility = async ({
   cxId: string;
   data: FacilityData;
 }): Promise<FacilityModel> => {
+  const { id, facilityNumber } = await createFacilityId(cxId);
   return FacilityModel.create({
-    id: "", // the facility id will be generated on the beforeCreate hook
-    facilityNumber: 0, // this will be generated on the beforeCreate hook
+    id,
+    facilityNumber,
     cxId,
     data,
   });

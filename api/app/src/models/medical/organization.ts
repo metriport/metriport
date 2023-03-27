@@ -1,7 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
-import { BaseModel, defaultModelOptions, IBaseModel, ModelSetup } from "../_default";
+import { IBaseModelCreate, IBaseModel, ModelSetup, BaseModel } from "../_default";
 import { Address } from "./address";
 
 export enum OrgType {
@@ -19,13 +17,13 @@ export type OrganizationData = {
   location: Address;
 };
 
-export type OrganizationCreate = Omit<OrganizationModel, "id">;
-
-export interface Organization extends IBaseModel {
+export interface OrganizationCreate extends IBaseModelCreate {
   cxId: string;
   organizationNumber: number;
   data: OrganizationData;
 }
+
+export interface Organization extends IBaseModel, OrganizationCreate {}
 
 export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {
   static NAME = "organization";
@@ -36,7 +34,7 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
   static setup: ModelSetup = (sequelize: Sequelize) => {
     OrganizationModel.init(
       {
-        ...BaseModel.baseAttributes(),
+        ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
         },
@@ -49,26 +47,9 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
         },
       },
       {
-        ...defaultModelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: OrganizationModel.NAME,
-        hooks: {
-          async beforeCreate(attributes) {
-            const { orgId, orgNumber } = await createOrgId();
-            attributes.id = orgId;
-            attributes.organizationNumber = orgNumber;
-          },
-        },
       }
     );
-  };
-}
-
-async function createOrgId() {
-  const curMaxNumber = (await OrganizationModel.max("organizationNumber")) as number;
-  const orgNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-
-  return {
-    orgId: `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}`,
-    orgNumber,
   };
 }

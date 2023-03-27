@@ -61,15 +61,21 @@ export async function organizationToCommonwell(
 }
 
 export const create = async (org: Organization): Promise<void> => {
-  const { log } = Util.out(`CW create - M orgId ${org.id}`);
+  const { log, debug } = Util.out(`CW create - M orgId ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
   try {
     const commonWell = makeCommonWellAPI(
       Config.getMetriportOrgName(),
       Config.getMemberManagementOID()
     );
-    await commonWell.createOrg(metriportQueryMeta, cwOrg);
-    await commonWell.addCertificateToOrg(metriportQueryMeta, certificate, org.id);
+    const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
+    debug(`resp respCreate: ${JSON.stringify(respCreate, null, 2)}`);
+    const respAddCert = await commonWell.addCertificateToOrg(
+      metriportQueryMeta,
+      certificate,
+      org.id
+    );
+    debug(`resp respAddCert: ${JSON.stringify(respAddCert, null, 2)}`);
   } catch (error) {
     const msg = `Failure creating Org`;
     log(`${msg} - payload: `, cwOrg);

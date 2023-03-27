@@ -12,21 +12,14 @@ import { Util } from "../shared/util";
 
 export type ModelSetup = (sequelize: Sequelize) => void;
 
-export const defaultModelOptions = <M extends Model>(sequelize: Sequelize): InitOptions<M> => ({
-  sequelize,
-  freezeTableName: true,
-  underscored: true,
-  timestamps: true,
-  createdAt: "created_at",
-  updatedAt: "updated_at",
-  version: true, // requires a `version` column; override it to false if you don't want versioning
-});
-
-export interface IBaseModel {
+export interface IBaseModelCreate {
   id: string;
-  createdAt: CreationOptional<Date>;
-  updatedAt: CreationOptional<Date>;
-  eTag: CreationOptional<string>;
+}
+
+export interface IBaseModel extends IBaseModelCreate {
+  createdAt: Date;
+  updatedAt: Date;
+  eTag: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,7 +33,7 @@ export abstract class BaseModel<T extends Model<any, any>>
   private declare version: CreationOptional<number>;
   declare eTag: CreationOptional<string>;
 
-  static baseAttributes() {
+  static attributes() {
     return {
       id: {
         type: DataTypes.STRING,
@@ -60,11 +53,22 @@ export abstract class BaseModel<T extends Model<any, any>>
       },
       eTag: {
         type: DataTypes.VIRTUAL,
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         get<T extends Model<any, any>>(this: BaseModel<T>): string {
           return Util.md5(this.id + "_" + this.version);
         },
       },
+    };
+  }
+  static modelOptions<M extends Model>(sequelize: Sequelize): InitOptions<M> {
+    return {
+      sequelize,
+      freezeTableName: true,
+      underscored: true,
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+      version: true, // requires a `version` column; override it to false if you don't want versioning
     };
   }
 }

@@ -3,7 +3,7 @@ import mime from "mime-types";
 import * as stream from "stream";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "../../models/medical/patient";
-import { oid, patientId as makePatientId } from "../../shared/oid";
+import { makePatientOID, oid } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "./api";
 import { getPatientData, PatientDataCommonwell } from "./patient-shared";
@@ -87,7 +87,7 @@ export async function downloadDocument({
 }
 
 function getFileName(patient: Patient, doc: Document): string {
-  const prefix = "document_" + makePatientId("", patient.patientNumber).substring(1);
+  const prefix = "document_" + makePatientOID("", patient.patientNumber).substring(1);
   const display = doc.content?.type?.coding?.length
     ? doc.content?.type.coding[0].display
     : undefined;
