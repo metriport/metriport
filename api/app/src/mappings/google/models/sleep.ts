@@ -1,15 +1,23 @@
-import { z } from "zod"
-import { googleResp } from ".";
+import { z } from "zod";
 
-export const sourceIdSleep = "derived:com.google.sleep.segment:com.google.android.gms:merged";
+const sessionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  startTimeMillis: z.string(),
+  endTimeMillis: z.string(),
+  modifiedTimeMillis: z.string(),
+  application: z.object({
+    packageName: z.string(),
+    version: z.string(),
+    detailsUrl: z.string(),
+  }),
+  activityType: z.number(),
+});
 
-export const googleSleepDataSourceId = z.enum([
-  sourceIdSleep,
-]);
-
-export const googleSleepResp = googleResp(googleSleepDataSourceId)
-
+export const googleSleepResp = z.object({
+  session: z.array(sessionSchema),
+  deletedSession: z.array(sessionSchema),
+});
 
 export type GoogleSleep = z.infer<typeof googleSleepResp>;
-export type GoogleSleepDataSourceId = z.infer<typeof googleSleepDataSourceId>;
-
