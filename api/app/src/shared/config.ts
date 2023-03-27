@@ -36,7 +36,7 @@ export class Config {
   }
 
   static getConnectRedirectUrl(): string {
-    if (this.isProdEnv()) {
+    if (this.isCloudEnv()) {
       return `${Config.getApiUrl()}/token/connect`;
     }
 
