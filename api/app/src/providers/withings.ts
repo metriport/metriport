@@ -113,6 +113,13 @@ export class Withings extends Provider implements OAuth2 {
           }
         );
 
+        const statusOk = 0;
+
+        if (response.data.status !== statusOk) {
+          console.log(response.data);
+          throw new Error(response.data.error);
+        }
+
         response.data.body.expires_at = dayjs(Date.now())
           .add(response.data.body.expires_in, "seconds")
           .unix();
