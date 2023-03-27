@@ -442,6 +442,9 @@ To do it manually:
 1. Go to API Gateway;
 1. Create a Usage Plan if you don't already have one;
 1. Create an API Key;
+   - the `value` field must follow this pattern: base 64 of "`<KEY>:<UUID>`", where:
+   - `KEY` is a random key (e.g., generated with `nanoid`); and
+   - `UUID` is the customer ID (more about this on [Initialization](#initialization))
 1. Add the newly created API Key to a Usage Plan.
 
 Now you can make requests to endpoints that require the an API Key by setting the `x-api-key` header.
