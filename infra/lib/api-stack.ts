@@ -202,6 +202,9 @@ export class APIStack extends Stack {
             ...(props.config.fhirServerUrl && {
               FHIR_SERVER_URL: props.config.fhirServerUrl,
             }),
+            ...(props.config.postHogApiKey && {
+              POSTHOG_API_KEY: props.config.postHogApiKey,
+            }),
           },
         },
         memoryLimitMiB: this.isProd(props) ? 4096 : 2048,

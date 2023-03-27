@@ -41,7 +41,6 @@ const reportIt = async (req: Request, apiType: ApiTypes): Promise<void> => {
       log(`Skipped, missing cxId`);
       return;
     }
-
     const cxUserId = getUserId(req);
     if (!cxUserId) {
       log(`Skipped, missing cxUserId (cxId ${cxId})`);

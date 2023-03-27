@@ -1,9 +1,8 @@
 import base64url from "base64url";
 import { NextFunction, Request, Response } from "express";
 import status from "http-status";
-
 import { MAPIAccess } from "../../models/medical/mapi-access";
-import { queryAnalytics } from "../../shared/analytics";
+import { analytics, EventTypes, EventErrMessage } from "../../shared/analytics";
 import { ApiTypes } from "../../command/usage/report-usage";
 
 /**
@@ -44,10 +43,13 @@ export const checkMAPIAccess = async (
   if (hasMAPIAccess) {
     next();
   } else {
-    queryAnalytics({
-      message: "no mapi access",
-      req,
-      apiType: ApiTypes.medical,
+    analytics({
+      distinctId: req.cxId,
+      event: EventTypes.error,
+      properties: {
+        message: EventErrMessage.no_access,
+        apiType: ApiTypes.medical,
+      },
     });
     res.status(status.FORBIDDEN);
     res.end();

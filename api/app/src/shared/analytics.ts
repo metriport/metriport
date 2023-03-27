@@ -1,32 +1,27 @@
 import { PostHog } from "posthog-node";
-import { Request } from "express";
-
+import { EventMessageV1 } from "posthog-node/src/types";
 import { Config } from "./config";
-import { getCxId } from "../routes/util";
 
-export const queryAnalytics = ({
-  message,
-  req,
-  apiType,
-}: {
-  message: string;
-  req: Request;
-  apiType: string;
-}): void => {
-  const cxId = getCxId(req);
+const postApiKey = Config.getPostHogApiKey();
 
-  if (!cxId) {
-    return;
-  }
+export const analytics = (params: EventMessageV1) => {
+  if (postApiKey) {
+    const posthog = new PostHog(postApiKey);
 
-  analytics.capture({
-    distinctId: cxId,
-    event: message,
-    properties: {
+    params.properties = {
+      ...params.properties,
       environment: Config.getEnvironment(),
-      apiType,
-    },
-  });
+    };
+
+    posthog.capture(params);
+  }
 };
 
-export const analytics = new PostHog(Config.getPostHogApiKey());
+export enum EventTypes {
+  query = "query",
+  error = "error",
+}
+
+export enum EventErrMessage {
+  no_access = "no access",
+}

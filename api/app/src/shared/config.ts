@@ -24,7 +24,7 @@ export class Config {
   static isSandbox(): boolean {
     return process.env.ENV_TYPE === this.SANDBOX_ENV;
   }
-  static getEnvironment(): string | undefined {
+  static getEnvironment(): string {
     switch (process.env.ENV_TYPE) {
       case this.PROD_ENV:
         return this.PROD_ENV;
@@ -160,7 +160,7 @@ export class Config {
     return getEnvVarOrFail("CW_MEMBER_OID");
   }
 
-  static getPostHogApiKey(): string {
-    return getEnvVarOrFail("POSTHOG_API_KEY");
+  static getPostHogApiKey(): string | undefined {
+    return getEnvVar("POSTHOG_API_KEY");
   }
 }

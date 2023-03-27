@@ -23,6 +23,7 @@ export type EnvConfig = {
   usageReportUrl?: string;
   fhirServerUrl?: string;
   systemRootOID: string;
+  postHogApiKey?: string;
   commonwell: {
     CW_MEMBER_NAME: string;
     CW_MEMBER_OID: string;
