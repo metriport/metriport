@@ -23,7 +23,9 @@ export type EnvConfig = {
   usageReportUrl?: string;
   fhirServerUrl?: string;
   systemRootOID: string;
-  postHogApiKey?: string;
+  analyticsSecretNames?: {
+    POST_HOG_API_KEY: string;
+  };
   commonwell: {
     CW_MEMBER_NAME: string;
     CW_MEMBER_OID: string;

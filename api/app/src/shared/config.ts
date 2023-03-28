@@ -161,6 +161,6 @@ export class Config {
   }
 
   static getPostHogApiKey(): string | undefined {
-    return getEnvVar("POSTHOG_API_KEY");
+    return getEnvVar("POST_HOG_API_KEY");
   }
 }

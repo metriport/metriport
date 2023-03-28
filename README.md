@@ -303,7 +303,7 @@ The API server reports analytics to [PostHog](https://posthog.com/). This is opt
 If you want to set it up, add this to the `.env` file:
 
 ```shell
-$ echo "POSTHOG_API_KEY=<YOUR-API-KEY>" >> api/app/.env
+$ echo "POST_HOG_API_KEY=<YOUR-API-KEY>" >> api/app/.env
 ```
 
 #### **Optional usage report**
