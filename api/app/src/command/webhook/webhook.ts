@@ -18,6 +18,7 @@ import { updateWebhookStatus } from "../settings/updateSettings";
 import { reportUsage as reportUsageCmd } from "../usage/report-usage";
 import { createWebhookRequest, updateWebhookRequestStatus } from "../webhook/webhook-request";
 import { ApiTypes } from "../usage/report-usage";
+import { analytics, EventTypes } from "../../shared/analytics";
 
 const axios = Axios.create();
 
@@ -120,6 +121,17 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
           });
           // now that we have a all the chunks for one customer, process them
           const settings = await getSettingsOrFail({ id: cxId });
+
+          // I thought about passing in the request for method and URL but though just adding it would be cleaner
+          analytics({
+            distinctId: cxId,
+            event: EventTypes.query,
+            properties: {
+              method: "POST",
+              url: "/webhook/garmin",
+              apiType: ApiTypes.devices,
+            },
+          });
           await processOneCustomer(cxId, settings, payloads);
           await reportUsage(
             cxId,

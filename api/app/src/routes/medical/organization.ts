@@ -14,12 +14,8 @@ import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
-import { analytics, EventTypes } from "../../shared/analytics";
-import { ApiTypes } from "../../command/usage/report-usage";
 
 const router = Router();
-
-const ORG_PATH = "/organization";
 
 /** ---------------------------------------------------------------------------
  * POST /organization
@@ -96,17 +92,6 @@ router.get(
     const cxId = getCxIdOrFail(req);
 
     const org = await getOrganization({ cxId });
-
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.query,
-      properties: {
-        method: req.method,
-        url: ORG_PATH,
-        apiType: ApiTypes.medical,
-      },
-    });
-
     return res.status(status.OK).json(org ? dtoFromModel(org) : undefined);
   })
 );

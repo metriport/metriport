@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
 import BadRequestError from "../errors/bad-request";
+import { analytics, EventTypes } from "../shared/analytics";
+import { ApiTypes } from "../command/usage/report-usage";
 
 export const asyncHandler =
   (
@@ -13,12 +15,44 @@ export const asyncHandler =
   ) =>
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      analyzeRoute(req);
       await f(req, res, next);
     } catch (err) {
       console.error(err);
       next(err);
     }
   };
+
+export const analyzeRoute = (req: Request): void => {
+  let cxId;
+
+  const reqCxId = getCxId(req);
+  if (reqCxId) cxId = reqCxId;
+
+  const headerCxId = getCxIdFromHeaders(req);
+  if (headerCxId) cxId = headerCxId;
+
+  if (cxId) {
+    const isMedical = req.baseUrl.includes("medical");
+
+    let reqUrl = req.baseUrl;
+    const hasPath = req.route.path.split("/")[1];
+
+    if (hasPath) {
+      reqUrl = reqUrl.concat(req.route.path);
+    }
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.query,
+      properties: {
+        method: req.method,
+        url: reqUrl,
+        apiType: isMedical ? ApiTypes.medical : ApiTypes.devices,
+      },
+    });
+  }
+};
 
 // https://www.rfc-editor.org/rfc/rfc7807
 export type HttpResponseBody = { status: number; title: string; detail?: string };
