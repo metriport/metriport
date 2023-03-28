@@ -2,8 +2,7 @@ import base64url from "base64url";
 import { NextFunction, Request, Response } from "express";
 import status from "http-status";
 import { MAPIAccess } from "../../models/medical/mapi-access";
-import { analytics, EventTypes, EventErrMessage } from "../../shared/analytics";
-import { ApiTypes } from "../../command/usage/report-usage";
+import { getCxIdOrFail } from "../util";
 
 /**
  * Process the API key and get the customer id.
@@ -35,7 +34,8 @@ export const checkMAPIAccess = async (
 ): Promise<void> => {
   let hasMAPIAccess = false;
   try {
-    const mapiAccess = await MAPIAccess.findOne({ where: { id: req.cxId } });
+    const cxId = getCxIdOrFail(req);
+    const mapiAccess = await MAPIAccess.findOne({ where: { id: cxId } });
     hasMAPIAccess = mapiAccess != null;
   } catch (error) {
     console.error(`Failed checking MAPI access with error ${error}`);
@@ -43,14 +43,6 @@ export const checkMAPIAccess = async (
   if (hasMAPIAccess) {
     next();
   } else {
-    analytics({
-      distinctId: req.cxId,
-      event: EventTypes.error,
-      properties: {
-        message: EventErrMessage.no_access,
-        apiType: ApiTypes.medical,
-      },
-    });
     res.status(status.FORBIDDEN);
     res.end();
   }

@@ -1,3 +1,4 @@
+import { Config } from "./config";
 import { USState } from "./geographic-locations";
 
 export const OID_ID_START = 100;
@@ -23,7 +24,15 @@ export function oid(id: string): string {
   return `${OID_PREFIX}${id}`;
 }
 
-export function patientId(orgId: string, patientNumber: string | number): string {
+export function makeOrganizationOID(orgNumber: string | number): string {
+  return `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}`;
+}
+
+export function makeFacilityOID(orgId: string, facilityNumber: string | number): string {
+  return `${orgId}.${OIDNode.locations}.${facilityNumber}`;
+}
+
+export function makePatientOID(orgId: string, patientNumber: string | number): string {
   return `${orgId}.${OIDNode.patients}.${patientNumber}`;
 }
 

@@ -1,8 +1,5 @@
 import { CreationOptional, DataTypes, Sequelize } from "sequelize";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
-import { BaseModel, defaultModelOptions, IBaseModel, ModelSetup } from "../_default";
+import { IBaseModelCreate, IBaseModel, ModelSetup, BaseModel } from "../_default";
 import { Address } from "./address";
 
 export type FacilityData = {
@@ -13,10 +10,12 @@ export type FacilityData = {
   address: Address;
 };
 
-export interface Facility extends IBaseModel {
+export interface FacilityCreate extends IBaseModelCreate {
   cxId: string;
+  facilityNumber: number;
   data: FacilityData;
 }
+export interface Facility extends IBaseModel, FacilityCreate {}
 
 export class FacilityModel extends BaseModel<FacilityModel> implements Facility {
   static NAME = "facility";
@@ -27,7 +26,7 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     FacilityModel.init(
       {
-        ...BaseModel.baseAttributes(),
+        ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
         },
@@ -39,23 +38,8 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
         },
       },
       {
-        ...defaultModelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: FacilityModel.NAME,
-        hooks: {
-          async beforeCreate(attributes) {
-            const curMaxNumber = (await FacilityModel.max("facilityNumber", {
-              where: {
-                cxId: attributes.cxId,
-              },
-            })) as number;
-            const org = await getOrganizationOrFail({ cxId: attributes.cxId });
-            const facNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
-              org.organizationNumber
-            }.${OIDNode.locations}.${facNumber}`;
-            attributes.facilityNumber = facNumber;
-          },
-        },
       }
     );
   };

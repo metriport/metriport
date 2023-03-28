@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { BaseModel, defaultModelOptions, ModelSetup } from "./_default";
+import { BaseModel, ModelSetup } from "./_default";
 
 export const DATE_FORMAT = "YYYY-MM";
 export const WEBHOOK_STATUS_OK = "OK";
@@ -16,7 +16,7 @@ export class Settings extends BaseModel<Settings> {
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Settings.init(
       {
-        ...BaseModel.baseAttributes(),
+        ...BaseModel.attributes(),
         id: {
           type: DataTypes.UUID,
           primaryKey: true,
@@ -35,7 +35,7 @@ export class Settings extends BaseModel<Settings> {
         },
       },
       {
-        ...defaultModelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: Settings.NAME,
       }
     );
