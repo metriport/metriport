@@ -46,7 +46,7 @@ export class APIStack extends Stack {
       },
     });
 
-    new r53.PrivateHostedZone(this, "PrivateZone", {
+    const privateZone = new r53.PrivateHostedZone(this, "PrivateZone", {
       vpc: this.vpc,
       zoneName: props.config.host,
     });
@@ -210,6 +210,15 @@ export class APIStack extends Stack {
       }
     );
     const apiServerAddress = fargateService.loadBalancer.loadBalancerDnsName;
+    const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
+
+    new r53.ARecord(this, "APIDomainPrivateRecord", {
+      recordName: apiUrl,
+      zone: privateZone,
+      target: r53.RecordTarget.fromAlias(
+        new r53_targets.LoadBalancerTarget(fargateService.loadBalancer)
+      ),
+    });
 
     // This speeds up deployments so the tasks are swapped quicker.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
@@ -286,7 +295,6 @@ export class APIStack extends Stack {
     });
 
     // add domain cert + record
-    const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
     api.addDomainName("APIDomain", {
       domainName: apiUrl,
       certificate: certificate,

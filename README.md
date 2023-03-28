@@ -434,7 +434,20 @@ Check the scripts on the folder's [package.json](https://github.com/metriport/me
 
 ### **API Key Setup**
 
-TODO
+Most endpoints require an API Gateway [API Key](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-usage-plans.html). You can do it manually on AWS console or programaticaly through AWS CLI or SDK.
+
+To do it manually:
+
+1. Login to the AWS console;
+1. Go to API Gateway;
+1. Create a Usage Plan if you don't already have one;
+1. Create an API Key;
+   - the `value` field must follow this pattern: base 64 of "`<KEY>:<UUID>`", where:
+   - `KEY` is a random key (e.g., generated with `nanoid`); and
+   - `UUID` is the customer ID (more about this on [Initialization](#initialization))
+1. Add the newly created API Key to a Usage Plan.
+
+Now you can make requests to endpoints that require the an API Key by setting the `x-api-key` header.
 
 ### **Environment Setup**
 
@@ -471,6 +484,20 @@ Note: if you need help with the `deploy.sh` script at any time, you can run:
 ```shell
 $ ./deploy.sh -h
 ```
+
+### **Initialization**
+
+The API Server works with the concept of "Customer", which is basically a tenant on the API Server DB.
+There must be at least one customer on the API Server DB - you can think of it as your account in case you're
+planning to have only one.
+
+Each new Customer on the API Server should be initialized by calling the "init" endpoint with said customer ID:
+
+```
+POST /internal/init?cxId=<customer-id>
+```
+
+The customer ID must be a UUID.
 
 ## License
 

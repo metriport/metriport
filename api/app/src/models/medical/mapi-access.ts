@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { BaseModel, ModelSetup } from "../_default";
 
 export class MAPIAccess extends BaseModel<MAPIAccess> {
   static NAME = "mapi_access";
@@ -7,10 +7,10 @@ export class MAPIAccess extends BaseModel<MAPIAccess> {
   static setup: ModelSetup = (sequelize: Sequelize) => {
     MAPIAccess.init(
       {
-        ...BaseModel.baseAttributes(),
+        ...BaseModel.attributes(),
       },
       {
-        ...defaultModelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: MAPIAccess.NAME,
       }
     );

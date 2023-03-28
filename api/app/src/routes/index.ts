@@ -14,12 +14,14 @@ import sleep from "./sleep";
 import user from "./user";
 import webhook from "./webhook";
 import medical from "./medical";
+import internal from "./internal";
 
 export default (app: Application) => {
   app.use(requestLogger);
 
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", webhook);
+  app.use("/internal", internal);
 
   // routes with API key auth
   app.use("/settings", processAPIKey, settings);
