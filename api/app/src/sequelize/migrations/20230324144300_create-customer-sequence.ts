@@ -53,7 +53,8 @@ async function getCxIDs(
   transaction: Transaction
 ): Promise<string[]> {
   const [res] = await sequelize.query(
-    `select cx_id from organization ` +
+    `select distinct cx_id from (` +
+      `select cx_id from organization ` +
       `where cx_id::text not in (` +
       `  select id from ${tableName} where data_type = '${dataType}'` +
       `) ` +
@@ -61,7 +62,7 @@ async function getCxIDs(
       `select cx_id from connected_user ` +
       `where cx_id::text not in (` +
       `  select id from ${tableName} where data_type = '${dataType}'` +
-      `)`,
+      `)) x`,
     { transaction }
   );
   return res && res.length ? (res as any[]).map(r => r.cx_id) : [];
