@@ -5,7 +5,7 @@ import { createPatient, PatientCreateCmd } from "../../command/medical/patient/c
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import cwCommands from "../../external/commonwell";
-import { captureError } from "../../shared/notifications";
+import { capture } from "../../shared/notifications";
 import {
   asyncHandler,
   getCxIdOrFail,
@@ -49,8 +49,8 @@ router.post(
     // Intentionally asynchronous - it takes too long to perform
     cwCommands.patient.create(patient, facilityId).catch(err => {
       console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
-      captureError(err, {
-        extra: { cxId, facilityId, patientId: patient.id, context: `cw.patient.create` },
+      capture.error(err, {
+        extra: { facilityId, patientId: patient.id, context: `cw.patient.create` },
       });
     });
 
@@ -86,8 +86,8 @@ router.put(
     // Intentionally asynchronous - it takes too long to perform
     cwCommands.patient.update(patient, facilityId).catch(err => {
       console.error(`Failed to update patient ${patient.id} @ CW: `, err);
-      captureError(err, {
-        extra: { cxId, facilityId, patientId: patient.id, context: `cw.patient.update` },
+      capture.error(err, {
+        extra: { facilityId, patientId: patient.id, context: `cw.patient.update` },
       });
     });
 

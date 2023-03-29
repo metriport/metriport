@@ -9,7 +9,7 @@ import { AppleWebhookPayload } from "../../mappings/apple";
 import { DataType, TypedData, UserData } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
-import { captureError } from "../../shared/notifications";
+import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUserOrFail, getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
@@ -57,6 +57,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
         const connectedUsers = (
           await Promise.all(
             userTokens.map(async ut => {
+              // not setting user on capture bc this is running in parallel/asynchronously
               return getConnectedUsers({
                 cxId: ut.cxId,
                 ids: [ut.userId],
@@ -138,15 +139,15 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
         } catch (err) {
           const msg = getErrorMessage(err);
           log(`Failed to process data of customer ${cxId}: ${msg}`);
-          captureError(err, {
-            extra: { cxId, context: `webhook.processData.customer` },
+          capture.error(err, {
+            extra: { context: `webhook.processData.customer` },
           });
         }
       })
     );
   } catch (err) {
     log(`Error on processData: `, err);
-    captureError(err, {
+    capture.error(err, {
       extra: { context: `webhook.processData.global` },
     });
   }
@@ -167,8 +168,8 @@ export const processAppleData = async (
     reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (err) {
     log(`Error on processAppleData: `, err);
-    captureError(err, {
-      extra: { cxId, metriportUserId, context: `webhook.processAppleData` },
+    capture.error(err, {
+      extra: { metriportUserId, context: `webhook.processAppleData` },
     });
   }
 };
@@ -177,7 +178,7 @@ const reportUsage = (cxId: string, cxUserIds: string[]): void => {
   cxUserIds.forEach(cxUserId => [
     reportUsageCmd({ cxId, cxUserId, apiType: ApiTypes.devices }).catch(err => {
       log(`Failed to report usage (${{ cxId, cxUserId, apiType: ApiTypes.devices }}): `, err);
-      captureError(err, { extra: { cxId, cxUserId, apiType: ApiTypes.devices } });
+      capture.error(err, { extra: { cxUserId, apiType: ApiTypes.devices } });
     }),
   ]);
 };
@@ -250,7 +251,7 @@ export const processRequest = async (
     return true;
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    captureError(err, {
+    capture.error(err, {
       extra: { webhookRequestId: webhookRequest.id, webhookUrl, context: `webhook.processRequest` },
     });
     try {
@@ -261,7 +262,7 @@ export const processRequest = async (
       });
     } catch (err2) {
       console.log(`Failed to store failure state on WH log`, err2);
-      captureError(err2, {
+      capture.error(err2, {
         extra: {
           webhookRequestId: webhookRequest.id,
           webhookUrl,
@@ -285,7 +286,7 @@ export const processRequest = async (
       });
     } catch (err2) {
       console.log(`Failed to store failure state on WH settings`, err2);
-      captureError(err2, {
+      capture.error(err2, {
         extra: {
           webhookRequestId: webhookRequest.id,
           webhookUrl,
