@@ -6,6 +6,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:cloud": "npm run build",
     "watch": "tsc -w",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint bin/**/*.ts lib/**/*.ts",

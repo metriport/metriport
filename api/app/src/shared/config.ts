@@ -10,18 +10,30 @@ export const getEnvVarOrFail = (varName: string): string => {
 
 export class Config {
   // env config
-  static readonly PROD_ENV: string = "production";
-  static readonly DEV_ENV: string = "dev";
-  static readonly SANDBOX_ENV: string = "sandbox";
-  static readonly SANDBOX_USER_LIMIT: number = 10;
+  static readonly PROD_ENV = "production";
+  static readonly DEV_ENV = "dev";
+  static readonly SANDBOX_ENV = "sandbox";
+  static readonly STAGING_ENV = "staging";
+  static readonly SANDBOX_USER_LIMIT = 10;
+
   static isCloudEnv(): boolean {
     return process.env.NODE_ENV === this.PROD_ENV;
   }
+  static getEnvType(): string | undefined {
+    return process.env.ENV_TYPE;
+  }
   static isProdEnv(): boolean {
-    return process.env.ENV_TYPE === this.PROD_ENV;
+    return Config.getEnvType() === this.PROD_ENV;
   }
   static isSandbox(): boolean {
-    return process.env.ENV_TYPE === this.SANDBOX_ENV;
+    return Config.getEnvType() === this.SANDBOX_ENV;
+  }
+  static isStagingbox(): boolean {
+    return Config.getEnvType() === this.STAGING_ENV;
+  }
+
+  static getVersion(): string | undefined {
+    return getEnvVar("METRIPORT_VERSION");
   }
 
   static getSlackAlertUrl(): string | undefined {
@@ -29,6 +41,10 @@ export class Config {
   }
   static getSlackNotificationUrl(): string | undefined {
     return getEnvVar("SLACK_NOTIFICATION_URL");
+  }
+
+  static getSentryDSN(): string | undefined {
+    return getEnvVar("SENTRY_DSN");
   }
 
   static getConnectWidgetUrl(): string {

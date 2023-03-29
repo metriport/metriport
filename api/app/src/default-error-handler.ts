@@ -31,6 +31,8 @@ const zodResponseBody = (err: ZodError): string => {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  res.setHeader(`x-sentry-id`, (res as any).sentry || ``);
   if (err instanceof MetriportError) {
     return res.contentType("json").status(err.status).send(metriportResponseBody(err));
   }

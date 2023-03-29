@@ -1,11 +1,14 @@
-import { NetworkLink, isLOLA1 } from "@metriport/commonwell-sdk";
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
-import { oid } from "../../../shared/oid";
-import { patientWithCWData } from "./shared";
-import { setCommonwellId } from "../patient-external-data";
+import { isLOLA1, NetworkLink } from "@metriport/commonwell-sdk";
 import { reset } from ".";
-import { getPatientData } from "../patient-shared";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { captureError } from "../../../shared/notifications";
+import { oid } from "../../../shared/oid";
+import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { setCommonwellId } from "../patient-external-data";
+import { getPatientData } from "../patient-shared";
+import { patientWithCWData } from "./shared";
+
+const context = "cw.link.create";
 
 export const create = async (
   personId: string,
@@ -71,26 +74,20 @@ export const create = async (
       lola1Links.forEach(async link => {
         if (link._links?.upgrade?.href) {
           requests.push(
-            commonWell.upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
+            commonWell
+              .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
+              .catch(err => {
+                console.log(`Failed to upgrade link: `, err);
+                captureError(err, { extra: { cxId, cwPatientId, personId, context } });
+                throw err;
+              })
           );
         }
       });
-
-      const upgradeLinksResp = await Promise.allSettled(requests);
-
-      const rejected = upgradeLinksResp.flatMap(r => (r.status === "rejected" ? r.reason : []));
-      if (rejected.length > 0) {
-        // TODO #369 also send ONE message to Slack?
-        rejected.forEach(reason =>
-          // TODO #156 SENTRY
-          console.log(`Failed to upgrade link: ${reason}`)
-        );
-      }
+      await Promise.allSettled(requests);
     }
   } catch (error) {
-    const msg = `Failure linking`;
-    console.log(`${msg} - person id:`, personId);
-    console.log(msg, error);
-    throw new Error(msg);
+    captureError(error, { extra: { cxId, cwPatientId, personId, context } });
+    throw error;
   }
 };

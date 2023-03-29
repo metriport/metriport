@@ -3,21 +3,20 @@ import Axios from "axios";
 import dayjs from "dayjs";
 import { chunk, groupBy } from "lodash";
 import { nanoid } from "nanoid";
-
-import { AppleWebhookPayload } from "../../mappings/apple";
 import { getErrorMessage } from "../../errors";
 import WebhookError from "../../errors/webhook";
+import { AppleWebhookPayload } from "../../mappings/apple";
 import { DataType, TypedData, UserData } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
+import { captureError } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { getConnectedUsers, getConnectedUserOrFail } from "../connected-user/get-connected-user";
+import { getConnectedUserOrFail, getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
-import { reportUsage as reportUsageCmd } from "../usage/report-usage";
+import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
 import { createWebhookRequest, updateWebhookRequestStatus } from "../webhook/webhook-request";
-import { ApiTypes } from "../usage/report-usage";
 
 const axios = Axios.create();
 
@@ -121,18 +120,24 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
           // now that we have a all the chunks for one customer, process them
           const settings = await getSettingsOrFail({ id: cxId });
           await processOneCustomer(cxId, settings, payloads);
-          await reportUsage(
+          reportUsage(
             cxId,
             dataAndUserList.map(du => du.cxUserId)
           );
         } catch (err) {
           const msg = getErrorMessage(err);
           log(`Failed to process data of customer ${cxId}: ${msg}`);
+          captureError(err, {
+            extra: { cxId, context: `webhook.processData.customer` },
+          });
         }
       })
     );
   } catch (err) {
     log(`Error on processData: `, err);
+    captureError(err, {
+      extra: { context: `webhook.processData.global` },
+    });
   }
 };
 
@@ -148,17 +153,20 @@ export const processAppleData = async (
     await processOneCustomer(connectedUser.cxId, settings, [
       { users: [{ userId: metriportUserId, ...data }] },
     ]);
-    await reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
+    reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (err) {
     log(`Error on processAppleData: `, err);
+    captureError(err, {
+      extra: { cxId, metriportUserId, context: `webhook.processAppleData` },
+    });
   }
 };
 
-const reportUsage = async (cxId: string, cxUserIds: string[]): Promise<void> => {
+const reportUsage = (cxId: string, cxUserIds: string[]): void => {
   cxUserIds.forEach(cxUserId => [
     reportUsageCmd({ cxId, cxUserId, apiType: ApiTypes.devices }).catch(err => {
-      // TODO #156 report to monitoring app instead
-      log(`Failed to report usage, cxId ${cxId}, cxUserId ${cxUserId}`, err);
+      log(`Failed to report usage (${{ cxId, cxUserId, apiType: ApiTypes.devices }}): `, err);
+      captureError(err, { extra: { cxId, cxUserId, apiType: ApiTypes.devices } });
     }),
   ]);
 };
@@ -231,6 +239,9 @@ export const processRequest = async (
     return true;
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
+    captureError(err, {
+      extra: { webhookRequestId: webhookRequest.id, webhookUrl, context: `webhook.processRequest` },
+    });
     try {
       // mark this request as failed on the DB
       await updateWebhookRequestStatus({
@@ -239,6 +250,13 @@ export const processRequest = async (
       });
     } catch (err2) {
       console.log(`Failed to store failure state on WH log`, err2);
+      captureError(err2, {
+        extra: {
+          webhookRequestId: webhookRequest.id,
+          webhookUrl,
+          context: `webhook.processRequest.updateStatus.failed`,
+        },
+      });
     }
     let webhookStatusDetail;
     if (err instanceof WebhookError) {
@@ -256,6 +274,13 @@ export const processRequest = async (
       });
     } catch (err2) {
       console.log(`Failed to store failure state on WH settings`, err2);
+      captureError(err2, {
+        extra: {
+          webhookRequestId: webhookRequest.id,
+          webhookUrl,
+          context: `webhook.processRequest.updateStatus.details`,
+        },
+      });
     }
   }
   return false;
@@ -279,6 +304,7 @@ const sendPayload = async (
     return res.data;
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
+    // Don't change this error message, it's used to detect if the webhook is working or not
     throw new WebhookError(`Failed to send payload`, err);
   }
 };
