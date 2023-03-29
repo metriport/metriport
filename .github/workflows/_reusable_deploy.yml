@@ -92,7 +92,7 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-        if: env.SENTRY_AUTH_TOKEN != null && env.SENTRY_ORG != nullß
+        if: env.SENTRY_AUTH_TOKEN != null && env.SENTRY_ORG != null
         with:
           environment: ${{ inputs.deploy_env }}
           version: ${{ github.sha }}
