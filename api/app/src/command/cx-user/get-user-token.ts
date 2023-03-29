@@ -2,6 +2,7 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { UserToken } from "../../domain/user-token";
 import NotFoundError from "../../errors/not-found";
 import { docTableNames, getDB } from "../../models/db";
+import { capture } from "../../shared/notifications";
 
 export type GetUserTokenCommand = {
   token: string;
@@ -14,7 +15,11 @@ export const getUserToken = async ({ token }: GetUserTokenCommand): Promise<User
       Key: { token },
     })
     .promise();
-  if (item && item.Item) return ddbItemAsOAuth(item.Item);
+  if (item && item.Item) {
+    const token = ddbItemAsOAuth(item.Item);
+    capture.setUserId(token.userId);
+    return token;
+  }
   // TODO protect the token on log, show only 5 first and last chars
   console.log(`Could not find token on DynamoDB: ${token}`);
   throw new NotFoundError(`Could not find token on DynamoDB`);

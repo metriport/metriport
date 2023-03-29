@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { accountInit } from "../command/account-init";
-import { asyncHandler, getFromQueryOrFail } from "./util";
+import { asyncHandler, getCxIdFromQueryOrFail } from "./util";
 
 const router = Router();
 
@@ -18,7 +18,7 @@ const router = Router();
 router.post(
   "/init",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getFromQueryOrFail("cxId", req);
+    const cxId = getCxIdFromQueryOrFail(req);
     await accountInit(cxId);
     return res.sendStatus(status.OK);
   })

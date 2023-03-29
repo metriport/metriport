@@ -10,6 +10,7 @@ import { saveUserToken } from "../command/cx-user/save-user-token";
 import { UserToken } from "../domain/user-token";
 import { Config } from "../shared/config";
 import { ProviderOAuth1Options } from "../shared/constants";
+import { capture } from "../shared/notifications";
 import { Util } from "../shared/util";
 
 const axios = Axios.create();
@@ -164,6 +165,7 @@ export class OAuth1DefaultImpl implements OAuth1 {
     for (const oauthUserAccessToken of userAccessTokens) {
       const userTokenList = await getUserTokenByUAT({ oauthUserAccessToken });
       for (const userToken of userTokenList) {
+        capture.setUserId(userToken.userId);
         // DynamoDB (Webhook and auth)
         const updatedUserToken = userToken.clone();
         updatedUserToken.oauthUserAccessToken = undefined;
