@@ -35,6 +35,19 @@ export class Config {
   static getVersion(): string | undefined {
     return getEnvVar("METRIPORT_VERSION");
   }
+  static getEnvironment(): string {
+    switch (process.env.ENV_TYPE) {
+      case this.PROD_ENV:
+        return this.PROD_ENV;
+      case this.STAGING_ENV:
+        return this.STAGING_ENV;
+      case this.SANDBOX_ENV:
+        return this.SANDBOX_ENV;
+
+      default:
+        return this.DEV_ENV;
+    }
+  }
 
   static getSlackAlertUrl(): string | undefined {
     return getEnvVar("SLACK_ALERT_URL");
@@ -160,5 +173,9 @@ export class Config {
   }
   static getMemberManagementOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
+  }
+
+  static getPostHogApiKey(): string | undefined {
+    return getEnvVar("POST_HOG_API_KEY");
   }
 }

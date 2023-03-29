@@ -4,6 +4,7 @@ import { sleep } from "../../../shared/util";
 import { DefaultProvider } from "./connect-providers";
 import ErrorDialog, { DEFAULT_ERROR_MESSAGE } from "./error-dialog";
 import Provider from "./provider";
+import Analytics from "../../../shared/analytics";
 
 type ProvidersProps = {
   providers: DefaultProvider[];
@@ -60,6 +61,10 @@ const Providers = ({ providers, connectedProviders, setConnectedProviders }: Pro
     setIsLoading({
       ...isLoading,
       [provider]: true,
+    });
+
+    Analytics.emit(Analytics.events.connectProvider, {
+      provider,
     });
 
     try {

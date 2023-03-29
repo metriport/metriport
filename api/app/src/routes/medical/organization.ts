@@ -53,7 +53,7 @@ router.post(
  *
  * Updates the organization at Metriport and HIEs.
  *
- * @param req.body The data to udpate the organization.
+ * @param req.body The data to update the organization.
  * @returns The updated organization.
  */
 router.put(

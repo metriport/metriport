@@ -17,6 +17,7 @@ import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
 import { createWebhookRequest, updateWebhookRequestStatus } from "../webhook/webhook-request";
+import { analytics, EventTypes } from "../../shared/analytics";
 
 const axios = Axios.create();
 
@@ -120,6 +121,16 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
           });
           // now that we have a all the chunks for one customer, process them
           const settings = await getSettingsOrFail({ id: cxId });
+
+          analytics({
+            distinctId: cxId,
+            event: EventTypes.query,
+            properties: {
+              method: "POST",
+              url: "/webhook/garmin",
+              apiType: ApiTypes.devices,
+            },
+          });
           await processOneCustomer(cxId, settings, payloads);
           reportUsage(
             cxId,

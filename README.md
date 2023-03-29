@@ -296,6 +296,16 @@ $ echo "CW_MEMBER_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env
 $ echo "CW_MEMBER_CERTIFICATE=<YOUR-SECRET>" >> api/app/.env
 ```
 
+#### **Optional analytics reporting**
+
+The API server reports analytics to [PostHog](https://posthog.com/). This is optional.
+
+If you want to set it up, add this to the `.env` file:
+
+```shell
+$ echo "POST_HOG_API_KEY=<YOUR-API-KEY>" >> api/app/.env
+```
+
 #### **Optional usage report**
 
 The API server reports endpoint usage to an external service. This is optional.

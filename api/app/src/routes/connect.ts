@@ -94,33 +94,36 @@ const providerRequest = z.object({
  *
  * @return  redirect to the Success page.
  */
-router.get("/:provider", async (req: Request, res: Response) => {
-  const { state, code: authCode, oauth_token, oauth_verifier } = providerRequest.parse(req.query);
+router.get(
+  "/:provider",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { state, code: authCode, oauth_token, oauth_verifier } = providerRequest.parse(req.query);
 
-  try {
-    // OAUTH 2
-    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(req.params.provider);
-    if (providerOAuth2.success) {
-      const provider = providerOAuth2.data;
-      const cxId = getCxIdFromHeaders(req);
-      const userId = getUserIdFromHeaders(req);
-      await processOAuth2(provider, state, authCode, cxId, userId);
-      return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
-    }
+    try {
+      // OAUTH 2
+      const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(req.params.provider);
+      if (providerOAuth2.success) {
+        const provider = providerOAuth2.data;
+        const cxId = getCxIdFromHeaders(req);
+        const userId = getUserIdFromHeaders(req);
+        await processOAuth2(provider, state, authCode, cxId, userId);
+        return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
+      }
 
-    // OAUTH 1
-    const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(req.params.provider);
-    if (providerOAuth1.success) {
-      const provider = providerOAuth1.data;
-      await processOAuth1(provider, state, oauth_token, oauth_verifier);
-      return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
+      // OAUTH 1
+      const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(req.params.provider);
+      if (providerOAuth1.success) {
+        const provider = providerOAuth1.data;
+        await processOAuth1(provider, state, oauth_token, oauth_verifier);
+        return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
+      }
+    } catch (err) {
+      console.log(`Error on /connect/${req.params.provider}`, err);
+      capture.error(err, { extra: { context: `connect.${req.params.provider}` } });
+      return res.redirect(buildConnectErrorRedirectURL(false, state));
     }
-  } catch (err) {
-    console.log(`Error on /connect/${req.params.provider}`, err);
-    capture.error(err, { extra: { context: `connect.${req.params.provider}` } });
-    return res.redirect(buildConnectErrorRedirectURL(false, state));
-  }
-});
+  })
+);
 
 /** ---------------------------------------------------------------------------------------
  * GET /connect/user/providers
@@ -133,33 +136,36 @@ router.get("/:provider", async (req: Request, res: Response) => {
  *
  * @return  {string[]}  The user's connected providers
  */
-router.get("/user/providers", async (req: Request, res: Response) => {
-  const token = req.header("api-token");
-  if (!token) throw new UnauthorizedError();
+router.get(
+  "/user/providers",
+  asyncHandler(async (req: Request, res: Response) => {
+    const token = req.header("api-token");
+    if (!token) throw new UnauthorizedError();
 
-  let cxId;
-  let userId;
+    let cxId;
+    let userId;
 
-  if (!Config.isCloudEnv()) {
-    const useToken = await getUserToken({ token });
-    cxId = useToken.cxId;
-    userId = useToken.userId;
-  } else {
-    cxId = getCxIdFromHeaders(req);
-    userId = getUserIdFromHeaders(req);
-  }
+    if (!Config.isCloudEnv()) {
+      const useToken = await getUserToken({ token });
+      cxId = useToken.cxId;
+      userId = useToken.userId;
+    } else {
+      cxId = getCxIdFromHeaders(req);
+      userId = getUserIdFromHeaders(req);
+    }
 
-  if (!cxId || !userId) {
-    throw new BadRequestError("Invalid headers");
-  }
+    if (!cxId || !userId) {
+      throw new BadRequestError("Invalid headers");
+    }
 
-  const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
-  if (!connectedUser.providerMap) return res.status(status.OK).send([]);
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+    if (!connectedUser.providerMap) return res.status(status.OK).send([]);
 
-  const providers = Object.keys(connectedUser.providerMap);
+    const providers = Object.keys(connectedUser.providerMap);
 
-  return res.status(status.OK).send(providers);
-});
+    return res.status(status.OK).send(providers);
+  })
+);
 
 /** ---------------------------------------------------------------------------------------
  * GET /connect/user/apple
@@ -171,38 +177,41 @@ router.get("/user/providers", async (req: Request, res: Response) => {
  *
  * @return  {string[]}  The user's connected providers
  */
-router.get("/user/apple", async (req: Request, res: Response) => {
-  const token = req.header("api-token");
-  if (!token) throw new UnauthorizedError();
+router.get(
+  "/user/apple",
+  asyncHandler(async (req: Request, res: Response) => {
+    const token = req.header("api-token");
+    if (!token) throw new UnauthorizedError();
 
-  let cxId;
-  let userId;
+    let cxId;
+    let userId;
 
-  if (!Config.isCloudEnv()) {
-    const useToken = await getUserToken({ token });
-    cxId = useToken.cxId;
-    userId = useToken.userId;
-  } else {
-    cxId = getCxIdFromHeaders(req);
-    userId = getUserIdFromHeaders(req);
-  }
+    if (!Config.isCloudEnv()) {
+      const useToken = await getUserToken({ token });
+      cxId = useToken.cxId;
+      userId = useToken.userId;
+    } else {
+      cxId = getCxIdFromHeaders(req);
+      userId = getUserIdFromHeaders(req);
+    }
 
-  if (!cxId || !userId) {
-    throw new BadRequestError("Invalid headers");
-  }
+    if (!cxId || !userId) {
+      throw new BadRequestError("Invalid headers");
+    }
 
-  const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
-  await updateProviderData({
-    id: connectedUser.id,
-    cxId: connectedUser.cxId,
-    provider: PROVIDER_APPLE,
-    providerItem: {
-      token: "true",
-    },
-  });
+    await updateProviderData({
+      id: connectedUser.id,
+      cxId: connectedUser.cxId,
+      provider: PROVIDER_APPLE,
+      providerItem: {
+        token: "true",
+      },
+    });
 
-  return res.status(status.OK).send(connectedUser.id);
-});
+    return res.status(status.OK).send(connectedUser.id);
+  })
+);
 
 export default router;

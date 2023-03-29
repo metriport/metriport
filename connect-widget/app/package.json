@@ -47,6 +47,7 @@
     "axios": "^0.27.2",
     "env-cmd": "^10.1.0",
     "framer-motion": "^7.6.15",
+    "posthog-js": "^1.51.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^3.11.0",

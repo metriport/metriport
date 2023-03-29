@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import BadRequestError from "../errors/bad-request";
+import { analytics, EventTypes } from "../shared/analytics";
+import { ApiTypes } from "../command/usage/report-usage";
 import { capture } from "../shared/notifications";
 
 export const asyncHandler =
@@ -13,12 +15,52 @@ export const asyncHandler =
   ) =>
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      analyzeRoute(req);
       await f(req, res, next);
     } catch (err) {
       console.error(err);
       next(err);
     }
   };
+
+export const analyzeRoute = (req: Request): void => {
+  const medicalRoutes = ["medical", "fhir"];
+  const devicesRoutes = ["activity", "body", "biometrics", "nutrition", "sleep", "user"];
+
+  let cxId;
+
+  const reqCxId = getCxId(req);
+  if (reqCxId) cxId = reqCxId;
+
+  const headerCxId = getCxIdFromHeaders(req);
+  if (headerCxId) cxId = headerCxId;
+
+  if (cxId) {
+    const isMedical = medicalRoutes.some(route => req.baseUrl.includes(route));
+    const isDevices = devicesRoutes.some(route => req.baseUrl.includes(route));
+
+    let reqUrl = req.baseUrl;
+    const hasPath = req.route.path.split("/")[1];
+
+    if (hasPath) {
+      reqUrl = reqUrl.concat(req.route.path);
+    }
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.query,
+      properties: {
+        method: req.method,
+        url: reqUrl,
+        ...(isMedical
+          ? { apiType: ApiTypes.medical }
+          : isDevices
+          ? { apiType: ApiTypes.devices }
+          : undefined),
+      },
+    });
+  }
+};
 
 // https://www.rfc-editor.org/rfc/rfc7807
 export type HttpResponseBody = { status: number; title: string; detail?: string };

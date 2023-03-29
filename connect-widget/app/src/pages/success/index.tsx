@@ -4,11 +4,15 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WidgetContainer from "../../shared/components/WidgetContainer";
 import { redirectToMain } from "../../shared/util";
+import Analytics from "../../shared/analytics";
 
 export default function Success() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const handleClick = () => redirectToMain(navigate, searchParams);
+  const handleClick = () => {
+    Analytics.emit(Analytics.events.connectSuccess);
+    redirectToMain(navigate, searchParams);
+  };
 
   return (
     <WidgetContainer>

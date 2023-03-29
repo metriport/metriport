@@ -1,7 +1,7 @@
 import base64url from "base64url";
 import { NextFunction, Request, Response } from "express";
-import { MAPIAccess } from "../../models/medical/mapi-access";
 import status from "http-status";
+import { MAPIAccess } from "../../models/medical/mapi-access";
 import { getCxIdOrFail } from "../util";
 
 /**
