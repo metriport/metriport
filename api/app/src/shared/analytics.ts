@@ -25,6 +25,7 @@ export const analytics = (params: EventMessageV1) => {
     params.properties = {
       ...params.properties,
       environment: Config.getEnvironment(),
+      platform: "oss-api",
     };
 
     posthog.capture(params);
