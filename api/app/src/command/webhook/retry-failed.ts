@@ -1,5 +1,5 @@
 import { WebhookRequest } from "../../models/webhook-request";
-import { captureError } from "../../shared/notifications";
+import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { processRequest } from "./webhook";
@@ -33,7 +33,7 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
         if (success) await Util.sleep(Math.random() * 200);
       }
     } catch (err) {
-      captureError(err, { extra: { cxId, context: `webhook.retryFailedRequests` } });
+      capture.error(err, { extra: { context: `webhook.retryFailedRequests` } });
     }
   };
   // intentionally asynchronous

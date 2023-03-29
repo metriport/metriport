@@ -11,7 +11,7 @@ import {
   updateOrganization,
 } from "../../command/medical/organization/update-organization";
 import cwCommands from "../../external/commonwell";
-import { captureError } from "../../shared/notifications";
+import { capture } from "../../shared/notifications";
 import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
@@ -39,8 +39,8 @@ router.post(
     // Intentionally asynchronous
     cwCommands.organization.create(org).catch(err => {
       console.error(`Failure while creating organization ${org.id} @ CW: `, err);
-      captureError(err, {
-        extra: { cxId, orgId: org.id, context: `cw.org.create` },
+      capture.error(err, {
+        extra: { orgId: org.id, context: `cw.org.create` },
       });
     });
 
@@ -82,8 +82,8 @@ router.put(
       })
       .catch(err => {
         console.error(`Failure while updating/creating organization ${org.id} @ CW: `, err);
-        captureError(err, {
-          extra: { cxId, orgId: org.id, context: `cw.org.update` },
+        capture.error(err, {
+          extra: { orgId: org.id, context: `cw.org.update` },
         });
       });
 

@@ -3,7 +3,7 @@ import { PatientLinkResp } from "@metriport/commonwell-sdk/lib/models/patient";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "../../../models/medical/patient";
-import { captureMessage } from "../../../shared/notifications";
+import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { setCommonwellId } from "../patient-external-data";
@@ -77,9 +77,8 @@ export const findCurrentLink = async (
       const msg =
         "Got 404 when trying to query person's patient links @ CW - Removing person ID from DB.";
       console.log(msg);
-      captureMessage(msg, {
+      capture.message(msg, {
         extra: {
-          cxId: patient.cxId,
           patientId: patient.id,
           cwPatientId: patientCWId,
           personId,

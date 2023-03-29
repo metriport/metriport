@@ -1,6 +1,6 @@
-import { Application } from "express";
+import { Application, Request, Response } from "express";
 import { nanoid } from "nanoid";
-import { captureError, captureMessage } from "../shared/notifications";
+import { capture } from "../shared/notifications";
 import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
@@ -15,7 +15,7 @@ import oauthRoutes from "./oauth-routes";
 import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
-import { asyncHandler } from "./util";
+import { asyncHandler, getCxId } from "./util";
 import webhook from "./webhook";
 
 export default (app: Application) => {
@@ -46,15 +46,15 @@ export default (app: Application) => {
   // TODO #156 remove this
   app.get(
     "/error",
-    asyncHandler(async () => {
+    processAPIKey,
+    asyncHandler(async (req: Request) => {
+      getCxId(req);
       try {
         throw new Error("This is an error");
       } catch (err) {
-        captureError(err, {
-          extra: {
-            userId: nanoid(),
-            userName: "Some Fake Name",
-          },
+        capture.error(err, {
+          user: { id: nanoid() },
+          extra: { userName: "Some Fake Name" },
         });
         throw err;
       }
@@ -62,13 +62,13 @@ export default (app: Application) => {
   );
   app.get(
     "/message",
-    asyncHandler(async () => {
-      captureMessage("Something special happened now", {
-        extra: {
-          userId: nanoid(),
-          userName: "Some Fake Name",
-        },
+    processAPIKey,
+    asyncHandler(async (req: Request, res: Response) => {
+      getCxId(req);
+      capture.message("Something special happened now", {
+        extra: { userName: "Some Fake Name" },
       });
+      return res.sendStatus(204);
     })
   );
 };

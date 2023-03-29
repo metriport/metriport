@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-
 import BadRequestError from "../errors/bad-request";
+import { capture } from "../shared/notifications";
 
 export const asyncHandler =
   (
@@ -54,45 +54,33 @@ export const getFromParamsOrFail = (prop: string, req: Request): string => {
   return value;
 };
 
-export const getCxId = (req: Request): string | undefined => req.cxId;
+export const getCxId = (req: Request): string | undefined => {
+  const cxId = req.cxId;
+  capture.setUserId(cxId);
+  return cxId;
+};
 export const getCxIdOrFail = (req: Request): string => {
   const cxId = getCxId(req);
   if (!cxId) throw new BadRequestError("Missing cxId");
   return cxId;
 };
 
-/** @deprecated use getFromQuery() */
-export const getCxIdFromQuery = (req: Request): string | undefined =>
-  req.query.cxId as string | undefined;
-/** @deprecated use getFromQueryOrFail() */
+export const getCxIdFromQuery = (req: Request): string | undefined => {
+  const cxId = req.query.cxId as string | undefined;
+  cxId && capture.setUserId(cxId);
+  return cxId;
+};
 export const getCxIdFromQueryOrFail = (req: Request): string => {
   const cxId = getCxIdFromQuery(req);
   if (!cxId) throw new BadRequestError("Missing cxId query param");
   return cxId;
 };
 
-/** @deprecated use getFromQuery() */
-export const getFacilityIdFromQuery = (req: Request): string | undefined =>
-  req.query.facilityId as string | undefined;
-/** @deprecated use getFromQueryOrFail() */
-export const getFacilityIdFromQueryOrFail = (req: Request): string => {
-  const facilityId = getFacilityIdFromQuery(req);
-  if (!facilityId) throw new BadRequestError("Missing facilityId query param");
-  return facilityId;
+export const getCxIdFromHeaders = (req: Request): string | undefined => {
+  const cxId = req.header("cxId") as string | undefined;
+  cxId && capture.setUserId(cxId);
+  return cxId;
 };
-
-/** @deprecated use getFromQuery() */
-export const getPatientIdFromQuery = (req: Request): string | undefined =>
-  req.query.patientId as string | undefined;
-/** @deprecated use getFromQueryOrFail() */
-export const getPatientIdFromQueryOrFail = (req: Request): string => {
-  const patientId = getPatientIdFromQuery(req);
-  if (!patientId) throw new BadRequestError("Missing patientId query param");
-  return patientId;
-};
-
-export const getCxIdFromHeaders = (req: Request): string | undefined =>
-  req.header("cxId") as string | undefined;
 
 export const getUserIdFromHeaders = (req: Request): string | undefined =>
   req.header("userId") as string | undefined;
