@@ -24,6 +24,9 @@ export const asyncHandler =
   };
 
 export const analyzeRoute = (req: Request): void => {
+  const medicalRoutes = ["medical", "fhir"];
+  const devicesRoutes = ["activity", "body", "biometrics", "nutrition", "sleep", "user"];
+
   let cxId;
 
   const reqCxId = getCxId(req);
@@ -33,7 +36,8 @@ export const analyzeRoute = (req: Request): void => {
   if (headerCxId) cxId = headerCxId;
 
   if (cxId) {
-    const isMedical = req.baseUrl.includes("medical");
+    const isMedical = medicalRoutes.some(route => req.baseUrl.includes(route));
+    const isDevices = devicesRoutes.some(route => req.baseUrl.includes(route));
 
     let reqUrl = req.baseUrl;
     const hasPath = req.route.path.split("/")[1];
@@ -48,7 +52,11 @@ export const analyzeRoute = (req: Request): void => {
       properties: {
         method: req.method,
         url: reqUrl,
-        apiType: isMedical ? ApiTypes.medical : ApiTypes.devices,
+        ...(isMedical
+          ? { apiType: ApiTypes.medical }
+          : isDevices
+          ? { apiType: ApiTypes.devices }
+          : undefined),
       },
     });
   }
