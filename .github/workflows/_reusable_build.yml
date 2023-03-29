@@ -37,7 +37,7 @@ jobs:
       # move to an external file so both this and deploy can use this logic
       - name: Build/compile
         if: ${{ inputs.build_env == 'production' }}
-        run: npm run build
+        run: npm run build:cloud
       - name: Build/compile STAGING
         if: ${{ inputs.build_env == 'staging' }}
         run: npm run build:staging

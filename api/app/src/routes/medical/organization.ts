@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -36,9 +37,11 @@ router.post(
 
     // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
     // Intentionally asynchronous
-    cwCommands.organization.create(org).then(undefined, (err: unknown) => {
-      // TODO #156 Send this to Sentry
+    cwCommands.organization.create(org).catch(err => {
       console.error(`Failure while creating organization ${org.id} @ CW: `, err);
+      Sentry.captureException(err, {
+        extra: { cxId, orgId: org.id, context: `cw.org.create` },
+      });
     });
 
     return res.status(status.CREATED).json(dtoFromModel(org));
@@ -70,10 +73,19 @@ router.put(
 
     // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
     // Intentionally asynchronous
-    cwCommands.organization.update(org).then(undefined, (err: unknown) => {
-      // TODO #156 Send this to Sentry
-      console.error(`Failure while updating organization ${org.id} @ CW: `, err);
-    });
+    cwCommands.organization
+      .update(org)
+      .catch(async err => {
+        // TODO #156 test this
+        if (err.response?.status !== 404) throw err;
+        await cwCommands.organization.create(org);
+      })
+      .catch(err => {
+        console.error(`Failure while updating/creating organization ${org.id} @ CW: `, err);
+        Sentry.captureException(err, {
+          extra: { cxId, orgId: org.id, context: `cw.org.update` },
+        });
+      });
 
     return res.status(status.OK).json(dtoFromModel(org));
   })

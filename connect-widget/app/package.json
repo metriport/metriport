@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
-    "build:staging": "env-cmd -f .env.staging react-scripts build",
+    "build": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` react-scripts build",
+    "build:cloud": "npm run build",
+    "build:staging": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` env-cmd -f .env.staging react-scripts build",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint src/**/*.ts src/**/*.tsx",
     "lint-fix": "npm run lint --fix",

@@ -7,10 +7,9 @@ import {
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
 import { StrongId } from "@metriport/commonwell-sdk/lib/models/identifier";
-
+import * as Sentry from "@sentry/node";
 import { MedicalDataSource } from "..";
 import { Patient, PatientExternalData } from "../../models/medical/patient";
-import { sendAlert } from "../../shared/notifications";
 import { oid } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
@@ -130,10 +129,11 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response?.status !== 404) throw err;
-      const subject = "Got 404 when trying to update person @ CW";
-      const message = `CW Person ID ${personId}\nTrying to find/create it...`;
-      sendAlert({ subject, message });
-      log(`${subject} - ${message}`);
+      const subject = "Got 404 when trying to update person @ CW, trying to find/create it";
+      log(`${subject} - CW Person ID ${personId}`);
+      Sentry.captureMessage(subject, {
+        extra: { cxId: patient.cxId, commonwellPatientId, personId, context: `cw.patient.update` },
+      });
       await findOrCreatePersonAndLink({
         commonWell,
         queryMeta,

@@ -1,10 +1,13 @@
+import * as Sentry from "@sentry/node";
 import { Application } from "express";
-
+import { nanoid } from "nanoid";
 import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
 import { requestLogger } from "./helpers/requestLogger";
+import internal from "./internal";
+import medical from "./medical";
 import { checkMAPIAccess, processAPIKey } from "./middlewares/auth";
 import { reportDeviceUsage, reportMedicalUsage } from "./middlewares/usage";
 import nutrition from "./nutrition";
@@ -12,9 +15,8 @@ import oauthRoutes from "./oauth-routes";
 import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
+import { asyncHandler } from "./util";
 import webhook from "./webhook";
-import medical from "./medical";
-import internal from "./internal";
 
 export default (app: Application) => {
   app.use(requestLogger);
@@ -40,4 +42,33 @@ export default (app: Application) => {
 
   // routes with OAuth based authentication
   app.use("/oauth", oauthRoutes);
+
+  // TODO #156 remove this
+  app.get(
+    "/error",
+    asyncHandler(async () => {
+      try {
+        throw new Error("This is an error");
+      } catch (err) {
+        Sentry.captureException(err, {
+          extra: {
+            userId: nanoid(),
+            userName: "Some Fake Name",
+          },
+        });
+        throw err;
+      }
+    })
+  );
+  app.get(
+    "/message",
+    asyncHandler(async () => {
+      Sentry.captureMessage("Something special happened now", {
+        extra: {
+          userId: nanoid(),
+          userName: "Some Fake Name",
+        },
+      });
+    })
+  );
 };
