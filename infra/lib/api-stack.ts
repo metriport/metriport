@@ -23,6 +23,7 @@ import { addErrorAlarmToLambdaFunc, isProd, mbToBytes } from "./util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
+  version: string | undefined;
 }
 
 export class APIStack extends Stack {
@@ -189,13 +190,15 @@ export class APIStack extends Stack {
           },
           environment: {
             NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
-            ENV_TYPE: props.config.environmentType,
+            ENV_TYPE: props.config.environmentType, // staging, production, sandbox
+            ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
             TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
             API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
             CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
             SYSTEM_ROOT_OID: props.config.systemRootOID,
             ...props.config.commonwell,
             ...(props.config.slack ? props.config.slack : undefined),
+            ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
             ...(props.config.usageReportUrl && {
               USAGE_URL: props.config.usageReportUrl,
             }),

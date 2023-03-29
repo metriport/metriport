@@ -168,13 +168,6 @@ export const getDateOrFail = (req: Request): string => {
   return date as string;
 };
 
-export const getCustomerEmail = (req: Request): string | undefined => req.email;
-export const getCustomerEmailOrFail = (req: Request): string => {
-  const email = getCustomerEmail(req);
-  if (!email) throw new BadRequestError("Missing email");
-  return email;
-};
-
 export function getETag(req: Request): {
   eTag: string | undefined;
 } {

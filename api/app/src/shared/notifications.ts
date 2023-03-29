@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import axios from "axios";
 import { Config } from "./config";
 
@@ -40,8 +41,46 @@ const sendToSlack = async (
   });
 };
 
+// TODO #156 remove this?
 export const sendNotification = async (notif: SlackMessage | string): Promise<void> =>
   sendToSlack(notif, slackNotificationUrl);
 
+// TODO #156 remove this?
 export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
   sendToSlack(notif, slackAlertUrl);
+
+export type CaptureContext = {
+  user: { id?: string; email?: string };
+  extra: Record<string, unknown>;
+  tags: {
+    [key: string]: string;
+  };
+};
+
+/**
+ * Captures an exception event and sends it to Sentry.
+ *
+ * @param error — An Error object.
+ * @param captureContext — Additional scope data to apply to exception event.
+ * @returns — The generated eventId.
+ */
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function captureError(error: any, captureContext?: Partial<CaptureContext>): string {
+  return Sentry.captureException(error, captureContext);
+}
+
+export type SeverityLevel = "fatal" | "error" | "warning" | "log" | "info" | "debug";
+
+/**
+ * Captures an exception event and sends it to Sentry.
+ *
+ * @param message The message to send to Sentry.
+ * @param captureContext — Additional scope data to apply to exception event.
+ * @returns — The generated eventId.
+ */
+export function captureMessage(
+  message: string,
+  captureContext?: Partial<CaptureContext> | SeverityLevel
+): string {
+  return Sentry.captureMessage(message, captureContext);
+}

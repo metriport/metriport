@@ -13,7 +13,7 @@ import { Facility } from "../../models/medical/facility";
 import { Organization } from "../../models/medical/organization";
 import { Patient, PatientExternalDataEntry } from "../../models/medical/patient";
 import { filterTruthy } from "../../shared/filter-map-utils";
-import { sendAlert } from "../../shared/notifications";
+import { captureError, captureMessage } from "../../shared/notifications";
 import { driversLicenseURIs } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makePersonForPatient } from "./patient-conversion";
@@ -46,9 +46,10 @@ export async function findOrCreatePerson({
     if (personIds.length > 1) {
       const subject = "Found more than one person for patient personal IDs";
       const message = idsToAlertMessage(commonwellPatientId, personIds);
-      sendAlert({ subject, message });
-      // TODO #156 SENTRY
       log(`${subject}: ${message}`);
+      captureMessage(subject, {
+        extra: { commonwellPatientId, personIds, context: `cw.findOrCreatePerson.strongIds` },
+      });
       return undefined;
     }
   } else {
@@ -62,8 +63,10 @@ export async function findOrCreatePerson({
     if (personIds.length > 1) {
       const subject = "Found more than one person for patient demographics";
       const message = idsToAlertMessage(commonwellPatientId, personIds);
-      sendAlert({ subject, message });
       log(`${subject}: ${message}`);
+      captureMessage(subject, {
+        extra: { commonwellPatientId, personIds, context: `cw.findOrCreatePerson.no.strongIds` },
+      });
       return undefined;
     }
   }
@@ -82,7 +85,7 @@ export async function findOrCreatePerson({
 }
 
 function idsToAlertMessage(cwPatientId: string, personIds: string[]): string {
-  return `Patient CW ID: ${cwPatientId}\nPerson IDs:\n- ${personIds.join("\n- ")}`;
+  return `Patient CW ID: ${cwPatientId}; Person IDs: ${personIds.join(", ")}`;
 }
 
 export async function getPatientData(
@@ -126,8 +129,8 @@ export async function searchPersonIds({
   const respSearches = await Promise.allSettled(
     personalIds.map(id =>
       commonWell.searchPerson(queryMeta, id.key, id.system).catch(err => {
-        // TODO #156 SENTRY
         log(`Failure searching person @ CW by personal ID`, err);
+        captureError(err, { extra: { context: `cw.searchPersonIds` } });
         throw err;
       })
     )
@@ -147,7 +150,6 @@ export function getPersonalIdentifiers(
   );
 }
 
-// TODO: REFACTOR WITH ABOVE
 export async function searchPersons({
   commonWell,
   queryMeta,
@@ -158,16 +160,14 @@ export async function searchPersons({
   strongIds: SimplifiedPersonalId[];
 }): Promise<CommonwellPerson[]> {
   const respSearches = await Promise.allSettled(
-    strongIds.map(id => commonWell.searchPerson(queryMeta, id.key, id.system))
+    strongIds.map(id =>
+      commonWell.searchPerson(queryMeta, id.key, id.system).catch(err => {
+        console.log(`Failed to search for person with strongId: `, err);
+        captureError(err, { extra: { context: `cw.searchPersons` } });
+        throw err;
+      })
+    )
   );
-  const rejected = respSearches.flatMap(r => (r.status === "rejected" ? r.reason : []));
-  if (rejected.length > 0) {
-    // TODO #369 also send ONE message to Slack?
-    rejected.forEach(reason =>
-      // TODO #156 SENTRY
-      console.log(`Failed to search for person with strongId: ${reason}`)
-    );
-  }
   const fulfilled = respSearches
     .flatMap(r => (r.status === "fulfilled" ? r.value._embedded?.person : []))
     .flatMap(filterTruthy);
