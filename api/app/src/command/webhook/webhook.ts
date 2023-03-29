@@ -1,5 +1,4 @@
 import { MetriportData } from "@metriport/api/lib/devices/models/metriport-data";
-import * as Sentry from "@sentry/node";
 import Axios from "axios";
 import dayjs from "dayjs";
 import { chunk, groupBy } from "lodash";
@@ -10,6 +9,7 @@ import { AppleWebhookPayload } from "../../mappings/apple";
 import { DataType, TypedData, UserData } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
+import { captureError } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUserOrFail, getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
@@ -127,7 +127,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
         } catch (err) {
           const msg = getErrorMessage(err);
           log(`Failed to process data of customer ${cxId}: ${msg}`);
-          Sentry.captureException(err, {
+          captureError(err, {
             extra: { cxId, context: `webhook.processData.customer` },
           });
         }
@@ -135,7 +135,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
     );
   } catch (err) {
     log(`Error on processData: `, err);
-    Sentry.captureException(err, {
+    captureError(err, {
       extra: { context: `webhook.processData.global` },
     });
   }
@@ -156,7 +156,7 @@ export const processAppleData = async (
     reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (err) {
     log(`Error on processAppleData: `, err);
-    Sentry.captureException(err, {
+    captureError(err, {
       extra: { cxId, metriportUserId, context: `webhook.processAppleData` },
     });
   }
@@ -166,7 +166,7 @@ const reportUsage = (cxId: string, cxUserIds: string[]): void => {
   cxUserIds.forEach(cxUserId => [
     reportUsageCmd({ cxId, cxUserId, apiType: ApiTypes.devices }).catch(err => {
       log(`Failed to report usage (${{ cxId, cxUserId, apiType: ApiTypes.devices }}): `, err);
-      Sentry.captureException(err, { extra: { cxId, cxUserId, apiType: ApiTypes.devices } });
+      captureError(err, { extra: { cxId, cxUserId, apiType: ApiTypes.devices } });
     }),
   ]);
 };
@@ -239,7 +239,7 @@ export const processRequest = async (
     return true;
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    Sentry.captureException(err, {
+    captureError(err, {
       extra: { webhookRequestId: webhookRequest.id, webhookUrl, context: `webhook.processRequest` },
     });
     try {
@@ -250,7 +250,7 @@ export const processRequest = async (
       });
     } catch (err2) {
       console.log(`Failed to store failure state on WH log`, err2);
-      Sentry.captureException(err2, {
+      captureError(err2, {
         extra: {
           webhookRequestId: webhookRequest.id,
           webhookUrl,
@@ -274,7 +274,7 @@ export const processRequest = async (
       });
     } catch (err2) {
       console.log(`Failed to store failure state on WH settings`, err2);
-      Sentry.captureException(err2, {
+      captureError(err2, {
         extra: {
           webhookRequestId: webhookRequest.id,
           webhookUrl,

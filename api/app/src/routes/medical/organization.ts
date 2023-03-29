@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -12,6 +11,7 @@ import {
   updateOrganization,
 } from "../../command/medical/organization/update-organization";
 import cwCommands from "../../external/commonwell";
+import { captureError } from "../../shared/notifications";
 import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
@@ -39,7 +39,7 @@ router.post(
     // Intentionally asynchronous
     cwCommands.organization.create(org).catch(err => {
       console.error(`Failure while creating organization ${org.id} @ CW: `, err);
-      Sentry.captureException(err, {
+      captureError(err, {
         extra: { cxId, orgId: org.id, context: `cw.org.create` },
       });
     });
@@ -82,7 +82,7 @@ router.put(
       })
       .catch(err => {
         console.error(`Failure while updating/creating organization ${org.id} @ CW: `, err);
-        Sentry.captureException(err, {
+        captureError(err, {
           extra: { cxId, orgId: org.id, context: `cw.org.update` },
         });
       });

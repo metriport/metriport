@@ -1,7 +1,7 @@
 import { isLOLA1, NetworkLink } from "@metriport/commonwell-sdk";
-import * as Sentry from "@sentry/node";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { captureError } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { setCommonwellId } from "../patient-external-data";
@@ -78,7 +78,7 @@ export const create = async (
               .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
               .catch(err => {
                 console.log(`Failed to upgrade link: `, err);
-                Sentry.captureException(err, { extra: { cxId, cwPatientId, personId, context } });
+                captureError(err, { extra: { cxId, cwPatientId, personId, context } });
                 throw err;
               })
           );
@@ -87,7 +87,7 @@ export const create = async (
       await Promise.allSettled(requests);
     }
   } catch (error) {
-    Sentry.captureException(error, { extra: { cxId, cwPatientId, personId, context } });
+    captureError(error, { extra: { cxId, cwPatientId, personId, context } });
     throw error;
   }
 };

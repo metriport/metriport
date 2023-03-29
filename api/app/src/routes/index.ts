@@ -1,6 +1,6 @@
-import * as Sentry from "@sentry/node";
 import { Application } from "express";
 import { nanoid } from "nanoid";
+import { captureError, captureMessage } from "../shared/notifications";
 import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
@@ -50,7 +50,7 @@ export default (app: Application) => {
       try {
         throw new Error("This is an error");
       } catch (err) {
-        Sentry.captureException(err, {
+        captureError(err, {
           extra: {
             userId: nanoid(),
             userName: "Some Fake Name",
@@ -63,7 +63,7 @@ export default (app: Application) => {
   app.get(
     "/message",
     asyncHandler(async () => {
-      Sentry.captureMessage("Something special happened now", {
+      captureMessage("Something special happened now", {
         extra: {
           userId: nanoid(),
           userName: "Some Fake Name",

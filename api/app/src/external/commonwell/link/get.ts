@@ -1,9 +1,9 @@
 import { CommonWellAPI, LOLA, Person, RequestMetadata } from "@metriport/commonwell-sdk";
 import { PatientLinkResp } from "@metriport/commonwell-sdk/lib/models/patient";
-import * as Sentry from "@sentry/node";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "../../../models/medical/patient";
+import { captureMessage } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { setCommonwellId } from "../patient-external-data";
@@ -77,7 +77,7 @@ export const findCurrentLink = async (
       const msg =
         "Got 404 when trying to query person's patient links @ CW - Removing person ID from DB.";
       console.log(msg);
-      Sentry.captureMessage(msg, {
+      captureMessage(msg, {
         extra: {
           cxId: patient.cxId,
           patientId: patient.id,

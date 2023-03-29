@@ -6,7 +6,6 @@ import {
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
 import { StrongId } from "@metriport/commonwell-sdk/lib/models/identifier";
-import * as Sentry from "@sentry/node";
 import _ from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
@@ -14,6 +13,7 @@ import { Facility } from "../../models/medical/facility";
 import { Organization } from "../../models/medical/organization";
 import { Patient, PatientExternalDataEntry } from "../../models/medical/patient";
 import { filterTruthy } from "../../shared/filter-map-utils";
+import { captureError, captureMessage } from "../../shared/notifications";
 import { driversLicenseURIs } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makePersonForPatient } from "./patient-conversion";
@@ -47,7 +47,7 @@ export async function findOrCreatePerson({
       const subject = "Found more than one person for patient personal IDs";
       const message = idsToAlertMessage(commonwellPatientId, personIds);
       log(`${subject}: ${message}`);
-      Sentry.captureMessage(subject, {
+      captureMessage(subject, {
         extra: { commonwellPatientId, personIds, context: `cw.findOrCreatePerson.strongIds` },
       });
       return undefined;
@@ -64,7 +64,7 @@ export async function findOrCreatePerson({
       const subject = "Found more than one person for patient demographics";
       const message = idsToAlertMessage(commonwellPatientId, personIds);
       log(`${subject}: ${message}`);
-      Sentry.captureMessage(subject, {
+      captureMessage(subject, {
         extra: { commonwellPatientId, personIds, context: `cw.findOrCreatePerson.no.strongIds` },
       });
       return undefined;
@@ -130,7 +130,7 @@ export async function searchPersonIds({
     personalIds.map(id =>
       commonWell.searchPerson(queryMeta, id.key, id.system).catch(err => {
         log(`Failure searching person @ CW by personal ID`, err);
-        Sentry.captureException(err, { extra: { context: `cw.searchPersonIds` } });
+        captureError(err, { extra: { context: `cw.searchPersonIds` } });
         throw err;
       })
     )
@@ -163,7 +163,7 @@ export async function searchPersons({
     strongIds.map(id =>
       commonWell.searchPerson(queryMeta, id.key, id.system).catch(err => {
         console.log(`Failed to search for person with strongId: `, err);
-        Sentry.captureException(err, { extra: { context: `cw.searchPersons` } });
+        captureError(err, { extra: { context: `cw.searchPersons` } });
         throw err;
       })
     )
