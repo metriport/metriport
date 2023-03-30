@@ -35,9 +35,6 @@ export const analyzeRoute = (req: Request): void => {
   const headerCxId = getCxIdFromHeaders(req);
   if (headerCxId) cxId = headerCxId;
 
-  // WILL REMOVE AFTER DEBUGGING
-  console.log(cxId, "i am cxId");
-
   if (cxId) {
     const isMedical = medicalRoutes.some(route => req.baseUrl.includes(route));
     const isDevices = devicesRoutes.some(route => req.baseUrl.includes(route));

@@ -19,12 +19,8 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
 const postApiKey = Config.getPostHogApiKey();
 
 export const analytics = (params: EventMessageV1) => {
-  // WILL REMOVE AFTER DEBUGGING
-  console.log(postApiKey, "i am the post hog key");
   if (postApiKey) {
     const posthog = new PostHog(postApiKey);
-
-    console.log(posthog, "i am posthog");
 
     params.properties = {
       ...params.properties,
