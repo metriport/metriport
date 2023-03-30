@@ -88,6 +88,7 @@ export async function create(patient: Patient, facilityId: string): Promise<void
     capture.error(err, {
       extra: { facilityId, patientId: patient.id, context: `cw.patient.create` },
     });
+    throw err;
   }
 }
 
@@ -97,8 +98,10 @@ export async function update(patient: Patient, facilityId: string): Promise<void
 
     const updateData = await setupUpdate(patient, facilityId);
     if (!updateData) {
-      log(`WARN - Could not find external data on Patient, not updating @ CW`);
-      return;
+      capture.message("Could not find external data on Patient, creating it @ CW", {
+        extra: { patientId: patient.id, context: `cw.patient.update` },
+      });
+      return create(patient, facilityId);
     }
     const { commonWell, queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;
 
@@ -195,6 +198,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     capture.error(err, {
       extra: { facilityId, patientId: patient.id, context: `cw.patient.update` },
     });
+    throw err;
   }
 }
 
