@@ -11,7 +11,6 @@ import {
   updateOrganization,
 } from "../../command/medical/organization/update-organization";
 import cwCommands from "../../external/commonwell";
-import { capture } from "../../shared/notifications";
 import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
@@ -35,14 +34,9 @@ router.post(
     const createOrg: OrganizationCreateCmd = { cxId, ...data };
     const org = await createOrganization(createOrg);
 
-    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
-    cwCommands.organization.create(org).catch(err => {
-      console.error(`Failure while creating organization ${org.id} @ CW: `, err);
-      capture.error(err, {
-        extra: { orgId: org.id, context: `cw.org.create` },
-      });
-    });
+    cwCommands.organization.create(org);
 
     return res.status(status.CREATED).json(dtoFromModel(org));
   })
@@ -71,21 +65,9 @@ router.put(
     };
     const org = await updateOrganization(updateCmd);
 
-    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
-    cwCommands.organization
-      .update(org)
-      .catch(async err => {
-        // TODO #156 test this
-        if (err.response?.status !== 404) throw err;
-        await cwCommands.organization.create(org);
-      })
-      .catch(err => {
-        console.error(`Failure while updating/creating organization ${org.id} @ CW: `, err);
-        capture.error(err, {
-          extra: { orgId: org.id, context: `cw.org.update` },
-        });
-      });
+    cwCommands.organization.update(org);
 
     return res.status(status.OK).json(dtoFromModel(org));
   })

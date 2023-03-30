@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "react-scripts start",
+    "start": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` react-scripts start",
     "build": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` react-scripts build",
     "build:cloud": "npm run build",
     "build:staging": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` env-cmd -f .env.staging react-scripts build",
@@ -37,6 +37,8 @@
     "@chakra-ui/react": "^2.4.1",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
+    "@sentry/react": "^7.45.0",
+    "@sentry/tracing": "^7.45.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
