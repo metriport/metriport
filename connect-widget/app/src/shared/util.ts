@@ -35,6 +35,10 @@ export function isSandbox(searchParams: URLSearchParams): boolean {
   return isEnvParamSet(searchParams, Constants.SANDBOX_PARAM);
 }
 
+export function getEnvType(): string {
+  return getEnvVarOrFail("REACT_APP_ENV_TYPE");
+}
+
 export function getEnvVar(varName: string): string | undefined {
   return process.env[varName];
 }

@@ -11,11 +11,12 @@ import {
 import App from "./App";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
-import { getEnvVar, getEnvVarOrFail } from "./shared/util";
+import { getEnvType, getEnvVar, getEnvVarOrFail } from "./shared/util";
 
 Sentry.init({
   dsn: getEnvVarOrFail("REACT_APP_SENTRY_DSN"),
   release: getEnvVar("REACT_APP_GIT_SHA"),
+  environment: getEnvType(),
   integrations: [
     new BrowserTracing({
       routingInstrumentation: Sentry.reactRouterV6Instrumentation(
