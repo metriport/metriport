@@ -12,7 +12,6 @@ export default function Error() {
   const navigate = useNavigate();
   const handleClick = () => redirectToMain(navigate, searchParams);
   useEffect(() => {
-    // TODO #156 Maybe this should be treated by Posthog?
     capture.message("errorPage.loaded", { extra: { searchParams } });
   }, []);
 

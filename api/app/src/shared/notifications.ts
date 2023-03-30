@@ -41,11 +41,9 @@ const sendToSlack = async (
   });
 };
 
-// TODO #156 remove this?
 export const sendNotification = async (notif: SlackMessage | string): Promise<void> =>
   sendToSlack(notif, slackNotificationUrl);
 
-// TODO #156 remove this?
 export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
   sendToSlack(notif, slackAlertUrl);
 

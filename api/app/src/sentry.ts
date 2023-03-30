@@ -17,9 +17,10 @@ export function initSentry(app: Application): void {
       // enable Express.js middleware tracing
       new Tracing.Integrations.Express({ app }),
     ],
+    // TODO #499 Review this based on the load on our app and Sentry's quotas
     // https://docs.sentry.io/platforms/node/guides/express/configuration/sampling
     // Error sample rate - 0.0 to 1.0
-    sampleRate: 1.0, // TODO: #156 Add a ticket to review this periodically
+    sampleRate: 1.0,
     // Traces sample rate
     tracesSampler: samplingContext => {
       // Do not send health checks to Sentry
@@ -30,7 +31,7 @@ export function initSentry(app: Application): void {
       if (samplingContext.transactionContext.name.match(/^OPTIONS.*$/)) {
         return 0.01;
       }
-      // TODO: #156 Add a ticket to review this periodically
+      // TODO #499 Review this based on the load on our app and Sentry's quotas
       return 0.5;
     },
   });

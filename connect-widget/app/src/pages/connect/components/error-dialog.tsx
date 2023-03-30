@@ -29,7 +29,6 @@ const ErrorDialog = ({ show, title, message, onClose: closed }: ErrorDialogProps
   });
 
   useEffect(() => {
-    // TODO #156 Maybe this should be treated by Posthog?
     isOpen && capture.message("Error dialog displayed", { extra: { show, title, message } });
   }, [isOpen]);
 
