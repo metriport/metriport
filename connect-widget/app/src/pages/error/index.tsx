@@ -1,14 +1,20 @@
 import { NotAllowedIcon } from "@chakra-ui/icons";
-import { Container, Flex, Heading, Text, Card, IconButton } from "@chakra-ui/react";
+import { Card, Container, Flex, Heading, IconButton, Text } from "@chakra-ui/react";
+import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WidgetContainer from "../../shared/components/WidgetContainer";
+import { capture } from "../../shared/notifications";
 import { redirectToMain } from "../../shared/util";
 
 export default function Error() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const handleClick = () => redirectToMain(navigate, searchParams);
+  useEffect(() => {
+    // TODO #156 Maybe this should be treated by Posthog?
+    capture.message("errorPage.loaded", { extra: { searchParams } });
+  }, []);
 
   return (
     <WidgetContainer>
