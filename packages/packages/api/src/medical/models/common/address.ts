@@ -10,4 +10,12 @@ export const addressSchema = z.object({
   country: z.string().min(1),
 });
 
+export const optionalAddressSchema = addressSchema.partial({
+  addressLine1: true,
+  addressLine2: true,
+  city: true,
+  state: true,
+  country: true,
+});
+
 export type Address = z.infer<typeof addressSchema>;
