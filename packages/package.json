@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "lerna run tsc",
+    "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",
     "lint": "lerna run lint",
     "lint-fix": "lerna run lint-fix",

@@ -5,7 +5,6 @@ import { createPatient, PatientCreateCmd } from "../../command/medical/patient/c
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import cwCommands from "../../external/commonwell";
-import { capture } from "../../shared/notifications";
 import {
   asyncHandler,
   getCxIdOrFail,
@@ -45,14 +44,9 @@ router.post(
     };
     const patient = await createPatient(patientCreate);
 
-    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient.create(patient, facilityId).catch(err => {
-      console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
-      capture.error(err, {
-        extra: { facilityId, patientId: patient.id, context: `cw.patient.create` },
-      });
-    });
+    cwCommands.patient.create(patient, facilityId);
 
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })
@@ -82,14 +76,9 @@ router.put(
     };
     const patient = await updatePatient(patientUpdate);
 
-    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient.update(patient, facilityId).catch(err => {
-      console.error(`Failed to update patient ${patient.id} @ CW: `, err);
-      capture.error(err, {
-        extra: { facilityId, patientId: patient.id, context: `cw.patient.update` },
-      });
-    });
+    cwCommands.patient.update(patient, facilityId);
 
     return res.status(status.OK).json(dtoFromModel(patient));
   })

@@ -14,6 +14,7 @@ function buildBaseURL(searchParams: URLSearchParams): string {
 
 const api = axios.create();
 let apiInitialized = false;
+export let isDemo = false;
 
 export const getApi = () => {
   if (!apiInitialized) throw new Error(`API not initialized`);
@@ -32,6 +33,8 @@ export function getApiToken(searchParams: URLSearchParams): string {
 // get the session token in query params, and set in the API headers
 export function setupApi(searchParams: URLSearchParams) {
   api.defaults.baseURL = buildBaseURL(searchParams);
+  const apiToken = getApiToken(searchParams);
+  if (apiToken === Constants.DEMO_TOKEN) isDemo = true;
   if (isLocalEnv()) {
     // insert the API token right into the headers, as we're bypassing
     // API Gateway in local envs

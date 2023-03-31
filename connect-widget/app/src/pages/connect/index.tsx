@@ -6,6 +6,7 @@ import WidgetContainer from "../../shared/components/WidgetContainer";
 import Constants from "../../shared/constants";
 import { acceptAgreement, setAgreementState } from "../../shared/localStorage/agreement";
 import { storeColorMode } from "../../shared/localStorage/color-mode";
+import { capture } from "../../shared/notifications";
 import Agreement from "./components/agreement";
 import ConnectProviders from "./components/connect-providers";
 import ErrorDialog from "./components/error-dialog";
@@ -25,13 +26,10 @@ const ConnectPage = () => {
       setupApi(searchParams);
       storeColorMode(colorMode);
       setAgreementState(setAgreement);
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err) {
       setIsError(true);
-      // TODO #135 send err to Sentry
-      console.log(err.message);
+      capture.error(err, { extra: { context: `connect.setup` } });
     }
-
     setIsLoading(false);
   }, [searchParams, colorMode]);
 

@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useState } from "react";
 import { getApi } from "../../../shared/api";
+import { capture } from "../../../shared/notifications";
 import { sleep } from "../../../shared/util";
 import { DefaultProvider } from "./connect-providers";
 import ErrorDialog, { DEFAULT_ERROR_MESSAGE } from "./error-dialog";
@@ -79,8 +80,7 @@ const Providers = ({ providers, connectedProviders, setConnectedProviders }: Pro
       } else {
         setErrorMessage(DEFAULT_ERROR_MESSAGE);
       }
-      // TODO #135 send err to Sentry
-      console.log(err.message);
+      capture.error(err, { extra: { context: `redirect.to.${provider}` } });
     }
     sleep(2_000).then(() => {
       setIsLoading({

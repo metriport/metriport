@@ -1,6 +1,4 @@
-import { Application, Request, Response } from "express";
-import { nanoid } from "nanoid";
-import { capture } from "../shared/notifications";
+import { Application } from "express";
 import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
@@ -15,7 +13,6 @@ import oauthRoutes from "./oauth-routes";
 import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
-import { asyncHandler, getCxId } from "./util";
 import webhook from "./webhook";
 
 export default (app: Application) => {
@@ -42,33 +39,4 @@ export default (app: Application) => {
 
   // routes with OAuth based authentication
   app.use("/oauth", oauthRoutes);
-
-  // TODO #156 remove this
-  app.get(
-    "/error",
-    processAPIKey,
-    asyncHandler(async (req: Request) => {
-      getCxId(req);
-      try {
-        throw new Error("This is an error");
-      } catch (err) {
-        capture.error(err, {
-          user: { id: nanoid() },
-          extra: { userName: "Some Fake Name" },
-        });
-        throw err;
-      }
-    })
-  );
-  app.get(
-    "/message",
-    processAPIKey,
-    asyncHandler(async (req: Request, res: Response) => {
-      getCxId(req);
-      capture.message("Something special happened now", {
-        extra: { userName: "Some Fake Name" },
-      });
-      return res.sendStatus(204);
-    })
-  );
 };
