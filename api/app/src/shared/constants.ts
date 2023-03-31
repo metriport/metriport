@@ -2,6 +2,7 @@ import { ProviderSource } from "@metriport/api/lib/devices/models/common/provide
 import { z } from "zod";
 import { Apple } from "../providers/apple";
 import { Cronometer } from "../providers/cronometer";
+import { Dexcom } from "../providers/dexcom";
 import { Fitbit } from "../providers/fitbit";
 import { Garmin } from "../providers/garmin";
 import { Google } from "../providers/google";
@@ -14,6 +15,7 @@ import { Withings } from "../providers/withings";
 
 export const PROVIDER_APPLE = ProviderSource.apple;
 export const PROVIDER_CRONOMETER = ProviderSource.cronometer;
+export const PROVIDER_DEXCOM = ProviderSource.dexcom;
 export const PROVIDER_OURA = ProviderSource.oura;
 export const PROVIDER_GARMIN = ProviderSource.garmin;
 export const PROVIDER_GOOGLE = ProviderSource.google;
@@ -26,6 +28,7 @@ export type ProviderOAuth1Options = z.infer<typeof providerOAuth1OptionsSchema>;
 
 export const providerOAuth2OptionsSchema = z.enum([
   PROVIDER_CRONOMETER,
+  PROVIDER_DEXCOM,
   PROVIDER_OURA,
   PROVIDER_GOOGLE,
   PROVIDER_FITBIT,
@@ -53,6 +56,7 @@ export class Constants {
     [k in ProviderOAuth2Options]: OAuth2;
   } = {
     cronometer: new Cronometer(),
+    dexcom: new Dexcom(),
     oura: new Oura(),
     google: new Google(),
     fitbit: new Fitbit(),
@@ -62,6 +66,7 @@ export class Constants {
   static readonly PROVIDER_MAP: { [k in ProviderOptions]: Provider } = {
     apple: new Apple(),
     cronometer: new Cronometer(),
+    dexcom: new Dexcom(),
     oura: new Oura(),
     garmin: new Garmin(),
     google: new Google(),
