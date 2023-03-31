@@ -25,6 +25,7 @@
   "scripts": {
     "tsc": "tsc",
     "build": "tsc -p .",
+    "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
