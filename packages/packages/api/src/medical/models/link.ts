@@ -1,15 +1,20 @@
 import { z } from "zod";
 import { demographicsSchema } from "./demographics";
+import { optionalAddressSchema } from "./common/address";
 
 export enum MedicalDataSource {
   COMMONWELL = "COMMONWELL",
 }
 
+const linkDemographics = demographicsSchema
+  .omit({ address: true })
+  .merge(z.object({ address: optionalAddressSchema }));
+
 export const linkSchema = z.object({
   entityId: z.string(),
   potential: z.boolean(),
   source: z.nativeEnum(MedicalDataSource),
-  patient: z.object({ id: z.string() }).merge(demographicsSchema),
+  patient: z.object({ id: z.string() }).merge(linkDemographics),
 });
 export type Link = z.infer<typeof linkSchema>;
 
