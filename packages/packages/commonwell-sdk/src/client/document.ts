@@ -4,20 +4,19 @@ import { CommonwellError } from "../common/commonwell-error";
 import { downloadFile } from "../common/fileDownload";
 import { convertPatientIdToSubjectId } from "../common/util";
 import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
-import { buildQueryHeaders, CommonWell, RequestMetadata } from "./commonwell";
+import { CommonWell } from "./commonwell";
 
 export async function query(
   api: AxiosInstance,
-  meta: RequestMetadata,
+  headers: Record<string, string>,
   patientId: string
 ): Promise<DocumentQueryResponse> {
   const subjectId = convertPatientIdToSubjectId(patientId);
   if (!subjectId) {
     throw new Error(`Could not determine subject ID for document query`);
   }
-  const headers = await buildQueryHeaders(meta);
   const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
-  const additionalInfo = { meta, patientId };
+  const additionalInfo = { headers, patientId };
   let response: any; //eslint-disable-line @typescript-eslint/no-explicit-any
   try {
     response = await api.get(url, { headers });
@@ -36,11 +35,10 @@ export async function query(
 
 export async function retrieve(
   api: AxiosInstance,
-  meta: RequestMetadata,
+  headers: Record<string, string>,
   inputUrl: string,
   outputStream: stream.Writable
 ): Promise<void> {
-  const headers = await buildQueryHeaders(meta);
   try {
     await downloadFile({
       url: inputUrl,
@@ -50,7 +48,7 @@ export async function retrieve(
     });
   } catch (err) {
     throw new CommonwellError(`Error retrieve document`, err, {
-      meta,
+      headers,
       inputUrl,
       outputStream: outputStream ? "[object]" : outputStream,
     });
