@@ -2,12 +2,11 @@ import axios, { AxiosInstance } from "axios";
 import * as httpStatus from "http-status";
 import { Agent } from "https";
 import * as stream from "stream";
-import { downloadFile } from "../common/fileDownload";
+import { CommonWellAPI } from "..";
 import { makeJwt } from "../common/make-jwt";
 import MetriportError from "../common/metriport-error";
-import { convertPatientIdToSubjectId } from "../common/util";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
-import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
+import { DocumentQueryResponse } from "../models/document";
 import { Identifier, StrongId } from "../models/identifier";
 import { NetworkLink, networkLinkSchema, PatientLinkProxy } from "../models/link";
 import {
@@ -37,7 +36,7 @@ import {
   personSearchRespSchema,
 } from "../models/person";
 import { PurposeOfUse } from "../models/purpose-of-use";
-import { CommonWellAPI } from "..";
+import * as document from "./document";
 
 export enum APIMode {
   integration = "integration",
@@ -737,14 +736,7 @@ export class CommonWell implements CommonWellAPI {
    * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
    */
   async queryDocuments(meta: RequestMetadata, patientId: string): Promise<DocumentQueryResponse> {
-    const subjectId = convertPatientIdToSubjectId(patientId);
-    if (!subjectId) {
-      throw new Error(`Could not determine subject ID for document query`);
-    }
-    const headers = await this.buildQueryHeaders(meta);
-    const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
-    const res = await this.api.get(url, { headers });
-    return documentQueryResponseSchema.parse(res.data);
+    return document.query(this.api, meta, patientId);
   }
 
   /**
@@ -761,13 +753,7 @@ export class CommonWell implements CommonWellAPI {
     inputUrl: string,
     outputStream: stream.Writable
   ): Promise<void> {
-    const headers = await this.buildQueryHeaders(meta);
-    await downloadFile({
-      url: inputUrl,
-      outputStream,
-      client: this.api,
-      headers,
-    });
+    return document.retrieve(this.api, meta, inputUrl, outputStream);
   }
 
   //--------------------------------------------------------------------------------------------
@@ -928,19 +914,27 @@ export class CommonWell implements CommonWellAPI {
   //--------------------------------------------------------------------------------------------
   // Private Methods
   //--------------------------------------------------------------------------------------------
-  private async buildQueryHeaders(meta: RequestMetadata): Promise<{
-    [index: string]: string;
-  }> {
-    const jwt = await makeJwt(
-      this.rsaPrivateKey,
-      meta.role,
-      meta.subjectId,
-      this.orgName,
-      this.oid,
-      meta.purposeOfUse,
-      meta.npi,
-      meta.payloadHash
-    );
-    return { Authorization: `Bearer ${jwt}` };
+  /**
+   * @deprecated use buildQueryHeaders exported function instead
+   */
+  private async buildQueryHeaders(meta: RequestMetadata): Promise<{ [index: string]: string }> {
+    return buildQueryHeaders(meta);
   }
+}
+
+// exported here, but don't expose it in the index.ts
+export async function buildQueryHeaders(meta: RequestMetadata): Promise<{
+  [index: string]: string;
+}> {
+  const jwt = await makeJwt(
+    this.rsaPrivateKey,
+    meta.role,
+    meta.subjectId,
+    this.orgName,
+    this.oid,
+    meta.purposeOfUse,
+    meta.npi,
+    meta.payloadHash
+  );
+  return { Authorization: `Bearer ${jwt}` };
 }

@@ -41,6 +41,7 @@
   "scripts": {
     "tsc": "tsc",
     "build": "tsc -p .",
+    "build:cloud": "npm run build",
     "test": "echo \"No test specified yet\""
   },
   "bugs": {

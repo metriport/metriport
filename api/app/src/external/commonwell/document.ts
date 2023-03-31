@@ -1,8 +1,14 @@
-import { Document, DocumentContent } from "@metriport/commonwell-sdk";
+import {
+  CommonwellError,
+  Document,
+  DocumentContent,
+  DocumentQueryResponse,
+} from "@metriport/commonwell-sdk";
 import mime from "mime-types";
 import * as stream from "stream";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "../../models/medical/patient";
+import { capture } from "../../shared/notifications";
 import { makePatientOID, oid } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "./api";
@@ -38,8 +44,19 @@ export async function getDocuments({
   const commonWell = makeCommonWellAPI(orgName, oid(orgId));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
-  const docs = await commonWell.queryDocuments(queryMeta, cwData.patientId);
-  debug(`resp queryDocuments: ${JSON.stringify(docs, null, 2)}`);
+  let docs: DocumentQueryResponse;
+  try {
+    docs = await commonWell.queryDocuments(queryMeta, cwData.patientId);
+    debug(`resp queryDocuments: ${JSON.stringify(docs, null, 2)}`);
+  } catch (err) {
+    capture.error(err, {
+      extra: {
+        context: `cw.queryDocuments`,
+        ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
+      },
+    });
+    throw err;
+  }
 
   const documents: DocumentWithLocation[] = docs.entry
     ? docs.entry
@@ -83,7 +100,17 @@ export async function downloadDocument({
   const commonWell = makeCommonWellAPI(orgName, oid(orgId));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
-  await commonWell.retrieveDocument(queryMeta, location, stream);
+  try {
+    await commonWell.retrieveDocument(queryMeta, location, stream);
+  } catch (err) {
+    capture.error(err, {
+      extra: {
+        context: `cw.retrieveDocument`,
+        ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
+      },
+    });
+    throw err;
+  }
 }
 
 function getFileName(patient: Patient, doc: Document): string {
