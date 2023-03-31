@@ -80,7 +80,7 @@ function personToPatient(person: { id: string } & Person): PatientOnLinkDTO {
       city: address && address.city ? address.city : "",
       state: address && address.state ? address.state : "",
       zip: address && address.zip ? address.zip : "",
-      country: address && address.country ? address.country : "",
+      country: address && address.country ? address.country : "USA",
     },
     contact: {},
   };
