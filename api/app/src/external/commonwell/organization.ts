@@ -1,6 +1,7 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { Organization } from "../../models/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
+import { capture } from "../../shared/notifications";
 import { OID_PREFIX } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { certificate, makeCommonWellAPI, metriportQueryMeta } from "./api";
@@ -61,20 +62,28 @@ export async function organizationToCommonwell(
 }
 
 export const create = async (org: Organization): Promise<void> => {
-  const { log } = Util.out(`CW create - M orgId ${org.id}`);
+  const { log, debug } = Util.out(`CW create - M orgId ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
   try {
     const commonWell = makeCommonWellAPI(
       Config.getMetriportOrgName(),
       Config.getMemberManagementOID()
     );
-    await commonWell.createOrg(metriportQueryMeta, cwOrg);
-    await commonWell.addCertificateToOrg(metriportQueryMeta, certificate, org.id);
+    const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
+    debug(`resp respCreate: ${JSON.stringify(respCreate, null, 2)}`);
+    const respAddCert = await commonWell.addCertificateToOrg(
+      metriportQueryMeta,
+      certificate,
+      org.id
+    );
+    debug(`resp respAddCert: ${JSON.stringify(respAddCert, null, 2)}`);
   } catch (error) {
-    const msg = `Failure creating Org`;
-    log(`${msg} - payload: `, cwOrg);
+    const msg = `Failure creating Org @ CW`;
     log(msg, error);
-    throw new Error(msg);
+    capture.error(error, {
+      extra: { orgId: org.id, context: `cw.org.create`, payload: cwOrg },
+    });
+    throw error;
   }
 };
 
@@ -88,10 +97,22 @@ export const update = async (org: Organization): Promise<void> => {
     );
     const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
     debug(`resp respUpdate: ${JSON.stringify(respUpdate, null, 2)}`);
-  } catch (error) {
-    const msg = `Failure updating Org`;
-    log(`${msg} - payload: `, cwOrg);
+
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    // Try to create the org if it doesn't exist
+    if (error.response?.status === 404) {
+      capture.message("Got 404 when updating Org @ CW, creating it", {
+        extra: { orgId: org.id, context: `cw.org.update` },
+      });
+      return create(org);
+    }
+    // General error handling
+    const msg = `Failure updating Org @ CW`;
     log(msg, error);
-    throw new Error(msg);
+    capture.error(error, {
+      extra: { orgId: org.id, context: `cw.org.update`, payload: cwOrg },
+    });
+    throw error;
   }
 };

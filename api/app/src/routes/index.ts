@@ -1,10 +1,11 @@
 import { Application } from "express";
-
 import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
 import { requestLogger } from "./helpers/requestLogger";
+import internal from "./internal";
+import medical from "./medical";
 import { checkMAPIAccess, processAPIKey } from "./middlewares/auth";
 import { reportDeviceUsage, reportMedicalUsage } from "./middlewares/usage";
 import nutrition from "./nutrition";
@@ -13,13 +14,13 @@ import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
 import webhook from "./webhook";
-import medical from "./medical";
 
 export default (app: Application) => {
   app.use(requestLogger);
 
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", webhook);
+  app.use("/internal", internal);
 
   // routes with API key auth
   app.use("/settings", processAPIKey, settings);

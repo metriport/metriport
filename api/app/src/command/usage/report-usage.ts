@@ -24,5 +24,6 @@ export const reportUsage = async ({
 
   const payload = { cxId, cxUserId };
 
-  await axios.post(`${url}/${apiType}`, payload, { timeout: 1_000 });
+  // TODO consider configuring Axios to not wait for response
+  await axios.post(`${url}/${apiType}`, payload, { timeout: 2_000 });
 };

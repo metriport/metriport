@@ -1,13 +1,11 @@
 import { CommonWellAPI, LOLA, Person, RequestMetadata } from "@metriport/commonwell-sdk";
-import { uniqBy } from "lodash";
-
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
-
 import { PatientLinkResp } from "@metriport/commonwell-sdk/lib/models/patient";
+import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "../../../models/medical/patient";
-import { sendAlert } from "../../../shared/notifications";
+import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
+import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { setCommonwellId } from "../patient-external-data";
 import {
   getPatientData,
@@ -76,14 +74,17 @@ export const findCurrentLink = async (
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response?.status !== 404) throw err;
-      const subject = "Got 404 when trying to query person's patient links @ CW";
-      const message =
-        `Patient ID ${patient.id}\n` +
-        `CW Patient ID ${patientCWId}\n` +
-        `CW Person ID ${personId}\n` +
-        `Removing person ID from DB...`;
-      sendAlert({ subject, message });
-      console.log(`${subject} - ${message}`);
+      const msg =
+        "Got 404 when trying to query person's patient links @ CW - Removing person ID from DB.";
+      console.log(msg);
+      capture.message(msg, {
+        extra: {
+          patientId: patient.id,
+          cwPatientId: patientCWId,
+          personId,
+          context: `cw.findCurrentLink`,
+        },
+      });
       await setCommonwellId({
         patientId: patient.id,
         cxId: patient.cxId,

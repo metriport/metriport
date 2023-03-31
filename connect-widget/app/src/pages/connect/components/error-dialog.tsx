@@ -9,6 +9,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
+import { capture } from "../../../shared/notifications";
 
 export const DEFAULT_ERROR_MESSAGE = `Something went wrong, you can try again.`;
 
@@ -26,6 +27,10 @@ const ErrorDialog = ({ show, title, message, onClose: closed }: ErrorDialogProps
     actualTitle: title,
     actualMsg: message,
   });
+
+  useEffect(() => {
+    isOpen && capture.message("Error dialog displayed", { extra: { show, title, message } });
+  }, [isOpen]);
 
   useEffect(() => {
     setActual({

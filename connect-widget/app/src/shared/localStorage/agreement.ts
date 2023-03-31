@@ -1,3 +1,5 @@
+import Analytics from "../analytics";
+
 const agreementLocalStorageKey = "agreement-accepted-v1";
 
 export const setAgreementState = (setAgreement: (value: boolean) => void) => {
@@ -25,5 +27,6 @@ export const acceptAgreement = (setAgreement: (value: boolean) => void, isDemo: 
     localStorage.setItem(agreementLocalStorageKey, JSON.stringify(true));
   }
 
+  Analytics.emit(Analytics.events.acceptAgreement);
   setAgreement(true);
 };

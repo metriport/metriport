@@ -19,5 +19,12 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
       buildSecret((config.cwSecretNames as { [index: string]: string })[key])
     );
   }
+  if (config.analyticsSecretNames) {
+    for (const key of Object.keys(config.analyticsSecretNames)) {
+      secrets[key] = ecs.Secret.fromSecretsManager(
+        buildSecret((config.analyticsSecretNames as { [index: string]: string })[key])
+      );
+    }
+  }
   return secrets;
 }

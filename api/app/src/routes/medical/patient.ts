@@ -44,12 +44,9 @@ router.post(
     };
     const patient = await createPatient(patientCreate);
 
-    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient.create(patient, facilityId).then(undefined, (err: unknown) => {
-      // TODO #156 Send this to Sentry
-      console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
-    });
+    cwCommands.patient.create(patient, facilityId);
 
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })
@@ -79,12 +76,9 @@ router.put(
     };
     const patient = await updatePatient(patientUpdate);
 
-    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient.update(patient, facilityId).then(undefined, err => {
-      // TODO #156 Send this to Sentry
-      console.error(`Failed to update patient ${patient.id} @ CW: `, err);
-    });
+    cwCommands.patient.update(patient, facilityId);
 
     return res.status(status.OK).json(dtoFromModel(patient));
   })

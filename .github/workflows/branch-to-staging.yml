@@ -17,6 +17,8 @@ jobs:
       AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
       CDK_STACK: ${{ secrets.WIDGET_STACK_NAME_STAGING }}
       INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
 
   api-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
@@ -28,4 +30,6 @@ jobs:
       AWS_REGION: ${{ secrets.API_REGION_STAGING }}
       CDK_STACK: ${{ secrets.API_STACK_NAME_STAGING }}
       INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
 

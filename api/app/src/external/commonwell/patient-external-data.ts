@@ -1,7 +1,7 @@
+import { cloneDeep } from "lodash";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import NotFoundError from "../../errors/not-found";
+import { Patient } from "../../models/medical/patient";
 import { PatientDataCommonwell } from "./patient-shared";
-import { Patient, PatientModel } from "../../models/medical/patient";
 
 export const setCommonwellId = async ({
   patientId,
@@ -16,21 +16,11 @@ export const setCommonwellId = async ({
 }): Promise<Patient> => {
   const updatedPatient = await getPatientOrFail({ id: patientId, cxId });
 
-  const data = updatedPatient.data;
-  data.externalData = {
-    ...data.externalData,
+  const updatedData = cloneDeep(updatedPatient.data);
+  updatedData.externalData = {
+    ...updatedData.externalData,
     COMMONWELL: new PatientDataCommonwell(commonwellPatientId, commonwellPersonId),
   };
 
-  const [count, rows] = await PatientModel.update(
-    {
-      data,
-    },
-    { where: { id: patientId, cxId }, returning: true }
-  );
-  if (count < 1) throw new NotFoundError();
-  // TODO #156 Send this to Sentry
-  if (count > 1) console.error(`Updated ${count} patients for id ${patientId} and cxId ${cxId}`);
-
-  return rows[0];
+  return updatedPatient.update({ data: updatedData });
 };

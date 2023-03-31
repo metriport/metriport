@@ -34,12 +34,9 @@ router.post(
     const createOrg: OrganizationCreateCmd = { cxId, ...data };
     const org = await createOrganization(createOrg);
 
-    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
-    cwCommands.organization.create(org).then(undefined, (err: unknown) => {
-      // TODO #156 Send this to Sentry
-      console.error(`Failure while creating organization ${org.id} @ CW: `, err);
-    });
+    cwCommands.organization.create(org);
 
     return res.status(status.CREATED).json(dtoFromModel(org));
   })
@@ -50,7 +47,7 @@ router.post(
  *
  * Updates the organization at Metriport and HIEs.
  *
- * @param req.body The data to udpate the organization.
+ * @param req.body The data to update the organization.
  * @returns The updated organization.
  */
 router.put(
@@ -68,12 +65,9 @@ router.put(
     };
     const org = await updateOrganization(updateCmd);
 
-    // TODO declarative, event-based integration: https://github.com/metriport/metriport-internal/issues/393
+    // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
-    cwCommands.organization.update(org).then(undefined, (err: unknown) => {
-      // TODO #156 Send this to Sentry
-      console.error(`Failure while updating organization ${org.id} @ CW: `, err);
-    });
+    cwCommands.organization.update(org);
 
     return res.status(status.OK).json(dtoFromModel(org));
   })
