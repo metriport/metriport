@@ -197,6 +197,14 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       );
       throw err;
     }
+
+    await autoUpgradeNetworkLinks(
+      commonWell,
+      queryMeta,
+      commonwellPatientId,
+      personId,
+      createContext
+    );
   } catch (err) {
     console.error(`Failed to update patient ${patient.id} @ CW: `, err);
     capture.error(err, {
@@ -205,10 +213,6 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     throw err;
   }
 }
-
-// REVIEW NETWORK LINKS? - this might be a good opportunity to update link to new Patients
-// added to CW we didn't know about when we first added this Patient
-// TODO #415
 
 async function setupUpdate(
   patient: Patient,
