@@ -14,6 +14,7 @@ import { oid } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI, organizationQueryMeta } from "./api";
+import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { setCommonwellId } from "./patient-external-data";
 import {
@@ -22,6 +23,9 @@ import {
   getPatientData,
   PatientDataCommonwell,
 } from "./patient-shared";
+
+const createContext = "cw.patient.create";
+const updateContext = "cw.patient.update";
 
 export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus {
   if (!data) return "needs-review";
@@ -86,7 +90,7 @@ export async function create(patient: Patient, facilityId: string): Promise<void
   } catch (err) {
     console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
     capture.error(err, {
-      extra: { facilityId, patientId: patient.id, context: `cw.patient.create` },
+      extra: { facilityId, patientId: patient.id, context: createContext },
     });
     throw err;
   }
@@ -99,7 +103,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     const updateData = await setupUpdate(patient, facilityId);
     if (!updateData) {
       capture.message("Could not find external data on Patient, creating it @ CW", {
-        extra: { patientId: patient.id, context: `cw.patient.update` },
+        extra: { patientId: patient.id, context: createContext },
       });
       return create(patient, facilityId);
     }
@@ -143,7 +147,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
         const subject = "Got 404 when trying to update person @ CW, trying to find/create it";
         log(`${subject} - CW Person ID ${personId}`);
         capture.message(subject, {
-          extra: { commonwellPatientId, personId, context: `cw.patient.update` },
+          extra: { commonwellPatientId, personId, context: updateContext },
         });
         await findOrCreatePersonAndLink({
           commonWell,
@@ -196,7 +200,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
   } catch (err) {
     console.error(`Failed to update patient ${patient.id} @ CW: `, err);
     capture.error(err, {
-      extra: { facilityId, patientId: patient.id, context: `cw.patient.update` },
+      extra: { facilityId, patientId: patient.id, context: updateContext },
     });
     throw err;
   }
@@ -290,8 +294,13 @@ async function findOrCreatePersonAndLink({
     throw err;
   }
 
-  // NETWORK LINKS
-  // TODO #415
+  await autoUpgradeNetworkLinks(
+    commonWell,
+    queryMeta,
+    commonwellPatientId,
+    personId,
+    createContext
+  );
 
   return personId;
 }
