@@ -1,4 +1,3 @@
-import { isLOLA1, NetworkLink } from "@metriport/commonwell-sdk";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
@@ -6,7 +5,7 @@ import { oid } from "../../../shared/oid";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { setCommonwellId } from "../patient-external-data";
 import { getPatientData } from "../patient-shared";
-import { patientWithCWData } from "./shared";
+import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
 
 const context = "cw.link.create";
 
@@ -63,29 +62,7 @@ export const create = async (
       throw new Error("Link has no href");
     }
 
-    // TODO: Convert this into a function
-    const networkLinks = await commonWell.getNetworkLinks(queryMeta, cwPatientId);
-
-    if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
-      const lola1Links = networkLinks._embedded.networkLink.filter(isLOLA1);
-
-      const requests: Promise<NetworkLink>[] = [];
-
-      lola1Links.forEach(async link => {
-        if (link._links?.upgrade?.href) {
-          requests.push(
-            commonWell
-              .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
-              .catch(err => {
-                console.log(`Failed to upgrade link: `, err);
-                capture.error(err, { extra: { cwPatientId, personId, context } });
-                throw err;
-              })
-          );
-        }
-      });
-      await Promise.allSettled(requests);
-    }
+    await autoUpgradeNetworkLinks(commonWell, queryMeta, cwPatientId, personId, context);
   } catch (error) {
     capture.error(error, { extra: { cwPatientId, personId, context } });
     throw error;

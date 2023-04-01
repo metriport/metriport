@@ -736,7 +736,8 @@ export class CommonWell implements CommonWellAPI {
    * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
    */
   async queryDocuments(meta: RequestMetadata, patientId: string): Promise<DocumentQueryResponse> {
-    return document.query(this.api, meta, patientId);
+    const headers = await this.buildQueryHeaders(meta);
+    return document.query(this.api, headers, patientId);
   }
 
   /**
@@ -753,7 +754,8 @@ export class CommonWell implements CommonWellAPI {
     inputUrl: string,
     outputStream: stream.Writable
   ): Promise<void> {
-    return document.retrieve(this.api, meta, inputUrl, outputStream);
+    const headers = await this.buildQueryHeaders(meta);
+    return document.retrieve(this.api, headers, inputUrl, outputStream);
   }
 
   //--------------------------------------------------------------------------------------------
@@ -914,27 +916,17 @@ export class CommonWell implements CommonWellAPI {
   //--------------------------------------------------------------------------------------------
   // Private Methods
   //--------------------------------------------------------------------------------------------
-  /**
-   * @deprecated use buildQueryHeaders exported function instead
-   */
-  private async buildQueryHeaders(meta: RequestMetadata): Promise<{ [index: string]: string }> {
-    return buildQueryHeaders(meta);
+  private async buildQueryHeaders(meta: RequestMetadata): Promise<Record<string, string>> {
+    const jwt = await makeJwt(
+      this.rsaPrivateKey,
+      meta.role,
+      meta.subjectId,
+      this.orgName,
+      this.oid,
+      meta.purposeOfUse,
+      meta.npi,
+      meta.payloadHash
+    );
+    return { Authorization: `Bearer ${jwt}` };
   }
-}
-
-// exported here, but don't expose it in the index.ts
-export async function buildQueryHeaders(meta: RequestMetadata): Promise<{
-  [index: string]: string;
-}> {
-  const jwt = await makeJwt(
-    this.rsaPrivateKey,
-    meta.role,
-    meta.subjectId,
-    this.orgName,
-    this.oid,
-    meta.purposeOfUse,
-    meta.npi,
-    meta.payloadHash
-  );
-  return { Authorization: `Bearer ${jwt}` };
 }
