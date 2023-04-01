@@ -103,7 +103,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     const updateData = await setupUpdate(patient, facilityId);
     if (!updateData) {
       capture.message("Could not find external data on Patient, creating it @ CW", {
-        extra: { patientId: patient.id, context: createContext },
+        extra: { patientId: patient.id, context: updateContext },
       });
       return create(patient, facilityId);
     }
