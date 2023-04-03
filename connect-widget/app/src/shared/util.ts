@@ -1,6 +1,7 @@
 import { NavigateFunction } from "react-router-dom";
 import { getApiToken } from "./api";
 import Constants from "./constants";
+import { capture } from "./notifications";
 
 function buildEnvParam(envParam: string) {
   return `${envParam}=true`;
@@ -8,9 +9,12 @@ function buildEnvParam(envParam: string) {
 
 // redirects to the main connect page while keeping the token state
 export function redirectToMain(navigate: NavigateFunction, searchParams: URLSearchParams) {
-  const envParam = isSandbox(searchParams) ? `&${buildEnvParam(Constants.SANDBOX_PARAM)}` : "";
-
-  navigate(`/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${envParam}`);
+  try {
+    const envParam = isSandbox(searchParams) ? `&${buildEnvParam(Constants.SANDBOX_PARAM)}` : "";
+    navigate(`/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${envParam}`);
+  } catch (err) {
+    capture.error(err, { extra: { context: `redirectToMain` } });
+  }
 }
 
 /**
@@ -29,6 +33,10 @@ function isEnvParamSet(searchParams: URLSearchParams, envParam: string): boolean
 
 export function isSandbox(searchParams: URLSearchParams): boolean {
   return isEnvParamSet(searchParams, Constants.SANDBOX_PARAM);
+}
+
+export function getEnvType(): string {
+  return getEnvVarOrFail("REACT_APP_ENV_TYPE");
 }
 
 export function getEnvVar(varName: string): string | undefined {

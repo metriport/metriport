@@ -1,20 +1,17 @@
 import { z } from "zod";
-import { dexcomResp } from ".";
+import { dexcomResp, baseRecordSchema } from ".";
 
 // https://developer.dexcom.com/docs/dexcomv3/operation/getEventsV3/
-export const eventRecordSchema = z.object({
-  systemTime: z.string(),
-  displayTime: z.string(),
-  recordId: z.string(),
-  eventStatus: z.string(),
-  eventType: z.string(),
-  eventSubType: z.string().nullable().optional(),
-  value: z.string(),
-  unit: z.string().nullable().optional(),
-  transmitterId: z.string(),
-  transmitterGeneration: z.string(),
-  displayDevice: z.string(),
-});
+export const eventRecordSchema = z
+  .object({
+    eventStatus: z.string(),
+    eventType: z.string(),
+    eventSubType: z.string().nullable().optional(),
+    value: z.string(),
+    unit: z.string().nullable().optional(),
+    transmitterId: z.string(),
+  })
+  .merge(baseRecordSchema);
 
 export type EventRecord = z.infer<typeof eventRecordSchema>;
 

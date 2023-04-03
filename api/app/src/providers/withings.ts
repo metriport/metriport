@@ -13,6 +13,7 @@ import { mapToActivity } from "../mappings/withings/activity";
 import { mapToBody } from "../mappings/withings/body";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
 import { mapToSleep } from "../mappings/withings/sleep";
+import convert from "convert-units";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import {
   withingsActivityLogResp,
@@ -98,7 +99,12 @@ export class Withings extends Provider implements OAuth2 {
 
   async checkRefreshToken(token: string, connectedUser: ConnectedUser): Promise<Token> {
     const access_token = JSON.parse(token);
-    const isExpired = access_token.expires_at * 1000 - (Date.now() + 120 * 1000) <= 0;
+    const bufferSeconds = 600;
+    const isExpired =
+      convert(access_token.expires_at).from("s").to("ms") -
+        Date.now() +
+        convert(bufferSeconds).from("s").to("ms") <=
+      0;
 
     if (isExpired) {
       try {
@@ -119,7 +125,7 @@ export class Withings extends Provider implements OAuth2 {
           throw new Error(response.data.error);
         }
 
-        response.data.body.expires_at = dayjs(Date.now())
+        response.data.body.expires_at = dayjs()
           .add(response.data.body.expires_in, "seconds")
           .unix();
 

@@ -1,5 +1,4 @@
 import { Biometrics } from "@metriport/api";
-import { Sample } from "@metriport/api/lib/devices/models/common/sample";
 
 import { DexcomEvgs } from "./models/evgs";
 import { PROVIDER_DEXCOM } from "../../shared/constants";
@@ -15,16 +14,14 @@ export const mapToBiometrics = (dexcomBiometrics: DexcomEvgs, date: string): Bio
     metadata: metadata,
   };
 
-  const samples = dexcomBiometrics.records.reduce((acc: Sample[], curr) => {
-    if (curr.value) {
-      acc.push({
-        time: curr.displayTime,
-        value: curr.value,
-      });
-    }
-
-    return acc;
-  }, []);
+  const samples = dexcomBiometrics.records.flatMap(record =>
+    record.value
+      ? {
+          time: record.displayTime,
+          value: record.value,
+        }
+      : []
+  );
 
   const mgDlValues = dexcomBiometrics.records.reduce((acc: number[], curr) => {
     const unitMgDl = "mg/dL";

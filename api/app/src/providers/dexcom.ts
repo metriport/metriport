@@ -13,6 +13,9 @@ import { mapToBiometrics } from "../mappings/dexcom/biometrics";
 import { mapToNutrition } from "../mappings/dexcom/nutrition";
 import { dexcomEvgsResp } from "../mappings/dexcom/models/evgs";
 import { dexcomEventsResp } from "../mappings/dexcom/models/events";
+import convert from "convert-units";
+import { capture } from "../shared/notifications";
+import { ISO_DATE } from "../shared/date";
 
 const axios = Axios.create();
 
@@ -64,7 +67,12 @@ export class Dexcom extends Provider implements OAuth2 {
 
   async checkRefreshToken(token: string, connectedUser: ConnectedUser): Promise<Token> {
     const access_token = JSON.parse(token);
-    const isExpired = access_token.expires_at * 1000 - (Date.now() + 120 * 1000) <= 0;
+    const bufferSeconds = 600;
+    const isExpired =
+      convert(access_token.expires_at).from("s").to("ms") -
+        Date.now() +
+        convert(bufferSeconds).from("s").to("ms") <=
+      0;
 
     if (isExpired) {
       const formData = {
@@ -84,9 +92,7 @@ export class Dexcom extends Provider implements OAuth2 {
           },
         });
 
-        response.data.expires_at = dayjs(Date.now())
-          .add(response.data.expires_in, "seconds")
-          .unix();
+        response.data.expires_at = dayjs().add(response.data.expires_in, "seconds").unix();
 
         const providerItem = connectedUser.providerMap
           ? {
@@ -105,6 +111,12 @@ export class Dexcom extends Provider implements OAuth2 {
         return response.data;
       } catch (error) {
         console.log("Error refreshing access token: ", error);
+        capture.error(error, {
+          extra: {
+            context: `dexcom.refreshToken`,
+            cxId: connectedUser.cxId,
+          },
+        });
         throw new Error("Error refreshing access token: ");
       }
     }
@@ -133,7 +145,7 @@ export class Dexcom extends Provider implements OAuth2 {
       },
     });
 
-    resp.data.expires_at = dayjs(Date.now()).add(resp.data.expires_in, "seconds").unix();
+    resp.data.expires_at = dayjs().add(resp.data.expires_in, "seconds").unix();
 
     return JSON.stringify(resp.data);
   }
@@ -146,8 +158,8 @@ export class Dexcom extends Provider implements OAuth2 {
     const accessToken = await this.getAccessToken(connectedUser);
 
     const query = new URLSearchParams({
-      startDate: dayjs(date).format("YYYY-MM-DD"),
-      endDate: dayjs(date).add(1, "day").format("YYYY-MM-DD"),
+      startDate: dayjs(date).format(ISO_DATE),
+      endDate: dayjs(date).add(1, "day").format(ISO_DATE),
     }).toString();
 
     return this.oauth.fetchProviderData<Biometrics>(
@@ -163,8 +175,8 @@ export class Dexcom extends Provider implements OAuth2 {
     const accessToken = await this.getAccessToken(connectedUser);
 
     const query = new URLSearchParams({
-      startDate: dayjs(date).format("YYYY-MM-DD"),
-      endDate: dayjs(date).add(1, "day").format("YYYY-MM-DD"),
+      startDate: dayjs(date).format(ISO_DATE),
+      endDate: dayjs(date).add(1, "day").format(ISO_DATE),
     }).toString();
 
     return this.oauth.fetchProviderData<Nutrition>(

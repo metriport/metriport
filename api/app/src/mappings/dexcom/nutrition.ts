@@ -14,15 +14,11 @@ export const mapToNutrition = (dexcomBiometrics: DexcomEvents, date: string): Nu
     metadata: metadata,
   };
 
-  const carbsValues = dexcomBiometrics.records.reduce((acc: number[], curr) => {
-    const carbEventType = "carbs";
+  const carbEventType = "carbs";
 
-    if (curr.eventType === carbEventType) {
-      acc.push(Number(curr.value));
-    }
-
-    return acc;
-  }, []);
+  const carbsValues = dexcomBiometrics.records.flatMap(record =>
+    record.eventType === carbEventType ? Number(record.value) : []
+  );
 
   nutrition.summary = {
     macros: {

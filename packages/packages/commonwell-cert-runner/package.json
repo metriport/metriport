@@ -25,6 +25,7 @@
   "scripts": {
     "tsc": "tsc",
     "build": "tsc -p .",
+    "build:cloud": "npm run build",
     "install-local": "sudo npm i -g",
     "start": "ts-node src/index.ts --env-file .env",
     "typecheck": "tsc --noEmit",
@@ -46,7 +47,7 @@
     "typescript": "^4.9.4"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "^3.1.3",
+    "@metriport/commonwell-sdk": "^4.0.1",
     "commander": "^9.5.0",
     "dotenv": "^16.0.3",
     "lodash": "^4.17.21",
