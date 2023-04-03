@@ -3,7 +3,6 @@ import axios from "axios";
 import dayjs from "dayjs";
 import crypto from "crypto";
 import { Token } from "simple-oauth2";
-
 import { PROVIDER_WITHINGS } from "../shared/constants";
 import { ConnectedUser } from "../models/connected-user";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";

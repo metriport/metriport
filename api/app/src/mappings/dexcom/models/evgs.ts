@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dexcomResp } from ".";
 
 // https://developer.dexcom.com/docs/dexcomv3/operation/getEstimatedGlucoseValuesV3/
 export const recordSchema = z.object({
@@ -19,11 +20,10 @@ export const recordSchema = z.object({
 
 export type Record = z.infer<typeof recordSchema>;
 
-export const dexcomBiometricsResp = z.object({
-  recordType: z.string(),
-  recordVersion: z.string(),
-  userId: z.string(),
-  records: z.array(recordSchema),
-});
+export const dexcomEvgsResp = dexcomResp.merge(
+  z.object({
+    records: z.array(recordSchema),
+  })
+);
 
-export type DexcomBiometrics = z.infer<typeof dexcomBiometricsResp>;
+export type DexcomEvgs = z.infer<typeof dexcomEvgsResp>;

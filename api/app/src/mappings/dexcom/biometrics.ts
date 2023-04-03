@@ -1,11 +1,11 @@
 import { Biometrics } from "@metriport/api";
 import { Sample } from "@metriport/api/lib/devices/models/common/sample";
 
-import { DexcomBiometrics } from "./models/biometrics";
+import { DexcomEvgs } from "./models/evgs";
 import { PROVIDER_DEXCOM } from "../../shared/constants";
 import { Util } from "../../shared/util";
 
-export const mapToBiometrics = (dexcomBiometrics: DexcomBiometrics, date: string): Biometrics => {
+export const mapToBiometrics = (dexcomBiometrics: DexcomEvgs, date: string): Biometrics => {
   const metadata = {
     date: date,
     source: PROVIDER_DEXCOM,
