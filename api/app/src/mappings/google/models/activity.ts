@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { googleResp } from ".";
 
-// GET TO THIS
 export const sourceIdActivity =
   "derived:com.google.activity.segment:com.google.android.gms:merge_activity_segments";
 export const sourceIdActiveMinutes =

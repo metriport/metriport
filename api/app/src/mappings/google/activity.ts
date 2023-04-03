@@ -16,6 +16,7 @@ import {
 import { GoogleSessions } from "./models";
 import { getValues, ValueKey } from ".";
 import { Util } from "../../shared/util";
+import { sessionSleepType } from "./models/sleep";
 
 export const mapToActivity = (
   date: string,
@@ -99,10 +100,8 @@ export const mapToActivity = (
   }
 
   if (googleSessions) {
-    const sleepType = 72;
-
     const activitySessions = googleSessions.session.filter(
-      session => session.activityType !== sleepType
+      session => session.activityType !== sessionSleepType
     );
 
     const activityLogs = activitySessions.map(session => {

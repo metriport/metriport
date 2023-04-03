@@ -16,6 +16,7 @@ import { googleBiometricsResp } from "../mappings/google/models/biometrics";
 import { mapToNutrition } from "../mappings/google/nutrition";
 import { googleNutritionResp } from "../mappings/google/models/nutrition";
 import { mapToSleep } from "../mappings/google/sleep";
+import { sessionSleepType } from "../mappings/google/models/sleep";
 import { sessionResp, GoogleSessions } from "../mappings/google/models";
 
 export class Google extends Provider implements OAuth2 {
@@ -148,9 +149,9 @@ export class Google extends Provider implements OAuth2 {
   }
 
   async fetchActivitySessions(connectedUser: ConnectedUser, date: string): Promise<GoogleSessions> {
-    const sleepSessions = await this.fetchGoogleSessions(connectedUser, date);
+    const activitySessions = await this.fetchGoogleSessions(connectedUser, date);
 
-    return sessionResp.parse(sleepSessions);
+    return sessionResp.parse(activitySessions);
   }
 
   async fetchActivityData(connectedUser: ConnectedUser, date: string): Promise<GoogleActivity> {
@@ -238,9 +239,7 @@ export class Google extends Provider implements OAuth2 {
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
-    const sleepType = 72;
-
-    const sleepSessions = await this.fetchGoogleSessions(connectedUser, date, sleepType);
+    const sleepSessions = await this.fetchGoogleSessions(connectedUser, date, sessionSleepType);
 
     return mapToSleep(sessionResp.parse(sleepSessions.data), date);
   }
