@@ -97,6 +97,7 @@ export async function documentContribution({
   const fhirApi = axios.create({
     baseURL: fhirUrl,
   });
+  // TODO: #230 we could split convertPatientIdToSubjectId() in two and reuse the part that splits the CW patientId.
   const newPatientId = patientIdNewOrg.split("%5E%5E%5E")[0];
   await addOrgToFHIRServer(orgId, orgName, fhirApi);
   await addPatientToFHIRServer(newPatientId, fhirApi);
@@ -158,6 +159,7 @@ async function getOrCreateOrg(
 }
 
 async function addOrgToFHIRServer(orgId: string, orgName: string, fhirApi: AxiosInstance) {
+  // TODO: #230 we could create data as a JS structure instead of string - easier for future code enhancements and maintenance.
   const data = `{
     "resourceType": "Organization",
     "id": "${orgId}",
