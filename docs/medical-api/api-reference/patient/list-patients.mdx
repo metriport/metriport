@@ -1,0 +1,86 @@
+---
+title: "List Patients at Facility"
+description: "Lists all Patients receiving care at the specified Facility."
+api: "GET /medical/v1/patient"
+---
+
+## Query Params
+
+<ParamField query="facilityId" type="string" required>
+  The ID of the Facility where the patient is receiving care.
+</ParamField>
+
+## Response
+
+All Patients receiving care at the specified Facility.
+
+<ResponseField name="patients" type="Patient[]">
+  <Expandable title="Patient properties">
+    <Snippet file="patient-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patients = await metriportClient.listPatients("2.16.840.1.113883.3.666.5.2004.4.2005");
+```
+
+</ResponseExample>
+
+```json
+{
+  "patients": [
+    {
+      "id": "2.16.840.1.113883.3.666.777",
+      "facilityIds": ["2.16.840.1.113883.3.666.5.2004.4.2005"],
+      "firstName": "Jose",
+      "lastName": "Juarez",
+      "dob": "1951-05-05",
+      "genderAtBirth": "M",
+      "personalIdentifiers": [
+        {
+          "type": "driversLicense",
+          "state": "CA",
+          "value": "51227265"
+        }
+      ],
+      "address": {
+        "zip": "12345",
+        "city": "San Diego",
+        "state": "CA",
+        "country": "USA",
+        "addressLine1": "Guadalajara St"
+      },
+      "contact": {
+        "phone": "1234567899",
+        "email": "jose@domain.com"
+      }
+    },
+    {
+      "id": "2.16.840.1.113883.3.666.888",
+      "facilityIds": ["2.16.840.1.113883.3.666.5.2004.4.2005"],
+      "firstName": "Josita",
+      "lastName": "Juarez",
+      "dob": "1949-06-09",
+      "genderAtBirth": "F",
+      "personalIdentifiers": [],
+      "address": {
+        "zip": "12345",
+        "city": "San Diego",
+        "state": "CA",
+        "country": "USA",
+        "addressLine1": "Guadalajara St"
+      },
+      "contact": {
+        "phone": "1234569999",
+        "email": "josita@domain.com"
+      }
+    }
+  ]
+}
+```

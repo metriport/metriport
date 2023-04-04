@@ -1,6 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { ProviderOptions } from "../shared/constants";
-import { BaseModel, defaultModelOptions, ModelSetup } from "./_default";
+import { BaseModel, ModelSetup } from "./_default";
 
 export type ProviderMapItem = {
   token: string; // user authorization token
@@ -22,7 +22,7 @@ export class ConnectedUser extends BaseModel<ConnectedUser> {
   static setup: ModelSetup = (sequelize: Sequelize) => {
     ConnectedUser.init(
       {
-        ...BaseModel.baseAttributes(),
+        ...BaseModel.attributes(),
         id: {
           type: DataTypes.UUID,
           primaryKey: true,
@@ -38,7 +38,7 @@ export class ConnectedUser extends BaseModel<ConnectedUser> {
         },
       },
       {
-        ...defaultModelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: ConnectedUser.NAME,
       }
     );

@@ -1,16 +1,21 @@
 import axios, { AxiosInstance } from "axios";
+import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
 import { Activity } from "../models/activity";
 import { Biometrics } from "../models/biometrics";
 import { Body } from "../models/body";
+import { ProviderSource } from "../models/common/provider-source";
 import { Nutrition } from "../models/nutrition";
 import { Sleep } from "../models/sleep";
 import { User } from "../models/user";
-import { ProviderSource } from "../models/common/provider-source";
-import { dateIsValid } from "./util/date-util";
 import { GetConnectTokenResponse } from "./models/get-connect-token-response";
 import { GetMetriportUserIDResponse } from "./models/get-metriport-user-id-response";
 import { SettingsResponse } from "./models/settings-response";
 import { WebhookStatusResponse } from "./models/webhook-status-response";
+import { dateIsValid } from "./util/date-util";
+
+export type Options = {
+  sandbox?: boolean;
+};
 
 export class MetriportDevicesApi {
   private api: AxiosInstance;
@@ -18,9 +23,14 @@ export class MetriportDevicesApi {
   /**
    * Creates a new instance of the Metriport Devices API client.
    *
-   * @param {string} apiKey - Your Metriport API key.
+   * @param apiKey - Your Metriport API key.
+   * @param options - Structure with `sandbox` property indicating whether to connect to the
+   *           sandbox. If a string is passed, it is assumed to be the base URL (deprecated).
    */
-  constructor(apiKey: string, baseURL = "https://api.metriport.com") {
+  constructor(apiKey: string, options: string | Options = { sandbox: false }) {
+    const baseURL =
+      typeof options === "string" ? options : options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS;
+
     this.api = axios.create({
       baseURL,
       headers: { "x-api-key": apiKey },

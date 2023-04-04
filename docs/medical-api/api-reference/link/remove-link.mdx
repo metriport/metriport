@@ -1,0 +1,41 @@
+---
+title: "Remove Link"
+description: "Removes link from the Patient to the specified HIE."
+api: "DELETE /medical/v1/patient/{id}/link/{linkSource}"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient that will be unlinked from the HIE.
+</ParamField>
+
+<ParamField path="linkSource" type="string" required>
+  The HIE for which the link will be removed - currently `COMMONWELL` is supported.
+</ParamField>
+
+## Query Params
+
+<ParamField query="facilityId" type="string" required>
+  The ID of the Facility that is currently providing the Patient care.
+</ParamField>
+
+## Response
+
+`204` on success.
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+await metriportClient.removeLink(
+  "2.16.840.1.113883.3.666.777",
+  "2.16.840.1.113883.3.666.123",
+  "COMMONWELL"
+);
+```
+
+</ResponseExample>

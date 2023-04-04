@@ -1,95 +1,99 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { asyncHandler, getCxIdOrFail, getPatientIdFromQueryOrFail } from "../util";
-const router = Router();
 import status from "http-status";
-import { getPatient } from "../../command/medical/patient/get-patient";
+import BadRequestError from "../../errors/bad-request";
+import { MedicalDataSource } from "../../external";
+import cwCommands from "../../external/commonwell";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQueryOrFail } from "../util";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { linkCreateSchema } from "./schemas/link";
+
+const router = Router();
 
 /** ---------------------------------------------------------------------------
- * POST /link
+ * POST /patient/:patientId/link/:source
  *
  * Creates link to the specified entity.
  *
- * @return  {Link}  The created link.
+ * @param req.params.patientId Patient ID to link to a person.
+ * @param req.params.source HIE from where the link is made to.
+ * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
+ * @returns 201 upon success.
  */
 router.post(
-  "/",
+  "/:patientId/link/:source",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const patientId = getPatientIdFromQueryOrFail(req);
-    const patient = await getPatient({ id: patientId, cxId });
-    // get linkSource from query params -> this should be "CommonWell"
-    console.log(patient);
+    const patientId = getFromParamsOrFail("patientId", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+    const linkSource = getFromParamsOrFail("source", req);
+    const linkCreate = linkCreateSchema.parse(req.body);
 
-    // CommonWell.patientLink();
-    // store the following data in our DB in the patient:
-    //    - link ID
-    //    - person ID
-    // can put this into a JSONB column `link_data` with structure:
-    //    {["CommonWell"]: {cw_link_id, cw_person_id}}
-
-    return res.status(status.OK).json({});
+    if (linkSource === MedicalDataSource.COMMONWELL) {
+      await cwCommands.link.create(linkCreate.entityId, patientId, cxId, facilityId);
+      return res.sendStatus(status.CREATED);
+    }
+    throw new BadRequestError(`Unsupported link source: ${linkSource}`);
   })
 );
 
 /** ---------------------------------------------------------------------------
- * DELETE /link
+ * DELETE /patient/:patientId/link/:source
  *
  * Removes the specified HIE link from the specified patient.
  *
- * @return  200
+ * @param req.params.patientId Patient ID to remove link from.
+ * @param req.params.linkSource HIE to remove the link from.
+ * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
+ * @returns 204 upon successful link delete.
  */
 router.delete(
-  "/",
+  "/:patientId/link/:source",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const patientId = getPatientIdFromQueryOrFail(req);
-    const patient = await getPatient({ id: patientId, cxId });
-    // get linkSource from query params -> this should be "CommonWell"
-    console.log(patient);
-    // build link string from patient.linkData["CommonWell"]
-    // CommonWell.resetPatientLink();
+    const patientId = getFromParamsOrFail("patientId", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+    const linkSource = req.params.source;
 
-    return res.status(status.OK);
+    if (linkSource === MedicalDataSource.COMMONWELL) {
+      await cwCommands.link.reset(patientId, cxId, facilityId);
+    }
+
+    return res.sendStatus(status.NO_CONTENT);
   })
 );
 
 /** ---------------------------------------------------------------------------
- * GET /link
+ * GET /patient/:patientId/link
  *
  * Builds and returns the current state of a patient's links across HIEs.
  *
- * @param   req.query.patientId Patient ID for which to retrieve links.
- * @return  {Link[]}            The patient's current and potential links.
+ * @param req.params.patientId Patient ID for which to retrieve links.
+ * @param req.query.facilityId The ID of the facility to provide the NPI to get links for patient.
+ * @returns The patient's current and potential links.
  */
 router.get(
-  "/",
+  "/:patientId/link",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const patientId = getPatientIdFromQueryOrFail(req);
+    const patientId = getFromParamsOrFail("patientId", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
 
-    // TODO: Here's some pseudocode for how we can do this for CommonWell
-    // (#374 will implement):
+    const links: PatientLinksDTO = {
+      currentLinks: [],
+      potentialLinks: [],
+    };
 
-    const patient = await getPatient({ id: patientId, cxId });
-    console.log(patient);
-    //  - initialize currentLinks, potentialLinks
-    //  - if the patient already has a link to a person
-    //      - need to verify link is still valid
-    //      - get the patient link -> CommonWell.getPatientLink()
-    //      - if the link exists and is >= LOLA 2
-    //        - add to currentLinks
-    //      - else
-    //        - this means the person was removed from CW
-    //        - TODO: ideas on how to handle this?
-    //  - if currentLinks is still empty
-    //      - initialize personResultsList
-    //      - if strong id is available
-    //        - add to personResultsList from strong ID search -> CommonWell.searchPerson()
-    //      - add to personResultsList from demo search & remove duplicates from strong ID search -> CommonWell.searchPersonByPatientDemo()
-    //      - add to potentialLinks from personResultsList
+    const cwPersonLinks = await cwCommands.link.get(patientId, cxId, facilityId);
+    const cwConvertedLinks = dtoFromCW({
+      cwPotentialPersons: cwPersonLinks.potentialLinks,
+      cwCurrentPersons: cwPersonLinks.currentLinks,
+    });
 
-    return res.status(status.OK).json([]);
+    links.potentialLinks = [...cwConvertedLinks.potentialLinks];
+    links.currentLinks = [...cwConvertedLinks.currentLinks];
+
+    return res.status(status.OK).json(links);
   })
 );
 

@@ -40,6 +40,7 @@ async function deploy() {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: config.region,
   };
+  const version = process.env.METRIPORT_VERSION;
 
   //---------------------------------------------------------------------------------
   // 1. Deploy the secrets stack to initialize all secrets.
@@ -50,13 +51,16 @@ async function deploy() {
   //---------------------------------------------------------------------------------
   // 2. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  new APIStack(app, config.stackName, { env, config });
+  new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 3. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
   if (config.connectWidget) {
-    new ConnectWidgetStack(app, config.connectWidget.stackName, { env, config });
+    new ConnectWidgetStack(app, config.connectWidget.stackName, {
+      env: { ...env, region: config.connectWidget.region },
+      config,
+    });
   }
 
   //---------------------------------------------------------------------------------

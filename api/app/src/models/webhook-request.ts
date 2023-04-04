@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { BaseModel, defaultModelOptions, ModelSetup } from "./_default";
+import { BaseModel, ModelSetup } from "./_default";
 
 export type WebhookRequestStatus = "processing" | "success" | "failure";
 
@@ -13,7 +13,7 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
   static setup: ModelSetup = (sequelize: Sequelize) => {
     WebhookRequest.init(
       {
-        ...BaseModel.baseAttributes(),
+        ...BaseModel.attributes(),
         id: {
           type: DataTypes.UUID,
           primaryKey: true,
@@ -29,7 +29,7 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
         },
       },
       {
-        ...defaultModelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: WebhookRequest.NAME,
       }
     );

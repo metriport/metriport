@@ -23,6 +23,7 @@ import { addErrorAlarmToLambdaFunc, isProd, mbToBytes } from "./util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
+  version: string | undefined;
 }
 
 export class APIStack extends Stack {
@@ -46,7 +47,7 @@ export class APIStack extends Stack {
       },
     });
 
-    new r53.PrivateHostedZone(this, "PrivateZone", {
+    const privateZone = new r53.PrivateHostedZone(this, "PrivateZone", {
       vpc: this.vpc,
       zoneName: props.config.host,
     });
@@ -189,11 +190,15 @@ export class APIStack extends Stack {
           },
           environment: {
             NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
-            ENV_TYPE: props.config.environmentType,
+            ENV_TYPE: props.config.environmentType, // staging, production, sandbox
+            ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
             TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
             API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
             CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
             SYSTEM_ROOT_OID: props.config.systemRootOID,
+            ...props.config.commonwell,
+            ...(props.config.slack ? props.config.slack : undefined),
+            ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
             ...(props.config.usageReportUrl && {
               USAGE_URL: props.config.usageReportUrl,
             }),
@@ -208,6 +213,15 @@ export class APIStack extends Stack {
       }
     );
     const apiServerAddress = fargateService.loadBalancer.loadBalancerDnsName;
+    const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
+
+    new r53.ARecord(this, "APIDomainPrivateRecord", {
+      recordName: apiUrl,
+      zone: privateZone,
+      target: r53.RecordTarget.fromAlias(
+        new r53_targets.LoadBalancerTarget(fargateService.loadBalancer)
+      ),
+    });
 
     // This speeds up deployments so the tasks are swapped quicker.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
@@ -279,11 +293,11 @@ export class APIStack extends Stack {
       defaultIntegration: integration,
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
+        allowHeaders: ["*"],
       },
     });
 
     // add domain cert + record
-    const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
     api.addDomainName("APIDomain", {
       domainName: apiUrl,
       certificate: certificate,

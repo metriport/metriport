@@ -1,21 +1,29 @@
-import { Organization, OrganizationData } from "../../../models/medical/organization";
+import BadRequestError from "../../../errors/bad-request";
+import { OrganizationData, OrganizationModel } from "../../../models/medical/organization";
+import { createOrganizationId } from "../customer-sequence/create-id";
+import { getOrganization } from "./get-organization";
 
-export const createOrganization = async ({
-  cxId,
-  data,
-}: {
-  cxId: string;
-  data: OrganizationData;
-}): Promise<Organization> => {
+type Identifier = Pick<OrganizationModel, "cxId">;
+type OrganizationNoExternalData = Omit<OrganizationData, "externalData">;
+export type OrganizationCreateCmd = OrganizationNoExternalData & Identifier;
+
+export const createOrganization = async (
+  orgData: OrganizationCreateCmd
+): Promise<OrganizationModel> => {
+  const { cxId, name, type, location } = orgData;
+
   // ensure we never create more than one org per customer
-  const [org] = await Organization.findOrCreate({
-    where: { cxId },
-    defaults: {
-      id: "", // this will be generated on the beforeCreate hook
-      cxId,
-      organizationNumber: 0, // this will be generated on the beforeCreate hook
-      data,
-    },
+  const existingOrg = await getOrganization({ cxId });
+  if (existingOrg) throw new BadRequestError(`Organization already exists for customer ${cxId}`);
+
+  const { id, organizationNumber } = await createOrganizationId();
+
+  const org = await OrganizationModel.create({
+    id,
+    organizationNumber,
+    cxId,
+    data: { name, type, location },
   });
+
   return org;
 };

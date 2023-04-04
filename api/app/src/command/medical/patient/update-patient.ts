@@ -1,23 +1,31 @@
-import NotFoundError from "../../../errors/not-found";
-import { Patient } from "../../../models/medical/patient";
+import { Patient, PatientData } from "../../../models/medical/patient";
+import { validateVersionForUpdate } from "../../../models/_default";
+import { BaseUpdateCmdWithCustomer } from "../base-update-command";
+import { getPatientOrFail } from "./get-patient";
+import { sanitize, validate } from "./shared";
 
-export const updatePatient = async ({
-  id,
-  cxId,
-  data,
-}: {
-  id: string;
-  cxId: string;
-  data: object;
-}): Promise<Patient> => {
-  const [count, rows] = await Patient.update(
-    {
-      data,
+type PatientNoExternalData = Omit<PatientData, "externalData">;
+export type PatientUpdateCmd = BaseUpdateCmdWithCustomer & PatientNoExternalData;
+
+export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Patient> => {
+  const { id, cxId, eTag } = patientUpdate;
+
+  const sanitized = sanitize(patientUpdate);
+  validate(sanitized);
+
+  const patient = await getPatientOrFail({ id, cxId });
+  validateVersionForUpdate(patient, eTag);
+
+  return patient.update({
+    data: {
+      ...patient.data,
+      firstName: sanitized.firstName,
+      lastName: sanitized.lastName,
+      dob: sanitized.dob,
+      genderAtBirth: sanitized.genderAtBirth,
+      personalIdentifiers: sanitized.personalIdentifiers,
+      address: sanitized.address,
+      contact: sanitized.contact,
     },
-    { where: { id, cxId }, returning: true }
-  );
-  if (count < 1) throw new NotFoundError();
-  // TODO #156 Send this to Sentry
-  if (count > 1) console.error(`Updated ${count} patients for id ${id} and cxId ${cxId}`);
-  return rows[0];
+  });
 };

@@ -1,25 +1,84 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
-import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { MedicalDataSource } from "../../external";
+import { USState } from "../../shared/geographic-locations";
+import { IBaseModelCreate, IBaseModel, ModelSetup, BaseModel } from "../_default";
+import { Address } from "./address";
+import { Contact } from "./contact";
 
-export class Patient extends BaseModel<Patient> {
+export const generalTypes = ["passport", "ssn", "medicare"] as const;
+export const driversLicenseType = ["driversLicense"] as const;
+export type GeneralTypes = (typeof generalTypes)[number];
+export type DriverLicenseType = (typeof driversLicenseType)[number];
+
+export type Period =
+  | {
+      start: string;
+      end?: string;
+    }
+  | {
+      start?: string;
+      end: string;
+    };
+
+export type BaseIdentifier = {
+  period?: Period;
+  assigner?: string;
+};
+// TODO #425 reenable this when we manage to work with diff systems @ CW
+// export type PersonalIdentifier = BaseIdentifier &
+//   (
+//     | { type: GeneralTypes; value: string; state?: never }
+//     | { type: DriverLicenseType; value: string; state: USState }
+//   );
+export type PersonalIdentifier = BaseIdentifier & {
+  type: DriverLicenseType;
+  value: string;
+  state: USState;
+};
+
+export type DriversLicense = {
+  value: string;
+  state: USState;
+};
+
+export const genderAtBirthTypes = ["F", "M"] as const;
+export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
+
+export abstract class PatientExternalDataEntry {}
+
+export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;
+
+export type PatientData = {
+  firstName: string;
+  lastName: string;
+  dob: string;
+  genderAtBirth: GenderAtBirth;
+  personalIdentifiers: PersonalIdentifier[];
+  address: Address;
+  contact?: Contact;
+  externalData?: PatientExternalData;
+};
+
+export interface PatientCreate extends IBaseModelCreate {
+  cxId: string;
+  facilityIds: string[];
+  patientNumber: number;
+  data: PatientData;
+}
+
+export interface Patient extends IBaseModel, PatientCreate {}
+
+export class PatientModel extends BaseModel<PatientModel> implements Patient {
   static NAME = "patient";
-  declare id: string;
   declare cxId: string;
   declare facilityIds: string[];
   declare patientNumber: number;
-  declare data: object;
+  declare data: PatientData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    Patient.init(
+    PatientModel.init(
       {
-        ...BaseModel.baseAttributes(),
-        id: {
-          type: DataTypes.STRING,
-          primaryKey: true,
-        },
+        ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
         },
@@ -34,23 +93,8 @@ export class Patient extends BaseModel<Patient> {
         },
       },
       {
-        ...defaultModelOptions(sequelize),
-        tableName: Patient.NAME,
-        hooks: {
-          async beforeCreate(attributes) {
-            const curMaxNumber = (await Patient.max("patientNumber", {
-              where: {
-                cxId: attributes.cxId,
-              },
-            })) as number;
-            const org = await getOrganizationOrFail({ cxId: attributes.cxId });
-            const patientNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
-              org.organizationNumber
-            }.${OIDNode.patients}.${patientNumber}`;
-            attributes.patientNumber = patientNumber;
-          },
-        },
+        ...BaseModel.modelOptions(sequelize),
+        tableName: PatientModel.NAME,
       }
     );
   };

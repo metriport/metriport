@@ -1,0 +1,52 @@
+<ParamField body="firstName" type="string" required>
+  The Patient's first name.
+</ParamField>
+
+<ParamField body="lastName" type="string" required>
+  The Patient's last name.
+</ParamField>
+
+<ParamField body="dob" type="string" required>
+  The Patient's date of birth (DOB), formatted `YYYY-MM-DD`.
+</ParamField>
+
+<ParamField body="genderAtBirth" type="string" required>
+  The Patient's gender at birth, can be one of `M` or `F`.
+</ParamField>
+
+<ParamField body="personalIdentifiers" type="PersonalIdentifier[]" required>
+  An array of the Patient's personal IDs, such as a driver's license. May be empty.
+
+  <Expandable title="PersonalIdentifier properties">
+    <ParamField body="type" type="string" required>
+      The ID type - currently `driversLicense` is supported.
+    </ParamField>
+
+    <ParamField body="state" type="string" required>
+      The 2 letter state acronym where this ID was issued, for example: `CA`.
+    </ParamField>
+
+    <ParamField body="value" type="string" required>
+      The ID number.
+    </ParamField>
+
+  </Expandable>
+</ParamField>
+
+<ParamField body="address" type="Address" required>
+  <Snippet file="address.mdx" />
+</ParamField>
+
+<ParamField body="contact" type="Contact">
+  <Expandable title="properties">
+    <ParamField body="phone" type="string">
+      The Patient's 10 digit phone number, formatted `1234567899`.
+    </ParamField>
+
+    <ParamField body="email" type="string">
+      The Patient's email address.
+    </ParamField>
+
+  </Expandable>
+
+</ParamField>

@@ -3,6 +3,8 @@ import { humanNameSchema } from "./human-name";
 import { identifierUseCodesSchema } from "./identifier";
 import { isoDateTimeSchema } from "./iso-datetime";
 import { periodSchema } from "./period";
+import { addressSchema } from "./address";
+import { genderSchema } from "./demographics";
 
 // Used as a reference, but not exactly the actual definition:
 // https://specification.commonwellalliance.org/services/rest-api-reference#8610-documentreference
@@ -34,12 +36,19 @@ const containedSchema = z.object({
   resourceType: resourceTypeSchema,
   id: z.string(),
   identifier: z.array(identifierSchema).optional(),
-  name: z.string().or(z.array(humanNameSchema)).optional(),
+  name: z.string().or(humanNameSchema).or(z.array(humanNameSchema)).optional(),
   organization: z
     .object({
       reference: z.string(),
     })
     .optional(),
+  gender: z
+    .object({
+      coding: z.array(genderSchema).optional(),
+    })
+    .optional(),
+  birthDate: z.string().optional(),
+  address: z.array(addressSchema).optional(),
 });
 
 const statusSchema = z.enum(["current", "superceded", "entered in error"]);
@@ -60,11 +69,13 @@ export const contentSchema = z.object({
   }),
   type: codeableConceptSchema,
   // class: ?, // Likely a codeableConceptSchema like 'type'?
-  author: z.array(
-    z.object({
-      reference: z.string(), // Supposed to be one of these, but sandbox doesn't match it: Practitioner | Device | Patient | RelatedPerson
-    })
-  ),
+  author: z
+    .array(
+      z.object({
+        reference: z.string(), // Supposed to be one of these, but sandbox doesn't match it: Practitioner | Device | Patient | RelatedPerson
+      })
+    )
+    .optional(),
   // custodian: ?, // It's an Organization, but what data are we going to get here, a simple or strong ID?
   // policyManager: ?, // URI, just a simple string/URI, or object with an inner property?
   // authenticator: ?, // same structure as 'author' with diff options, or diff structure?
@@ -79,7 +90,7 @@ export const contentSchema = z.object({
   // confidentiality: ?[], // What's the structure here? Maybe based on codeableConceptSchema?
   // primaryLanguage: ?, // What's the structure here?
   mimeType: z.string().optional(),
-  format: z.string().optional(), // URI - Format/content rules for the document
+  format: z.string().or(z.array(z.string())).optional(), // URI - Format/content rules for the document
   size: z.number().optional(), // Size of the document in bytes
   hash: z.string().optional(), // Base64 representation of SHA-256
   location: z.string().optional(), // URI - Where to access the document
@@ -99,10 +110,10 @@ export const contentSchema = z.object({
   //   })
   //   .optional(),
   context: z.object({
-    event: z.array(eventSchema),
-    period: periodSchema,
+    event: z.array(eventSchema).optional(),
+    period: periodSchema.optional(),
+    facilityType: codeableConceptSchema.optional(), // Kind of facility where patient was seen
   }),
-  // facilityType: z.string().optional(), // Kind of facility where patient was seen
 });
 export type DocumentContent = z.infer<typeof contentSchema>;
 

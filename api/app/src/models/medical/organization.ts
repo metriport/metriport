@@ -1,7 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-
-import { createOrgId } from "../../shared/oid";
-import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { IBaseModelCreate, IBaseModel, ModelSetup, BaseModel } from "../_default";
 import { Address } from "./address";
 
 export enum OrgType {
@@ -19,23 +17,24 @@ export type OrganizationData = {
   location: Address;
 };
 
-export type OrganizationCreate = Omit<Organization, "id">;
+export interface OrganizationCreate extends IBaseModelCreate {
+  cxId: string;
+  organizationNumber: number;
+  data: OrganizationData;
+}
 
-export class Organization extends BaseModel<Organization> {
+export interface Organization extends IBaseModel, OrganizationCreate {}
+
+export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {
   static NAME = "organization";
-  declare id: string;
   declare cxId: string;
   declare organizationNumber: number;
   declare data: OrganizationData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    Organization.init(
+    OrganizationModel.init(
       {
-        ...BaseModel.baseAttributes(),
-        id: {
-          type: DataTypes.STRING,
-          primaryKey: true,
-        },
+        ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
         },
@@ -48,16 +47,8 @@ export class Organization extends BaseModel<Organization> {
         },
       },
       {
-        ...defaultModelOptions(sequelize),
-        tableName: Organization.NAME,
-        hooks: {
-          async beforeCreate(attributes) {
-            const { orgId, orgNumber } = await createOrgId();
-
-            attributes.id = orgId;
-            attributes.organizationNumber = orgNumber;
-          },
-        },
+        ...BaseModel.modelOptions(sequelize),
+        tableName: OrganizationModel.NAME,
       }
     );
   };

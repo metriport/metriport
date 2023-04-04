@@ -33,6 +33,8 @@ jobs:
       AWS_REGION: ${{ secrets.WIDGET_REGION_PRODUCTION }}
       CDK_STACK: ${{ secrets.WIDGET_STACK_NAME_PRODUCTION }}
       INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
 
   api-build:
     uses: ./.github/workflows/_reusable_build.yml
@@ -49,6 +51,8 @@ jobs:
       AWS_REGION: ${{ secrets.API_REGION_PRODUCTION }}
       CDK_STACK: ${{ secrets.API_STACK_NAME_PRODUCTION }}
       INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
   api-sandbox-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
     needs: api-deploy
@@ -60,6 +64,8 @@ jobs:
       AWS_REGION: ${{ secrets.API_REGION_SANDBOX }}
       CDK_STACK: ${{ secrets.API_STACK_NAME_SANDBOX }}
       INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_SANDBOX }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
 
   release:
     uses: ./.github/workflows/_reusable_release.yml

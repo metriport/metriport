@@ -28,8 +28,8 @@ export const humanNameSchema = z.object({
   use: nameUseCodesSchema.optional().nullable(),
   text: z.string().optional().nullable(),
   family: z.array(z.string()),
-  given: z.array(z.string()),
-  prefix: z.string().optional().nullable(),
+  given: z.array(z.string()).optional(),
+  prefix: z.string().or(z.array(z.string())).optional().nullable(),
   suffix: z.string().optional().nullable(),
   period: periodSchema.optional().nullable(),
 });

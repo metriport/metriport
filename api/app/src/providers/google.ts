@@ -113,13 +113,9 @@ export class Google extends Provider implements OAuth2 {
       aggregateBy: [
         {
           dataTypeName: "com.google.calories.expended",
-          dataSourceId:
-            "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended",
         },
         {
           dataTypeName: "com.google.step_count.delta",
-          dataSourceId:
-            "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps",
         },
       ],
     });
@@ -131,8 +127,7 @@ export class Google extends Provider implements OAuth2 {
     const biometrics = await this.fetchGoogleData(connectedUser, date, {
       aggregateBy: [
         {
-          dataTypeName: "	com.google.blood_pressure",
-          dataSourceId: "derived:com.google.blood_pressure:com.google.android.gms:merged",
+          dataTypeName: "com.google.blood_pressure",
         },
         {
           dataTypeName: "com.google.blood_glucose",
@@ -185,14 +180,21 @@ export class Google extends Provider implements OAuth2 {
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
-    const sleep = await this.fetchGoogleData(connectedUser, date, {
-      aggregateBy: [
-        {
-          dataTypeName: "com.google.sleep.segment",
-        },
-      ],
+    const access_token = await this.oauth.getAccessToken(connectedUser);
+
+    const sleepType = 72;
+
+    const resp = await axios.get(`${Google.URL}${Google.API_PATH}/users/me/sessions`, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+      params: {
+        startTime: dayjs(date).toISOString(),
+        endTime: dayjs(date).add(24, "hours").toISOString(),
+        activityType: sleepType,
+      },
     });
 
-    return mapToSleep(googleSleepResp.parse(sleep), date);
+    return mapToSleep(googleSleepResp.parse(resp.data), date);
   }
 }

@@ -1,57 +1,75 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { createOrganization } from "../../command/medical/organization/create-organization";
-import { getOrganization } from "../../command/medical/organization/get-organization";
-import { updateOrganization } from "../../command/medical/organization/update-organization";
 import {
-  createOrgAtCommonwell,
-  updateOrgAtCommonwell,
-} from "../../external/commonwell/organization";
-import { Organization, OrganizationData } from "../../models/medical/organization";
-import { asyncHandler, getCxIdOrFail } from "../util";
-import { organizationSchema } from "./schemas/organization";
+  createOrganization,
+  OrganizationCreateCmd,
+} from "../../command/medical/organization/create-organization";
+import { getOrganization } from "../../command/medical/organization/get-organization";
+import {
+  OrganizationUpdateCmd,
+  updateOrganization,
+} from "../../command/medical/organization/update-organization";
+import cwCommands from "../../external/commonwell";
+import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
+import { dtoFromModel } from "./dtos/organizationDTO";
+import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
 
 const router = Router();
 
-type OrganizationDTO = Pick<Organization, "id"> & OrganizationData;
-
-// TODO split this in two, one to create "POST /" and another to update "POST /:id"
 /** ---------------------------------------------------------------------------
  * POST /organization
  *
- * Updates or creates the organization if it doesn't exist already.
+ * Creates a new organization at Metroport and HIEs.
  *
- * @return  {OrganizationDTO}  The organization.
+ * @param req.body The data to create the organization.
+ * @returns The newly created organization.
  */
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    const data = organizationCreateSchema.parse(req.body);
 
-    const reqOrgData = organizationSchema.parse(req.body);
-    const org = {
-      ...reqOrgData,
-      location: {
-        ...reqOrgData.location,
-        addressLine2: reqOrgData.location.addressLine2 ?? null,
-      },
+    const createOrg: OrganizationCreateCmd = { cxId, ...data };
+    const org = await createOrganization(createOrg);
+
+    // TODO: #393 declarative, event-based integration
+    // Intentionally asynchronous
+    cwCommands.organization.create(org);
+
+    return res.status(status.CREATED).json(dtoFromModel(org));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * PUT /organization/:id
+ *
+ * Updates the organization at Metriport and HIEs.
+ *
+ * @param req.body The data to update the organization.
+ * @returns The updated organization.
+ */
+router.put(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+    const payload = organizationUpdateSchema.parse(req.body);
+
+    const updateCmd: OrganizationUpdateCmd = {
+      ...payload,
+      ...getETag(req),
+      id,
+      cxId,
     };
+    const org = await updateOrganization(updateCmd);
 
-    let localOrg: Organization;
+    // TODO: #393 declarative, event-based integration
+    // Intentionally asynchronous
+    cwCommands.organization.update(org);
 
-    if (org.id) {
-      const data = { ...org };
-      delete data.id;
-      localOrg = await updateOrganization({ id: org.id, cxId, data });
-      await updateOrgAtCommonwell(localOrg);
-    } else {
-      localOrg = await createOrganization({ cxId, data: org });
-      await createOrgAtCommonwell(localOrg);
-    }
-
-    const responsePayload: OrganizationDTO = { id: localOrg.id, ...localOrg.data };
-    return res.status(status.OK).json(responsePayload);
+    return res.status(status.OK).json(dtoFromModel(org));
   })
 );
 
@@ -60,7 +78,7 @@ router.post(
  *
  * Gets the org corresponding to the customer ID.
  *
- * @return  {LocalOrg}  The organization.
+ * @returns The organization.
  */
 router.get(
   "/",
@@ -68,8 +86,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
 
     const org = await getOrganization({ cxId });
-
-    return res.status(status.OK).json(org ? { id: org.id, ...org.data } : undefined);
+    return res.status(status.OK).json(org ? dtoFromModel(org) : undefined);
   })
 );
 

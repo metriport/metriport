@@ -79,7 +79,7 @@ export async function documentContribution({
   console.log(`patientId: ${patientIdNewOrg}`);
 
   console.log(`Get patients links`);
-  const respGetLinks = await apiNewOrg.getPatientsLinks(queryMeta, patientIdNewOrg);
+  const respGetLinks = await apiNewOrg.getNetworkLinks(queryMeta, patientIdNewOrg);
   console.log(respGetLinks);
 
   const allLinks = respGetLinks._embedded.networkLink;
@@ -115,7 +115,7 @@ export async function documentContribution({
 
     const fileName = `./cw_contribution_${doc.id ?? "ID"}_${makeId()}.contents.file`;
     // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
-    const outputStream = fs.createWriteStream(fileName, { encoding: null });
+    const outputStream = fs.createWriteStream(fileName, { encoding: undefined });
     console.log(`File being created at ${process.cwd()}/${fileName}`);
     const url = doc.content?.location;
     if (url != null) await apiDefaultOrg.retrieveDocument(queryMeta, url, outputStream);

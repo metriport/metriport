@@ -1,4 +1,6 @@
-import { Address } from "./common/address";
+import { z } from "zod";
+import { addressSchema } from "./common/address";
+import { baseUpdateSchema } from "./common/base-update";
 
 export enum OrgType {
   acuteCare = "acuteCare",
@@ -8,9 +10,15 @@ export enum OrgType {
   pharmacy = "pharmacy",
   postAcuteCare = "postAcuteCare",
 }
-export interface Organization {
-  id?: string | null;
-  name: string;
-  type: OrgType;
-  location: Address;
-}
+
+export const orgTypeSchema = z.nativeEnum(OrgType);
+
+export const organizationCreateSchema = z.object({
+  name: z.string(),
+  type: orgTypeSchema,
+  location: addressSchema,
+});
+export type OrganizationCreate = z.infer<typeof organizationCreateSchema>;
+
+export const organizationSchema = organizationCreateSchema.merge(baseUpdateSchema);
+export type Organization = z.infer<typeof organizationSchema>;

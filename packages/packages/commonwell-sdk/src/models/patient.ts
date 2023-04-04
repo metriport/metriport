@@ -3,6 +3,7 @@ import { demographicsSchema } from "./demographics";
 import { identifierSchema } from "./identifier";
 import { linkSchema, networkLinkSchema } from "./link";
 import { facilitySchema } from "./facility";
+import { patientLinkSchema } from "./person";
 
 export const patientOrganizationSchema = z.object({
   type: z.string().optional().nullable(),
@@ -12,7 +13,7 @@ export const patientOrganizationSchema = z.object({
 
 export const patientLinksSchema = z.object({
   self: linkSchema,
-  networkLink: networkLinkSchema.optional().nullable(),
+  networkLink: linkSchema.optional().nullable(),
   person: linkSchema.optional().nullable(),
   personMatch: linkSchema.optional().nullable(),
   upgrade: linkSchema.optional().nullable(),
@@ -48,3 +49,12 @@ export const patientNetworkLinkRespSchema = z.object({
 });
 
 export type PatientNetworkLinkResp = z.infer<typeof patientNetworkLinkRespSchema>;
+
+export const patientLinkRespSchema = z.object({
+  _embedded: z.object({
+    patientLink: z.array(patientLinkSchema).optional().nullable(),
+  }),
+  _links: z.object({ self: linkSchema }).optional(),
+});
+
+export type PatientLinkResp = z.infer<typeof patientLinkRespSchema>;

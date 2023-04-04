@@ -23,6 +23,19 @@ export type EnvConfig = {
   usageReportUrl?: string;
   fhirServerUrl?: string;
   systemRootOID: string;
+  analyticsSecretNames?: {
+    POST_HOG_API_KEY: string;
+  };
+  commonwell: {
+    CW_MEMBER_NAME: string;
+    CW_MEMBER_OID: string;
+    CW_GATEWAY_ENDPOINT: string;
+    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
+    CW_TECHNICAL_CONTACT_NAME: string;
+    CW_TECHNICAL_CONTACT_TITLE: string;
+    CW_TECHNICAL_CONTACT_EMAIL: string;
+    CW_TECHNICAL_CONTACT_PHONE: string;
+  };
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: string;
     CRONOMETER_CLIENT_SECRET: string;
@@ -42,18 +55,15 @@ export type EnvConfig = {
   cwSecretNames: {
     CW_PRIVATE_KEY: string;
     CW_CERTIFICATE: string;
-    CW_MEMBER_NAME: string;
-    CW_MEMBER_OID: string;
     CW_MEMBER_PRIVATE_KEY: string;
     CW_MEMBER_CERTIFICATE: string;
-    CW_GATEWAY_ENDPOINT: string;
-    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
-    CW_TECHNICAL_CONTACT_NAME: string;
-    CW_TECHNICAL_CONTACT_TITLE: string;
-    CW_TECHNICAL_CONTACT_EMAIL: string;
-    CW_TECHNICAL_CONTACT_PHONE: string;
+  };
+  sentryDSN?: string; // API's Sentry DSN
+  slack?: {
+    SLACK_ALERT_URL?: string;
+    SLACK_NOTIFICATION_URL?: string;
   };
 } & (
   | {

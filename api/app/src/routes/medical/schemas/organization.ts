@@ -4,11 +4,12 @@ import { addressSchema } from "./address";
 
 export const orgTypeSchema = z.nativeEnum(OrgType);
 
-export const organizationSchema = z.object({
-  id: z.string().optional().nullable(),
+export const organizationCreateSchema = z.object({
   name: z.string().min(1),
   type: orgTypeSchema,
   location: addressSchema,
 });
+export type OrganizationCreate = z.infer<typeof organizationCreateSchema>;
 
-export type Organization = z.infer<typeof organizationSchema>;
+export const organizationUpdateSchema = organizationCreateSchema;
+export type OrganizationUpdate = z.infer<typeof organizationUpdateSchema>;

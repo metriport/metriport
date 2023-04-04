@@ -18,11 +18,12 @@ const metriportResponseBody = (err: MetriportError): string => {
 };
 
 const zodResponseBody = (err: ZodError): string => {
+  const formatted = err.issues.map(i => `${i.message}, on [${i.path}]`);
   return JSON.stringify({
     ...httpResponseBody({
       status: status.BAD_REQUEST,
       title: "Missing or invalid parameters",
-      detail: JSON.stringify(err.issues),
+      detail: formatted.join(", "),
     }),
     name: status[status.BAD_REQUEST],
   });
@@ -30,6 +31,8 @@ const zodResponseBody = (err: ZodError): string => {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  res.setHeader(`x-sentry-id`, (res as any).sentry || ``);
   if (err instanceof MetriportError) {
     return res.contentType("json").status(err.status).send(metriportResponseBody(err));
   }

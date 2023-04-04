@@ -1,79 +1,128 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { createPatient } from "../../command/medical/patient/create-patient";
-import { getPatients } from "../../command/medical/patient/get-patient";
-import { updatePatient } from "../../command/medical/patient/update-patient";
-import { Patient } from "../../models/medical/patient";
-import { asyncHandler, getCxIdOrFail, getFacilityIdFromQueryOrFail } from "../util";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
+import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import cwCommands from "../../external/commonwell";
+import {
+  asyncHandler,
+  getCxIdOrFail,
+  getETag,
+  getFromParamsOrFail,
+  getFromQueryOrFail,
+} from "../util";
+import { dtoFromModel } from "./dtos/patientDTO";
+import {
+  patientCreateSchema,
+  patientUpdateSchema,
+  schemaCreateToPatient,
+  schemaUpdateToPatient,
+} from "./schemas/patient";
 
 const router = Router();
 
 /** ---------------------------------------------------------------------------
  * POST /patient
  *
- * Updates or creates the patient corresponding to the specified facility at the
+ * Creates the patient corresponding to the specified facility at the
  * customer's organization if it doesn't exist already.
  *
- * @return  {Patient}  The patient.
+ * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
+ * @return The newly created patient.
  */
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFacilityIdFromQueryOrFail(req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+    const payload = patientCreateSchema.parse(req.body);
 
-    // TODO: parse this into model
-    const patientData = req.body;
+    const patientCreate: PatientCreateCmd = {
+      ...schemaCreateToPatient(payload, cxId),
+      facilityId,
+    };
+    const patient = await createPatient(patientCreate);
 
-    let patient: Patient;
-    if (patientData.id) {
-      const data = { ...patientData };
-      delete data.id;
-      delete data.facilityId;
-      patient = await updatePatient({
-        id: patientData.id,
-        cxId,
-        data,
-      });
-    } else {
-      patient = await createPatient({
-        cxId,
-        data: patientData,
-        facilityId: facilityId,
-      });
-    }
+    // TODO: #393 declarative, event-based integration
+    // Intentionally asynchronous - it takes too long to perform
+    cwCommands.patient.create(patient, facilityId);
 
-    // TODO: create or update patient in CW as well
+    return res.status(status.CREATED).json(dtoFromModel(patient));
+  })
+);
 
-    return res
-      .status(status.OK)
-      .json({ id: patient.id, facilityIds: patient.facilityIds, ...patient.data });
+/** ---------------------------------------------------------------------------
+ * PUT /patient/:id
+ *
+ * Updates the patient corresponding to the specified facility at the customer's organization.
+ * Note: this is not a PATCH, so requests must include all patient data in the payload.
+ *
+ * @param req.query.facilityId The facility providing NPI for the patient update
+ * @return The patient to be updated
+ */
+router.put(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+    const payload = patientUpdateSchema.parse(req.body);
+
+    const patientUpdate: PatientUpdateCmd = {
+      ...schemaUpdateToPatient(payload, cxId),
+      ...getETag(req),
+      id,
+    };
+    const patient = await updatePatient(patientUpdate);
+
+    // TODO: #393 declarative, event-based integration
+    // Intentionally asynchronous - it takes too long to perform
+    cwCommands.patient.update(patient, facilityId);
+
+    return res.status(status.OK).json(dtoFromModel(patient));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id
+ *
+ * Returns a patient corresponding to the specified facility at the customer's organization.
+ *
+ * @param   req.cxId      The customer ID.
+ * @param   req.param.id  The ID of the patient to be returned is associated with.
+ * @return  The customer's patients associated with the given facility.
+ */
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromParamsOrFail("id", req);
+
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+
+    return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
 
 /** ---------------------------------------------------------------------------
  * GET /patient
  *
- * Gets all of the patients corresponding to the specified facility at the
- * customer's organization.
+ * Gets all patients corresponding to the specified facility at the customer's organization.
  *
- * @param   {string}        req.cxId              The customer ID.
- * @param   {string}        req.query.facilityId  The ID of the facility the user patient
- * is associated with.
- *
- * @return  {Patient[]} The customer's patients associated with the given facility.
+ * @param   req.cxId              The customer ID.
+ * @param   req.query.facilityId  The ID of the facility the user patient is associated with.
+ * @return  The customer's patients associated with the given facility.
  */
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFacilityIdFromQueryOrFail(req);
-    const patients = await getPatients({ cxId, facilityId: facilityId });
-    const patientsData = patients.map(patient => {
-      return { id: patient.id, facilityIds: patient.facilityIds, ...patient.data };
-    });
+    const facilityId = getFromQueryOrFail("facilityId", req);
 
+    const patients = await getPatients({ cxId, facilityId: facilityId });
+
+    const patientsData = patients.map(dtoFromModel);
     return res.status(status.OK).json({ patients: patientsData });
   })
 );

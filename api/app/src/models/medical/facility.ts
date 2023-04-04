@@ -1,24 +1,32 @@
-import { DataTypes, Sequelize } from "sequelize";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { Config } from "../../shared/config";
-import { OIDNode, OID_ID_START } from "../../shared/oid";
-import { BaseModel, defaultModelOptions, ModelSetup } from "../_default";
+import { CreationOptional, DataTypes, Sequelize } from "sequelize";
+import { IBaseModelCreate, IBaseModel, ModelSetup, BaseModel } from "../_default";
+import { Address } from "./address";
 
-export class Facility extends BaseModel<Facility> {
+export type FacilityData = {
+  name: string;
+  npi: string;
+  tin?: string;
+  active?: boolean;
+  address: Address;
+};
+
+export interface FacilityCreate extends IBaseModelCreate {
+  cxId: string;
+  facilityNumber: number;
+  data: FacilityData;
+}
+export interface Facility extends IBaseModel, FacilityCreate {}
+
+export class FacilityModel extends BaseModel<FacilityModel> implements Facility {
   static NAME = "facility";
-  declare id: string;
   declare cxId: string;
-  declare facilityNumber: number;
-  declare data: object;
+  declare facilityNumber: CreationOptional<number>;
+  declare data: FacilityData; // TODO #414 move to strong type
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    Facility.init(
+    FacilityModel.init(
       {
-        ...BaseModel.baseAttributes(),
-        id: {
-          type: DataTypes.STRING,
-          primaryKey: true,
-        },
+        ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
         },
@@ -30,23 +38,8 @@ export class Facility extends BaseModel<Facility> {
         },
       },
       {
-        ...defaultModelOptions(sequelize),
-        tableName: Facility.NAME,
-        hooks: {
-          async beforeCreate(attributes) {
-            const curMaxNumber = (await Facility.max("facilityNumber", {
-              where: {
-                cxId: attributes.cxId,
-              },
-            })) as number;
-            const org = await getOrganizationOrFail({ cxId: attributes.cxId });
-            const facNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-            attributes.id = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
-              org.organizationNumber
-            }.${OIDNode.locations}.${facNumber}`;
-            attributes.facilityNumber = facNumber;
-          },
-        },
+        ...BaseModel.modelOptions(sequelize),
+        tableName: FacilityModel.NAME,
       }
     );
   };

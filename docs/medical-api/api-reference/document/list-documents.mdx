@@ -1,0 +1,67 @@
+---
+title: "List Documents"
+description: "Lists all Documents that can be retrieved for a Patient."
+api: "GET /medical/v1/document"
+---
+
+## Query Params
+
+<ParamField query="patientId" type="string" required>
+  The ID of the Patient for which to list available Documents.
+</ParamField>
+
+<ParamField query="facilityId" type="string" required>
+  The ID of the Facility where the patient is receiving care.
+</ParamField>
+
+## Response
+
+An array of objects describing the Documents that can be retrieved for the Patient.
+
+<ResponseField name="documents" type="DocumentReference[]">
+  <Expandable title="DocumentReference properties">
+    <Snippet file="document-reference-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const documents = await metriportClient.listDocuments(
+  "2.16.840.1.113883.3.666.777",
+  "2.16.840.1.113883.3.666.5.2004.4.2005"
+);
+```
+
+</ResponseExample>
+
+```json
+{
+  "documents": [
+    {
+      "id": "1.2.543.1.34.1.34.134",
+      "fileName": "CCDA_Diag.xml",
+      "location": "https://fhir.metriport.com/oauth/fhir/Binary/2.16.840.1.113883.3.777.666.5.700009.969696",
+      "description": "Patient Diagnoses",
+      "status": "current",
+      "indexed": "2019-09-07T15:50:00.000Z",
+      "mimeType": "application/xml",
+      "size": "17344007",
+      "type": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "62479008",
+            "display": "Diagnoses"
+          }
+        ],
+        "text": "Diagnoses"
+      }
+    }
+  ]
+}
+```

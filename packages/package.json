@@ -13,13 +13,14 @@
   },
   "scripts": {
     "build": "lerna run tsc",
+    "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",
     "lint": "lerna run lint",
     "lint-fix": "lerna run lint-fix",
     "prettier-fix": "lerna run prettier-fix",
     "test": "lerna run test",
-    "publish": "npm run build && lerna publish",
-    "force-publish": "lerna run tsc && lerna publish --force-publish --no-git-tag-version --no-push"
+    "publish:lerna": "npm run build && lerna publish",
+    "force-publish": "lerna run tsc && lerna publish --force-publish --no-git-tag-version --no-push --ignore-changes '**'"
   },
   "license": "MIT"
 }

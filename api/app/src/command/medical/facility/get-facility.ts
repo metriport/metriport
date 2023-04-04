@@ -1,8 +1,31 @@
-import { Facility } from "../../../models/medical/facility";
+import NotFoundError from "../../../errors/not-found";
+import { FacilityModel } from "../../../models/medical/facility";
 
-export const getFacilities = async ({ cxId }: { cxId: string }): Promise<Facility[]> => {
-  const facility = await Facility.findAll({
-    where: { cxId },
+type GetFacilitiesQuery = Pick<FacilityModel, "cxId"> & Partial<{ ids: FacilityModel["id"][] }>;
+
+export const getFacilities = async ({
+  cxId,
+  ids,
+}: GetFacilitiesQuery): Promise<FacilityModel[]> => {
+  const facility = await FacilityModel.findAll({
+    where: {
+      ...(ids ? { id: ids } : undefined),
+      cxId,
+    },
+    order: [["id", "ASC"]],
   });
+  return facility;
+};
+
+type GetFacilityQuery = Pick<FacilityModel, "id" | "cxId">;
+
+export const getFacilityOrFail = async ({ cxId, id }: GetFacilityQuery): Promise<FacilityModel> => {
+  const facility = await FacilityModel.findOne({
+    where: {
+      id,
+      cxId,
+    },
+  });
+  if (!facility) throw new NotFoundError(`Could not find facility`);
   return facility;
 };

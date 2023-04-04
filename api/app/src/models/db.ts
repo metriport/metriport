@@ -4,10 +4,11 @@ import updateDB from "../sequelize";
 import { Config, getEnvVarOrFail } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev } from "./db-dev";
-import { Facility } from "./medical/facility";
+import { CustomerSequenceModel } from "./medical/customer-sequence";
+import { FacilityModel } from "./medical/facility";
 import { MAPIAccess } from "./medical/mapi-access";
-import { Organization } from "./medical/organization";
-import { Patient } from "./medical/patient";
+import { OrganizationModel } from "./medical/organization";
+import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { ModelSetup } from "./_default";
@@ -17,10 +18,11 @@ const models: ModelSetup[] = [
   ConnectedUser.setup,
   Settings.setup,
   WebhookRequest.setup,
-  Organization.setup,
-  Facility.setup,
-  Patient.setup,
+  OrganizationModel.setup,
+  FacilityModel.setup,
+  PatientModel.setup,
   MAPIAccess.setup,
+  CustomerSequenceModel.setup,
 ];
 
 export type MetriportDB = {
@@ -42,6 +44,7 @@ const initDB = async (): Promise<void> => {
   // make sure we have the env vars we need
   const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
   const tokenTableName = getEnvVarOrFail("TOKEN_TABLE_NAME");
+  const logDBOperations = Config.isProdEnv() || Config.isSandbox() ? false : true;
 
   docTableNames = {
     token: tokenTableName,
@@ -60,6 +63,8 @@ const initDB = async (): Promise<void> => {
       acquire: 30000,
       idle: 10000,
     },
+    logging: logDBOperations,
+    logQueryParameters: logDBOperations,
   });
   try {
     await sequelize.authenticate();
@@ -72,7 +77,7 @@ const initDB = async (): Promise<void> => {
 
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client
-    if (Config.isProdEnv()) {
+    if (Config.isCloudEnv()) {
       doc = new AWS.DynamoDB.DocumentClient({
         apiVersion: "2012-08-10",
       });

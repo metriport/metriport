@@ -1,0 +1,189 @@
+---
+title: "Medical API"
+description: "Follow this guide to get started accessing your patients' medical data."
+---
+
+<img className="h-40" src="/images/medical.svg" />
+
+<Warning>
+  Access to our Medical API will require you to make requests on behalf of an entity with an [NPI
+  number](https://www.cms.gov/Regulations-and-Guidance/Administrative-Simplification/NationalProvIdentStand)
+  for a valid
+  [Treatment](https://www.hhs.gov/hipaa/for-professionals/privacy/guidance/disclosures-treatment-payment-health-care-operations/index.html)
+  purpose of use.
+</Warning>
+
+## Overview
+
+Getting started with our Medical API is pretty easy, you'll just need take the following steps:
+
+1. [Create a developer account](#1-create-a-developer-account).
+2. [Request API access](#2-request-api-access).
+3. [Generate an API key](#3-generate-an-api-key).
+4. [Register your Organization](#4-register-your-organization).
+5. [Create Facilities and Patients](#5-create-facilities-and-patients).
+6. [Get Patient Medical Documents](#6-get-patient-medical-documents). 🎉🎉🎉
+
+Let's get into it! 🤘
+
+## 1. Create a developer account
+
+<Card
+  title="Click me to go to the developer dashboard!"
+  icon="user"
+  href="https://dash.metriport.com/"
+>
+  This will take you to the Metriport developer dashboard where you can create your Metriport
+  account, if you don't have one already.
+</Card>
+
+## 2. Request API access
+
+Once you've created an account and confirmed your email, you'll be taken to the [dashboard
+home page](https://dash.metriport.com/). From here, take the following steps to request API access:
+
+- In the left hand menu, click `Products & Billing`.
+- Click `Get Started` on the Medical API product.
+- Fill out the form, and click `Request Access` to submit the request.
+
+Once the form is submitted, we will review your request promptly and contact you if we need any further information.
+
+## 3. Generate an API key
+
+After we approve your access request, take the following steps to get your API key:
+
+Once you've created an account and confirmed your email, you'll be taken to the [dashboard
+home page](https://dash.metriport.com/). From here, take the following steps to get your API key:
+
+- In the left hand menu, click "Products & Billing".
+- Click `Get Started` on the Medical API product, and add your payment info.
+- In the left hand menu, click `Developers`.
+- On the Developers page, you'll be able to click the "Generate Secret Key" button.
+
+<Info>
+  This Secret Key will allow you to start making requests to the entire Metriport API on your
+  behalf. Treat this like a password, and keep it somewhere safe! You can read the [API
+  Keys](/home/api-info/api-keys) page to learn more about API key security best practices.
+</Info>
+
+<Tip>
+  If you believe your key has been compromised, you can always revoke it and then generate a new one
+  on the Developers page by clicking the trash button beside the key.
+</Tip>
+
+<Tip>
+  After you get access to the Medical API, you can go to the Developers page and toggle the switch
+  under the `Sandbox` section. Learn more about it [here](/medical-api/more-info/sandbox).
+
+</Tip>
+
+## 4. Register your Organization
+
+<Info>
+  For the remainder of the steps, you are able to either use the Dashboard UI, or the API - whatever
+  you prefer!
+</Info>
+
+<Info>
+  Pro-tip: you can use our handy [SDK](/medical-api/more-info/sdk) on your server
+  if you're using Node:
+
+  <Snippet file="medical-api-init.mdx" />
+</Info>
+
+First, you'll need to register an `Organization` in Metriport.
+
+<Info>
+  An `Organization` represents your company's legal corporate entity - this is needed for HIPAA
+  auditing purposes so the Health Information Exchanges (HIEs) can validate who is making requests
+  to the networks.
+</Info>
+
+You only need to register your `Organization` once, and you can do so by either:
+
+### Using the API
+
+See the [Create Organization endpoint](/medical-api/api-reference/organization/create-organization) in our API reference.
+
+### Using the Dashboard
+
+- In the left hand menu, click `Medical API`.
+- In the Organization section, click `Create`.
+- Fill in the details and submit the form to register your Organization.
+
+## 5. Create Facilities and Patients
+
+Once your Organization is registered, you can now create `Facilities` and `Patients`. First,
+you'll need to create your `Facilities`.
+
+<Info>
+  In Metriport, a `Facility` is a location that a `Patient` receives some form of treatment. You can
+  create multiple `Facilities` to represent each of your care locations. Note that for telehealth
+  practices, these can be virtual locations.
+</Info>
+
+You can create a `Facility` by either:
+
+### Creating Facilities using the API
+
+See the [Create Facility endpoint](/medical-api/api-reference/facility/create-facility) in our API reference.
+
+### Creating Facilities using the Dashboard
+
+- On the `Medical API` page, in the Facilities section, click `Add`.
+- Fill in the details and submit the form to add your Facility.
+
+Once you've created all of your `Facilities`, you can create the `Patients` that you treat
+each facility. You can create `Patients` by either:
+
+### Creating Patients using the API
+
+See the [Create Patient endpoint](/medical-api/api-reference/patient/create-patient) in our API reference.
+
+### Creating Patients using the Dashboard
+
+- On the `Medical API` page, in the Facilities section, click `Patients` for the Facility under which to add Patients.
+- In the Patients section, click `Add`.
+- Fill in the details and submit the form to add your Patient.
+
+<Info>
+  When you create a Patient, Metriport automatically links the Patient to all HIE data sources
+  related to the Patient based on the demographic and/or identification information provided when
+  creating the Patient.
+</Info>
+
+## 6. Get Patient Medical Documents 🎉🎉🎉
+
+Now, you're able to access your Patients' medical `Documents`. This involves 2 main steps:
+
+1. Querying for available `Documents` to get a list of metadata describing the available records.
+2. Downloading the `Document` data from the URL returned in the metadata.
+
+To query for a Patient's available `Documents`, you can either:
+
+### Query for Documents using the API
+
+See the [List Documents endpoint](/medical-api/api-reference/document/list-documents) in our API reference.
+
+### Query for Documents using the Dashboard
+
+- On the `Medical API` page, in the Facilities section, click `Patients` for the Facility where the Patient is located.
+- In the desired Patient's row, click `Documents`.
+- You'll see all available Documents in the side panel.
+
+<Info>Not all Patients will have available Documents, but they should ~95% of the time.</Info>
+
+Once you've identified the `Document` you want to retrieve, you can download them by either:
+
+### Downloading a Document using the API
+
+See the [Get Document endpoint](/medical-api/api-reference/document/get-document) in our API reference.
+
+### Downloading a Document using the Dashboard
+
+- In the side panel that comes up after clicking `Documents`, simply click `Download` on the desired Document.
+
+That's it! You're now well equiped to use the Metriport API to access and manage your Patients' medical data.
+
+As next steps, we'd recommend scoping out our [Medical API Reference](/medical-api/api-reference/organization/create-organization)
+in further detail to see the other things you can do with the API.

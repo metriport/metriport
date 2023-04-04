@@ -10,22 +10,62 @@ export const getEnvVarOrFail = (varName: string): string => {
 
 export class Config {
   // env config
-  static readonly PROD_ENV: string = "production";
-  static readonly DEV_ENV: string = "dev";
-  static readonly SANDBOX_ENV: string = "sandbox";
-  static readonly SANDBOX_USER_LIMIT: number = 10;
-  static isProdEnv(): boolean {
+  static readonly PROD_ENV = "production";
+  static readonly DEV_ENV = "dev";
+  static readonly SANDBOX_ENV = "sandbox";
+  static readonly STAGING_ENV = "staging";
+  static readonly SANDBOX_USER_LIMIT = 10;
+
+  static isCloudEnv(): boolean {
     return process.env.NODE_ENV === this.PROD_ENV;
   }
-  static isSandbox(): boolean {
-    return process.env.ENV_TYPE === this.SANDBOX_ENV;
+  static getEnvType(): string | undefined {
+    return process.env.ENV_TYPE;
   }
+  static isProdEnv(): boolean {
+    return Config.getEnvType() === this.PROD_ENV;
+  }
+  static isSandbox(): boolean {
+    return Config.getEnvType() === this.SANDBOX_ENV;
+  }
+  static isStagingbox(): boolean {
+    return Config.getEnvType() === this.STAGING_ENV;
+  }
+
+  static getVersion(): string | undefined {
+    return getEnvVar("METRIPORT_VERSION");
+  }
+  static getEnvironment(): string {
+    switch (process.env.ENV_TYPE) {
+      case this.PROD_ENV:
+        return this.PROD_ENV;
+      case this.STAGING_ENV:
+        return this.STAGING_ENV;
+      case this.SANDBOX_ENV:
+        return this.SANDBOX_ENV;
+
+      default:
+        return this.DEV_ENV;
+    }
+  }
+
+  static getSlackAlertUrl(): string | undefined {
+    return getEnvVar("SLACK_ALERT_URL");
+  }
+  static getSlackNotificationUrl(): string | undefined {
+    return getEnvVar("SLACK_NOTIFICATION_URL");
+  }
+
+  static getSentryDSN(): string | undefined {
+    return getEnvVar("SENTRY_DSN");
+  }
+
   static getConnectWidgetUrl(): string {
     return getEnvVarOrFail("CONNECT_WIDGET_URL");
   }
 
   static getConnectRedirectUrl(): string {
-    if (this.isProdEnv()) {
+    if (this.isCloudEnv()) {
       return `${Config.getApiUrl()}/token/connect`;
     }
 
@@ -112,5 +152,30 @@ export class Config {
 
   static getGatewayAuthorizationClientSecret(): string {
     return getEnvVarOrFail("CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET");
+  }
+
+  static getMetriportPrivateKey(): string {
+    return getEnvVarOrFail("CW_PRIVATE_KEY");
+  }
+  static getMetriportCert(): string {
+    return getEnvVarOrFail("CW_CERTIFICATE");
+  }
+
+  static getMemberManagementPrivateKey(): string {
+    return getEnvVarOrFail("CW_MEMBER_PRIVATE_KEY");
+  }
+  static getMemberManagementCert(): string {
+    return getEnvVarOrFail("CW_MEMBER_CERTIFICATE");
+  }
+
+  static getMetriportOrgName(): string {
+    return getEnvVarOrFail("CW_MEMBER_NAME");
+  }
+  static getMemberManagementOID(): string {
+    return getEnvVarOrFail("CW_MEMBER_OID");
+  }
+
+  static getPostHogApiKey(): string | undefined {
+    return getEnvVar("POST_HOG_API_KEY");
   }
 }

@@ -1,19 +1,27 @@
-import { Patient } from "../../../models/medical/patient";
+import { Patient, PatientCreate, PatientData, PatientModel } from "../../../models/medical/patient";
+import { createPatientId } from "../customer-sequence/create-id";
+import { sanitize, validate } from "./shared";
 
-export const createPatient = async ({
-  facilityId,
-  cxId,
-  data,
-}: {
-  facilityId: string;
-  cxId: string;
-  data: object;
-}): Promise<Patient> => {
-  return Patient.create({
-    id: "", // the patient id will be generated on the beforeCreate hook
+type Identifier = Pick<Patient, "cxId"> & { facilityId: string };
+type PatientNoExternalData = Omit<PatientData, "externalData">;
+export type PatientCreateCmd = PatientNoExternalData & Identifier;
+
+export const createPatient = async (patient: PatientCreateCmd): Promise<Patient> => {
+  const { cxId, facilityId } = patient;
+  const sanitized = sanitize(patient);
+  validate(sanitized);
+  const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
+    sanitized;
+
+  const { id, patientNumber } = await createPatientId(cxId);
+
+  const patientCreate: PatientCreate = {
+    id,
+    patientNumber,
     cxId,
     facilityIds: [facilityId],
-    patientNumber: 0, // this will be generated on the beforeCreate hook
-    data,
-  });
+    data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
+  };
+
+  return PatientModel.create(patientCreate);
 };

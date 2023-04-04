@@ -1,0 +1,112 @@
+---
+title: "Get Links"
+description: "Gets current state of a Patient's Links across HIEs."
+api: "GET /medical/v1/patient/{id}/link"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Query Params
+
+<ParamField query="facilityId" type="string" required>
+  The ID of the Facility that is providing the Patient care.
+</ParamField>
+
+## Response
+
+<ResponseField type="PatientLinks" required>
+  The patient's current and potential links.
+  <Expandable title="properties">
+
+    <ResponseField name="potentialLinks" type="Link[]" required>
+      An array of the HIE Links the Patient can possibly be linked to.
+      <Snippet file="link-response.mdx" />
+    </ResponseField>
+
+    <ResponseField name="currentLinks" type="Link[]" required>
+      An array of the HIE Links the Patient is currently linked to.
+      <Snippet file="link-response.mdx" />
+    </ResponseField>
+
+  </Expandable>
+
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const links = await metriportClient.getLinks(
+  "2.16.840.1.113883.3.666.777",
+  "2.16.840.1.113883.3.666.123"
+);
+```
+
+</ResponseExample>
+
+```json
+{
+  "potentialLinks": [
+    {
+      "entityId": "1.23.1234.123.3333",
+      "potential": true,
+      "source": "COMMONWELL",
+      "patient": {
+        "id": "1.23.1234.123.3333",
+        "firstName": "Jose",
+        "lastName": "Juarez",
+        "dob": "1951-05-05",
+        "genderAtBirth": "M",
+        "personalIdentifiers": [
+          {
+            "type": "driversLicense",
+            "state": "TX",
+            "value": "47281294"
+          }
+        ],
+        "address": {
+          "zip": "44233",
+          "city": "Austin",
+          "state": "TX",
+          "country": "USA",
+          "addressLine1": "Blamanche St"
+        }
+      }
+    }
+  ],
+  "currentLinks": [
+    {
+      "id": "123",
+      "entityId": "1.23.1234.123.3334",
+      "potential": false,
+      "source": "COMMONWELL",
+      "patient": {
+        "id": "1.23.1234.123.3334",
+        "firstName": "Jose",
+        "lastName": "Juarez",
+        "dob": "1951-05-05",
+        "genderAtBirth": "M",
+        "personalIdentifiers": [],
+        "address": {
+          "zip": "12345",
+          "city": "San Diego",
+          "state": "CA",
+          "country": "USA",
+          "addressLine1": "Guadalajara St"
+        },
+        "contact": {
+          "phone": "1234567899",
+          "email": "jose@domain.com"
+        }
+      }
+    }
+  ]
+}
+```

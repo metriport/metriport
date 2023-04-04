@@ -1,0 +1,26 @@
+<ResponseField name="id" type="string" required>
+  The ID assigned to this Facility. This ID will be used to uniquely identify this Facility in
+  medical documents.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name of your Facility. This is the actual address where a patient will recieve care (can be
+  virtual) - for example `Care Facility, LLC`.
+</ResponseField>
+
+<ResponseField name="npi" type="string" required>
+  The 10 digit National Provider Identifier (NPI) that will be used to make requests on behalf of
+  the Facility.
+</ResponseField>
+
+<ResponseField name="address" type="Address" required>
+  <Snippet file="address-response.mdx" />
+</ResponseField>
+
+<ResponseField name="tin" type="string">
+  The Taxpayer Identification Number (TIN) of the Facility.
+</ResponseField>
+
+<ResponseField name="active" type="bool">
+  Whether or not this Facility is currently active - this is usually `true`.
+</ResponseField>

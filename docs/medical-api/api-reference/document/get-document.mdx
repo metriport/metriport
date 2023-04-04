@@ -1,0 +1,41 @@
+---
+title: "Get Document"
+description: "Downloads the Document contents of the specified URL."
+api: "GET /medical/v1/document/download"
+---
+
+## Query Params
+
+<ParamField query="patientId" type="string" required>
+  The ID of the Patient for which to list available Documents.
+</ParamField>
+
+<ParamField query="facilityId" type="string" required>
+  The ID of the Facility where the patient is receiving care.
+</ParamField>
+
+<ParamField query="location" type="string" required>
+  URL from the DocumentReference.
+</ParamField>
+
+## Response
+
+<ResponseField type="blob">
+  The downloaded Document contents.
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const documentBlob = await metriportClient.getDocument(
+  "2.16.840.1.113883.3.666.5.2004.4.2005",
+  "2.16.840.1.113883.3.666.123",
+  "https://fhir.metriport.com/oauth/fhir/Binary/2.16.840.1.113883.3.777.666.5.700009.969696"
+);
+```
+
+</ResponseExample>

@@ -1,65 +1,105 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { asyncHandler, getCxIdOrFail } from "../util";
-const router = Router();
 import status from "http-status";
-import { Facility } from "../../models/medical/facility";
 import { createFacility } from "../../command/medical/facility/create-facility";
-import { updateFacility } from "../../command/medical/facility/update-facility";
 import { getFacilities } from "../../command/medical/facility/get-facility";
+import { updateFacility } from "../../command/medical/facility/update-facility";
+import NotFoundError from "../../errors/not-found";
+import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
+import { dtoFromModel } from "./dtos/facilityDTO";
+import { facilityCreateSchema, facilityUpdateSchema } from "./schemas/facility";
+
+const router = Router();
 
 /** ---------------------------------------------------------------------------
  * POST /facility
  *
- * Updates or creates the facility if it doesn't exist already.
+ * Creates a new facility.
  *
- * @return  {Facility}  The facility.
+ * @return {FacilityDTO} The facility.
  */
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    const facilityData = facilityCreateSchema.parse(req.body);
 
-    // TODO: parse this into model
-    const facilityData = req.body;
+    const facility = await createFacility({
+      cxId,
+      data: {
+        ...facilityData,
+        tin: facilityData.tin ?? undefined,
+        active: facilityData.active ?? undefined,
+      },
+    });
 
-    let facility: Facility;
-    if (facilityData.id) {
-      const data = { ...facilityData };
-      delete data.id;
-      facility = await updateFacility({
-        id: facilityData.id,
-        cxId,
-        data,
-      });
-    } else {
-      facility = await createFacility({
-        cxId,
-        data: facilityData,
-      });
-    }
+    return res.status(status.CREATED).json(dtoFromModel(facility));
+  })
+);
 
-    return res.status(status.OK).json({ id: facility.id, ...facility.data });
+/** ---------------------------------------------------------------------------
+ * PUT /facility/:id
+ *
+ * Updates a facility.
+ *
+ * @return {FacilityDTO} The updated facility.
+ */
+router.put(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const facilityId = getFromParamsOrFail("id", req);
+    const facilityData = facilityUpdateSchema.parse(req.body);
+
+    const facility = await updateFacility({
+      ...facilityData,
+      ...getETag(req),
+      id: facilityId,
+      cxId,
+      tin: facilityData.tin ?? undefined,
+      active: facilityData.active ?? undefined,
+    });
+
+    return res.status(status.OK).json(dtoFromModel(facility));
   })
 );
 
 /** ---------------------------------------------------------------------------
  * GET /facility
  *
- * Gets all of the facilities corresponding to the customer.
+ * Gets all of the facilities associated with this account.
  *
- * @return  {Facility[]}  The facilities.
+ * @return {FacilityDTO} The list of facilities.
  */
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilities = await getFacilities({ cxId });
-    const facilitiesData = facilities.map(facility => {
-      return { id: facility.id, ...facility.data };
-    });
 
+    const facilities = await getFacilities({ cxId });
+
+    const facilitiesData = facilities.map(dtoFromModel);
     return res.status(status.OK).json({ facilities: facilitiesData });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /facility/:id
+ *
+ * Return a facility.
+ *
+ * @return {FacilityDTO} The facility.
+ */
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const facilityId = getFromParamsOrFail("id", req);
+
+    const facilities = await getFacilities({ cxId, ids: [facilityId] });
+    if (facilities.length < 1) throw new NotFoundError(`No facility found`);
+
+    return res.status(status.OK).json(dtoFromModel(facilities[0]));
   })
 );
 

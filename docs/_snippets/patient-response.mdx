@@ -1,0 +1,24 @@
+<Snippet file="patient-response-no-facilities-or-links.mdx" />
+
+<ResponseField name="facilityIds" type="string[]" required>
+  Array of the IDs of the Facilities where the Patient is receiving care.
+</ResponseField>
+
+<ResponseField name="links" type="LinkStatusAcrossHIEs" required>
+  A map with the Patient link's status across HIEs. Each HIE is a property, and the status is the value.
+  
+  <Expandable title="properties">
+
+    For HIE, currently only `COMMONWELL` is supported.
+
+    For status, these are the possible values:
+    - `linked`: the Patient is successfully linked to an entity on the respective HIE;
+    - `needs-review`: we couldn't automatically link the patient to an entity on the respective HIE - 
+    see the [Links section of the API](/medical-api/api-reference/link/get-links) to learn how to manage links.
+
+    <ResponseField name="COMMONWELL" type="string">
+      The status of this Patient's link with CommonWell.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>

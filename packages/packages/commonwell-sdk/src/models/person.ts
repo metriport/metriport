@@ -9,6 +9,7 @@ export const personLinksSchema = z.object({
   patientMatch: linkSchema.optional().nullable(),
   unenroll: linkSchema.optional().nullable(),
   enroll: linkSchema.optional().nullable(),
+  reset: linkSchema.optional().nullable(),
 });
 
 // The Person resource represents a natural person independent of a specific healthcare context.
@@ -40,3 +41,10 @@ export const patientLinkSchema = z.object({
 });
 
 export type PatientLink = z.infer<typeof patientLinkSchema>;
+
+export const patientLinkSearchRespSchema = z.object({
+  _embedded: z.object({ patientLink: z.array(patientLinkSchema) }),
+  _links: z.object({ self: linkSchema }),
+});
+
+export type PatientLinkSearchResp = z.infer<typeof patientLinkSearchRespSchema>;
