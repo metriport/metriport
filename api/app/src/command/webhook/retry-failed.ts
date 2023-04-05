@@ -1,3 +1,4 @@
+import { processAsyncError } from "../../errors";
 import { WebhookRequest } from "../../models/webhook-request";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
@@ -37,5 +38,5 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
     }
   };
   // intentionally asynchronous
-  _processRequest();
+  _processRequest().catch(processAsyncError(`retryFailedRequests._processRequest`));
 };

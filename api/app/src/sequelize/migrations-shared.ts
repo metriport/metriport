@@ -20,7 +20,11 @@ class BaseModel extends Model<InferAttributes<BaseModel>, InferCreationAttribute
 }
 
 // default columns, don't change them here; if you need something different do it on the migration file
-export const defaultColumnsDef = (): ModelAttributes<BaseModel, CreationAttributes<BaseModel>> => ({
+export const defaultColumnsDef = ({
+  version,
+}: {
+  version: boolean | undefined;
+}): ModelAttributes<BaseModel, CreationAttributes<BaseModel>> => ({
   createdAt: {
     field: "created_at",
     type: DataTypes.DATE(6),
@@ -33,6 +37,15 @@ export const defaultColumnsDef = (): ModelAttributes<BaseModel, CreationAttribut
     allowNull: false,
     defaultValue: literal("CURRENT_TIMESTAMP(6)"), // https://github.com/sequelize/sequelize/issues/4896
   },
+  ...(version
+    ? {
+        version: {
+          allowNull: false,
+          type: DataTypes.INTEGER,
+          defaultValue: 0,
+        },
+      }
+    : undefined),
 });
 
 export const addUpdatedAtTrigger = (
@@ -54,7 +67,9 @@ export const addUpdatedAtTrigger = (
   );
 
 export type CreateTableOptions = Omit<QueryInterfaceCreateTableOptions, "transaction"> &
-  DeepNonNullable<Required<Pick<QueryInterfaceCreateTableOptions, "transaction">>>;
+  DeepNonNullable<Required<Pick<QueryInterfaceCreateTableOptions, "transaction">>> & {
+    addVersion?: boolean;
+  };
 
 export const createTable = async (
   queryInterface: QueryInterface,
@@ -66,7 +81,7 @@ export const createTable = async (
     tableName,
     {
       ...tableDefinitions,
-      ...defaultColumnsDef(),
+      ...defaultColumnsDef({ version: options.addVersion }),
     },
     options
   );

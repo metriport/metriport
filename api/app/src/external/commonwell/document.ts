@@ -6,7 +6,14 @@ import {
 } from "@metriport/commonwell-sdk";
 import mime from "mime-types";
 import * as stream from "stream";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { MedicalDataSource } from "..";
+import { createOrUpdate } from "../../command/medical/document/create-or-update";
+import { updateDocQueryStatus } from "../../command/medical/document/get-documents";
+import {
+  DocumentReference,
+  DocumentReferenceCreate,
+} from "../../domain/medical/document-reference";
+import NotFoundError from "../../errors/not-found";
 import { Patient } from "../../models/medical/patient";
 import { capture } from "../../shared/notifications";
 import { makePatientOID, oid } from "../../shared/oid";
@@ -22,22 +29,73 @@ export type DocumentWithLocation = Required<Pick<Document, "id">> &
   };
 
 export async function getDocuments({
-  cxId,
-  patientId,
+  patient,
   facilityId,
 }: {
-  cxId: string;
-  patientId: string;
+  patient: Patient;
+  facilityId: string;
+}): Promise<DocumentReference[]> {
+  try {
+    const cwDocuments = await internalGetDocuments({ patient, facilityId });
+
+    const documents = cwDocuments.map(toDomain(patient));
+
+    return await createOrUpdate(patient, documents);
+  } catch (err) {
+    console.log(`Error: `, err);
+    capture.error(err, {
+      extra: {
+        context: `cw.queryDocuments`,
+        ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
+      },
+    });
+    throw err;
+  } finally {
+    try {
+      await updateDocQueryStatus({ patient, status: "completed" });
+    } catch (err) {
+      capture.error(err, {
+        extra: { context: `cw.getDocuments.updateDocQueryStatus` },
+      });
+    }
+  }
+}
+
+function toDomain(patient: Patient) {
+  return (doc: DocumentWithLocation): DocumentReferenceCreate => {
+    return {
+      cxId: patient.cxId,
+      patientId: patient.id,
+      source: MedicalDataSource.COMMONWELL,
+      externalId: doc.id,
+      data: {
+        fileName: doc.fileName,
+        location: doc.location,
+        description: doc.description,
+        status: doc.status,
+        indexed: doc.indexed,
+        mimeType: doc.mimeType,
+        size: doc.size,
+        type: doc.type,
+      },
+    };
+  };
+}
+
+async function internalGetDocuments({
+  patient,
+  facilityId,
+}: {
+  patient: Patient;
   facilityId: string;
 }): Promise<DocumentWithLocation[]> {
-  const { debug } = Util.out(`getDocuments - M patient ${patientId}`);
+  const { debug } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return [];
   const cwData = externalData as PatientDataCommonwell;
-
   const { organization, facility } = await getPatientData(patient, facilityId);
+
   const orgName = organization.data.name;
   const orgId = organization.id;
   const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
@@ -109,6 +167,9 @@ export async function downloadDocument({
         ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
       },
     });
+    if (err instanceof CommonwellError && err.cause?.response?.status === 404) {
+      throw new NotFoundError("Document not found");
+    }
     throw err;
   }
 }

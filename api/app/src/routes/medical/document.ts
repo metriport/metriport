@@ -1,9 +1,16 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { downloadDocument, getDocuments } from "../../external/commonwell/document";
+import { getDocuments } from "../../command/medical/document/get-documents";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { processAsyncError } from "../../errors";
+import {
+  downloadDocument,
+  getDocuments as getDocumentsFromCW,
+} from "../../external/commonwell/document";
+import { PatientDataCommonwell } from "../../external/commonwell/patient-shared";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
-import { dtoFromModel } from "./dtos/documentDTO";
+import { toDTO } from "./dtos/documentDTO";
 
 const router = Router();
 
@@ -23,10 +30,26 @@ router.get(
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
 
-    const documents = await getDocuments({ cxId, patientId, facilityId });
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+    let queryStatus = patient.data.documentQueryStatus;
 
-    const result = documents.map(dtoFromModel);
-    return res.status(status.OK).json({ documents: result });
+    const documents = await getDocuments({ cxId, patientId });
+
+    // TODO: #515 We should only query on certain situations, when patient is created and/or updated.
+    // This is temporary and makes the current solution extensible for that ^.
+    if (queryStatus !== "processing") {
+      getDocumentsFromCW({ patient, facilityId }).catch(processAsyncError(`getDocumentsFromCW`));
+      // Temporary solution
+      // only override the status if we have CW IDs
+      const externalData = patient.data.externalData?.COMMONWELL;
+      if (externalData) {
+        const cwData = externalData as PatientDataCommonwell;
+        if (cwData.patientId) queryStatus = "processing";
+      }
+    }
+
+    const documentsDTO = documents.map(toDTO);
+    return res.status(status.OK).json({ queryStatus, documents: documentsDTO });
   })
 );
 
