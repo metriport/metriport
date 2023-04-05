@@ -1,32 +1,14 @@
-import {
-  CommonwellError,
-  Document,
-  DocumentContent,
-  DocumentQueryResponse,
-} from "@metriport/commonwell-sdk";
-import mime from "mime-types";
-import * as stream from "stream";
-import { MedicalDataSource } from "..";
+import { CommonwellError, DocumentQueryResponse } from "@metriport/commonwell-sdk";
 import { createOrUpdate } from "../../command/medical/document/create-or-update";
 import { updateDocQueryStatus } from "../../command/medical/document/get-documents";
-import {
-  DocumentReference,
-  DocumentReferenceCreate,
-} from "../../domain/medical/document-reference";
-import NotFoundError from "../../errors/not-found";
+import { DocumentReference } from "../../domain/medical/document-reference";
 import { Patient } from "../../models/medical/patient";
 import { capture } from "../../shared/notifications";
-import { makePatientOID, oid } from "../../shared/oid";
+import { oid } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "./api";
 import { getPatientData, PatientDataCommonwell } from "./patient-shared";
-
-// TODO #340 When we fix tsconfig on CW SDK we can remove the `Required` for `id`
-export type DocumentWithLocation = Required<Pick<Document, "id">> &
-  Omit<DocumentContent, "location"> &
-  Required<Pick<DocumentContent, "location">> & {
-    fileName: string;
-  };
+import { DocumentWithLocation, getFileName, toDomain } from "./document/shared";
 
 export async function getDocuments({
   patient,
@@ -59,27 +41,6 @@ export async function getDocuments({
       });
     }
   }
-}
-
-function toDomain(patient: Patient) {
-  return (doc: DocumentWithLocation): DocumentReferenceCreate => {
-    return {
-      cxId: patient.cxId,
-      patientId: patient.id,
-      source: MedicalDataSource.COMMONWELL,
-      externalId: doc.id,
-      data: {
-        fileName: doc.fileName,
-        location: doc.location,
-        description: doc.description,
-        status: doc.status,
-        indexed: doc.indexed,
-        mimeType: doc.mimeType,
-        size: doc.size,
-        type: doc.type,
-      },
-    };
-  };
 }
 
 async function internalGetDocuments({
@@ -136,62 +97,4 @@ async function internalGetDocuments({
         }))
     : [];
   return documents;
-}
-
-export async function downloadDocument({
-  cxId,
-  patientId,
-  facilityId,
-  location,
-  stream,
-}: {
-  cxId: string;
-  patientId: string;
-  facilityId: string;
-  location: string;
-  stream: stream.Writable;
-}): Promise<void> {
-  const { organization, facility } = await getPatientData({ id: patientId, cxId }, facilityId);
-  const orgName = organization.data.name;
-  const orgId = organization.id;
-  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-  const commonWell = makeCommonWellAPI(orgName, oid(orgId));
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-
-  try {
-    await commonWell.retrieveDocument(queryMeta, location, stream);
-  } catch (err) {
-    capture.error(err, {
-      extra: {
-        context: `cw.retrieveDocument`,
-        ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
-      },
-    });
-    if (err instanceof CommonwellError && err.cause?.response?.status === 404) {
-      throw new NotFoundError("Document not found");
-    }
-    throw err;
-  }
-}
-
-function getFileName(patient: Patient, doc: Document): string {
-  const prefix = "document_" + makePatientOID("", patient.patientNumber).substring(1);
-  const display = doc.content?.type?.coding?.length
-    ? doc.content?.type.coding[0].display
-    : undefined;
-  const suffix = getSuffix(doc.id);
-  const extension = getFileExtension(doc.content?.mimeType);
-  const fileName = `${prefix}_${display ? display + "_" : display}${suffix}${extension}`;
-  return fileName.replace(/\s/g, "-");
-}
-
-function getSuffix(id: string | undefined): string {
-  if (!id) return "";
-  return id.replace("urn:uuid:", "");
-}
-
-function getFileExtension(value: string | undefined): string {
-  if (!value || !mime.contentType(value)) return "";
-  const extension = mime.extension(value);
-  return extension ? `.${extension}` : "";
 }

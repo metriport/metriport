@@ -23,9 +23,9 @@ export const updateDocQueryStatus = async ({
 }: {
   patient: Patient;
   status: DocumentQueryStatus;
-}): Promise<void> => {
+}): Promise<Patient> => {
   const patientModel = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
-  await patientModel.update({
+  return patientModel.update({
     data: {
       ...patient.data,
       documentQueryStatus: status,
