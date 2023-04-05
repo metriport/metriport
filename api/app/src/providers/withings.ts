@@ -13,7 +13,6 @@ import { mapToActivity } from "../mappings/withings/activity";
 import { mapToBody } from "../mappings/withings/body";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
 import { mapToSleep } from "../mappings/withings/sleep";
-import convert from "convert-units";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import {
   withingsActivityLogResp,
@@ -26,6 +25,8 @@ import {
   WithingsMeasurements,
 } from "../mappings/withings/models/measurements";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
+import { Util } from "../shared/util";
+
 export class Withings extends Provider implements OAuth2 {
   static URL = "https://wbsapi.withings.net";
   static AUTHORIZATION_URL = "https://account.withings.com";
@@ -99,12 +100,7 @@ export class Withings extends Provider implements OAuth2 {
 
   async checkRefreshToken(token: string, connectedUser: ConnectedUser): Promise<Token> {
     const access_token = JSON.parse(token);
-    const bufferSeconds = 600;
-    const isExpired =
-      convert(access_token.expires_at).from("s").to("ms") -
-        Date.now() +
-        convert(bufferSeconds).from("s").to("ms") <=
-      0;
+    const isExpired = Util.isTokenExpired(access_token.expires_at);
 
     if (isExpired) {
       try {

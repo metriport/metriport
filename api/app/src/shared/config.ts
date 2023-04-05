@@ -19,8 +19,8 @@ export class Config {
   static isCloudEnv(): boolean {
     return process.env.NODE_ENV === this.PROD_ENV;
   }
-  static getEnvType(): string | undefined {
-    return process.env.ENV_TYPE;
+  static getEnvType(): string {
+    return getEnvVarOrFail("ENV_TYPE");
   }
   static isProdEnv(): boolean {
     return Config.getEnvType() === this.PROD_ENV;
@@ -28,25 +28,12 @@ export class Config {
   static isSandbox(): boolean {
     return Config.getEnvType() === this.SANDBOX_ENV;
   }
-  static isStagingbox(): boolean {
+  static isStaging(): boolean {
     return Config.getEnvType() === this.STAGING_ENV;
   }
 
   static getVersion(): string | undefined {
     return getEnvVar("METRIPORT_VERSION");
-  }
-  static getEnvironment(): string {
-    switch (process.env.ENV_TYPE) {
-      case this.PROD_ENV:
-        return this.PROD_ENV;
-      case this.STAGING_ENV:
-        return this.STAGING_ENV;
-      case this.SANDBOX_ENV:
-        return this.SANDBOX_ENV;
-
-      default:
-        return this.DEV_ENV;
-    }
   }
 
   static getSlackAlertUrl(): string | undefined {

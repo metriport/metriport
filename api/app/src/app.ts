@@ -24,7 +24,7 @@ app.use(cors());
 app.set("etag", false);
 
 app.use((req, res, next) => {
-  version && res.setHeader("X-Metriport-Version", version);
+  version && res.setHeader("x-metriport-version", version);
   next();
 });
 

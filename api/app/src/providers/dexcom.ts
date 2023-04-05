@@ -13,9 +13,9 @@ import { mapToBiometrics } from "../mappings/dexcom/biometrics";
 import { mapToNutrition } from "../mappings/dexcom/nutrition";
 import { dexcomEvgsResp } from "../mappings/dexcom/models/evgs";
 import { dexcomEventsResp } from "../mappings/dexcom/models/events";
-import convert from "convert-units";
 import { capture } from "../shared/notifications";
 import { ISO_DATE } from "../shared/date";
+import { Util } from "../shared/util";
 
 const axios = Axios.create();
 
@@ -67,12 +67,7 @@ export class Dexcom extends Provider implements OAuth2 {
 
   async checkRefreshToken(token: string, connectedUser: ConnectedUser): Promise<Token> {
     const access_token = JSON.parse(token);
-    const bufferSeconds = 600;
-    const isExpired =
-      convert(access_token.expires_at).from("s").to("ms") -
-        Date.now() +
-        convert(bufferSeconds).from("s").to("ms") <=
-      0;
+    const isExpired = Util.isTokenExpired(access_token.expires_at);
 
     if (isExpired) {
       const formData = {
@@ -114,7 +109,6 @@ export class Dexcom extends Provider implements OAuth2 {
         capture.error(error, {
           extra: {
             context: `dexcom.refreshToken`,
-            cxId: connectedUser.cxId,
           },
         });
         throw new Error("Error refreshing access token: ");

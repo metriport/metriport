@@ -23,6 +23,11 @@ const docPatientDateOfBirth = getEnvOrFail("DOCUMENT_PATIENT_DATE_OF_BIRTH");
 const docPatientGender = getEnvOrFail("DOCUMENT_PATIENT_GENDER");
 const docPatientZip = getEnvOrFail("DOCUMENT_PATIENT_ZIP");
 
+const docUrl = getEnvOrFail("DOCUMENT_CONTRIBUTION_URL");
+const docAuthUrl = getEnvOrFail("DOCUMENT_CONTRIBUTION_AUTH_URL");
+const clientId = getEnvOrFail("DOCUMENT_CONTRIBUTION_CLIENT_ID");
+const clientSecret = getEnvOrFail("DOCUMENT_CONTRIBUTION_CLIENT_SECRET");
+
 const ORGANIZATION = "5";
 const LOCATION = "4";
 const PATIENT = "2";
@@ -232,6 +237,56 @@ export const makeOrganization = (suffixId?: string) => {
         phone: "303-555-1212",
       },
     ],
+  };
+};
+
+export const makeDocContribOrganization = (suffixId?: string) => {
+  const orgId = makeOrgId(suffixId);
+  return {
+    organizationId: `${CW_ID_PREFIX}${orgId}`,
+    homeCommunityId: `${CW_ID_PREFIX}${orgId}`,
+    name: `Provider${suffixId}`,
+    displayName: `Provider${suffixId}`,
+    memberName: "Metriport",
+    type: "Hospital",
+    patientIdAssignAuthority: `${CW_ID_PREFIX}${orgId}`,
+    securityTokenKeyType: "BearerKey",
+    isActive: true,
+    locations: [
+      {
+        address1: "1 Main Street",
+        address2: "PO Box 123",
+        city: "Denver",
+        state: "CO",
+        postalCode: "80001",
+        country: "USA",
+        phone: "303-555-1212",
+        fax: "303-555-1212",
+        email: "here@dummymail.com",
+      },
+    ],
+    technicalContacts: [
+      {
+        name: "Technician",
+        title: "TechnicalContact",
+        email: "technicalContact@dummymail.com",
+        phone: "303-555-1212",
+      },
+    ],
+    gateways: [
+      {
+        serviceType: "XCA_Query",
+        gatewayType: "R4",
+        endpointLocation: docUrl,
+      },
+    ],
+    authorizationInformation: {
+      authorizationServerEndpoint: docAuthUrl,
+      clientId: clientId,
+      clientSecret: clientSecret,
+      documentReferenceScope: "fhir/document",
+      binaryScope: "fhir/document",
+    },
   };
 };
 

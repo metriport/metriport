@@ -10,19 +10,18 @@ export const mapToNutrition = (dexcomBiometrics: DexcomEvents, date: string): Nu
     source: PROVIDER_DEXCOM,
   };
 
-  const nutrition: Nutrition = {
-    metadata: metadata,
-  };
-
   const carbEventType = "carbs";
 
   const carbsValues = dexcomBiometrics.records.flatMap(record =>
     record.eventType === carbEventType ? Number(record.value) : []
   );
 
-  nutrition.summary = {
-    macros: {
-      carbs_g: sum(carbsValues),
+  const nutrition: Nutrition = {
+    metadata: metadata,
+    summary: {
+      macros: {
+        carbs_g: sum(carbsValues),
+      },
     },
   };
 
