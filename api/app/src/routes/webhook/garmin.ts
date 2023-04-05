@@ -2,6 +2,7 @@ import { MetriportData } from "@metriport/api/lib/devices/models/metriport-data"
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { processData } from "../../command/webhook/webhook";
+import { processAsyncError } from "../../errors";
 import { UserData } from "../../mappings/garmin";
 import { garminActivityListSchema, mapToActivity } from "../../mappings/garmin/activity";
 import {
@@ -51,7 +52,7 @@ routes.post(
     }
     // STORE AND SEND TO CUSTOMER
     // Intentionally asynchronous, respond asap, sending to customers is irrelevant to Provider
-    processData(data);
+    processData(data).catch(processAsyncError(`wh.garmin.processData`));
 
     return res.sendStatus(200);
   })

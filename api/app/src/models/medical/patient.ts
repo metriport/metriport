@@ -1,7 +1,8 @@
 import { DataTypes, Sequelize } from "sequelize";
+import { DocumentQueryStatus } from "../../domain/medical/document-reference";
 import { MedicalDataSource } from "../../external";
 import { USState } from "../../shared/geographic-locations";
-import { IBaseModelCreate, IBaseModel, ModelSetup, BaseModel } from "../_default";
+import { BaseModel, IBaseModel, IBaseModelCreate, ModelSetup } from "../_default";
 import { Address } from "./address";
 import { Contact } from "./contact";
 
@@ -56,6 +57,7 @@ export type PatientData = {
   personalIdentifiers: PersonalIdentifier[];
   address: Address;
   contact?: Contact;
+  documentQueryStatus?: DocumentQueryStatus;
   externalData?: PatientExternalData;
 };
 
