@@ -41,3 +41,25 @@ export const googlePoint = z.array(
 );
 
 export type GooglePoint = z.infer<typeof googlePoint>;
+
+const sessionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  startTimeMillis: z.string(),
+  endTimeMillis: z.string(),
+  modifiedTimeMillis: z.string(),
+  application: z.object({
+    packageName: z.string(),
+    version: z.string(),
+    detailsUrl: z.string(),
+  }),
+  activityType: z.number(),
+});
+
+export const sessionResp = z.object({
+  session: z.array(sessionSchema),
+  deletedSession: z.array(sessionSchema),
+});
+
+export type GoogleSessions = z.infer<typeof sessionResp>;

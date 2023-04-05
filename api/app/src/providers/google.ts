@@ -8,7 +8,7 @@ import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "../models/connected-user";
 import { mapToActivity } from "../mappings/google/activity";
-import { googleActivityResp } from "../mappings/google/models/activity";
+import { googleActivityResp, GoogleActivity } from "../mappings/google/models/activity";
 import { mapToBody } from "../mappings/google/body";
 import { googleBodyResp } from "../mappings/google/models/body";
 import { mapToBiometrics } from "../mappings/google/biometrics";
@@ -16,7 +16,9 @@ import { googleBiometricsResp } from "../mappings/google/models/biometrics";
 import { mapToNutrition } from "../mappings/google/nutrition";
 import { googleNutritionResp } from "../mappings/google/models/nutrition";
 import { mapToSleep } from "../mappings/google/sleep";
-import { googleSleepResp } from "../mappings/google/models/sleep";
+import { sessionSleepType } from "../mappings/google/models/sleep";
+import { sessionResp, GoogleSessions } from "../mappings/google/models";
+import { capture } from "../shared/notifications";
 
 export class Google extends Provider implements OAuth2 {
   static URL = "https://www.googleapis.com";
@@ -102,25 +104,86 @@ export class Google extends Provider implements OAuth2 {
 
       return resp.data;
     } catch (error) {
-      console.error(error);
+      capture.error(error, {
+        extra: { context: `google.fetch.data` },
+      });
+
+      throw new Error(`Request failed google`);
+    }
+  }
+
+  async fetchGoogleSessions(connectedUser: ConnectedUser, date: string, type?: number) {
+    try {
+      const access_token = await this.oauth.getAccessToken(connectedUser);
+
+      const resp = await axios.get(`${Google.URL}${Google.API_PATH}/users/me/sessions`, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+        params: {
+          startTime: dayjs(date).toISOString(),
+          endTime: dayjs(date).add(24, "hours").toISOString(),
+          activityType: type,
+        },
+      });
+
+      return resp.data;
+    } catch (error) {
+      capture.error(error, {
+        extra: { context: `google.fetch.sessions` },
+      });
 
       throw new Error(`Request failed google`);
     }
   }
 
   async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
+    const [resSessions, resData] = await Promise.allSettled([
+      this.fetchActivitySessions(connectedUser, date),
+      this.fetchActivityData(connectedUser, date),
+    ]);
+
+    const sessions = resSessions.status === "fulfilled" ? resSessions.value : undefined;
+    const data = resData.status === "fulfilled" ? resData.value : undefined;
+
+    if (!sessions && !data) {
+      throw new Error("All Requests failed");
+    }
+
+    return mapToActivity(date, data, sessions);
+  }
+
+  async fetchActivitySessions(connectedUser: ConnectedUser, date: string): Promise<GoogleSessions> {
+    const activitySessions = await this.fetchGoogleSessions(connectedUser, date);
+
+    return sessionResp.parse(activitySessions);
+  }
+
+  async fetchActivityData(connectedUser: ConnectedUser, date: string): Promise<GoogleActivity> {
     const activity = await this.fetchGoogleData(connectedUser, date, {
       aggregateBy: [
+        {
+          dataTypeName: "com.google.active_minutes",
+        },
+        {
+          dataTypeName: "com.google.activity.segment",
+        },
         {
           dataTypeName: "com.google.calories.expended",
         },
         {
           dataTypeName: "com.google.step_count.delta",
         },
+        {
+          dataTypeName: "com.google.distance.delta",
+        },
+        {
+          dataTypeName: "com.google.speed",
+        },
       ],
     });
 
-    return mapToActivity(googleActivityResp.parse(activity), date);
+    return googleActivityResp.parse(activity);
   }
 
   async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
@@ -143,6 +206,7 @@ export class Google extends Provider implements OAuth2 {
         },
       ],
     });
+
     return mapToBiometrics(googleBiometricsResp.parse(biometrics), date);
   }
 
@@ -180,21 +244,8 @@ export class Google extends Provider implements OAuth2 {
   }
 
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
-    const access_token = await this.oauth.getAccessToken(connectedUser);
+    const sleepSessions = await this.fetchGoogleSessions(connectedUser, date, sessionSleepType);
 
-    const sleepType = 72;
-
-    const resp = await axios.get(`${Google.URL}${Google.API_PATH}/users/me/sessions`, {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-      params: {
-        startTime: dayjs(date).toISOString(),
-        endTime: dayjs(date).add(24, "hours").toISOString(),
-        activityType: sleepType,
-      },
-    });
-
-    return mapToSleep(googleSleepResp.parse(resp.data), date);
+    return mapToSleep(sessionResp.parse(sleepSessions.data), date);
   }
 }
