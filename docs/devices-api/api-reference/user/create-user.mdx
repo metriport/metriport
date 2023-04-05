@@ -19,9 +19,9 @@ api: "POST /user"
 <ResponseExample>
 
 ```javascript Metriport SDK
-import { Metriport } from "@metriport/api";
+import { MetriportDevicesApi } from "@metriport/api";
 
-const metriportClient = new Metriport("YOUR_API_KEY");
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
 const metriportUserId = await metriportClient.getMetriportUserId("your-app-user-id");
 ```
