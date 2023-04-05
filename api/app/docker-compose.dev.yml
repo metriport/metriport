@@ -24,6 +24,7 @@ services:
     environment:
       - DB_CREDS={"password":"admin","dbname":"db","engine":"postgres","port":5432,"host":"postgres","username":"admin"}
       - NODE_ENV=development
+      - ENV_TYPE=development
       - TOKEN_TABLE_NAME=token
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
     networks:
