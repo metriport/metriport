@@ -10,6 +10,7 @@ import {
   OrganizationUpdateCmd,
   updateOrganization,
 } from "../../command/medical/organization/update-organization";
+import { processAsyncError } from "../../errors";
 import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
@@ -36,7 +37,7 @@ router.post(
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
-    cwCommands.organization.create(org);
+    cwCommands.organization.create(org).catch(processAsyncError(`cw.org.create`));
 
     return res.status(status.CREATED).json(dtoFromModel(org));
   })
@@ -67,7 +68,7 @@ router.put(
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
-    cwCommands.organization.update(org);
+    cwCommands.organization.update(org).catch(processAsyncError(`cw.org.update`));
 
     return res.status(status.OK).json(dtoFromModel(org));
   })

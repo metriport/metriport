@@ -5,6 +5,7 @@ import { Config, getEnvVarOrFail } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev } from "./db-dev";
 import { CustomerSequenceModel } from "./medical/customer-sequence";
+import { DocumentReferenceModel } from "./medical/document-reference";
 import { FacilityModel } from "./medical/facility";
 import { MAPIAccess } from "./medical/mapi-access";
 import { OrganizationModel } from "./medical/organization";
@@ -23,6 +24,7 @@ const models: ModelSetup[] = [
   PatientModel.setup,
   MAPIAccess.setup,
   CustomerSequenceModel.setup,
+  DocumentReferenceModel.setup,
 ];
 
 export type MetriportDB = {

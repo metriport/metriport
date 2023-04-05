@@ -25,5 +25,6 @@ export const documentReferenceSchema = z.object({
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
 
 export const documentListSchema = z.object({
+  queryStatus: z.boolean(),
   documents: z.array(documentReferenceSchema),
 });

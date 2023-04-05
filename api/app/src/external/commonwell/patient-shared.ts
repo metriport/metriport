@@ -17,6 +17,7 @@ import { capture } from "../../shared/notifications";
 import { driversLicenseURIs } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makePersonForPatient } from "./patient-conversion";
+
 export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(public patientId: string, public personId?: string | undefined) {
     super();

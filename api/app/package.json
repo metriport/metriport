@@ -21,7 +21,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/api": "^2.5.0-alpha.1",
+    "@metriport/api": "^2.5.1-alpha.3",
     "@metriport/commonwell-sdk": "^4.0.1",
     "@sentry/node": "^7.45.0",
     "@sentry/tracing": "^7.45.0",

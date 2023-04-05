@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { processAsyncError } from "../../errors";
 import WebhookError from "../../errors/webhook";
 import { Settings, WEBHOOK_STATUS_BAD_RESPONSE, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { Util } from "../../shared/util";
@@ -64,7 +65,8 @@ const getWebhookDataForUpdate = (
     webhookStatus: null,
   };
   // if there's a URL, fire a test towards it - intentionally asynchronous
-  webhookData.webhookUrl && testWebhook({ id: settings.id, ...webhookData });
+  webhookData.webhookUrl &&
+    testWebhook({ id: settings.id, ...webhookData }).catch(processAsyncError(`testWebhook`));
   return webhookData;
 };
 
