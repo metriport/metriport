@@ -1,7 +1,12 @@
 import axios, { AxiosInstance, AxiosStatic } from "axios";
 import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
-import { documentListSchema, DocumentReference } from "../models/document";
+import {
+  DocumentList,
+  documentListSchema,
+  documentQuerySchema,
+  DocumentQueryStatus,
+} from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
@@ -294,7 +299,7 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation.
    * @return The metadata of available documents.
    */
-  async listDocuments(patientId: string, facilityId: string): Promise<DocumentReference[]> {
+  async listDocuments(patientId: string, facilityId: string): Promise<DocumentList> {
     const resp = await this.api.get(`${DOCUMENT_URL}`, {
       params: {
         patientId,
@@ -302,7 +307,25 @@ export class MetriportMedicalApi {
       },
     });
     if (!resp.data) [];
-    return documentListSchema.parse(resp.data).documents;
+    return documentListSchema.parse(resp.data);
+  }
+
+  /**
+   * Start a document query for the given patient across HIEs.
+   *
+   * @param patientId Patient ID for which to retrieve document metadata.
+   * @param facilityId The facility providing the NPI to support this operation.
+   * @return The document query status indicating whether its being executed or not.
+   */
+  async startDocumentQuery(patientId: string, facilityId: string): Promise<DocumentQueryStatus> {
+    const resp = await this.api.post(`${DOCUMENT_URL}/query`, null, {
+      params: {
+        patientId,
+        facilityId,
+      },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return documentQuerySchema.parse(resp.data).queryStatus;
   }
 
   // TODO #435 review the return type of this function

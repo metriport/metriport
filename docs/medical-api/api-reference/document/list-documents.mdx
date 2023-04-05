@@ -4,14 +4,14 @@ description: "Lists all Documents that can be retrieved for a Patient."
 api: "GET /medical/v1/document"
 ---
 
-This endpoint returns the document references associated with a Patient.
+This endpoint returns the document references available at Metriport which are associated with the
+given Patient.
 
-Because this might contain a large number of records that have to obtained from HIEs,
-this endpoint works asynchronously:
-1. Upon request, it fires an asynchronous document query with HIEs and immediately returns the existing 
-document references stored at Metriport;
-   - When the asynchronous document query finishes, it stores new/updated document references for future requests;
-1. When requested again, it will return the existing documents and trigger a new document query (step 1).
+It also returns the status of querying document references across HIEs, indicating whether
+there is an asynchronous query in progress (status `processing`) or not (status `completed`).
+
+To start a new document
+query, see [Start Document Query endpoint](/medical-api/api-reference/document/start-document-query).
 
 ## Query Params
 
@@ -43,10 +43,11 @@ import { MetriportMedicalApi } from "@metriport/api";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
-const documents = await metriportClient.listDocuments(
-  "2.16.840.1.113883.3.666.777",
-  "2.16.840.1.113883.3.666.5.2004.4.2005"
-);
+const { documents, queryStatus } = await metriportClient
+  .listDocuments(
+    "2.16.840.1.113883.3.666.777",
+    "2.16.840.1.113883.3.666.5.2004.4.2005"
+  );
 ```
 
 </ResponseExample>

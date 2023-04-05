@@ -1,0 +1,47 @@
+---
+title: "Start Document Query"
+description: "Triggers a document query for the specified patient across HIEs."
+api: "POST /medical/v1/document/query"
+---
+
+When executed, this endpoint triggers an asynchronous document query with HIEs and immediately returns the status
+of document query, `processing`.
+
+When the asynchronous document query finishes, it stores new/updated document references for future requests and
+update the status of document query to `completed` - acessible through 
+[List Documents endpoint](/medical-api/api-reference/document/list-documents).
+
+## Query Params
+
+<ParamField query="patientId" type="string" required>
+  The ID of the Patient for which to list available Documents.
+</ParamField>
+
+<ParamField query="facilityId" type="string" required>
+  The ID of the Facility where the patient is receiving care.
+</ParamField>
+
+## Response
+
+<ResponseField name="queryStatus" type="string">
+  The status of querying document references across HIEs, either `processing` or `completed`.
+</ResponseField>
+
+<ResponseExample>
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const status = await api.startDocumentQuery(
+  "2.16.840.1.113883.3.666.5.2004.4.2005",
+  "2.16.840.1.113883.3.666.123",
+);
+```
+</ResponseExample>
+
+```json
+{
+  "queryStatus": "processing"
+}
+```
