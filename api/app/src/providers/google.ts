@@ -18,6 +18,7 @@ import { googleNutritionResp } from "../mappings/google/models/nutrition";
 import { mapToSleep } from "../mappings/google/sleep";
 import { sessionSleepType } from "../mappings/google/models/sleep";
 import { sessionResp, GoogleSessions } from "../mappings/google/models";
+import { capture } from "../shared/notifications";
 
 export class Google extends Provider implements OAuth2 {
   static URL = "https://www.googleapis.com";
@@ -103,7 +104,9 @@ export class Google extends Provider implements OAuth2 {
 
       return resp.data;
     } catch (error) {
-      console.error(error);
+      capture.error(error, {
+        extra: { context: `google.fetch.data` },
+      });
 
       throw new Error(`Request failed google`);
     }
@@ -126,7 +129,9 @@ export class Google extends Provider implements OAuth2 {
 
       return resp.data;
     } catch (error) {
-      console.error(error);
+      capture.error(error, {
+        extra: { context: `google.fetch.sessions` },
+      });
 
       throw new Error(`Request failed google`);
     }
