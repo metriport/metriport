@@ -1,14 +1,14 @@
 import { CommonwellError, DocumentQueryResponse } from "@metriport/commonwell-sdk";
-import { createOrUpdate } from "../../command/medical/document/create-or-update";
-import { updateDocQueryStatus } from "../../command/medical/document/get-documents";
-import { DocumentReference } from "../../domain/medical/document-reference";
-import { Patient } from "../../models/medical/patient";
-import { capture } from "../../shared/notifications";
-import { oid } from "../../shared/oid";
-import { Util } from "../../shared/util";
-import { makeCommonWellAPI, organizationQueryMeta } from "./api";
-import { getPatientData, PatientDataCommonwell } from "./patient-shared";
-import { DocumentWithLocation, getFileName, toDomain } from "./document/shared";
+import { createOrUpdate } from "../../../command/medical/document/create-or-update";
+import { updateDocQueryStatus } from "../../../command/medical/document/document-query";
+import { DocumentReference } from "../../../domain/medical/document-reference";
+import { Patient } from "../../../models/medical/patient";
+import { capture } from "../../../shared/notifications";
+import { oid } from "../../../shared/oid";
+import { Util } from "../../../shared/util";
+import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { getPatientData, PatientDataCommonwell } from "../patient-shared";
+import { DocumentWithLocation, getFileName, toDomain } from "./shared";
 
 export async function getDocuments({
   patient,
