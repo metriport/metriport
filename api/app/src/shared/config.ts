@@ -85,6 +85,13 @@ export class Config {
     return getEnvVarOrFail("OURA_CLIENT_SECRET");
   }
 
+  static getDexcomClientId(): string {
+    return getEnvVarOrFail("DEXCOM_CLIENT_ID");
+  }
+  static getDexcomClientSecret(): string {
+    return getEnvVarOrFail("DEXCOM_CLIENT_SECRET");
+  }
+
   static getFitbitClientId(): string {
     return getEnvVarOrFail("FITBIT_CLIENT_ID");
   }

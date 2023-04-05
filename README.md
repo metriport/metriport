@@ -61,6 +61,7 @@ Our [Health Devices API](https://metriport.com/devices), allows you to gain acce
 
 Out of the box, our Health Devices API supports the following integrations:
 
+- Dexcom
 - Fitbit
 - Garmin
 - Oura
@@ -252,6 +253,8 @@ $ echo "API_URL=http://localhost:8080" >> api/app/.env
 $ echo "CONNECT_WIDGET_URL=http://localhost:3001/" >> api/app/.env
 $ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" >> api/app/.env
 $ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "DEXCOM_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
+$ echo "DEXCOM_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
 $ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
 $ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
 $ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" >> api/app/.env
