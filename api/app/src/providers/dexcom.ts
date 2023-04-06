@@ -111,7 +111,7 @@ export class Dexcom extends Provider implements OAuth2 {
             context: `dexcom.refreshToken`,
           },
         });
-        throw new Error("Error refreshing access token: ");
+        throw new Error("Error refreshing access token", { cause: error });
       }
     }
 
