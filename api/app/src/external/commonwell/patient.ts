@@ -412,7 +412,9 @@ async function getLinkInfo({
   const strongIds = getMatchingStrongIds(person, commonwellPatient);
   const hasLink = Boolean(linkToPatient && linkToPatient.assuranceLevel);
   const isLinkLola3Plus = linkToPatient?.assuranceLevel
-    ? [LOLA.level_3, LOLA.level_4].map(toString).includes(linkToPatient.assuranceLevel)
+    ? [LOLA.level_3, LOLA.level_4]
+        .map(level => level.toString())
+        .includes(linkToPatient.assuranceLevel)
     : false;
   return { hasLink, isLinkLola3Plus, strongIds };
 }
