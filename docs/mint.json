@@ -112,6 +112,7 @@
         {
           "group": "Document",
           "pages": [
+            "medical-api/api-reference/document/start-document-query",
             "medical-api/api-reference/document/list-documents",
             "medical-api/api-reference/document/get-document"
           ]

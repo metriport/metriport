@@ -1,7 +1,12 @@
 import axios, { AxiosInstance, AxiosStatic } from "axios";
 import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
-import { documentListSchema, DocumentReference } from "../models/document";
+import {
+  DocumentList,
+  documentListSchema,
+  documentQuerySchema,
+  DocumentQueryStatus,
+} from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
@@ -15,9 +20,15 @@ import {
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
+const ORGANIZATION_URL = `/organization`;
+const FACILITY_URL = `/facility`;
+const PATIENT_URL = `/patient`;
+const LINK_URL = `/link`;
+const DOCUMENT_URL = `/document`;
 
 export type Options = {
   axios?: AxiosStatic; // Set axios if it fails to load
+  additionalHeaders?: Record<string, string>;
 } & (
   | {
       sandbox?: boolean;
@@ -31,11 +42,10 @@ export type Options = {
 
 export class MetriportMedicalApi {
   readonly api: AxiosInstance;
-  private ORGANIZATION_URL = `/organization`;
-  private FACILITY_URL = `/facility`;
-  private PATIENT_URL = `/patient`;
-  private LINK_URL = `/link`;
-  private DOCUMENT_URL = `/document`;
+
+  static readonly headers = {
+    clientApp: "x-metriport-client",
+  };
 
   /**
    * Creates a new instance of the Metriport Medical API client.
@@ -43,7 +53,7 @@ export class MetriportMedicalApi {
    * @param apiKey Your Metriport API key.
    */
   constructor(apiKey: string, options: Options = { sandbox: false }) {
-    const headers = { "x-api-key": apiKey };
+    const headers = { "x-api-key": apiKey, ...options.additionalHeaders };
 
     const baseURL =
       (options.baseAddress || (options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
@@ -70,7 +80,7 @@ export class MetriportMedicalApi {
    * @returns The created organization.
    */
   async createOrganization(data: OrganizationCreate): Promise<Organization> {
-    const resp = await this.api.post(this.ORGANIZATION_URL, data);
+    const resp = await this.api.post(ORGANIZATION_URL, data);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return organizationSchema.parse(resp.data);
   }
@@ -87,7 +97,7 @@ export class MetriportMedicalApi {
       ...organization,
       id: undefined,
     };
-    const resp = await this.api.put(`${this.ORGANIZATION_URL}/${organization.id}`, payload, {
+    const resp = await this.api.put(`${ORGANIZATION_URL}/${organization.id}`, payload, {
       headers: { ...getETagHeader(organization) },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
@@ -100,7 +110,7 @@ export class MetriportMedicalApi {
    * @returns The organization, or undefined if no organization has been created.
    */
   async getOrganization(): Promise<Organization | undefined> {
-    const resp = await this.api.get(this.ORGANIZATION_URL);
+    const resp = await this.api.get(ORGANIZATION_URL);
     if (!resp.data) return undefined;
     return organizationSchema.parse(resp.data);
   }
@@ -112,7 +122,7 @@ export class MetriportMedicalApi {
    * @return The newly created facility.
    */
   async createFacility(data: FacilityCreate): Promise<Facility> {
-    const resp = await this.api.post(`${this.FACILITY_URL}`, data);
+    const resp = await this.api.post(`${FACILITY_URL}`, data);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return facilitySchema.parse(resp.data);
   }
@@ -124,7 +134,7 @@ export class MetriportMedicalApi {
    * @return The facilities.
    */
   async getFacility(id: string): Promise<Facility> {
-    const resp = await this.api.get(`${this.FACILITY_URL}/${id}`);
+    const resp = await this.api.get(`${FACILITY_URL}/${id}`);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return facilitySchema.parse(resp.data);
   }
@@ -141,7 +151,7 @@ export class MetriportMedicalApi {
       ...facility,
       id: undefined,
     };
-    const resp = await this.api.put(`${this.FACILITY_URL}/${facility.id}`, payload, {
+    const resp = await this.api.put(`${FACILITY_URL}/${facility.id}`, payload, {
       headers: { ...getETagHeader(facility) },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
@@ -154,7 +164,7 @@ export class MetriportMedicalApi {
    * @return The list of facilities.
    */
   async listFacilities(): Promise<Facility[]> {
-    const resp = await this.api.get(`${this.FACILITY_URL}`);
+    const resp = await this.api.get(`${FACILITY_URL}`);
     if (!resp.data) [];
     return facilityListSchema.parse(resp.data).facilities;
   }
@@ -167,7 +177,7 @@ export class MetriportMedicalApi {
    * @return The newly created patient.
    */
   async createPatient(data: PatientCreate, facilityId: string): Promise<Patient> {
-    const resp = await this.api.post(`${this.PATIENT_URL}`, data, {
+    const resp = await this.api.post(`${PATIENT_URL}`, data, {
       params: { facilityId },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
@@ -181,7 +191,7 @@ export class MetriportMedicalApi {
    * @return The patients.
    */
   async getPatient(id: string): Promise<Patient> {
-    const resp = await this.api.get(`${this.PATIENT_URL}/${id}`);
+    const resp = await this.api.get(`${PATIENT_URL}/${id}`);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return patientSchema.parse(resp.data);
   }
@@ -199,7 +209,7 @@ export class MetriportMedicalApi {
       ...patient,
       id: undefined,
     };
-    const resp = await this.api.put(`${this.PATIENT_URL}/${patient.id}`, payload, {
+    const resp = await this.api.put(`${PATIENT_URL}/${patient.id}`, payload, {
       params: { facilityId },
       headers: { ...getETagHeader(patient) },
     });
@@ -214,7 +224,7 @@ export class MetriportMedicalApi {
    * @return The list of patients.
    */
   async listPatients(facilityId: string): Promise<Patient[]> {
-    const resp = await this.api.get(`${this.PATIENT_URL}`, {
+    const resp = await this.api.get(`${PATIENT_URL}`, {
       params: { facilityId },
     });
     if (!resp.data) [];
@@ -229,7 +239,7 @@ export class MetriportMedicalApi {
    * @returns The patient's current and potential links.
    */
   async listLinks(patientId: string, facilityId: string): Promise<PatientLinks> {
-    const resp = await this.api.get(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}`, {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}${LINK_URL}`, {
       params: { facilityId },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
@@ -258,7 +268,7 @@ export class MetriportMedicalApi {
     linkSource: MedicalDataSource
   ): Promise<void> {
     await this.api.post(
-      `${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`,
+      `${PATIENT_URL}/${patientId}${LINK_URL}/${linkSource}`,
       { entityId },
       { params: { facilityId } }
     );
@@ -277,7 +287,7 @@ export class MetriportMedicalApi {
     facilityId: string,
     linkSource: MedicalDataSource
   ): Promise<void> {
-    await this.api.delete(`${this.PATIENT_URL}/${patientId}${this.LINK_URL}/${linkSource}`, {
+    await this.api.delete(`${PATIENT_URL}/${patientId}${LINK_URL}/${linkSource}`, {
       params: { facilityId },
     });
   }
@@ -289,15 +299,33 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation.
    * @return The metadata of available documents.
    */
-  async listDocuments(patientId: string, facilityId: string): Promise<DocumentReference[]> {
-    const resp = await this.api.get(`${this.DOCUMENT_URL}`, {
+  async listDocuments(patientId: string, facilityId: string): Promise<DocumentList> {
+    const resp = await this.api.get(`${DOCUMENT_URL}`, {
       params: {
         patientId,
         facilityId,
       },
     });
     if (!resp.data) [];
-    return documentListSchema.parse(resp.data).documents;
+    return documentListSchema.parse(resp.data);
+  }
+
+  /**
+   * Start a document query for the given patient across HIEs.
+   *
+   * @param patientId Patient ID for which to retrieve document metadata.
+   * @param facilityId The facility providing the NPI to support this operation.
+   * @return The document query status indicating whether its being executed or not.
+   */
+  async startDocumentQuery(patientId: string, facilityId: string): Promise<DocumentQueryStatus> {
+    const resp = await this.api.post(`${DOCUMENT_URL}/query`, null, {
+      params: {
+        patientId,
+        facilityId,
+      },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return documentQuerySchema.parse(resp.data).queryStatus;
   }
 
   // TODO #435 review the return type of this function
@@ -313,7 +341,7 @@ export class MetriportMedicalApi {
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getDocument(patientId: string, facilityId: string, location: string): Promise<any> {
-    const resp = await this.api.get(`${this.DOCUMENT_URL}/download`, {
+    const resp = await this.api.get(`${DOCUMENT_URL}/download`, {
       params: {
         patientId,
         facilityId,

@@ -24,6 +24,16 @@ export const documentReferenceSchema = z.object({
 });
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
 
-export const documentListSchema = z.object({
-  documents: z.array(documentReferenceSchema),
+export const documentQueryStatusSchema = z.enum(["processing", "completed"]);
+export type DocumentQueryStatus = z.infer<typeof documentQueryStatusSchema>;
+
+export const documentQuerySchema = z.object({
+  queryStatus: documentQueryStatusSchema,
 });
+
+export const documentListSchema = z
+  .object({
+    documents: z.array(documentReferenceSchema),
+  })
+  .merge(documentQuerySchema);
+export type DocumentList = z.infer<typeof documentListSchema>;

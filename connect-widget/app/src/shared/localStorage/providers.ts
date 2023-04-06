@@ -8,6 +8,7 @@ const defaultProviders: DefaultProvider[] = [
   { name: "oura", image: "oura.webp" },
   { name: "withings", image: "withings.png" },
   { name: "whoop", image: "whoop.png" },
+  { name: "dexcom", image: "dexcom.png" },
   { name: "cronometer", image: "cronometer.webp" },
 ];
 

@@ -3,6 +3,8 @@ import convert from "convert-units";
 
 import { PROVIDER_GOOGLE } from "../../shared/constants";
 import { GoogleBody, sourceIdBodyFat, sourceIdHeight, sourceIdWeight } from "./models/body";
+import { getValues } from ".";
+import { Util } from "../../shared/util";
 
 export const mapToBody = (googleBody: GoogleBody, date: string): Body => {
   const metadata = {
@@ -26,7 +28,9 @@ export const mapToBody = (googleBody: GoogleBody, date: string): Body => {
       }
 
       if (data.dataSourceId === sourceIdBodyFat) {
-        body.body_fat_pct = dataPoint.value[0].fpVal;
+        const values = getValues(data.point);
+
+        body.body_fat_pct = Util.getAvgOfArr(values, 1);
       }
     }
   });

@@ -3,7 +3,6 @@ import axios from "axios";
 import dayjs from "dayjs";
 import crypto from "crypto";
 import { Token } from "simple-oauth2";
-
 import { PROVIDER_WITHINGS } from "../shared/constants";
 import { ConnectedUser } from "../models/connected-user";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
@@ -26,6 +25,8 @@ import {
   WithingsMeasurements,
 } from "../mappings/withings/models/measurements";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
+import { Util } from "../shared/util";
+
 export class Withings extends Provider implements OAuth2 {
   static URL = "https://wbsapi.withings.net";
   static AUTHORIZATION_URL = "https://account.withings.com";
@@ -99,7 +100,7 @@ export class Withings extends Provider implements OAuth2 {
 
   async checkRefreshToken(token: string, connectedUser: ConnectedUser): Promise<Token> {
     const access_token = JSON.parse(token);
-    const isExpired = access_token.expires_at * 1000 - (Date.now() + 120 * 1000) <= 0;
+    const isExpired = Util.isTokenExpired(access_token.expires_at);
 
     if (isExpired) {
       try {
@@ -120,7 +121,7 @@ export class Withings extends Provider implements OAuth2 {
           throw new Error(response.data.error);
         }
 
-        response.data.body.expires_at = dayjs(Date.now())
+        response.data.body.expires_at = dayjs()
           .add(response.data.body.expires_in, "seconds")
           .unix();
 

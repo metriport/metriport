@@ -1,5 +1,5 @@
-import { DocumentContent } from "@metriport/commonwell-sdk";
-import { DocumentWithLocation } from "../../../external/commonwell/document";
+import { DocumentReference } from "../../../domain/medical/document-reference";
+import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
 
 export type DocumentReferenceDTO = {
   id: string;
@@ -10,19 +10,21 @@ export type DocumentReferenceDTO = {
   indexed: string | undefined; // ISO-8601
   mimeType: string | undefined;
   size: number | undefined; // bytes
-} & Partial<Pick<DocumentContent, "type">>; // TODO build our own representation
+  type: CodeableConceptDTO | undefined;
+};
 
-export function dtoFromModel(doc: DocumentWithLocation): DocumentReferenceDTO {
-  const { id, description, type, status, location, fileName, indexed, mimeType, size } = doc;
+export function toDTO(doc: DocumentReference): DocumentReferenceDTO {
+  const { id } = doc;
+  const { description, type, status, location, fileName, indexed, mimeType, size } = doc.data;
   return {
     id,
-    description,
+    description: description,
     fileName,
     location,
-    type,
-    status,
-    indexed,
-    mimeType,
-    size,
+    type: codeableToDTO(type),
+    status: status,
+    indexed: indexed,
+    mimeType: mimeType,
+    size: size,
   };
 }

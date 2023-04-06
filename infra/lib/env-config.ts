@@ -39,6 +39,8 @@ export type EnvConfig = {
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: string;
     CRONOMETER_CLIENT_SECRET: string;
+    DEXCOM_CLIENT_ID: string;
+    DEXCOM_CLIENT_SECRET: string;
     FITBIT_CLIENT_ID: string;
     FITBIT_CLIENT_SECRET: string;
     GARMIN_CONSUMER_KEY: string;

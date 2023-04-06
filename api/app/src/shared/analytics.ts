@@ -24,7 +24,7 @@ export const analytics = (params: EventMessageV1) => {
 
     params.properties = {
       ...params.properties,
-      environment: Config.getEnvironment(),
+      environment: Config.getEnvType(),
       platform: "oss-api",
     };
 

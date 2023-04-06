@@ -4,6 +4,7 @@ import status from "http-status";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { processAsyncError } from "../../errors";
 import cwCommands from "../../external/commonwell";
 import {
   asyncHandler,
@@ -46,7 +47,7 @@ router.post(
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient.create(patient, facilityId);
+    cwCommands.patient.create(patient, facilityId).catch(processAsyncError(`cw.patient.create`));
 
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })
@@ -78,7 +79,7 @@ router.put(
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient.update(patient, facilityId);
+    cwCommands.patient.update(patient, facilityId).catch(processAsyncError(`cw.patient.update`));
 
     return res.status(status.OK).json(dtoFromModel(patient));
   })

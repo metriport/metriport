@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { downloadDocument, getDocuments } from "../../external/commonwell/document";
+import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
+import { getDocuments } from "../../command/medical/document/get-documents";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { downloadDocument } from "../../external/commonwell/document/document-download";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
-import { dtoFromModel } from "./dtos/documentDTO";
+import { toDTO } from "./dtos/documentDTO";
 
 const router = Router();
 
@@ -22,11 +25,38 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const forceQuery = getFromQuery("force-query", req);
 
-    const documents = await getDocuments({ cxId, patientId, facilityId });
+    const documents = await getDocuments({ cxId, patientId });
+    const documentsDTO = documents.map(toDTO);
 
-    const result = documents.map(dtoFromModel);
-    return res.status(status.OK).json({ documents: result });
+    const queryStatus = forceQuery
+      ? await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId })
+      : (await getPatientOrFail({ cxId, id: patientId })).data.documentQueryStatus ?? "completed";
+
+    return res.status(status.OK).json({ queryStatus, documents: documentsDTO });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /document/query
+ *
+ * Triggers a document query for the specified patient across HIEs.
+ *
+ * @param req.query.patientId Patient ID for which to retrieve document metadata.
+ * @param req.query.facilityId The facility providing NPI for the document query.
+ * @return The status of document querying.
+ */
+router.post(
+  "/query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+
+    const queryStatus = await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId });
+
+    return res.status(status.OK).json({ queryStatus });
   })
 );
 

@@ -21,6 +21,10 @@ export const mapToSleep = (googleSleep: GoogleSleep, date: string): Sleep => {
     metadata: metadata,
   };
 
+  if (!googleSleep.session.length) {
+    return sleep;
+  }
+
   const sleepSession = googleSleep.session.reduce((acc: SleepSession[], curr) => {
     if (acc.length) {
       const lastItem = acc[acc.length - 1];

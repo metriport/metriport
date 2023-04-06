@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { mean } from "lodash";
+import convert from "convert-units";
 import { debug } from "./log";
 
 interface MinMaxItem {
@@ -7,6 +8,17 @@ interface MinMaxItem {
   max_item: number;
 }
 export class Util {
+  static isTokenExpired(expires_at: number): boolean {
+    const bufferSeconds = 600;
+
+    return (
+      convert(expires_at).from("s").to("ms") -
+        Date.now() +
+        convert(bufferSeconds).from("s").to("ms") <=
+      0
+    );
+  }
+
   static md5(value: string): string {
     return crypto.createHash("md5").update(value).digest("hex");
   }
