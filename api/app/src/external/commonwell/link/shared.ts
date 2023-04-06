@@ -5,16 +5,16 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import { MedicalDataSource } from "../..";
 import {
   Patient,
   PatientData,
   PatientExternalData,
   PatientExternalDataEntry,
 } from "../../../models/medical/patient";
-import { PatientDataCommonwell } from "../patient-shared";
-import { MedicalDataSource } from "../..";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
+import { PatientDataCommonwell } from "../patient-shared";
 
 export const commonwellPersonLinks = (persons: Person[]): Person[] => {
   return persons.flatMap<Person>(filterTruthy);
@@ -77,7 +77,12 @@ export async function autoUpgradeNetworkLinks(
             .catch(err => {
               console.log(`Failed to upgrade link: `, err);
               capture.error(err, {
-                extra: { commonwellPatientId, commonwellPersonId, context: executionContext },
+                extra: {
+                  commonwellPatientId,
+                  commonwellPersonId,
+                  cwReference: commonWell.lastReferenceHeader,
+                  context: executionContext,
+                },
               });
               throw err;
             })

@@ -1,3 +1,4 @@
+import { CommonWellAPI } from "@metriport/commonwell-sdk";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
@@ -28,6 +29,7 @@ export const create = async (
   const cwPatientId = patientCWExternalData.data.externalData.COMMONWELL.patientId;
   const cwPersonId = patientCWExternalData.data.externalData.COMMONWELL.personId;
 
+  let commonWell: CommonWellAPI | undefined;
   try {
     if (cwPersonId === personId) {
       return;
@@ -40,7 +42,7 @@ export const create = async (
     const orgName = organization.data.name;
     const orgId = organization.id;
     const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+    commonWell = makeCommonWellAPI(orgName, oid(orgId));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
     const cwPatient = await commonWell.getPatient(queryMeta, cwPatientId);
@@ -64,7 +66,9 @@ export const create = async (
 
     await autoUpgradeNetworkLinks(commonWell, queryMeta, cwPatientId, personId, context);
   } catch (error) {
-    capture.error(error, { extra: { cwPatientId, personId, context } });
+    capture.error(error, {
+      extra: { cwPatientId, personId, cwReference: commonWell?.lastReferenceHeader, context },
+    });
     throw error;
   }
 };

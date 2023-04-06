@@ -22,7 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "@metriport/api": "^3.0.0",
-    "@metriport/commonwell-sdk": "^4.0.2",
+    "@metriport/commonwell-sdk": "^4.1.0-alpha.0",
     "@sentry/node": "^7.45.0",
     "@sentry/tracing": "^7.45.0",
     "aws-sdk": "^2.1243.0",
