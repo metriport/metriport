@@ -142,7 +142,7 @@ export class Withings extends Provider implements OAuth2 {
         return response.data.body;
       } catch (error) {
         console.log("Error refreshing access token: ", error);
-        throw new Error("Error refreshing access token: ");
+        throw new Error("Error refreshing access token", { cause: error });
       }
     }
 
