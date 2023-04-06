@@ -37,6 +37,7 @@ Let's get into it! 🤘
   account, if you don't have one already.
 </Card>
 
+---
 ## 2. Request API access
 
 Once you've created an account and confirmed your email, you'll be taken to the [dashboard
@@ -48,6 +49,7 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 
 Once the form is submitted, we will review your request promptly and contact you if we need any further information.
 
+---
 ## 3. Generate an API key
 
 After we approve your access request, take the following steps to get your API key:
@@ -77,6 +79,7 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 
 </Tip>
 
+---
 ## 4. Register your Organization
 
 <Info>
@@ -111,6 +114,7 @@ See the [Create Organization endpoint](/medical-api/api-reference/organization/c
 - In the Organization section, click `Create`.
 - Fill in the details and submit the form to register your Organization.
 
+---
 ## 5. Create Facilities and Patients
 
 Once your Organization is registered, you can now create `Facilities` and `Patients`. First,
@@ -152,6 +156,7 @@ See the [Create Patient endpoint](/medical-api/api-reference/patient/create-pati
   creating the Patient.
 </Info>
 
+---
 ## 6. Get Patient Medical Documents 🎉🎉🎉
 
 Now, you're able to access your Patients' medical `Documents`. This involves 2 main steps:
@@ -163,13 +168,16 @@ To query for a Patient's available `Documents`, you can either:
 
 ### Query for Documents using the API
 
-See the [List Documents endpoint](/medical-api/api-reference/document/list-documents) in our API reference.
+1. Start an asynchronous [Document Query](/medical-api/api-reference/document/start-document-query) across HIEs.
+1. [List Documents](/medical-api/api-reference/document/list-documents) to get the available document
+references returned from HIEs.
 
 ### Query for Documents using the Dashboard
 
 - On the `Medical API` page, in the Facilities section, click `Patients` for the Facility where the Patient is located.
 - In the desired Patient's row, click `Documents`.
 - You'll see all available Documents in the side panel.
+- To update the list of documents from HIEs, click on `Query Documents`.
 
 <Info>Not all Patients will have available Documents, but they should ~95% of the time.</Info>
 

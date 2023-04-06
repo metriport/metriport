@@ -14,6 +14,7 @@ import {
 import { PatientLink, PatientLinkSearchResp, Person, PersonSearchResp } from "../models/person";
 
 export interface CommonWellAPI {
+  get lastReferenceHeader(): string | undefined;
   createOrg(meta: RequestMetadata, organization: Organization): Promise<Organization>;
   updateOrg(meta: RequestMetadata, organization: Organization, id: string): Promise<Organization>;
   getAllOrgs(
