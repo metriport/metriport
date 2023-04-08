@@ -10,9 +10,11 @@ on:
       - "api/lambdas/**"
       - "infra/**"
       - "package.json"
+      - "package-lock.json"
       - "commitlint.config.js"
       - ".releaserc.yaml"
-      - ".github/workflows/**"
+      - ".github/workflows/deploy-staging*"
+      - ".github/workflows/_reusable*"
   workflow_dispatch: # manually executed by a user
 
 jobs:

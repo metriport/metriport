@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "api/app/**"
+  merge_group:
   workflow_dispatch:
 
 jobs:

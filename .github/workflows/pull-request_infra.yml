@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "infra/**"
+  merge_group:
   workflow_dispatch:
 
 jobs:
