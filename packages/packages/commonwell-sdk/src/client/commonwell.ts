@@ -122,9 +122,10 @@ export class CommonWell implements CommonWellAPI {
     };
   }
   private axiosErrorResponse(_this: CommonWell) {
-    return (response: AxiosResponse): AxiosResponse => {
-      _this && _this.postRequest(response);
-      return response;
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (error: any): AxiosResponse => {
+      _this && _this.postRequest(error.response);
+      throw error;
     };
   }
 
