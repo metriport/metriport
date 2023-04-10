@@ -13,6 +13,7 @@ export type EnvConfig = {
   secretsStackName: string;
   environmentType: EnvType;
   region: string;
+  sandboxRegion?: string; // Only used for prod
   secretReplicaRegion?: string;
   host: string; // DNS Zone
   domain: string; // Base domain
