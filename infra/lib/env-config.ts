@@ -14,7 +14,6 @@ export type EnvConfig = {
   environmentType: EnvType;
   region: string;
   sandboxRegion?: string; // Only used for prod
-  sandboxVpcName?: string; // Only used for prod
   secretReplicaRegion?: string;
   host: string; // DNS Zone
   domain: string; // Base domain
