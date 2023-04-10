@@ -47,10 +47,7 @@ export class APIStack extends Stack {
       },
     });
 
-    const privateZone = new r53.PrivateHostedZone(this, "PrivateZone", {
-      vpc: this.vpc,
-      zoneName: props.config.host,
-    });
+    const privateZone = createPrivateZone(this, props);
     const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
       domainName: props.config.host,
     });
@@ -689,4 +686,22 @@ export class APIStack extends Stack {
   private isProd(props: APIStackProps): boolean {
     return isProd(props.config);
   }
+}
+
+function createPrivateZone(stack: APIStack, props: APIStackProps): r53.IPrivateHostedZone {
+  const zone = new r53.PrivateHostedZone(stack, "PrivateZone", {
+    vpc: stack.vpc,
+    zoneName: props.config.host,
+  });
+  // When creating prod's zone, we need to add a reference to the sandbox's vpc because some prod
+  // resources need to access sandbox's.
+  if (isProd(props.config) && props.config.sandboxRegion) {
+    const sandboxVpc = ec2.Vpc.fromLookup(stack, "APIVpc", {
+      vpcName: "APIVpc",
+      region: props.config.sandboxRegion,
+    });
+    if (sandboxVpc) zone.addVpc(sandboxVpc);
+    else throw new Error("Sandbox VPC not found");
+  }
+  return zone;
 }
