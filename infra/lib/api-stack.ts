@@ -696,8 +696,8 @@ function createPrivateZone(stack: APIStack, props: APIStackProps): r53.IPrivateH
   // When creating prod's zone, we need to add a reference to the sandbox's vpc because some prod
   // resources need to access sandbox's.
   if (isProd(props.config) && props.config.sandboxRegion) {
-    const sandboxVpc = ec2.Vpc.fromLookup(stack, "APIVpc", {
-      vpcName: "APIVpc",
+    const sandboxVpc = ec2.Vpc.fromLookup(stack, "APIVpcSandbox", {
+      vpcName: props.config.sandboxVpcName,
       region: props.config.sandboxRegion,
     });
     if (sandboxVpc) zone.addVpc(sandboxVpc);
