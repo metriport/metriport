@@ -10,6 +10,7 @@ export type DocumentWithLocation = Required<Pick<Document, "id">> &
   Omit<DocumentContent, "location"> &
   Required<Pick<DocumentContent, "location">> & {
     fileName: string;
+    raw?: unknown;
   };
 
 export function toDomain(patient: Patient) {
@@ -29,6 +30,7 @@ export function toDomain(patient: Patient) {
         size: doc.size,
         type: doc.type,
       },
+      raw: doc.raw,
     };
   };
 }

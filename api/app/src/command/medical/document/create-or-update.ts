@@ -35,6 +35,7 @@ export async function createOrUpdate(
                 ...existing.data,
                 ...doc.data,
               },
+              raw: doc.raw,
             },
             { transaction }
           );
@@ -47,6 +48,7 @@ export async function createOrUpdate(
               source: MedicalDataSource.COMMONWELL,
               externalId: doc.externalId,
               data: doc.data,
+              raw: doc.raw,
             },
             { transaction }
           );

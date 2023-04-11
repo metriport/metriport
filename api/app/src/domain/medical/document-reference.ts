@@ -1,5 +1,5 @@
 import { MedicalDataSource } from "../../external";
-import { IBaseModel, IBaseModelCreate } from "../../models/_default";
+import { BaseDomain } from "../base-domain";
 import { CodeableConcept } from "./codeable-concept";
 
 export type ExternalDocumentReference = {
@@ -16,12 +16,13 @@ export type ExternalDocumentReference = {
 export const documentQueryStatus = ["processing", "completed"] as const;
 export type DocumentQueryStatus = (typeof documentQueryStatus)[number];
 
-export interface DocumentReferenceCreate extends Omit<IBaseModelCreate, "id"> {
+export interface DocumentReferenceCreate {
   cxId: string;
   patientId: string;
   source: MedicalDataSource;
   externalId: string;
   data: ExternalDocumentReference;
+  raw?: unknown;
 }
 
-export interface DocumentReference extends IBaseModel, DocumentReferenceCreate {}
+export interface DocumentReference extends BaseDomain, DocumentReferenceCreate {}
