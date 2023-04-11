@@ -7,25 +7,16 @@ import {
   Model,
   Sequelize,
 } from "sequelize";
+import { BaseDomain } from "../domain/base-domain";
 import VersionMismatchError from "../errors/version-mismatch";
 import { Util } from "../shared/util";
 
 export type ModelSetup = (sequelize: Sequelize) => void;
 
-export interface IBaseModelCreate {
-  id: string;
-}
-
-export interface IBaseModel extends IBaseModelCreate {
-  createdAt: Date;
-  updatedAt: Date;
-  eTag: string;
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export abstract class BaseModel<T extends Model<any, any>>
   extends Model<InferAttributes<T>, InferCreationAttributes<T>>
-  implements IBaseModel
+  implements BaseDomain
 {
   declare id: string;
   declare createdAt: CreationOptional<Date>;
@@ -74,7 +65,7 @@ export abstract class BaseModel<T extends Model<any, any>>
 }
 
 export function validateVersionForUpdate(
-  entity: Pick<IBaseModel, "id" | "eTag">,
+  entity: Pick<BaseDomain, "id" | "eTag">,
   eTag: string | undefined
 ) {
   if (eTag != null && eTag !== entity.eTag) {

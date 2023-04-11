@@ -78,23 +78,22 @@ async function internalGetDocuments({
   }
 
   const documents: DocumentWithLocation[] = docs.entry
-    ? docs.entry
-        .flatMap(d =>
-          d.id && d.content && d.content.location
-            ? { id: d.id, content: { location: d.content.location, ...d.content } }
-            : []
-        )
-        .map(d => ({
-          id: d.id,
-          fileName: getFileName(patient, d),
-          description: d.content.description,
-          type: d.content.type,
-          status: d.content.status,
-          location: d.content.location,
-          indexed: d.content.indexed,
-          mimeType: d.content.mimeType,
-          size: d.content.size, // bytes
-        }))
+    ? docs.entry.flatMap(d =>
+        d.content?.masterIdentifier?.value && d.content?.location
+          ? {
+              id: d.content.masterIdentifier.value,
+              fileName: getFileName(patient, d),
+              description: d.content.description,
+              type: d.content.type,
+              status: d.content.status,
+              location: d.content.location,
+              indexed: d.content.indexed,
+              mimeType: d.content.mimeType,
+              size: d.content.size, // bytes
+              raw: d,
+            }
+          : []
+      )
     : [];
   return documents;
 }

@@ -10,7 +10,7 @@ import { genderSchema } from "./demographics";
 // https://specification.commonwellalliance.org/services/rest-api-reference#8610-documentreference
 
 // TODO can this be an enum?
-// Bundle, DocumentReference, Organization, Practitioner
+// Bundle, DocumentReference, Organization, Practitioner, OperationOutcome
 const resourceTypeSchema = z.string().optional();
 
 const identifierSchema = z.object({
