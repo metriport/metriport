@@ -1,5 +1,6 @@
 import { CreationOptional, DataTypes, Sequelize } from "sequelize";
-import { IBaseModelCreate, IBaseModel, ModelSetup, BaseModel } from "../_default";
+import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
+import { BaseModel, ModelSetup } from "../_default";
 import { Address } from "./address";
 
 export type FacilityData = {
@@ -10,12 +11,12 @@ export type FacilityData = {
   address: Address;
 };
 
-export interface FacilityCreate extends IBaseModelCreate {
+export interface FacilityCreate extends BaseDomainCreate {
   cxId: string;
   facilityNumber: number;
   data: FacilityData;
 }
-export interface Facility extends IBaseModel, FacilityCreate {}
+export interface Facility extends BaseDomain, FacilityCreate {}
 
 export class FacilityModel extends BaseModel<FacilityModel> implements Facility {
   static NAME = "facility";

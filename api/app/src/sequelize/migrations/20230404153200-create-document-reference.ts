@@ -43,6 +43,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.dropTable("document-reference", { transaction });
+    await queryInterface.dropTable("document_reference", { transaction });
   });
 };

@@ -1,8 +1,9 @@
 import { DataTypes, Sequelize } from "sequelize";
+import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
 import { DocumentQueryStatus } from "../../domain/medical/document-reference";
 import { MedicalDataSource } from "../../external";
 import { USState } from "../../shared/geographic-locations";
-import { BaseModel, IBaseModel, IBaseModelCreate, ModelSetup } from "../_default";
+import { BaseModel, ModelSetup } from "../_default";
 import { Address } from "./address";
 import { Contact } from "./contact";
 
@@ -61,14 +62,14 @@ export type PatientData = {
   externalData?: PatientExternalData;
 };
 
-export interface PatientCreate extends IBaseModelCreate {
+export interface PatientCreate extends BaseDomainCreate {
   cxId: string;
   facilityIds: string[];
   patientNumber: number;
   data: PatientData;
 }
 
-export interface Patient extends IBaseModel, PatientCreate {}
+export interface Patient extends BaseDomain, PatientCreate {}
 
 export class PatientModel extends BaseModel<PatientModel> implements Patient {
   static NAME = "patient";
