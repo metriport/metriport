@@ -22,8 +22,8 @@ import { DocumentWithFilename } from "./shared";
 // NEED TO UPDATE THIS
 const s3client = new AWS.S3({
   region: "us-east-2",
-  accessKeyId: "AKIAWX27OVJFLAZPUK56",
-  secretAccessKey: "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",
+  accessKeyId: "***************",
+  secretAccessKey: "***************",
 });
 
 export async function getDocuments({
