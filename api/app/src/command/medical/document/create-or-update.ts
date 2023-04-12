@@ -4,7 +4,6 @@ import {
   DocumentReference,
   DocumentReferenceCreate,
 } from "../../../domain/medical/document-reference";
-import { MedicalDataSource } from "../../../external";
 import { DocumentReferenceModel } from "../../../models/medical/document-reference";
 import { Patient } from "../../../models/medical/patient";
 
@@ -45,7 +44,7 @@ export async function createOrUpdate(
               id: uuidv4(),
               cxId: patient.cxId,
               patientId: patient.id,
-              source: MedicalDataSource.COMMONWELL,
+              source: doc.source,
               externalId: doc.externalId,
               data: doc.data,
               raw: doc.raw,

@@ -7,3 +7,7 @@ export interface BaseDomain extends BaseDomainCreate {
   updatedAt: Date;
   eTag: string;
 }
+
+export interface BaseDomainSoftDelete extends BaseDomain {
+  deletedAt?: Date;
+}

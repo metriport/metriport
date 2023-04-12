@@ -1,5 +1,5 @@
 import { MedicalDataSource } from "../../external";
-import { BaseDomain } from "../base-domain";
+import { BaseDomainSoftDelete } from "../base-domain";
 import { CodeableConcept } from "./codeable-concept";
 
 export type ExternalDocumentReference = {
@@ -25,4 +25,4 @@ export interface DocumentReferenceCreate {
   raw?: unknown;
 }
 
-export interface DocumentReference extends BaseDomain, DocumentReferenceCreate {}
+export interface DocumentReference extends BaseDomainSoftDelete, DocumentReferenceCreate {}
