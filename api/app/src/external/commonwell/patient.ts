@@ -23,6 +23,9 @@ import {
   getPatientData,
   PatientDataCommonwell,
 } from "./patient-shared";
+import { Patient as FHIRPatient, Identifier } from "@medplum/fhirtypes";
+import { PersonalIdentifier } from "../../models/medical/patient";
+import { driversLicenseURIs } from "../../shared/oid";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -55,6 +58,52 @@ function getStoreIdsFn(patientId: string, cxId: string): StoreIdsFunction {
     });
   };
 }
+
+export const toFHIR = (patient: Patient): FHIRPatient => {
+  return {
+    resourceType: "Patient",
+    id: patient.id,
+    identifier: convertDriversLicenseToIdentifier(patient.data.personalIdentifiers),
+    name: [
+      {
+        family: patient.data.lastName,
+        given: [patient.data.firstName],
+      },
+    ],
+    telecom: patient.data.contact
+      ? Object.entries(patient.data.contact).map(([key, val]) => {
+          return {
+            // TODO: NEED TO ADDRESS THIS
+            system: key === "email" ? "email" : "phone",
+            value: val,
+          };
+        })
+      : undefined,
+    // TODO: NEED TO ADDRESS THIS
+    gender: patient.data.genderAtBirth === "M" ? "male" : "female",
+    birthDate: patient.data.dob,
+    address: [
+      {
+        line: [patient.data.address.addressLine1],
+        city: patient.data.address.city,
+        state: patient.data.address.state,
+        postalCode: patient.data.address.zip,
+        country: patient.data.address.country,
+      },
+    ],
+  };
+};
+
+const convertDriversLicenseToIdentifier = (
+  personalIdentifiers: PersonalIdentifier[]
+): Identifier[] => {
+  return personalIdentifiers.map(identifier => {
+    return {
+      system: driversLicenseURIs[identifier.state],
+      value: identifier.value,
+    };
+  });
+};
 
 export async function create(patient: Patient, facilityId: string): Promise<void> {
   try {

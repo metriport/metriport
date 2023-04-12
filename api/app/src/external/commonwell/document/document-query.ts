@@ -1,14 +1,30 @@
-import { CommonwellError, DocumentQueryResponse } from "@metriport/commonwell-sdk";
-import { createOrUpdate } from "../../../command/medical/document/create-or-update";
+import { CommonwellError, DocumentQueryResponse, Document } from "@metriport/commonwell-sdk";
+import stream from "stream";
+import * as AWS from "aws-sdk";
 import { updateDocQueryStatus } from "../../../command/medical/document/document-query";
-import { DocumentReference } from "../../../domain/medical/document-reference";
 import { Patient } from "../../../models/medical/patient";
+import { Organization } from "../../../models/medical/organization";
+import { Facility } from "../../../models/medical/facility";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
-import { DocumentWithLocation, getFileName, toDomain } from "./shared";
+import { downloadDocument } from "./document-download";
+import { addOrgToFHIRServer } from "../../fhir/organization/add-organization";
+import { toFHIR as toFHIROrg } from "../organization";
+import { addPatientToFHIRServer } from "../../fhir/patient/add-patient";
+import { toFHIR as toFHIRPatient } from "../patient";
+import { addDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
+import { toFHIR as toFHIRDocRef } from "./shared";
+import { DocumentWithFilename } from "./shared";
+
+// NEED TO UPDATE THIS
+const s3client = new AWS.S3({
+  region: "us-east-2",
+  accessKeyId: "AKIAWX27OVJFLAZPUK56",
+  secretAccessKey: "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",
+});
 
 export async function getDocuments({
   patient,
@@ -16,13 +32,19 @@ export async function getDocuments({
 }: {
   patient: Patient;
   facilityId: string;
-}): Promise<DocumentReference[]> {
+}): Promise<void> {
   try {
-    const cwDocuments = await internalGetDocuments({ patient, facilityId });
+    const { organization, facility } = await getPatientData(patient, facilityId);
 
-    const documents = cwDocuments.map(toDomain(patient));
+    const cwDocuments = await internalGetDocuments({ patient, organization, facility });
 
-    return await createOrUpdate(patient, documents);
+    const docsS3Refs = await dowloadAnduploadDocsToS3({
+      patient,
+      facilityId,
+      documents: cwDocuments,
+    });
+
+    return await sendToFHIR({ organization, patient, docs: docsS3Refs });
   } catch (err) {
     console.log(`Error: `, err);
     capture.error(err, {
@@ -45,17 +67,18 @@ export async function getDocuments({
 
 async function internalGetDocuments({
   patient,
-  facilityId,
+  organization,
+  facility,
 }: {
   patient: Patient;
-  facilityId: string;
-}): Promise<DocumentWithLocation[]> {
+  organization: Organization;
+  facility: Facility;
+}): Promise<Document[]> {
   const { debug } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
 
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return [];
   const cwData = externalData as PatientDataCommonwell;
-  const { organization, facility } = await getPatientData(patient, facilityId);
 
   const orgName = organization.data.name;
   const orgId = organization.id;
@@ -77,24 +100,102 @@ async function internalGetDocuments({
     throw err;
   }
 
-  const documents: DocumentWithLocation[] = docs.entry
-    ? docs.entry
-        .flatMap(d =>
-          d.id && d.content && d.content.location
-            ? { id: d.id, content: { location: d.content.location, ...d.content } }
-            : []
-        )
-        .map(d => ({
-          id: d.id,
-          fileName: getFileName(patient, d),
-          description: d.content.description,
-          type: d.content.type,
-          status: d.content.status,
-          location: d.content.location,
-          indexed: d.content.indexed,
-          mimeType: d.content.mimeType,
-          size: d.content.size, // bytes
-        }))
+  const documents: Document[] = docs.entry
+    ? docs.entry.flatMap(d =>
+        d.id && d.content && d.content.location
+          ? { id: d.id, content: { location: d.content.location, ...d.content } }
+          : []
+      )
     : [];
   return documents;
 }
+
+async function dowloadAnduploadDocsToS3({
+  patient,
+  facilityId,
+  documents,
+}: {
+  patient: Patient;
+  facilityId: string;
+  documents: Document[];
+}): Promise<DocumentWithFilename[]> {
+  const uploadStream = (key: string) => {
+    const pass = new stream.PassThrough();
+    const removePeriods = key.split(".").join("");
+
+    return {
+      writeStream: pass,
+      promise: s3client
+        // JORGE-TODO: CHANGE TO ACTUALLY BUCKET NAME
+        .upload({ Bucket: "testing-documents-download", Key: removePeriods, Body: pass })
+        .promise(),
+    };
+  };
+
+  const s3Refs = await Promise.allSettled(
+    documents.map(async doc => {
+      if (doc.content?.masterIdentifier?.value) {
+        // TEMP KEY
+        const { writeStream, promise } = uploadStream(doc.content?.masterIdentifier?.value);
+
+        await downloadDocument({
+          cxId: patient.cxId,
+          patientId: patient.id,
+          facilityId: facilityId,
+          location: doc.content?.location ? doc.content.location : "",
+          stream: writeStream,
+        });
+
+        const data = await promise;
+
+        return {
+          ...doc,
+          content: {
+            ...doc.content,
+            location: data.Location,
+          },
+          fileName: data.Key,
+        };
+      }
+
+      return undefined;
+    })
+  );
+
+  const docsNewLocation: DocumentWithFilename[] = s3Refs.flatMap(ref =>
+    ref.status === "fulfilled" && ref.value ? ref.value : []
+  );
+
+  s3Refs.forEach(ref => {
+    if (ref.status === "rejected") {
+      capture.error(ref.reason, {
+        extra: {
+          context: `s3.documentUpload`,
+        },
+      });
+    }
+  });
+
+  return docsNewLocation;
+}
+
+const sendToFHIR = async ({
+  organization,
+  patient,
+  docs,
+}: {
+  organization: Organization;
+  patient: Patient;
+  docs: DocumentWithFilename[];
+}) => {
+  const FHIROrg = toFHIROrg(organization);
+  await addOrgToFHIRServer(FHIROrg);
+
+  const FHIRPatient = toFHIRPatient(patient);
+  await addPatientToFHIRServer(FHIRPatient);
+
+  docs.forEach(async doc => {
+    const FHIRDocRef = toFHIRDocRef(doc, organization, patient);
+    await addDocumentToFHIRServer(FHIRDocRef);
+  });
+};

@@ -41,3 +41,17 @@ export async function downloadDocument({
     throw err;
   }
 }
+//  WIP
+// const fetchWithRetry = async (url: string, options: RequestInit): Promise<Response> => {
+//   const maxRetries = 3;
+//   const retryDelay = 200;
+//   let response: Response | undefined = undefined;
+//   for (let retry = 0; retry < maxRetries; retry++) {
+//     response = (await this.#fetch(url, options)) as Response;
+//     if (response.status < 500) {
+//       return response;
+//     }
+//     await new Promise(resolve => setTimeout(resolve, retryDelay));
+//   }
+//   return response as Response;
+// };

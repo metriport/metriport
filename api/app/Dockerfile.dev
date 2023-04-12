@@ -1,4 +1,4 @@
-FROM node:16.16
+FROM node:18
 WORKDIR /usr/src/app
 COPY package*.json ./
 COPY tsconfig.json ./

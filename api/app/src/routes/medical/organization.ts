@@ -21,7 +21,7 @@ const router = Router();
 /** ---------------------------------------------------------------------------
  * POST /organization
  *
- * Creates a new organization at Metroport and HIEs.
+ * Creates a new organization at Metriport and HIEs.
  *
  * @param req.body The data to create the organization.
  * @returns The newly created organization.
