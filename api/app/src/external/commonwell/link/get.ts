@@ -65,9 +65,15 @@ export const findCurrentLink = async (
   const personId = patientCWExternalData.personId;
   if (!personId) return;
 
+  const patientCWId = patientCWExternalData.patientId;
+  const captureExtra = {
+    patientId: patient.id,
+    cwPatientId: patientCWId,
+    personId,
+    cwReference: commonWell.lastReferenceHeader,
+    context: `cw.findCurrentLink`,
+  };
   try {
-    const patientCWId = patientCWExternalData.patientId;
-
     let patientLinkToPerson: PatientLinkResp;
     try {
       patientLinkToPerson = await commonWell.getPatientLink(queryMeta, personId, patientCWId);
@@ -77,14 +83,7 @@ export const findCurrentLink = async (
       const msg =
         "Got 404 when trying to query person's patient links @ CW - Removing person ID from DB.";
       console.log(msg);
-      capture.message(msg, {
-        extra: {
-          patientId: patient.id,
-          cwPatientId: patientCWId,
-          personId,
-          context: `cw.findCurrentLink`,
-        },
-      });
+      capture.message(msg, { extra: captureExtra });
       await setCommonwellId({
         patientId: patient.id,
         cxId: patient.cxId,
@@ -130,6 +129,7 @@ export const findCurrentLink = async (
     const msg = `Failure retrieving link`;
     console.log(`${msg} - for person id:`, personId);
     console.log(msg, error);
+    capture.error(error, { extra: captureExtra });
     throw new Error(msg);
   }
 };

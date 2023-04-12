@@ -1,5 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { IBaseModelCreate, IBaseModel, ModelSetup, BaseModel } from "../_default";
+import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
+import { BaseModel, ModelSetup } from "../_default";
 import { Address } from "./address";
 
 export enum OrgType {
@@ -17,13 +18,13 @@ export type OrganizationData = {
   location: Address;
 };
 
-export interface OrganizationCreate extends IBaseModelCreate {
+export interface OrganizationCreate extends BaseDomainCreate {
   cxId: string;
   organizationNumber: number;
   data: OrganizationData;
 }
 
-export interface Organization extends IBaseModel, OrganizationCreate {}
+export interface Organization extends BaseDomain, OrganizationCreate {}
 
 export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {
   static NAME = "organization";

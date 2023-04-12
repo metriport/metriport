@@ -106,6 +106,7 @@ const convertDriversLicenseToIdentifier = (
 };
 
 export async function create(patient: Patient, facilityId: string): Promise<void> {
+  let commonWell: CommonWellAPI | undefined;
   try {
     const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
@@ -116,7 +117,7 @@ export async function create(patient: Patient, facilityId: string): Promise<void
 
     const storeIds = getStoreIdsFn(patient.id, patient.cxId);
 
-    const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+    commonWell = makeCommonWellAPI(orgName, oid(orgId));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
     const commonwellPatient = patientToCommonwell({ patient, orgName, orgId });
     debug(`Registering this Patient: ${JSON.stringify(commonwellPatient, undefined, 2)}`);
@@ -139,13 +140,19 @@ export async function create(patient: Patient, facilityId: string): Promise<void
   } catch (err) {
     console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
     capture.error(err, {
-      extra: { facilityId, patientId: patient.id, context: createContext },
+      extra: {
+        facilityId,
+        patientId: patient.id,
+        cwReference: commonWell?.lastReferenceHeader,
+        context: createContext,
+      },
     });
     throw err;
   }
 }
 
 export async function update(patient: Patient, facilityId: string): Promise<void> {
+  let commonWell: CommonWellAPI | undefined;
   try {
     const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
 
@@ -156,7 +163,8 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       });
       return create(patient, facilityId);
     }
-    const { commonWell, queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;
+    const { queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;
+    commonWell = updateData.commonWell;
 
     const { patientRefLink } = await updatePatient({
       commonWell,
@@ -196,7 +204,12 @@ export async function update(patient: Patient, facilityId: string): Promise<void
         const subject = "Got 404 when trying to update person @ CW, trying to find/create it";
         log(`${subject} - CW Person ID ${personId}`);
         capture.message(subject, {
-          extra: { commonwellPatientId, personId, context: updateContext },
+          extra: {
+            commonwellPatientId,
+            personId,
+            cwReference: commonWell.lastReferenceHeader,
+            context: updateContext,
+          },
         });
         await findOrCreatePersonAndLink({
           commonWell,
@@ -257,7 +270,12 @@ export async function update(patient: Patient, facilityId: string): Promise<void
   } catch (err) {
     console.error(`Failed to update patient ${patient.id} @ CW: `, err);
     capture.error(err, {
-      extra: { facilityId, patientId: patient.id, context: updateContext },
+      extra: {
+        facilityId,
+        patientId: patient.id,
+        cwReference: commonWell?.lastReferenceHeader,
+        context: updateContext,
+      },
     });
     throw err;
   }
@@ -461,7 +479,9 @@ async function getLinkInfo({
   const strongIds = getMatchingStrongIds(person, commonwellPatient);
   const hasLink = Boolean(linkToPatient && linkToPatient.assuranceLevel);
   const isLinkLola3Plus = linkToPatient?.assuranceLevel
-    ? [LOLA.level_3, LOLA.level_4].map(toString).includes(linkToPatient.assuranceLevel)
+    ? [LOLA.level_3, LOLA.level_4]
+        .map(level => level.toString())
+        .includes(linkToPatient.assuranceLevel)
     : false;
   return { hasLink, isLinkLola3Plus, strongIds };
 }

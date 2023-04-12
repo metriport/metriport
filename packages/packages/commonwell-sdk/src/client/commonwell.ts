@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 import * as httpStatus from "http-status";
 import { Agent } from "https";
 import * as stream from "stream";
@@ -68,6 +68,7 @@ export class CommonWell implements CommonWellAPI {
   private orgName: string;
   private _oid: string;
   private httpsAgent: Agent;
+  private _lastReferenceHeader: string | undefined;
 
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
@@ -91,12 +92,41 @@ export class CommonWell implements CommonWellAPI {
         apiMode === APIMode.production ? CommonWell.productionUrl : CommonWell.integrationUrl,
       httpsAgent: this.httpsAgent,
     });
+    this.api.interceptors.response.use(
+      this.axiosSuccessfulResponse(this),
+      this.axiosErrorResponse(this)
+    );
     this.orgName = orgName;
     this._oid = oid;
   }
 
   get oid() {
     return this._oid;
+  }
+  /**
+   * Returns the `CW-Reference` header from the last request.
+   */
+  get lastReferenceHeader(): string | undefined {
+    return this._lastReferenceHeader;
+  }
+
+  // Being extra safe with these bc a failure here fails the actual request
+  private postRequest(response: AxiosResponse): void {
+    this._lastReferenceHeader =
+      response && response.headers ? response.headers["cw-reference"] : undefined;
+  }
+  private axiosSuccessfulResponse(_this: CommonWell) {
+    return (response: AxiosResponse): AxiosResponse => {
+      _this && _this.postRequest(response);
+      return response;
+    };
+  }
+  private axiosErrorResponse(_this: CommonWell) {
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (error: any): AxiosResponse => {
+      _this && _this.postRequest(error.response);
+      throw error;
+    };
   }
 
   // TODO: #322 handle errors in API calls as per
@@ -718,8 +748,6 @@ export class CommonWell implements CommonWellAPI {
     await this.api.delete(`${CommonWell.ORG_ENDPOINT}/${this.oid}/patient/${id}/`, {
       headers,
     });
-
-    return;
   }
 
   //--------------------------------------------------------------------------------------------

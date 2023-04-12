@@ -88,11 +88,11 @@ export const toFHIR = (org: Organization): FHIROrganization => {
 export const create = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW create - M orgId ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
+  const commonWell = makeCommonWellAPI(
+    Config.getMetriportOrgName(),
+    Config.getMemberManagementOID()
+  );
   try {
-    const commonWell = makeCommonWellAPI(
-      Config.getMetriportOrgName(),
-      Config.getMemberManagementOID()
-    );
     const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
     debug(`resp respCreate: ${JSON.stringify(respCreate, null, 2)}`);
     const respAddCert = await commonWell.addCertificateToOrg(
@@ -105,7 +105,12 @@ export const create = async (org: Organization): Promise<void> => {
     const msg = `Failure creating Org @ CW`;
     log(msg, error);
     capture.error(error, {
-      extra: { orgId: org.id, context: `cw.org.create`, payload: cwOrg },
+      extra: {
+        orgId: org.id,
+        cwReference: commonWell.lastReferenceHeader,
+        context: `cw.org.create`,
+        payload: cwOrg,
+      },
     });
     throw error;
   }
@@ -114,29 +119,30 @@ export const create = async (org: Organization): Promise<void> => {
 export const update = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW update - M orgId ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
+  const commonWell = makeCommonWellAPI(
+    Config.getMetriportOrgName(),
+    Config.getMemberManagementOID()
+  );
   try {
-    const commonWell = makeCommonWellAPI(
-      Config.getMetriportOrgName(),
-      Config.getMemberManagementOID()
-    );
     const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
     debug(`resp respUpdate: ${JSON.stringify(respUpdate, null, 2)}`);
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
+    const extra = {
+      orgId: org.id,
+      cwReference: commonWell.lastReferenceHeader,
+      context: `cw.org.update`,
+    };
     // Try to create the org if it doesn't exist
     if (error.response?.status === 404) {
-      capture.message("Got 404 when updating Org @ CW, creating it", {
-        extra: { orgId: org.id, context: `cw.org.update` },
-      });
+      capture.message("Got 404 when updating Org @ CW, creating it", { extra });
       return create(org);
     }
     // General error handling
     const msg = `Failure updating Org @ CW`;
     log(msg, error);
-    capture.error(error, {
-      extra: { orgId: org.id, context: `cw.org.update`, payload: cwOrg },
-    });
+    capture.error(error, { extra: { ...extra, payload: cwOrg } });
     throw error;
   }
 };
