@@ -1,7 +1,9 @@
 import { CommonwellError, DocumentQueryResponse } from "@metriport/commonwell-sdk";
+import { MedicalDataSource } from "../..";
 import { createOrUpdate } from "../../../command/medical/document/create-or-update";
 import { updateDocQueryStatus } from "../../../command/medical/document/document-query";
 import { DocumentReference } from "../../../domain/medical/document-reference";
+import { DocumentReferenceModel } from "../../../models/medical/document-reference";
 import { Patient } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
@@ -21,6 +23,16 @@ export async function getDocuments({
     const cwDocuments = await internalGetDocuments({ patient, facilityId });
 
     const documents = cwDocuments.map(toDomain(patient));
+
+    // Commonwell does not consistently return the same ID for a given document, so we don't
+    // update CW's entries, we replace them
+    await DocumentReferenceModel.destroy({
+      where: {
+        cxId: patient.cxId,
+        patientId: patient.id,
+        source: MedicalDataSource.COMMONWELL,
+      },
+    });
 
     return await createOrUpdate(patient, documents);
   } catch (err) {

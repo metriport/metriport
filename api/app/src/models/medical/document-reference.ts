@@ -13,6 +13,7 @@ export class DocumentReferenceModel
   implements DocumentReference
 {
   static NAME = "document_reference";
+  declare deletedAt?: Date;
   declare cxId: string;
   declare patientId: string;
   declare source: MedicalDataSource;
@@ -24,6 +25,9 @@ export class DocumentReferenceModel
     DocumentReferenceModel.init(
       {
         ...BaseModel.attributes(),
+        deletedAt: {
+          type: DataTypes.DATE(6),
+        },
         cxId: {
           type: DataTypes.UUID,
         },
@@ -46,6 +50,8 @@ export class DocumentReferenceModel
       {
         ...BaseModel.modelOptions(sequelize),
         tableName: DocumentReferenceModel.NAME,
+        paranoid: true,
+        deletedAt: "deleted_at",
       }
     );
   };
