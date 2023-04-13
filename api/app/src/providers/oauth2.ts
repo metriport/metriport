@@ -138,7 +138,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
         return accessToken.token;
       } catch (error) {
         console.log("Error refreshing access token: ", error);
-        throw new Error("Error refreshing access token: ");
+        throw new Error("Error refreshing access token", { cause: error });
       }
     }
 

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "utils/**"
+  merge_group:
   workflow_dispatch:
 
 jobs:

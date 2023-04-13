@@ -49,6 +49,9 @@ export class CommonWellMock implements CommonWellAPI {
   get oid() {
     return this._oid;
   }
+  get lastReferenceHeader() {
+    return undefined;
+  }
 
   //--------------------------------------------------------------------------------------------
   // Org Management

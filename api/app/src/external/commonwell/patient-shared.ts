@@ -66,7 +66,12 @@ export async function findOrCreatePerson({
       const message = idsToAlertMessage(commonwellPatientId, personIds);
       log(`${subject}: ${message}`);
       capture.message(subject, {
-        extra: { commonwellPatientId, personIds, context: `cw.findOrCreatePerson.no.strongIds` },
+        extra: {
+          commonwellPatientId,
+          personIds,
+          cwReference: commonWell.lastReferenceHeader,
+          context: `cw.findOrCreatePerson.no.strongIds`,
+        },
       });
       return undefined;
     }

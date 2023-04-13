@@ -32,6 +32,7 @@ export async function downloadDocument({
     capture.error(err, {
       extra: {
         context: `cw.retrieveDocument`,
+        cwReference: commonWell.lastReferenceHeader,
         ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
       },
     });

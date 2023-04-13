@@ -83,6 +83,7 @@ async function internalGetDocuments({
     capture.error(err, {
       extra: {
         context: `cw.queryDocuments`,
+        cwReference: commonWell.lastReferenceHeader,
         ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
       },
     });

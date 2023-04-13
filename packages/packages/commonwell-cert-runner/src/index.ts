@@ -44,11 +44,11 @@ COMMONWELL_ORG_NAME=Metriport
 COMMONWELL_OID=2.16.840.1.113883.3.9621
 COMMONWELL_SANDBOX_ORG_NAME=Metriport-OrgA-1617
 COMMONWELL_SANDBOX_OID=2.16.840.1.113883.3.3330.8889429.1617.1
-COMMONWELL_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+COMMONWELL_ORG_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
 fkadsjhfhdsakjfhdsakhfkdsahfadshfkhdsfhdsakfdhafkashdfkjhalsdkjf
 -----END PRIVATE KEY-----
 "
-COMMONWELL_CERTIFICATE="-----BEGIN CERTIFICATE-----
+COMMONWELL_ORG_CERTIFICATE="-----BEGIN CERTIFICATE-----
 asdlkfjladsjflkjdaslkfjdsafjadslfjasdlkfjdsaklfjdkalfjdslfjalkjs
 -----END CERTIFICATE-----
 "
@@ -65,14 +65,14 @@ async function main() {
   dotenv.config({ path: options.envFile });
 
   // Main Account Org
-  const commonwellPrivateKey = getEnvOrFail("COMMONWELL_PRIVATE_KEY");
-  const commonwellCert = getEnvOrFail("COMMONWELL_CERTIFICATE");
+  const commonwellOrgPrivateKey = getEnvOrFail("COMMONWELL_ORG_PRIVATE_KEY");
+  const commonwellOrgCert = getEnvOrFail("COMMONWELL_ORG_CERTIFICATE");
   const commonwellOID = getEnvOrFail("COMMONWELL_OID");
   const commonwellOrgName = getEnvOrFail("COMMONWELL_ORG_NAME");
 
   const commonWell = new CommonWell(
-    commonwellCert,
-    commonwellPrivateKey,
+    commonwellOrgCert,
+    commonwellOrgPrivateKey,
     commonwellOrgName,
     commonwellOID,
     APIMode.integration
@@ -83,8 +83,8 @@ async function main() {
   const commonwellSandboxOrgName = getEnvOrFail("COMMONWELL_SANDBOX_ORG_NAME");
 
   const commonWellSandbox = new CommonWell(
-    commonwellCert,
-    commonwellPrivateKey,
+    commonwellOrgCert,
+    commonwellOrgPrivateKey,
     commonwellSandboxOrgName,
     commonwellSandboxOID,
     APIMode.integration
@@ -92,10 +92,12 @@ async function main() {
 
   // Member Account Org
   const commonwellMemberOID = getEnvOrFail("COMMONWELL_MEMBER_OID");
+  const commonwellMemberPrivateKey = getEnvOrFail("COMMONWELL_MEMBER_PRIVATE_KEY");
+  const commonwellMemberCert = getEnvOrFail("COMMONWELL_MEMBER_CERTIFICATE");
 
   const commonWellMember = new CommonWell(
-    commonwellCert,
-    commonwellPrivateKey,
+    commonwellMemberCert,
+    commonwellMemberPrivateKey,
     commonwellOrgName,
     commonwellMemberOID,
     APIMode.integration
@@ -115,6 +117,9 @@ async function main() {
   await linkManagement(commonWell, queryMeta);
   await documentConsumption(commonWell, queryMeta);
   await documentContribution({ memberManagementApi: commonWellMember, api: commonWell, queryMeta });
+
+  // Issue #425Ø
+  // await patientLinksWithStrongIds(commonWell, queryMeta);
 }
 
 main();

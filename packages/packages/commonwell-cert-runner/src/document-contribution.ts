@@ -16,8 +16,8 @@ import axios, { AxiosInstance } from "axios";
 // Document Contribution
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Document-Contribution-(SOAP,-REST).aspx
 
-const commonwellPrivateKey = getEnvOrFail("COMMONWELL_PRIVATE_KEY");
-const commonwellCert = getEnvOrFail("COMMONWELL_CERTIFICATE");
+const commonwellPrivateKey = getEnvOrFail("COMMONWELL_ORG_PRIVATE_KEY");
+const commonwellCert = getEnvOrFail("COMMONWELL_ORG_CERTIFICATE");
 
 const orgIdSuffix = getEnvOrFail("DOCUMENT_CONTRIBUTION_ORGANIZATION_ID");
 
