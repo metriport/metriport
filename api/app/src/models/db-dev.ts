@@ -1,5 +1,4 @@
 import * as AWS from "aws-sdk";
-import { docTableNames } from "./db"; //eslint-disable-line @typescript-eslint/no-unused-vars
 
 /**
  * Creates the token table. Destroys the existing one.

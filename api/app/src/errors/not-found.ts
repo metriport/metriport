@@ -1,10 +1,12 @@
+import httpStatus from "http-status";
 import MetriportError from "./metriport-error";
-import status from "http-status";
+
+const numericStatus = httpStatus.NOT_FOUND;
 
 export default class NotFoundError extends MetriportError {
-  status = status.NOT_FOUND;
-  constructor(message = status[status.NOT_FOUND].toString()) {
+  constructor(message = httpStatus[numericStatus].toString()) {
     super(message);
+    this.status = numericStatus;
     this.name = this.constructor.name;
   }
 }

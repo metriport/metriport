@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 app.use(cors());
 app.set("etag", false);
 
-app.use((req, res, next) => {
+app.use((_req, res, next) => {
   version && res.setHeader("x-metriport-version", version);
   next();
 });
@@ -32,7 +32,7 @@ mountRoutes(app);
 module.exports = app;
 
 // route used for health checks
-app.get("/", (req: Request, res: Response) => {
+app.get("/", (_req: Request, res: Response) => {
   res.status(200).send("OK");
 });
 
