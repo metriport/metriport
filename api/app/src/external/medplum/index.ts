@@ -5,5 +5,4 @@ export * from "./hl7";
 export * from "./jwt";
 export * from "./outcomes";
 export * from "./readablepromise";
-export * from "./storage";
 export * from "./utils";

@@ -40,7 +40,7 @@ export const toFHIR = (
         system: id.system,
         value: id.value,
         // question
-        use: id.use,
+        // use: id.use,
       };
     }),
     date: doc.content?.indexed,

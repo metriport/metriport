@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 /**
  * Decodes a section of a JWT.
  * See: https://tools.ietf.org/html/rfc7519
