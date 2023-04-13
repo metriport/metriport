@@ -26,33 +26,26 @@ export async function downloadDocument({
   const commonWell = makeCommonWellAPI(orgName, oid(orgId));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
-  try {
-    await commonWell.retrieveDocument(queryMeta, location, stream);
-  } catch (err) {
-    capture.error(err, {
-      extra: {
-        context: `cw.retrieveDocument`,
-        cwReference: commonWell.lastReferenceHeader,
-        ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
-      },
-    });
-    if (err instanceof CommonwellError && err.cause?.response?.status === 404) {
-      throw new NotFoundError("Document not found");
+  let retrys = 0;
+  let success = false;
+
+  while (success || retrys < 3) {
+    try {
+      await commonWell.retrieveDocument(queryMeta, location, stream);
+      success = true;
+    } catch (err) {
+      retrys = retrys + 1;
+      capture.error(err, {
+        extra: {
+          context: `cw.retrieveDocument`,
+          cwReference: commonWell.lastReferenceHeader,
+          ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
+        },
+      });
+      if (err instanceof CommonwellError && err.cause?.response?.status === 404) {
+        throw new NotFoundError("Document not found");
+      }
+      throw err;
     }
-    throw err;
   }
 }
-//  WIP
-// const fetchWithRetry = async (url: string, options: RequestInit): Promise<Response> => {
-//   const maxRetries = 3;
-//   const retryDelay = 200;
-//   let response: Response | undefined = undefined;
-//   for (let retry = 0; retry < maxRetries; retry++) {
-//     response = (await this.#fetch(url, options)) as Response;
-//     if (response.status < 500) {
-//       return response;
-//     }
-//     await new Promise(resolve => setTimeout(resolve, retryDelay));
-//   }
-//   return response as Response;
-// };
