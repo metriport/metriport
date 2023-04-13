@@ -29,7 +29,6 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # TODO once this is mature, remove '--debug'
         run: |
           pwd
-          npx semantic-release --debug
+          npx semantic-release

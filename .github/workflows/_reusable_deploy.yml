@@ -12,14 +12,16 @@ on:
         required: true
         type: string
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
+      cdk_stack:
+        required: true
+        type: string
+        description: "the name of the CDK stack we're deploying"
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
       AWS_REGION:
-        required: true
-      CDK_STACK:
         required: true
       INFRA_CONFIG:
         required: true
@@ -34,7 +36,7 @@ jobs:
     # https://serverlessfirst.com/emails/how-to-prevent-concurrent-deployments-of-serverless-stacks-in-github-actions/
     # TODO Consider the solution here: https://github.com/tj-actions/aws-cdk/blob/main/action.yml
     concurrency:
-      group: ${{ format('{0}-{1}', github.job, inputs.deploy_env) }}
+      group: ${{ format('{0}-{1}-{2}', github.job, inputs.cdk_stack, inputs.deploy_env) }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.deploy_env }}
     steps:
@@ -110,7 +112,7 @@ jobs:
         with:
           cdk_action: "diff"
           cdk_version: "2.49.0"
-          cdk_stack: "${{ secrets.CDK_STACK }}"
+          cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -123,7 +125,7 @@ jobs:
         with:
           cdk_action: "deploy --verbose --require-approval never"
           cdk_version: "2.49.0"
-          cdk_stack: "${{ secrets.CDK_STACK }}"
+          cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

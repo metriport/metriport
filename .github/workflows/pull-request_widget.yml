@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "connect-widget/app/**"
+  merge_group:
   workflow_dispatch:
 
 jobs:
