@@ -29,7 +29,7 @@ export async function downloadDocument({
   let retrys = 0;
   let success = false;
 
-  while (success || retrys < 3) {
+  while (!success && retrys < 3) {
     try {
       await commonWell.retrieveDocument(queryMeta, location, stream);
       success = true;
