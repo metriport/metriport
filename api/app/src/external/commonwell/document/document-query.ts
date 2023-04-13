@@ -18,13 +18,9 @@ import { toFHIR as toFHIRPatient } from "../patient";
 import { addDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { toFHIR as toFHIRDocRef } from "./shared";
 import { DocumentWithFilename } from "./shared";
+import { Config } from "../../../shared/config";
 
-// NEED TO UPDATE THIS
-const s3client = new AWS.S3({
-  region: "us-east-2",
-  accessKeyId: "***************",
-  secretAccessKey: "***************",
-});
+const s3client = new AWS.S3();
 
 export async function getDocuments({
   patient,
@@ -37,6 +33,10 @@ export async function getDocuments({
     const { organization, facility } = await getPatientData(patient, facilityId);
 
     const cwDocuments = await internalGetDocuments({ patient, organization, facility });
+
+    if (Config.isSandbox()) {
+      return;
+    }
 
     const docsS3Refs = await dowloadAnduploadDocsToS3({
       patient,

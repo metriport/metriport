@@ -9,6 +9,10 @@ export function isProd(config: EnvConfig): boolean {
   return config.environmentType === EnvType.production;
 }
 
+export function isSandbox(config: EnvConfig): boolean {
+  return config.environmentType === EnvType.sandbox;
+}
+
 export function addErrorAlarmToLambdaFunc(
   construct: Construct,
   lambdaFunc: lambda.SingletonFunction | lambda_node.NodejsFunction,

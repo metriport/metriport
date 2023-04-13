@@ -9,6 +9,7 @@ import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as rds from "aws-cdk-lib/aws-rds";
@@ -19,7 +20,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
 import { getSecrets } from "./secrets";
-import { addErrorAlarmToLambdaFunc, isProd, mbToBytes } from "./util";
+import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -205,6 +206,9 @@ export class APIStack extends Stack {
             ...(props.config.fhirServerUrl && {
               FHIR_SERVER_URL: props.config.fhirServerUrl,
             }),
+            ...(props.config.medicalDocumentsBucketName && {
+              MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+            }),
           },
         },
         memoryLimitMiB: this.isProd(props) ? 4096 : 2048,
@@ -281,6 +285,20 @@ export class APIStack extends Stack {
       integrationHttpMethod: "ANY",
       uri: `http://${apiServerAddress}/{proxy}`,
     });
+
+    //-------------------------------------------
+    // S3 bucket for MAPI Access Requests
+    //-------------------------------------------
+
+    if (!this.isSandbox(props)) {
+      const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
+        bucketName: props.config.medicalDocumentsBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+      });
+      // Access grant for medical documents bucket
+      medicalDocumentsBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    }
 
     //-------------------------------------------
     // API Gateway
@@ -688,5 +706,9 @@ export class APIStack extends Stack {
 
   private isProd(props: APIStackProps): boolean {
     return isProd(props.config);
+  }
+
+  private isSandbox(props: APIStackProps): boolean {
+    return isSandbox(props.config);
   }
 }
