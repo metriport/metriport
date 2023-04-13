@@ -41,7 +41,7 @@ After installation, create a `.env` file defining the following variables:
 - `DOCUMENT_CONTRIBUTION_PATIENT_GENDER`
 - `DOCUMENT_CONTRIBUTION_PATIENT_ZIP`
 - `DOCUMENT_CONTRIBUTION_URL`: the url of the server where the documents are stored
-- `DOCUMENT_CONTRIBUTION_FHIRURL`: the direct url of the FHIR server where the documents are stored, with no authentication required
+- `DOCUMENT_CONTRIBUTION_FHIR_URL`: the direct url of the FHIR server where the documents are stored, with no authentication required
 - `DOCUMENT_CONTRIBUTION_AUTH_URL`: the url of the server used to authenticate document contribution requests
 - `DOCUMENT_CONTRIBUTION_CLIENT_ID`: the client OAuth ID to authenticate document contribution requests
 - `DOCUMENT_CONTRIBUTION_CLIENT_SECRET`: the client OAuth secret to authenticate document contribution requests

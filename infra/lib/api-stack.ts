@@ -16,6 +16,7 @@ import { Credentials } from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+// import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
 import { getSecrets } from "./secrets";
@@ -399,6 +400,21 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // S3 bucket for Medical Documents
+    //-------------------------------------------
+    // TODO: #407
+    // if (!isSandbox(props.config)) {
+    //   const medicalApiRequestsBucket = new s3.Bucket(this, "APIServiceMedicalApiRequestsBucket", {
+    //     bucketName: props.config.mapiAccessReqBucketName,
+    //     publicReadAccess: false,
+    //     encryption: s3.BucketEncryption.S3_MANAGED,
+    //   });
+    //   // Access grant for medical api requests bucket
+    //   medicalApiRequestsBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    // }
+    this.setupCWLambda(api, oauthAuth, oauthScopes);
+
+    //-------------------------------------------
     // Output
     //-------------------------------------------
     new CfnOutput(this, "APIGatewayUrl", {
@@ -503,6 +519,24 @@ export class APIStack extends Stack {
     tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
 
     return tokenAuth;
+  }
+  private setupCWLambda(
+    api: apig.RestApi,
+    authorizer: apig.IAuthorizer,
+    oauthScopes: cognito.OAuthScope[]
+  ): apig.Resource {
+    const cwLambda = new lambda_node.NodejsFunction(this, "APICommonWellLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "../api/lambdas/commonwell/index.js",
+    });
+    addErrorAlarmToLambdaFunc(this, cwLambda, "CommonWellFunctionAlarm");
+
+    const cwResource = api.root.addResource("cw");
+    cwResource.addMethod("GET", new apig.LambdaIntegration(cwLambda), {
+      authorizer: authorizer,
+      authorizationScopes: oauthScopes.map(s => s.scopeName),
+    });
+    return cwResource;
   }
 
   private setupAPIGWApiTokenResource(

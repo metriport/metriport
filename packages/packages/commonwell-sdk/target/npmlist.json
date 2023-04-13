@@ -1,0 +1,1 @@
+{"version":"4.1.0-alpha.1","name":"@metriport/commonwell-sdk","dependencies":{"axios":{"version":"1.3.5"},"http-status":{"version":"1.6.2"},"jsonwebtoken":{"version":"9.0.0"},"zod":{"version":"3.21.4"}}}

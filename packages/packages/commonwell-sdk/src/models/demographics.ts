@@ -9,7 +9,8 @@ import { isoDateSchema } from "./iso-date";
 export enum GenderCodes {
   F = "F", // Female
   M = "M", // Male
-  UN = "UN",
+  UN = "UN", // unknown
+  UNK = "UNK", // unknown
 }
 export const genderCodesSchema = z.enum(Object.keys(GenderCodes) as [string, ...string[]]);
 

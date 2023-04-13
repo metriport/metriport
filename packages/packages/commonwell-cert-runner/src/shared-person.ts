@@ -5,13 +5,13 @@ import {
   getPersonIdFromSearchByPatientDemo,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { getPatientStrongIds } from "@metriport/commonwell-sdk/lib/common/util";
+// import { getPatientStrongIds } from "@metriport/commonwell-sdk/lib/common/util";
 import { makeDocPerson, makePatient } from "./payloads";
-import { getEnvOrFail } from "./util";
+// import { getEnvOrFail } from "./util";
 
-const commonwellOID = getEnvOrFail("COMMONWELL_OID");
+// const commonwellOID = getEnvOrFail("COMMONWELL_OID");
 
-const prefixedCommonwellOID = `urn:oid:${commonwellOID}`;
+// const prefixedCommonwellOID = `urn:oid:${commonwellOID}`;
 
 export async function findOrCreatePerson(
   commonWell: CommonWell,
@@ -97,10 +97,11 @@ export async function findOrCreatePatient(
     console.log(respPatientCreate);
     const patientId = getIdTrailingSlash(respPatientCreate);
     const patientLink = respPatientCreate._links.self.href;
-    const patientStrongIds = getPatientStrongIds(respPatientCreate);
-    const patientStrongId = patientStrongIds
-      ? patientStrongIds.find(id => id.system === prefixedCommonwellOID)
-      : undefined;
+    // const patientStrongIds = getPatientStrongIds(respPatientCreate);
+    // const patientStrongId = patientStrongIds
+    //   ? patientStrongIds.find(id => id.system === prefixedCommonwellOID)
+    //   : undefined;
+    const patientStrongId = undefined;
     if (personId) {
       // Link the patient to the person
       const respLink = await commonWell.addPatientLink(
