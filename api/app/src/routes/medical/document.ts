@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import * as AWS from "aws-sdk";
 import status from "http-status";
+import { Config } from "../../shared/config";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getDocuments } from "../../external/fhir/document/get-documents";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -76,8 +77,7 @@ router.get(
     const fileName = getFromQuery("fileName", req);
 
     const url = await s3client.getSignedUrl("getObject", {
-      // NEED TO UPDATE THIS
-      Bucket: "testing-documents-download",
+      Bucket: Config.getMedicalDocumentsBucketName(),
       Key: fileName,
       Expires: 100,
     });

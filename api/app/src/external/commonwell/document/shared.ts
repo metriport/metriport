@@ -17,7 +17,6 @@ export const toFHIR = (
 ): DocumentReference => {
   const id = doc.id?.replace("urn:uuid:", "");
 
-  // Jorge-todo: Where do i mark the source
   return {
     id: id,
     resourceType: "DocumentReference",
@@ -36,8 +35,14 @@ export const toFHIR = (
       system: doc.content?.masterIdentifier?.system,
       value: doc.content?.masterIdentifier?.value,
     },
-    // COME BACK TO THIS
-    // identifier: doc.content?.identifier,
+    identifier: doc.content?.identifier?.map(id => {
+      return {
+        system: id.system,
+        value: id.value,
+        // question
+        use: id.use,
+      };
+    }),
     date: doc.content?.indexed,
     status: "current",
     type: doc.content?.type,

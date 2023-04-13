@@ -127,8 +127,7 @@ async function dowloadAnduploadDocsToS3({
     return {
       writeStream: pass,
       promise: s3client
-        // JORGE-TODO: CHANGE TO ACTUALLY BUCKET NAME
-        .upload({ Bucket: "testing-documents-download", Key: removePeriods, Body: pass })
+        .upload({ Bucket: Config.getMedicalDocumentsBucketName(), Key: removePeriods, Body: pass })
         .promise(),
     };
   };
