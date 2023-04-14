@@ -38,7 +38,15 @@ app.get("/", (req: Request, res: Response) => {
 
 // The Sentry error handler must be before any other error middleware and after all controllers
 if (isSentryEnabled()) {
-  app.use(Sentry.Handlers.errorHandler());
+  app.use(
+    Sentry.Handlers.errorHandler({
+      //eslint-disable-next-line @typescript-eslint/no-unused-vars
+      shouldHandleError: (error): boolean => {
+        // here we can dd logic to decide if we want to send the error to Sentry, like filtering out 404s
+        return true;
+      },
+    })
+  );
 }
 app.use(errorHandler);
 
