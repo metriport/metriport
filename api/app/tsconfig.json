@@ -1,18 +1,14 @@
 {
-  "extends": "@tsconfig/node18/tsconfig",
+  "extends": "@tsconfig/node18",
   "compilerOptions": {
     // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
     // START - From @tsconfig/strictest
-    "strict": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "checkJs": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     // #340 - Left this ones out bc it was causing too many changes
     // "exactOptionalPropertyTypes": true,
     // "noImplicitReturns": true,
@@ -27,5 +23,6 @@
     "rootDir": "./src",                                  /* Specify the root folder within your source files. */
     "outDir": "./dist",                                  /* Specify an output folder for all emitted files. */
     "typeRoots": ["./src/@types"],                       /* Specify multiple folders that act like './node_modules/@types'. */
-  }
+  },
+  "include": ["./src"]
 }
