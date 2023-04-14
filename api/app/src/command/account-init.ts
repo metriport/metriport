@@ -16,7 +16,7 @@ export async function accountInit(cxId: string): Promise<void> {
   await initSequences(cxId);
 }
 
-export async function initSequences(cxId: string): Promise<void> {
+async function initSequences(cxId: string): Promise<void> {
   // only initialize customer sequence for data types that are not "organization"
   const cxDataTypesForSeq = _.difference<DataType>(dataTypes, ["organization"]);
   const existingEntries = await CustomerSequenceModel.findAll({
