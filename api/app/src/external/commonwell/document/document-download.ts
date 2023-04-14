@@ -6,6 +6,8 @@ import { oid } from "../../../shared/oid";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData } from "../patient-shared";
 
+const NUM_OF_RETRIES = 3;
+
 export async function downloadDocument({
   cxId,
   patientId,
@@ -26,15 +28,15 @@ export async function downloadDocument({
   const commonWell = makeCommonWellAPI(orgName, oid(orgId));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
-  let retrys = 0;
+  let retries = 0;
   let success = false;
 
-  while (!success && retrys < 3) {
+  while (!success && retries < NUM_OF_RETRIES) {
     try {
       await commonWell.retrieveDocument(queryMeta, location, stream);
       success = true;
     } catch (err) {
-      retrys = retrys + 1;
+      retries = retries + 1;
       capture.error(err, {
         extra: {
           context: `cw.retrieveDocument`,

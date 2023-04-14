@@ -23,7 +23,7 @@
   "dependencies": {
     "@medplum/core": "^2.0.14",
     "@medplum/fhirtypes": "^2.0.14",
-    "@metriport/api": "^3.0.0",
+    "@metriport/api": "^3.0.1-alpha.3",
     "@metriport/commonwell-sdk": "^4.1.0-alpha.0",
     "@sentry/node": "^7.45.0",
     "@sentry/tracing": "^7.45.0",

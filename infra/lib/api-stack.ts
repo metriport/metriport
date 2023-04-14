@@ -287,7 +287,7 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // S3 bucket for MAPI Access Requests
+    // S3 bucket for Medical Documents
     //-------------------------------------------
 
     if (!this.isSandbox(props)) {

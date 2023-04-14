@@ -8,6 +8,7 @@ import { getDocuments } from "../../external/fhir/document/get-documents";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
+import { createS3FileName } from "../../shared/external";
 
 const router = Router();
 
@@ -66,20 +67,22 @@ router.post(
 /** ---------------------------------------------------------------------------
  * GET /document
  *
- * Downloads the specified document for the specified patient.
+ * Fetches the document from S3 and sends a presigned URL
  *
  * @param req.query.fileName The file name of the document in s3.
  * @return presigned url
  */
 router.get(
-  "/download",
+  "/downloadUrl",
   asyncHandler(async (req: Request, res: Response) => {
-    const fileName = getFromQuery("fileName", req);
+    const cxId = getCxIdOrFail(req);
+    const hour = 3600;
+    const fileName = getFromQueryOrFail("fileName", req);
 
     const url = await s3client.getSignedUrl("getObject", {
       Bucket: Config.getMedicalDocumentsBucketName(),
-      Key: fileName,
-      Expires: 100,
+      Key: createS3FileName(cxId, fileName),
+      Expires: hour,
     });
 
     return res.status(status.OK).json({ url });

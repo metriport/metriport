@@ -4,6 +4,7 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { Patient } from "../../../models/medical/patient";
 import { Organization } from "../../../models/medical/organization";
 import { makePatientOID } from "../../../shared/oid";
+import { MedicalDataSource } from "../..";
 
 // TODO #340 When we fix tsconfig on CW SDK we can remove the `Required` for `id`
 export type DocumentWithFilename = Document & {
@@ -61,20 +62,17 @@ export const toFHIR = (
       {
         attachment: {
           title: doc.fileName,
-          contentType: "application/xml",
+          contentType: doc.content?.mimeType,
           url: doc.content?.location,
-          extension: [
-            {
-              valueString: "S3",
-            },
-          ],
+          size: doc.content?.size,
+          creation: doc.content?.indexed,
         },
       },
     ],
     extension: [
       {
         valueReference: {
-          reference: "Commonwell",
+          reference: MedicalDataSource.COMMONWELL,
         },
       },
     ],

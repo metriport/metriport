@@ -5,5 +5,5 @@ const fhirUrl = Config.getFHIRServerUrl();
 
 export const api = new MedplumClient({
   baseUrl: fhirUrl,
-  fhirUrlPath: "/fhir",
+  fhirUrlPath: "fhir",
 });

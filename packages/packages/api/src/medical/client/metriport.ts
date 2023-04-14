@@ -335,8 +335,8 @@ export class MetriportMedicalApi {
    * @return presigned url
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async getDocument(fileName: string): Promise<{ url: string }> {
-    const resp = await this.api.get(`${DOCUMENT_URL}/download`, {
+  async getDocumentUrl(fileName: string): Promise<{ url: string }> {
+    const resp = await this.api.get(`${DOCUMENT_URL}/downloadUrl`, {
       params: {
         fileName,
       },

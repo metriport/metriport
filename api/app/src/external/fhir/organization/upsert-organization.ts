@@ -2,7 +2,7 @@ import { Organization } from "@medplum/fhirtypes";
 import { api } from "../api";
 import { capture } from "../../../shared/notifications";
 
-export const addOrgToFHIRServer = async (organization: Organization) => {
+export const upsertOrgToFHIRServer = async (organization: Organization) => {
   try {
     return await api.updateResource(organization);
   } catch (err) {

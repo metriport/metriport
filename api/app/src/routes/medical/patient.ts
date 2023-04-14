@@ -5,6 +5,8 @@ import { createPatient, PatientCreateCmd } from "../../command/medical/patient/c
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
+import { toFHIR } from "../../external/commonwell/patient";
+import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import cwCommands from "../../external/commonwell";
 import {
   asyncHandler,
@@ -45,6 +47,10 @@ router.post(
     };
     const patient = await createPatient(patientCreate);
 
+    // temp solution until we migrate to FHIR
+    const fhirPatient = toFHIR(patient);
+    await upsertPatientToFHIRServer(fhirPatient);
+
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
     cwCommands.patient.create(patient, facilityId).catch(processAsyncError(`cw.patient.create`));
@@ -76,6 +82,10 @@ router.put(
       id,
     };
     const patient = await updatePatient(patientUpdate);
+
+    // temp solution until we migrate to FHIR
+    const fhirPatient = toFHIR(patient);
+    await upsertPatientToFHIRServer(fhirPatient);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform

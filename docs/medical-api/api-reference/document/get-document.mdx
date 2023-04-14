@@ -1,7 +1,7 @@
 ---
 title: "Get Document"
 description: "Downloads the Document contents of the specified URL."
-api: "GET /medical/v1/document/download"
+api: "GET /medical/v1/document/downloadUrl"
 ---
 
 ## Query Params
@@ -20,9 +20,7 @@ api: "GET /medical/v1/document/download"
 
 ## Response
 
-<ResponseField type="blob">
-  The downloaded Document contents.
-</ResponseField>
+<ResponseField type="blob">The downloaded Document contents.</ResponseField>
 
 <ResponseExample>
 
@@ -31,10 +29,8 @@ import { MetriportMedicalApi } from "@metriport/api";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
-const documentBlob = await metriportClient.getDocument(
-  "2.16.840.1.113883.3.666.5.2004.4.2005",
-  "2.16.840.1.113883.3.666.123",
-  "https://fhir.metriport.com/oauth/fhir/Binary/2.16.840.1.113883.3.777.666.5.700009.969696"
+const documentBlob = await metriportClient.getDocumentUrl(
+  "2.16.840.1.113883.3.777.666.5.700009.969696"
 );
 ```
 

@@ -9,9 +9,9 @@ export type DocumentReferenceDTO = {
   location: string;
   description: string | undefined;
   status: string | undefined;
-  indexed?: string | undefined; // ISO-8601
-  mimeType?: string | undefined;
-  size?: number | undefined; // bytes
+  indexed: string | undefined; // ISO-8601
+  mimeType: string | undefined;
+  size: number | undefined; // bytes
   type: CodeableConceptDTO | undefined;
 };
 
@@ -34,6 +34,9 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
             location: hasS3Attachment.attachment.url,
             type: codeableToDTO(doc.type),
             status: doc.status,
+            indexed: hasS3Attachment.attachment.creation,
+            mimeType: hasS3Attachment.attachment.contentType,
+            size: hasS3Attachment.attachment.size,
           };
         }
 

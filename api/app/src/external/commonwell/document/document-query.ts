@@ -11,14 +11,12 @@ import { Util } from "../../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
-import { addOrgToFHIRServer } from "../../fhir/organization/add-organization";
-import { toFHIR as toFHIROrg } from "../organization";
-import { addPatientToFHIRServer } from "../../fhir/patient/add-patient";
-import { toFHIR as toFHIRPatient } from "../patient";
-import { addDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
+import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { toFHIR as toFHIRDocRef } from "./shared";
 import { DocumentWithFilename } from "./shared";
 import { Config } from "../../../shared/config";
+import { createS3FileName } from "../../../shared/external";
+import { debug } from "../../../shared/log";
 
 const s3client = new AWS.S3();
 
@@ -38,13 +36,18 @@ export async function getDocuments({
       return;
     }
 
+    console.log(debug(JSON.stringify(cwDocuments, null, 2)));
+
     const docsS3Refs = await dowloadAnduploadDocsToS3({
       patient,
       facilityId,
       documents: cwDocuments,
     });
 
-    return await sendToFHIR({ organization, patient, docs: docsS3Refs });
+    docsS3Refs.forEach(async doc => {
+      const FHIRDocRef = toFHIRDocRef(doc, organization, patient);
+      await upsertDocumentToFHIRServer(FHIRDocRef);
+    });
   } catch (err) {
     console.log(`Error: `, err);
     capture.error(err, {
@@ -127,7 +130,11 @@ async function dowloadAnduploadDocsToS3({
     return {
       writeStream: pass,
       promise: s3client
-        .upload({ Bucket: Config.getMedicalDocumentsBucketName(), Key: removePeriods, Body: pass })
+        .upload({
+          Bucket: Config.getMedicalDocumentsBucketName(),
+          Key: createS3FileName(patient.cxId, removePeriods),
+          Body: pass,
+        })
         .promise(),
     };
   };
@@ -135,7 +142,6 @@ async function dowloadAnduploadDocsToS3({
   const s3Refs = await Promise.allSettled(
     documents.map(async doc => {
       if (doc.content?.masterIdentifier?.value) {
-        // TEMP KEY
         const { writeStream, promise } = uploadStream(doc.content?.masterIdentifier?.value);
 
         await downloadDocument({
@@ -178,24 +184,3 @@ async function dowloadAnduploadDocsToS3({
 
   return docsNewLocation;
 }
-
-const sendToFHIR = async ({
-  organization,
-  patient,
-  docs,
-}: {
-  organization: Organization;
-  patient: Patient;
-  docs: DocumentWithFilename[];
-}) => {
-  const FHIROrg = toFHIROrg(organization);
-  await addOrgToFHIRServer(FHIROrg);
-
-  const FHIRPatient = toFHIRPatient(patient);
-  await addPatientToFHIRServer(FHIRPatient);
-
-  docs.forEach(async doc => {
-    const FHIRDocRef = toFHIRDocRef(doc, organization, patient);
-    await addDocumentToFHIRServer(FHIRDocRef);
-  });
-};
