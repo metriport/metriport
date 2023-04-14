@@ -98,7 +98,7 @@ export const getFromParamsOrFail = (prop: string, req: Request): string => {
 
 export const getCxId = (req: Request): string | undefined => {
   const cxId = req.cxId;
-  capture.setUserId(cxId);
+  cxId && capture.setUserId(cxId);
   return cxId;
 };
 export const getCxIdOrFail = (req: Request): string => {
