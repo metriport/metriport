@@ -246,6 +246,6 @@ export class Google extends Provider implements OAuth2 {
   async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
     const sleepSessions = await this.fetchGoogleSessions(connectedUser, date, sessionSleepType);
 
-    return mapToSleep(sessionResp.parse(sleepSessions.data), date);
+    return mapToSleep(sessionResp.parse(sleepSessions), date);
   }
 }
