@@ -1,17 +1,23 @@
 {
+  "extends": "@tsconfig/recommended",
   "compilerOptions": {
-    "module": "commonjs",
+    "target": "es2020",
+    "sourceMap": true,
     "declaration": true,
-    "noImplicitAny": false,
-    "removeComments": true,
-    "noLib": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "target": "es6",
-    "sourceMap": true,
-    "lib": ["es6"],
     "types": ["react", "jest"],
-    "skipLibCheck": true
-  },
-  "exclude": ["node_modules", "**/*.spec.ts"]
+    // START - From @tsconfig/strictest
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "checkJs": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true
+    // END - From @tsconfig/strictest
+  }
 }
