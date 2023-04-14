@@ -1,26 +1,14 @@
 {
+  "extends": "@tsconfig/create-react-app",
   "compilerOptions": {
-    "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx"
+    // START - From the list of options from https://github.com/tsconfig/bases/blob/main/bases/strictest.json
+    // that were applied to api/app/tsconfig.json and not already present on @tsconfig/create-react-app
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "checkJs": true,
+    // END
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

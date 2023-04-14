@@ -2,7 +2,7 @@
   "extends": "@tsconfig/node18/tsconfig",
   "compilerOptions": {
     // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
-    // START - From @tsconfig/strictest/tsconfig
+    // START - From @tsconfig/strictest
     "strict": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
@@ -21,7 +21,7 @@
     // "verbatimModuleSyntax": true,
     // #340 - Left this one out bc it required adding _ as prefix for unused params in addition to ts-eslint's no-unused-vars
     // "noUnusedParameters": true,
-    // END - From @tsconfig/strictest/tsconfig
+    // END - From @tsconfig/strictest
 
     "sourceMap": true,                                   /* Create source map files for emitted JavaScript files. */
     "rootDir": "./src",                                  /* Specify the root folder within your source files. */
