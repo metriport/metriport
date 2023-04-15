@@ -1,5 +1,5 @@
 {
-  "extends": "@tsconfig/create-react-app",
+  "extends": "@tsconfig/create-react-app/tsconfig.json",
   "compilerOptions": {
     // START - From the list of options from https://github.com/tsconfig/bases/blob/main/bases/strictest.json
     // that were applied to api/app/tsconfig.json and not already present on @tsconfig/create-react-app

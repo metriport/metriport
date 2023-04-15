@@ -1,5 +1,5 @@
 {
-  "extends": "@tsconfig/node18",
+  "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
     // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
     // START - From @tsconfig/strictest
