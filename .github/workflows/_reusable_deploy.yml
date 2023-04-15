@@ -29,6 +29,10 @@ on:
         required: false
       SENTRY_ORG:
         required: false
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
 
 jobs:
   deploy:
@@ -40,16 +44,26 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.deploy_env }}
     steps:
+      - name: Log Environment
+        run: |
+          env
+        shell: bash
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18.14"
       # TODO we should reuse the checked out code from the previous step
       # doing this here might introduce minutes between `build` and `deploy`, which
       # gives opportunity for problems (someone merges between `build` and `deploy`)
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "lts/*"
-      - run: env
-        shell: bash
-      - run: |
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Log Git Ref
+        run: |
           echo "Git ref: $(git rev-parse HEAD)"
         shell: bash
 

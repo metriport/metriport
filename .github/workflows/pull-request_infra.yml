@@ -12,3 +12,4 @@ jobs:
     uses: ./.github/workflows/_reusable_build.yml
     with:
       path: "infra"
+    secrets: inherit
