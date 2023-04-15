@@ -17,7 +17,7 @@ export function getPersonIdFromSearchByPatientDemo(object: PersonSearchResp): st
     console.log(`Found more than one person, using the first one: `, object);
   }
   const person = embeddedPersons[0];
-  return getId(person);
+  return person && getId(person);
 }
 
 export function getIdTrailingSlash(object: Patient | Organization): string | undefined {
@@ -28,7 +28,7 @@ export function getIdTrailingSlash(object: Patient | Organization): string | und
 }
 
 export function getPatientStrongIds(object: Patient): StrongId[] | undefined {
-  return object.identifier;
+  return object.identifier ?? undefined;
 }
 
 function buildPatiendIdToDocQuery(code: string, system: string): string {
@@ -48,5 +48,7 @@ export function convertPatientIdToSubjectId(patientId: string): string | undefin
   const value = decodeURIComponent(decodeURI(patientId));
   const regex = /(.+)\^\^\^(.+)/i;
   const match = value.match(regex);
-  return match && match.length >= 3 ? buildPatiendIdToDocQuery(match[1], match[2]) : undefined;
+  const code = match && match[1];
+  const system = match && match[2];
+  return code && system ? buildPatiendIdToDocQuery(code, system) : undefined;
 }

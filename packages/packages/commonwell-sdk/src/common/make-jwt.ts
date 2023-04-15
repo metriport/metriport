@@ -46,7 +46,7 @@ export async function makeJwt(
   if (npi && !validateNPI(npi)) {
     throw new Error(`NPI number ${npi} is not valid!`);
   }
-  const jwtToken: string = await new Promise((res, rej) => {
+  const jwtToken: string = await new Promise((resolve, reject) => {
     jwt.sign(
       {
         [roleClaim]: role,
@@ -68,10 +68,11 @@ export async function makeJwt(
         noTimestamp: true,
       },
       function (err, token) {
-        if (err) {
-          rej(err);
+        if (err || !token) {
+          reject(err);
+          return;
         }
-        res(token);
+        resolve(token);
       }
     );
   });

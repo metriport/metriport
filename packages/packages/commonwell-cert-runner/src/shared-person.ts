@@ -7,7 +7,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { getPatientStrongIds } from "@metriport/commonwell-sdk/lib/common/util";
 import { makeDocPerson, makePatient } from "./payloads";
-import { getEnvOrFail } from "./util";
+import { firstElementOrFail, getEnvOrFail } from "./util";
 
 const commonwellOID = getEnvOrFail("COMMONWELL_OID");
 
@@ -25,6 +25,7 @@ export async function findOrCreatePerson(
     const respPerson = await commonWell.enrollPerson(queryMeta, patientData);
     console.log(respPerson);
     const personId = getId(respPerson);
+    if (!personId) throw new Error("No personId on response from enrollPerson");
 
     const respLink = await commonWell.addPatientLink(
       queryMeta,
@@ -51,10 +52,12 @@ type FindOrCreatePatientResult =
       result: "new";
       patientId: string;
       patientLink: string;
-      patientStrongId?: {
-        key?: string;
-        system?: string;
-      };
+      patientStrongId?:
+        | {
+            key: string;
+            system: string;
+          }
+        | undefined;
     };
 
 export async function findOrCreatePatient(
@@ -63,10 +66,12 @@ export async function findOrCreatePatient(
   patientData: ReturnType<typeof makeDocPerson> | ReturnType<typeof makePatient>,
   personId?: string
 ): Promise<FindOrCreatePatientResult> {
+  const givenName = firstElementOrFail(patientData.details.name[0].given, "given name");
+  const familyName = firstElementOrFail(patientData.details.name[0].family, "family name");
   const respPatient = await commonWell.searchPatient(
     queryMeta,
-    patientData.details.name[0].given[0],
-    patientData.details.name[0].family[0],
+    givenName,
+    familyName,
     patientData.details.birthDate,
     patientData.details.gender.code,
     patientData.details.address[0].zip
@@ -83,10 +88,12 @@ export async function findOrCreatePatient(
     }
     const patient = embeddedPatients[0];
     const patientId = getIdTrailingSlash(patient);
+    if (!patientId) throw new Error(`No patient ID found in patient search response`);
 
     const respPerson = await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
     console.log(respPerson);
     const personId = getPersonIdFromSearchByPatientDemo(respPerson);
+    if (!personId) throw new Error(`No person ID found in person search response`);
     return { result: "existing", patientId, personId };
 
     //
@@ -96,7 +103,9 @@ export async function findOrCreatePatient(
     const respPatientCreate = await commonWell.registerPatient(queryMeta, patientData);
     console.log(respPatientCreate);
     const patientId = getIdTrailingSlash(respPatientCreate);
-    const patientLink = respPatientCreate._links.self.href;
+    if (!patientId) throw new Error(`No patient ID found in patient create response`);
+    const patientLink = respPatientCreate._links?.self.href;
+    if (!patientLink) throw new Error(`No patient link found in patient create response`);
     const patientStrongIds = getPatientStrongIds(respPatientCreate);
     const patientStrongId = patientStrongIds
       ? patientStrongIds.find(id => id.system === prefixedCommonwellOID)
