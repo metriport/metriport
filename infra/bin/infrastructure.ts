@@ -6,6 +6,7 @@ import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 import { EnvConfig } from "../lib/env-config";
 import { EnvType } from "../lib/env-type";
 import { SecretsStack } from "../lib/secrets-stack";
+import { getEnvVar } from "../lib/util";
 
 const app = new cdk.App();
 //-------------------------------------------
@@ -37,10 +38,10 @@ async function deploy() {
   // To specify a different profile, you can use the profile flag. For example:
   //    cdk synth --profile prod-profile
   const env = {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
+    account: getEnvVar("CDK_DEFAULT_ACCOUNT"),
     region: config.region,
   };
-  const version = process.env.METRIPORT_VERSION;
+  const version = getEnvVar("METRIPORT_VERSION");
 
   //---------------------------------------------------------------------------------
   // 1. Deploy the secrets stack to initialize all secrets.
