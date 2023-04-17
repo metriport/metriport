@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
-  "type": "module",
   "scripts": {
     "dev": "ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9229 --files src/app.ts",
     "start": "ts-node dist/app.js",
