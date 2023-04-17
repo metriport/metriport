@@ -36,11 +36,13 @@ export async function personManagement(commonWell: CommonWell, queryMeta: Reques
 
   console.log(`>>> C2b: Search for a Person using the local Patient demographics.`);
   const personId = getId(respC1a);
+  if (!personId) throw new Error("No personId on response from enrollPerson");
   const newPatient = await commonWell.registerPatient(
     queryMeta,
     makePatient({ facilityId: commonWell.oid })
   );
   const patientId = getIdTrailingSlash(newPatient);
+  if (!patientId) throw new Error("No patientId on response from registerPatient");
   const respC2b = await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
   console.log(respC2b);
 
@@ -56,6 +58,7 @@ export async function personManagement(commonWell: CommonWell, queryMeta: Reques
     `>>> C3b: Update a Person without a Strong ID by updating their demographics and/or by adding a Strong ID`
   );
   const personId2 = getId(respC1b);
+  if (!personId2) throw new Error("No personId2 on response from enrollPerson");
   const driversLicenseId2 = nanoid.nanoid();
   personNoStrongId.details.identifier = [
     {

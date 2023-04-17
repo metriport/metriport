@@ -3,6 +3,7 @@ import { CommonWell, Document, isLOLA1, RequestMetadata } from "@metriport/commo
 import * as fs from "fs";
 import { makeDocPerson, makeId } from "./payloads";
 import { findOrCreatePerson } from "./shared-person";
+import { filterTruthy } from "./util";
 
 // Document Consumption
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Document-Consumption-(SOAP,-REST).aspx
@@ -30,14 +31,18 @@ export async function queryDocuments(
   if (!personId) throw new Error(`[E1c] personId is undefined before calling getNetworkLinks()`);
   const respLinks = await commonWell.getNetworkLinks(queryMeta, patientId);
   console.log(respLinks);
-  const allLinks = respLinks._embedded.networkLink;
+  const allLinks = respLinks._embedded.networkLink
+    ? respLinks._embedded.networkLink.flatMap(filterTruthy)
+    : [];
   const lola1Links = allLinks.filter(isLOLA1);
   console.log(`Found ${allLinks.length} network links, ${lola1Links.length} are LOLA 1`);
   for (const link of lola1Links) {
-    const respUpgradeLink = await commonWell.upgradeOrDowngradeNetworkLink(
-      queryMeta,
-      link._links.upgrade.href
-    );
+    const upgradeURL = link._links?.upgrade?.href;
+    if (!upgradeURL) {
+      console.log(`[queryDocuments] missing upgrade URL for link `, link);
+      continue;
+    }
+    const respUpgradeLink = await commonWell.upgradeOrDowngradeNetworkLink(queryMeta, upgradeURL);
     console.log(respUpgradeLink);
   }
 
@@ -61,8 +66,9 @@ export async function retrieveDocument(
 
   const fileName = `./cw_consumption_${doc.id ?? "ID"}_${makeId()}.contents.file`;
   // the default is UTF-8, avoid changing the encoding if we don't know the file we're downloading
-  const outputStream = fs.createWriteStream(fileName, { encoding: null });
+  const outputStream = fs.createWriteStream(fileName, { encoding: undefined });
   console.log(`File being created at ${process.cwd()}/${fileName}`);
   const url = doc.content.location;
+  if (!url) throw new Error(`[E2c] missing content.location in document ${doc.id}`);
   await commonWell.retrieveDocument(queryMeta, url, outputStream);
 }

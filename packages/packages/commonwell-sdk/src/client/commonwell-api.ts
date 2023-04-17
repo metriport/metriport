@@ -65,12 +65,6 @@ export interface CommonWellAPI {
   getPersonById(meta: RequestMetadata, personId: string): Promise<Person>;
   updatePerson(meta: RequestMetadata, person: Person, id: string): Promise<Person>;
   patientMatch(meta: RequestMetadata, id: string): Promise<PatientSearchResp>;
-  patientLink(
-    meta: RequestMetadata,
-    personId: string,
-    patientUri: string,
-    patientStrongId?: StrongId
-  ): Promise<PatientLink>;
   addPatientLink(
     meta: RequestMetadata,
     personId: string,

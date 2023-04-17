@@ -148,7 +148,10 @@ export class Dexcom extends Provider implements OAuth2 {
     await this.oauth.revokeLocal(connectedUser);
   }
 
-  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+  override async getBiometricsData(
+    connectedUser: ConnectedUser,
+    date: string
+  ): Promise<Biometrics> {
     const accessToken = await this.getAccessToken(connectedUser);
 
     const query = new URLSearchParams({
@@ -165,7 +168,7 @@ export class Dexcom extends Provider implements OAuth2 {
     );
   }
 
-  async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
+  override async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
     const accessToken = await this.getAccessToken(connectedUser);
 
     const query = new URLSearchParams({

@@ -59,7 +59,7 @@ export class Oura extends Provider implements OAuth2 {
     await this.oauth.revokeLocal(connectedUser);
   }
 
-  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
+  override async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
     const accessToken = await this.oauth.getAccessToken(connectedUser);
 
     const [resFetchDaily, resBio, resSess, resWork] = await Promise.allSettled([
@@ -132,7 +132,10 @@ export class Oura extends Provider implements OAuth2 {
     );
   }
 
-  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+  override async getBiometricsData(
+    connectedUser: ConnectedUser,
+    date: string
+  ): Promise<Biometrics> {
     const { start_date, end_date } = getStartAndEndDateTime(date);
     const params = {
       start_datetime: start_date,
@@ -151,7 +154,7 @@ export class Oura extends Provider implements OAuth2 {
     );
   }
 
-  async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+  override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
     const accessToken = await this.oauth.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<Body>(
@@ -163,7 +166,7 @@ export class Oura extends Provider implements OAuth2 {
     );
   }
 
-  async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
+  override async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
     const { start_date, end_date } = getStartAndEndDate(date);
     const params = {
       start_date: start_date,
@@ -184,7 +187,7 @@ export class Oura extends Provider implements OAuth2 {
     );
   }
 
-  async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
+  override async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
     const accessToken = await this.oauth.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<User>(

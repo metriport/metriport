@@ -137,7 +137,7 @@ export class Google extends Provider implements OAuth2 {
     }
   }
 
-  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
+  override async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
     const [resSessions, resData] = await Promise.allSettled([
       this.fetchActivitySessions(connectedUser, date),
       this.fetchActivityData(connectedUser, date),
@@ -186,7 +186,10 @@ export class Google extends Provider implements OAuth2 {
     return googleActivityResp.parse(activity);
   }
 
-  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+  override async getBiometricsData(
+    connectedUser: ConnectedUser,
+    date: string
+  ): Promise<Biometrics> {
     const biometrics = await this.fetchGoogleData(connectedUser, date, {
       aggregateBy: [
         {
@@ -210,7 +213,7 @@ export class Google extends Provider implements OAuth2 {
     return mapToBiometrics(googleBiometricsResp.parse(biometrics), date);
   }
 
-  async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+  override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
     const body = await this.fetchGoogleData(connectedUser, date, {
       aggregateBy: [
         {
@@ -228,7 +231,7 @@ export class Google extends Provider implements OAuth2 {
     return mapToBody(googleBodyResp.parse(body), date);
   }
 
-  async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
+  override async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
     const nutrition = await this.fetchGoogleData(connectedUser, date, {
       aggregateBy: [
         {
@@ -243,7 +246,7 @@ export class Google extends Provider implements OAuth2 {
     return mapToNutrition(googleNutritionResp.parse(nutrition), date);
   }
 
-  async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
+  override async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
     const sleepSessions = await this.fetchGoogleSessions(connectedUser, date, sessionSleepType);
 
     return mapToSleep(sessionResp.parse(sleepSessions), date);

@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 
-import { asyncHandler } from "../util";
-import { mapData, appleSchema } from "../../mappings/apple";
 import { processAppleData } from "../../command/webhook/webhook";
+import { appleSchema, mapData } from "../../mappings/apple";
+import { asyncHandler, getCxIdOrFail } from "../util";
 
 const routes = Router();
 /** ---------------------------------------------------------------------------
@@ -16,7 +16,7 @@ routes.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const metriportUserId = req.body.metriportUserId;
-    const cxId = req.cxId;
+    const cxId = getCxIdOrFail(req);
     const payload = JSON.parse(req.body.data);
     const mappedData = mapData(appleSchema.parse(payload));
 

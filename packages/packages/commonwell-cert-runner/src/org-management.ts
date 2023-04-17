@@ -15,6 +15,7 @@ export async function orgManagement(commonWell: CommonWell, queryMeta: RequestMe
   console.log(`>>> Update an org`);
   org.locations[0].city = "Miami";
   const orgId = getIdTrailingSlash(respCreateOrg);
+  if (!orgId) throw new Error("No orgId on response from createOrg");
   const respUpdateOrg = await commonWell.updateOrg(queryMeta, org, orgId);
   console.log(respUpdateOrg);
 
