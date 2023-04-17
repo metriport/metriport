@@ -19,10 +19,12 @@
     // "noUnusedParameters": true,
     // END - From @tsconfig/strictest
 
-    "sourceMap": true,                                   /* Create source map files for emitted JavaScript files. */
-    "rootDir": "./src",                                  /* Specify the root folder within your source files. */
-    "outDir": "./dist",                                  /* Specify an output folder for all emitted files. */
-    "typeRoots": ["./src/@types"],                       /* Specify multiple folders that act like './node_modules/@types'. */
+    "sourceMap": true /* Create source map files for emitted JavaScript files. */,
+    "rootDir": "./src" /* Specify the root folder within your source files. */,
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */,
+    "typeRoots": [
+      "./src/@types"
+    ] /* Specify multiple folders that act like './node_modules/@types'. */
   },
   "include": ["./src"]
 }
