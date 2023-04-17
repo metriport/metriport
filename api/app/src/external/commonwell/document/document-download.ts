@@ -29,14 +29,21 @@ export async function downloadDocument({
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
   let retries = 0;
-  let success = false;
+  let done = false;
 
-  while (!success && retries < NUM_OF_RETRIES) {
+  while (!done && retries < NUM_OF_RETRIES) {
     try {
       await commonWell.retrieveDocument(queryMeta, location, stream);
-      success = true;
+      done = true;
     } catch (err) {
-      retries = retries + 1;
+      const has404Error = err instanceof CommonwellError && err.cause?.response?.status === 404;
+      const lastTry = retries === NUM_OF_RETRIES - 1;
+
+      if (has404Error && !lastTry) {
+        retries = retries + 1;
+        throw err;
+      }
+
       capture.error(err, {
         extra: {
           context: `cw.retrieveDocument`,
@@ -44,10 +51,8 @@ export async function downloadDocument({
           ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
         },
       });
-      if (err instanceof CommonwellError && err.cause?.response?.status === 404) {
-        throw new NotFoundError("Document not found");
-      }
-      throw err;
+      done = true;
+      throw new NotFoundError("Document not found");
     }
   }
 }

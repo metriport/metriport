@@ -35,18 +35,18 @@ async function main() {
   const orgResults = await sequelize.query("SELECT * FROM organization");
   const organizations = orgResults[0];
 
-  organizations.forEach(async org => {
+  for (const org of organizations) {
     const fhirOrg = toFHIROrg(org);
     await fhirApi.updateResource(fhirOrg);
-  });
+  }
 
   const patientResults = await sequelize.query("SELECT * FROM patient");
   const patients = patientResults[0];
 
-  patients.forEach(async patient => {
+  for (const patient of patients) {
     const fhirPatient = toFHIRPatient(patient);
     await fhirApi.updateResource(fhirPatient);
-  });
+  }
 
   console.log(`Done`);
 }

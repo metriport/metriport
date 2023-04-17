@@ -5,7 +5,7 @@ import { createPatient, PatientCreateCmd } from "../../command/medical/patient/c
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
-import { toFHIR } from "../../external/commonwell/patient";
+import { toFHIR } from "../../external/fhir/patient";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import cwCommands from "../../external/commonwell";
 import {

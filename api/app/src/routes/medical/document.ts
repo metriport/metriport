@@ -31,7 +31,7 @@ router.get(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const forceQuery = getFromQuery("force-query", req);
 
-    const documents = await getDocuments(patientId);
+    const documents = await getDocuments(`patient=${patientId}&extension=Commonwell`);
     const documentsDTO = toDTO(documents);
 
     const queryStatus = forceQuery
@@ -65,7 +65,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /document
+ * GET /downloadUrl
  *
  * Fetches the document from S3 and sends a presigned URL
  *
@@ -76,13 +76,13 @@ router.get(
   "/downloadUrl",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const hour = 3600;
+    const seconds = 20;
     const fileName = getFromQueryOrFail("fileName", req);
 
-    const url = await s3client.getSignedUrl("getObject", {
+    const url = s3client.getSignedUrl("getObject", {
       Bucket: Config.getMedicalDocumentsBucketName(),
       Key: createS3FileName(cxId, fileName),
-      Expires: hour,
+      Expires: seconds,
     });
 
     return res.status(status.OK).json({ url });

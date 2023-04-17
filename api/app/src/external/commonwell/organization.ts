@@ -5,7 +5,6 @@ import { capture } from "../../shared/notifications";
 import { OID_PREFIX } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { certificate, makeCommonWellAPI, metriportQueryMeta } from "./api";
-import { Organization as FHIROrganization } from "@medplum/fhirtypes";
 
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
@@ -61,29 +60,6 @@ export async function organizationToCommonwell(
     technicalContacts: [technicalContact],
   };
 }
-
-export const toFHIR = (org: Organization): FHIROrganization => {
-  return {
-    resourceType: "Organization",
-    id: org.id,
-    active: true,
-    type: [
-      {
-        text: org.data.type,
-      },
-    ],
-    name: org.data.name,
-    address: [
-      {
-        line: [org.data.location.addressLine1],
-        city: org.data.location.city,
-        state: org.data.location.state,
-        postalCode: org.data.location.zip,
-        country: org.data.location.country,
-      },
-    ],
-  };
-};
 
 export const create = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW create - M orgId ${org.id}`);

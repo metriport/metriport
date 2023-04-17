@@ -1,7 +1,5 @@
-import { DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
+import { DocumentReference } from "@medplum/fhirtypes";
 import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
-
-const ATTACHMENT_SOURCE = "S3";
 
 export type DocumentReferenceDTO = {
   id: string;
@@ -19,24 +17,24 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
   if (docs) {
     return docs.flatMap(doc => {
       if (doc && doc.id && doc.content) {
-        const hasS3Attachment = getS3Attachment(doc.content);
+        const hasAttachment = doc.content[0];
 
         if (
-          hasS3Attachment &&
-          hasS3Attachment.attachment &&
-          hasS3Attachment.attachment.title &&
-          hasS3Attachment.attachment.url
+          hasAttachment &&
+          hasAttachment.attachment &&
+          hasAttachment.attachment.title &&
+          hasAttachment.attachment.url
         ) {
           return {
             id: doc.id,
             description: doc.description,
-            fileName: hasS3Attachment.attachment.title,
-            location: hasS3Attachment.attachment.url,
+            fileName: hasAttachment.attachment.title,
+            location: hasAttachment.attachment.url,
             type: codeableToDTO(doc.type),
             status: doc.status,
-            indexed: hasS3Attachment.attachment.creation,
-            mimeType: hasS3Attachment.attachment.contentType,
-            size: hasS3Attachment.attachment.size,
+            indexed: hasAttachment.attachment.creation,
+            mimeType: hasAttachment.attachment.contentType,
+            size: hasAttachment.attachment.size,
           };
         }
 
@@ -49,13 +47,3 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
 
   return [];
 }
-
-const getS3Attachment = (content: DocumentReferenceContent[]): DocumentReferenceContent | void => {
-  if (content) {
-    return content.find(c => {
-      if (c.attachment && c.attachment.extension) {
-        return c.attachment.extension.find(item => item.valueString === ATTACHMENT_SOURCE);
-      }
-    });
-  }
-};

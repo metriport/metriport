@@ -27,7 +27,8 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.1",
     "express-promise-router": "^4.1.1",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "sequelize": "^6.31.0"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",

@@ -290,7 +290,7 @@ export class APIStack extends Stack {
     // S3 bucket for Medical Documents
     //-------------------------------------------
 
-    if (!this.isSandbox(props)) {
+    if (!this.isSandbox(props) && props.config.medicalDocumentsBucketName) {
       const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
         bucketName: props.config.medicalDocumentsBucketName,
         publicReadAccess: false,
