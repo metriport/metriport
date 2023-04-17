@@ -6,6 +6,12 @@ on:
       path:
         required: true
         type: string
+        description: "sub-directory where this workflow should execute lint and build "
+      install-from-parent:
+        required: false
+        type: boolean
+        default: true
+        description: "whether this workflow should 'npm ci' on parent folder, 'input.path' if false (default=true)"
       build_env:
         required: false
         type: string
@@ -45,11 +51,18 @@ jobs:
       # check commits' messages to make sure they follow Conventional Commits
       - uses: wagoid/commitlint-github-action@v5
       # Lint and build/compile the code
-      - name: Install environment
+      - name: Install on parent
+        if: ${{ inputs.install-from-parent == true }}
         run: |
           pwd
           npm ci --ignore-scripts
         working-directory: "./" # from root bc package-lock.json is there
+      - name: Install
+        if: ${{ inputs.install-from-parent == false }}
+        run: |
+          pwd
+          npm ci --ignore-scripts
+        working-directory: ${{ inputs.path }}
       - name: Run Linter
         run: npm run lint
         working-directory: ${{ inputs.path }}
@@ -85,11 +98,18 @@ jobs:
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
         shell: bash
-      - name: Install environment
+      - name: Install on parent
+        if: ${{ inputs.install-from-parent == true }}
         run: |
           pwd
           npm ci --ignore-scripts
         working-directory: "./" # from root bc package-lock.json is there
+      - name: Install
+        if: ${{ inputs.install-from-parent == false }}
+        run: |
+          pwd
+          npm ci --ignore-scripts
+        working-directory: ${{ inputs.path }}
       - name: Run Tests
         run: npm run test
         working-directory: ${{ inputs.path }}
