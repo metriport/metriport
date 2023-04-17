@@ -1,6 +1,6 @@
 {
   "name": "@metriport/commonwell-sdk",
-  "version": "4.1.1-alpha.1",
+  "version": "4.1.1-alpha.2",
   "description": "SDK to simplify CommonWell API integration - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.0",
-    "@types/node": "^18.11.18"
+    "@types/node": "^18.11.18",
+    "typescript": "^4.9.5"
   }
 }
