@@ -218,6 +218,19 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Removes a patient at Metriport and at HIEs the patient is linked to.
+   *
+   * @param patientId The ID of the patient data to be deleted.
+   * @param facilityId The facility providing the NPI to support this operation.
+   */
+  async deletePatient(patientId: string, facilityId: string, eTag?: string): Promise<void> {
+    await this.api.delete(`${PATIENT_URL}/${patientId}`, {
+      params: { facilityId },
+      headers: { ...getETagHeader({ eTag }) },
+    });
+  }
+
+  /**
    * Returns the patients associated with given facility.
    *
    * @param facilityId The ID of the facility.

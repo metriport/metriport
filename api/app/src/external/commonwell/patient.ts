@@ -26,6 +26,7 @@ import {
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
+const deleteContext = "cw.patient.delete";
 
 export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus {
   if (!data) return "needs-review";
@@ -226,6 +227,35 @@ export async function update(patient: Patient, facilityId: string): Promise<void
         patientId: patient.id,
         cwReference: commonWell?.lastReferenceHeader,
         context: updateContext,
+      },
+    });
+    throw err;
+  }
+}
+
+export async function remove(patient: Patient, facilityId: string): Promise<void> {
+  let commonWell: CommonWellAPI | undefined;
+  try {
+    const { log, debug } = Util.out(`CW delete - M patientId ${patient.id}`);
+
+    const data = await setupUpdate(patient, facilityId);
+    if (!data) {
+      log("Could not find external data on Patient while deleting it @ CW, continuing...");
+      return;
+    }
+    const { queryMeta, commonwellPatientId } = data;
+    commonWell = data.commonWell;
+
+    const resp = await commonWell.deletePatient(queryMeta, commonwellPatientId);
+    debug(`resp deletePatient: ${JSON.stringify(resp, null, 2)}`);
+  } catch (err) {
+    console.error(`Failed to delete patient ${patient.id} @ CW: `, err);
+    capture.error(err, {
+      extra: {
+        facilityId,
+        patientId: patient.id,
+        cwReference: commonWell?.lastReferenceHeader,
+        context: deleteContext,
       },
     });
     throw err;

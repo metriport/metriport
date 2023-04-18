@@ -25,9 +25,9 @@ All Patients receiving care at the specified Facility.
 ```javascript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const patients = await metriportClient.listPatients("2.16.840.1.113883.3.666.5.2004.4.2005");
+const patients = await metriport.listPatients("2.16.840.1.113883.3.666.5.2004.4.2005");
 ```
 
 </ResponseExample>
