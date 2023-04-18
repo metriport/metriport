@@ -19,9 +19,9 @@ api: "GET /medical/v1/patient/{id}"
 ```javascript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const patient = await metriportClient.getPatient("2.16.840.1.113883.3.666.777");
+const patient = await metriport.getPatient("2.16.840.1.113883.3.666.777");
 ```
 
 </ResponseExample>

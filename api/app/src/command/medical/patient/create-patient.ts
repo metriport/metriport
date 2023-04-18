@@ -1,5 +1,6 @@
 import { Patient, PatientCreate, PatientData, PatientModel } from "../../../models/medical/patient";
 import { createPatientId } from "../customer-sequence/create-id";
+import { getFacilityOrFail } from "../facility/get-facility";
 import { sanitize, validate } from "./shared";
 
 type Identifier = Pick<Patient, "cxId"> & { facilityId: string };
@@ -13,6 +14,7 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     sanitized;
 
+  await getFacilityOrFail({ cxId, id: facilityId });
   const { id, patientNumber } = await createPatientId(cxId);
 
   const patientCreate: PatientCreate = {

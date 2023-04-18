@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
@@ -103,6 +104,33 @@ router.get(
     const patient = await getPatientOrFail({ id: patientId, cxId });
 
     return res.status(status.OK).json(dtoFromModel(patient));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * DELETE /patient/:id
+ *
+ * Deletes a patient from our DB and HIEs.
+ *
+ * @param req.query.facilityId The facility providing NPI for the patient delete
+ * @return 204 No Content
+ */
+router.delete(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+
+    const patientDeleteCmd = {
+      ...getETag(req),
+      id,
+      cxId,
+      facilityId,
+    };
+    await deletePatient(patientDeleteCmd);
+
+    return res.sendStatus(status.NO_CONTENT);
   })
 );
 

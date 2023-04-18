@@ -21,11 +21,11 @@ api: "POST /medical/v1/patient"
 <ResponseExample>
 
 ```javascript Metriport SDK
-import { Metriport, USState } from "@metriport/api";
+import { MetriportMedicalApi, USState } from "@metriport/api";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const patient = await metriportClient.createPatient(
+const patient = await metriport.createPatient(
   {
     firstName: "Jose",
     lastName: "Juarez",
