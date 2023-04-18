@@ -37,9 +37,13 @@ export const getPatientByDemo = async ({
       data: {
         firstName: demo.firstName,
         lastName: demo.lastName,
-        personalIdentifiers: {
-          [Op.in]: demo.personalIdentifiers,
-        },
+        ...(demo.personalIdentifiers && demo.personalIdentifiers.length
+          ? {
+              personalIdentifiers: {
+                [Op.in]: demo.personalIdentifiers,
+              },
+            }
+          : undefined),
         dob: demo.dob,
         address: demo.address,
         contact: demo.contact,
