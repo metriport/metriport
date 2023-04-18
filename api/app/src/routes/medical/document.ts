@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import * as AWS from "aws-sdk";
-import status from "http-status";
+import { OK } from "http-status";
 import { Config } from "../../shared/config";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getDocuments } from "../../external/fhir/document/get-documents";
@@ -37,7 +37,7 @@ router.get(
       ? await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId })
       : (await getPatientOrFail({ cxId, id: patientId })).data.documentQueryStatus ?? "completed";
 
-    return res.status(status.OK).json({ queryStatus, documents: documentsDTO });
+    return res.status(OK).json({ queryStatus, documents: documentsDTO });
   })
 );
 
@@ -59,7 +59,7 @@ router.post(
 
     const queryStatus = await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId });
 
-    return res.status(status.OK).json({ queryStatus });
+    return res.status(OK).json({ queryStatus });
   })
 );
 
@@ -87,7 +87,7 @@ router.get(
       Expires: seconds,
     });
 
-    return res.status(status.OK).json({ url });
+    return res.status(OK).json({ url });
   })
 );
 

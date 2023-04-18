@@ -3,7 +3,6 @@ import { contentType, extension } from "mime-types";
 import { Patient } from "../../../models/medical/patient";
 import { makePatientOID } from "../../../shared/oid";
 
-// TODO #340 When we fix tsconfig on CW SDK we can remove the `Required` for `id`
 export type DocumentWithFilename = Document & {
   fileName: string;
   raw?: unknown;
