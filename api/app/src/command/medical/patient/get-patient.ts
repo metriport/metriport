@@ -52,7 +52,14 @@ export const getPatientByDemo = async ({
             }
           : undefined),
         dob: demo.dob,
-        address: demo.address,
+        address: {
+          addressLine1: demo.address.addressLine1,
+          city: demo.address.city,
+          state: demo.address.state,
+          zip: demo.address.zip,
+          country: demo.address.country,
+          ...(demo.address.addressLine2 ? { addressLine2: demo.address.addressLine2 } : undefined),
+        },
         contact: demo.contact,
       },
     },
