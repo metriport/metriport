@@ -95,6 +95,10 @@ async function internalGetDocuments({
         d.content?.masterIdentifier?.value && d.content?.location
           ? {
               id: d.content.masterIdentifier.value,
+              contained: d.content.contained,
+              masterIdentifier: d.content.masterIdentifier,
+              subject: d.content.subject,
+              context: d.content.context,
               fileName: getFileName(patient, d),
               description: d.content.description,
               type: d.content.type,

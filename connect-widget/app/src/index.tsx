@@ -11,10 +11,12 @@ import {
 import App from "./App";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
-import { getEnvType, getEnvVar, getEnvVarOrFail } from "./shared/util";
+import { getEnvType, getEnvVar } from "./shared/util";
 
+const sentryDSN = getEnvVar("REACT_APP_SENTRY_DSN");
 Sentry.init({
-  dsn: getEnvVarOrFail("REACT_APP_SENTRY_DSN"),
+  dsn: sentryDSN,
+  enabled: Boolean(sentryDSN),
   release: getEnvVar("REACT_APP_GIT_SHA"),
   environment: getEnvType(),
   integrations: [

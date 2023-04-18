@@ -77,7 +77,7 @@ router.post(
     // if the user doesn't yet exist, create one
     if (connectedUser == null) {
       connectedUser = await createConnectedUser({
-        cxId: req.cxId,
+        cxId,
         cxUserId: appUserId,
       });
     }

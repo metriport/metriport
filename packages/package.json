@@ -1,20 +1,14 @@
 {
   "name": "root",
   "private": true,
+  "license": "MIT",
   "workspaces": [
     "packages/*"
   ],
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.49.0",
-    "@typescript-eslint/parser": "^5.49.0",
-    "eslint": "^8.32.0",
-    "eslint-config-prettier": "^8.6.0",
-    "lerna": "^6.1.0"
-  },
   "scripts": {
     "build": "lerna run tsc",
     "build:cloud": "npm run build",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "lerna run tsc -- --noEmit",
     "lint": "lerna run lint",
     "lint-fix": "lerna run lint-fix",
     "prettier-fix": "lerna run prettier-fix",
@@ -22,5 +16,8 @@
     "publish:lerna": "npm run build && lerna publish",
     "force-publish": "lerna run tsc && lerna publish --force-publish --no-git-tag-version --no-push --ignore-changes '**'"
   },
-  "license": "MIT"
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.2",
+    "lerna": "^6.1.0"
+  }
 }

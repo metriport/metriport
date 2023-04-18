@@ -1398,10 +1398,10 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
-"@metriport/react-native-sdk@^0.0.15":
-  version "0.0.15"
-  resolved "https://registry.npmjs.org/@metriport/react-native-sdk/-/react-native-sdk-0.0.15.tgz"
-  integrity sha512-Fm0kSJJg0votkJc7WQP+2aHR3YfeFgRqdQWzZiAl+zL7R2OQPizQPjHXaIehlPxl+A4VPVhaDckXaFc+nSHHAA==
+"@metriport/react-native-sdk@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.npmjs.org/@metriport/react-native-sdk/-/react-native-sdk-0.2.4.tgz"
+  integrity sha512-EM/eTvT7dZjVOVw0i69b5OwNBT/hAwHIu+8+2hIwqDI0UGVlORc8Q6gvTZPqb3eVtEQfq1BEY7nK+jO5G8H1tw==
   dependencies:
     react-native-webview "^11.26.1"
 

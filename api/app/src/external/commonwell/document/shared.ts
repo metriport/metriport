@@ -23,7 +23,7 @@ export function toDomain(patient: Patient) {
       data: {
         fileName: doc.fileName,
         location: doc.location,
-        description: doc.description,
+        description: doc.description ?? undefined,
         status: doc.status,
         indexed: doc.indexed,
         mimeType: doc.mimeType,

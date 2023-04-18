@@ -1,33 +1,55 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   CommonWellAPI,
-  RequestMetadata,
+  DocumentQueryResponse,
   Organization,
-  Person,
   Patient,
+  Person,
+  RequestMetadata,
 } from "@metriport/commonwell-sdk";
 import { downloadFile } from "@metriport/commonwell-sdk/lib/common/fileDownload";
-import { PersonSearchResp } from "@metriport/commonwell-sdk/lib/models/person";
-import { PatientLink, PatientLinkSearchResp } from "@metriport/commonwell-sdk/lib/models/person";
 import {
-  PatientNetworkLinkResp,
   PatientLinkResp,
+  PatientNetworkLinkResp,
+  PatientSearchResp,
 } from "@metriport/commonwell-sdk/lib/models/patient";
-import { DocumentQueryResponse } from "@metriport/commonwell-sdk";
+import {
+  PatientLink,
+  PatientLinkSearchResp,
+  PersonSearchResp,
+} from "@metriport/commonwell-sdk/lib/models/person";
 import * as stream from "stream";
 
 import * as nanoid from "nanoid";
 
 import {
-  createPerson,
-  createPatient,
-  createPatientWithLinks,
-  createPatientLink,
+  CertificateParam,
+  CertificatePurpose,
+  CertificateResp,
+} from "@metriport/commonwell-sdk/lib/models/certificates";
+import { Identifier } from "@metriport/commonwell-sdk/lib/models/identifier";
+import { NetworkLink, PatientLinkProxy } from "@metriport/commonwell-sdk/lib/models/link";
+import { OrganizationList } from "@metriport/commonwell-sdk/lib/models/organization";
+import NotImplementedError from "../../errors/not-implemented";
+import { makeOrganizationOID, makePatientOID } from "../../shared/oid";
+import {
   createDocument,
+  createPatient,
+  createPatientLink,
+  createPatientWithLinks,
+  createPerson,
 } from "./sandbox-payloads";
 
 const cwURL = "https://sandbox.rest.api.commonwellalliance.org";
 const idAlphabet = "123456789";
 export const primaryPatientId = nanoid.customAlphabet(idAlphabet, 6)();
+
+const randonNumber = () => Math.random() * 1000;
+
+function makePatientId() {
+  const orgId = makeOrganizationOID(randonNumber());
+  return makePatientOID(orgId, randonNumber());
+}
 
 export class CommonWellMock implements CommonWellAPI {
   // V1
@@ -66,23 +88,42 @@ export class CommonWellMock implements CommonWellAPI {
   }
 
   // NOT USED YET
-  async getAllOrgs() {
-    return {};
+  async getAllOrgs(
+    meta: RequestMetadata,
+    summary?: boolean,
+    offset?: number,
+    limit?: number,
+    sort?: string
+  ): Promise<OrganizationList> {
+    throw new NotImplementedError();
   }
 
   // NOT USED YET
-  async getOneOrg() {
-    return {};
+  async getOneOrg(meta: RequestMetadata, id: string): Promise<Organization | undefined> {
+    throw new NotImplementedError();
   }
 
   // USED BUT DOESNT RETURN ANYTHING YET
-  async addCertificateToOrg() {
-    return {};
+  async addCertificateToOrg(
+    meta: RequestMetadata,
+    certificate: CertificateParam,
+    id: string
+  ): Promise<CertificateResp> {
+    return {
+      certificates: [{ purpose: CertificatePurpose.Signing }],
+      _links: {
+        self: null,
+      },
+    };
   }
 
   // NOT USED YET
-  async replaceCertificateForOrg() {
-    return {};
+  async replaceCertificateForOrg(
+    meta: RequestMetadata,
+    certificate: CertificateParam,
+    id: string
+  ): Promise<CertificateResp> {
+    throw new NotImplementedError();
   }
 
   // NOT USED YET
@@ -91,18 +132,33 @@ export class CommonWellMock implements CommonWellAPI {
   }
 
   // NOT USED YET
-  async getCertificatesFromOrg() {
-    return {};
+  async getCertificatesFromOrg(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint?: string,
+    purpose?: string
+  ): Promise<CertificateResp> {
+    throw new NotImplementedError();
   }
 
   // NOT USED YET
-  async getCertificatesFromOrgByThumbprint() {
-    return {};
+  async getCertificatesFromOrgByThumbprint(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint: string,
+    purpose?: string
+  ): Promise<CertificateResp> {
+    throw new NotImplementedError();
   }
 
   // NOT USED YET
-  async getCertificatesFromOrgByThumbprintAndPurpose() {
-    return {};
+  async getCertificatesFromOrgByThumbprintAndPurpose(
+    meta: RequestMetadata,
+    id: string,
+    thumbprint: string,
+    purpose: string
+  ): Promise<CertificateResp> {
+    throw new NotImplementedError();
   }
 
   //--------------------------------------------------------------------------------------------
@@ -181,13 +237,8 @@ export class CommonWellMock implements CommonWellAPI {
   }
 
   // NOT USED YET
-  async patientMatch() {
-    return {};
-  }
-
-  // NOT USED YET (DEPRECATED)
-  async patientLink() {
-    return {};
+  async patientMatch(meta: RequestMetadata, id: string): Promise<PatientSearchResp> {
+    throw new NotImplementedError();
   }
 
   async addPatientLink(
@@ -212,8 +263,8 @@ export class CommonWellMock implements CommonWellAPI {
   }
 
   // NOT USED YET
-  async unenrollPerson() {
-    return {};
+  async unenrollPerson(meta: RequestMetadata, id: string): Promise<Person> {
+    throw new NotImplementedError();
   }
 
   // NOT USED YET
@@ -237,8 +288,15 @@ export class CommonWellMock implements CommonWellAPI {
   }
 
   // NOT USED YET
-  async searchPatient() {
-    return {};
+  async searchPatient(
+    meta: RequestMetadata,
+    fname: string,
+    lname: string,
+    dob: string,
+    gender?: string,
+    zip?: string
+  ): Promise<PatientSearchResp> {
+    throw new NotImplementedError();
   }
 
   async updatePatient(meta: RequestMetadata, patient: Patient): Promise<Patient> {
@@ -264,7 +322,7 @@ export class CommonWellMock implements CommonWellAPI {
           },
         ],
       },
-      _links: {},
+      _links: createPatientWithLinks(patient)._links,
     };
   }
 
@@ -301,17 +359,26 @@ export class CommonWellMock implements CommonWellAPI {
   //--------------------------------------------------------------------------------------------
 
   // USED BUT DOESNT RETURN ANYTHING
-  async upgradeOrDowngradeNetworkLink() {
+  async upgradeOrDowngradeNetworkLink(
+    meta: RequestMetadata,
+    href: string,
+    proxy?: PatientLinkProxy
+  ): Promise<NetworkLink> {
     return {
       _links: {},
       assuranceLevel: "2",
-      patient: {},
+      patient: createPatient(this.oid, this.orgName, makePatientId()),
     };
   }
 
   // NOT USED YET
-  async updatePatientLink() {
-    return {};
+  async updatePatientLink(
+    meta: RequestMetadata,
+    patientLinkUri: string,
+    patientUri?: string,
+    identifier?: Identifier
+  ): Promise<PatientLink> {
+    throw new NotImplementedError();
   }
 
   async getPatientLinks(meta: RequestMetadata, personId: string): Promise<PatientLinkSearchResp> {

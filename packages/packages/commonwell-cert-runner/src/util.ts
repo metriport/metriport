@@ -13,9 +13,18 @@ export function getEnvOrFail(name: string): string {
 export function getCertificateContent(cert: string): string | undefined {
   const regex = /-+BEGIN CERTIFICATE-+([\s\S]+?)-+END CERTIFICATE-+/i;
   const matches = cert.match(regex);
-  if (matches && matches.length > 1) {
-    const content = matches[1];
+  const content = matches && matches[1];
+  if (content) {
     return content.replace(/\r\n|\n|\r/gm, "");
   }
   return undefined;
+}
+
+export function filterTruthy<T>(o: T | undefined | null): T | [] {
+  return o ? o : [];
+}
+
+export function firstElementOrFail<T>(arr?: T[] | undefined, fieldName?: string): T {
+  if (arr && arr.length > 0) return arr[0];
+  throw new Error(`No first ${fieldName ? fieldName : "element"} on array`);
 }

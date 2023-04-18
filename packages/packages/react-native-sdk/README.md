@@ -4,7 +4,7 @@ A React Native package to render our widget to be able to connect with available
 
 ## Quickstart
 
-[See our developer documentation](https://docs.metriport.com/more-info/react-native) to get started.
+[See our developer documentation](https://docs.metriport.com/devices-api/more-info/react-native) to get started.
 
 ```
             ,▄,

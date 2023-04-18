@@ -1,29 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./lib"
+    "outDir": "./lib",
+    // #340 Leaving this off bc not that impactful considering the impact of this package
+    "noPropertyAccessFromIndexSignature": false
   },
   "include": ["./src"],
-  // "lib": ["es6", "es2015", "dom"],
-  /* Language and Environment */
-  "target": "es6" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
-
-  /* Modules */
-  "module": "CommonJS" /* Specify what module code is generated. */,
-  "rootDir": "./src" /* Specify the root folder within your source files. */,
-  "moduleResolution": "node" /* Specify how TypeScript looks up a file from a given module specifier. */,
-  "typeRoots": [
-    "./src/@types"
-  ] /* Specify multiple folders that act like './node_modules/@types'. */,
-
-  "sourceMap": true /* Create source map files for emitted JavaScript files. */,
-  "outDir": "./dist" /* Specify an output folder for all emitted files. */,
-  "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
-  "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
-  "resolveJsonModule": true,
-
-  /* Type Checking */
-  "strict": true /* Enable all strict type-checking options. */,
-  "skipLibCheck": true /* Skip type checking all .d.ts files. */,
-  "types": ["node"]
+  "exclude": ["./lib"]
 }

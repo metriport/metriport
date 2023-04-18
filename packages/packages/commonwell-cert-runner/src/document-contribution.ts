@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { APIMode, CommonWell, isLOLA1, RequestMetadata } from "@metriport/commonwell-sdk";
+import axios, { AxiosInstance } from "axios";
 import * as fs from "fs";
 import { cloneDeep } from "lodash";
 import {
@@ -10,8 +11,7 @@ import {
   makePatient,
 } from "./payloads";
 import { findOrCreatePatient, findOrCreatePerson } from "./shared-person";
-import { getEnv, getEnvOrFail } from "./util";
-import axios, { AxiosInstance } from "axios";
+import { filterTruthy, getEnv, getEnvOrFail } from "./util";
 
 // Document Contribution
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Document-Contribution-(SOAP,-REST).aspx
@@ -41,6 +41,26 @@ export async function documentContribution({
   queryMeta: RequestMetadata;
 }) {
   console.log(`>>> E3: Query for documents served by Metriport's FHIR server`);
+  if (!firstName) {
+    console.log(`Skipping E3 because no first name provided`);
+    return;
+  }
+  if (!lastName) {
+    console.log(`Skipping E3 because no last name provided`);
+    return;
+  }
+  if (!zip) {
+    console.log(`Skipping E3 because no zip provided`);
+    return;
+  }
+  if (!dob) {
+    console.log(`Skipping E3 because no date of birth provided`);
+    return;
+  }
+  if (!gender) {
+    console.log(`Skipping E3 because no gender provided`);
+    return;
+  }
 
   const {
     orgAPI: apiNewOrg,
@@ -82,14 +102,18 @@ export async function documentContribution({
   const respGetLinks = await apiNewOrg.getNetworkLinks(queryMeta, patientIdNewOrg);
   console.log(respGetLinks);
 
-  const allLinks = respGetLinks._embedded.networkLink;
+  const allLinks = respGetLinks._embedded.networkLink
+    ? respGetLinks._embedded.networkLink.flatMap(filterTruthy)
+    : [];
   const lola1Links = allLinks.filter(isLOLA1);
   console.log(`Found ${allLinks.length} network links, ${lola1Links.length} are LOLA 1`);
   for (const link of lola1Links) {
-    const respUpgradeLink = await apiNewOrg.upgradeOrDowngradeNetworkLink(
-      queryMeta,
-      link._links.upgrade.href
-    );
+    const upgradeURL = link._links?.upgrade?.href;
+    if (!upgradeURL) {
+      console.log(`[queryDocuments] missing upgrade URL for link `, link);
+      continue;
+    }
+    const respUpgradeLink = await apiNewOrg.upgradeOrDowngradeNetworkLink(queryMeta, upgradeURL);
     console.log(respUpgradeLink);
   }
 

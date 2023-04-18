@@ -75,6 +75,7 @@ async function runWith(id: StrongId, commonWell: CommonWell, queryMeta: RequestM
     // console.log(respEnrollPerson);
     console.log(`>>> Enroll a Person with a Strong ID OK`);
     personId = getId(respEnrollPerson);
+    if (!personId) throw new Error(`Person ID not found in response to enrollPerson`);
   } catch (err) {
     console.log(
       `___ ERROR enrolling person (CW-Ref: ${commonWell.lastReferenceHeader}): ${getMessage(err)}`
@@ -93,37 +94,34 @@ async function runWith(id: StrongId, commonWell: CommonWell, queryMeta: RequestM
         identifier: [id],
       },
     });
-    // console.log(respRegPatient);
-    console.log(`>>> Register a Patient OK`);
     const patientId = getIdTrailingSlash(respRegPatient);
-    const referenceLink = respRegPatient._links.self.href;
+    if (!patientId) throw new Error(`Patient ID not found in response of registerPatient`);
+    const referenceLink = respRegPatient._links?.self.href;
+    if (!referenceLink)
+      throw new Error(`Patient reference link not found in response of registerPatient`);
+    console.log(`>>> Register a Patient OK`);
 
     try {
       console.log(`>>> Create patient link w/ strong ID`);
-      const respLink = await commonWell.addPatientLink(queryMeta, personId, referenceLink, id);
-      // console.log(respLink);
+      await commonWell.addPatientLink(queryMeta, personId, referenceLink, id);
       console.log(`>>> Create patient link w/ strong ID OK`);
     } catch (err) {
       console.log(
         `___ ERROR linking (CW-Ref: ${commonWell.lastReferenceHeader}): ${getMessage(err)}`
       );
       console.log(`___ ID: ${JSON.stringify(id, null, 2)}`);
-      // throw err;
     } finally {
       console.log(`>>> Delete the Patient`);
-      const respDeletePatient = await commonWell.deletePatient(queryMeta, patientId);
-      // console.log(respDeletePatient);
+      await commonWell.deletePatient(queryMeta, patientId);
       console.log(`>>> Delete the Patient OK`);
     }
   } finally {
     console.log(`>>> Unenroll the Person`);
-    const respUnenrollPerson = await commonWell.unenrollPerson(queryMeta, personId);
-    // console.log(respUnenrollPerson);
+    await commonWell.unenrollPerson(queryMeta, personId);
     console.log(`>>> Unenroll the Person OK`);
 
     console.log(`>>> Delete the Person`);
-    const respDeletePerson = await commonWell.deletePerson(queryMeta, personId);
-    // console.log(respDeletePerson);
+    await commonWell.deletePerson(queryMeta, personId);
     console.log(`>>> Delete the Person OK`);
   }
 }
