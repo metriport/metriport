@@ -3,7 +3,7 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { DocumentWithFilename } from "../../commonwell/document/shared";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
-import { ResourceType } from "../shared";
+import { ResourceType, ProviderOid } from "../shared";
 
 export const toFHIR = (
   doc: DocumentWithFilename,
@@ -12,7 +12,6 @@ export const toFHIR = (
 ): DocumentReference => {
   const id = doc.id?.replace("urn:uuid:", "");
 
-  // need to add custodian
   return {
     id: id,
     resourceType: ResourceType.DocumentReference,
@@ -51,6 +50,10 @@ export const toFHIR = (
         type: ResourceType.Organization,
       },
     ],
+    // DEFAULT TO COMMONWELL FOR NOW
+    custodian: {
+      id: ProviderOid.commonwell,
+    },
     description: doc.content?.description,
     content: [
       {
