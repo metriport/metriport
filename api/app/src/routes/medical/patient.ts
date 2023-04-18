@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
-import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
+import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
 import cwCommands from "../../external/commonwell";
@@ -44,11 +44,8 @@ router.post(
       ...schemaCreateToPatient(payload, cxId),
       facilityId,
     };
-    const patient = await createPatient(patientCreate);
 
-    // TODO: #393 declarative, event-based integration
-    // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient.create(patient, facilityId).catch(processAsyncError(`cw.patient.create`));
+    const patient = await createPatient(patientCreate);
 
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })

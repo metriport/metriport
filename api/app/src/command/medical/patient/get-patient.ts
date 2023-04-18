@@ -1,9 +1,11 @@
+import { Op } from "sequelize";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
+import { PatientData } from "../../../models/medical/patient";
 
 export const getPatients = async ({
   facilityId,
@@ -13,10 +15,57 @@ export const getPatients = async ({
   cxId: string;
 }): Promise<Patient[]> => {
   const patients = await PatientModel.findAll({
-    where: { cxId, facilityIds: [facilityId] },
+    where: {
+      cxId,
+      facilityIds: {
+        [Op.contains]: [facilityId],
+      },
+    },
     order: [["id", "ASC"]],
   });
   return patients;
+};
+
+export const getPatientByDemo = async ({
+  facilityId,
+  cxId,
+  demo,
+}: {
+  facilityId: string;
+  cxId: string;
+  demo: PatientData;
+}): Promise<Patient | null> => {
+  const patient = await PatientModel.findOne({
+    where: {
+      cxId,
+      facilityIds: {
+        [Op.contains]: [facilityId],
+      },
+      data: {
+        firstName: demo.firstName,
+        lastName: demo.lastName,
+        ...(demo.personalIdentifiers && demo.personalIdentifiers.length
+          ? {
+              personalIdentifiers: {
+                [Op.in]: demo.personalIdentifiers,
+              },
+            }
+          : undefined),
+        dob: demo.dob,
+        address: {
+          addressLine1: demo.address.addressLine1,
+          city: demo.address.city,
+          state: demo.address.state,
+          zip: demo.address.zip,
+          country: demo.address.country,
+          ...(demo.address.addressLine2 ? { addressLine2: demo.address.addressLine2 } : undefined),
+        },
+        contact: demo.contact,
+      },
+    },
+  });
+
+  return patient;
 };
 
 export const getPatientOrFail = async ({
