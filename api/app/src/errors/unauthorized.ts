@@ -1,10 +1,12 @@
-import status from "http-status";
+import httpStatus from "http-status";
 import MetriportError from "./metriport-error";
 
+const numericStatus = httpStatus.UNAUTHORIZED;
+
 export default class UnauthorizedError extends MetriportError {
-  status = status.UNAUTHORIZED;
-  constructor(message = status[status.UNAUTHORIZED].toString()) {
+  constructor(message = httpStatus[numericStatus].toString()) {
     super(message);
+    this.status = numericStatus;
     this.name = this.constructor.name;
   }
 }

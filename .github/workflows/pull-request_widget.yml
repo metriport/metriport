@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "connect-widget/app/**"
+  merge_group:
   workflow_dispatch:
 
 jobs:
@@ -13,6 +14,7 @@ jobs:
     with:
       path: "connect-widget/app"
       build_env: "production"
+    secrets: inherit
 
   check-pr-staging:
     if: ${{ github.event.pull_request.base.ref != 'master' }}
@@ -20,3 +22,4 @@ jobs:
     with:
       path: "connect-widget/app"
       build_env: "staging"
+    secrets: inherit

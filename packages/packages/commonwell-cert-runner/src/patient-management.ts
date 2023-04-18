@@ -10,7 +10,7 @@ import { cloneDeep } from "lodash";
 
 import { makeMergePatient, makePatient, personStrongId } from "./payloads";
 
-import { getEnvOrFail } from "./util";
+import { firstElementOrFail, getEnvOrFail } from "./util";
 
 const commonwellSandboxOID = getEnvOrFail("COMMONWELL_SANDBOX_OID");
 const commonwellSandboxOrgName = getEnvOrFail("COMMONWELL_SANDBOX_ORG_NAME");
@@ -33,13 +33,14 @@ export async function patientManagement(
   console.log(`>>> D2a: Update demographics for a local Patient `);
   patient.details.name[0].family[0] = "Graham";
   const patientId = getIdTrailingSlash(respD1b);
+  if (!patientId) throw new Error("No patientId on response from registerPatient");
   const respD2a = await commonWell.updatePatient(queryMeta, patient, patientId);
   console.log(respD2a);
 
   console.log(`>>> D3a: Search for a Patient`);
   const respD3a = await commonWell.searchPatient(
     queryMeta,
-    patient.details.name[0].given[0],
+    firstElementOrFail(patient.details.name[0].given, "given name"),
     patient.details.name[0].family[0],
     patient.details.birthDate,
     patient.details.gender.code,
@@ -54,7 +55,9 @@ export async function patientManagement(
     makeMergePatient({ facilityId: commonWell.oid })
   );
   const patientId2 = getIdTrailingSlash(respPatient2);
-  const referenceLink = respD1b._links.self.href;
+  if (!patientId2) throw new Error("No patientId on response from registerPatient");
+  const referenceLink = respD1b._links?.self.href;
+  if (!referenceLink) throw new Error("No referenceLink on response from registerPatient");
 
   await commonWell.mergePatients(queryMeta, patientId2, referenceLink);
   console.log("D4a successful");
@@ -65,6 +68,7 @@ export async function patientManagement(
   // Main Account Link
   const person = await commonWell.enrollPerson(queryMeta, personStrongId);
   const personId = getId(person);
+  if (!personId) throw new Error("No personId on response from enrollPerson");
   await commonWell.addPatientLink(queryMeta, personId, referenceLink);
   // Sandbox Account Link
   const payloadSandboxPatient = cloneDeep(patient);
@@ -73,7 +77,11 @@ export async function patientManagement(
   payloadSandboxPatient.identifier[0].label = commonwellSandboxOrgName;
   const sandboxPatient = await commonwellSandbox.registerPatient(queryMeta, payloadSandboxPatient);
   const sandboxPatientId = getIdTrailingSlash(sandboxPatient);
-  const sandboxReferenceLink = sandboxPatient._links.self.href;
+  if (!sandboxPatientId) throw new Error("No sandboxPatientId on response from registerPatient");
+  const sandboxReferenceLink = sandboxPatient._links?.self.href;
+  if (!sandboxReferenceLink) {
+    throw new Error("No sandboxReferenceLink on response from registerPatient");
+  }
   await commonwellSandbox.addPatientLink(queryMeta, personId, sandboxReferenceLink);
   await commonWell.searchPersonByPatientDemo(queryMeta, patientId);
   const respD5a = await commonWell.getNetworkLinks(queryMeta, patientId);
@@ -81,20 +89,20 @@ export async function patientManagement(
 
   // D6: Upgrade/Downgrade a Network link
   console.log(`>>> D6a: Upgrade link from LOLA 1 to LOLA 2`);
-  const getLola1Link = respD5a._embedded.networkLink.find(
-    link => link.assuranceLevel === LOLA.level_1
+  const getLola1Link = respD5a._embedded.networkLink?.find(
+    link => link && link.assuranceLevel === LOLA.level_1
   );
-  const respD6a = await commonWell.upgradeOrDowngradeNetworkLink(
-    queryMeta,
-    getLola1Link._links.upgrade.href
-  );
+  const upgradeURL = getLola1Link?._links?.upgrade?.href;
+  if (!upgradeURL) throw new Error("No upgradeURL on response from getNetworkLinks");
+  const respD6a = await commonWell.upgradeOrDowngradeNetworkLink(queryMeta, upgradeURL);
   console.log(respD6a);
 
   console.log(`>>> D6b: Downgrade link from LOLA 2 to LOLA 0`);
-  const respD6b = await commonWell.upgradeOrDowngradeNetworkLink(
-    queryMeta,
-    respD6a._links.downgrade.href
-  );
+  const downgradeURL = respD6a._links?.downgrade?.href;
+  if (!downgradeURL) {
+    throw new Error("No downgradeURL on response from upgradeOrDowngradeNetworkLink");
+  }
+  const respD6b = await commonWell.upgradeOrDowngradeNetworkLink(queryMeta, downgradeURL);
   console.log(respD6b);
 
   // Deletes created patients (not a part of spec just for cleanup)

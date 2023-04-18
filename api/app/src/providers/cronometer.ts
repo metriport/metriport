@@ -69,7 +69,7 @@ export class Cronometer extends Provider implements OAuth2 {
     });
   }
 
-  async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
+  override async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
     // not using fetchProviderData here on purpose due to interesting API design - this is a POST
     const resp = await axios.post(
       `${Cronometer.URL}/${Cronometer.API_PATH}/diary_summary`,

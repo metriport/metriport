@@ -1,11 +1,12 @@
 import { Document } from "@metriport/commonwell-sdk";
-import mime from "mime-types";
+import { contentType, extension } from "mime-types";
 import { Patient } from "../../../models/medical/patient";
 import { makePatientOID } from "../../../shared/oid";
 
 // TODO #340 When we fix tsconfig on CW SDK we can remove the `Required` for `id`
 export type DocumentWithFilename = Document & {
   fileName: string;
+  raw?: unknown;
 };
 
 export function getFileName(patient: Patient, doc: Document): string {
@@ -25,7 +26,7 @@ function getSuffix(id: string | undefined): string {
 }
 
 function getFileExtension(value: string | undefined): string {
-  if (!value || !mime.contentType(value)) return "";
-  const extension = mime.extension(value);
-  return extension ? `.${extension}` : "";
+  if (!value || !contentType(value)) return "";
+  const fileExtension = extension(value);
+  return fileExtension ? `.${fileExtension}` : "";
 }

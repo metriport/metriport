@@ -9,10 +9,10 @@ export enum LOLA {
   level_4 = "4",
 }
 
-export const isLOLA1 = (link: NetworkLink) => link.assuranceLevel === LOLA.level_1;
-export const isLOLA2 = (link: NetworkLink) => link.assuranceLevel === LOLA.level_2;
-export const isLOLA3 = (link: NetworkLink) => link.assuranceLevel === LOLA.level_3;
-export const isLOLA4 = (link: NetworkLink) => link.assuranceLevel === LOLA.level_4;
+export const isLOLA1 = (link?: NetworkLink) => link && link.assuranceLevel === LOLA.level_1;
+export const isLOLA2 = (link?: NetworkLink) => link && link.assuranceLevel === LOLA.level_2;
+export const isLOLA3 = (link?: NetworkLink) => link && link.assuranceLevel === LOLA.level_3;
+export const isLOLA4 = (link?: NetworkLink) => link && link.assuranceLevel === LOLA.level_4;
 
 export const lolaSchema = z.enum(Object.values(LOLA) as [string, ...string[]]);
 

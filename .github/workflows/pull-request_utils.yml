@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "utils/**"
+  merge_group:
   workflow_dispatch:
 
 jobs:
@@ -11,3 +12,4 @@ jobs:
     uses: ./.github/workflows/_reusable_build.yml
     with:
       path: "utils"
+    secrets: inherit

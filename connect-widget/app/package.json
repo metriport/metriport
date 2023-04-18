@@ -58,6 +58,7 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
+    "@tsconfig/create-react-app": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
     "eslint": "^8.32.0",

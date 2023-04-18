@@ -12,6 +12,10 @@ on:
         required: true
         type: string
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
+      cdk_stack:
+        required: true
+        type: string
+        description: "the name of the CDK stack we're deploying"
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -19,14 +23,16 @@ on:
         required: true
       AWS_REGION:
         required: true
-      CDK_STACK:
-        required: true
       INFRA_CONFIG:
         required: true
       SENTRY_AUTH_TOKEN:
         required: false
       SENTRY_ORG:
         required: false
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
 
 jobs:
   deploy:
@@ -34,20 +40,30 @@ jobs:
     # https://serverlessfirst.com/emails/how-to-prevent-concurrent-deployments-of-serverless-stacks-in-github-actions/
     # TODO Consider the solution here: https://github.com/tj-actions/aws-cdk/blob/main/action.yml
     concurrency:
-      group: ${{ format('{0}-{1}', github.job, inputs.deploy_env) }}
+      group: ${{ format('{0}-{1}-{2}', github.job, inputs.cdk_stack, inputs.deploy_env) }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.deploy_env }}
     steps:
+      - name: Log Environment
+        run: |
+          env
+        shell: bash
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18.14"
       # TODO we should reuse the checked out code from the previous step
       # doing this here might introduce minutes between `build` and `deploy`, which
       # gives opportunity for problems (someone merges between `build` and `deploy`)
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "lts/*"
-      - run: env
-        shell: bash
-      - run: |
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Log Git Ref
+        run: |
           echo "Git ref: $(git rev-parse HEAD)"
         shell: bash
 
@@ -110,7 +126,7 @@ jobs:
         with:
           cdk_action: "diff"
           cdk_version: "2.49.0"
-          cdk_stack: "${{ secrets.CDK_STACK }}"
+          cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -123,7 +139,7 @@ jobs:
         with:
           cdk_action: "deploy --verbose --require-approval never"
           cdk_version: "2.49.0"
-          cdk_stack: "${{ secrets.CDK_STACK }}"
+          cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

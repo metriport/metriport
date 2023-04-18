@@ -1,10 +1,12 @@
-import status from "http-status";
+import httpStatus from "http-status";
 import MetriportError from "./metriport-error";
 
+const numericStatus = httpStatus.BAD_REQUEST;
+
 export default class BadRequestError extends MetriportError {
-  status = status.BAD_REQUEST;
-  constructor(message = status[status.BAD_REQUEST].toString()) {
+  constructor(message = httpStatus[numericStatus].toString()) {
     super(message);
+    this.status = numericStatus;
     this.name = this.constructor.name;
   }
 }

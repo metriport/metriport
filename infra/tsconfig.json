@@ -1,28 +1,22 @@
 {
+  "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2018",
-    "module": "commonjs",
-    "lib": ["es2018"],
-    "declaration": true,
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
+    // START - From @tsconfig/strictest
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "checkJs": true,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": false,
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "experimentalDecorators": true,
-    "strictPropertyInitialization": false,
-    "typeRoots": ["./node_modules/@types"],
-    "outDir": "./dist"
+    "noUncheckedIndexedAccess": true,
+    // END - From @tsconfig/strictest
+
+    "sourceMap": true /* Create source map files for emitted JavaScript files. */,
+    "rootDir": "./" /* Specify the root folder within your source files. */,
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */
   },
-  "exclude": [
-    "node_modules",
-    "cdk.out",
-    "dist/**/*",
-  ]
+  "include": ["./bin", "./lib"],
+  "exclude": ["cdk.out", "dist/**/*"]
 }

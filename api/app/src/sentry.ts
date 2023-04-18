@@ -3,7 +3,7 @@ import * as Tracing from "@sentry/tracing";
 import { Application } from "express";
 import { Config } from "./shared/config";
 
-export const isSentryEnabled = () => Config.isCloudEnv() && Boolean(Config.getSentryDSN());
+export const isSentryEnabled = () => Boolean(Config.getSentryDSN());
 
 export function initSentry(app: Application): void {
   Sentry.init({

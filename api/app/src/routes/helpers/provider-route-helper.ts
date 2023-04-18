@@ -5,6 +5,7 @@ import { getConnectedUserOrFail } from "../../command/connected-user/get-connect
 import { ConsumerHealthDataType } from "../../providers/provider";
 import { Constants, ProviderOptions } from "../../shared/constants";
 import { getCxIdOrFail, getDateOrFail, getUserIdFromQueryOrFail } from "../util";
+import { capture } from "../../shared/notifications";
 
 // TODO make one of this for each Type so we can avoid the potential type mismatching
 // on the caller's side
@@ -43,6 +44,9 @@ export async function getProviderDataForType<T>(
       data.push(result.value);
     } else {
       console.error(result.reason);
+      capture.error(result.reason, {
+        extra: { context: `${providers[i]}.${type}` },
+      });
       data.push({
         metadata: {
           date: date,

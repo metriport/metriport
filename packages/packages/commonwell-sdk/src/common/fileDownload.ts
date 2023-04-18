@@ -19,7 +19,7 @@ export async function downloadFile({
 }): Promise<boolean> {
   const config: AxiosRequestConfig = {
     responseType: "stream",
-    headers,
+    ...(headers && { headers }),
   };
   const response = await (client ?? axios).get(url, config);
   await pipeline(response.data, outputStream);

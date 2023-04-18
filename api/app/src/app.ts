@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 app.use(cors());
 app.set("etag", false);
 
-app.use((req, res, next) => {
+app.use((_req, res, next) => {
   version && res.setHeader("x-metriport-version", version);
   next();
 });
@@ -32,13 +32,21 @@ mountRoutes(app);
 module.exports = app;
 
 // route used for health checks
-app.get("/", (req: Request, res: Response) => {
+app.get("/", (_req: Request, res: Response) => {
   res.status(200).send("OK");
 });
 
 // The Sentry error handler must be before any other error middleware and after all controllers
 if (isSentryEnabled()) {
-  app.use(Sentry.Handlers.errorHandler());
+  app.use(
+    Sentry.Handlers.errorHandler({
+      //eslint-disable-next-line @typescript-eslint/no-unused-vars
+      shouldHandleError: (error): boolean => {
+        // here we can dd logic to decide if we want to send the error to Sentry, like filtering out 404s
+        return true;
+      },
+    })
+  );
 }
 app.use(errorHandler);
 

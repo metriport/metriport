@@ -1,5 +1,5 @@
 import { CommonwellError, DocumentQueryResponse, Document } from "@metriport/commonwell-sdk";
-import stream from "stream";
+import { PassThrough } from "stream";
 import * as AWS from "aws-sdk";
 import { updateDocQueryStatus } from "../../../command/medical/document/document-query";
 import { Patient } from "../../../models/medical/patient";
@@ -16,6 +16,7 @@ import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { DocumentWithFilename } from "./shared";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
+import { getFileName } from "./shared";
 
 const s3client = new AWS.S3();
 
@@ -110,6 +111,19 @@ async function internalGetDocuments({
           ? {
               id: d.content.masterIdentifier.value,
               content: { location: d.content.location, ...d.content },
+              contained: d.content.contained,
+              masterIdentifier: d.content.masterIdentifier,
+              subject: d.content.subject,
+              context: d.content.context,
+              fileName: getFileName(patient, d),
+              description: d.content.description,
+              type: d.content.type,
+              status: d.content.status,
+              location: d.content.location,
+              indexed: d.content.indexed,
+              mimeType: d.content.mimeType,
+              size: d.content.size, // bytes
+              raw: d,
             }
           : []
       )
@@ -127,7 +141,7 @@ async function dowloadAndUploadDocsToS3({
   documents: Document[];
 }): Promise<DocumentWithFilename[]> {
   const uploadStream = (key: string) => {
-    const pass = new stream.PassThrough();
+    const pass = new PassThrough();
     const base64key = Buffer.from(key).toString("base64");
 
     return {

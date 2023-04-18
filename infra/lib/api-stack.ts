@@ -227,6 +227,10 @@ export class APIStack extends Stack {
       ),
     });
 
+    // TODO: #489 ain't the most secure, but the above code doesn't work as CDK complains we can't use the connections
+    // from the cluster created above, should be fine for now as it will only accept connections in the VPC
+    fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
+
     // This speeds up deployments so the tasks are swapped quicker.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
     fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");

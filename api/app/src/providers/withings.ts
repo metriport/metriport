@@ -243,7 +243,7 @@ export class Withings extends Provider implements OAuth2 {
     );
   }
 
-  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
+  override async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
     const accessToken = await this.getAccessToken(connectedUser);
 
     const [resActivity, resWorkouts] = await Promise.allSettled([
@@ -277,7 +277,7 @@ export class Withings extends Provider implements OAuth2 {
     return withingsMeasurementResp.parse(response.data.body);
   }
 
-  async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+  override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
     const accessToken = await this.getAccessToken(connectedUser);
 
     const response = await this.fetchBodyData(accessToken, date);
@@ -301,7 +301,10 @@ export class Withings extends Provider implements OAuth2 {
     );
   }
 
-  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+  override async getBiometricsData(
+    connectedUser: ConnectedUser,
+    date: string
+  ): Promise<Biometrics> {
     const accessToken = await this.getAccessToken(connectedUser);
 
     const [resHeart, resBody] = await Promise.allSettled([
@@ -318,7 +321,7 @@ export class Withings extends Provider implements OAuth2 {
     return mapToBiometrics(date, heart, body);
   }
 
-  async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
+  override async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
     const params = {
       action: "getsummary",
       startdateymd: date,
