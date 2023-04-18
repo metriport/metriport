@@ -50,6 +50,7 @@ jobs:
     with:
       path: "connect-widget/app"
       build_env: "production"
+    secrets: inherit
   widget-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
     needs: widget-build
@@ -73,6 +74,7 @@ jobs:
     uses: ./.github/workflows/_reusable_build.yml
     with:
       path: "api/app" # there's no "build" for lambdas, so one job for both works
+    secrets: inherit
   api-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
     needs: api-build
