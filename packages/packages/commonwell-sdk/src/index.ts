@@ -9,7 +9,7 @@ export { Demographics, GenderCodes } from "./models/demographics";
 export * from "./models/document";
 export { EnrollmentSummary } from "./models/enrollment-summary";
 export { HumanName, NameUseCodes } from "./models/human-name";
-export { Identifier, IdentifierUseCodes } from "./models/identifier";
+export { Identifier } from "./models/identifier";
 export { isLOLA1, isLOLA2, isLOLA3, isLOLA4, LOLA, NetworkLink } from "./models/link";
 export { Organization } from "./models/organization";
 export { Patient } from "./models/patient";
