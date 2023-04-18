@@ -3,6 +3,7 @@ import { Patient } from "../../../models/medical/patient";
 import { GenderAtBirth } from "../../../models/medical/patient";
 import { PersonalIdentifier } from "../../../models/medical/patient";
 import { driversLicenseURIs } from "../../../shared/oid";
+import { ResourceType } from "../shared";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
@@ -16,7 +17,7 @@ export const contactMapping: { [k: string]: "phone" | "email" } = {
 
 export const toFHIR = (patient: Patient): FHIRPatient => {
   return {
-    resourceType: "Patient",
+    resourceType: ResourceType.Patient,
     id: patient.id,
     identifier: convertDriversLicenseToIdentifier(patient.data.personalIdentifiers),
     name: [

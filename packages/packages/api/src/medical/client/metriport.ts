@@ -329,10 +329,10 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Returns presigned url for document in s3
+   * Returns a URL that can be used to download the document.
    *
    * @param fileName The file name of the document in s3.
-   * @return presigned url
+   * @return presigned url that expires in 20 seconds
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getDocumentUrl(fileName: string): Promise<{ url: string }> {

@@ -8,7 +8,6 @@ import { getDocuments } from "../../external/fhir/document/get-documents";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
-import { createS3FileName } from "../../shared/external";
 
 const router = Router();
 
@@ -31,7 +30,7 @@ router.get(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const forceQuery = getFromQuery("force-query", req);
 
-    const documents = await getDocuments(`patient=${patientId}&extension=Commonwell`);
+    const documents = await getDocuments(`patient=${patientId}`);
     const documentsDTO = toDTO(documents);
 
     const queryStatus = forceQuery
@@ -78,10 +77,13 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const seconds = 20;
     const fileName = getFromQueryOrFail("fileName", req);
+    const fileHasCxId = fileName.includes(cxId);
+
+    if (!fileHasCxId) throw new Error(`File does not belong to cxId: ${cxId}`);
 
     const url = s3client.getSignedUrl("getObject", {
       Bucket: Config.getMedicalDocumentsBucketName(),
-      Key: createS3FileName(cxId, fileName),
+      Key: fileName,
       Expires: seconds,
     });
 

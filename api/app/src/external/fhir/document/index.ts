@@ -3,6 +3,7 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { DocumentWithFilename } from "../../commonwell/document/shared";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
+import { ResourceType } from "../shared";
 
 export const toFHIR = (
   doc: DocumentWithFilename,
@@ -11,17 +12,18 @@ export const toFHIR = (
 ): DocumentReference => {
   const id = doc.id?.replace("urn:uuid:", "");
 
+  // need to add custodian
   return {
     id: id,
-    resourceType: "DocumentReference",
+    resourceType: ResourceType.DocumentReference,
     contained: [
       {
-        resourceType: "Organization",
+        resourceType: ResourceType.Organization,
         id: organization.id,
         name: organization.data.name,
       },
       {
-        resourceType: "Patient",
+        resourceType: ResourceType.Patient,
         id: patient.id,
       },
     ],
@@ -42,12 +44,12 @@ export const toFHIR = (
     type: doc.content?.type,
     subject: {
       reference: `Patient/${patient.id}`,
-      type: "Patient",
+      type: ResourceType.Patient,
     },
     author: [
       {
         reference: `#${organization.id}`,
-        type: "Organization",
+        type: ResourceType.Organization,
       },
     ],
     description: doc.content?.description,
