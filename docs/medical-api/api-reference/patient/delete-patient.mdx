@@ -1,0 +1,35 @@
+---
+title: "Delete Patient"
+description: "Removes the specified Patient."
+api: "DELETE /medical/v1/patient/{id}"
+---
+
+## Query Params
+
+<ParamField query="facilityId" type="string" required>
+  The ID of the Facility where the patient is receiving care.
+</ParamField>
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient to delete.
+</ParamField>
+
+## Response
+
+`204` - no content, upon successful delete.
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patientId = "2.16.840.1.113883.3.666.5.2004.2.110";
+const facilityId = "2.16.840.1.113883.3.666.5.2004.4.102";
+await metriport.deletePatient(patientId, facilityId);
+```
+
+</ResponseExample>
