@@ -35,7 +35,14 @@ export const getPatientByDemo = async ({
       cxId,
       facilityIds: [facilityId],
       data: {
-        [Op.eq]: demo,
+        firstName: demo.firstName,
+        lastName: demo.lastName,
+        personalIdentifiers: {
+          [Op.in]: demo.personalIdentifiers,
+        },
+        dob: demo.dob,
+        address: demo.address,
+        contact: demo.contact,
       },
     },
   });
