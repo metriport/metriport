@@ -15,7 +15,12 @@ export const getPatients = async ({
   cxId: string;
 }): Promise<Patient[]> => {
   const patients = await PatientModel.findAll({
-    where: { cxId, facilityIds: [facilityId] },
+    where: {
+      cxId,
+      facilityIds: {
+        [Op.contains]: [facilityId],
+      },
+    },
     order: [["id", "ASC"]],
   });
   return patients;
@@ -33,7 +38,9 @@ export const getPatientByDemo = async ({
   const patient = await PatientModel.findOne({
     where: {
       cxId,
-      facilityIds: [facilityId],
+      facilityIds: {
+        [Op.contains]: [facilityId],
+      },
       data: {
         firstName: demo.firstName,
         lastName: demo.lastName,
