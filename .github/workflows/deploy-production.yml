@@ -82,7 +82,7 @@ jobs:
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.WIDGET_REGION_PRODUCTION }} # renamed
+      AWS_REGION: ${{ secrets.API_REGION_PRODUCTION }} # renamed
       INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }} # renamed
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
