@@ -4,15 +4,11 @@ import { GenderAtBirth } from "../../../models/medical/patient";
 import { PersonalIdentifier } from "../../../models/medical/patient";
 import { driversLicenseURIs } from "../../../shared/oid";
 import { ResourceType } from "../shared";
+import { ContactTypes } from "../../../models/medical/contact";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
   M: "male",
-};
-
-export const contactMapping: { [k: string]: "phone" | "email" } = {
-  phone: "phone",
-  email: "email",
 };
 
 export const toFHIR = (patient: Patient): FHIRPatient => {
@@ -29,7 +25,7 @@ export const toFHIR = (patient: Patient): FHIRPatient => {
     telecom: patient.data.contact
       ? Object.entries(patient.data.contact).map(([key, val]) => {
           return {
-            system: contactMapping[key],
+            system: key as ContactTypes,
             value: val,
           };
         })

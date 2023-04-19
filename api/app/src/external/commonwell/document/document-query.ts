@@ -106,28 +106,39 @@ async function internalGetDocuments({
   }
 
   const documents: Document[] = docs.entry
-    ? docs.entry.flatMap(d =>
-        d.content?.masterIdentifier?.value && d.content && d.content.location
-          ? {
-              id: d.content.masterIdentifier.value,
-              content: { location: d.content.location, ...d.content },
-              contained: d.content.contained,
-              masterIdentifier: d.content.masterIdentifier,
-              subject: d.content.subject,
-              context: d.content.context,
-              fileName: getFileName(patient, d),
-              description: d.content.description,
-              type: d.content.type,
-              status: d.content.status,
-              location: d.content.location,
-              indexed: d.content.indexed,
-              mimeType: d.content.mimeType,
-              size: d.content.size, // bytes
-              raw: d,
-            }
-          : []
-      )
+    ? docs.entry.flatMap(d => {
+        if (d.content.size && d.content.size === 0) {
+          capture.message("Document is of size 0", {
+            extra: d.content,
+          });
+
+          return [];
+        }
+
+        if (d.content?.masterIdentifier?.value && d.content && d.content.location) {
+          return {
+            id: d.content.masterIdentifier.value,
+            content: { location: d.content.location, ...d.content },
+            contained: d.content.contained,
+            masterIdentifier: d.content.masterIdentifier,
+            subject: d.content.subject,
+            context: d.content.context,
+            fileName: getFileName(patient, d),
+            description: d.content.description,
+            type: d.content.type,
+            status: d.content.status,
+            location: d.content.location,
+            indexed: d.content.indexed,
+            mimeType: d.content.mimeType,
+            size: d.content.size, // bytes
+            raw: d,
+          };
+        }
+
+        return [];
+      })
     : [];
+
   return documents;
 }
 

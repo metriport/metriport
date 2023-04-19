@@ -1,4 +1,5 @@
+export type ContactTypes = "email" | "phone";
+
 export type Contact = {
-  phone?: string;
-  email?: string;
+  [k in ContactTypes]?: string;
 };

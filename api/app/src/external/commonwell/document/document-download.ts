@@ -43,7 +43,6 @@ export async function downloadDocument({
   // let retries = 0;
   // let done = false;
 
-  // // COMMENT OUT RETRY LOGIC
   // while (!done && retries < NUM_OF_RETRIES) {
   //   try {
   //     await commonWell.retrieveDocument(queryMeta, location, stream);
