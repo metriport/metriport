@@ -7,6 +7,8 @@ import { periodSchema } from "./period";
 
 export const identifierUseCodesSchema = z.enum(["usual", "official", "temp", "secondary", "old"]);
 
+export type IdentifierUseCodes = z.infer<typeof identifierUseCodesSchema>;
+
 // An identifier intended for use external to the FHIR protocol. As an external identifier,
 // it may be changed or retired due to human or system process and errors.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.11 Identifier)

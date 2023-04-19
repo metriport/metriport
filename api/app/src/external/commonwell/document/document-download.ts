@@ -1,6 +1,6 @@
 import { CommonwellError } from "@metriport/commonwell-sdk";
 import * as stream from "stream";
-// import NotFoundError from "../../../errors/not-found";
+import NotFoundError from "../../../errors/not-found";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
@@ -38,6 +38,10 @@ export async function downloadDocument({
         ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
       },
     });
+    if (err instanceof CommonwellError && err.cause?.response?.status === 404) {
+      throw new NotFoundError("Document not found");
+    }
+    throw err;
   }
 
   // let retries = 0;

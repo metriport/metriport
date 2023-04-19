@@ -1,5 +1,3 @@
 export type ContactTypes = "email" | "phone";
 
-export type Contact = {
-  [k in ContactTypes]?: string;
-};
+export type Contact = Record<ContactTypes, string>;

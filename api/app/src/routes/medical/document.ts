@@ -1,17 +1,14 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import * as AWS from "aws-sdk";
 import { OK } from "http-status";
-import { Config } from "../../shared/config";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getDocuments } from "../../external/fhir/document/get-documents";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
+import { downloadDocument } from "../../command/medical/document/document-download";
 
 const router = Router();
-
-const s3client = new AWS.S3();
 
 /** ---------------------------------------------------------------------------
  * GET /document
@@ -30,7 +27,7 @@ router.get(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const forceQuery = getFromQuery("force-query", req);
 
-    const documents = await getDocuments(`patient=${patientId}`);
+    const documents = await getDocuments({ patientId });
     const documentsDTO = toDTO(documents);
 
     const queryStatus = forceQuery
@@ -75,17 +72,12 @@ router.get(
   "/downloadUrl",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const seconds = 20;
     const fileName = getFromQueryOrFail("fileName", req);
     const fileHasCxId = fileName.includes(cxId);
 
     if (!fileHasCxId) throw new Error(`File does not belong to cxId: ${cxId}`);
 
-    const url = s3client.getSignedUrl("getObject", {
-      Bucket: Config.getMedicalDocumentsBucketName(),
-      Key: fileName,
-      Expires: seconds,
-    });
+    const url = await downloadDocument({ fileName });
 
     return res.status(OK).json({ url });
   })

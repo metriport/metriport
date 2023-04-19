@@ -3,7 +3,8 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { DocumentWithFilename } from "../../commonwell/document/shared";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
-import { ResourceType, ProviderOid } from "../shared";
+import { ResourceType } from "../shared";
+import { MedicalDataSourceOid } from "../..";
 
 export const toFHIR = (
   doc: DocumentWithFilename,
@@ -52,7 +53,7 @@ export const toFHIR = (
     ],
     // DEFAULT TO COMMONWELL FOR NOW
     custodian: {
-      id: ProviderOid.commonwell,
+      id: MedicalDataSourceOid.COMMONWELL,
     },
     description: doc.content?.description,
     content: [

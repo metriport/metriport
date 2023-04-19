@@ -107,7 +107,7 @@ async function internalGetDocuments({
 
   const documents: Document[] = docs.entry
     ? docs.entry.flatMap(d => {
-        if (d.content.size && d.content.size === 0) {
+        if (d.content.size === 0) {
           capture.message("Document is of size 0", {
             extra: d.content,
           });
@@ -170,14 +170,14 @@ async function dowloadAndUploadDocsToS3({
   const s3Refs = await Promise.allSettled(
     documents.map(async doc => {
       try {
-        if (doc.content?.masterIdentifier?.value) {
-          const { writeStream, promise } = uploadStream(doc.content?.masterIdentifier?.value);
+        if (doc.content?.masterIdentifier?.value && doc.content.location) {
+          const { writeStream, promise } = uploadStream(doc.content.masterIdentifier.value);
 
           await downloadDocument({
             cxId: patient.cxId,
             patientId: patient.id,
             facilityId: facilityId,
-            location: doc.content?.location ? doc.content.location : "",
+            location: doc.content?.location,
             stream: writeStream,
           });
 
@@ -200,6 +200,7 @@ async function dowloadAndUploadDocsToS3({
             context: `s3.documentUpload`,
           },
         });
+        throw error;
       }
     })
   );

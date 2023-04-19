@@ -1,5 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
+import { capture } from "../../../shared/notifications";
 
 export type DocumentReferenceDTO = {
   id: string;
@@ -18,6 +19,14 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
     return docs.flatMap(doc => {
       if (doc && doc.id && doc.content) {
         const hasAttachment = doc.content[0];
+
+        if (doc.content.length > 1) {
+          capture.message("Doc contains more than one content item", {
+            extra: {
+              content_length: doc.content.length,
+            },
+          });
+        }
 
         if (
           hasAttachment &&
