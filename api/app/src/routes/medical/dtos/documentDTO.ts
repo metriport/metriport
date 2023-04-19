@@ -23,6 +23,7 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
         if (doc.content.length > 1) {
           capture.message("Doc contains more than one content item", {
             extra: {
+              id: doc.id,
               content_length: doc.content.length,
             },
           });
