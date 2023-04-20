@@ -1,13 +1,15 @@
 ---
 title: "Get Document"
-description: "Fetches the document from S3 and sends a presigned URL"
+description: "Fetches the document and sends a presigned URL"
 api: "GET /medical/v1/document/downloadUrl"
 ---
+
+This endpoint returns a URL which you can use to download the specified document using the file name provided from the [List Documents endpoint](/medical-api/api-reference/document/list-documents)
 
 ## Query Params
 
 <ParamField query="fileName" type="string" required>
-  The file name of the document in s3.
+  The file name of the document.
 </ParamField>
 
 ## Response
