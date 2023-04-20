@@ -42,7 +42,7 @@ export const garminUserMetricsToBody = (gBody: GarminUserMetrics): Biometrics | 
 
 export const garminUserMetricsSchema = z.object({
   calendarDate: garminTypes.date,
-  vo2Max: garminTypes.vo2Max,
+  vo2Max: garminTypes.vo2Max.nullish(),
   // fitnessAge: 44, // we don't have this
 });
 export type GarminUserMetrics = z.infer<typeof garminUserMetricsSchema>;
