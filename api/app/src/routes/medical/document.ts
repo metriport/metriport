@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import status from "http-status";
+import { OK } from "http-status";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
-import { getDocuments } from "../../command/medical/document/get-documents";
+import { getDocuments } from "../../external/fhir/document/get-documents";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { downloadDocument } from "../../external/commonwell/document/document-download";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
+import { downloadDocument } from "../../command/medical/document/document-download";
 
 const router = Router();
 
@@ -27,14 +27,14 @@ router.get(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const forceQuery = getFromQuery("force-query", req);
 
-    const documents = await getDocuments({ cxId, patientId });
-    const documentsDTO = documents.map(toDTO);
+    const documents = await getDocuments({ patientId });
+    const documentsDTO = toDTO(documents);
 
     const queryStatus = forceQuery
       ? await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId })
       : (await getPatientOrFail({ cxId, id: patientId })).data.documentQueryStatus ?? "completed";
 
-    return res.status(status.OK).json({ queryStatus, documents: documentsDTO });
+    return res.status(OK).json({ queryStatus, documents: documentsDTO });
   })
 );
 
@@ -56,39 +56,30 @@ router.post(
 
     const queryStatus = await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId });
 
-    return res.status(status.OK).json({ queryStatus });
+    return res.status(OK).json({ queryStatus });
   })
 );
 
 /** ---------------------------------------------------------------------------
- * GET /document
+ * GET /downloadUrl
  *
- * Downloads the specified document for the specified patient.
+ * Fetches the document from S3 and sends a presigned URL
  *
- * @param req.query.patientId Patient ID for which to retrieve document metadata.
- * @param req.query.facilityId The facility providing NPI for the document download.
- * @param req.query.location The document URL.
- * @param [req.query.mimeType] The mime type of the document.
- * @param [req.query.fileName] The file name of the document.
- * @return The document content.
+ * @param req.query.fileName The file name of the document in s3.
+ * @return presigned url
  */
 router.get(
-  "/download",
+  "/downloadUrl",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const fileName = getFromQueryOrFail("fileName", req);
+    const fileHasCxId = fileName.includes(cxId);
 
-    const location = getFromQueryOrFail("location", req);
-    const mimeType = getFromQuery("mimeType", req);
-    const fileName = getFromQuery("fileName", req);
+    if (!fileHasCxId) throw new Error(`File does not belong to cxId: ${cxId}`);
 
-    fileName && res.attachment(fileName);
-    mimeType && res.header("Content-Type", mimeType);
+    const url = await downloadDocument({ fileName });
 
-    await downloadDocument({ patientId, cxId, facilityId, location, stream: res });
-
-    return res;
+    return res.status(OK).json({ url });
   })
 );
 

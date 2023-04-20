@@ -72,9 +72,12 @@ export async function patientManagement(
   await commonWell.addPatientLink(queryMeta, personId, referenceLink);
   // Sandbox Account Link
   const payloadSandboxPatient = cloneDeep(patient);
-  payloadSandboxPatient.identifier[0].system = `urn:oid:${commonwellSandboxOID}`;
-  payloadSandboxPatient.identifier[0].assigner = commonwellSandboxOrgName;
-  payloadSandboxPatient.identifier[0].label = commonwellSandboxOrgName;
+
+  if (payloadSandboxPatient.identifier) {
+    payloadSandboxPatient.identifier[0].system = `urn:oid:${commonwellSandboxOID}`;
+    payloadSandboxPatient.identifier[0].assigner = commonwellSandboxOrgName;
+    payloadSandboxPatient.identifier[0].label = commonwellSandboxOrgName;
+  }
   const sandboxPatient = await commonwellSandbox.registerPatient(queryMeta, payloadSandboxPatient);
   const sandboxPatientId = getIdTrailingSlash(sandboxPatient);
   if (!sandboxPatientId) throw new Error("No sandboxPatientId on response from registerPatient");

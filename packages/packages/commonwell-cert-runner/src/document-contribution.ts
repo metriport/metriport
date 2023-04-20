@@ -88,8 +88,10 @@ export async function documentContribution({
 
   const newPerson = cloneDeep(person);
   newPerson.identifier = makePatient({ facilityId: apiNewOrg.oid }).identifier;
-  newPerson.identifier[0].assigner = orgName;
-  newPerson.identifier[0].label = orgName;
+  if (newPerson.identifier) {
+    newPerson.identifier[0].assigner = orgName;
+    newPerson.identifier[0].label = orgName;
+  }
   const { patientId: patientIdNewOrg } = await findOrCreatePatient(
     apiNewOrg,
     queryMeta,

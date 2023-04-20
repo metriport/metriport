@@ -341,27 +341,20 @@ export class MetriportMedicalApi {
     return documentQuerySchema.parse(resp.data).queryStatus;
   }
 
-  // TODO #435 review the return type of this function
   /**
-   * Returns document references for the given patient across HIEs.
-   * Usually called after a successful call to `getDocuments`, which provides
-   * a Document location.
+   * Returns a URL that can be used to download the document.
    *
-   * @param patientId Patient ID for which to retrieve document metadata.
-   * @param facilityId The facility providing the NPI to support this operation.
-   * @param location The location of the document.
-   * @return The document's contents (bytes).
+   * @param fileName The file name of the document in s3.
+   * @return presigned url that expires in 20 seconds
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async getDocument(patientId: string, facilityId: string, location: string): Promise<any> {
-    const resp = await this.api.get(`${DOCUMENT_URL}/download`, {
+  async getDocumentUrl(fileName: string): Promise<{ url: string }> {
+    const resp = await this.api.get(`${DOCUMENT_URL}/downloadUrl`, {
       params: {
-        patientId,
-        facilityId,
-        location,
+        fileName,
       },
-      responseType: "blob",
     });
+
     return resp.data;
   }
 }

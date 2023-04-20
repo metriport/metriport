@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import {
   AddressUseCodes,
-  IdentifierUseCodes,
   NameUseCodes,
   Person,
+  Patient,
+  Identifier,
 } from "@metriport/commonwell-sdk";
 import { CertificatePurpose } from "@metriport/commonwell-sdk/lib/models/certificates";
 import { Demographics } from "@metriport/commonwell-sdk/lib/models/demographics";
@@ -61,8 +62,8 @@ export function makePatientId({
 export const caDriversLicenseUri = `${CW_ID_PREFIX}2.16.840.1.113883.4.3.6`;
 export const driversLicenseId = nanoid.nanoid();
 
-export const identifier = {
-  use: IdentifierUseCodes.usual,
+export const identifier: Identifier = {
+  use: "usual",
   key: driversLicenseId,
   system: caDriversLicenseUri,
   period: {
@@ -132,10 +133,10 @@ export const personNoStrongId: Person = {
 export const makePatient = ({
   facilityId = makeFacilityId(),
   details = mainDetails,
-}: { facilityId?: string; details?: Demographics } = {}) => ({
+}: { facilityId?: string; details?: Demographics } = {}): Patient => ({
   identifier: [
     {
-      use: "unspecified",
+      use: "old",
       label: commonwellOrgName,
       system: `${CW_ID_PREFIX}${facilityId}`,
       key: makePatientId({ facilityId }),

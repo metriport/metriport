@@ -1,6 +1,6 @@
 import { DocumentQueryStatus } from "../../../domain/medical/document-reference";
 import { processAsyncError } from "../../../errors";
-import { getDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
+import { queryDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient } from "../../../models/medical/patient";
 import { getPatientOrFail } from "../patient/get-patient";

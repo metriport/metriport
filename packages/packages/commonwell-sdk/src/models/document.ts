@@ -23,9 +23,9 @@ const codeableConceptSchema = z.object({
   coding: z
     .array(
       z.object({
-        system: z.string().optional().nullable(),
-        code: z.string().optional().nullable(),
-        display: z.string().optional().nullable(),
+        system: z.string().optional(),
+        code: z.string().optional(),
+        display: z.string().optional(),
       })
     )
     .optional(),
@@ -86,7 +86,7 @@ export const contentSchema = z.object({
   // relatesTo: ?, // What's the structure here?
   // code: replaces | transforms | signs | appends, // Supposed to be required, no example - what's the structure here?
   // target: ?, // Supposed to be required, no example - what's the structure here?
-  description: z.string().optional().nullable(),
+  description: z.string().optional(),
   // confidentiality: ?[], // What's the structure here? Maybe based on codeableConceptSchema?
   // primaryLanguage: ?, // What's the structure here?
   mimeType: z.string().optional(),

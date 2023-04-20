@@ -1,11 +1,5 @@
 #!/usr/bin/env node
-import {
-  CommonWell,
-  getId,
-  getIdTrailingSlash,
-  IdentifierUseCodes,
-  RequestMetadata,
-} from "@metriport/commonwell-sdk";
+import { CommonWell, getId, getIdTrailingSlash, RequestMetadata } from "@metriport/commonwell-sdk";
 import * as nanoid from "nanoid";
 
 import {
@@ -62,7 +56,7 @@ export async function personManagement(commonWell: CommonWell, queryMeta: Reques
   const driversLicenseId2 = nanoid.nanoid();
   personNoStrongId.details.identifier = [
     {
-      use: IdentifierUseCodes.usual,
+      use: "usual",
       key: driversLicenseId2,
       system: caDriversLicenseUri,
       period: {

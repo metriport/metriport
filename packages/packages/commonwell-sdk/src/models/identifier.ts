@@ -4,15 +4,10 @@ import { periodSchema } from "./period";
 // Identifies the use for an identifier, if known. This value set defines its own
 // terms in the system http://hl7.org/fhir/identifier-use
 // See: https://specification.commonwellalliance.org/appendix/terminology-bindings#c8-identifier-use-codes
-export enum IdentifierUseCodes {
-  usual = "usual",
-  official = "official",
-  temp = "temp",
-  unspecified = "unspecified",
-}
-export const identifierUseCodesSchema = z.enum(
-  Object.keys(IdentifierUseCodes) as [string, ...string[]]
-);
+
+export const identifierUseCodesSchema = z.enum(["usual", "official", "temp", "secondary", "old"]);
+
+export type IdentifierUseCodes = z.infer<typeof identifierUseCodesSchema>;
 
 // An identifier intended for use external to the FHIR protocol. As an external identifier,
 // it may be changed or retired due to human or system process and errors.

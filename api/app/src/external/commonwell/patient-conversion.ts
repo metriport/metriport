@@ -1,7 +1,6 @@
 import {
   AddressUseCodes,
   Identifier,
-  IdentifierUseCodes,
   NameUseCodes,
   Patient as CommonwellPatient,
   Person as CommonwellPerson,
@@ -35,8 +34,8 @@ export function patientToCommonwell({
   orgName: string;
   orgId: string;
 }): CommonwellPatient {
-  const identifier = {
-    use: IdentifierUseCodes.usual,
+  const identifier: Identifier = {
+    use: "usual",
     label: orgName,
     system: oid(orgId),
     key: patient.id,
@@ -73,7 +72,7 @@ export function patientToCommonwell({
 
 function getStrongIdentifiers(data: PatientData): Identifier[] {
   return data.personalIdentifiers.map(id => ({
-    use: IdentifierUseCodes.usual,
+    use: "usual",
     key: id.value,
     system:
       id.type === "driversLicense" ? driversLicenseURIs[id.state] : identifierSytemByType[id.type],
