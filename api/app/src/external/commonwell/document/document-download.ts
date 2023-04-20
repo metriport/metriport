@@ -6,8 +6,6 @@ import { oid } from "../../../shared/oid";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData } from "../patient-shared";
 
-// const NUM_OF_RETRIES = 3;
-
 export async function downloadDocument({
   cxId,
   patientId,
@@ -43,33 +41,4 @@ export async function downloadDocument({
     }
     throw err;
   }
-
-  // let retries = 0;
-  // let done = false;
-
-  // while (!done && retries < NUM_OF_RETRIES) {
-  //   try {
-  //     await commonWell.retrieveDocument(queryMeta, location, stream);
-  //     done = true;
-  //   } catch (err) {
-  //     // ALSO ADD SIZE = 0
-  //     const has404Error = err instanceof CommonwellError && err.cause?.response?.status === 404;
-  //     const lastTry = retries === NUM_OF_RETRIES - 1;
-
-  //     if (has404Error && !lastTry) {
-  //       retries = retries + 1;
-  //       throw err;
-  //     }
-
-  //     capture.error(err, {
-  //       extra: {
-  //         context: `cw.retrieveDocument`,
-  //         cwReference: commonWell.lastReferenceHeader,
-  //         ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
-  //       },
-  //     });
-  //     done = true;
-  //     throw new NotFoundError("Document not found");
-  //   }
-  // }
 }
