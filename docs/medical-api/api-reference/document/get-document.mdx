@@ -1,26 +1,18 @@
 ---
 title: "Get Document"
-description: "Downloads the Document contents of the specified URL."
+description: "Fetches the document from S3 and sends a presigned URL"
 api: "GET /medical/v1/document/downloadUrl"
 ---
 
 ## Query Params
 
-<ParamField query="patientId" type="string" required>
-  The ID of the Patient for which to list available Documents.
-</ParamField>
-
-<ParamField query="facilityId" type="string" required>
-  The ID of the Facility where the patient is receiving care.
-</ParamField>
-
-<ParamField query="location" type="string" required>
-  URL from the DocumentReference.
+<ParamField query="fileName" type="string" required>
+  The file name of the document in s3.
 </ParamField>
 
 ## Response
 
-<ResponseField type="blob">The downloaded Document contents.</ResponseField>
+<ResponseField type="string">The presigned url.</ResponseField>
 
 <ResponseExample>
 
@@ -29,9 +21,7 @@ import { MetriportMedicalApi } from "@metriport/api";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
-const documentBlob = await metriportClient.getDocumentUrl(
-  "2.16.840.1.113883.3.777.666.5.700009.969696"
-);
+const presignedUrl = await metriportClient.getDocumentUrl("abc123-def456");
 ```
 
 </ResponseExample>
