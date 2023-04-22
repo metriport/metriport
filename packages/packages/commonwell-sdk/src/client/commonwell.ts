@@ -6,7 +6,7 @@ import { CommonWellAPI } from "..";
 import { makeJwt } from "../common/make-jwt";
 import MetriportError from "../common/metriport-error";
 import { CertificateParam, CertificateResp, certificateRespSchema } from "../models/certificates";
-import { DocumentQueryResponse } from "../models/document";
+import { DocumentQueryFullResponse, DocumentQueryResponse } from "../models/document";
 import { Identifier, StrongId } from "../models/identifier";
 import { NetworkLink, networkLinkSchema, PatientLinkProxy } from "../models/link";
 import {
@@ -766,6 +766,23 @@ export class CommonWell implements CommonWellAPI {
   async queryDocuments(meta: RequestMetadata, patientId: string): Promise<DocumentQueryResponse> {
     const headers = await this.buildQueryHeaders(meta);
     return document.query(this.api, headers, patientId);
+  }
+
+  /**
+   * Queries a patient's Documents - including other possible results.
+   *
+   * @param meta       Metadata about the request.
+   * @param patientId  The patient's ID.
+   * @returns {Promise<DocumentQueryFullResponse>}
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#104-document-query|Use case}
+   * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
+   */
+  async queryDocumentsFull(
+    meta: RequestMetadata,
+    patientId: string
+  ): Promise<DocumentQueryFullResponse> {
+    const headers = await this.buildQueryHeaders(meta);
+    return document.queryFull(this.api, headers, patientId);
   }
 
   /**
