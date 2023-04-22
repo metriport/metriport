@@ -3,7 +3,12 @@ import * as stream from "stream";
 import { CommonwellError } from "../common/commonwell-error";
 import { downloadFile } from "../common/fileDownload";
 import { convertPatientIdToSubjectId } from "../common/util";
-import { DocumentQueryResponse, documentQueryResponseSchema } from "../models/document";
+import {
+  DocumentQueryFullResponse,
+  DocumentQueryResponse,
+  documentQueryFullResponseSchema,
+  documentQueryResponseSchema,
+} from "../models/document";
 import { CommonWell } from "./commonwell";
 
 export async function query(
@@ -25,6 +30,33 @@ export async function query(
   }
   try {
     return documentQueryResponseSchema.parse(response.data);
+  } catch (err) {
+    throw new CommonwellError(`Error parsing document query response`, err, {
+      ...additionalInfo,
+      response,
+    });
+  }
+}
+
+export async function queryFull(
+  api: AxiosInstance,
+  headers: Record<string, string>,
+  patientId: string
+): Promise<DocumentQueryFullResponse> {
+  const subjectId = convertPatientIdToSubjectId(patientId);
+  if (!subjectId) {
+    throw new Error(`Could not determine subject ID for document query`);
+  }
+  const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
+  const additionalInfo = { headers, patientId };
+  let response: any; //eslint-disable-line @typescript-eslint/no-explicit-any
+  try {
+    response = await api.get(url, { headers });
+  } catch (err) {
+    throw new CommonwellError(`Error querying documents`, err, additionalInfo);
+  }
+  try {
+    return documentQueryFullResponseSchema.parse(response.data);
   } catch (err) {
     throw new CommonwellError(`Error parsing document query response`, err, {
       ...additionalInfo,
