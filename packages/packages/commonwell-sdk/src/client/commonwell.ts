@@ -773,7 +773,7 @@ export class CommonWell implements CommonWellAPI {
    *
    * @param meta       Metadata about the request.
    * @param patientId  The patient's ID.
-   * @returns {Promise<DocumentQueryFullResponse>}
+   * @returns The DocumentReferences of a patient's available documents and/or OperationOutcomes denoting problems with the query.
    * @see {@link https://specification.commonwellalliance.org/services/data-broker/cha-broker-api-reference#104-document-query|Use case}
    * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
    */
