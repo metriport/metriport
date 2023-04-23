@@ -69,10 +69,10 @@ There are two ways to receive data from Metriport:
 
 - API: Your app requests data from Metriport:
   - your application polls Metriport for user data, for a specific date;
-  - currently, this is the required method for all providers with the exception of Garmin (below);
 - Webhook: Metriport sends data to your app when it becomes available:
   - your application exposes a webhook (endpoint), which Metriport calls when there's more user data available;
-  - currently, this is the only way to get information from Garmin.
+  - note that this is the only way to get information from Garmin and Apple Health (you can see what providers support Webhooks [here](/devices-api/more-info/our-integrations));
+  - to learn more about how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 
 ### 3.1 API: setup the Metriport client on your server
 
@@ -103,7 +103,7 @@ This allows your application to receive user data as soon as it becomes availabl
 
 It's the only and required way to get information from Garmin.
 
-Head to the [webhook page](/devices-api/more-info/webhooks) to learn how to setup this integration with Metriport.
+Head to the [webhook page](/home/api-info/webhooks) to learn how to setup this integration with Metriport.
 
 ## 4. Link to the Metriport Connect widget in your app
 
