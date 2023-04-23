@@ -17,6 +17,9 @@ import { DocumentWithFilename } from "./shared";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
 import { getFileName } from "./shared";
+import { DocumentReference } from "@medplum/fhirtypes";
+import { toDTO } from "../../../routes/medical/dtos/documentDTO";
+import { processPatientRequest } from "../../../command/webhook/webhook";
 
 const s3client = new AWS.S3();
 
@@ -45,10 +48,15 @@ export async function queryDocuments({
       documents: cwDocuments,
     });
 
+    const FHIRDocRefs: DocumentReference[] = [];
     for (const doc of docsS3Refs) {
       const FHIRDocRef = toFHIRDocRef(doc, organization, patient);
+      FHIRDocRefs.push(FHIRDocRef);
       await upsertDocumentToFHIRServer(FHIRDocRef);
     }
+
+    // send webhook to cx async when docs are done processing
+    processPatientRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
   } catch (err) {
     console.log(`Error: `, err);
     capture.error(err, {
