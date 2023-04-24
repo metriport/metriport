@@ -1,0 +1,135 @@
+---
+title: "Webhooks"
+description: "Receive data as soon as it becomes available."
+---
+
+## Overview
+
+Usually, when an application wants to consume information from another it makes a request to
+obtain such information.
+
+Webhooks turn this around: the producer of information calls the consumer when data is available.
+This way, the consumer doesn't have to poll the producer regularly to obtain information.
+
+Metriport will call your app's webhook endpoint when user data is available - there's no way for your
+application to request data exposed through webhooks.
+
+To enable this integration approach with Metriport:
+
+1. Expose a public endpoint on your app;
+1. Set this endpoint URL on the [Developers page](https://dash.metriport.com/developers) in the developer dashboard,
+   or via the [Update Settings endpoint](/home/api-reference/settings/post-settings);
+1. This will generate a webhook key that should be used to authenticate requests on
+   your app's endpoint (webhook).
+
+General requirements for the endpoint:
+
+1. Public endpoint accessible from the internet;
+1. Accepts a `POST` HTTP request;
+1. Verifies requests by comparing the HTTP header `x-webhook-key` with the webhook key;
+1. Accepts and responds to a [`ping` message](#the-ping-message);
+
+Additionally, depending on what Metriport APIs you're using, your endpoint will need to accept and process
+different messages when they become available - specifically:
+
+1. If using the Devices API - accept and process [user data messages](#devices-api-messages).
+1. If using the Medical API - accept and process [patient data messages](#medical-api-messages).
+
+## Authentication
+
+Validate requests to your public endpoint by comparing the webhook key with each request's HTTP header.
+
+The webhook key is accessible on [Developers page](https://dash.metriport.com/developers) in the developer
+dashboard, or via the [Get Settings endpoint](/home/api-reference/settings/get-settings) - see how to enable webhooks on the [overview section](#overview).
+
+The HTTP header will contain a header named `x-webhook-key` - it should contain the webhook key mentioned above.
+Your app is expected to disregard requests if those don't match. We suggest returning a HTTP status code
+`401` with no body in such cases.
+
+### Generating a new webhook key
+
+If using the dashboard: simply delete your webhook URL on the [Developers page](https://dash.metriport.com/developers), save, and enter it again.
+
+If using the API: set the webhook URL to an empty string via the [Update Settings endpoint](/home/api-reference/settings/post-settings), and then set it
+to your desired URL making another request to the same endpoint.
+
+## Format
+
+Webhook requests contain the relevant information on the body of the HTTP request.
+
+There are three types of messages you can expect to receive:
+
+- [`ping`](#the-ping-message): validation of the webhook connection between Metriport and your app;
+- [user data](#devices-api-messages): health information grouped by user (Devices API only).
+- [patient data](#medical-api-messages): patient document information (Medical API only).
+
+In general, upon successful receiving of these messages, it's expected that your app responds with a `200` HTTP
+status code (OK).
+
+There's no need to include anything on the response body.
+
+### The `ping` message
+
+This is a simple message to validate access to your app's webhook endpoint. Your app should
+accept a `POST` request with this body...
+
+```json
+{
+  "ping": "<random-sequence>"
+}
+```
+
+...and respond to this request by sending back the `<random-sequence>` as below:
+
+```json
+{
+  "pong": "<random-sequence>"
+}
+```
+
+You can check the [webhook mock server available on our repository](https://github.com/metriport/metriport/blob/master/utils/src/mock-webhook.ts)
+for a simple implementation of this message.
+
+### Devices API messages
+
+When using the Devices API, Metriport will send Webhook messages containing user data to your app from
+connected Providers, as soon as the data becomes available.
+
+You can see Webhook details specific to the Devices API on [this page](/devices-api/more-info/webhooks).
+
+### Medical API messages
+
+When using the Medical API, Metriport will send Webhook messages containing patient document data to your app, as soon
+as the data becomes available after initiating a document query.
+
+You can see Webhook details specific to the Medical API on [this page](/medical-api/more-info/webhooks).
+
+## Retries
+
+Sometimes, due to temporary network distruption (or whatever other reason), a Webhook payload may fail to be delivered
+to your app. In these cases, Metriport will store the failed requests, and then you can then manually retry them - using
+either the dashboard, or the API.
+
+<Warning>
+  If you do not have the Webhook URL configured, the Metriport will not attempt to deliver Webhook
+  messages for the Medical API - in which case retries are not applicable.
+</Warning>
+
+### Retry Using the Dashboard
+
+On the [Developers page](https://dash.metriport.com/developers) in the dashboard, you're able to see the count of
+Webhook requests currently processing, and a count of outstanding ones that failed:
+
+<img className="h-100" src="/images/dash-webhook-retry.png" />
+
+To retry failed requests, simply click the `Retry` button, and those requests will be sent to your app again.
+
+### Retry Using the API
+
+1. Using the [Get Webhook Status endpoint](/home/api-reference/settings/get-webhook), check to see if there are any failed requests;
+1. Then, use the [Retry Webhook requests endpoint](/home/api-reference/settings/retry-webhook), to kick off the retry.
+
+<Warning>
+  Currently, the Metriport API doesn't implement automatic retries - let us know if this is
+  something you need.
+</Warning>

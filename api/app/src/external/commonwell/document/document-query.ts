@@ -1,4 +1,5 @@
 import { CommonwellError, DocumentQueryResponse, Document } from "@metriport/commonwell-sdk";
+import { DocumentReference } from "@medplum/fhirtypes";
 import { PassThrough } from "stream";
 import * as AWS from "aws-sdk";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
@@ -18,6 +19,8 @@ import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
 import { getFileName } from "./shared";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { toDTO } from "../../../routes/medical/dtos/documentDTO";
+import { processPatientRequest } from "../../../command/webhook/webhook";
 
 const s3client = new AWS.S3();
 
@@ -40,12 +43,15 @@ export async function queryDocuments({
 
     const cwDocuments = await internalGetDocuments({ patient, organization, facility });
 
-    await downloadDocsAndUpsertFHIR({
+    const FHIRDocRefs = await downloadDocsAndUpsertFHIR({
       patient,
       organization,
       facilityId,
       documents: cwDocuments,
     });
+
+    // send webhook to cx async when docs are done processing
+    processPatientRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
   } catch (err) {
     console.log(`Error: `, err);
     capture.error(err, {
@@ -149,7 +155,7 @@ async function downloadDocsAndUpsertFHIR({
   organization: Organization;
   facilityId: string;
   documents: Document[];
-}): Promise<void> {
+}): Promise<DocumentReference[]> {
   const uploadStream = (key: string) => {
     const pass = new PassThrough();
     const base64key = Buffer.from(key).toString("base64");
@@ -168,7 +174,7 @@ async function downloadDocsAndUpsertFHIR({
 
   let completedCount = 0;
 
-  await Promise.allSettled(
+  const s3Refs = await Promise.allSettled(
     documents.map(async doc => {
       try {
         if (doc.content?.masterIdentifier?.value && doc.content.location) {
@@ -195,6 +201,8 @@ async function downloadDocsAndUpsertFHIR({
 
           const FHIRDocRef = toFHIRDocRef(docWithFile, organization, patient);
           await upsertDocumentToFHIRServer(FHIRDocRef);
+
+          return FHIRDocRef;
         }
       } catch (error) {
         capture.error(error, {
@@ -225,4 +233,10 @@ async function downloadDocsAndUpsertFHIR({
       }
     })
   );
+
+  const docsNewLocation: DocumentReference[] = s3Refs.flatMap(ref =>
+    ref.status === "fulfilled" && ref.value ? ref.value : []
+  );
+
+  return docsNewLocation;
 }

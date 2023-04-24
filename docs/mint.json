@@ -62,14 +62,29 @@
     },
     {
       "group": "API Info",
-      "pages": [
-        "home/api-info/api-keys"
-      ]
+      "pages": ["home/api-info/api-keys", "home/api-info/webhooks"]
     },
     {
       "group": "Getting Started",
+      "pages": ["medical-api/getting-started/quickstart"]
+    },
+    {
+      "group": "API Reference",
       "pages": [
-        "medical-api/getting-started/quickstart"
+        {
+          "group": "General API",
+          "pages": [
+            {
+              "group": "Settings",
+              "pages": [
+                "home/api-reference/settings/get-settings",
+                "home/api-reference/settings/post-settings",
+                "home/api-reference/settings/get-webhook",
+                "home/api-reference/settings/retry-webhook"
+              ]
+            }
+          ]
+        }
       ]
     },
     {
@@ -124,6 +139,7 @@
       "group": "More Info",
       "pages": [
         "medical-api/more-info/general-info",
+        "medical-api/more-info/webhooks",
         "medical-api/more-info/sdk",
         "medical-api/more-info/sandbox",
         "medical-api/more-info/etag"
@@ -149,15 +165,6 @@
                 "devices-api/api-reference/user/create-connect-token",
                 "devices-api/api-reference/user/revoke-provider-access",
                 "devices-api/api-reference/user/get-connected-providers"
-              ]
-            },
-            {
-              "group": "Settings",
-              "pages": [
-                "devices-api/api-reference/settings/get-settings",
-                "devices-api/api-reference/settings/post-settings",
-                "devices-api/api-reference/settings/get-webhook",
-                "devices-api/api-reference/settings/retry-webhook"
               ]
             }
           ]

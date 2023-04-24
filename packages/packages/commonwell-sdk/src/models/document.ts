@@ -123,6 +123,26 @@ export const documentSchema = z.object({
 });
 export type Document = z.infer<typeof documentSchema>;
 
+export const operationOutcomeSchema = z.object({
+  id: z.string(),
+  content: z.object({
+    resourceType: resourceTypeSchema,
+    issue: z.array(
+      z.object({
+        severity: z.string(),
+        type: z
+          .object({
+            code: z.string(),
+          })
+          .optional()
+          .nullable(),
+        details: z.string(),
+      })
+    ),
+  }),
+});
+export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
+
 export const documentQueryResponseSchema = z.object({
   resourceType: resourceTypeSchema,
   entry: z.preprocess(entries => {
@@ -132,3 +152,17 @@ export const documentQueryResponseSchema = z.object({
 });
 
 export type DocumentQueryResponse = z.infer<typeof documentQueryResponseSchema>;
+
+export const documentQueryFullResponseSchema = z.object({
+  resourceType: resourceTypeSchema,
+  entry: z.preprocess(entries => {
+    const result = z.array(z.any()).parse(entries);
+    return result.filter(
+      e =>
+        e.content?.resourceType === "DocumentReference" ||
+        e.content?.resourceType === "OperationOutcome"
+    );
+  }, z.array(documentSchema.or(operationOutcomeSchema))),
+});
+
+export type DocumentQueryFullResponse = z.infer<typeof documentQueryFullResponseSchema>;

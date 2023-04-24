@@ -1,4 +1,3 @@
-import { Transaction } from "sequelize";
 import {
   DocumentQueryStatus,
   DocumentQueryProgress,
@@ -63,7 +62,7 @@ export const updateDocQuery = async ({
   const sequelize = PatientModel.sequelize;
   if (!sequelize) throw new Error("Missing sequelize");
 
-  let transaction: Transaction | undefined = await sequelize.transaction();
+  const transaction = await sequelize.transaction();
 
   try {
     const existing = await PatientModel.findOne({
@@ -87,11 +86,10 @@ export const updateDocQuery = async ({
         { transaction }
       );
     }
+
+    await transaction.commit();
   } catch (error) {
     await transaction.rollback();
-    transaction = undefined;
     throw error;
-  } finally {
-    if (transaction) await transaction.commit();
   }
 };

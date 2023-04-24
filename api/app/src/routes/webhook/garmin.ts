@@ -103,9 +103,9 @@ function mapData(body: any): UserData<MetriportData>[] | undefined {
 }
 
 function logRequest(req: Request): void {
-  log(`Headers: ${JSON.stringify(req.headers, undefined, 2)}`);
-  log(`Query: ${JSON.stringify(req.query, undefined, 2)}`);
-  log(`BODY: ${JSON.stringify(req.body, undefined, 2)}`);
+  log(`Headers: ${JSON.stringify(req.headers)}`);
+  log(`Query: ${JSON.stringify(req.query)}`);
+  log(`BODY: ${JSON.stringify(req.body)}`);
 }
 
 export default routes;
