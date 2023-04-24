@@ -1,7 +1,7 @@
 import { CommonwellError, DocumentQueryResponse, Document } from "@metriport/commonwell-sdk";
 import { PassThrough } from "stream";
 import * as AWS from "aws-sdk";
-import { updateDocQueryStatus } from "../../../command/medical/document/document-query";
+import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { Patient } from "../../../models/medical/patient";
 import { Organization } from "../../../models/medical/organization";
 import { Facility } from "../../../models/medical/facility";
@@ -17,6 +17,7 @@ import { DocumentWithFilename } from "./shared";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
 import { getFileName } from "./shared";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const s3client = new AWS.S3();
 
@@ -39,16 +40,12 @@ export async function queryDocuments({
 
     const cwDocuments = await internalGetDocuments({ patient, organization, facility });
 
-    const docsS3Refs = await dowloadAndUploadDocsToS3({
+    await downloadDocsAndUpsertFHIR({
       patient,
+      organization,
       facilityId,
       documents: cwDocuments,
     });
-
-    for (const doc of docsS3Refs) {
-      const FHIRDocRef = toFHIRDocRef(doc, organization, patient);
-      await upsertDocumentToFHIRServer(FHIRDocRef);
-    }
   } catch (err) {
     console.log(`Error: `, err);
     capture.error(err, {
@@ -60,10 +57,10 @@ export async function queryDocuments({
     throw err;
   } finally {
     try {
-      await updateDocQueryStatus({ patient, status: "completed" });
+      await updateDocQuery({ patient, status: "completed" });
     } catch (err) {
       capture.error(err, {
-        extra: { context: `cw.getDocuments.updateDocQueryStatus` },
+        extra: { context: `cw.getDocuments.updateDocQuery` },
       });
     }
   }
@@ -142,15 +139,17 @@ async function internalGetDocuments({
   return documents;
 }
 
-async function dowloadAndUploadDocsToS3({
+async function downloadDocsAndUpsertFHIR({
   patient,
+  organization,
   facilityId,
   documents,
 }: {
   patient: Patient;
+  organization: Organization;
   facilityId: string;
   documents: Document[];
-}): Promise<DocumentWithFilename[]> {
+}): Promise<void> {
   const uploadStream = (key: string) => {
     const pass = new PassThrough();
     const base64key = Buffer.from(key).toString("base64");
@@ -167,7 +166,9 @@ async function dowloadAndUploadDocsToS3({
     };
   };
 
-  const s3Refs = await Promise.allSettled(
+  let completedCount = 0;
+
+  await Promise.allSettled(
     documents.map(async doc => {
       try {
         if (doc.content?.masterIdentifier?.value && doc.content.location) {
@@ -183,7 +184,7 @@ async function dowloadAndUploadDocsToS3({
 
           const data = await promise;
 
-          return {
+          const docWithFile: DocumentWithFilename = {
             ...doc,
             content: {
               ...doc.content,
@@ -191,6 +192,9 @@ async function dowloadAndUploadDocsToS3({
             },
             fileName: data.Key,
           };
+
+          const FHIRDocRef = toFHIRDocRef(docWithFile, organization, patient);
+          await upsertDocumentToFHIRServer(FHIRDocRef);
         }
 
         return undefined;
@@ -201,13 +205,26 @@ async function dowloadAndUploadDocsToS3({
           },
         });
         throw error;
+      } finally {
+        // TODO: eventually we will have to update this to support multiple HIEs
+        try {
+          const newPatient = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
+
+          await updateDocQuery({
+            patient: newPatient,
+            status: "processing",
+            progress: {
+              completed: completedCount + 1,
+              total: documents.length,
+            },
+          });
+        } catch (err) {
+          capture.error(err, {
+            extra: { context: `cw.getDocuments.updateDocQuery` },
+          });
+        }
+        completedCount = completedCount + 1;
       }
     })
   );
-
-  const docsNewLocation: DocumentWithFilename[] = s3Refs.flatMap(ref =>
-    ref.status === "fulfilled" && ref.value ? ref.value : []
-  );
-
-  return docsNewLocation;
 }

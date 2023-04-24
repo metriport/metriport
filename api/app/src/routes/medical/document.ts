@@ -30,11 +30,24 @@ router.get(
     const documents = await getDocuments({ patientId });
     const documentsDTO = toDTO(documents);
 
-    const queryStatus = forceQuery
-      ? await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId })
-      : (await getPatientOrFail({ cxId, id: patientId })).data.documentQueryStatus ?? "completed";
+    let query;
 
-    return res.status(OK).json({ queryStatus, documents: documentsDTO });
+    if (forceQuery) {
+      query = await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId });
+    } else {
+      const patient = await getPatientOrFail({ cxId, id: patientId });
+
+      query = {
+        queryStatus: patient.data.documentQueryStatus,
+        queryProgress: patient.data.documentQueryProgress,
+      };
+    }
+
+    return res.status(OK).json({
+      queryStatus: query.queryStatus,
+      queryProgress: query.queryProgress,
+      documents: documentsDTO,
+    });
   })
 );
 
@@ -54,9 +67,13 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
 
-    const queryStatus = await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId });
+    const { queryStatus, queryProgress } = await queryDocumentsAcrossHIEs({
+      cxId,
+      patientId,
+      facilityId,
+    });
 
-    return res.status(OK).json({ queryStatus });
+    return res.status(OK).json({ queryStatus, queryProgress });
   })
 );
 

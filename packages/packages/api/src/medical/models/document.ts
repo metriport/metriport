@@ -27,9 +27,19 @@ export type DocumentReference = z.infer<typeof documentReferenceSchema>;
 export const documentQueryStatusSchema = z.enum(["processing", "completed"]);
 export type DocumentQueryStatus = z.infer<typeof documentQueryStatusSchema>;
 
+export const documentQueryProgress = z.object({
+  total: z.number(),
+  completed: z.number(),
+});
+
+export type DocumentQueryProgress = z.infer<typeof documentQueryProgress>;
+
 export const documentQuerySchema = z.object({
   queryStatus: documentQueryStatusSchema,
+  queryProgress: documentQueryProgress.optional(),
 });
+
+export type DocumentQuery = z.infer<typeof documentQuerySchema>;
 
 export const documentListSchema = z
   .object({
