@@ -196,8 +196,6 @@ async function downloadDocsAndUpsertFHIR({
           const FHIRDocRef = toFHIRDocRef(docWithFile, organization, patient);
           await upsertDocumentToFHIRServer(FHIRDocRef);
         }
-
-        return undefined;
       } catch (error) {
         capture.error(error, {
           extra: {
