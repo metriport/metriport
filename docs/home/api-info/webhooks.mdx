@@ -60,8 +60,8 @@ Webhook requests contain the relevant information on the body of the HTTP reques
 There are three types of messages you can expect to receive:
 
 - [`ping`](#the-ping-message): validation of the webhook connection between Metriport and your app;
-- [user data](#devices-api): health information grouped by user (Devices API only).
-- [patient data](#medical-api): patient document information (Medical API only).
+- [user data](#devices-api-messages): health information grouped by user (Devices API only).
+- [patient data](#medical-api-messages): patient document information (Medical API only).
 
 In general, upon successful receiving of these messages, it's expected that your app responds with a `200` HTTP
 status code (OK).
@@ -110,6 +110,11 @@ Sometimes, due to temporary network distruption (or whatever other reason), a We
 to your app. In these cases, Metriport will store the failed requests, and then you can then manually retry them - using
 either the dashboard, or the API.
 
+<Warning>
+  If you do not have the Webhook URL configured, the Metriport will not attempt to deliver Webhook
+  messages for the Medical API - in which case retries are not applicable.
+</Warning>
+
 ### Retry Using the Dashboard
 
 On the [Developers page](https://dash.metriport.com/developers) in the dashboard, you're able to see the count of
@@ -125,6 +130,6 @@ To retry failed requests, simply click the `Retry` button, and those requests wi
 1. Then, use the [Retry Webhook requests endpoint](/home/api-reference/settings/retry-webhook), to kick off the retry.
 
 <Warning>
-  Currently, the Metriport doesn't implement automatic retries - let us know if this is something
-  you need.
+  Currently, the Metriport API doesn't implement automatic retries - let us know if this is
+  something you need.
 </Warning>

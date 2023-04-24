@@ -88,11 +88,16 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 
 Note that there are two ways to receive data from Metriport:
 
-- API: Your app requests data from Metriport:
-  - your application polls Metriport for Patients' medical data after initiating a query to fetch a Patient's documents;
 - Webhook: Metriport sends patient data to your app when it becomes available:
   - your application exposes a webhook (endpoint), which Metriport calls when there's Patient data available after initiating a query;
   - to learn more about how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
+- API: Your app requests data from Metriport:
+  - your application polls Metriport for Patients' medical data after initiating a query to fetch a Patient's documents;
+
+<Tip>
+  We recommend using Webhooks to ensure you're able to get patient data as quickly and easily as
+  possible.
+</Tip>
 
 ---
 
@@ -187,8 +192,9 @@ To query for a Patient's available `Documents`, you can either:
 ### Query for Documents using the API
 
 1. Start an asynchronous [Document Query](/medical-api/api-reference/document/start-document-query) across HIEs;
-1. Then, either poll the API to [List Documents](/medical-api/api-reference/document/list-documents) to get the available document
-   references returned from HIEs - or wait process the inbound [Webhook message](/medical-api/more-info/webhooks) which will be sent if you have Webhooks configured.
+1. Then, either process the inbound [Webhook message](/medical-api/more-info/webhooks) which will be sent if you
+   have Webhooks configured, or poll the API to [List Documents](/medical-api/api-reference/document/list-documents) to get
+   the available document references returned from HIEs.
 
 ### Query for Documents using the Dashboard
 
