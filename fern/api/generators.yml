@@ -1,0 +1,28 @@
+default-group: local
+groups:
+  local:
+    generators:
+      - name: fernapi/fern-typescript-express
+        version: 0.5.16
+        output:
+          location: local-file-system
+          path: ../../api/app/src/fern/generated
+
+  publish:
+    generators:
+      - name: fernapi/fern-typescript-sdk
+        version: 0.5.16
+        output:
+          location: npm
+          package-name: "@fern-api/metriport"
+          token: ${FERN_NPM_TOKEN}
+        github:
+          repository: fern-metriport/metriport-node
+      - name: fernapi/fern-python-sdk
+        version: 0.3.2
+        output:
+          location: pypi
+          package-name: mercoa
+          token: ${PYPI_TOKEN}
+        github:
+          repository: fern-metriport/metriport-python

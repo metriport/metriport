@@ -1,20 +1,9 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
+import { toDTO as codeableToDTO } from "./codeableDTO";
+import { MetriportApi } from "../../../fern";
 import { capture } from "../../../shared/notifications";
 
-export type DocumentReferenceDTO = {
-  id: string;
-  fileName: string;
-  location: string;
-  description: string | undefined;
-  status: string | undefined;
-  indexed: string | undefined; // ISO-8601
-  mimeType: string | undefined;
-  size: number | undefined; // bytes
-  type: CodeableConceptDTO | undefined;
-};
-
-export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceDTO[] {
+export function toDTO(docs: DocumentReference[] | undefined): MetriportApi.Document[] {
   if (docs) {
     return docs.flatMap(doc => {
       if (doc && doc.id && doc.content) {
@@ -42,7 +31,10 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
             location: hasAttachment.attachment.url,
             type: codeableToDTO(doc.type),
             status: doc.status,
-            indexed: hasAttachment.attachment.creation,
+            indexed:
+              hasAttachment.attachment.creation != null
+                ? new Date(hasAttachment.attachment.creation)
+                : undefined,
             mimeType: hasAttachment.attachment.contentType,
             size: hasAttachment.attachment.size,
           };

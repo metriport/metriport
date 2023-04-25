@@ -1,0 +1,8 @@
+name: api
+error-discrimination:
+  strategy: status-code
+
+auth: ApiKey
+auth-schemes:
+  ApiKey:
+    header: X-API-Key

@@ -1,17 +1,9 @@
 import { CodeableConcept, Coding } from "../../../domain/medical/codeable-concept";
+import { MetriportApi } from "../../../fern";
 
-export type CodingDTO = {
-  system: string | undefined;
-  code: string | undefined;
-  display: string | undefined;
-};
-
-export type CodeableConceptDTO = {
-  coding: CodingDTO[] | undefined;
-  text: string | undefined;
-};
-
-export function toDTO(domain: CodeableConcept | undefined): CodeableConceptDTO | undefined {
+export function toDTO(
+  domain: CodeableConcept | undefined
+): MetriportApi.CodeableConcept | undefined {
   if (!domain) return undefined;
   return {
     coding: domain.coding ? domain.coding.map(codingToDTO) : undefined,
@@ -19,7 +11,7 @@ export function toDTO(domain: CodeableConcept | undefined): CodeableConceptDTO |
   };
 }
 
-export function codingToDTO(domain: Coding): CodingDTO {
+export function codingToDTO(domain: Coding): MetriportApi.Coding {
   return {
     system: domain.system ?? undefined,
     code: domain.code ?? undefined,
