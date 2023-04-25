@@ -8,6 +8,7 @@ import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from ".
 import { toDTO } from "./dtos/documentDTO";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { DocumentQueryResp } from "../../command/medical/document/document-query";
+import { createQueryResponse } from "../../command/medical/document/document-query";
 
 const router = Router();
 
@@ -39,14 +40,9 @@ router.get(
       const patient = await getPatientOrFail({ cxId, id: patientId });
 
       if (patient.data.documentQueryStatus === "processing") {
-        query = {
-          queryStatus: patient.data.documentQueryStatus,
-          queryProgress: patient.data.documentQueryProgress,
-        };
+        query = createQueryResponse("processing", patient);
       } else {
-        query = {
-          queryStatus: "completed",
-        };
+        query = createQueryResponse("completed");
       }
     }
 

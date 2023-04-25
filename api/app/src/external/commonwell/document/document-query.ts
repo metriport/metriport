@@ -216,11 +216,13 @@ async function downloadDocsAndUpsertFHIR({
         try {
           const newPatient = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
 
+          completedCount = completedCount + 1;
+
           await updateDocQuery({
             patient: newPatient,
             status: "processing",
             progress: {
-              completed: completedCount + 1,
+              completed: completedCount,
               total: documents.length,
             },
           });
@@ -229,7 +231,6 @@ async function downloadDocsAndUpsertFHIR({
             extra: { context: `cw.getDocuments.updateDocQuery` },
           });
         }
-        completedCount = completedCount + 1;
       }
     })
   );
