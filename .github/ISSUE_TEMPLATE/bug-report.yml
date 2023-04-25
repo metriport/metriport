@@ -1,0 +1,52 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before You Start...**
+
+        ✋ If you'd like to report a security bug/vulnerability, please [report a vulnerability](https://github.com/metriport/metriport/security/advisories/new) instead.
+
+        This form is only for submitting bug reports.
+
+        We recomment to search for [existing issues](https://github.com/metriport/metriport/issues) - it helps to give each issue the proper attention and priority. However, if you find an old, closed issue, it's better to open a new one and make a reference to the closed one.
+
+        You can use [Markdown](https://guides.github.com/features/mastering-markdown/) to format lists and code.
+
+        Thanks for taking the time to fill this out!
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: |
+        What needs to be done in order to make the bug happen? Clear and concise instructions are important and help to understand what happened.
+        Here you can also share code that help us triage this bug. It can be a public repo or a zip file attached here.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What is actually happening?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Here you can add relevant information specific about your environment (not required).
+      render: shell
+      placeholder: OS, HTTP client/library, Browser, Logs, etc.
+  - type: textarea
+    id: additional-comments
+    attributes:
+      label: Any additional comments?
+      description: Additional information that might be useful to understand how you found the bug.
