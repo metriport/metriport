@@ -1,0 +1,47 @@
+name: Feature Request
+description: Suggest an idea, new feature, or improment
+title: "[Feat]: "
+labels: ["feature", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before You Start...**
+
+        ✋ If you'd like to report a security bug/vulnerability, please [report a vulnerability](https://github.com/metriport/metriport/security/advisories/new) instead.
+
+        This form is only for submitting feature requests.
+
+        We recomment to search for [existing issues](https://github.com/metriport/metriport/issues) - it helps to give each issue the proper attention and priority. However, if you find an old, closed issue, it's better to open a new one and make a reference to the closed one.
+
+        You can use [Markdown](https://guides.github.com/features/mastering-markdown/) to format lists and code.
+
+        Thanks for taking the time to fill this out!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: A clear and concise description of what the problem is. Ex. When I try to do [...]
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested solution
+      description: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Alternative solutions or features you've considered.
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Additional information that might be useful to understand how you found the bug.
+    validations:
+      required: false
