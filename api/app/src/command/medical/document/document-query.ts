@@ -1,9 +1,22 @@
-import { DocumentQueryStatus } from "../../../domain/medical/document-reference";
+import {
+  DocumentQueryStatus,
+  DocumentQueryProgress,
+} from "../../../domain/medical/document-reference";
 import { processAsyncError } from "../../../errors";
 import { queryDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
-import { Patient } from "../../../models/medical/patient";
+import { Patient, PatientModel } from "../../../models/medical/patient";
 import { getPatientOrFail } from "../patient/get-patient";
+
+export type DocumentQueryResp =
+  | {
+      queryStatus: "completed";
+      queryProgress?: never;
+    }
+  | {
+      queryStatus: "processing";
+      queryProgress: DocumentQueryProgress | undefined;
+    };
 
 // TODO: eventually we will have to update this to support multiple HIEs
 export async function queryDocumentsAcrossHIEs({
@@ -14,38 +27,86 @@ export async function queryDocumentsAcrossHIEs({
   cxId: string;
   patientId: string;
   facilityId: string;
-}): Promise<DocumentQueryStatus> {
+}): Promise<DocumentQueryResp> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (patient.data.documentQueryStatus === "processing") return "processing";
+  if (patient.data.documentQueryStatus === "processing")
+    return createQueryResponse("processing", patient);
 
   const externalData = patient.data.externalData?.COMMONWELL;
-  if (!externalData) return "completed";
+  if (!externalData) return createQueryResponse("completed");
 
   const cwData = externalData as PatientDataCommonwell;
-  if (!cwData.patientId) return "completed";
+  if (!cwData.patientId) return createQueryResponse("completed");
 
-  await updateDocQueryStatus({ patient, status: "processing" });
+  await updateDocQuery({ patient, status: "processing" });
 
   // intentionally asynchronous, not waiting for the result
   getDocumentsFromCW({ patient, facilityId }).catch(
     processAsyncError(`doc.list.getDocumentsFromCW`)
   );
 
-  return "processing";
+  return createQueryResponse("processing", patient);
 }
 
-export const updateDocQueryStatus = async ({
+export const createQueryResponse = (
+  status: DocumentQueryStatus,
+  patient?: Patient
+): DocumentQueryResp => {
+  if (status === "completed") {
+    return {
+      queryStatus: status,
+    };
+  }
+
+  return {
+    queryStatus: status,
+    queryProgress: patient?.data.documentQueryProgress,
+  };
+};
+
+export const updateDocQuery = async ({
   patient,
   status,
+  progress,
 }: {
   patient: Patient;
   status: DocumentQueryStatus;
-}): Promise<Patient> => {
-  const patientModel = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
-  return patientModel.update({
-    data: {
-      ...patient.data,
-      documentQueryStatus: status,
-    },
-  });
+  progress?: {
+    completed: number;
+    total: number;
+  };
+}) => {
+  const sequelize = PatientModel.sequelize;
+  if (!sequelize) throw new Error("Missing sequelize");
+
+  const transaction = await sequelize.transaction();
+
+  try {
+    const existing = await PatientModel.findOne({
+      where: {
+        id: patient.id,
+        cxId: patient.cxId,
+      },
+      lock: true,
+      transaction,
+    });
+
+    if (existing) {
+      return await existing.update(
+        {
+          data: {
+            ...patient.data,
+            documentQueryStatus: status,
+            documentQueryProgress: progress,
+          },
+        },
+        { transaction }
+      );
+    }
+
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 };
