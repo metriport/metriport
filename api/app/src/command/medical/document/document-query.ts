@@ -8,10 +8,15 @@ import { PatientDataCommonwell } from "../../../external/commonwell/patient-shar
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { getPatientOrFail } from "../patient/get-patient";
 
-export type DocumentQueryResp = {
-  queryStatus: DocumentQueryStatus;
-  queryProgress: DocumentQueryProgress | undefined;
-};
+export type DocumentQueryResp =
+  | {
+      queryStatus: "completed";
+      queryProgress?: never;
+    }
+  | {
+      queryStatus: "processing";
+      queryProgress: DocumentQueryProgress | undefined;
+    };
 
 // TODO: eventually we will have to update this to support multiple HIEs
 export async function queryDocumentsAcrossHIEs({
@@ -28,10 +33,10 @@ export async function queryDocumentsAcrossHIEs({
     return createQueryResponse("processing", patient);
 
   const externalData = patient.data.externalData?.COMMONWELL;
-  if (!externalData) return createQueryResponse("completed", patient);
+  if (!externalData) return createQueryResponse("completed");
 
   const cwData = externalData as PatientDataCommonwell;
-  if (!cwData.patientId) return createQueryResponse("completed", patient);
+  if (!cwData.patientId) return createQueryResponse("completed");
 
   await updateDocQuery({ patient, status: "processing" });
 
@@ -43,8 +48,17 @@ export async function queryDocumentsAcrossHIEs({
   return createQueryResponse("processing", patient);
 }
 
-const createQueryResponse = (status: DocumentQueryStatus, patient: Patient): DocumentQueryResp => {
-  return { queryStatus: status, queryProgress: patient.data.documentQueryProgress };
+const createQueryResponse = (status: DocumentQueryStatus, patient?: Patient): DocumentQueryResp => {
+  if (status === "completed") {
+    return {
+      queryStatus: status,
+    };
+  }
+
+  return {
+    queryStatus: status,
+    queryProgress: patient?.data.documentQueryProgress,
+  };
 };
 
 export const updateDocQuery = async ({

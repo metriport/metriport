@@ -7,6 +7,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { downloadDocument } from "../../command/medical/document/document-download";
+import { DocumentQueryResp } from "../../command/medical/document/document-query";
 
 const router = Router();
 
@@ -30,17 +31,23 @@ router.get(
     const documents = await getDocuments({ patientId });
     const documentsDTO = toDTO(documents);
 
-    let query;
+    let query: DocumentQueryResp;
 
     if (forceQuery) {
       query = await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId });
     } else {
       const patient = await getPatientOrFail({ cxId, id: patientId });
 
-      query = {
-        queryStatus: patient.data.documentQueryStatus,
-        queryProgress: patient.data.documentQueryProgress,
-      };
+      if (patient.data.documentQueryStatus === "processing") {
+        query = {
+          queryStatus: patient.data.documentQueryStatus,
+          queryProgress: patient.data.documentQueryProgress,
+        };
+      } else {
+        query = {
+          queryStatus: "completed",
+        };
+      }
     }
 
     return res.status(OK).json({

@@ -23,6 +23,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 
 const router = Router();
 
@@ -74,9 +75,9 @@ router.put(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const payload = patientUpdateSchema.parse(req.body);
 
-    const patient = await getPatientOrFail({ id, cxId });
+    const isProcessing = await areDocumentsProcessing({ id, cxId });
 
-    if (patient.data.documentQueryStatus === "processing") {
+    if (isProcessing) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
     }
 
