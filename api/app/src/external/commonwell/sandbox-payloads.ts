@@ -60,7 +60,11 @@ export const createPatientWithLinks = (patient: Patient) => {
   };
 };
 
-export const createPatient = (localOrgId: string, localOrgName: string, patientId: string) => {
+export const createPatient = (
+  localOrgId: string,
+  localOrgName: string,
+  patientId: string
+): Patient => {
   return {
     active: true,
     identifier: [

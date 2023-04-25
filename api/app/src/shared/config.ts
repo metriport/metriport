@@ -172,4 +172,8 @@ export class Config {
   static getPostHogApiKey(): string | undefined {
     return getEnvVar("POST_HOG_API_KEY");
   }
+
+  static getMedicalDocumentsBucketName(): string {
+    return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+  }
 }

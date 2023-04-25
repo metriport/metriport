@@ -18,11 +18,18 @@ import { updateWebhookStatus } from "../settings/updateSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
 import { createWebhookRequest, updateWebhookRequestStatus } from "../webhook/webhook-request";
 import { analytics, EventTypes } from "../../shared/analytics";
+import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
 
 const axios = Axios.create();
 
 const log = Util.log(`Webhook`);
 
+// General
+type WebhookPingPayload = {
+  ping: string;
+};
+
+// DAPI
 type WebhookUserDataPayload = {
   [k in DataType]?: MetriportData[];
 };
@@ -33,9 +40,17 @@ type WebhookDataPayload = {
   users: WebhookUserPayload[];
 };
 type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
-type WebhookPingPayload = {
-  ping: string;
+
+// MAPI
+type WebhookDocumentDataPayload = {
+  documents: DocumentReferenceDTO[];
 };
+type WebhookPatientPayload = { patientId: string } & WebhookDocumentDataPayload;
+type WebhookPatientDataPayload = {
+  meta: WebhookMetadataPayload;
+  patients: WebhookPatientPayload[];
+};
+type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload, "meta">;
 
 // TODO #163 - break this up, it has Garmin-specific logic that should live on its own file
 /**
@@ -183,7 +198,6 @@ const reportUsage = (cxId: string, cxUserIds: string[]): void => {
   ]);
 };
 
-// const processOneCustomer = async <T extends MetriportData>(
 const processOneCustomer = async (
   cxId: string,
   settings: Settings,
@@ -200,24 +214,60 @@ const processOneCustomer = async (
   return true;
 };
 
+export const processPatientRequest = async (
+  cxId: string,
+  patientId: string,
+  documents: DocumentReferenceDTO[]
+): Promise<boolean> => {
+  try {
+    const settings = await getSettingsOrFail({ id: cxId });
+    // create a representation of this request and store on the DB
+    const payload: WebhookPatientDataPayloadWithoutMessageId = {
+      patients: [{ patientId, documents }],
+    };
+    const webhookRequest = await createWebhookRequest({ cxId, payload });
+    // send it to the customer and update the request status
+    await processRequest(webhookRequest, settings, ApiTypes.medical);
+
+    // TODO: #484
+    // reportUsage(cxId, ...);
+  } catch (err) {
+    log(`Error on processPatientRequest: `, err);
+    capture.error(err, {
+      extra: { patientId, context: `webhook.processPatientRequest` },
+    });
+  }
+  return true;
+};
+
 export const processRequest = async (
   webhookRequest: WebhookRequest,
-  settings: Settings
+  settings: Settings,
+  apiType: ApiTypes = ApiTypes.devices
 ): Promise<boolean> => {
   const payload = webhookRequest.payload;
 
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
-    console.log(
+    const msg =
       `Missing webhook config, skipping sending it ` +
-        `(url: ${webhookUrl}, key: ${webhookKey ? "<defined>" : null}`
-    );
-    // mark this request as failed on the DB - so it can be retried later
-    await updateWebhookRequestStatus({
-      id: webhookRequest.id,
-      status: "failure",
-    });
-    return false;
+      `(url: ${webhookUrl}, key: ${webhookKey ? "<defined>" : null}`;
+    console.log(msg);
+    capture.message(msg, { extra: { context: `webhook.processRequest` } });
+    // if this is for DAPI:
+    //    mark this request as failed on the DB - so it can be retried later
+    // if this is for MAPI:
+    //    silently ignore this since this is just a notification for ease-of-use
+    //    and won't result in data loss
+    if (apiType === ApiTypes.devices) {
+      await updateWebhookRequestStatus({
+        id: webhookRequest.id,
+        status: "failure",
+      });
+      return false;
+    } else {
+      return true;
+    }
   }
   // TODO Separate preparing the payloads with the actual sending of that data over the wire
   // It will simplify managing the webhook status (enabled?) and only retrying sending once

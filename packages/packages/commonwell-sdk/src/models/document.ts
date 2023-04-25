@@ -23,9 +23,9 @@ const codeableConceptSchema = z.object({
   coding: z
     .array(
       z.object({
-        system: z.string().optional().nullable(),
-        code: z.string().optional().nullable(),
-        display: z.string().optional().nullable(),
+        system: z.string().optional(),
+        code: z.string().optional(),
+        display: z.string().optional(),
       })
     )
     .optional(),
@@ -86,7 +86,7 @@ export const contentSchema = z.object({
   // relatesTo: ?, // What's the structure here?
   // code: replaces | transforms | signs | appends, // Supposed to be required, no example - what's the structure here?
   // target: ?, // Supposed to be required, no example - what's the structure here?
-  description: z.string().optional().nullable(),
+  description: z.string().optional(),
   // confidentiality: ?[], // What's the structure here? Maybe based on codeableConceptSchema?
   // primaryLanguage: ?, // What's the structure here?
   mimeType: z.string().optional(),
@@ -123,6 +123,26 @@ export const documentSchema = z.object({
 });
 export type Document = z.infer<typeof documentSchema>;
 
+export const operationOutcomeSchema = z.object({
+  id: z.string(),
+  content: z.object({
+    resourceType: resourceTypeSchema,
+    issue: z.array(
+      z.object({
+        severity: z.string(),
+        type: z
+          .object({
+            code: z.string(),
+          })
+          .optional()
+          .nullable(),
+        details: z.string(),
+      })
+    ),
+  }),
+});
+export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
+
 export const documentQueryResponseSchema = z.object({
   resourceType: resourceTypeSchema,
   entry: z.preprocess(entries => {
@@ -132,3 +152,17 @@ export const documentQueryResponseSchema = z.object({
 });
 
 export type DocumentQueryResponse = z.infer<typeof documentQueryResponseSchema>;
+
+export const documentQueryFullResponseSchema = z.object({
+  resourceType: resourceTypeSchema,
+  entry: z.preprocess(entries => {
+    const result = z.array(z.any()).parse(entries);
+    return result.filter(
+      e =>
+        e.content?.resourceType === "DocumentReference" ||
+        e.content?.resourceType === "OperationOutcome"
+    );
+  }, z.array(documentSchema.or(operationOutcomeSchema))),
+});
+
+export type DocumentQueryFullResponse = z.infer<typeof documentQueryFullResponseSchema>;

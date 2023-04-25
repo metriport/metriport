@@ -5,6 +5,8 @@ import {
   createOrganization,
   OrganizationCreateCmd,
 } from "../../command/medical/organization/create-organization";
+import { toFHIR } from "../../external/fhir/organization";
+import { upsertOrgToFHIRServer } from "../../external/fhir/organization/upsert-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
 import {
   OrganizationUpdateCmd,
@@ -21,7 +23,7 @@ const router = Router();
 /** ---------------------------------------------------------------------------
  * POST /organization
  *
- * Creates a new organization at Metroport and HIEs.
+ * Creates a new organization at Metriport and HIEs.
  *
  * @param req.body The data to create the organization.
  * @returns The newly created organization.
@@ -34,6 +36,10 @@ router.post(
 
     const createOrg: OrganizationCreateCmd = { cxId, ...data };
     const org = await createOrganization(createOrg);
+
+    // temp solution until we migrate to FHIR
+    const fhirOrg = toFHIR(org);
+    await upsertOrgToFHIRServer(fhirOrg);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
@@ -65,6 +71,10 @@ router.put(
       cxId,
     };
     const org = await updateOrganization(updateCmd);
+
+    // temp solution until we migrate to FHIR
+    const fhirOrg = toFHIR(org);
+    await upsertOrgToFHIRServer(fhirOrg);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous

@@ -1,28 +1,22 @@
 ---
-title: "Get Document"
-description: "Downloads the Document contents of the specified URL."
-api: "GET /medical/v1/document/download"
+title: "Get Document URL"
+description: "Gets a presigned URL for downloading the specified document."
+api: "GET /medical/v1/document/downloadUrl"
 ---
+
+This endpoint returns a URL which you can use to download the specified document using the file name provided from the [List Documents endpoint](/medical-api/api-reference/document/list-documents).
+
+<Info>The URL will only be valid for 60 seconds before you need to request a new one.</Info>
 
 ## Query Params
 
-<ParamField query="patientId" type="string" required>
-  The ID of the Patient for which to list available Documents.
-</ParamField>
-
-<ParamField query="facilityId" type="string" required>
-  The ID of the Facility where the patient is receiving care.
-</ParamField>
-
-<ParamField query="location" type="string" required>
-  URL from the DocumentReference.
+<ParamField query="fileName" type="string" required>
+  The file name of the document.
 </ParamField>
 
 ## Response
 
-<ResponseField type="blob">
-  The downloaded Document contents.
-</ResponseField>
+<ResponseField type="string">The presigned URL.</ResponseField>
 
 <ResponseExample>
 
@@ -31,11 +25,7 @@ import { MetriportMedicalApi } from "@metriport/api";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
-const documentBlob = await metriportClient.getDocument(
-  "2.16.840.1.113883.3.666.5.2004.4.2005",
-  "2.16.840.1.113883.3.666.123",
-  "https://fhir.metriport.com/oauth/fhir/Binary/2.16.840.1.113883.3.777.666.5.700009.969696"
-);
+const presignedUrl = await metriportClient.getDocumentUrl("abc123-def456");
 ```
 
 </ResponseExample>

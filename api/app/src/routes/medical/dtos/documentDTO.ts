@@ -1,5 +1,6 @@
-import { DocumentReference } from "../../../domain/medical/document-reference";
+import { DocumentReference } from "@medplum/fhirtypes";
 import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
+import { capture } from "../../../shared/notifications";
 
 export type DocumentReferenceDTO = {
   id: string;
@@ -13,18 +14,46 @@ export type DocumentReferenceDTO = {
   type: CodeableConceptDTO | undefined;
 };
 
-export function toDTO(doc: DocumentReference): DocumentReferenceDTO {
-  const { id } = doc;
-  const { description, type, status, location, fileName, indexed, mimeType, size } = doc.data;
-  return {
-    id,
-    description: description,
-    fileName,
-    location,
-    type: codeableToDTO(type),
-    status: status,
-    indexed: indexed,
-    mimeType: mimeType,
-    size: size,
-  };
+export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceDTO[] {
+  if (docs) {
+    return docs.flatMap(doc => {
+      if (doc && doc.id && doc.content) {
+        const hasAttachment = doc.content[0];
+
+        if (doc.content.length > 1) {
+          capture.message("Doc contains more than one content item", {
+            extra: {
+              id: doc.id,
+              content_length: doc.content.length,
+            },
+          });
+        }
+
+        if (
+          hasAttachment &&
+          hasAttachment.attachment &&
+          hasAttachment.attachment.title &&
+          hasAttachment.attachment.url
+        ) {
+          return {
+            id: doc.id,
+            description: doc.description,
+            fileName: hasAttachment.attachment.title,
+            location: hasAttachment.attachment.url,
+            type: codeableToDTO(doc.type),
+            status: doc.status,
+            indexed: hasAttachment.attachment.creation,
+            mimeType: hasAttachment.attachment.contentType,
+            size: hasAttachment.attachment.size,
+          };
+        }
+
+        return [];
+      }
+
+      return [];
+    });
+  }
+
+  return [];
 }
