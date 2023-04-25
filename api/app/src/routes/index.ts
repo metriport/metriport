@@ -1,4 +1,5 @@
 import { Application } from "express";
+import { register } from "../fern";
 import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
@@ -6,6 +7,7 @@ import connect from "./connect";
 import { requestLogger } from "./helpers/requestLogger";
 import internal from "./internal";
 import medical from "./medical";
+import document from "./medical/document";
 import { checkMAPIAccess, processAPIKey } from "./middlewares/auth";
 import { reportDeviceUsage, reportMedicalUsage } from "./middlewares/usage";
 import nutrition from "./nutrition";
@@ -33,6 +35,11 @@ export default (app: Application) => {
 
   // medical routes with API key auth
   app.use("/medical/v1", processAPIKey, checkMAPIAccess, reportMedicalUsage, medical);
+
+  // register fern routes
+  register(app, {
+    document,
+  });
 
   // routes with session token auth
   app.use("/connect", connect);

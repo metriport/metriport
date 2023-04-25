@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+service:
+  base-path: /medical/v1/document
+  auth: true
+  endpoints:
+    get:
+      docs: Queries for all available document metadata for the specified patient across HIEs
+      path: ""
+      method: GET
+      request:
+        name: GetDocumentsRequest
+        query-parameters:
+          patientId:
+            docs: Patient ID for which to retrieve document metadata
+            type: string
+          facilityId:
+            docs: The facility providing NPI for the document query
+            type: string
+          forceQuery: optional<string>
+      response: GetDocumentsResponse
+
+    triggerQuery:
+      docs: Triggers a document query for the specified patient across HIEs
+      path: /query
+      request:
+        name: TriggerDocumentsQueryRequest
+        query-parameters:
+          patientId:
+            docs: Patient ID for which to retrieve document metadata
+            type: string
+          facilityId:
+            docs: The facility providing NPI for the document query
+            type: string
+      response: TriggerDocumentsQueryResponse
+
+    download:
+      docs: Fetches the document from S3 and sends a presigned URL
+      path: /downloadUrl
+      request:
+        name: DownloadDocumentRequest
+        query-parameters:
+          fileName:
+            docs: The file name of the document in s3
+            type: string
+      response: DownloadDocumentResponse
+
+types:
+  Document:
+    properties:
+      id: string
+      fileName: string
+      location: string
+      description: optional<string>
+      status: optional<string>
+      indexed: optional<datetime>
+      mimeType: optional<string>
+      size:
+        docs: size of document in bytes
+        type: optional<integer>
+      type: optional<CodeableConcept>
+
+  CodeableConcept:
+    properties:
+      coding: optional<list<Coding>>
+      text: optional<string>
+
+  Coding:
+    properties:
+      system: optional<string>
+      code: optional<string>
+      display: optional<string>
+
+  GetDocumentsResponse:
+    properties:
+      queryStatus: QueryStatus
+      documents: list<Document>
+
+  QueryStatus:
+    enum:
+      - processing
+      - completed
+
+  TriggerDocumentsQueryResponse:
+    properties:
+      queryStatus: QueryStatus
+
+  DownloadDocumentResponse:
+    properties:
+      url: string
