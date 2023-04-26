@@ -1,4 +1,5 @@
 import { Duration } from "aws-cdk-lib";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
@@ -29,6 +30,7 @@ export function addErrorAlarmToLambdaFunc(
     evaluationPeriods: 1,
     alarmDescription:
       "Alarm if the SUM of Lambda invocations is greater than or equal to the  threshold (1) for 1 evaluation period",
+    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
   alarmAction && alarm.addAlarmAction(alarmAction);
 }
