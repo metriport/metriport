@@ -70,7 +70,7 @@ export async function findOrCreatePerson({
     if (persons.length > 1) {
       return alertAndReturnMostRecentPerson(
         commonwellPatientId,
-        [persons[0], ...persons], // to match the type requiring at least one element
+        [persons[0], ...persons.slice(1)], // to match the type requiring at least one element
         commonWell.lastReferenceHeader,
         context
       );
