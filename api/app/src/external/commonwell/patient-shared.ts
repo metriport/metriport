@@ -1,12 +1,13 @@
 import {
   CommonWellAPI,
+  getDemographics,
   getId,
   Patient as CommonwellPatient,
   Person as CommonwellPerson,
   RequestMetadata,
+  StrongId,
 } from "@metriport/commonwell-sdk";
-import { StrongId } from "@metriport/commonwell-sdk/lib/models/identifier";
-import _ from "lodash";
+import _, { maxBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
 import { Facility } from "../../models/medical/facility";
@@ -26,6 +27,8 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
 
 type SimplifiedPersonalId = { key: string; system: string };
 
+type FindOrCreatePersonResponse = { personId: string; person: CommonwellPerson } | undefined;
+
 export async function findOrCreatePerson({
   commonWell,
   queryMeta,
@@ -36,12 +39,15 @@ export async function findOrCreatePerson({
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
-}): Promise<{ personId: string; person: CommonwellPerson } | undefined> {
+}): Promise<FindOrCreatePersonResponse> {
   const { log, debug } = Util.out(`CW findOrCreatePerson - CW patientId ${commonwellPatientId}`);
+  const context = `cw.findOrCreatePerson.strongIds`;
   const person = makePersonForPatient(commonwellPatient);
   const strongIds = getPersonalIdentifiers(person);
   if (strongIds.length > 0) {
     // Search by personal ID
+    // TODO: we should be returning instances of CommonwellPerson here, so we return what we get from CW on this function, not
+    // the result of calling `makePersonForPatient()`
     const personIds = await searchPersonIds({ commonWell, queryMeta, personalIds: strongIds });
     if (personIds.length === 1) return { personId: personIds[0], person };
     if (personIds.length > 1) {
@@ -49,32 +55,30 @@ export async function findOrCreatePerson({
       const message = idsToAlertMessage(commonwellPatientId, personIds);
       log(`${subject}: ${message}`);
       capture.message(subject, {
-        extra: { commonwellPatientId, personIds, context: `cw.findOrCreatePerson.strongIds` },
+        extra: { commonwellPatientId, personIds, context },
       });
+      // TODO consider also returning the most recent person here
       return undefined;
     }
   } else {
     // Search by demographics
     const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, commonwellPatientId);
     debug(`resp searchPersonByPatientDemo: ${JSON.stringify(respSearch, null, 2)}`);
-    const personIds = respSearch._embedded?.person
-      ? respSearch._embedded.person.map(getId).flatMap(filterTruthy)
+    const persons = respSearch._embedded?.person
+      ? respSearch._embedded.person.flatMap(p => (p && getId(p) ? p : []))
       : [];
-    if (personIds.length === 1) return { personId: personIds[0], person };
-    if (personIds.length > 1) {
-      const subject = "Found more than one person for patient demographics";
-      const message = idsToAlertMessage(commonwellPatientId, personIds);
-      log(`${subject}: ${message}`);
-      capture.message(subject, {
-        extra: {
-          commonwellPatientId,
-          personIds,
-          cwReference: commonWell.lastReferenceHeader,
-          context: `cw.findOrCreatePerson.no.strongIds`,
-        },
-      });
-      return undefined;
+    if (persons.length > 1) {
+      return alertAndReturnMostRecentPerson(
+        commonwellPatientId,
+        [persons[0], ...persons], // to match the type requiring at least one element
+        commonWell.lastReferenceHeader,
+        context
+      );
     }
+    const cwPerson = persons.flatMap(filterTruthy)[0];
+    const personId = getId(cwPerson);
+    if (cwPerson && personId) return { personId, person: cwPerson };
+    // if didn't find any, proceed to enroll
   }
 
   // If not found, enroll/add person
@@ -88,6 +92,40 @@ export async function findOrCreatePerson({
     throw new Error(msg);
   }
   return { personId, person };
+}
+
+function alertAndReturnMostRecentPerson(
+  commonwellPatientId: string,
+  persons: [CommonwellPerson, ...CommonwellPerson[]],
+  cwReference?: string,
+  context?: string
+): FindOrCreatePersonResponse {
+  const { log } = Util.out(
+    `CW alertAndReturnMostRecentPerson - CW patientId ${commonwellPatientId}`
+  );
+  const personIds = persons.map(getId).flatMap(filterTruthy);
+  const subject = "Found more than one person for patient demographics";
+  const message = idsToAlertMessage(commonwellPatientId, personIds);
+  log(`${subject} - using the most recent one: ${message}`);
+  capture.message(subject, {
+    extra: {
+      action: `Using the most recent one`,
+      commonwellPatientId,
+      persons: getDemographics(persons),
+      cwReference,
+      context,
+    },
+  });
+  const person = getMostRecentPerson(persons);
+  const personId = getId(person);
+  if (person && personId) return { personId, person };
+  return undefined;
+}
+
+function getMostRecentPerson(persons: [CommonwellPerson, ...CommonwellPerson[]]): CommonwellPerson {
+  const mostRecent = maxBy(persons, p => p.enrollmentSummary?.dateEnrolled);
+  const lastOne = persons[persons.length - 1]; // .at(-1) doesn't expose the correct type
+  return mostRecent ?? lastOne;
 }
 
 function idsToAlertMessage(cwPatientId: string, personIds: string[]): string {
