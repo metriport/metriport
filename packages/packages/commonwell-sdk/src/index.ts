@@ -1,17 +1,37 @@
 export { APIMode, CommonWell, RequestMetadata } from "./client/commonwell";
 export { CommonWellAPI } from "./client/commonwell-api";
 export { CommonwellError } from "./common/commonwell-error";
+export { downloadFile } from "./common/fileDownload";
 export { makeJwt } from "./common/make-jwt";
-export { getId, getIdTrailingSlash, getPersonIdFromSearchByPatientDemo } from "./common/util";
+export {
+  getDemographics,
+  getId,
+  getIdTrailingSlash,
+  getPersonIdFromSearchByPatientDemo,
+} from "./common/util";
 export { Address, AddressUseCodes } from "./models/address";
+export { CertificateParam, CertificatePurpose, CertificateResp } from "./models/certificates";
 export { Contact, ContactSystemCodes, ContactUseCodes } from "./models/contact";
 export { Demographics, GenderCodes } from "./models/demographics";
 export * from "./models/document";
 export { EnrollmentSummary } from "./models/enrollment-summary";
 export { HumanName, NameUseCodes } from "./models/human-name";
-export { Identifier } from "./models/identifier";
-export { isLOLA1, isLOLA2, isLOLA3, isLOLA4, LOLA, NetworkLink } from "./models/link";
-export { Organization } from "./models/organization";
-export { Patient } from "./models/patient";
-export { Person } from "./models/person";
+export { Identifier, StrongId } from "./models/identifier";
+export {
+  isLOLA1,
+  isLOLA2,
+  isLOLA3,
+  isLOLA4,
+  LOLA,
+  NetworkLink,
+  PatientLinkProxy,
+} from "./models/link";
+export { Organization, OrganizationList } from "./models/organization";
+export {
+  Patient,
+  PatientLinkResp,
+  PatientNetworkLinkResp,
+  PatientSearchResp,
+} from "./models/patient";
+export { PatientLink, PatientLinkSearchResp, Person, PersonSearchResp } from "./models/person";
 export { PurposeOfUse } from "./models/purpose-of-use";

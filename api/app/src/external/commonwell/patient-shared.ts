@@ -1,11 +1,12 @@
 import {
   CommonWellAPI,
+  getDemographics,
   getId,
   Patient as CommonwellPatient,
   Person as CommonwellPerson,
   RequestMetadata,
+  StrongId,
 } from "@metriport/commonwell-sdk";
-import { StrongId } from "@metriport/commonwell-sdk/lib/models/identifier";
 import _, { maxBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
@@ -110,7 +111,7 @@ function alertAndReturnMostRecentPerson(
     extra: {
       action: `Using the most recent one`,
       commonwellPatientId,
-      personIds,
+      persons: getDemographics(persons),
       cwReference,
       context,
     },
