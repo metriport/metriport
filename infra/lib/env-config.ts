@@ -67,6 +67,8 @@ export type EnvConfig = {
   slack?: {
     SLACK_ALERT_URL?: string;
     SLACK_NOTIFICATION_URL?: string;
+    workspaceId: string;
+    alertsChannelId: string;
   };
 } & (
   | {
