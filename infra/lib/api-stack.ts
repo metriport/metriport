@@ -584,6 +584,7 @@ export class APIStack extends Stack {
       threshold: mbToBytes(150),
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
     alarmAction && memoryAlarm.addAlarmAction(alarmAction);
     alarmAction && memoryAlarm.addOkAction(alarmAction);
@@ -593,6 +594,7 @@ export class APIStack extends Stack {
       threshold: mbToBytes(250),
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
     alarmAction && storageAlarm.addAlarmAction(alarmAction);
     alarmAction && storageAlarm.addOkAction(alarmAction);
@@ -601,29 +603,28 @@ export class APIStack extends Stack {
     const cpuAlarm = cpuMetric.createAlarm(this, `${dbClusterName}CPUUtilizationAlarm`, {
       threshold: 90, // pct
       evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
     alarmAction && cpuAlarm.addAlarmAction(alarmAction);
     alarmAction && cpuAlarm.addOkAction(alarmAction);
 
     const readIOPsMetric = dbCluster.metricVolumeReadIOPs();
-    const readIOPSAlarm = readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
+    const rIOPSAlarm = readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
       threshold: 20000, // IOPs per second
       evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    alarmAction && readIOPSAlarm.addAlarmAction(alarmAction);
-    alarmAction && readIOPSAlarm.addOkAction(alarmAction);
+    alarmAction && rIOPSAlarm.addAlarmAction(alarmAction);
+    alarmAction && rIOPSAlarm.addOkAction(alarmAction);
 
     const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
-    const writeIOPSAlarm = writeIOPsMetric.createAlarm(
-      this,
-      `${dbClusterName}VolumeWriteIOPsAlarm`,
-      {
-        threshold: 5000, // IOPs per second
-        evaluationPeriods: 1,
-      }
-    );
-    alarmAction && writeIOPSAlarm.addAlarmAction(alarmAction);
-    alarmAction && writeIOPSAlarm.addOkAction(alarmAction);
+    const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
+      threshold: 5000, // IOPs per second
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    alarmAction && wIOPSAlarm.addAlarmAction(alarmAction);
+    alarmAction && wIOPSAlarm.addOkAction(alarmAction);
   }
 
   private addDynamoPerformanceAlarms(
@@ -638,6 +639,7 @@ export class APIStack extends Stack {
       {
         threshold: 10000, // units per second
         evaluationPeriods: 1,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
     );
     alarmAction && readAlarm.addAlarmAction(alarmAction);
@@ -650,6 +652,7 @@ export class APIStack extends Stack {
       {
         threshold: 10000, // units per second
         evaluationPeriods: 1,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
     );
     alarmAction && writeAlarm.addAlarmAction(alarmAction);

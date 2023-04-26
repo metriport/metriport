@@ -1,4 +1,5 @@
 import { Duration, StackProps } from "aws-cdk-lib";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -112,6 +113,7 @@ export function createAPIService(
       threshold: 80,
       evaluationPeriods: 3,
       datapointsToAlarm: 2,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
   alarmAction && fargateCPUAlarm.addAlarmAction(alarmAction);
   alarmAction && fargateCPUAlarm.addOkAction(alarmAction);
@@ -122,6 +124,7 @@ export function createAPIService(
       threshold: 70,
       evaluationPeriods: 3,
       datapointsToAlarm: 2,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
   alarmAction && fargateMemoryAlarm.addAlarmAction(alarmAction);
   alarmAction && fargateMemoryAlarm.addOkAction(alarmAction);
