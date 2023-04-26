@@ -4,7 +4,8 @@ import { Organization } from "../models/organization";
 import { Patient } from "../models/patient";
 import { Person, PersonSearchResp } from "../models/person";
 
-export function getId(object: Person): string | undefined {
+export function getId(object: Person | undefined): string | undefined {
+  if (!object) return undefined;
   const url = object._links?.self?.href;
   if (!url) return undefined;
   return url.substring(url.lastIndexOf("/") + 1);
