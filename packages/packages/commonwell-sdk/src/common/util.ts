@@ -1,9 +1,11 @@
+import { Demographics } from "../models/demographics";
 import { StrongId } from "../models/identifier";
 import { Organization } from "../models/organization";
 import { Patient } from "../models/patient";
 import { Person, PersonSearchResp } from "../models/person";
 
-export function getId(object: Person): string | undefined {
+export function getId(object: Person | undefined): string | undefined {
+  if (!object) return undefined;
   const url = object._links?.self?.href;
   if (!url) return undefined;
   return url.substring(url.lastIndexOf("/") + 1);
@@ -51,4 +53,16 @@ export function convertPatientIdToSubjectId(patientId: string): string | undefin
   const code = match && match[1];
   const system = match && match[2];
   return code && system ? buildPatiendIdToDocQuery(code, system) : undefined;
+}
+
+/**
+ * Return the demographics for the results of a person search or a list of persons.
+ *
+ * @param personRelated structure containing person data, either an array of Person or a PersonSearchResp
+ */
+export function getDemographics(personRelated: Person[] | PersonSearchResp): Demographics[] {
+  if (personRelated instanceof Array) {
+    return personRelated.map(p => p.details);
+  }
+  return personRelated._embedded.person.map(p => p.details);
 }
