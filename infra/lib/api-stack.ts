@@ -21,7 +21,6 @@ import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
 import { EnvConfig } from "./env-config";
-import { EnvType } from "./env-type";
 import { getSecrets } from "./secrets";
 import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./util";
 
@@ -675,25 +674,15 @@ function setupSlackNotifSnsTopic(
 ): { snsTopic: ITopic; alarmAction: SnsAction } | undefined {
   if (!config.slack) return undefined;
 
-  if (config.environmentType !== EnvType.sandbox) {
-    const slackNotifSnsTopic = new sns.Topic(stack, "SlackSnsTopic", {
-      displayName: "Slack SNS Topic",
-    });
-    AlarmSlackBot.addSlackChannelConfig(stack, {
-      configName: `slack-chatbot-configuration-` + config.environmentType,
-      workspaceId: config.slack.workspaceId,
-      channelId: config.slack.alertsChannelId,
-      topics: [slackNotifSnsTopic],
-    });
-    const alarmAction = new SnsAction(slackNotifSnsTopic);
-    return { snsTopic: slackNotifSnsTopic, alarmAction };
-  }
-
-  const slackNotifSnsTopic = sns.Topic.fromTopicArn(
-    stack,
-    "SlackSnsTopic",
-    config.slack.snsTopicArn
-  );
+  const slackNotifSnsTopic = new sns.Topic(stack, "SlackSnsTopic", {
+    displayName: "Slack SNS Topic",
+  });
+  AlarmSlackBot.addSlackChannelConfig(stack, {
+    configName: `slack-chatbot-configuration-` + config.environmentType,
+    workspaceId: config.slack.workspaceId,
+    channelId: config.slack.alertsChannelId,
+    topics: [slackNotifSnsTopic],
+  });
   const alarmAction = new SnsAction(slackNotifSnsTopic);
   return { snsTopic: slackNotifSnsTopic, alarmAction };
 }

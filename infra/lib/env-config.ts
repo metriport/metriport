@@ -63,27 +63,21 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
   sentryDSN?: string; // API's Sentry DSN
+  slack?: {
+    SLACK_ALERT_URL?: string;
+    SLACK_NOTIFICATION_URL?: string;
+    workspaceId: string;
+    alertsChannelId: string;
+  };
 } & (
   | {
       environmentType: EnvType.staging | EnvType.production;
       connectWidget: ConnectWidgetConfig;
       connectWidgetUrl?: never;
-      slack?: SlackBase & {
-        workspaceId: string;
-        alertsChannelId: string;
-      };
     }
   | {
       environmentType: EnvType.sandbox;
       connectWidget?: never;
       connectWidgetUrl: string;
-      slack?: SlackBase & {
-        snsTopicArn: string;
-      };
     }
 );
-
-type SlackBase = {
-  SLACK_ALERT_URL?: string;
-  SLACK_NOTIFICATION_URL?: string;
-};
