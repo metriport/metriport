@@ -307,11 +307,15 @@ const styles = StyleSheet.create({
 export default App;
 ```
 
+<Tip>
+  Our GitHub repo has [an example
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/react-native) of this
+  in a React Native app.
+</Tip>
+
 ### Cordova
 
-.html
-
-```html
+```html index.html
 <html>
   <head>
     <meta charset="utf-8" />
@@ -341,21 +345,12 @@ export default App;
 </html>
 ```
 
-.js
-
-```js
-document.getElementById("show").addEventListener("click", () =>
-  metriportconnectwidget.show({
-    clientApiKey: "CLIENT_API_KEY",
-    token: "CONNECT_TOKEN",
-  })
-);
-```
+<Snippet file="cordova-js-example.mdx" />
 
 <Tip>
   Our GitHub repo has [an example
-  implementation](https://github.com/metriport/metriport/tree/develop/examples/react-native) of this
-  in a React Native app.
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/cordova) of this in a
+  Cordova app.
 </Tip>
 
 ## URL Parameters

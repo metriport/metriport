@@ -4,9 +4,9 @@ description: "A plugin to integrate with Metriport on Cordova - including Apple 
 ---
 
 <Info>
-  Before getting started, visit the [Apple Health
+  Before getting started, if you are deleveloping on IOS visit the [Apple Health
   docs](/devices-api/more-info/apple-health#1-enable-healthkit) and follow the Enable HealthKit
-  section to configure HealthKit."
+  section to configure HealthKit.
 </Info>
 
 ## Installation
@@ -24,7 +24,7 @@ pod install
 
 ## Usage
 
-To use our SDK go to your index.html add:
+To use our SDK go to your index.html and add:
 
 ```html
 <body>
@@ -34,16 +34,9 @@ To use our SDK go to your index.html add:
 </body>
 ```
 
-Then in your js file add:
+Then, in your js file add:
 
-```js
-document.getElementById("show-widget").addEventListener("click", () =>
-  metriportconnectwidget.show({
-    clientApiKey: "CLIENT_API_KEY",
-    token: "CONNECT_TOKEN",
-  })
-);
-```
+<Snippet file="cordova-js-example.mdx" />
 
 <Warning>
   Ensure you use your Client Key here, and not your Secret Key. You can read more about the
