@@ -9,19 +9,16 @@ With Metriport, you get a pre-built [Connect widget](https://connect.metriport.c
 that you can easily plug into your app, so that your users can connect all of their data sources to your application!
 Here's a preview:
 
-<iframe
-  width="90%"
-  height="700"
-  src="https://connect.metriport.com/?token=demo"
-  ></iframe>
-
+<iframe width="90%" height="700" src="https://connect.metriport.com/?token=demo"></iframe>
 
 ## How to Implement
 
 You can use the references below for sample implementations on various platforms. Generally, you can simply link to the Connect Widget in web apps, and use WebViews to implement the Widget on mobile platforms.
 
 <Info>
-  As per the [Quickstart guide](/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app), you'll need to generate a temporary token for each Connect Widget session.
+  As per the [Quickstart
+  guide](/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app),
+  you'll need to generate a temporary token for each Connect Widget session.
 </Info>
 
 ### Web
@@ -31,7 +28,8 @@ window.open(`https://connect.metriport.com/?token=${connectToken}`);
 ```
 
 <Info>
-  Not all of the data providers support an `iframe` embedding, so we recommend to avoid using an `iframe` for the Connect Widget in your web app.
+  Not all of the data providers support an `iframe` embedding, so we recommend to avoid using an
+  `iframe` for the Connect Widget in your web app.
 </Info>
 
 ### iOS (Swift)
@@ -53,12 +51,12 @@ struct Metriport_mobileApp: App {
 
 struct ContentView: View {
     @State private var showWebView = false
-    
+
     // var localWebView = MetriportWidget(url: URL(string: "http://localhost:3001/?token={YOUR_TOKEN}")!)
     // For more information of how to create a token view link below
     // https://docs.metriport.com/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app
     var webView = MetriportWidget(url: URL(string: "https://connect.metriport.com/?token=demo")!)
-    
+
     var body: some View {
         VStack {
           webView
@@ -95,15 +93,15 @@ struct ContentView: View {
 }
 
 struct MetriportWidget: UIViewRepresentable {
-    
+
     var url: URL
     private var webView: WKWebView?
-    
+
     public init(url: URL) {
         self.webView = WKWebView()
         self.url = url
     }
-    
+
     public func makeUIView(context: Context) -> WKWebView {
         return webView!
     }
@@ -112,7 +110,7 @@ struct MetriportWidget: UIViewRepresentable {
        let request = URLRequest(url: url)
        webView.load(request)
     }
-    
+
     public func goBack(){
         webView?.goBack()
     }
@@ -120,7 +118,7 @@ struct MetriportWidget: UIViewRepresentable {
     public func goForward(){
         webView?.goForward()
     }
-    
+
     public func refresh() {
         webView?.reload()
     }
@@ -128,7 +126,9 @@ struct MetriportWidget: UIViewRepresentable {
 ```
 
 <Tip>
-  Our GitHub repo has [an example implementation](https://github.com/metriport/metriport/tree/develop/examples/ios/Metriport%20mobile) of this in an iOS app.
+  Our GitHub repo has [an example
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/ios/Metriport%20mobile)
+  of this in an iOS app.
 </Tip>
 
 ### Android (Kotlin)
@@ -244,7 +244,9 @@ class MainActivity : AppCompatActivity() {
 </CodeGroup>
 
 <Tip>
-  Our GitHub repo has [an example implementation](https://github.com/metriport/metriport/tree/develop/examples/android) of this in an Android app.
+  Our GitHub repo has [an example
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/android) of this in
+  an Android app.
 </Tip>
 
 ### React Native
@@ -259,25 +261,21 @@ const App = () => {
 
   return (
     <View style={styles.centeredView}>
-      <Modal
-        animationType='slide'
-        presentationStyle='formSheet'
-        visible={modalVisible}
-      >
+      <Modal animationType="slide" presentationStyle="formSheet" visible={modalVisible}>
         <Pressable
-          style={{ backgroundColor: "#748df0", height: 40, alignItems: "center", justifyContent: 'center' }}
+          style={{
+            backgroundColor: "#748df0",
+            height: 40,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
           onPress={() => setModalVisible(false)}
         >
           <Text style={styles.textStyle}>CLOSE</Text>
         </Pressable>
-        <WebView
-          source={{ uri: "https://connect.metriport.com/?token=demo" }}
-        />
+        <WebView source={{ uri: "https://connect.metriport.com/?token=demo" }} />
       </Modal>
-      <Pressable
-        style={[styles.button, styles.buttonOpen]}
-        onPress={() => setModalVisible(true)}
-      >
+      <Pressable style={[styles.button, styles.buttonOpen]} onPress={() => setModalVisible(true)}>
         <Text style={styles.textStyle}>Show Metriport Widget</Text>
       </Pressable>
     </View>
@@ -289,29 +287,70 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 22
+    marginTop: 22,
   },
   button: {
     borderRadius: 20,
     padding: 10,
-    elevation: 2
+    elevation: 2,
   },
   buttonOpen: {
-    backgroundColor: "#748df0"
+    backgroundColor: "#748df0",
   },
   textStyle: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 
 export default App;
-
 ```
 
 <Tip>
-  Our GitHub repo has [an example implementation](https://github.com/metriport/metriport/tree/develop/examples/react-native) of this in a React Native app.
+  Our GitHub repo has [an example
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/react-native) of this
+  in a React Native app.
+</Tip>
+
+### Cordova
+
+```html index.html
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' data: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; img-src 'self' data: content:;"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="stylesheet" href="css/index.css" />
+  </head>
+
+  <body>
+    <div class="app">
+      <h1>Metriport Cordova</h1>
+      <div id="deviceready" class="blink">
+        <p class="event listening">Connecting to Device</p>
+        <p class="event received">Device is Ready</p>
+      </div>
+      <button id="show">Open widget</button>
+    </div>
+    <script src="cordova.js"></script>
+    <script src="js/index.js"></script>
+  </body>
+</html>
+```
+
+<Snippet file="cordova-js-example.mdx" />
+
+<Tip>
+  Our GitHub repo has [an example
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/cordova) of this in a
+  Cordova app.
 </Tip>
 
 ## URL Parameters
@@ -358,10 +397,7 @@ For a comprehensive list of available colors [visit here](https://www.w3schools.
 `https://connect.metriport.com/?token=${connectToken}&customColor=orange`;
 ```
 
-<Tip>
-  If you wish to add a hex code ensure that it is URL encoded ie.
-  customColor=%23FF5733
-</Tip>
+<Tip>If you wish to add a hex code ensure that it is URL encoded ie. customColor=%23FF5733</Tip>
 
 <iframe
   width="90%"
@@ -379,9 +415,8 @@ For a list of the available providers [visit here](/more-info/our-integrations).
 ```
 
 <Tip>
-  This defaults to all providers if no paramater is set. Once you set the
-  provider parameter you will need to manually add providers or it will default
-  to your last request.
+  This defaults to all providers if no paramater is set. Once you set the provider parameter you
+  will need to manually add providers or it will default to your last request.
 </Tip>
 
 <iframe

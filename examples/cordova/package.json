@@ -1,0 +1,33 @@
+{
+  "name": "com.metriport.cordova",
+  "displayName": "MetriportTestApp",
+  "version": "1.0.0",
+  "description": "A sample Metriport Cordova application that uses our healthkit plugin.",
+  "main": "index.js",
+  "keywords": [
+    "ecosystem:cordova"
+  ],
+  "author": "Metriport Team",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "cordova-plugin-add-swift-support": "2.0.2"
+  },
+  "cordova": {
+    "plugins": {
+      "cordova-plugin-add-swift-support": {},
+      "cordova-plugin-enable-cleartext-traffic": {},
+      "com-metriport-cordova-sdk": {}
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ]
+  },
+  "devDependencies": {
+    "@metriport/cordova-sdk": "github:metriport/cordova-sdk",
+    "cordova-android": "^10.1.2",
+    "cordova-ios": "^6.3.0",
+    "cordova-plugin-enable-cleartext-traffic": "^2.1.0",
+    "cordova-plugin-inappbrowser": "github:apache/cordova-plugin-inappbrowser"
+  }
+}
