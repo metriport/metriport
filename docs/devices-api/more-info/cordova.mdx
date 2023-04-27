@@ -1,6 +1,6 @@
 ---
-title: "React Native"
-description: "A library to integrate with Metriport on React Native - including Apple Health integrations."
+title: "Cordova"
+description: "A plugin to integrate with Metriport on Cordova - including Apple Health integrations."
 ---
 
 <Info>
@@ -12,44 +12,37 @@ description: "A library to integrate with Metriport on React Native - including 
 ## Installation
 
 ```sh
-npm install @metriport/react-native-sdk
-npm install react-native-webview
+cordova plugin add https://github.com/metriport/cordova-sdk
 ```
 
 You'll need to ensure that the MetriportSDK pod is installed as well.
 
 ```sh
-cd ios
+cd platforms/ios
 pod install
 ```
 
 ## Usage
 
-To use our SDK go to the root of your project and add:
+To use our SDK go to your index.html add:
 
-```jsx
-import * as React from "react";
+```html
+<body>
+  ...
+  <button id="show-widget">Open widget</button>
+  ...
+</body>
+```
 
-import { StyleSheet } from "react-native";
-import { MetriportWidget } from "@metriport/react-native-sdk";
+Then in your js file add:
 
-export default function App() {
-  return (
-    <MetriportWidget
-      token="CONNECT_TOKEN"
-      clientApiKey="CLIENT_API_KEY"
-      sandbox={false}
-      style={styles.box}
-    />
-  );
-}
-
-const styles = StyleSheet.create({
-  box: {
-    width: "100%",
-    height: "100%",
-  },
-});
+```js
+document.getElementById("show-widget").addEventListener("click", () =>
+  metriportconnectwidget.show({
+    clientApiKey: "CLIENT_API_KEY",
+    token: "CONNECT_TOKEN",
+  })
+);
 ```
 
 <Warning>
