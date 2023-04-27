@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="com-metriport-cordova-sdk" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+  <name>MetriportConnectWidget</name>
+  <js-module name="MetriportConnectWidget" src="www/MetriportConnectWidget.js">
+    <clobbers target="metriportconnectwidget" />
+  </js-module>
+  <dependency id="cordova-plugin-inappbrowser" url="https://github.com/apache/cordova-plugin-inappbrowser" />
+  <platform name="ios">
+    <config-file target="config.xml" parent="/*">
+      <feature name="MetriportConnectWidget">
+        <param name="ios-package" value="MetriportConnectWidget" />
+      </feature>
+      <preference name="deployment-target" value="13.0" />
+      <preference name="UseSwiftLanguageVersion" value="5" />
+    </config-file>
+    <podspec>
+      <config>
+        <source url="https://github.com/brightcove/BrightcoveSpecs.git" />
+        <source url="https://github.com/CocoaPods/Specs.git"/>
+      </config>
+      <pods use-frameworks="true">
+        <pod name="MetriportSDK" />
+      </pods>
+    </podspec>
+    <source-file src="src/ios/MetriportConnectWidget.swift" />
+  </platform>
+</plugin>
