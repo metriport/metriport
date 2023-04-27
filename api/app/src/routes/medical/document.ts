@@ -7,6 +7,8 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { downloadDocument } from "../../command/medical/document/document-download";
+import { DocumentQueryResp } from "../../command/medical/document/document-query";
+import { createQueryResponse } from "../../command/medical/document/document-query";
 
 const router = Router();
 
@@ -30,11 +32,25 @@ router.get(
     const documents = await getDocuments({ patientId });
     const documentsDTO = toDTO(documents);
 
-    const queryStatus = forceQuery
-      ? await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId })
-      : (await getPatientOrFail({ cxId, id: patientId })).data.documentQueryStatus ?? "completed";
+    let query: DocumentQueryResp;
 
-    return res.status(OK).json({ queryStatus, documents: documentsDTO });
+    if (forceQuery) {
+      query = await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId });
+    } else {
+      const patient = await getPatientOrFail({ cxId, id: patientId });
+
+      if (patient.data.documentQueryStatus === "processing") {
+        query = createQueryResponse("processing", patient);
+      } else {
+        query = createQueryResponse("completed");
+      }
+    }
+
+    return res.status(OK).json({
+      queryStatus: query.queryStatus,
+      queryProgress: query.queryProgress,
+      documents: documentsDTO,
+    });
   })
 );
 
@@ -54,9 +70,13 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
 
-    const queryStatus = await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId });
+    const { queryStatus, queryProgress } = await queryDocumentsAcrossHIEs({
+      cxId,
+      patientId,
+      facilityId,
+    });
 
-    return res.status(OK).json({ queryStatus });
+    return res.status(OK).json({ queryStatus, queryProgress });
   })
 );
 

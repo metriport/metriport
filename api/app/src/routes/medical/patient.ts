@@ -23,6 +23,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 
 const router = Router();
 
@@ -74,22 +75,30 @@ router.put(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const payload = patientUpdateSchema.parse(req.body);
 
+    const isProcessing = await areDocumentsProcessing({ id, cxId });
+
+    if (isProcessing) {
+      return res.status(status.LOCKED).json("Document querying currently in progress");
+    }
+
     const patientUpdate: PatientUpdateCmd = {
       ...schemaUpdateToPatient(payload, cxId),
       ...getETag(req),
       id,
     };
-    const patient = await updatePatient(patientUpdate);
+    const updatedPatient = await updatePatient(patientUpdate);
 
     // temp solution until we migrate to FHIR
-    const fhirPatient = toFHIR(patient);
+    const fhirPatient = toFHIR(updatedPatient);
     await upsertPatientToFHIRServer(fhirPatient);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient.update(patient, facilityId).catch(processAsyncError(`cw.patient.update`));
+    cwCommands.patient
+      .update(updatedPatient, facilityId)
+      .catch(processAsyncError(`cw.patient.update`));
 
-    return res.status(status.OK).json(dtoFromModel(patient));
+    return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })
 );
 

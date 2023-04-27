@@ -2,22 +2,24 @@ import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
-import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
-import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
-import * as s3 from "aws-cdk-lib/aws-s3";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as rds from "aws-cdk-lib/aws-rds";
-import { Credentials } from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import * as sns from "aws-cdk-lib/aws-sns";
+import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
+import { AlarmSlackBot } from "./alarm-slack-chatbot";
+import { createAPIService } from "./api-service";
 import { EnvConfig } from "./env-config";
 import { getSecrets } from "./secrets";
 import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./util";
@@ -38,6 +40,8 @@ export class APIStack extends Stack {
     //-------------------------------------------
     const secrets = getSecrets(this, props.config);
 
+    const slackNotification = setupSlackNotifSnsTopic(this, props.config);
+
     //-------------------------------------------
     // VPC + NAT Gateway
     //-------------------------------------------
@@ -55,6 +59,7 @@ export class APIStack extends Stack {
     const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
       domainName: props.config.host,
     });
+    const dnsZones = { privateZone, publicZone };
 
     //-------------------------------------------
     // Security Setup
@@ -73,7 +78,8 @@ export class APIStack extends Stack {
     addErrorAlarmToLambdaFunc(
       this,
       certificateRequestorLambda,
-      "APICertificateCertificateRequestorFunctionAlarm"
+      "APICertificateCertificateRequestorFunctionAlarm",
+      slackNotification?.alarmAction
     );
 
     //-------------------------------------------
@@ -95,7 +101,7 @@ export class APIStack extends Stack {
         generateStringKey: "password",
       },
     });
-    const dbCreds = Credentials.fromSecret(dbCredsSecret);
+    const dbCreds = rds.Credentials.fromSecret(dbCredsSecret);
     // aurora serverlessv2 db
     const dbCluster = new rds.DatabaseCluster(this, "APIDB", {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
@@ -123,7 +129,7 @@ export class APIStack extends Stack {
 
     // add performance alarms for monitoring prod environment
     if (this.isProd(props)) {
-      this.addDBClusterPerformanceAlarms(dbCluster, dbClusterName);
+      this.addDBClusterPerformanceAlarms(dbCluster, dbClusterName, slackNotification?.alarmAction);
     }
 
     //----------------------------------------------------------
@@ -151,130 +157,38 @@ export class APIStack extends Stack {
 
     // add performance alarms for monitoring prod environment
     if (this.isProd(props)) {
-      this.addDynamoPerformanceAlarms(dynamoDBTokenTable, dynamoConstructName);
+      this.addDynamoPerformanceAlarms(
+        dynamoDBTokenTable,
+        dynamoConstructName,
+        slackNotification?.alarmAction
+      );
     }
 
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
-
-    // Create a new Amazon Elastic Container Service (ECS) cluster
-    const cluster = new ecs.Cluster(this, "APICluster", {
-      vpc: this.vpc,
-    });
-
-    // Create a Docker image and upload it to the Amazon Elastic Container Registry (ECR)
-    const dockerImage = new ecr_assets.DockerImageAsset(this, "APIImage", {
-      directory: "../api/app",
-    });
-
-    const connectWidgetUrlEnvVar =
-      props.config.connectWidgetUrl != undefined
-        ? props.config.connectWidgetUrl
-        : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
-
-    // Run some servers on fargate containers
-    const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
+    const {
+      cluster,
+      service: apiService,
+      loadBalancerAddress: apiLoadBalancerAddress,
+      serverAddress: apiServerUrl,
+    } = createAPIService(
       this,
-      "APIFargateService",
-      {
-        cluster: cluster,
-        cpu: this.isProd(props) ? 2048 : 1024,
-        desiredCount: this.isProd(props) ? 2 : 1,
-        taskImageOptions: {
-          image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
-          containerPort: 8080,
-          containerName: "API-Server",
-          secrets: {
-            DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
-            ...secrets,
-          },
-          environment: {
-            NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
-            ENV_TYPE: props.config.environmentType, // staging, production, sandbox
-            ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
-            TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-            API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
-            CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
-            SYSTEM_ROOT_OID: props.config.systemRootOID,
-            ...props.config.commonwell,
-            ...(props.config.slack ? props.config.slack : undefined),
-            ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
-            ...(props.config.usageReportUrl && {
-              USAGE_URL: props.config.usageReportUrl,
-            }),
-            ...(props.config.fhirServerUrl && {
-              FHIR_SERVER_URL: props.config.fhirServerUrl,
-            }),
-            ...(props.config.medicalDocumentsBucketName && {
-              MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
-            }),
-          },
-        },
-        memoryLimitMiB: this.isProd(props) ? 4096 : 2048,
-        healthCheckGracePeriod: Duration.seconds(60),
-        publicLoadBalancer: false,
-      }
+      props,
+      secrets,
+      this.vpc,
+      dbCredsSecret,
+      dynamoDBTokenTable,
+      slackNotification?.alarmAction,
+      dnsZones
     );
-    const apiServerAddress = fargateService.loadBalancer.loadBalancerDnsName;
-    const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
-
-    new r53.ARecord(this, "APIDomainPrivateRecord", {
-      recordName: apiUrl,
-      zone: privateZone,
-      target: r53.RecordTarget.fromAlias(
-        new r53_targets.LoadBalancerTarget(fargateService.loadBalancer)
-      ),
-    });
-
-    // TODO: #489 ain't the most secure, but the above code doesn't work as CDK complains we can't use the connections
-    // from the cluster created above, should be fine for now as it will only accept connections in the VPC
-    fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
-
-    // This speeds up deployments so the tasks are swapped quicker.
-    // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-    fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
-
-    // This also speeds up deployments so the health checks have a faster turnaround.
-    // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
-    fargateService.targetGroup.configureHealthCheck({
-      healthyThresholdCount: 2,
-      interval: Duration.seconds(10),
-    });
 
     // Access grant for Aurora DB
-    dbCreds.secret?.grantRead(fargateService.taskDefinition.taskRole);
-    dbCluster.connections.allowDefaultPortFrom(fargateService.service);
-
-    // RW grant for Dynamo DB
-    dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
-
-    // hookup autoscaling based on 90% thresholds
-    const scaling = fargateService.service.autoScaleTaskCount({
-      minCapacity: this.isProd(props) ? 2 : 1,
-      maxCapacity: this.isProd(props) ? 10 : 2,
-    });
-    scaling.scaleOnCpuUtilization("autoscale_cpu", {
-      targetUtilizationPercent: 90,
-      scaleInCooldown: Duration.minutes(2),
-      scaleOutCooldown: Duration.seconds(30),
-    });
-    scaling.scaleOnMemoryUtilization("autoscale_mem", {
-      targetUtilizationPercent: 90,
-      scaleInCooldown: Duration.minutes(2),
-      scaleOutCooldown: Duration.seconds(30),
-    });
-
-    // allow the NLB to talk to fargate
-    fargateService.service.connections.allowFrom(
-      ec2.Peer.ipv4(this.vpc.vpcCidrBlock),
-      ec2.Port.allTraffic(),
-      "Allow traffic from within the VPC to the service secure port"
-    );
+    dbCluster.connections.allowDefaultPortFrom(apiService.service);
 
     // setup a private link so the API can talk to the NLB
     const link = new apig.VpcLink(this, "link", {
-      targets: [fargateService.loadBalancer],
+      targets: [apiService.loadBalancer],
     });
 
     const integration = new apig.Integration({
@@ -287,7 +201,7 @@ export class APIStack extends Stack {
         },
       },
       integrationHttpMethod: "ANY",
-      uri: `http://${apiServerAddress}/{proxy}`,
+      uri: `http://${apiLoadBalancerAddress}/{proxy}`,
     });
 
     //-------------------------------------------
@@ -301,7 +215,7 @@ export class APIStack extends Stack {
         encryption: s3.BucketEncryption.S3_MANAGED,
       });
       // Access grant for medical documents bucket
-      medicalDocumentsBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+      medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     }
 
     //-------------------------------------------
@@ -321,12 +235,12 @@ export class APIStack extends Stack {
 
     // add domain cert + record
     api.addDomainName("APIDomain", {
-      domainName: apiUrl,
+      domainName: apiServerUrl,
       certificate: certificate,
       securityPolicy: apig.SecurityPolicy.TLS_1_2,
     });
     new r53.ARecord(this, "APIDomainRecord", {
-      recordName: apiUrl,
+      recordName: apiServerUrl,
       zone: publicZone,
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
     });
@@ -362,12 +276,12 @@ export class APIStack extends Stack {
     const tokenAuth = this.setupTokenAuthLambda(dynamoDBTokenTable);
 
     // setup /token path with token auth
-    this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiServerAddress);
+    this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiLoadBalancerAddress);
 
     const userPoolClientSecret = this.setupOAuthUserPool(props.config, publicZone);
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
-    this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiServerAddress);
+    this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiLoadBalancerAddress);
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
@@ -375,7 +289,7 @@ export class APIStack extends Stack {
     this.setupGarminWebhookAuth({
       baseResource: webhookResource,
       vpc: this.vpc,
-      fargateService,
+      fargateService: apiService,
       dynamoDBTokenTable,
     });
 
@@ -388,7 +302,7 @@ export class APIStack extends Stack {
         vpcLink: link,
       },
       integrationHttpMethod: "POST",
-      uri: `http://${apiServerAddress}${appleHealthResource.path}`,
+      uri: `http://${apiLoadBalancerAddress}${appleHealthResource.path}`,
     });
     appleHealthResource.addMethod("POST", integrationApple, {
       apiKeyRequired: true,
@@ -449,7 +363,7 @@ export class APIStack extends Stack {
     });
     new CfnOutput(this, "FargateServiceARN", {
       description: "Fargate Service ARN",
-      value: fargateService.service.serviceArn,
+      value: apiService.service.serviceArn,
     });
     new CfnOutput(this, "APIECSClusterARN", {
       description: "API ECS Cluster ARN",
@@ -660,52 +574,89 @@ export class APIStack extends Stack {
     return oauthResource;
   }
 
-  private addDBClusterPerformanceAlarms(dbCluster: rds.DatabaseCluster, dbClusterName: string) {
+  private addDBClusterPerformanceAlarms(
+    dbCluster: rds.DatabaseCluster,
+    dbClusterName: string,
+    alarmAction?: SnsAction
+  ) {
     const memoryMetric = dbCluster.metricFreeableMemory();
-    memoryMetric.createAlarm(this, `${dbClusterName}FreeableMemoryAlarm`, {
+    const memoryAlarm = memoryMetric.createAlarm(this, `${dbClusterName}FreeableMemoryAlarm`, {
       threshold: mbToBytes(150),
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
+    alarmAction && memoryAlarm.addAlarmAction(alarmAction);
+    alarmAction && memoryAlarm.addOkAction(alarmAction);
 
     const storageMetric = dbCluster.metricFreeLocalStorage();
-    storageMetric.createAlarm(this, `${dbClusterName}FreeLocalStorageAlarm`, {
+    const storageAlarm = storageMetric.createAlarm(this, `${dbClusterName}FreeLocalStorageAlarm`, {
       threshold: mbToBytes(250),
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
+    alarmAction && storageAlarm.addAlarmAction(alarmAction);
+    alarmAction && storageAlarm.addOkAction(alarmAction);
 
     const cpuMetric = dbCluster.metricCPUUtilization();
-    cpuMetric.createAlarm(this, `${dbClusterName}CPUUtilizationAlarm`, {
+    const cpuAlarm = cpuMetric.createAlarm(this, `${dbClusterName}CPUUtilizationAlarm`, {
       threshold: 90, // pct
       evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
+    alarmAction && cpuAlarm.addAlarmAction(alarmAction);
+    alarmAction && cpuAlarm.addOkAction(alarmAction);
 
     const readIOPsMetric = dbCluster.metricVolumeReadIOPs();
-    readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
+    const rIOPSAlarm = readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
       threshold: 20000, // IOPs per second
       evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
+    alarmAction && rIOPSAlarm.addAlarmAction(alarmAction);
+    alarmAction && rIOPSAlarm.addOkAction(alarmAction);
 
     const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
-    writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
+    const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
       threshold: 5000, // IOPs per second
       evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
+    alarmAction && wIOPSAlarm.addAlarmAction(alarmAction);
+    alarmAction && wIOPSAlarm.addOkAction(alarmAction);
   }
 
-  private addDynamoPerformanceAlarms(table: dynamodb.Table, dynamoConstructName: string) {
+  private addDynamoPerformanceAlarms(
+    table: dynamodb.Table,
+    dynamoConstructName: string,
+    alarmAction?: SnsAction
+  ) {
     const readUnitsMetric = table.metricConsumedReadCapacityUnits();
-    readUnitsMetric.createAlarm(this, `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`, {
-      threshold: 10000, // units per second
-      evaluationPeriods: 1,
-    });
+    const readAlarm = readUnitsMetric.createAlarm(
+      this,
+      `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`,
+      {
+        threshold: 10000, // units per second
+        evaluationPeriods: 1,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      }
+    );
+    alarmAction && readAlarm.addAlarmAction(alarmAction);
+    alarmAction && readAlarm.addOkAction(alarmAction);
 
     const writeUnitsMetric = table.metricConsumedWriteCapacityUnits();
-    writeUnitsMetric.createAlarm(this, `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`, {
-      threshold: 10000, // units per second
-      evaluationPeriods: 1,
-    });
+    const writeAlarm = writeUnitsMetric.createAlarm(
+      this,
+      `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`,
+      {
+        threshold: 10000, // units per second
+        evaluationPeriods: 1,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      }
+    );
+    alarmAction && writeAlarm.addAlarmAction(alarmAction);
+    alarmAction && writeAlarm.addOkAction(alarmAction);
   }
 
   private isProd(props: APIStackProps): boolean {
@@ -715,4 +666,26 @@ export class APIStack extends Stack {
   private isSandbox(props: APIStackProps): boolean {
     return isSandbox(props.config);
   }
+}
+
+function setupSlackNotifSnsTopic(
+  stack: Stack,
+  config: EnvConfig
+): { snsTopic: ITopic; alarmAction: SnsAction } | undefined {
+  if (!config.slack) return undefined;
+
+  const slackNotifSnsTopic = new sns.Topic(stack, "SlackSnsTopic", {
+    displayName: "Slack SNS Topic",
+  });
+
+  AlarmSlackBot.addSlackChannelConfig(stack, {
+    configName: `slack-chatbot-configuration`,
+    workspaceId: config.slack.workspaceId,
+    channelId: config.slack.alertsChannelId,
+    topics: [slackNotifSnsTopic],
+  });
+
+  const alarmAction = new SnsAction(slackNotifSnsTopic);
+
+  return { snsTopic: slackNotifSnsTopic, alarmAction };
 }

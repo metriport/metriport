@@ -1,7 +1,8 @@
 import { CommonwellError, DocumentQueryResponse, Document } from "@metriport/commonwell-sdk";
+import { DocumentReference } from "@medplum/fhirtypes";
 import { PassThrough } from "stream";
 import * as AWS from "aws-sdk";
-import { updateDocQueryStatus } from "../../../command/medical/document/document-query";
+import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { Patient } from "../../../models/medical/patient";
 import { Organization } from "../../../models/medical/organization";
 import { Facility } from "../../../models/medical/facility";
@@ -17,7 +18,7 @@ import { DocumentWithFilename } from "./shared";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
 import { getFileName } from "./shared";
-import { DocumentReference } from "@medplum/fhirtypes";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { processPatientRequest } from "../../../command/webhook/webhook";
 
@@ -42,18 +43,12 @@ export async function queryDocuments({
 
     const cwDocuments = await internalGetDocuments({ patient, organization, facility });
 
-    const docsS3Refs = await dowloadAndUploadDocsToS3({
+    const FHIRDocRefs = await downloadDocsAndUpsertFHIR({
       patient,
+      organization,
       facilityId,
       documents: cwDocuments,
     });
-
-    const FHIRDocRefs: DocumentReference[] = [];
-    for (const doc of docsS3Refs) {
-      const FHIRDocRef = toFHIRDocRef(doc, organization, patient);
-      FHIRDocRefs.push(FHIRDocRef);
-      await upsertDocumentToFHIRServer(FHIRDocRef);
-    }
 
     // send webhook to cx async when docs are done processing
     processPatientRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
@@ -68,10 +63,10 @@ export async function queryDocuments({
     throw err;
   } finally {
     try {
-      await updateDocQueryStatus({ patient, status: "completed" });
+      await updateDocQuery({ patient, status: "completed" });
     } catch (err) {
       capture.error(err, {
-        extra: { context: `cw.getDocuments.updateDocQueryStatus` },
+        extra: { context: `cw.getDocuments.updateDocQuery` },
       });
     }
   }
@@ -150,15 +145,17 @@ async function internalGetDocuments({
   return documents;
 }
 
-async function dowloadAndUploadDocsToS3({
+async function downloadDocsAndUpsertFHIR({
   patient,
+  organization,
   facilityId,
   documents,
 }: {
   patient: Patient;
+  organization: Organization;
   facilityId: string;
   documents: Document[];
-}): Promise<DocumentWithFilename[]> {
+}): Promise<DocumentReference[]> {
   const uploadStream = (key: string) => {
     const pass = new PassThrough();
     const base64key = Buffer.from(key).toString("base64");
@@ -174,6 +171,8 @@ async function dowloadAndUploadDocsToS3({
         .promise(),
     };
   };
+
+  let completedCount = 0;
 
   const s3Refs = await Promise.allSettled(
     documents.map(async doc => {
@@ -191,7 +190,7 @@ async function dowloadAndUploadDocsToS3({
 
           const data = await promise;
 
-          return {
+          const docWithFile: DocumentWithFilename = {
             ...doc,
             content: {
               ...doc.content,
@@ -199,9 +198,12 @@ async function dowloadAndUploadDocsToS3({
             },
             fileName: data.Key,
           };
-        }
 
-        return undefined;
+          const FHIRDocRef = toFHIRDocRef(docWithFile, organization, patient);
+          await upsertDocumentToFHIRServer(FHIRDocRef);
+
+          return FHIRDocRef;
+        }
       } catch (error) {
         capture.error(error, {
           extra: {
@@ -209,11 +211,31 @@ async function dowloadAndUploadDocsToS3({
           },
         });
         throw error;
+      } finally {
+        // TODO: eventually we will have to update this to support multiple HIEs
+        try {
+          const newPatient = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
+
+          completedCount = completedCount + 1;
+
+          await updateDocQuery({
+            patient: newPatient,
+            status: "processing",
+            progress: {
+              completed: completedCount,
+              total: documents.length,
+            },
+          });
+        } catch (err) {
+          capture.error(err, {
+            extra: { context: `cw.getDocuments.updateDocQuery` },
+          });
+        }
       }
     })
   );
 
-  const docsNewLocation: DocumentWithFilename[] = s3Refs.flatMap(ref =>
+  const docsNewLocation: DocumentReference[] = s3Refs.flatMap(ref =>
     ref.status === "fulfilled" && ref.value ? ref.value : []
   );
 

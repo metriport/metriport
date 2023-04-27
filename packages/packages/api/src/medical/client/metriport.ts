@@ -5,7 +5,7 @@ import {
   DocumentList,
   documentListSchema,
   documentQuerySchema,
-  DocumentQueryStatus,
+  DocumentQuery,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
@@ -328,9 +328,9 @@ export class MetriportMedicalApi {
    *
    * @param patientId Patient ID for which to retrieve document metadata.
    * @param facilityId The facility providing the NPI to support this operation.
-   * @return The document query status indicating whether its being executed or not.
+   * @return The document query progress & status indicating whether its being executed or not.
    */
-  async startDocumentQuery(patientId: string, facilityId: string): Promise<DocumentQueryStatus> {
+  async startDocumentQuery(patientId: string, facilityId: string): Promise<DocumentQuery> {
     const resp = await this.api.post(`${DOCUMENT_URL}/query`, null, {
       params: {
         patientId,
@@ -338,7 +338,7 @@ export class MetriportMedicalApi {
       },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return documentQuerySchema.parse(resp.data).queryStatus;
+    return documentQuerySchema.parse(resp.data);
   }
 
   /**
