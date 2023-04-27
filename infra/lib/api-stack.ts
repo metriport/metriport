@@ -679,7 +679,7 @@ function setupSlackNotifSnsTopic(
   });
 
   AlarmSlackBot.addSlackChannelConfig(stack, {
-    configName: `slack-chatbot-configuration`,
+    configName: `slack-chatbot-configuration-` + config.environmentType,
     workspaceId: config.slack.workspaceId,
     channelId: config.slack.alertsChannelId,
     topics: [slackNotifSnsTopic],
