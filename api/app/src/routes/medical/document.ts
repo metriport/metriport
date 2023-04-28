@@ -9,6 +9,7 @@ import { toDTO } from "./dtos/documentDTO";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { DocumentQueryResp } from "../../command/medical/document/document-query";
 import { createQueryResponse } from "../../command/medical/document/document-query";
+import { Config } from "../../shared/config";
 
 const router = Router();
 
@@ -95,7 +96,8 @@ router.get(
     const fileName = getFromQueryOrFail("fileName", req);
     const fileHasCxId = fileName.includes(cxId);
 
-    if (!fileHasCxId) throw new Error(`File does not belong to cxId: ${cxId}`);
+    if (!fileHasCxId && !Config.isSandbox())
+      throw new Error(`File does not belong to cxId: ${cxId}`);
 
     const url = await downloadDocument({ fileName });
 
