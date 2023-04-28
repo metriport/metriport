@@ -22,7 +22,7 @@ import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
 import { EnvConfig } from "./env-config";
 import { getSecrets } from "./secrets";
-import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./util";
+import { addErrorAlarmToLambdaFunc, isProd, mbToBytes } from "./util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -208,7 +208,7 @@ export class APIStack extends Stack {
     // S3 bucket for Medical Documents
     //-------------------------------------------
 
-    if (!this.isSandbox(props) && props.config.medicalDocumentsBucketName) {
+    if (props.config.medicalDocumentsBucketName) {
       const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
         bucketName: props.config.medicalDocumentsBucketName,
         publicReadAccess: false,
@@ -661,10 +661,6 @@ export class APIStack extends Stack {
 
   private isProd(props: APIStackProps): boolean {
     return isProd(props.config);
-  }
-
-  private isSandbox(props: APIStackProps): boolean {
-    return isSandbox(props.config);
   }
 }
 
