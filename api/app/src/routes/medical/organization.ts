@@ -17,7 +17,6 @@ import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
-import { Config } from "../../shared/config";
 
 const router = Router();
 
@@ -38,11 +37,9 @@ router.post(
     const createOrg: OrganizationCreateCmd = { cxId, ...data };
     const org = await createOrganization(createOrg);
 
-    if (!Config.isSandbox()) {
-      // temp solution until we migrate to FHIR
-      const fhirOrg = toFHIR(org);
-      await upsertOrgToFHIRServer(fhirOrg);
-    }
+    // temp solution until we migrate to FHIR
+    const fhirOrg = toFHIR(org);
+    await upsertOrgToFHIRServer(fhirOrg);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
@@ -75,11 +72,9 @@ router.put(
     };
     const org = await updateOrganization(updateCmd);
 
-    if (!Config.isSandbox()) {
-      // temp solution until we migrate to FHIR
-      const fhirOrg = toFHIR(org);
-      await upsertOrgToFHIRServer(fhirOrg);
-    }
+    // temp solution until we migrate to FHIR
+    const fhirOrg = toFHIR(org);
+    await upsertOrgToFHIRServer(fhirOrg);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous

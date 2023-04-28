@@ -24,7 +24,6 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { Config } from "../../shared/config";
 
 const router = Router();
 
@@ -51,11 +50,9 @@ router.post(
 
     const patient = await createPatient(patientCreate);
 
-    if (!Config.isSandbox()) {
-      // temp solution until we migrate to FHIR
-      const fhirPatient = toFHIR(patient);
-      await upsertPatientToFHIRServer(fhirPatient);
-    }
+    // temp solution until we migrate to FHIR
+    const fhirPatient = toFHIR(patient);
+    await upsertPatientToFHIRServer(fhirPatient);
 
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })
@@ -91,11 +88,9 @@ router.put(
     };
     const updatedPatient = await updatePatient(patientUpdate);
 
-    if (!Config.isSandbox()) {
-      // temp solution until we migrate to FHIR
-      const fhirPatient = toFHIR(updatedPatient);
-      await upsertPatientToFHIRServer(fhirPatient);
-    }
+    // temp solution until we migrate to FHIR
+    const fhirPatient = toFHIR(updatedPatient);
+    await upsertPatientToFHIRServer(fhirPatient);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
