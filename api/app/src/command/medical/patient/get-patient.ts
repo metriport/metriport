@@ -1,11 +1,13 @@
+import { intersectionWith, isEqual } from "lodash";
 import { Op } from "sequelize";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
-import { Patient, PatientModel } from "../../../models/medical/patient";
+import { Patient, PatientData, PatientModel } from "../../../models/medical/patient";
+import { capture } from "../../../shared/notifications";
+import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import { PatientData } from "../../../models/medical/patient";
 
 export const getPatients = async ({
   facilityId,
@@ -35,7 +37,9 @@ export const getPatientByDemo = async ({
   cxId: string;
   demo: PatientData;
 }): Promise<Patient | null> => {
-  const patient = await PatientModel.findOne({
+  const { log } = Util.out(`getPatientByDemo - cxId ${cxId}`);
+
+  const patients = await PatientModel.findAll({
     where: {
       cxId,
       facilityIds: {
@@ -44,13 +48,6 @@ export const getPatientByDemo = async ({
       data: {
         firstName: demo.firstName,
         lastName: demo.lastName,
-        ...(demo.personalIdentifiers && demo.personalIdentifiers.length
-          ? {
-              personalIdentifiers: {
-                [Op.in]: demo.personalIdentifiers,
-              },
-            }
-          : undefined),
         dob: demo.dob,
         address: {
           addressLine1: demo.address.addressLine1,
@@ -65,7 +62,35 @@ export const getPatientByDemo = async ({
     },
   });
 
-  return patient;
+  // Check for personal identifiers in memory, we were having a hard time to get the query to work with Sequelize
+  // Consider checking this out if trying to move this to the query: https://github.com/sequelize/sequelize/issues/5173
+  let matchingPatients: Patient[];
+  if (demo.personalIdentifiers && demo.personalIdentifiers.length > 0) {
+    matchingPatients = patients.filter(
+      p =>
+        intersectionWith(p.data.personalIdentifiers, demo.personalIdentifiers, isEqual).length > 0
+    );
+  } else {
+    matchingPatients = patients;
+  }
+  if (matchingPatients.length === 0) return null;
+  if (matchingPatients.length === 1) return matchingPatients[0];
+  const chosenOne = matchingPatients[0];
+
+  const msg = `Found more than one patient with the same demo`;
+  log(
+    `${msg}, chose ${chosenOne.id} - list ${matchingPatients.map(p => p.id).join(", ")} - demo: `,
+    demo
+  );
+  capture.message(msg, {
+    extra: {
+      chosenOne: chosenOne.id,
+      demograhics: demo,
+      patients: matchingPatients.map(p => ({ id: p.id, data: p.data })),
+    },
+  });
+
+  return chosenOne;
 };
 
 export const getPatientOrFail = async ({
