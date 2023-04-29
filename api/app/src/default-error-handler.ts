@@ -59,15 +59,16 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
       });
   }
   console.log(`Error: `, err);
+  const internalErrStatus = status.INTERNAL_SERVER_ERROR;
   return res
     .contentType("json")
-    .status(status.INTERNAL_SERVER_ERROR)
+    .status(internalErrStatus)
     .send({
       ...defaultResponseBody({
-        status: status.INTERNAL_SERVER_ERROR,
+        status: internalErrStatus,
         title: "InternalServerError",
         detail: "Please try again or reach out to support@metriport.com",
       }),
-      name: status[status.INTERNAL_SERVER_ERROR],
+      name: status[internalErrStatus],
     });
 };
