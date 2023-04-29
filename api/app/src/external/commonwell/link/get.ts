@@ -130,7 +130,7 @@ export const findCurrentLink = async (
     console.log(`${msg} - for person id:`, personId);
     console.log(msg, error);
     capture.error(error, { extra: captureExtra });
-    throw new Error(msg);
+    throw new Error(msg, { cause: error });
   }
 };
 
@@ -179,7 +179,7 @@ const findAllPersons = async (
     const msg = `Failure retrieving persons`;
     console.log(`${msg} - patient id:`, patient.id);
     console.log(msg, error);
-    throw new Error(msg);
+    throw new Error(msg, { cause: error });
   }
 };
 
@@ -209,6 +209,6 @@ const findAllPersonsStrongId = async (
     const msg = `Failure retrieving persons`;
     console.log(`${msg} - patient:`, patient.id);
     console.log(msg, error);
-    throw new Error(msg);
+    throw new Error(msg, { cause: error });
   }
 };

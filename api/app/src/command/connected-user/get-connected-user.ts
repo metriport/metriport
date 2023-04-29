@@ -32,9 +32,9 @@ export const getProviderDataFromConnectUserOrFail = (
   connectedUser: ConnectedUser,
   provider: ProviderOptions
 ) => {
-  if (!connectedUser.providerMap) throw new NotFoundError();
+  if (!connectedUser.providerMap) throw new NotFoundError("Could not find provider map");
   const providerData = connectedUser.providerMap[provider];
-  if (!providerData) throw new NotFoundError();
+  if (!providerData) throw new NotFoundError("Provider map has no data");
 
   return providerData;
 };

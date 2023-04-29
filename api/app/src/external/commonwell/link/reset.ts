@@ -40,6 +40,6 @@ export const reset = async (patientId: string, cxId: string, facilityId: string)
     const msg = `Failure resetting`;
     console.log(`${msg} - patient id:`, patient.id);
     console.log(msg, error);
-    throw new Error(msg);
+    throw new Error(msg, { cause: error });
   }
 };

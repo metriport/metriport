@@ -4,16 +4,22 @@ import { ZodError } from "zod";
 import MetriportError from "./errors/metriport-error";
 import { httpResponseBody } from "./routes/util";
 
-// https://www.rfc-editor.org/rfc/rfc7807
+// Errors in Metriport are based off of https://www.rfc-editor.org/rfc/rfc7807
+// This is specifically how the fields are used:
+//    - status: numeric HTTP status code; ie 500
+//    - name: human-readable description of the status code; ie "INTERNAL_SERVER_ERROR"
+//    - title: the specific error description - this shouldn't change between occurences; ie "NotFoundError"
+//    - detail: details about this error occurrence; ie "Could not find organization"
 const defaultResponseBody = httpResponseBody;
 
 const metriportResponseBody = (err: MetriportError): string => {
   return JSON.stringify({
     ...httpResponseBody({
       status: err.status,
-      title: err.message,
+      title: err.name,
+      detail: err.message,
     }),
-    name: err.name,
+    name: status[err.status],
   });
 };
 
@@ -43,21 +49,26 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     return res
       .contentType("json")
       .status(err.statusCode)
-      .send(
-        defaultResponseBody({
+      .send({
+        ...defaultResponseBody({
           status: err.statusCode,
-          title: err.message,
-        })
-      );
+          title: "MetriportError",
+          detail: err.message,
+        }),
+        name: status[err.statusCode],
+      });
   }
   console.log(`Error: `, err);
+  const internalErrStatus = status.INTERNAL_SERVER_ERROR;
   return res
     .contentType("json")
-    .status(status.INTERNAL_SERVER_ERROR)
-    .send(
-      defaultResponseBody({
-        status: status.INTERNAL_SERVER_ERROR,
-        title: "Internal server error, please try again or reach out to support@metriport.com",
-      })
-    );
+    .status(internalErrStatus)
+    .send({
+      ...defaultResponseBody({
+        status: internalErrStatus,
+        title: "InternalServerError",
+        detail: "Please try again or reach out to support@metriport.com",
+      }),
+      name: status[internalErrStatus],
+    });
 };
