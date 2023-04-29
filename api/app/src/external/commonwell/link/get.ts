@@ -179,7 +179,7 @@ const findAllPersons = async (
     const msg = `Failure retrieving persons`;
     console.log(`${msg} - patient id:`, patient.id);
     console.log(msg, error);
-    throw new Error(msg);
+    throw new Error(msg, { cause: error });
   }
 };
 
