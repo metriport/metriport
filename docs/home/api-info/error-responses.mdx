@@ -19,8 +19,8 @@ Read more below to get familiar with the error response format.
 
 ```json
 {
-  "status": 500,
-  "name": "INTERNAL_SERVER_ERROR",
+  "status": 404,
+  "name": "NOT_FOUND",
   "title": "NotFoundError",
   "detail": "Could not find organization Devault Medical"
 }
@@ -39,5 +39,5 @@ Read more below to get familiar with the error response format.
 </ResponseField>
 
 <ResponseField name="detail" type="string" required>
-  Details about this error occurrence.
+  Details about this error occurrence - this might change between occurences.
 </ResponseField>

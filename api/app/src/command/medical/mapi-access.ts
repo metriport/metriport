@@ -10,6 +10,6 @@ export async function allowMapiAccess(cxId: string): Promise<"new" | "existing">
 
 export async function revokeMapiAccess(cxId: string): Promise<void> {
   const existing = await MAPIAccess.findByPk(cxId);
-  if (!existing) throw new NotFoundError("Could not find cxId in mapi access table");
+  if (!existing) throw new NotFoundError("Customer not found");
   await existing.destroy();
 }

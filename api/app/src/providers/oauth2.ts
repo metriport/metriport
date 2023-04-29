@@ -196,7 +196,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
     } catch (error) {
       console.error(error);
 
-      throw new Error(`Request failed ${endpoint}`);
+      throw new Error(`Request failed ${endpoint}`, { cause: error });
     }
   }
 }

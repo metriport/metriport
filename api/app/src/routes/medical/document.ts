@@ -10,6 +10,7 @@ import { downloadDocument } from "../../command/medical/document/document-downlo
 import { DocumentQueryResp } from "../../command/medical/document/document-query";
 import { createQueryResponse } from "../../command/medical/document/document-query";
 import { Config } from "../../shared/config";
+import ForbiddenError from "../../errors/forbidden";
 
 const router = Router();
 
@@ -96,8 +97,7 @@ router.get(
     const fileName = getFromQueryOrFail("fileName", req);
     const fileHasCxId = fileName.includes(cxId);
 
-    if (!fileHasCxId && !Config.isSandbox())
-      throw new Error(`File does not belong to cxId: ${cxId}`);
+    if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
 
     const url = await downloadDocument({ fileName });
 

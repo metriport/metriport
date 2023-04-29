@@ -79,7 +79,7 @@ export class Google extends Provider implements OAuth2 {
     try {
       await this.oauth.revokeLocal(connectedUser);
     } catch (error) {
-      throw new Error("Google Revoke failed");
+      throw new Error("Google Revoke failed", { cause: error });
     }
   }
 
@@ -108,7 +108,7 @@ export class Google extends Provider implements OAuth2 {
         extra: { context: `google.fetch.data` },
       });
 
-      throw new Error(`Request failed google`);
+      throw new Error(`Request failed google`, { cause: error });
     }
   }
 
@@ -133,7 +133,7 @@ export class Google extends Provider implements OAuth2 {
         extra: { context: `google.fetch.sessions` },
       });
 
-      throw new Error(`Request failed google`);
+      throw new Error(`Request failed google`, { cause: error });
     }
   }
 
