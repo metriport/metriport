@@ -69,7 +69,8 @@
       "group": "API Info",
       "pages": [
         "home/api-info/api-keys",
-        "home/api-info/webhooks"
+        "home/api-info/webhooks",
+        "home/api-info/error-responses"
       ]
     },
     {
