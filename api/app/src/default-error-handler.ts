@@ -7,7 +7,7 @@ import { httpResponseBody } from "./routes/util";
 // Errors in Metriport are based off of https://www.rfc-editor.org/rfc/rfc7807
 // This is specifically how the fields are used:
 //    - status: numeric HTTP status code; ie 500
-//    - name: description of the status code in English; ie "INTERNAL_SERVER_ERROR"
+//    - name: human-readable description of the status code; ie "INTERNAL_SERVER_ERROR"
 //    - title: the specific error description - this shouldn't change between occurences; ie "NotFoundError"
 //    - detail: details about this error occurrence; ie "Could not find organization"
 const defaultResponseBody = httpResponseBody;
