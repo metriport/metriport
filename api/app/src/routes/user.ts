@@ -12,12 +12,8 @@ import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
 import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../shared/constants";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
-import {
-  asyncHandler,
-  getCxIdOrFail,
-  getUserIdFromQueryOrFail,
-  getUserIdFromParamsOrFail,
-} from "./util";
+import { getUserIdFrom } from "./schemas/user-id";
+import { asyncHandler, getCxIdOrFail } from "./util";
 
 const router = Router();
 
@@ -104,7 +100,7 @@ router.get(
     if (!req.query.userId) {
       return res.sendStatus(status.BAD_REQUEST);
     }
-    const userId = getUserIdFromQueryOrFail(req);
+    const userId = getUserIdFrom("query", req).orFail();
     const cxId = getCxIdOrFail(req);
 
     // check to make sure this user actually exists
@@ -134,7 +130,7 @@ router.get(
 router.delete(
   "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = getUserIdFromQueryOrFail(req);
+    const userId = getUserIdFrom("query", req).orFail();
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
@@ -175,7 +171,7 @@ router.delete(
 router.get(
   "/:userId/connected-providers",
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = getUserIdFromParamsOrFail(req);
+    const userId = getUserIdFrom("params", req).orFail();
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
