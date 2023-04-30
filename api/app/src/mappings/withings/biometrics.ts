@@ -39,12 +39,61 @@ export const mapToBiometrics = (
   if (withingsMeasurements && withingsMeasurements.measuregrps.length) {
     const results = getMeasurementResults(withingsMeasurements.measuregrps);
 
+    const hrBpm = results[WithingsMeasType.heart_rate_bpm];
+    if (hrBpm) {
+      const minMax = Util.getMinMaxSamplesItem(hrBpm);
+      biometrics.heart_rate = {
+        ...biometrics.heart_rate,
+        avg_bpm: Util.getAvgOfSamplesArr(hrBpm),
+        max_bpm: minMax.max_item,
+        min_bpm: minMax.min_item,
+      };
+    }
+
+    const diastolicBp = results[WithingsMeasType.diastolic_mm_Hg];
+    if (diastolicBp) {
+      if (biometrics.blood_pressure && biometrics.blood_pressure.diastolic_mm_Hg?.samples) {
+        biometrics.blood_pressure = {
+          ...biometrics.blood_pressure,
+          diastolic_mm_Hg: {
+            samples: [...biometrics.blood_pressure.diastolic_mm_Hg.samples, ...diastolicBp],
+          },
+        };
+      } else {
+        biometrics.blood_pressure = {
+          ...biometrics.blood_pressure,
+          diastolic_mm_Hg: {
+            samples: diastolicBp,
+          },
+        };
+      }
+    }
+
+    const systolicBp = results[WithingsMeasType.systolic_mm_Hg];
+    if (systolicBp) {
+      if (biometrics.blood_pressure && biometrics.blood_pressure.systolic_mm_Hg?.samples) {
+        biometrics.blood_pressure = {
+          ...biometrics.blood_pressure,
+          systolic_mm_Hg: {
+            samples: [...biometrics.blood_pressure.systolic_mm_Hg.samples, ...systolicBp],
+          },
+        };
+      } else {
+        biometrics.blood_pressure = {
+          ...biometrics.blood_pressure,
+          systolic_mm_Hg: {
+            samples: systolicBp,
+          },
+        };
+      }
+    }
+
     const withingsSpo2 = results[WithingsMeasType.spo2];
     if (withingsSpo2) {
       biometrics.respiration = {
         ...biometrics.respiration,
         spo2: {
-          avg_pct: Util.getAvgOfArr(withingsSpo2, 2),
+          avg_pct: Util.getAvgOfSamplesArr(withingsSpo2, 2),
         },
       };
     }
@@ -53,7 +102,7 @@ export const mapToBiometrics = (
     if (withingsTemp) {
       biometrics.temperature = {
         ...biometrics.temperature,
-        delta_celcius: Util.getAvgOfArr(withingsTemp, 2),
+        delta_celcius: Util.getAvgOfSamplesArr(withingsTemp, 2),
       };
     }
 
@@ -62,7 +111,7 @@ export const mapToBiometrics = (
       biometrics.temperature = {
         ...biometrics.temperature,
         core: {
-          avg_celcius: Util.getAvgOfArr(withingsBodyTemp, 2),
+          avg_celcius: Util.getAvgOfSamplesArr(withingsBodyTemp, 2),
         },
       };
     }
@@ -72,7 +121,7 @@ export const mapToBiometrics = (
       biometrics.temperature = {
         ...biometrics.temperature,
         skin: {
-          avg_celcius: Util.getAvgOfArr(withingsSkinTemp, 2),
+          avg_celcius: Util.getAvgOfSamplesArr(withingsSkinTemp, 2),
         },
       };
     }
@@ -81,7 +130,7 @@ export const mapToBiometrics = (
     if (withingsVo2) {
       biometrics.respiration = {
         ...biometrics.respiration,
-        vo2_max: Util.getAvgOfArr(withingsVo2, 2),
+        vo2_max: Util.getAvgOfSamplesArr(withingsVo2, 2),
       };
     }
   }
