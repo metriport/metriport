@@ -32,8 +32,8 @@ export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 export const genderAtBirthSchema = z.enum(["F", "M"]);
 
 export const contactSchema = z.object({
-  phone: z.string().length(10).or(z.undefined().nullable()).or(z.literal("")),
-  email: z.string().email().or(z.undefined().nullable()).or(z.literal("")),
+  phone: z.string().length(10).or(z.undefined()),
+  email: z.string().email().or(z.undefined()),
 });
 
 export const demographicsSchema = z.object({
@@ -42,7 +42,7 @@ export const demographicsSchema = z.object({
   dob: z.string(), // YYYY-MM-DD
   genderAtBirth: genderAtBirthSchema,
   personalIdentifiers: z.array(personalIdentifierSchema),
-  address: z.array(addressSchema),
-  contact: contactSchema.nullish(),
+  address: addressSchema,
+  contact: contactSchema.optional(),
 });
 export type Demographics = z.infer<typeof demographicsSchema>;
