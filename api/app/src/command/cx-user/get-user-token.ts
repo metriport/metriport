@@ -60,7 +60,7 @@ const ddbItemAsOAuth = (item: DocumentClient.AttributeMap): UserToken => {
     oauthUserAccessSecret,
   } = item;
   if (!token || !cxId || !userId || !expiryTime) {
-    throw new Error(`Invalid user token entry on DB (token: ${token})`);
+    throw new Error(`Invalid user token entry on DB`);
   }
   return UserToken.build({
     token,

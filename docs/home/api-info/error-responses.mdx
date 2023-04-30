@@ -1,0 +1,43 @@
+---
+title: "Error Responses"
+description: "Learn more about our standardized error responses."
+---
+
+## Overview
+
+In the event that there's an issue when making a request to our API, we'll return a
+standardized error response that describes the nature of the error in detail.
+
+Read more below to get familiar with the error response format.
+
+<Tip>
+  Our error responses are based on the [RFC 7807 format](https://www.rfc-editor.org/rfc/rfc7807) - a
+  widely used standard for HTTP APIs.
+</Tip>
+
+## Format
+
+```json
+{
+  "status": 404,
+  "name": "NOT_FOUND",
+  "title": "NotFoundError",
+  "detail": "Could not find organization Devault Medical"
+}
+```
+
+<ResponseField name="status" type="number" required>
+  Numeric HTTP status code.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Human-readable description of the status code.
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  The specific error description - this wont't change between occurences of the same error.
+</ResponseField>
+
+<ResponseField name="detail" type="string" required>
+  Details about this error occurrence - this might change between occurences.
+</ResponseField>
