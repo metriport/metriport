@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { mean } from "lodash";
 import convert from "convert-units";
 import { debug } from "./log";
+import { Sample } from "@metriport/api/lib/devices/models/common/sample";
 
 interface MinMaxItem {
   min_item: number;
@@ -46,6 +47,17 @@ export class Util {
     }
 
     return 0;
+  };
+
+  static getAvgOfSamplesArr = (arr: Sample[], fixed = 0): number => {
+    return this.getAvgOfArr(
+      arr.map(sample => sample.value),
+      fixed
+    );
+  };
+
+  static getMinMaxSamplesItem = (arr: Sample[]): MinMaxItem => {
+    return this.getMinMaxItem(arr.map(sample => sample.value));
   };
 
   static addDataToObject = (key: string, value: unknown) => {

@@ -1,4 +1,4 @@
-import { Activity, Biometrics, Sleep } from "@metriport/api";
+import { Activity, Biometrics, Body, Sleep } from "@metriport/api";
 import axios from "axios";
 import dayjs from "dayjs";
 import crypto from "crypto";
@@ -260,7 +260,7 @@ export class Withings extends Provider implements OAuth2 {
     return mapToActivity(date, activity, workouts);
   }
 
-  async fetchBodyData(accessToken: string, date: string): Promise<WithingsMeasurements> {
+  async fetchMeasurementData(accessToken: string, date: string): Promise<WithingsMeasurements> {
     const params = {
       action: "getmeas",
       startdate: dayjs(date).unix(),
@@ -277,10 +277,10 @@ export class Withings extends Provider implements OAuth2 {
     return withingsMeasurementResp.parse(response.data.body);
   }
 
-  override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+  override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
     const accessToken = await this.getAccessToken(connectedUser);
 
-    const response = await this.fetchBodyData(accessToken, date);
+    const response = await this.fetchMeasurementData(accessToken, date);
 
     return mapToBody(date, response);
   }
@@ -309,7 +309,7 @@ export class Withings extends Provider implements OAuth2 {
 
     const [resHeart, resBody] = await Promise.allSettled([
       this.fetchHeartData(accessToken, date),
-      this.fetchBodyData(accessToken, date),
+      this.fetchMeasurementData(accessToken, date),
     ]);
 
     const heart = resHeart.status === "fulfilled" ? resHeart.value : undefined;
@@ -318,6 +318,7 @@ export class Withings extends Provider implements OAuth2 {
     if (!heart && !body) {
       throw new Error("All Requests failed");
     }
+
     return mapToBiometrics(date, heart, body);
   }
 
