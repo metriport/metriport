@@ -4,9 +4,9 @@ import dayjs from "dayjs";
 import { Util } from "../../shared/util";
 
 import { PROVIDER_WITHINGS } from "../../shared/constants";
-import { WithingsHeartRate } from "./models/heart-rate";
-import { WithingsMeasurements, WithingsMeasType } from "./models/measurements";
 import { getMeasurementResults } from "./body";
+import { WithingsHeartRate } from "./models/heart-rate";
+import { WithingsMeasType, WithingsMeasurements } from "./models/measurements";
 
 export const mapToBiometrics = (
   date: string,
@@ -143,7 +143,7 @@ const createDiastolicSamples = (arr: WithingsHeartRate): Sample[] => {
   return arr.reduce((acc: Sample[], item) => {
     if (item.bloodpressure) {
       acc.push({
-        time: dayjs(item.timestamp).format("YYYY-MM-DDTHH:mm:ssZ"),
+        time: dayjs(item.timestamp).toISOString(),
         value: item.bloodpressure.diastole,
       });
     }
@@ -156,7 +156,7 @@ const createSystolicSamples = (arr: WithingsHeartRate): Sample[] => {
   return arr.reduce((acc: Sample[], item) => {
     if (item.bloodpressure) {
       acc.push({
-        time: dayjs(item.timestamp).format("YYYY-MM-DDTHH:mm:ssZ"),
+        time: dayjs(item.timestamp).toISOString(),
         value: item.bloodpressure.systole,
       });
     }
@@ -168,7 +168,7 @@ const createSystolicSamples = (arr: WithingsHeartRate): Sample[] => {
 const createHrSamples = (arr: WithingsHeartRate): Sample[] => {
   return arr.map(item => {
     return {
-      time: dayjs(item.timestamp).format("YYYY-MM-DDTHH:mm:ssZ"),
+      time: dayjs(item.timestamp).toISOString(),
       value: item.heart_rate,
     };
   });
