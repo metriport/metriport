@@ -1,4 +1,10 @@
-import { CommonwellError, DocumentQueryResponse, Document } from "@metriport/commonwell-sdk";
+import {
+  CommonwellError,
+  Document,
+  OperationOutcome,
+  documentReferenceResourceType,
+  operationOutcomeResourceType,
+} from "@metriport/commonwell-sdk";
 import { DocumentReference } from "@medplum/fhirtypes";
 import { PassThrough } from "stream";
 import * as AWS from "aws-sdk";
@@ -93,10 +99,19 @@ async function internalGetDocuments({
   const commonWell = makeCommonWellAPI(orgName, oid(orgId));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
-  let docs: DocumentQueryResponse;
+  const docs: Document[] = [];
+  const cwErrs: OperationOutcome[] = [];
   try {
-    docs = await commonWell.queryDocuments(queryMeta, cwData.patientId);
+    const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
     debug(`resp queryDocuments: ${JSON.stringify(docs, null, 2)}`);
+
+    for (const item of queryResponse.entry) {
+      if (item.content?.resourceType === documentReferenceResourceType) {
+        docs.push(item as Document);
+      } else if (item.content?.resourceType === operationOutcomeResourceType) {
+        cwErrs.push(item as OperationOutcome);
+      }
+    }
   } catch (err) {
     capture.error(err, {
       extra: {
@@ -108,39 +123,47 @@ async function internalGetDocuments({
     throw err;
   }
 
-  const documents: Document[] = docs.entry
-    ? docs.entry.flatMap(d => {
-        if (d.content.size === 0) {
-          capture.message("Document is of size 0", {
-            extra: d.content,
-          });
+  if (cwErrs.length > 0) {
+    capture.message("Document query contained errors", {
+      extra: {
+        cwReference: commonWell.lastReferenceHeader,
+        patientId: patient.id,
+        cwErrs,
+      },
+    });
+  }
 
-          return [];
-        }
+  const documents: Document[] = docs.flatMap(d => {
+    if (d.content.size === 0) {
+      capture.message("Document is of size 0", {
+        extra: d.content,
+      });
 
-        if (d.content?.masterIdentifier?.value && d.content && d.content.location) {
-          return {
-            id: d.content.masterIdentifier.value,
-            content: { location: d.content.location, ...d.content },
-            contained: d.content.contained,
-            masterIdentifier: d.content.masterIdentifier,
-            subject: d.content.subject,
-            context: d.content.context,
-            fileName: getFileName(patient, d),
-            description: d.content.description,
-            type: d.content.type,
-            status: d.content.status,
-            location: d.content.location,
-            indexed: d.content.indexed,
-            mimeType: d.content.mimeType,
-            size: d.content.size, // bytes
-            raw: d,
-          };
-        }
+      return [];
+    }
 
-        return [];
-      })
-    : [];
+    if (d.content?.masterIdentifier?.value && d.content && d.content.location) {
+      return {
+        id: d.content.masterIdentifier.value,
+        content: { location: d.content.location, ...d.content },
+        contained: d.content.contained,
+        masterIdentifier: d.content.masterIdentifier,
+        subject: d.content.subject,
+        context: d.content.context,
+        fileName: getFileName(patient, d),
+        description: d.content.description,
+        type: d.content.type,
+        status: d.content.status,
+        location: d.content.location,
+        indexed: d.content.indexed,
+        mimeType: d.content.mimeType,
+        size: d.content.size, // bytes
+        raw: d,
+      };
+    }
+
+    return [];
+  });
 
   return documents;
 }

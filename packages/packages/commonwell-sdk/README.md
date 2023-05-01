@@ -1,31 +1,40 @@
 # `commonwell-sdk`
 
-> TODO: description
+SDK to simplify CommonWell API integration - by Metriport Inc.
 
 ## Usage
 
 ```
-const commonwellSdk = require('commonwell-sdk');
+import {
+  APIMode,
+  CommonWell
+} from "@metriport/commonwell-sdk";
 
-// TODO: DEMONSTRATE API
+const commonWell = new CommonWell(
+    "CERTIFICATE",
+    "PRIVATE_KEY",
+    "Leopard Medical",
+    "2.16.840.1.113883.3.666.7.777",
+    APIMode.production
+  );
 ```
 
 ```
             ,▄,
           ▄▓███▌
       ▄▀╙   ▀▓▀    ²▄
-    ▄└               ╙▌     
-  ,▀                   ╨▄   
-  ▌                     ║   
-                         ▌  
-                         ▌  
-,▓██▄                 ╔███▄ 
-╙███▌                 ▀███▀ 
-    ▀▄                      
+    ▄└               ╙▌
+  ,▀                   ╨▄
+  ▌                     ║
+                         ▌
+                         ▌
+,▓██▄                 ╔███▄
+╙███▌                 ▀███▀
+    ▀▄
       ▀╗▄         ,▄
          '╙▀▀▀▀▀╙''
 
-     
+
       by Metriport Inc.
 
 ```
