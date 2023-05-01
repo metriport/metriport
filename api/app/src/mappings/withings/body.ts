@@ -68,7 +68,7 @@ export const getMeasurementResults = (
     .filter(measure => !measure.is_inconclusive)
     .reduce<ResultsMeasurements>((acc, curr) => {
       const { measures } = curr;
-      const time = dayjs(curr.date * 1000).format("YYYY-MM-DDTHH:mm:ssZ");
+      const time = dayjs(curr.date * 1000).toISOString();
 
       measures.forEach(item => {
         const trueValue = item.value * 10 ** item.unit;

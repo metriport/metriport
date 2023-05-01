@@ -12,7 +12,7 @@ export const getSamples = (arr: GooglePoint, valueIndex = 0): Sample[] => {
     return {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       value: hasFpVal[valueIndex].fpVal!,
-      time: dayjs(convert(startTimeNanos).from("ns").to("ms")).format("YYYY-MM-DDTHH:mm:ssZ"),
+      time: dayjs(convert(startTimeNanos).from("ns").to("ms")).toISOString(),
     };
   });
 };

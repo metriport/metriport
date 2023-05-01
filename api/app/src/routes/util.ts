@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
+import { ApiTypes } from "../command/usage/report-usage";
 import BadRequestError from "../errors/bad-request";
 import { analytics, EventTypes } from "../shared/analytics";
-import { ApiTypes } from "../command/usage/report-usage";
 import { capture } from "../shared/notifications";
 
 export const asyncHandler =
@@ -96,6 +96,40 @@ export const getFromParamsOrFail = (prop: string, req: Request): string => {
   return value;
 };
 
+export const getFromHeader = (prop: string, req: Request): string | undefined => req.header(prop);
+export const getFromHeaderOrFail = (prop: string, req: Request): string => {
+  const value = getFromHeader(prop, req);
+  if (!value) throw new Error(`Missing ${prop} header`); // Plain Error bc this is app logic, not user error
+  return value;
+};
+
+export interface GetWithParams {
+  optional: (prop: string, req: Request) => string | undefined;
+  orFail: (prop: string, req: Request) => string;
+}
+export interface GetWithoutParams extends GetWithParams {
+  optional: () => string | undefined;
+  orFail: () => string;
+}
+export type Context = "query" | "params" | "headers";
+export const functionByContext: Record<Context, GetWithParams> = {
+  query: {
+    optional: getFromQuery,
+    orFail: getFromQueryOrFail,
+  },
+  params: {
+    optional: getFromParams,
+    orFail: getFromParamsOrFail,
+  },
+  headers: {
+    optional: getFromHeader,
+    orFail: getFromHeaderOrFail,
+  },
+};
+export function getFrom(context: Context): GetWithParams {
+  return functionByContext[context];
+}
+
 export const getCxId = (req: Request): string | undefined => {
   const cxId = req.cxId;
   cxId && capture.setUserId(cxId);
@@ -122,29 +156,6 @@ export const getCxIdFromHeaders = (req: Request): string | undefined => {
   const cxId = req.header("cxId") as string | undefined;
   cxId && capture.setUserId(cxId);
   return cxId;
-};
-
-export const getUserIdFromHeaders = (req: Request): string | undefined =>
-  req.header("userId") as string | undefined;
-
-/** @deprecated use getFromQuery() */
-export const getUserId = (req: Request): string | undefined =>
-  req.query.userId as string | undefined;
-/** @deprecated use getFromQueryOrFail() */
-export const getUserIdFromQueryOrFail = (req: Request): string => {
-  const userId = getUserId(req);
-  if (!userId) throw new BadRequestError("Missing userId query param");
-  return userId as string;
-};
-
-/** @deprecated use getFromParams() */
-export const getUserIdFromParams = (req: Request): string | undefined =>
-  req.params.userId as string | undefined;
-/** @deprecated use getFromParamsOrFail() */
-export const getUserIdFromParamsOrFail = (req: Request): string => {
-  const userId = getUserIdFromParams(req);
-  if (!userId) throw new BadRequestError("Missing userId param");
-  return userId as string;
 };
 
 /** @deprecated use getFromQuery() */
