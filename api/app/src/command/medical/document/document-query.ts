@@ -1,6 +1,7 @@
+import { Transaction } from "sequelize";
 import {
-  DocumentQueryStatus,
   DocumentQueryProgress,
+  DocumentQueryStatus,
 } from "../../../domain/medical/document-reference";
 import { processAsyncError } from "../../../errors";
 import { queryDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
@@ -79,7 +80,7 @@ export const updateDocQuery = async ({
   const sequelize = PatientModel.sequelize;
   if (!sequelize) throw new Error("Missing sequelize");
 
-  const transaction = await sequelize.transaction();
+  let transaction: Transaction | undefined = await sequelize.transaction();
 
   try {
     const existing = await PatientModel.findOne({
@@ -103,10 +104,11 @@ export const updateDocQuery = async ({
         { transaction }
       );
     }
-
-    await transaction.commit();
   } catch (error) {
     await transaction.rollback();
+    transaction = undefined;
     throw error;
+  } finally {
+    transaction && (await transaction.commit());
   }
 };
