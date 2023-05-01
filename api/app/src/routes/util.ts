@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import httpStatus from "http-status";
 import { ApiTypes } from "../command/usage/report-usage";
 import BadRequestError from "../errors/bad-request";
 import { analytics, EventTypes } from "../shared/analytics";
@@ -175,4 +176,8 @@ export function getETag(req: Request): {
   return {
     eTag: eTagHeader ?? eTagPayload,
   };
+}
+
+export function isHttpOK(statusCode: number): boolean {
+  return httpStatus[`${statusCode}_CLASS`] === httpStatus.classes.SUCCESSFUL;
 }

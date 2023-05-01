@@ -1,9 +1,8 @@
 import { NextFunction, Request } from "express";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
-import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getUserIdFrom } from "../schemas/user-id";
-import { getCxId } from "../util";
+import { getCxId, isHttpOK } from "../util";
 
 const log = Util.log("USAGE");
 
@@ -11,7 +10,10 @@ const log = Util.log("USAGE");
  * Adds a listener on Response close/finish, executing the logic on 'reportIt'.
  * Thanks to https://stackoverflow.com/questions/20175806/before-and-after-hooks-for-a-request-in-express-to-be-executed-before-any-req-a
  */
-export const reportUsage = (apiType: ApiTypes) => {
+export const reportUsage = (
+  apiType: ApiTypes,
+  getEntityIdFn: (req: Request) => string | undefined
+) => {
   return async (
     req: Request,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,7 +23,7 @@ export const reportUsage = (apiType: ApiTypes) => {
     function afterResponse() {
       res.removeListener("finish", afterResponse);
       res.removeListener("close", afterResponse);
-      reportIt(req, apiType);
+      if (isHttpOK(res.statusCode)) reportIt(req, apiType, getEntityIdFn(req));
     }
     res.on("finish", afterResponse);
     res.on("close", afterResponse);
@@ -29,23 +31,29 @@ export const reportUsage = (apiType: ApiTypes) => {
   };
 };
 
-export const reportMedicalUsage = reportUsage(ApiTypes.medical);
-export const reportDeviceUsage = reportUsage(ApiTypes.devices);
+// export const reportMedicalUsage = reportUsage(ApiTypes.medical);
+export const reportDeviceUsage = reportUsage(ApiTypes.devices, getDevicesEntityId);
 /**
  * Reports usage base on the the customer ID on the Request, property 'cxId', and
  * the customer's userId on the request params, 'userId'.
  */
-const reportIt = async (req: Request, apiType: ApiTypes): Promise<void> => {
-  try {
-    const cxId = getCxId(req);
-    if (!cxId) {
-      log(`Skipped, missing cxId`);
-      return;
-    }
-    const cxUserId = getUserIdFrom("query", req).optional();
-    await reportUsageCmd({ cxId, cxUserId, apiType });
-  } catch (err) {
-    capture.error(err, { extra: { apiType } });
-    // intentionally failing silently
+const reportIt = async (
+  req: Request,
+  apiType: ApiTypes,
+  entityId: string | undefined
+): Promise<void> => {
+  const cxId = getCxId(req);
+  if (!cxId) {
+    log(`Skipped, missing cxId`);
+    return;
   }
+  if (!entityId) {
+    log(`Skipped, missing entityId`);
+    return;
+  }
+  reportUsageCmd({ cxId, entityId, apiType });
 };
+
+function getDevicesEntityId(req: Request): string | undefined {
+  return getUserIdFrom("params", req).optional() ?? getUserIdFrom("query", req).optional();
+}
