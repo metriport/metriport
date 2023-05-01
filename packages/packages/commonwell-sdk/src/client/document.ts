@@ -11,11 +11,12 @@ import {
 } from "../models/document";
 import { CommonWell } from "./commonwell";
 
-export async function query(
+async function initQuery(
   api: AxiosInstance,
   headers: Record<string, string>,
   patientId: string
-): Promise<DocumentQueryResponse> {
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<any> {
   const subjectId = convertPatientIdToSubjectId(patientId);
   if (!subjectId) {
     throw new Error(`Could not determine subject ID for document query`);
@@ -28,11 +29,21 @@ export async function query(
   } catch (err) {
     throw new CommonwellError(`Error querying documents`, err, additionalInfo);
   }
+  return response;
+}
+
+export async function query(
+  api: AxiosInstance,
+  headers: Record<string, string>,
+  patientId: string
+): Promise<DocumentQueryResponse> {
+  const response = await initQuery(api, headers, patientId);
   try {
     return documentQueryResponseSchema.parse(response.data);
   } catch (err) {
     throw new CommonwellError(`Error parsing document query response`, err, {
-      ...additionalInfo,
+      headers,
+      patientId,
       response,
     });
   }
@@ -43,23 +54,13 @@ export async function queryFull(
   headers: Record<string, string>,
   patientId: string
 ): Promise<DocumentQueryFullResponse> {
-  const subjectId = convertPatientIdToSubjectId(patientId);
-  if (!subjectId) {
-    throw new Error(`Could not determine subject ID for document query`);
-  }
-  const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
-  const additionalInfo = { headers, patientId };
-  let response: any; //eslint-disable-line @typescript-eslint/no-explicit-any
-  try {
-    response = await api.get(url, { headers });
-  } catch (err) {
-    throw new CommonwellError(`Error querying documents`, err, additionalInfo);
-  }
+  const response = await initQuery(api, headers, patientId);
   try {
     return documentQueryFullResponseSchema.parse(response.data);
   } catch (err) {
     throw new CommonwellError(`Error parsing document query response`, err, {
-      ...additionalInfo,
+      headers,
+      patientId,
       response,
     });
   }

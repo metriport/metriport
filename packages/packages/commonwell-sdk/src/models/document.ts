@@ -143,11 +143,14 @@ export const operationOutcomeSchema = z.object({
 });
 export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
 
+export const documentReferenceResourceType = "DocumentReference";
+export const operationOutcomeResourceType = "OperationOutcome";
+
 export const documentQueryResponseSchema = z.object({
   resourceType: resourceTypeSchema,
   entry: z.preprocess(entries => {
     const result = z.array(z.any()).parse(entries);
-    return result.filter(e => e.content?.resourceType === "DocumentReference");
+    return result.filter(e => e.content?.resourceType === documentReferenceResourceType);
   }, z.array(documentSchema)),
 });
 
@@ -159,8 +162,8 @@ export const documentQueryFullResponseSchema = z.object({
     const result = z.array(z.any()).parse(entries);
     return result.filter(
       e =>
-        e.content?.resourceType === "DocumentReference" ||
-        e.content?.resourceType === "OperationOutcome"
+        e.content?.resourceType === documentReferenceResourceType ||
+        e.content?.resourceType === operationOutcomeResourceType
     );
   }, z.array(documentSchema.or(operationOutcomeSchema))),
 });
