@@ -127,6 +127,7 @@ async function internalGetDocuments({
     capture.message("Document query contained errors", {
       extra: {
         cwReference: commonWell.lastReferenceHeader,
+        patientId: patient.id,
         cwErrs,
       },
     });

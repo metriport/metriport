@@ -23,13 +23,12 @@ async function initQuery(
   }
   const url = `${CommonWell.DOCUMENT_QUERY_ENDPOINT}?subject.id=${subjectId}`;
   const additionalInfo = { headers, patientId };
-  let response: any; //eslint-disable-line @typescript-eslint/no-explicit-any
   try {
-    response = await api.get(url, { headers });
+    const response = await api.get(url, { headers });
+    return response;
   } catch (err) {
     throw new CommonwellError(`Error querying documents`, err, additionalInfo);
   }
-  return response;
 }
 
 export async function query(
