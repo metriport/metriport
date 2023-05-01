@@ -1,5 +1,6 @@
 import { NextFunction, Request } from "express";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
+import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getUserIdFrom } from "../schemas/user-id";
 import { getCxId } from "../util";
@@ -42,13 +43,9 @@ const reportIt = async (req: Request, apiType: ApiTypes): Promise<void> => {
       return;
     }
     const cxUserId = getUserIdFrom("query", req).optional();
-    if (!cxUserId) {
-      log(`Skipped, missing cxUserId (cxId ${cxId})`);
-      return;
-    }
     await reportUsageCmd({ cxId, cxUserId, apiType });
   } catch (err) {
-    console.log(err);
+    capture.error(err, { extra: { apiType } });
     // intentionally failing silently
   }
 };

@@ -10,7 +10,7 @@ export enum ApiTypes {
 
 export type ReportUsageCommand = {
   cxId: string;
-  cxUserId: string;
+  cxUserId: string | undefined;
   apiType: ApiTypes;
 };
 
@@ -21,9 +21,6 @@ export const reportUsage = async ({
 }: ReportUsageCommand): Promise<void> => {
   const url = Config.getUsageUrl();
   if (!url) return;
-
-  const payload = { cxId, cxUserId };
-
-  // TODO consider configuring Axios to not wait for response
-  await axios.post(`${url}/${apiType}`, payload, { timeout: 2_000 });
+  const payload = { cxId, cxUserId, apiType };
+  await axios.post(`${url}`, payload);
 };
