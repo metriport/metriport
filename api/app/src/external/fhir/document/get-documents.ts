@@ -103,6 +103,9 @@ export const getDocuments = async ({
       },
     ];
   }
-
-  return api.searchResources("DocumentReference", `patient=${patientId}`);
+  const docs: DocumentReference[] = [];
+  for await (const page of api.searchResourcePages("DocumentReference", `patient=${patientId}`)) {
+    docs.push(...page);
+  }
+  return docs;
 };
