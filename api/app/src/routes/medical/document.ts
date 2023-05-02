@@ -1,16 +1,18 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { OK } from "http-status";
-import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
-import { getDocuments } from "../../external/fhir/document/get-documents";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { asyncHandler, getCxIdOrFail, getFromQuery, getFromQueryOrFail } from "../util";
-import { toDTO } from "./dtos/documentDTO";
 import { downloadDocument } from "../../command/medical/document/document-download";
-import { DocumentQueryResp } from "../../command/medical/document/document-query";
-import { createQueryResponse } from "../../command/medical/document/document-query";
-import { Config } from "../../shared/config";
+import {
+  createQueryResponse,
+  DocumentQueryResp,
+  queryDocumentsAcrossHIEs,
+} from "../../command/medical/document/document-query";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
+import { getDocuments } from "../../external/fhir/document/get-documents";
+import { Config } from "../../shared/config";
+import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../util";
+import { toDTO } from "./dtos/documentDTO";
 
 const router = Router();
 
@@ -20,7 +22,6 @@ const router = Router();
  * Queries for all available document metadata for the specified patient across HIEs.
  *
  * @param req.query.patientId Patient ID for which to retrieve document metadata.
- * @param req.query.facilityId The facility providing NPI for the document query.
  * @return The metadata of available documents.
  */
 router.get(
@@ -28,24 +29,18 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
-    const forceQuery = getFromQuery("force-query", req);
 
     const documents = await getDocuments({ patientId });
     const documentsDTO = toDTO(documents);
 
     let query: DocumentQueryResp;
 
-    if (forceQuery) {
-      query = await queryDocumentsAcrossHIEs({ cxId, patientId, facilityId });
-    } else {
-      const patient = await getPatientOrFail({ cxId, id: patientId });
+    const patient = await getPatientOrFail({ cxId, id: patientId });
 
-      if (patient.data.documentQueryStatus === "processing") {
-        query = createQueryResponse("processing", patient);
-      } else {
-        query = createQueryResponse("completed");
-      }
+    if (patient.data.documentQueryStatus === "processing") {
+      query = createQueryResponse("processing", patient);
+    } else {
+      query = createQueryResponse("completed");
     }
 
     return res.status(OK).json({

@@ -7,7 +7,7 @@ import { requestLogger } from "./helpers/requestLogger";
 import internal from "./internal";
 import medical from "./medical";
 import { checkMAPIAccess, processAPIKey } from "./middlewares/auth";
-import { reportDeviceUsage, reportMedicalUsage } from "./middlewares/usage";
+import { reportDeviceUsage } from "./middlewares/usage";
 import nutrition from "./nutrition";
 import oauthRoutes from "./oauth-routes";
 import settings from "./settings";
@@ -32,7 +32,7 @@ export default (app: Application) => {
   app.use("/user", processAPIKey, reportDeviceUsage, user);
 
   // medical routes with API key auth
-  app.use("/medical/v1", processAPIKey, checkMAPIAccess, reportMedicalUsage, medical);
+  app.use("/medical/v1", processAPIKey, checkMAPIAccess, medical);
 
   // routes with session token auth
   app.use("/connect", connect);

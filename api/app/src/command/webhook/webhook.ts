@@ -9,6 +9,8 @@ import { AppleWebhookPayload } from "../../mappings/apple";
 import { DataType, TypedData, UserData } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
+import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
+import { analytics, EventTypes } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUserOrFail, getConnectedUsers } from "../connected-user/get-connected-user";
@@ -17,8 +19,6 @@ import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
 import { createWebhookRequest, updateWebhookRequestStatus } from "../webhook/webhook-request";
-import { analytics, EventTypes } from "../../shared/analytics";
-import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
 
 const axios = Axios.create();
 
@@ -147,7 +147,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
             },
           });
           await processOneCustomer(cxId, settings, payloads);
-          reportUsage(
+          reportDevicesUsage(
             cxId,
             dataAndUserList.map(du => du.cxUserId)
           );
@@ -180,7 +180,7 @@ export const processAppleData = async (
     await processOneCustomer(connectedUser.cxId, settings, [
       { users: [{ userId: metriportUserId, ...data }] },
     ]);
-    reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
+    reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (err) {
     log(`Error on processAppleData: `, err);
     capture.error(err, {
@@ -189,13 +189,9 @@ export const processAppleData = async (
   }
 };
 
-const reportUsage = (cxId: string, cxUserIds: string[]): void => {
-  cxUserIds.forEach(cxUserId => [
-    reportUsageCmd({ cxId, cxUserId, apiType: ApiTypes.devices }).catch(err => {
-      log(`Failed to report usage (${{ cxId, cxUserId, apiType: ApiTypes.devices }}): `, err);
-      capture.error(err, { extra: { cxUserId, apiType: ApiTypes.devices } });
-    }),
-  ]);
+const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
+  const apiType = ApiTypes.devices;
+  cxUserIds.forEach(cxUserId => reportUsageCmd({ cxId, entityId: cxUserId, apiType }));
 };
 
 const processOneCustomer = async (
@@ -219,6 +215,7 @@ export const processPatientRequest = async (
   patientId: string,
   documents: DocumentReferenceDTO[]
 ): Promise<boolean> => {
+  const apiType = ApiTypes.medical;
   try {
     const settings = await getSettingsOrFail({ id: cxId });
     // create a representation of this request and store on the DB
@@ -227,10 +224,9 @@ export const processPatientRequest = async (
     };
     const webhookRequest = await createWebhookRequest({ cxId, payload });
     // send it to the customer and update the request status
-    await processRequest(webhookRequest, settings, ApiTypes.medical);
+    await processRequest(webhookRequest, settings, apiType);
 
-    // TODO: #484
-    // reportUsage(cxId, ...);
+    reportUsageCmd({ cxId, entityId: patientId, apiType });
   } catch (err) {
     log(`Error on processPatientRequest: `, err);
     capture.error(err, {
