@@ -12,12 +12,13 @@ import {
   Constants,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
+  PROVIDER_APPLE,
 } from "../shared/constants";
+import { capture } from "../shared/notifications";
 import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
-import { asyncHandler, getCxIdFromHeaders, getUserIdFromHeaders } from "./util";
-import { PROVIDER_APPLE } from "../shared/constants";
-import { capture } from "../shared/notifications";
+import { getUserIdFrom } from "./schemas/user-id";
+import { asyncHandler, getCxIdFromHeaders } from "./util";
 
 const router = Router();
 
@@ -105,7 +106,7 @@ router.get(
       if (providerOAuth2.success) {
         const provider = providerOAuth2.data;
         const cxId = getCxIdFromHeaders(req);
-        const userId = getUserIdFromHeaders(req);
+        const userId = getUserIdFrom("headers", req).optional();
         await processOAuth2(provider, state, authCode, cxId, userId);
         return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
       }
@@ -151,7 +152,7 @@ router.get(
       userId = useToken.userId;
     } else {
       cxId = getCxIdFromHeaders(req);
-      userId = getUserIdFromHeaders(req);
+      userId = getUserIdFrom("headers", req).optional();
     }
 
     if (!cxId || !userId) {
@@ -192,7 +193,7 @@ router.get(
       userId = useToken.userId;
     } else {
       cxId = getCxIdFromHeaders(req);
-      userId = getUserIdFromHeaders(req);
+      userId = getUserIdFrom("headers", req).optional();
     }
 
     if (!cxId || !userId) {

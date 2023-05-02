@@ -1,7 +1,7 @@
 import * as stream from "stream";
 import { RequestMetadata } from "./commonwell";
 import { CertificateParam, CertificateResp } from "../models/certificates";
-import { DocumentQueryResponse } from "../models/document";
+import { DocumentQueryResponse, DocumentQueryFullResponse } from "../models/document";
 import { Identifier, StrongId } from "../models/identifier";
 import { NetworkLink, PatientLinkProxy } from "../models/link";
 import { Organization, OrganizationList } from "../models/organization";
@@ -93,6 +93,7 @@ export interface CommonWellAPI {
   getNetworkLinks(meta: RequestMetadata, patientId: string): Promise<PatientNetworkLinkResp>;
   deletePatient(meta: RequestMetadata, id: string): Promise<void>;
   queryDocuments(meta: RequestMetadata, patientId: string): Promise<DocumentQueryResponse>;
+  queryDocumentsFull(meta: RequestMetadata, patientId: string): Promise<DocumentQueryFullResponse>;
   retrieveDocument(
     meta: RequestMetadata,
     inputUrl: string,

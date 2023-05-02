@@ -6,6 +6,7 @@ import convert from "convert-units";
 import { PROVIDER_FITBIT } from "../../shared/constants";
 import { FitbitActivityLogs, HeartRateZone } from "./models/activity-log";
 import { Util } from "../../shared/util";
+import { ISO_DATE } from "../../shared/date";
 
 export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string): Activity => {
   const filteredLogs = filterLogsByDate(fitbitActiveLogs, date);
@@ -105,7 +106,7 @@ export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string
 
 const filterLogsByDate = (logs: FitbitActivityLogs, date: string): FitbitActivityLogs => {
   const filteredLogs = logs.filter(log => {
-    const originalDate = dayjs(log.originalStartTime).format("YYYY-MM-DD");
+    const originalDate = dayjs(log.originalStartTime).format(ISO_DATE);
 
     return originalDate === date;
   });

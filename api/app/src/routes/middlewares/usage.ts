@@ -1,8 +1,8 @@
 import { NextFunction, Request } from "express";
-import { reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
+import { ApiTypes, reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
 import { Util } from "../../shared/util";
-import { getCxId, getUserId } from "../util";
-import { ApiTypes } from "../../command/usage/report-usage";
+import { getUserIdFrom } from "../schemas/user-id";
+import { getCxId } from "../util";
 
 const log = Util.log("USAGE");
 
@@ -41,7 +41,7 @@ const reportIt = async (req: Request, apiType: ApiTypes): Promise<void> => {
       log(`Skipped, missing cxId`);
       return;
     }
-    const cxUserId = getUserId(req);
+    const cxUserId = getUserIdFrom("query", req).optional();
     if (!cxUserId) {
       log(`Skipped, missing cxUserId (cxId ${cxId})`);
       return;

@@ -321,6 +321,11 @@ export class CommonWellMock implements sdk.CommonWellAPI {
 
     return document;
   }
+  async queryDocumentsFull(): Promise<sdk.DocumentQueryFullResponse> {
+    const document = createDocument(this.oid, this.orgName);
+
+    return document;
+  }
 
   async retrieveDocument(
     meta: sdk.RequestMetadata,

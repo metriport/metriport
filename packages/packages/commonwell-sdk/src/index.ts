@@ -35,3 +35,4 @@ export {
 } from "./models/patient";
 export { PatientLink, PatientLinkSearchResp, Person, PersonSearchResp } from "./models/person";
 export { PurposeOfUse } from "./models/purpose-of-use";
+export { documentReferenceResourceType, operationOutcomeResourceType } from "./models/document";
