@@ -12,7 +12,7 @@ export type DemographicsDTO = {
   genderAtBirth: GenderDTO;
   personalIdentifiers: PersonalIdentifierDTO[];
   address: AddressDTO[];
-  contact?: ContactDTO[];
+  contact?: ContactDTO[] | null;
 };
 
 export function dtoFromModel(patient: Pick<Patient, "data">): DemographicsDTO {

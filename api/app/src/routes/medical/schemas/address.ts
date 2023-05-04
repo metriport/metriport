@@ -1,20 +1,23 @@
 import { z } from "zod";
 import { USState } from "../../../shared/geographic-locations";
-import { defaultOptionalString, parseToNumericString } from "./shared";
+import { defaultOptionalString, defaultZipString, optionalString } from "./shared";
 
 export const usStateSchema = z.nativeEnum(USState);
 
-const zipLength = 5;
 export const addressSchema = z.object({
   addressLine1: defaultOptionalString,
   addressLine2: defaultOptionalString,
   city: defaultOptionalString,
   state: usStateSchema.or(defaultOptionalString),
-  zip: z.coerce
-    .string()
-    .transform(zipStr => parseToNumericString(zipStr))
-    .refine(zip => zip.length === zipLength, {
-      message: `Zip must be a string consisting of ${zipLength} numbers`,
-    }),
+  zip: defaultZipString,
   country: defaultOptionalString.default("USA"), // here for backwards compatibility, we'll ignore this and always default to USA
+});
+
+export const locationAddressSchema = z.object({
+  addressLine1: z.string().min(1),
+  addressLine2: optionalString(z.string()),
+  city: z.string().min(1),
+  state: usStateSchema,
+  zip: defaultZipString,
+  country: z.string().min(1).default("USA"),
 });

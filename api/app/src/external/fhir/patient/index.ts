@@ -24,12 +24,14 @@ export const toFHIR = (patient: Patient): FHIRPatient => {
     ],
     telecom: patient.data.contact
       ? patient.data.contact.map(contact => {
-          return Object.entries(contact).map(([key, val]) => {
-            return {
-              system: key as ContactTypes,
-              value: val ?? undefined,
-            };
-          })[0];
+          return contact
+            ? Object.entries(contact).map(([key, val]) => {
+                return {
+                  system: key as ContactTypes,
+                  value: val ?? undefined,
+                };
+              })[0]
+            : {};
         })
       : undefined,
     gender: genderMapping[patient.data.genderAtBirth],

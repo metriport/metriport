@@ -70,19 +70,20 @@ function personToPatient(person: { id: string } & Person): PatientOnLinkDTO {
   const personName = person.details?.name?.length ? person.details?.name[0] : undefined;
   return {
     id: person.id,
-    firstName: personName && personName.given?.length ? name(personName.given) : "",
-    lastName: personName && personName.family?.length ? name(personName.family) : "",
+    firstName: personName && personName.given?.length ? [name(personName.given)] : [""],
+    lastName: personName && personName.family?.length ? [name(personName.family)] : [""],
     dob: person.details?.birthDate ? person.details.birthDate : "",
     genderAtBirth: genderToDTO(person),
     personalIdentifiers: [],
-    address: {
-      addressLine1: address && address.line ? address.line[0] : "",
-      city: address && address.city ? address.city : "",
-      state: address && address.state ? address.state : "",
-      zip: address && address.zip ? address.zip : "",
-      country: address && address.country ? address.country : "USA",
-    },
-    contact: {},
+    address: [
+      {
+        addressLine1: address && address.line ? address.line[0] : "",
+        city: address && address.city ? address.city : "",
+        state: address && address.state ? address.state : "",
+        zip: address && address.zip ? address.zip : "",
+        country: address && address.country ? address.country : "USA",
+      },
+    ],
   };
 }
 

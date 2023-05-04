@@ -17,4 +17,11 @@ export const defaultOptionalString = optionalString(defaultString).nullable();
 export const defaultDateString = defaultString.refine(v => dayjs(v, ISO_DATE, true).isValid(), {
   message: `Date must be a valid ISO 8601 date formatted ${ISO_DATE}. Example: 2023-05-03`,
 });
+const zipLength = 5;
+export const defaultZipString = z.coerce
+  .string()
+  .transform(zipStr => parseToNumericString(zipStr))
+  .refine(zip => zip.length === zipLength, {
+    message: `Zip must be a string consisting of ${zipLength} numbers`,
+  });
 export const defaultNameString = defaultString.transform(name => name.split(/[\s,]+/));
