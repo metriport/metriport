@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import status from "http-status";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import { getCxIdOrFail } from "../util";
+import { Config } from "../../shared/config";
 
 /**
  * Process the API key and get the customer id.
@@ -32,6 +33,11 @@ export const checkMAPIAccess = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  // skip check on local env
+  if (!Config.isCloudEnv()) {
+    next();
+    return;
+  }
   let hasMAPIAccess = false;
   try {
     const cxId = getCxIdOrFail(req);

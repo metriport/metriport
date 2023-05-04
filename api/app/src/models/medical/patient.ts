@@ -54,13 +54,13 @@ export abstract class PatientExternalDataEntry {}
 export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;
 
 export type PatientData = {
-  firstName: string;
-  lastName: string;
+  firstName: string[];
+  lastName: string[];
   dob: string;
   genderAtBirth: GenderAtBirth;
   personalIdentifiers: PersonalIdentifier[];
-  address: Address;
-  contact?: Contact;
+  address: Address[];
+  contact?: Contact[];
   documentQueryStatus?: DocumentQueryStatus;
   documentQueryProgress?: DocumentQueryProgress;
   externalData?: PatientExternalData;
