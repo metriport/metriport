@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { usStateSchema } from "./us-data";
-import { defaultOptionalString, parseToNumericString } from "../../../shared";
+import { defaultOptionalString, stripNonNumericChars } from "../../../shared";
 
 const zipLength = 5;
 export const addressSchema = z.object({
@@ -10,7 +10,7 @@ export const addressSchema = z.object({
   state: usStateSchema.or(defaultOptionalString),
   zip: z.coerce
     .string()
-    .transform(zipStr => parseToNumericString(zipStr))
+    .transform(zipStr => stripNonNumericChars(zipStr))
     .refine(zip => zip.length === zipLength, {
       message: `Zip must be a string consisting of ${zipLength} numbers`,
     }),

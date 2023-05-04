@@ -5,8 +5,7 @@ import {
   defaultDateString,
   defaultNameString,
   defaultOptionalString,
-  defaultString,
-  parseToNumericString,
+  stripNonNumericChars,
 } from "../../shared";
 
 const basePersonalIdentifierSchema = z.object({
@@ -43,25 +42,22 @@ export const contactSchema = z
   .object({
     phone: z.coerce
       .string()
-      .transform(phone => parseToNumericString(phone))
+      .transform(phone => stripNonNumericChars(phone))
       .refine(phone => phone.length === phoneLength, {
         message: `Phone must be a string consisting of ${phoneLength} numbers. For example: 4153245540`,
       })
       .or(defaultOptionalString),
     email: z.string().email().or(defaultOptionalString),
   })
-  .transform(contact => {
-    return !contact.email && !contact.phone ? undefined : contact;
-  })
-  .nullish();
+  .refine(c => c.email || c.phone, { message: "Either email or phone must be present" });
 
 export const demographicsSchema = z.object({
-  firstName: defaultNameString.or(z.array(defaultString)),
-  lastName: defaultNameString.or(z.array(defaultString)),
+  firstName: defaultNameString,
+  lastName: defaultNameString,
   dob: defaultDateString,
   genderAtBirth: genderAtBirthSchema,
-  personalIdentifiers: z.array(personalIdentifierSchema).nullish(),
+  personalIdentifiers: z.array(personalIdentifierSchema).optional(),
   address: z.array(addressSchema).or(addressSchema),
-  contact: z.array(contactSchema).nullish().or(contactSchema),
+  contact: z.array(contactSchema).optional().or(contactSchema.optional()),
 });
 export type Demographics = z.infer<typeof demographicsSchema>;
