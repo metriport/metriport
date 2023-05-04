@@ -1,21 +1,20 @@
 import { z } from "zod";
 import { usStateSchema } from "./us-data";
+import { defaultOptionalString, parseToNumericString } from "../../../shared";
 
+const zipLength = 5;
 export const addressSchema = z.object({
-  addressLine1: z.string().min(1),
-  addressLine2: z.string().optional().nullable(),
-  city: z.string().min(1),
-  state: usStateSchema,
-  zip: z.string().length(5),
-  country: z.string().min(1),
-});
-
-export const optionalAddressSchema = addressSchema.partial({
-  addressLine1: true,
-  addressLine2: true,
-  city: true,
-  state: true,
-  country: true,
+  addressLine1: defaultOptionalString,
+  addressLine2: defaultOptionalString,
+  city: defaultOptionalString,
+  state: usStateSchema.or(defaultOptionalString),
+  zip: z.coerce
+    .string()
+    .transform(zipStr => parseToNumericString(zipStr))
+    .refine(zip => zip.length === zipLength, {
+      message: `Zip must be a string consisting of ${zipLength} numbers`,
+    }),
+  country: defaultOptionalString.default("USA"), // here for backwards compatibility, we'll ignore this and always default to USA
 });
 
 export type Address = z.infer<typeof addressSchema>;

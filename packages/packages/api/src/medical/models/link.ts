@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { demographicsSchema } from "./demographics";
-import { optionalAddressSchema } from "./common/address";
+import { addressSchema } from "./common/address";
 
 export enum MedicalDataSource {
   COMMONWELL = "COMMONWELL",
@@ -8,7 +8,7 @@ export enum MedicalDataSource {
 
 const linkDemographics = demographicsSchema
   .omit({ address: true })
-  .merge(z.object({ address: optionalAddressSchema }));
+  .merge(z.object({ address: addressSchema }));
 
 export const linkSchema = z.object({
   entityId: z.string(),
