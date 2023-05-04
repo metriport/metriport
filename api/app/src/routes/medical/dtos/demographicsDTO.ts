@@ -6,13 +6,13 @@ import { PersonalIdentifierDTO } from "./personal-identifier-dto";
 export type GenderDTO = "F" | "M" | "U"; // U = unspecified
 
 export type DemographicsDTO = {
-  firstName: string;
-  lastName: string;
+  firstName: string[];
+  lastName: string[];
   dob: string;
   genderAtBirth: GenderDTO;
   personalIdentifiers: PersonalIdentifierDTO[];
-  address: AddressDTO;
-  contact?: ContactDTO;
+  address: AddressDTO[];
+  contact?: ContactDTO[];
 };
 
 export function dtoFromModel(patient: Pick<Patient, "data">): DemographicsDTO {

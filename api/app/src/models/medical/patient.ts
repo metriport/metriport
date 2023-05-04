@@ -60,7 +60,7 @@ export type PatientData = {
   genderAtBirth: GenderAtBirth;
   personalIdentifiers: PersonalIdentifier[];
   address: Address[];
-  contact?: Contact[];
+  contact?: Contact[] | null | undefined;
   documentQueryStatus?: DocumentQueryStatus;
   documentQueryProgress?: DocumentQueryProgress;
   externalData?: PatientExternalData;
