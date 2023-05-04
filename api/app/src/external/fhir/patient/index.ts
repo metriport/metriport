@@ -1,5 +1,5 @@
 import { Patient as FHIRPatient, Identifier } from "@medplum/fhirtypes";
-import { Patient } from "../../../models/medical/patient";
+import { Patient, splitName } from "../../../models/medical/patient";
 import { GenderAtBirth } from "../../../models/medical/patient";
 import { PersonalIdentifier } from "../../../models/medical/patient";
 import { driversLicenseURIs } from "../../../shared/oid";
@@ -18,8 +18,8 @@ export const toFHIR = (patient: Patient): FHIRPatient => {
     identifier: convertDriversLicenseToIdentifier(patient.data.personalIdentifiers),
     name: [
       {
-        family: patient.data.lastName[0],
-        given: patient.data.firstName,
+        family: patient.data.lastName,
+        given: splitName(patient.data.firstName),
       },
     ],
     telecom: patient.data.contact

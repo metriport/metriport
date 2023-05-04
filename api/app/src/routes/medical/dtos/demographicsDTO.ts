@@ -6,8 +6,8 @@ import { PersonalIdentifierDTO } from "./personal-identifier-dto";
 export type GenderDTO = "F" | "M" | "U"; // U = unspecified
 
 export type DemographicsDTO = {
-  firstName: string[];
-  lastName: string[];
+  firstName: string;
+  lastName: string;
   dob: string;
   genderAtBirth: GenderDTO;
   personalIdentifiers: PersonalIdentifierDTO[];

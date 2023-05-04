@@ -3,6 +3,7 @@ import { differenceBy } from "lodash";
 
 import { MedicalDataSource } from "../../../external";
 import { DemographicsDTO, GenderDTO } from "./demographicsDTO";
+import { joinName } from "../../../models/medical/patient";
 
 export type LinkDTO = {
   id?: string | null;
@@ -70,8 +71,8 @@ function personToPatient(person: { id: string } & Person): PatientOnLinkDTO {
   const personName = person.details?.name?.length ? person.details?.name[0] : undefined;
   return {
     id: person.id,
-    firstName: personName && personName.given?.length ? [name(personName.given)] : [""],
-    lastName: personName && personName.family?.length ? [name(personName.family)] : [""],
+    firstName: personName && personName.given?.length ? joinName(personName.given) : "",
+    lastName: personName && personName.family?.length ? joinName(personName.family) : "",
     dob: person.details?.birthDate ? person.details.birthDate : "",
     genderAtBirth: genderToDTO(person),
     personalIdentifiers: [],
@@ -91,7 +92,3 @@ const genderToDTO = (person: Person): GenderDTO => {
   const code = person.details?.gender?.code;
   return code === "M" || code === "F" ? code : "U";
 };
-
-export function name(names: string[]): string {
-  return names.join(" ");
-}

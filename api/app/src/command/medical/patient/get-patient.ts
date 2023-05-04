@@ -52,7 +52,7 @@ export const getPatientByDemo = async ({
     },
   });
 
-  // Check for personal identifiers & demo in memory, we were having a hard time to get the query to work with Sequelize
+  // TODO: #656 Check for personal identifiers & demo in memory, we were having a hard time to get the query to work with Sequelize
   // Consider checking this out if trying to move this to the query: https://github.com/sequelize/sequelize/issues/5173
   const matchingPatients = patients.filter(patient => {
     // First, check for an ID match - if it's a match, don't bother checking for demo

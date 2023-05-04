@@ -1,9 +1,3 @@
 export type ContactTypes = "email" | "phone";
 
-export type Contact =
-  | {
-      email?: string | null;
-      phone?: string | null;
-    }
-  | null
-  | undefined;
+export type Contact = Partial<Record<ContactTypes, string | undefined>>;

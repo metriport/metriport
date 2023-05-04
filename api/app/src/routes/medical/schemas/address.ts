@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { USState } from "../../../shared/geographic-locations";
-import { defaultOptionalString, defaultZipString, optionalString } from "./shared";
+import { defaultOptionalString, defaultZipString } from "./shared";
 
 export const usStateSchema = z.nativeEnum(USState);
 
@@ -15,7 +15,7 @@ export const addressSchema = z.object({
 
 export const locationAddressSchema = z.object({
   addressLine1: z.string().min(1),
-  addressLine2: optionalString(z.string()),
+  addressLine2: defaultOptionalString,
   city: z.string().min(1),
   state: usStateSchema,
   zip: defaultZipString,

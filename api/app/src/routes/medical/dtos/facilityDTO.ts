@@ -1,14 +1,6 @@
 import { Facility } from "../../../models/medical/facility";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
-
-export type FacilityAddressDTO = {
-  addressLine1?: string | null;
-  addressLine2?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zip: string;
-  country?: string | null;
-};
+import { LocationAddressDTO } from "./location-address-dto";
 
 export type FacilityDTO = BaseDTO & {
   id: string;
@@ -16,7 +8,7 @@ export type FacilityDTO = BaseDTO & {
   npi: string;
   tin: string | undefined;
   active: boolean | undefined;
-  address: FacilityAddressDTO;
+  address: LocationAddressDTO;
 };
 
 export function dtoFromModel(facility: Facility): FacilityDTO {

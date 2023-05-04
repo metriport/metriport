@@ -5,7 +5,13 @@ import {
   Patient as CommonwellPatient,
   Person as CommonwellPerson,
 } from "@metriport/commonwell-sdk";
-import { GenderAtBirth, generalTypes, Patient, PatientData } from "../../models/medical/patient";
+import {
+  GenderAtBirth,
+  generalTypes,
+  Patient,
+  PatientData,
+  splitName,
+} from "../../models/medical/patient";
 import { driversLicenseURIs, medicareURI, oid, passportURI, ssnURI } from "../../shared/oid";
 
 export const genderMapping: { [k in GenderAtBirth]: string } = {
@@ -63,8 +69,8 @@ export function patientToCommonwell({
       name: [
         {
           use: NameUseCodes.usual,
-          given: [...patient.data.firstName],
-          family: [...patient.data.lastName],
+          given: splitName(patient.data.firstName),
+          family: splitName(patient.data.lastName),
         },
       ],
       gender: {
