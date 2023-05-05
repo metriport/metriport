@@ -1,4 +1,4 @@
-export type LocationAddressDTO = {
+export type AddressStrictDTO = {
   addressLine1: string;
   addressLine2?: string;
   city: string;

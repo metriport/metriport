@@ -1,11 +1,11 @@
 import { Organization, OrgType } from "../../../models/medical/organization";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
-import { LocationAddressDTO } from "./location-address-dto";
+import { AddressStrictDTO } from "./location-address-dto";
 
 export type OrganizationDTO = BaseDTO & {
   name: string;
   type: OrgType;
-  location: LocationAddressDTO;
+  location: AddressStrictDTO;
 };
 
 export function dtoFromModel(org: Organization): OrganizationDTO {

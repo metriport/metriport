@@ -44,7 +44,7 @@ export const toFHIR = (patient: Patient): FHIRPatient => {
         line: line,
         city: address.city ?? undefined,
         state: address.state ?? undefined,
-        postalCode: address.zip ?? undefined,
+        postalCode: address.zip,
         country: address.country ?? undefined,
       };
     }),

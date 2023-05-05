@@ -1,70 +1,55 @@
-import { DataTypes } from "sequelize";
 import type { Migration } from "..";
-import { PatientModel } from "../../models/medical/patient";
+
+const patientTableName = "patient";
 
 // Use 'Promise.all' when changes are independent of each other
 // Docs: https://sequelize.org/api/v6/class/src/dialects/abstract/query-interface.js~queryinterface
 export const up: Migration = async ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    const patients = (await queryInterface.select(null, PatientModel.NAME, {
+    const patients = (await queryInterface.select(null, patientTableName, {
       transaction,
     })) as any[]; //eslint-disable-line @typescript-eslint/no-explicit-any
-    const newPatients: any[] = []; //eslint-disable-line @typescript-eslint/no-explicit-any
     for (const patient of patients) {
-      let newPatientData = { ...patient.data };
-      if (newPatientData.address && !Array.isArray(newPatientData.address)) {
-        newPatientData = { ...newPatientData, address: [newPatientData.address] };
+      if (patient.data.address && !Array.isArray(patient.data.address)) {
+        patient.data.address = [patient.data.address];
       }
       if (
-        newPatientData.contact &&
-        !Array.isArray(newPatientData.contact) &&
-        (newPatientData.contact.email || newPatientData.contact.phone)
+        patient.data.contact &&
+        !Array.isArray(patient.data.contact) &&
+        (patient.data.contact.email || patient.data.contact.phone)
       ) {
-        newPatientData = { ...newPatientData, contact: [newPatientData.contact] };
+        patient.data.contact = [patient.data.contact];
       }
-      newPatients.push({ ...patient, data: { ...newPatientData } });
+      patient.data = JSON.stringify(patient.data);
     }
-    await queryInterface.bulkDelete(PatientModel.NAME, {}, { transaction });
-    console.log(newPatients[0].data.address);
-    await queryInterface.bulkInsert(
-      PatientModel.NAME,
-      newPatients,
-      { transaction },
-      { data: { type: DataTypes.JSONB } }
-    );
+    await queryInterface.bulkDelete(patientTableName, {}, { transaction });
+    await queryInterface.bulkInsert(patientTableName, patients, { transaction });
   });
 };
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    const patients = (await queryInterface.select(null, PatientModel.NAME, {
+    const patients = (await queryInterface.select(null, patientTableName, {
       transaction,
     })) as any[]; //eslint-disable-line @typescript-eslint/no-explicit-any
-    const newPatients: any[] = []; //eslint-disable-line @typescript-eslint/no-explicit-any
     for (const patient of patients) {
-      let newPatientData = { ...patient.data };
       if (
-        newPatientData.address &&
-        Array.isArray(newPatientData.address) &&
-        newPatientData.address.size > 0
+        patient.data.address &&
+        Array.isArray(patient.data.address) &&
+        patient.data.address.size > 0
       ) {
-        newPatientData = { ...newPatientData, address: newPatientData.address[0] };
+        patient.data.address = patient.data.address[0];
       }
       if (
-        newPatientData.contact &&
-        Array.isArray(newPatientData.contact) &&
-        newPatientData.contact.size > 0
+        patient.data.contact &&
+        Array.isArray(patient.data.contact) &&
+        patient.data.contact.size > 0
       ) {
-        newPatientData = { ...newPatientData, contact: newPatientData.contact[0] };
+        patient.data.contact = patient.data.contact[0];
       }
-      newPatients.push({ ...patient, data: { ...newPatientData } });
+      patient.data = JSON.stringify(patient.data);
     }
-    await queryInterface.bulkDelete(PatientModel.NAME, {}, { transaction });
-    await queryInterface.bulkInsert(
-      PatientModel.NAME,
-      newPatients,
-      { transaction },
-      { data: { type: DataTypes.JSONB } }
-    );
+    await queryInterface.bulkDelete(patientTableName, {}, { transaction });
+    await queryInterface.bulkInsert(patientTableName, patients, { transaction });
   });
 };

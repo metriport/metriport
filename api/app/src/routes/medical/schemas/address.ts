@@ -13,7 +13,7 @@ export const addressSchema = z.object({
   country: defaultOptionalString.default("USA"), // here for backwards compatibility, we'll ignore this and always default to USA
 });
 
-export const locationAddressSchema = z.object({
+export const AddressStrictSchema = z.object({
   addressLine1: z.string().min(1),
   addressLine2: defaultOptionalString,
   city: z.string().min(1),
