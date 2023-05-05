@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getApi } from "../../../shared/api";
 import { capture } from "../../../shared/notifications";
 import { sleep } from "../../../shared/util";
@@ -6,6 +7,7 @@ import { DefaultProvider } from "./connect-providers";
 import ErrorDialog, { DEFAULT_ERROR_MESSAGE } from "./error-dialog";
 import Provider from "./provider";
 import Analytics from "../../../shared/analytics";
+import Constants from "../../../shared/constants";
 
 type ProvidersProps = {
   providers: DefaultProvider[];
@@ -22,6 +24,8 @@ declare global {
 const Providers = ({ providers, connectedProviders, setConnectedProviders }: ProvidersProps) => {
   const [isLoading, setIsLoading] = useState<{ [id: string]: boolean }>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get(Constants.TOKEN_PARAM);
 
   const customEventHandler = useCallback(
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,6 +113,7 @@ const Providers = ({ providers, connectedProviders, setConnectedProviders }: Pro
           <Provider
             key={index}
             isConnected={isConnected}
+            isDisabled={!token}
             isLoading={isLoading}
             provider={value}
             onRedirect={isApple ? connectToApple : redirectToProvider}

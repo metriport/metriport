@@ -1,24 +1,16 @@
 import { MetriportData } from "@metriport/api/lib/devices/models/metriport-data";
 import Axios from "axios";
 import dayjs from "dayjs";
-import { chunk, groupBy } from "lodash";
 import { nanoid } from "nanoid";
-import { getErrorMessage } from "../../errors";
 import WebhookError from "../../errors/webhook";
-import { AppleWebhookPayload } from "../../mappings/apple";
-import { DataType, TypedData, UserData } from "../../mappings/garmin";
+import { DataType } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { getConnectedUserOrFail, getConnectedUsers } from "../connected-user/get-connected-user";
-import { getUserTokenByUAT } from "../cx-user/get-user-token";
-import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { createWebhookRequest, updateWebhookRequestStatus } from "../webhook/webhook-request";
-import { analytics, EventTypes } from "../../shared/analytics";
-import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
+import { updateWebhookRequestStatus } from "../webhook/webhook-request";
 
 const axios = Axios.create();
 
@@ -30,214 +22,18 @@ type WebhookPingPayload = {
 };
 
 // DAPI
-type WebhookUserDataPayload = {
+export type WebhookUserDataPayload = {
   [k in DataType]?: MetriportData[];
 };
-type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
-type WebhookMetadataPayload = { messageId: string; when: string };
-type WebhookDataPayload = {
-  meta: WebhookMetadataPayload;
-  users: WebhookUserPayload[];
-};
-type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
+export type WebhookMetadataPayload = { messageId: string; when: string };
 
-// MAPI
-type WebhookDocumentDataPayload = {
-  documents: DocumentReferenceDTO[];
-};
-type WebhookPatientPayload = { patientId: string } & WebhookDocumentDataPayload;
-type WebhookPatientDataPayload = {
-  meta: WebhookMetadataPayload;
-  patients: WebhookPatientPayload[];
-};
-type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload, "meta">;
-
-// TODO #163 - break this up, it has Garmin-specific logic that should live on its own file
-/**
- * Does the bulk of processing webhook incoming data, including storing and sending
- * to Customers/accounts.
- *
- * @param {UserData} data The data coming from a Provider, already converted to our internal format
- */
-export const processData = async <T extends MetriportData>(data: UserData<T>[]): Promise<void> => {
-  try {
-    // the same Garmin user/UAT might be associated with multiple Metriport Customers
-    // convert "data + UAT" into "data + list of users/customers"
-    const dataWithListOfCxIdAndUserId = await Promise.all(
-      data.map(async d => {
-        const uat = d.user.userAccessToken;
-        const userTokens = await getUserTokenByUAT({
-          oauthUserAccessToken: uat,
-        });
-        const connectedUsers = (
-          await Promise.all(
-            userTokens.map(async ut => {
-              // not setting user on capture bc this is running in parallel/asynchronously
-              return getConnectedUsers({
-                cxId: ut.cxId,
-                ids: [ut.userId],
-              });
-            })
-          )
-        ).flatMap(u => u);
-        const cxIdAndUserIdList = connectedUsers.map(t => ({
-          cxId: t.cxId,
-          cxUserId: t.cxUserId,
-        }));
-        if (cxIdAndUserIdList.length < 1) {
-          log(`Could not find account for UAT ${uat}`);
-        }
-        return { typedData: d.typedData, cxIdAndUserIdList };
-      })
-    );
-    // Flatten the list so each item has one cxId/userId and one data record
-    const dataByUser = dataWithListOfCxIdAndUserId.flatMap(v =>
-      v.cxIdAndUserIdList.map(({ cxId, cxUserId }) => ({
-        cxId,
-        cxUserId,
-        typedData: v.typedData,
-      }))
-    );
-    // Group all the data records for the same cxId
-    const dataByCustomer = groupBy(dataByUser, v => v.cxId);
-    // Process all data for the same Customer in one Promise, run all in parallel
-    await Promise.allSettled(
-      Object.keys(dataByCustomer).map(async cxId => {
-        try {
-          // flat list of each data record and its respective user
-          const dataAndUserList = dataByCustomer[cxId].map(v => ({
-            cxUserId: v.cxUserId,
-            typedData: v.typedData,
-          }));
-          // split the list in chunks
-          const chunks = chunk(dataAndUserList, 10);
-          // transform each chunk into a payload
-          const payloads = chunks.map(c => {
-            // groups by user
-            const dataByUser = groupBy(c, v => v.cxUserId);
-            // now convert that into an array of WebhookUserPayload (all the data of a user for this chunk)
-            const users: WebhookUserPayload[] = [];
-            for (const cxUserId of Object.keys(dataByUser)) {
-              const usersData = dataByUser[cxUserId].map(dbu => dbu.typedData);
-              // for each user, group together data by type
-              const usersDataByType = groupBy(usersData, ud => ud.type);
-              const data: MetriportData[] = [];
-              for (const type of Object.keys(usersDataByType)) {
-                const dataOfType: TypedData<MetriportData>[] = usersDataByType[type];
-                data.push(...dataOfType.map(d => d.data));
-                users.push({
-                  userId: cxUserId,
-                  [type]: data,
-                });
-              }
-            }
-            const payload: WebhookDataPayloadWithoutMessageId = { users };
-            return payload;
-          });
-          // now that we have a all the chunks for one customer, process them
-          const settings = await getSettingsOrFail({ id: cxId });
-
-          analytics({
-            distinctId: cxId,
-            event: EventTypes.query,
-            properties: {
-              method: "POST",
-              url: "/webhook/garmin",
-              apiType: ApiTypes.devices,
-            },
-          });
-          await processOneCustomer(cxId, settings, payloads);
-          reportUsage(
-            cxId,
-            dataAndUserList.map(du => du.cxUserId)
-          );
-        } catch (err) {
-          const msg = getErrorMessage(err);
-          log(`Failed to process data of customer ${cxId}: ${msg}`);
-          capture.error(err, {
-            extra: { context: `webhook.processData.customer` },
-          });
-        }
-      })
-    );
-  } catch (err) {
-    log(`Error on processData: `, err);
-    capture.error(err, {
-      extra: { context: `webhook.processData.global` },
-    });
-  }
-};
-
-export const processAppleData = async (
-  data: AppleWebhookPayload,
-  metriportUserId: string,
-  cxId: string
-): Promise<void> => {
-  try {
-    const connectedUser = await getConnectedUserOrFail({ id: metriportUserId, cxId });
-
-    const settings = await getSettingsOrFail({ id: connectedUser.cxId });
-    await processOneCustomer(connectedUser.cxId, settings, [
-      { users: [{ userId: metriportUserId, ...data }] },
-    ]);
-    reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
-  } catch (err) {
-    log(`Error on processAppleData: `, err);
-    capture.error(err, {
-      extra: { metriportUserId, context: `webhook.processAppleData` },
-    });
-  }
-};
-
-const reportUsage = (cxId: string, cxUserIds: string[]): void => {
+export const reportUsage = (cxId: string, cxUserIds: string[]): void => {
   cxUserIds.forEach(cxUserId => [
     reportUsageCmd({ cxId, cxUserId, apiType: ApiTypes.devices }).catch(err => {
       log(`Failed to report usage (${{ cxId, cxUserId, apiType: ApiTypes.devices }}): `, err);
       capture.error(err, { extra: { cxUserId, apiType: ApiTypes.devices } });
     }),
   ]);
-};
-
-const processOneCustomer = async (
-  cxId: string,
-  settings: Settings,
-  payloads: WebhookDataPayloadWithoutMessageId[]
-): Promise<boolean> => {
-  for (const payload of payloads) {
-    // create a representation of this request and store on the DB
-    const webhookRequest = await createWebhookRequest({ cxId, payload });
-    // send it to the customer and update the request status
-    const success = await processRequest(webhookRequest, settings);
-    // give it some time to prevent flooding the customer
-    if (success) await Util.sleep(Math.random() * 200);
-  }
-  return true;
-};
-
-export const processPatientRequest = async (
-  cxId: string,
-  patientId: string,
-  documents: DocumentReferenceDTO[]
-): Promise<boolean> => {
-  try {
-    const settings = await getSettingsOrFail({ id: cxId });
-    // create a representation of this request and store on the DB
-    const payload: WebhookPatientDataPayloadWithoutMessageId = {
-      patients: [{ patientId, documents }],
-    };
-    const webhookRequest = await createWebhookRequest({ cxId, payload });
-    // send it to the customer and update the request status
-    await processRequest(webhookRequest, settings, ApiTypes.medical);
-
-    // TODO: #484
-    // reportUsage(cxId, ...);
-  } catch (err) {
-    log(`Error on processPatientRequest: `, err);
-    capture.error(err, {
-      extra: { patientId, context: `webhook.processPatientRequest` },
-    });
-  }
-  return true;
 };
 
 export const processRequest = async (
@@ -348,7 +144,7 @@ export const processRequest = async (
   return false;
 };
 
-const sendPayload = async (
+export const sendPayload = async (
   payload: unknown,
   url: string,
   apiKey: string,

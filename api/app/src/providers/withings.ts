@@ -88,6 +88,25 @@ export class Withings extends Provider implements OAuth2 {
     return JSON.stringify(response.data.body);
   }
 
+  async subscribeToWebhooks(token: string, callbackUrl: string) {
+    const access_token = JSON.parse(token).access_token;
+    const webhookCategories = [1, 2, 4, 16, 44, 54, 58];
+
+    for (const category of webhookCategories) {
+      const resp = await axios.post(
+        "https://wbsapi.withings.net/notify",
+        `action=subscribe&callbackurl=${callbackUrl}/&appli=${category}`,
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        }
+      );
+
+      console.log(resp.data, "success");
+    }
+  }
+
   async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
     const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_WITHINGS);
 
@@ -210,6 +229,7 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async fetchActivityData(accessToken: string, date: string): Promise<WithingsActivityLogs> {
+    console.log(date);
     const params = {
       action: "getactivity",
       startdateymd: date,

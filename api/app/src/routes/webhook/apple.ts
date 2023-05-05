@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-
-import { processAppleData } from "../../command/webhook/webhook";
+import { processAppleData } from "../../command/webhook/apple";
 import { appleSchema, mapData } from "../../mappings/apple";
 import { asyncHandler, getCxIdOrFail } from "../util";
 

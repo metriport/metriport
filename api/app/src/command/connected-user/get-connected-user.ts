@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import NotFoundError from "../../errors/not-found";
 import { ConnectedUser } from "../../models/connected-user";
 import { ProviderOptions } from "../../shared/constants";
@@ -51,4 +52,26 @@ export const getConnectedUsers = async ({
       cxId,
     },
   });
+};
+
+export const getConnectedUserByTokenOrFail = async (
+  provider: string,
+  str: string
+): Promise<ConnectedUser> => {
+  const connectedUser = await ConnectedUser.findOne({
+    where: {
+      providerMap: {
+        [provider]: {
+          token: {
+            [Op.like]: "%" + str + "%",
+          },
+        },
+      },
+    },
+  });
+
+  if (!connectedUser)
+    throw new NotFoundError(`Could not find connected user with str matching token`);
+
+  return connectedUser;
 };

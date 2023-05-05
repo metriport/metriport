@@ -26,7 +26,7 @@ import { createS3FileName } from "../../../shared/external";
 import { getFileName } from "./shared";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
-import { processPatientRequest } from "../../../command/webhook/webhook";
+import { processPatientRequest } from "../../../command/webhook/medical";
 
 const s3client = new AWS.S3();
 
