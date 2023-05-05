@@ -227,7 +227,6 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async fetchActivityData(accessToken: string, date: string): Promise<WithingsActivityLogs> {
-    console.log(date);
     const params = {
       action: "getactivity",
       startdateymd: date,
