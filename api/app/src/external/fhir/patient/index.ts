@@ -1,5 +1,5 @@
 import { Patient as FHIRPatient, Identifier } from "@medplum/fhirtypes";
-import { Patient } from "../../../models/medical/patient";
+import { Patient, splitName } from "../../../models/medical/patient";
 import { GenderAtBirth } from "../../../models/medical/patient";
 import { PersonalIdentifier } from "../../../models/medical/patient";
 import { driversLicenseURIs } from "../../../shared/oid";
@@ -19,28 +19,35 @@ export const toFHIR = (patient: Patient): FHIRPatient => {
     name: [
       {
         family: patient.data.lastName,
-        given: [patient.data.firstName],
+        given: splitName(patient.data.firstName),
       },
     ],
     telecom: patient.data.contact
-      ? Object.entries(patient.data.contact).map(([key, val]) => {
-          return {
-            system: key as ContactTypes,
-            value: val,
-          };
+      ? patient.data.contact.map(contact => {
+          return contact
+            ? Object.entries(contact).map(([key, val]) => {
+                return {
+                  system: key as ContactTypes,
+                  value: val ?? undefined,
+                };
+              })[0]
+            : {};
         })
       : undefined,
     gender: genderMapping[patient.data.genderAtBirth],
     birthDate: patient.data.dob,
-    address: [
-      {
-        line: [patient.data.address.addressLine1],
-        city: patient.data.address.city,
-        state: patient.data.address.state,
-        postalCode: patient.data.address.zip,
-        country: patient.data.address.country,
-      },
-    ],
+    address: patient.data.address.map(address => {
+      const line: string[] = [];
+      if (address.addressLine1) line.push(address.addressLine1);
+      if (address.addressLine2) line.push(address.addressLine2);
+      return {
+        line: line,
+        city: address.city ?? undefined,
+        state: address.state ?? undefined,
+        postalCode: address.zip,
+        country: address.country ?? undefined,
+      };
+    }),
   };
 };
 

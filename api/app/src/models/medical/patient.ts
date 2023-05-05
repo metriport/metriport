@@ -59,8 +59,8 @@ export type PatientData = {
   dob: string;
   genderAtBirth: GenderAtBirth;
   personalIdentifiers: PersonalIdentifier[];
-  address: Address;
-  contact?: Contact;
+  address: Address[];
+  contact?: Contact[];
   documentQueryStatus?: DocumentQueryStatus;
   documentQueryProgress?: DocumentQueryProgress;
   externalData?: PatientExternalData;
@@ -71,6 +71,14 @@ export interface PatientCreate extends BaseDomainCreate {
   facilityIds: string[];
   patientNumber: number;
   data: PatientData;
+}
+
+export function splitName(name: string): string[] {
+  return name.split(/[\s,]+/);
+}
+
+export function joinName(name: string[]): string {
+  return name.join(" ");
 }
 
 export interface Patient extends BaseDomain, PatientCreate {}

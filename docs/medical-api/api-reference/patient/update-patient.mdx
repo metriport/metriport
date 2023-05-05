@@ -45,17 +45,21 @@ const patient = await metriport.updatePatient(
         value: "51227265",
       },
     ],
-    address: {
-      zip: "12345",
-      city: "San Diego",
-      state: USState.CA,
-      country: "USA",
-      addressLine1: "Guadalajara Sreet",
-    },
-    contact: {
-      phone: "1234567899",
-      email: "jose@domain.com",
-    },
+    address: [
+      {
+        zip: "12345",
+        city: "San Diego",
+        state: USState.CA,
+        country: "USA",
+        addressLine1: "Guadalajara Sreet",
+      },
+    ],
+    contact: [
+      {
+        phone: "1234567899",
+        email: "jose@domain.com",
+      },
+    ],
   },
   "2.16.840.1.113883.3.666.5.2004.4.2005"
 );

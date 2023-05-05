@@ -1,7 +1,7 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
 import { BaseModel, ModelSetup } from "../_default";
-import { Address } from "./address";
+import { AddressStrict } from "./location-address";
 
 export enum OrgType {
   acuteCare = "acuteCare",
@@ -15,7 +15,7 @@ export enum OrgType {
 export type OrganizationData = {
   name: string;
   type: OrgType;
-  location: Address;
+  location: AddressStrict;
 };
 
 export interface OrganizationCreate extends BaseDomainCreate {
