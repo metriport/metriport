@@ -10,7 +10,7 @@ import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes } from "../usage/report-usage";
 import { analytics, EventTypes } from "../../shared/analytics";
 import {
-  reportUsage,
+  reportDevicesUsage,
   WebhookMetadataPayload,
   WebhookUserDataPayload,
   processRequest,
@@ -122,7 +122,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
             },
           });
           await processOneCustomer(cxId, settings, payloads);
-          reportUsage(
+          reportDevicesUsage(
             cxId,
             dataAndUserList.map(du => du.cxUserId)
           );

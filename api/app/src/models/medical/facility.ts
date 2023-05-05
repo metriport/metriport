@@ -1,14 +1,14 @@
 import { CreationOptional, DataTypes, Sequelize } from "sequelize";
 import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
 import { BaseModel, ModelSetup } from "../_default";
-import { Address } from "./address";
+import { AddressStrict } from "./location-address";
 
 export type FacilityData = {
   name: string;
   npi: string;
   tin?: string;
   active?: boolean;
-  address: Address;
+  address: AddressStrict;
 };
 
 export interface FacilityCreate extends BaseDomainCreate {

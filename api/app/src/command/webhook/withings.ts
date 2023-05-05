@@ -5,7 +5,7 @@ import { getSettingsOrFail } from "../settings/getSettings";
 import { Constants } from "../../shared/constants";
 import { ConnectedUser } from "../../models/connected-user";
 import { createWebhookRequest } from "./webhook-request";
-import { processRequest, WebhookUserDataPayload, reportUsage } from "./webhook";
+import { processRequest, WebhookUserDataPayload, reportDevicesUsage } from "./webhook";
 import { capture } from "../../shared/notifications";
 
 export type WithingsWebhook = {
@@ -47,7 +47,7 @@ export const processData = async (data: WithingsWebhook) => {
     const webhookRequest = await createWebhookRequest({ cxId, payload });
 
     await processRequest(webhookRequest, settings);
-    reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
+    reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (error) {
     capture.error(error, {
       extra: { context: `webhook.withings.processData` },

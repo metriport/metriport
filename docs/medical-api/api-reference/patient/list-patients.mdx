@@ -49,37 +49,40 @@ const patients = await metriport.listPatients("2.16.840.1.113883.3.666.5.2004.4.
           "value": "51227265"
         }
       ],
-      "address": {
-        "zip": "12345",
-        "city": "San Diego",
-        "state": "CA",
-        "country": "USA",
-        "addressLine1": "Guadalajara St"
-      },
-      "contact": {
-        "phone": "1234567899",
-        "email": "jose@domain.com"
-      }
+      "address": [
+        {
+          "zip": "12345",
+          "city": "San Diego",
+          "state": "CA",
+          "country": "USA",
+          "addressLine1": "Guadalajara St"
+        }
+      ],
+      "contact": [
+        {
+          "phone": "1234567899",
+          "email": "jose@domain.com"
+        }
+      ]
     },
     {
       "id": "2.16.840.1.113883.3.666.888",
       "facilityIds": ["2.16.840.1.113883.3.666.5.2004.4.2005"],
       "firstName": "Josita",
-      "lastName": "Juarez",
+      "lastName": "Juarez,Diaz",
       "dob": "1949-06-09",
       "genderAtBirth": "F",
       "personalIdentifiers": [],
-      "address": {
-        "zip": "12345",
-        "city": "San Diego",
-        "state": "CA",
-        "country": "USA",
-        "addressLine1": "Guadalajara St"
-      },
-      "contact": {
-        "phone": "1234569999",
-        "email": "josita@domain.com"
-      }
+      "address": [
+        {
+          "zip": "12345",
+          "city": "San Diego",
+          "state": "CA",
+          "country": "USA",
+          "addressLine1": "Guadalajara St"
+        },
+        { "zip": 66543 }
+      ]
     }
   ]
 }

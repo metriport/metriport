@@ -6,6 +6,12 @@ import {
 } from "../../../models/medical/patient";
 import { USState } from "../../../shared/geographic-locations";
 import { addressSchema } from "./address";
+import {
+  defaultDateString,
+  defaultNameString,
+  defaultOptionalString,
+  stripNonNumericChars,
+} from "./shared";
 
 const usStateSchema = z.nativeEnum(USState);
 
@@ -40,17 +46,27 @@ export const personalIdentifierSchema = basePersonalIdentifierSchema.merge(
 // .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
+const phoneLength = 10;
+export const contactSchema = z
+  .object({
+    phone: z.coerce
+      .string()
+      .transform(phone => stripNonNumericChars(phone))
+      .refine(phone => phone.length === phoneLength, {
+        message: `Phone must be a string consisting of ${phoneLength} numbers. For example: 4153245540`,
+      })
+      .or(defaultOptionalString),
+    email: z.string().email().or(defaultOptionalString),
+  })
+  .refine(c => c.email || c.phone, { message: "Either email or phone must be present" });
 export const patientCreateSchema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  dob: z.string().length(10), // YYYY-MM-DD
+  firstName: defaultNameString,
+  lastName: defaultNameString,
+  dob: defaultDateString,
   genderAtBirth: z.enum(genderAtBirthTypes),
   personalIdentifiers: z.array(personalIdentifierSchema),
-  address: addressSchema,
-  contact: z.object({
-    phone: z.string().length(10).or(z.undefined()),
-    email: z.string().email().or(z.undefined()),
-  }),
+  address: z.array(addressSchema).or(addressSchema),
+  contact: z.array(contactSchema).optional().or(contactSchema.optional()),
 });
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
 
@@ -61,10 +77,13 @@ export function schemaCreateToPatient(input: PatientCreate, cxId: string) {
   return {
     ...input,
     cxId,
-    address: {
-      ...input.address,
-      addressLine2: input.address.addressLine2 ?? undefined,
-    },
+    address: Array.isArray(input.address) ? input.address : [input.address],
+    contact:
+      input.contact && Array.isArray(input.contact)
+        ? input.contact
+        : input.contact
+        ? [input.contact]
+        : undefined,
   };
 }
 

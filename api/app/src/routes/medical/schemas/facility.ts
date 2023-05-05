@@ -1,6 +1,6 @@
 import { validateNPI } from "@metriport/commonwell-sdk/lib/common/validate-npi";
 import { z } from "zod";
-import { addressSchema } from "./address";
+import { AddressStrictSchema } from "./address";
 import { optionalString } from "./shared";
 
 export const facilityCreateSchema = z.object({
@@ -11,7 +11,7 @@ export const facilityCreateSchema = z.object({
     .refine(npi => validateNPI(npi), { message: "NPI is not valid" }),
   tin: optionalString(z.string()),
   active: z.boolean().optional().nullable(),
-  address: addressSchema,
+  address: AddressStrictSchema,
 });
 
 export const facilityUpdateSchema = facilityCreateSchema;

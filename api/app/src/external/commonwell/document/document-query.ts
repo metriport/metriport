@@ -1,32 +1,32 @@
+import { DocumentReference } from "@medplum/fhirtypes";
 import {
   CommonwellError,
   Document,
-  OperationOutcome,
   documentReferenceResourceType,
+  OperationOutcome,
   operationOutcomeResourceType,
 } from "@metriport/commonwell-sdk";
-import { DocumentReference } from "@medplum/fhirtypes";
-import { PassThrough } from "stream";
 import * as AWS from "aws-sdk";
+import { PassThrough } from "stream";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
-import { Patient } from "../../../models/medical/patient";
-import { Organization } from "../../../models/medical/organization";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import { Facility } from "../../../models/medical/facility";
+import { Organization } from "../../../models/medical/organization";
+import { Patient } from "../../../models/medical/patient";
+import { toDTO } from "../../../routes/medical/dtos/documentDTO";
+import { Config } from "../../../shared/config";
+import { createS3FileName } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
+import { toFHIR as toFHIRDocRef } from "../../fhir/document";
+import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
-import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { toFHIR as toFHIRDocRef } from "../../fhir/document";
-import { DocumentWithFilename } from "./shared";
-import { Config } from "../../../shared/config";
-import { createS3FileName } from "../../../shared/external";
-import { getFileName } from "./shared";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { processPatientRequest } from "../../../command/webhook/medical";
+import { DocumentWithFilename, getFileName } from "./shared";
 
 const s3client = new AWS.S3();
 
@@ -55,6 +55,8 @@ export async function queryDocuments({
       facilityId,
       documents: cwDocuments,
     });
+
+    reportDocQuery(patient);
 
     // send webhook to cx async when docs are done processing
     processPatientRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
@@ -263,4 +265,12 @@ async function downloadDocsAndUpsertFHIR({
   );
 
   return docsNewLocation;
+}
+
+function reportDocQuery(patient: Patient): void {
+  reportUsage({
+    cxId: patient.cxId,
+    entityId: patient.id,
+    apiType: ApiTypes.medical,
+  });
 }

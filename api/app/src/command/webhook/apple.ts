@@ -2,7 +2,7 @@ import { AppleWebhookPayload } from "../../mappings/apple";
 import { capture } from "../../shared/notifications";
 import { getConnectedUserOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { reportUsage, processRequest } from "./webhook";
+import { reportDevicesUsage, processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 import { Util } from "../../shared/util";
 
@@ -21,7 +21,7 @@ export const processAppleData = async (
     const webhookRequest = await createWebhookRequest({ cxId, payload });
 
     await processRequest(webhookRequest, settings);
-    reportUsage(connectedUser.cxId, [connectedUser.cxUserId]);
+    reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (err) {
     log(`Error on processAppleData: `, err);
     capture.error(err, {

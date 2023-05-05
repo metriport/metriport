@@ -27,13 +27,9 @@ export type WebhookUserDataPayload = {
 };
 export type WebhookMetadataPayload = { messageId: string; when: string };
 
-export const reportUsage = (cxId: string, cxUserIds: string[]): void => {
-  cxUserIds.forEach(cxUserId => [
-    reportUsageCmd({ cxId, cxUserId, apiType: ApiTypes.devices }).catch(err => {
-      log(`Failed to report usage (${{ cxId, cxUserId, apiType: ApiTypes.devices }}): `, err);
-      capture.error(err, { extra: { cxUserId, apiType: ApiTypes.devices } });
-    }),
-  ]);
+export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
+  const apiType = ApiTypes.devices;
+  cxUserIds.forEach(cxUserId => reportUsageCmd({ cxId, entityId: cxUserId, apiType }));
 };
 
 export const processRequest = async (
