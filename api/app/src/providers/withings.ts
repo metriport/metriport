@@ -93,7 +93,7 @@ export class Withings extends Provider implements OAuth2 {
     const webhookCategories = [1, 2, 4, 16, 44, 54, 58];
 
     for (const category of webhookCategories) {
-      const resp = await axios.post(
+      await axios.post(
         "https://wbsapi.withings.net/notify",
         `action=subscribe&callbackurl=${callbackUrl}/&appli=${category}`,
         {
@@ -102,8 +102,6 @@ export class Withings extends Provider implements OAuth2 {
           },
         }
       );
-
-      console.log(resp.data, "success");
     }
   }
 
