@@ -104,11 +104,11 @@ export class Withings extends Provider implements OAuth2 {
       biometricsCategories,
       sleepCategory,
     ].flat();
-
+    const subscriptionUrl = "https://wbsapi.withings.net/notify";
     for (const category of webhookCategories) {
-      const subUrl = `https://wbsapi.withings.net/notify?action=subscribe&callbackurl=${callbackUrl}&appli=${category}`;
+      const subscriptionBody = `action=subscribe&callbackurl=${callbackUrl}&appli=${category}`;
       try {
-        const resp = await axios.post(subUrl, undefined, {
+        const resp = await axios.post(subscriptionUrl, subscriptionBody, {
           headers: {
             Authorization: `Bearer ${access_token}`,
           },
@@ -116,7 +116,7 @@ export class Withings extends Provider implements OAuth2 {
         console.log(resp.data);
       } catch (error) {
         capture.error(error, {
-          extra: { context: `withings.postAuth`, url: subUrl },
+          extra: { context: `withings.postAuth`, subscriptionUrl, subscriptionBody },
         });
 
         throw new Error(`WH subscription failed Withings`, { cause: error });
