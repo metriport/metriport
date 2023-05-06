@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { addressSchema } from "./common/address";
 import { usStateSchema } from "./common/us-data";
+import {
+  defaultDateString,
+  defaultNameString,
+  defaultOptionalString,
+  stripNonNumericChars,
+} from "../../shared";
 
 const basePersonalIdentifierSchema = z.object({
   value: z.string(),
@@ -31,18 +37,27 @@ export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
 export const genderAtBirthSchema = z.enum(["F", "M"]);
 
-export const contactSchema = z.object({
-  phone: z.string().length(10).or(z.undefined()),
-  email: z.string().email().or(z.undefined()),
-});
+const phoneLength = 10;
+export const contactSchema = z
+  .object({
+    phone: z.coerce
+      .string()
+      .transform(phone => stripNonNumericChars(phone))
+      .refine(phone => phone.length === phoneLength, {
+        message: `Phone must be a string consisting of ${phoneLength} numbers. For example: 4153245540`,
+      })
+      .or(defaultOptionalString),
+    email: z.string().email().or(defaultOptionalString),
+  })
+  .refine(c => c.email || c.phone, { message: "Either email or phone must be present" });
 
 export const demographicsSchema = z.object({
-  firstName: z.string(),
-  lastName: z.string(),
-  dob: z.string(), // YYYY-MM-DD
+  firstName: defaultNameString,
+  lastName: defaultNameString,
+  dob: defaultDateString,
   genderAtBirth: genderAtBirthSchema,
-  personalIdentifiers: z.array(personalIdentifierSchema),
-  address: addressSchema,
-  contact: contactSchema.optional(),
+  personalIdentifiers: z.array(personalIdentifierSchema).optional(),
+  address: z.array(addressSchema).or(addressSchema),
+  contact: z.array(contactSchema).optional().or(contactSchema.optional()),
 });
 export type Demographics = z.infer<typeof demographicsSchema>;

@@ -7,6 +7,7 @@ export type ProviderProps = {
   provider: DefaultProvider;
   isLoading: { [id: string]: boolean };
   isConnected: boolean;
+  isDisabled: boolean;
   onRedirect: (provider: string) => void;
 };
 

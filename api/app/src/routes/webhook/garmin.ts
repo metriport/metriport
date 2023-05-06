@@ -1,7 +1,7 @@
 import { MetriportData } from "@metriport/api/lib/devices/models/metriport-data";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { processData } from "../../command/webhook/webhook";
+import { processData } from "../../command/webhook/garmin";
 import { processAsyncError } from "../../errors";
 import { UserData } from "../../mappings/garmin";
 import { garminActivityListSchema, mapToActivity } from "../../mappings/garmin/activity";

@@ -25,7 +25,9 @@ export const getApi = () => {
 export function getApiToken(searchParams: URLSearchParams): string {
   const apiToken = searchParams.get(Constants.TOKEN_PARAM);
   if (!apiToken) {
-    throw new Error(`Missing query param ${Constants.TOKEN_PARAM}!`);
+    throw new Error(
+      `Missing query param ${Constants.TOKEN_PARAM}! To learn more go to the Connect Widget overview in our documentation.`
+    );
   }
   return apiToken;
 }

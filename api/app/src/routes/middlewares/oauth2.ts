@@ -33,4 +33,6 @@ export const processOAuth2 = async (
       token: token,
     },
   });
+
+  Constants.PROVIDER_OAUTH2_MAP[provider].postAuth?.(token);
 };

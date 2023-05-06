@@ -46,35 +46,37 @@ export const getPatientByDemo = async ({
         [Op.contains]: [facilityId],
       },
       data: {
-        firstName: demo.firstName,
-        lastName: demo.lastName,
         dob: demo.dob,
-        address: {
-          addressLine1: demo.address.addressLine1,
-          city: demo.address.city,
-          state: demo.address.state,
-          zip: demo.address.zip,
-          country: demo.address.country,
-          ...(demo.address.addressLine2 ? { addressLine2: demo.address.addressLine2 } : undefined),
-        },
-        contact: demo.contact,
+        genderAtBirth: demo.genderAtBirth,
       },
     },
   });
 
-  // Check for personal identifiers in memory, we were having a hard time to get the query to work with Sequelize
+  // TODO: #656 Check for personal identifiers & demo in memory, we were having a hard time to get the query to work with Sequelize
   // Consider checking this out if trying to move this to the query: https://github.com/sequelize/sequelize/issues/5173
-  let matchingPatients: Patient[];
-  if (demo.personalIdentifiers && demo.personalIdentifiers.length > 0) {
-    matchingPatients = patients.filter(
-      p =>
-        intersectionWith(p.data.personalIdentifiers, demo.personalIdentifiers, isEqual).length > 0
-    );
-  } else {
-    matchingPatients = patients;
-  }
+  const matchingPatients = patients.filter(patient => {
+    // First, check for an ID match - if it's a match, don't bother checking for demo
+    if (
+      demo.personalIdentifiers &&
+      demo.personalIdentifiers.length > 0 &&
+      intersectionWith(patient.data.personalIdentifiers, demo.personalIdentifiers, isEqual).length >
+        0
+    ) {
+      return true;
+    }
+    // If the IDs don't match, or none were provided, check the demo for a match
+    let demoMatch =
+      intersectionWith(patient.data.firstName, demo.firstName, isEqual).length > 0 &&
+      intersectionWith(patient.data.lastName, demo.lastName, isEqual).length > 0 &&
+      intersectionWith(patient.data.address, demo.address, isEqual).length > 0;
+    if (demoMatch && demo.contact && demo.contact.length > 0) {
+      demoMatch = intersectionWith(patient.data.contact, demo.contact, isEqual).length > 0;
+    }
+    return demoMatch;
+  });
   if (matchingPatients.length === 0) return null;
   if (matchingPatients.length === 1) return matchingPatients[0];
+
   const chosenOne = matchingPatients[0];
 
   const msg = `Found more than one patient with the same demo`;
