@@ -8,7 +8,7 @@ export enum MedicalDataSource {
 
 const linkDemographics = demographicsSchema
   .omit({ address: true })
-  .merge(z.object({ address: addressSchema }));
+  .merge(z.object({ address: z.array(addressSchema).or(addressSchema) }));
 
 export const linkSchema = z.object({
   entityId: z.string(),
