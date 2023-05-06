@@ -26,6 +26,12 @@ import {
 } from "../mappings/withings/models/measurements";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
 import { Util } from "../shared/util";
+import {
+  activityCategory,
+  bodyCategory,
+  biometricsCategories,
+  sleepCategory,
+} from "../command/webhook/withings";
 
 export class Withings extends Provider implements OAuth2 {
   static URL = "https://wbsapi.withings.net";
@@ -88,12 +94,18 @@ export class Withings extends Provider implements OAuth2 {
     return JSON.stringify(response.data.body);
   }
 
-  async subscribeToWebhooks(token: string, callbackUrl: string) {
+  async postAuth(token: string) {
+    const callbackUrl = `${Config.getApiUrl()}/webhook/${PROVIDER_WITHINGS}`;
     const access_token = JSON.parse(token).access_token;
-    const webhookCategories = [1, 2, 4, 16, 44, 54, 58];
+    const webhookCategories = [
+      activityCategory,
+      bodyCategory,
+      biometricsCategories,
+      sleepCategory,
+    ].flat();
 
     for (const category of webhookCategories) {
-      await axios.post(
+      const resp = await axios.post(
         "https://wbsapi.withings.net/notify",
         `action=subscribe&callbackurl=${callbackUrl}/&appli=${category}`,
         {
@@ -102,6 +114,7 @@ export class Withings extends Provider implements OAuth2 {
           },
         }
       );
+      console.log(resp.data);
     }
   }
 

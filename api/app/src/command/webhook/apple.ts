@@ -6,7 +6,7 @@ import { reportDevicesUsage, processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 import { Util } from "../../shared/util";
 
-const log = Util.log(`Webhook`);
+const log = Util.log(`Apple Webhook`);
 
 export const processAppleData = async (
   data: AppleWebhookPayload,

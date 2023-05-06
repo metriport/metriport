@@ -16,10 +16,10 @@ export type WithingsWebhook = {
   appli: string;
 };
 
-const activityCategory = "16";
-const bodyCategory = "1";
-const biometricsCategories = ["2", "4", "54", "58"];
-const sleepCategory = "44";
+export const activityCategory = "16";
+export const bodyCategory = "1";
+export const biometricsCategories = ["2", "4", "54", "58"];
+export const sleepCategory = "44";
 
 export const processData = async (data: WithingsWebhook) => {
   const categoryNum = data.appli;
@@ -50,7 +50,7 @@ export const processData = async (data: WithingsWebhook) => {
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (error) {
     capture.error(error, {
-      extra: { context: `webhook.withings.processData` },
+      extra: { data, context: `webhook.withings.processData` },
     });
   }
 };
@@ -66,19 +66,13 @@ export const mapData = async (
   if (categoryNum === activityCategory) {
     const activity = await provider.getActivityData(connectedUser, startdate);
     payload.activity = [activity];
-  }
-
-  if (categoryNum === bodyCategory) {
+  } else if (categoryNum === bodyCategory) {
     const body = await provider.getBodyData(connectedUser, startdate);
     payload.body = [body];
-  }
-
-  if (biometricsCategories.includes(categoryNum)) {
+  } else if (biometricsCategories.includes(categoryNum)) {
     const biometrics = await provider.getBiometricsData(connectedUser, startdate);
     payload.biometrics = [biometrics];
-  }
-
-  if (categoryNum === sleepCategory) {
+  } else if (categoryNum === sleepCategory) {
     const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format("YYYY-MM-DD"));
     payload.sleep = [sleep];
   }

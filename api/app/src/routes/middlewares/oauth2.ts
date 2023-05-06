@@ -10,7 +10,7 @@ export const processOAuth2 = async (
   authCode: string | undefined,
   cxId: string | undefined,
   userId: string | undefined
-): Promise<void> => {
+): Promise<string> => {
   // get the cx/user ids from DDB if this isn't cloud mode
   if (!Config.isCloudEnv()) {
     const useToken = await getUserToken({ token: state });
@@ -24,10 +24,6 @@ export const processOAuth2 = async (
   const token = await Constants.PROVIDER_OAUTH2_MAP[provider].getTokenFromAuthCode(authCode);
   if (!token) throw new UnauthorizedError();
 
-  // subscribe to webhooks if available
-  const callbackUrl = `${Config.getApiUrl()}/webhook/${provider}`;
-  await Constants.PROVIDER_OAUTH2_MAP[provider].subscribeToWebhooks?.(token, callbackUrl);
-
   // save the access token in the provider map
   await updateProviderData({
     id: userId,
@@ -37,4 +33,6 @@ export const processOAuth2 = async (
       token: token,
     },
   });
+
+  return token;
 };

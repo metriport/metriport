@@ -25,7 +25,7 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
-import { processPatientRequest } from "../../../command/webhook/medical";
+import { processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { DocumentWithFilename, getFileName } from "./shared";
 
 const s3client = new AWS.S3();
@@ -59,7 +59,7 @@ export async function queryDocuments({
     reportDocQuery(patient);
 
     // send webhook to cx async when docs are done processing
-    processPatientRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
+    processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
   } catch (err) {
     console.log(`Error: `, err);
     capture.error(err, {

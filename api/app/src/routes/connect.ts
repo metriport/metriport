@@ -107,7 +107,8 @@ router.get(
         const provider = providerOAuth2.data;
         const cxId = getCxIdFromHeaders(req);
         const userId = getUserIdFrom("headers", req).optional();
-        await processOAuth2(provider, state, authCode, cxId, userId);
+        const token = await processOAuth2(provider, state, authCode, cxId, userId);
+        Constants.PROVIDER_OAUTH2_MAP[provider].postAuth?.(token);
         return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
       }
 

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-
 import { asyncHandler } from "../util";
 import { processData } from "../../command/webhook/withings";
 

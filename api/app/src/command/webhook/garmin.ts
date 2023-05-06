@@ -18,7 +18,7 @@ import {
 import { Settings } from "../../models/settings";
 import { createWebhookRequest } from "./webhook-request";
 
-const log = Util.log(`Webhook`);
+const log = Util.log(`Garmin Webhook`);
 
 type WebhookDataPayload = {
   meta: WebhookMetadataPayload;
@@ -27,7 +27,6 @@ type WebhookDataPayload = {
 type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
 type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
 
-// TODO #163 - break this up, it has Garmin-specific logic that should live on its own file
 /**
  * Does the bulk of processing webhook incoming data, including storing and sending
  * to Customers/accounts.

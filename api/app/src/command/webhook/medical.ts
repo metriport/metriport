@@ -6,7 +6,7 @@ import { createWebhookRequest } from "../webhook/webhook-request";
 import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
 import { processRequest, WebhookMetadataPayload } from "./webhook";
 
-const log = Util.log(`Webhook`);
+const log = Util.log(`Medical Webhook`);
 
 // MAPI
 type WebhookDocumentDataPayload = {
@@ -19,7 +19,7 @@ type WebhookPatientDataPayload = {
 };
 type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload, "meta">;
 
-export const processPatientRequest = async (
+export const processPatientDocumentRequest = async (
   cxId: string,
   patientId: string,
   documents: DocumentReferenceDTO[]
@@ -37,9 +37,9 @@ export const processPatientRequest = async (
 
     reportUsageCmd({ cxId, entityId: patientId, apiType });
   } catch (err) {
-    log(`Error on processPatientRequest: `, err);
+    log(`Error on processPatientDocumentRequest: `, err);
     capture.error(err, {
-      extra: { patientId, context: `webhook.processPatientRequest` },
+      extra: { patientId, context: `webhook.processPatientDocumentRequest` },
     });
   }
   return true;
