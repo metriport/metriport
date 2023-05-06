@@ -4,8 +4,14 @@ import { periodSchema } from "./period";
 // Identifies the use for an identifier, if known. This value set defines its own
 // terms in the system http://hl7.org/fhir/identifier-use
 // See: https://specification.commonwellalliance.org/appendix/terminology-bindings#c8-identifier-use-codes
-
-export const identifierUseCodesSchema = z.enum(["usual", "official", "temp", "secondary", "old"]);
+export const identifierUseCodesSchema = z.enum([
+  "usual",
+  "official",
+  "temp",
+  "secondary",
+  "old",
+  "unspecified",
+]);
 
 export type IdentifierUseCodes = z.infer<typeof identifierUseCodesSchema>;
 
