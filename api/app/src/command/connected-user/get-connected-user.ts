@@ -63,6 +63,7 @@ export const getConnectedUserByTokenOrFail = async (
       providerMap: {
         [provider]: {
           token: {
+            // TODO: Find more optimal solution
             [Op.like]: "%" + str + "%",
           },
         },
