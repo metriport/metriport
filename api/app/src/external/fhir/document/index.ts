@@ -1,10 +1,11 @@
+import { DocumentReference, Identifier } from "@medplum/fhirtypes";
 import { MedicalDataSource } from "@metriport/api";
-import { DocumentReference } from "@medplum/fhirtypes";
-import { DocumentWithFilename } from "../../commonwell/document/shared";
+import { DocumentIdentifier } from "@metriport/commonwell-sdk";
+import { MedicalDataSourceOid } from "../..";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
+import { DocumentWithFilename } from "../../commonwell/document/shared";
 import { ResourceType } from "../shared";
-import { MedicalDataSourceOid } from "../..";
 
 export const toFHIR = (
   doc: DocumentWithFilename,
@@ -31,13 +32,7 @@ export const toFHIR = (
       system: doc.content?.masterIdentifier?.system,
       value: doc.content?.masterIdentifier?.value,
     },
-    identifier: doc.content?.identifier?.map(id => {
-      return {
-        system: id.system,
-        value: id.value,
-        use: id.use,
-      };
-    }),
+    identifier: doc.content?.identifier?.map(idToFHIR),
     date: doc.content?.indexed,
     status: "current",
     type: doc.content?.type,
@@ -77,3 +72,13 @@ export const toFHIR = (
     context: doc.content?.context,
   };
 };
+
+// TODO once we merge DocumentIdentifier with Identifier on CW SDK, let's move this to
+// an identifier-specific file
+export function idToFHIR(id: DocumentIdentifier): Identifier {
+  return {
+    system: id.system,
+    value: id.value,
+    use: id.use === "unspecified" ? undefined : id.use,
+  };
+}
