@@ -10,7 +10,7 @@ export const processOAuth2 = async (
   authCode: string | undefined,
   cxId: string | undefined,
   userId: string | undefined
-): Promise<string> => {
+): Promise<void> => {
   // get the cx/user ids from DDB if this isn't cloud mode
   if (!Config.isCloudEnv()) {
     const useToken = await getUserToken({ token: state });
@@ -34,5 +34,5 @@ export const processOAuth2 = async (
     },
   });
 
-  return token;
+  Constants.PROVIDER_OAUTH2_MAP[provider].postAuth?.(token);
 };

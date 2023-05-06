@@ -27,7 +27,7 @@ export const processData = async (data: WithingsWebhook) => {
   let startdate = "";
 
   if (data.startdate) {
-    startdate = dayjs.unix(parseInt(data.startdate)).format();
+    startdate = dayjs.unix(parseInt(data.startdate)).format("YYYY-MM-DD");
   } else if (data.date) {
     startdate = data.date;
   }
@@ -45,7 +45,6 @@ export const processData = async (data: WithingsWebhook) => {
     const withingsData = await mapData(categoryNum, connectedUser, startdate);
     const payload = { users: [{ userId: cxUserId, ...withingsData }] };
     const webhookRequest = await createWebhookRequest({ cxId, payload });
-
     await processRequest(webhookRequest, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (error) {
