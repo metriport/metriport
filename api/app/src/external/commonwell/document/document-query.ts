@@ -11,7 +11,6 @@ import { PassThrough } from "stream";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
-import { processPatientRequest } from "../../../command/webhook/webhook";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
@@ -26,6 +25,7 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
+import { processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { DocumentWithFilename, getFileName } from "./shared";
 
 const s3client = new AWS.S3();
@@ -59,7 +59,7 @@ export async function queryDocuments({
     reportDocQuery(patient);
 
     // send webhook to cx async when docs are done processing
-    processPatientRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
+    processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
   } catch (err) {
     console.log(`Error: `, err);
     capture.error(err, {

@@ -15,7 +15,7 @@ const ConnectPage = () => {
   const [agreement, setAgreement] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams] = useSearchParams();
-  const [isError, setIsError] = useState(false);
+  const [isError, setIsError] = useState(null);
 
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
   const token = searchParams.get(Constants.TOKEN_PARAM);
@@ -26,8 +26,9 @@ const ConnectPage = () => {
       setupApi(searchParams);
       storeColorMode(colorMode);
       setAgreementState(setAgreement);
-    } catch (err) {
-      setIsError(true);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      setIsError(err.message);
       capture.error(err, { extra: { context: `connect.setup` } });
     }
     setIsLoading(false);
@@ -43,7 +44,7 @@ const ConnectPage = () => {
         ) : (
           <Agreement onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)} />
         )}
-        {isError && <ErrorDialog show onClose={() => setIsError(false)} />}
+        {isError && <ErrorDialog message={isError} show onClose={() => setIsError(null)} />}
       </>
     </WidgetContainer>
   );
