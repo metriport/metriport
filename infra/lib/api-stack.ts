@@ -293,6 +293,14 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
     });
 
+    const withingsWebhookResource = api.root.addResource("withings");
+
+    this.setupWithingsWebhookAuth({
+      baseResource: withingsWebhookResource,
+      vpc: this.vpc,
+      fargateService: apiService,
+    });
+
     // add webhook path for apple health clients
     const appleHealthResource = webhookResource.addResource("apple");
     const integrationApple = new apig.Integration({
@@ -415,6 +423,31 @@ export class APIStack extends Stack {
     // setup $base/garmin path with token auth
     const garminResource = baseResource.addResource("garmin");
     garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
+  }
+
+  private setupWithingsWebhookAuth(ownProps: {
+    baseResource: apig.Resource;
+    vpc: ec2.IVpc;
+    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+  }) {
+    const { baseResource, vpc, fargateService: server } = ownProps;
+
+    const withingsLambda = new lambda_node.NodejsFunction(this, "WithingsLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "../api/lambdas/withings/index.js",
+      environment: {
+        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
+      },
+      vpc,
+    });
+    addErrorAlarmToLambdaFunc(this, withingsLambda, "GarminAuthFunctionAlarm");
+
+    // Grant lambda access to the api server
+    server.service.connections.allowFrom(withingsLambda, Port.allTcp());
+
+    // setup $base/withings path with token auth
+    const garminResource = baseResource.addResource("withings");
+    garminResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
   }
 
   private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {
