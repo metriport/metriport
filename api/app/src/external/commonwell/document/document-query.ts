@@ -11,6 +11,7 @@ import { PassThrough } from "stream";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
+import { processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
@@ -21,13 +22,12 @@ import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { toFHIR as toFHIRDocRef } from "../../fhir/document";
+import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
-import { processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { DocumentWithFilename, getFileName } from "./shared";
-import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 
 const s3client = new AWS.S3();
 
@@ -239,6 +239,8 @@ async function downloadDocsAndUpsertFHIR({
         capture.error(error, {
           extra: {
             context: `s3.documentUpload`,
+            patientId: patient.id,
+            documentReference: doc,
           },
         });
         throw error;

@@ -32,12 +32,14 @@ export async function downloadDocument({
     capture.error(err, {
       extra: {
         context: `cw.retrieveDocument`,
+        patientId,
+        documentLocation: location,
         cwReference: commonWell.lastReferenceHeader,
-        ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
+        err,
       },
     });
     if (err instanceof CommonwellError && err.cause?.response?.status === 404) {
-      throw new NotFoundError("Document not found");
+      throw new NotFoundError("Document not found", err);
     }
     throw err;
   }
