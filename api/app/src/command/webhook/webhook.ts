@@ -94,7 +94,12 @@ export const processRequest = async (
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     capture.error(err, {
-      extra: { webhookRequestId: webhookRequest.id, webhookUrl, context: `webhook.processRequest` },
+      extra: {
+        webhookRequestId: webhookRequest.id,
+        webhookUrl,
+        context: `webhook.processRequest`,
+        cause: err.cause,
+      },
     });
     try {
       // mark this request as failed on the DB
@@ -114,7 +119,7 @@ export const processRequest = async (
     }
     let webhookStatusDetail;
     if (err instanceof WebhookError) {
-      webhookStatusDetail = err.underlyingError.message;
+      webhookStatusDetail = err.cause.message;
     } else {
       log(`Unexpected error testing webhook`, err);
       webhookStatusDetail = `Internal error: ${err?.message}`;
