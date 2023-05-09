@@ -349,6 +349,15 @@ Now, the backend services will be available at:
 - Postgres: `localhost:5432`
 - DynamoDB: `localhost:8000`
 
+Another option is to have the dependency services running with docker compose and the back-end API running as regular NodeJS process (faster
+to run and restart); this has the benefit of Docker Desktop managing the services and you likely only need to start the dependencies once.
+
+```shell
+$ cd api/app
+$ npm run start-dependencies # might be able run it once
+$ npm run dev
+```
+
 #### **Database Migrations**
 
 The API Server uses Sequelize as an ORM, and its migration component to update the DB with changes as the application

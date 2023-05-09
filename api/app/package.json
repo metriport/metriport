@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9229 --files src/app.ts",
     "start": "ts-node dist/app.js",
-    "start-docker-compose": "docker-compose -f docker-compose.dev.yml up --build",
+    "start-docker-compose": "docker compose -f docker-compose.dev.yml up --build",
+    "start-dependencies": "docker compose -f docker-compose.dev.yml up postgres dynamodb",
     "build": "tsc -p .",
     "build:cloud": "tsc -p tsconfig.cloud.json",
     "typecheck": "tsc --noEmit",
@@ -14,7 +15,7 @@
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "echo \"No test specified yet\"",
-    "db-local": "DB_CREDS='{\"username\":\"admin\",\"password\":\"admin\",\"dbname\":\"db\",\"engine\":\"postgres\",\"host\":\"localhost\",\"port\":5432}' ts-node src/sequelize/cli",
+    "db-local": "ts-node src/sequelize/cli",
     "db-local:up": "npm run db-local -- up"
   },
   "keywords": [],
