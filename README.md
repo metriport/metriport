@@ -413,7 +413,7 @@ To do basic UI admin operations on the DynamoDB instance, you can do the followi
 
 ```shell
 $ npm install -g dynamodb-admin # only needs to be run once
-$ DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin # admin console will be available at http://localhost:8001/
+$ npm run ddb-admin # admin console will be available at http://localhost:8001/
 ```
 
 To kill and clean-up the back-end, hit `CTRL + C` a few times, and run the following from the `api/app` directory:
