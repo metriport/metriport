@@ -46,12 +46,13 @@
 </ParamField>
 
 <ParamField body="address" type="Address[]" required>
-  An array of `Address` objects, representing the Patient's current and/or previous addresses.
+  An array of `Address` objects, representing the Patient's current and/or previous addresses. May
+  be empty.
   <Snippet file="address.mdx" />
 </ParamField>
 
 <ParamField body="contact" type="Contact[]">
-  An array of `Contact` objects, representing the Patient's current and/or previous contact information.
+  An array of `Contact` objects, representing the Patient's current and/or previous contact information. May be empty.
   <Expandable title="Contact properties">
     <ParamField body="phone" type="string">
       The Patient's 10 digit phone number, formatted `1234567899`.
