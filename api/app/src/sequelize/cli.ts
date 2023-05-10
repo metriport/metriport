@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+// Keep dotenv import and config before everything else
 import { Sequelize } from "sequelize";
 import { getUmzug } from "./index";
 
@@ -33,4 +36,9 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
   },
 });
 
-getUmzug(sequelize).runAsCLI();
+async function main() {
+  await getUmzug(sequelize).runAsCLI();
+  process.exit();
+}
+
+main();

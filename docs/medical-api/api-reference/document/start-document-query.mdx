@@ -7,11 +7,19 @@ api: "POST /medical/v1/document/query"
 When executed, this endpoint triggers an asynchronous document query with HIEs and immediately returns the status
 of document query, `processing`.
 
-As the query is processing, if you were to trigger this endpoint again, you will receive that the query status is `processing` as well as the current progress of documents being queried.
-
 When the asynchronous document query finishes, it stores new/updated document references for future requests and
-update the status of document query to `completed` - accessible through
-[List Documents endpoint](/medical-api/api-reference/document/list-documents).
+updates the status of document query to `completed` - accessible through the [List Documents endpoint](/medical-api/api-reference/document/list-documents).
+
+<Tip>
+  You can also use the [List Documents endpoint](/medical-api/api-reference/document/list-documents) to get the current query status and
+  query progress, while the query is still processing.
+</Tip>
+
+<Warning>
+  If you were to trigger this endpoint again while the query is still processing, you will get
+  a response that reflects the current query progress. So essentially, only a single document query
+  will be running for a patient at a given time.
+</Warning>
 
 ## Query Params
 

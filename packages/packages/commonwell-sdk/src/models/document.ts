@@ -13,11 +13,14 @@ import { genderSchema } from "./demographics";
 // Bundle, DocumentReference, Organization, Practitioner, OperationOutcome
 const resourceTypeSchema = z.string().optional();
 
+// TODO we should try to reuse identifierSchema from models/identifier instead
+// TODO try to replace this when we can properly test it
 const identifierSchema = z.object({
   use: identifierUseCodesSchema.optional(),
   system: z.string().optional(),
   value: z.string(),
 });
+export type DocumentIdentifier = z.infer<typeof identifierSchema>;
 
 const codeableConceptSchema = z.object({
   coding: z

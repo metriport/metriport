@@ -27,6 +27,7 @@ import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
 import { processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { DocumentWithFilename, getFileName } from "./shared";
+import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 
 const s3client = new AWS.S3();
 
@@ -40,26 +41,31 @@ export async function queryDocuments({
   patient: Patient;
   facilityId: string;
 }): Promise<void> {
+  const { organization, facility } = await getPatientData(patient, facilityId);
+
   try {
     if (Config.isSandbox()) {
-      return;
+      // if this is sandbox, just send the sandbox payload to the WH
+      processPatientDocumentRequest(
+        organization.cxId,
+        patient.id,
+        toDTO(getDocumentSandboxPayload(patient.id))
+      );
+    } else {
+      const cwDocuments = await internalGetDocuments({ patient, organization, facility });
+
+      const FHIRDocRefs = await downloadDocsAndUpsertFHIR({
+        patient,
+        organization,
+        facilityId,
+        documents: cwDocuments,
+      });
+
+      reportDocQuery(patient);
+
+      // send webhook to cx async when docs are done processing
+      processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
     }
-
-    const { organization, facility } = await getPatientData(patient, facilityId);
-
-    const cwDocuments = await internalGetDocuments({ patient, organization, facility });
-
-    const FHIRDocRefs = await downloadDocsAndUpsertFHIR({
-      patient,
-      organization,
-      facilityId,
-      documents: cwDocuments,
-    });
-
-    reportDocQuery(patient);
-
-    // send webhook to cx async when docs are done processing
-    processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
   } catch (err) {
     console.log(`Error: `, err);
     capture.error(err, {
