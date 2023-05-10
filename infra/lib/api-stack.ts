@@ -283,7 +283,7 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
     });
 
-    const withingsWebhookResource = api.root.addResource("withings");
+    const withingsWebhookResource = webhookResource.addResource("withings");
 
     this.setupWithingsWebhookAuth({
       baseResource: withingsWebhookResource,
@@ -430,14 +430,13 @@ export class APIStack extends Stack {
       },
       vpc,
     });
-    addErrorAlarmToLambdaFunc(this, withingsLambda, "GarminAuthFunctionAlarm");
+    addErrorAlarmToLambdaFunc(this, withingsLambda, "WithingsAuthFunctionAlarm");
 
     // Grant lambda access to the api server
     server.service.connections.allowFrom(withingsLambda, Port.allTcp());
 
-    // setup $base/withings path with token auth
-    const garminResource = baseResource.addResource("withings");
-    garminResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
+    const withingsResource = baseResource.addResource("withings");
+    withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
   }
 
   private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {

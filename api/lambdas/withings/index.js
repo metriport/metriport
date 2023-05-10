@@ -1,4 +1,5 @@
 import axios from "axios";
+const { exec } = require("child_process");
 
 const getEnvOrFail = name => {
   const value = process.env[name];
@@ -16,21 +17,10 @@ const buildResponse = (status, body) => ({
 const defaultResponse = () => buildResponse(200);
 
 exports.handler = async req => {
-  const withingsWhitelistIpAddresses = [
-    "89.30.121.171",
-    "89.30.121.172",
-    "89.30.121.173",
-    "89.30.121.174",
-    "89.30.121.150",
-    "89.30.121.143",
-    "89.30.121.144",
-    "89.30.121.145",
-    "89.30.121.146",
-    "89.30.121.140",
-    "89.30.121.150",
-    "89.30.121.160",
-    "89.30.121.170",
-  ];
+  const withingsIPAddresses1 = await lookup("ipblock-notify.withings.net");
+  const withingsIPAddresses2 = await lookup("ipblock-front.withings.net");
+
+  const withingsWhitelistIpAddresses = [...withingsIPAddresses1, ...withingsIPAddresses2];
 
   const ipAddress = req.socket.remoteAddress;
 
@@ -40,6 +30,17 @@ exports.handler = async req => {
 
   console.log("Request does not include a valid Withings IP address");
   return defaultResponse();
+};
+
+const lookup = async address => {
+  return new Promise((resolve, reject) => {
+    exec(`dig +short TXT ${address}`, (error, stdout, stderr) => {
+      if (error || stderr) {
+        reject("DNS lookup failed");
+      }
+      resolve(stdout.split(" ").map(s => s.replace(/[^0-9.]/g, "")));
+    });
+  });
 };
 
 async function forwardCallToServer(req) {
