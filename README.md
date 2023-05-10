@@ -452,6 +452,21 @@ Check the scripts on the folder's [package.json](https://github.com/metriport/me
 
 ---
 
+### Tests
+
+Unit tests can be executed with:
+
+```shell
+$ npm run test
+```
+
+To run integration tests, make sure to check each package/folder README for requirements, but in general they can be
+executed with:
+
+```shell
+$ npm run test:e2e
+```
+
 ## **Self-Hosted Deployments**
 
 ### **API Key Setup**

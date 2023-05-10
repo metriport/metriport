@@ -1,6 +1,9 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
+    "types": ["reflect-metadata", "node", "jest"],
+    "typeRoots": ["./src/@types", "../../node_modules/@types"],
+
     // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
     // START - From @tsconfig/strictest
     "allowUnusedLabels": false,
@@ -21,10 +24,7 @@
 
     "sourceMap": true /* Create source map files for emitted JavaScript files. */,
     "rootDir": "./src" /* Specify the root folder within your source files. */,
-    "outDir": "./dist" /* Specify an output folder for all emitted files. */,
-    "typeRoots": [
-      "./src/@types"
-    ] /* Specify multiple folders that act like './node_modules/@types'. */
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */
   },
   "include": ["./src"]
 }
