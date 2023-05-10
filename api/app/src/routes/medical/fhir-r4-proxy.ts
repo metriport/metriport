@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import proxy from "express-http-proxy";
 import Router from "express-promise-router";
 import NotFoundError from "../../errors/not-found";
 import { Config } from "../../shared/config";
 import { Util } from "../../shared/util";
-import { asyncHandler } from "../util";
+import { asyncHandler, getCxIdOrFail } from "../util";
 
 const { log } = Util.out(`FHIR-R4-PROXY`);
 
@@ -13,7 +12,8 @@ const fhirRouter = (fhirServerUrl: string) =>
     proxyReqPathResolver: function (req) {
       log(`ORIGINAL HEADERS: `, JSON.stringify(req.headers));
       log(`ORIGINAL URL: `, req.url);
-      const updatedURL = "/fhir" + req.url;
+      const cxId = getCxIdOrFail(req);
+      const updatedURL = `/fhir/${cxId}` + req.url;
       log(`Proxying to FHIR server: ${updatedURL}`);
       return updatedURL;
     },

@@ -1,6 +1,6 @@
+import { MedplumClient, QueryTypes, ReadablePromise } from "@medplum/core";
 import { Bundle, BundleLink, ExtractResource, ResourceType } from "@medplum/fhirtypes";
 import { Config } from "../../shared/config";
-import { MedplumClient, QueryTypes, ReadablePromise } from "@medplum/core";
 
 export class FHIRClient extends MedplumClient {
   static fhirServerUrl = Config.getFHIRServerUrl();
@@ -63,6 +63,47 @@ export class FHIRClient extends MedplumClient {
         url = undefined;
       }
     }
+  }
+
+  // HAPI FHIR specific
+  private readonly HAPI_URI = "fhir/DEFAULT";
+  private readonly baseHAPIPayload = { resourceType: "Parameters" };
+
+  // HAPI FHIR specific
+  async createTenant(org: { organizationNumber: number; cxId: string }): Promise<void> {
+    const url = this.getBaseUrl() + this.HAPI_URI + "/$partition-management-create-partition";
+    const payload = {
+      ...this.baseHAPIPayload,
+      parameter: [
+        { name: "id", valueInteger: org.organizationNumber },
+        { name: "name", valueCode: org.cxId },
+      ],
+    };
+    await this.post(url, payload);
+  }
+
+  // HAPI FHIR specific
+  async listTenants(): Promise<string[]> {
+    const url = this.getBaseUrl() + this.HAPI_URI + "/$partition-management-list-partitions";
+    const payload = {
+      ...this.baseHAPIPayload,
+      parameter: [],
+    };
+    const res = await this.post(url, payload);
+    return res.parameter
+      .flatMap((p: any) => p.part) //eslint-disable-line @typescript-eslint/no-explicit-any
+      .filter((p: any) => p.name === "name") //eslint-disable-line @typescript-eslint/no-explicit-any
+      .map((p: any) => p.valueCode); //eslint-disable-line @typescript-eslint/no-explicit-any
+  }
+
+  // HAPI FHIR specific
+  async deleteTenant(org: { organizationNumber: number }): Promise<void> {
+    const url = this.getBaseUrl() + this.HAPI_URI + "/$partition-management-delete-partition";
+    const payload = {
+      ...this.baseHAPIPayload,
+      parameter: [{ name: "id", valueInteger: org.organizationNumber }],
+    };
+    await this.post(url, payload);
   }
 }
 
