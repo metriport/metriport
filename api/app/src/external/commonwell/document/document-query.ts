@@ -136,7 +136,7 @@ async function internalGetDocuments({
       extra: {
         cwReference: commonWell.lastReferenceHeader,
         patientId: patient.id,
-        cwErrs,
+        cwErrs: `${JSON.stringify(cwErrs, null, 2)}`,
       },
     });
   }
