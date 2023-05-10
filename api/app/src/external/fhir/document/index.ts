@@ -12,7 +12,7 @@ export const toFHIR = (
   organization: Organization,
   patient: Patient
 ): DocumentReference => {
-  const id = doc.id?.replace("urn:uuid:", "");
+  const id = doc.id?.replace("urn:uuid:", "").replace("^", ".");
 
   return {
     id: id,
