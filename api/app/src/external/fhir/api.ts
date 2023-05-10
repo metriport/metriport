@@ -3,7 +3,8 @@ import { Bundle, BundleLink, ExtractResource, ResourceType } from "@medplum/fhir
 import { Config } from "../../shared/config";
 
 export class FHIRClient extends MedplumClient {
-  static fhirServerUrl = Config.getFHIRServerUrl();
+  // Don't send undefined otherwise it'll point to Medplum's server
+  static fhirServerUrl = Config.getFHIRServerUrl() ?? "http://0.0.0.0";
   constructor() {
     super({ baseUrl: FHIRClient.fhirServerUrl, fhirUrlPath: "fhir" });
   }

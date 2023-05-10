@@ -13,6 +13,12 @@ To run integration tests, first have these services running local, each with its
 - API server
 - FHIR Server
 
+Set this environment variable on your local `.env` file with a valid API key from your local environment:
+
+```shell
+$ echo "API_KEY=XXXXXXXX" >> .env
+```
+
 Then execute integration tests with:
 
 ```shell

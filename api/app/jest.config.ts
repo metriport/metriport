@@ -1,9 +1,9 @@
-import * as dotenv from "dotenv";
-dotenv.config();
-// Keep dotenv import and config before everything else
 import type { Config } from "@jest/types";
 
 const isE2E = process.env.E2E === "true";
+
+process.env.ENV_TYPE = "development";
+process.env.FHIR_SERVER_URL = "http://localhost:8888";
 
 const config: Config.InitialOptions = {
   preset: "ts-jest",
