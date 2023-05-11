@@ -3,7 +3,7 @@ import { api } from "../api";
 
 export const upsertDocumentToFHIRServer = async (docRef: DocumentReference) => {
   await api.updateResource({
-    id: docRef.masterIdentifier?.value,
+    id: docRef.id,
     ...docRef,
   });
 };
