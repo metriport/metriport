@@ -1,5 +1,5 @@
 import NotFoundError from "../../errors/not-found";
-import { createTenantSafe } from "../../external/fhir/admin";
+import { createTenantIfNotExists } from "../../external/fhir/admin";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import { getOrganizationOrFail } from "./organization/get-organization";
 
@@ -12,7 +12,7 @@ export async function allowMapiAccess(cxId: string): Promise<"new" | "existing">
 
   // create tenant on FHIR server
   const org = await getOrganizationOrFail({ cxId });
-  await createTenantSafe(org);
+  await createTenantIfNotExists(org);
 
   return "new";
 }

@@ -12,7 +12,7 @@ beforeEach(() => {
   jest.restoreAllMocks();
   getOrganizationOrFailMock = jest.spyOn(getOrg, "getOrganizationOrFail");
   createTenantSafeMock = jest
-    .spyOn(createTenant, "createTenantSafe")
+    .spyOn(createTenant, "createTenantIfNotExists")
     .mockImplementation(async () => {});
 });
 

@@ -1,6 +1,6 @@
-import { nanoid } from "../../../../__tests__/shared";
+import { randFirstName, randLastName, randNumber, randPhoneNumber, randUuid } from "@ngneat/falso";
 
-const defaultId = "2.16.840.1.113883.3.9621.5." + nanoid();
+const defaultId = randUuid();
 
 export const makePatient = (id = defaultId) => ({
   resourceType: "Patient",
@@ -68,7 +68,7 @@ export const makePatient = (id = defaultId) => ({
   identifier: [
     {
       system: "https://github.com/synthetichealth/synthea",
-      value: "e48c330b-d0d9-4bbd-9811-9c63cde19c7e",
+      value: randUuid(),
     },
     {
       type: {
@@ -82,21 +82,21 @@ export const makePatient = (id = defaultId) => ({
         text: "Driver's License",
       },
       system: "urn:oid:2.16.840.1.113883.4.3.49",
-      value: "498651177",
+      value: randNumber({ min: 10_000, max: 99_999 }),
     },
   ],
   name: [
     {
       use: "official",
-      family: "Pontes",
-      given: [`Paulo ${id}`],
-      prefix: ["Mr."],
+      family: randLastName(),
+      given: [randFirstName()],
+      prefix: [],
     },
   ],
   telecom: [
     {
       system: "phone",
-      value: "555-677-3119",
+      value: randPhoneNumber(),
       use: "home",
     },
   ],

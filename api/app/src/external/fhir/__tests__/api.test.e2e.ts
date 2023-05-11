@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { makeOrgNumber } from "../../../models/medical/__tests__/organization";
-import { makeAdminFhirApi } from "../api";
+import { makeFhirAdminApi } from "../api/api-factory";
 
-const fhirApi = makeAdminFhirApi();
+const fhirApi = makeFhirAdminApi();
 
 describe("Integration FHIR Client", () => {
   describe("tenant", () => {

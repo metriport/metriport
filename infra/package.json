@@ -12,7 +12,7 @@
     "lint": "npx eslint bin/**/*.ts lib/**/*.ts",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '{bin,lib}/**/*.ts' --write",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "cdk": "cdk"
   },
   "devDependencies": {

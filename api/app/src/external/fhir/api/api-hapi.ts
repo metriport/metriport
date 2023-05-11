@@ -1,26 +1,13 @@
 import { MedplumClient, QueryTypes, ReadablePromise } from "@medplum/core";
 import { Bundle, BundleLink, ExtractResource, ResourceType } from "@medplum/fhirtypes";
-import { Config } from "../../shared/config";
+import { Config } from "../../../shared/config";
+import { FhirAdminClient, FhirClient } from "./api";
 
+export const DEFAULT_TENANT = "DEFAULT";
 /**
- * Return an instance of the FHIR API client configured to access the respective
- * customer's data.
+ * Don't use this class directly. Use the factory function `makeFhirApi()` instead.
  */
-export const makeFhirApi = (cxId: string) => new FHIRClient(cxId);
-
-/**
- * WARNING: THIS IS FOR TENANT MANAGEMENT ONLY!
- *
- * Returns an instance of the FHIR API client configured to access the
- * default tenant, which can be used to manage tenants on the FHIR server.
- */
-export const makeAdminFhirApi = () => new FHIRClient("DEFAULT");
-
-/**
- * Don't use this class directly. Use factory functions below instead.
- * This is exported for testing purposes only.
- */
-export class FHIRClient extends MedplumClient {
+export class HapiFhirClient extends MedplumClient implements FhirClient {
   // Don't send undefined otherwise it'll point to Medplum's server
   static fhirServerUrl = Config.getFHIRServerUrl() ?? "http://0.0.0.0";
   /**
@@ -29,7 +16,7 @@ export class FHIRClient extends MedplumClient {
    * @param tenantId
    */
   constructor(tenantId: string) {
-    super({ baseUrl: FHIRClient.fhirServerUrl, fhirUrlPath: `fhir/${tenantId}` });
+    super({ baseUrl: HapiFhirClient.fhirServerUrl, fhirUrlPath: `fhir/${tenantId}` });
   }
 
   // needed to hack around HAPI FHIR urls returned in search queries
@@ -61,7 +48,7 @@ export class FHIRClient extends MedplumClient {
     resourceType: K,
     query?: QueryTypes
   ): AsyncGenerator<ExtractResource<K>[]> {
-    if (!FHIRClient.fhirServerUrl) return;
+    if (!HapiFhirClient.fhirServerUrl) return;
     let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
     let isNext = false;
 
@@ -79,7 +66,7 @@ export class FHIRClient extends MedplumClient {
       const nextUrl = nextLink?.url ? new URL(nextLink?.url) : undefined;
       if (nextUrl) {
         // modify url to point to internal FHIR URL
-        let newUrl = nextUrl.href.replace(nextUrl.origin, FHIRClient.fhirServerUrl);
+        let newUrl = nextUrl.href.replace(nextUrl.origin, HapiFhirClient.fhirServerUrl);
         newUrl = newUrl.replace("/oauth", "");
         url = new URL(newUrl);
         isNext = true;
@@ -88,14 +75,23 @@ export class FHIRClient extends MedplumClient {
       }
     }
   }
+}
 
-  // HAPI FHIR specific
-  private readonly HAPI_URI = "fhir/DEFAULT";
+/**
+ * Don't use this class directly. Use the factory function `makeFhirAdminApi()` instead.
+ */
+export class HapiFhirAdminClient extends HapiFhirClient implements FhirAdminClient {
+  /**
+   * Creates a new FHIR client setup for administration/management purposes.
+   */
+  constructor() {
+    super(DEFAULT_TENANT);
+  }
+
   private readonly baseHAPIPayload = { resourceType: "Parameters" };
 
-  // HAPI FHIR specific
   async createTenant(org: { organizationNumber: number; cxId: string }): Promise<void> {
-    const url = this.getBaseUrl() + this.HAPI_URI + "/$partition-management-create-partition";
+    const url = this.fhirUrl("$partition-management-create-partition");
     const payload = {
       ...this.baseHAPIPayload,
       parameter: [
@@ -106,23 +102,23 @@ export class FHIRClient extends MedplumClient {
     await this.post(url, payload);
   }
 
-  // HAPI FHIR specific
   async listTenants(): Promise<string[]> {
-    const url = this.getBaseUrl() + this.HAPI_URI + "/$partition-management-list-partitions";
+    const url = this.fhirUrl("$partition-management-list-partitions");
     const payload = {
       ...this.baseHAPIPayload,
       parameter: [],
     };
     const res = await this.post(url, payload);
     return res.parameter
-      .flatMap((p: any) => p.part) //eslint-disable-line @typescript-eslint/no-explicit-any
-      .filter((p: any) => p.name === "name") //eslint-disable-line @typescript-eslint/no-explicit-any
-      .map((p: any) => p.valueCode); //eslint-disable-line @typescript-eslint/no-explicit-any
+      ? res.parameter
+          .flatMap((p: any) => p.part) //eslint-disable-line @typescript-eslint/no-explicit-any
+          .filter((p: any) => p.name === "name") //eslint-disable-line @typescript-eslint/no-explicit-any
+          .map((p: any) => p.valueCode) //eslint-disable-line @typescript-eslint/no-explicit-any
+      : [];
   }
 
-  // HAPI FHIR specific
   async deleteTenant(org: { organizationNumber: number }): Promise<void> {
-    const url = this.getBaseUrl() + this.HAPI_URI + "/$partition-management-delete-partition";
+    const url = this.fhirUrl("$partition-management-delete-partition");
     const payload = {
       ...this.baseHAPIPayload,
       parameter: [{ name: "id", valueInteger: org.organizationNumber }],

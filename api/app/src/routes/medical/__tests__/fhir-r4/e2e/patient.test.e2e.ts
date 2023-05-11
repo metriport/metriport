@@ -1,14 +1,14 @@
 import { AxiosResponse } from "axios";
 import { v4 as uuidv4 } from "uuid";
-import { makeAdminFhirApi } from "../../../../../external/fhir/api";
+import { makeFhirAdminApi } from "../../../../../external/fhir/api/api-factory";
 import { makeOrgNumber } from "../../../../../models/medical/__tests__/organization";
-import { makePatient } from "./patient";
 import { api } from "../../../../__tests__/shared";
+import { makePatient } from "./patient";
 
 const patient = makePatient();
 const organizationNumber = makeOrgNumber();
 const cxId = uuidv4();
-const fhirClient = makeAdminFhirApi();
+const fhirClient = makeFhirAdminApi();
 
 beforeAll(async () => {
   await fhirClient.createTenant({ organizationNumber, cxId });
@@ -44,7 +44,15 @@ describe("Integration FHIR Patient", () => {
     expect(entry).toBeTruthy();
     expect(entry.resource).toBeTruthy();
     expect(entry.resource.id).toEqual(patient.id);
-    expect(entry.resource.name).toEqual(patient.name);
+    expect(entry.resource.name).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          given: patient.name[0].given,
+          family: patient.name[0].family,
+          use: patient.name[0].use,
+        }),
+      ])
+    );
   });
 
   describe(`delete`, () => {

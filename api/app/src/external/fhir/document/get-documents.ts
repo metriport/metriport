@@ -1,6 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { Config } from "../../../shared/config";
-import { makeFhirApi } from "../api";
+import { makeFhirApi } from "../api/api-factory";
 
 export function getDocumentSandboxPayload(patientId: string): DocumentReference[] {
   return [

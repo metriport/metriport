@@ -1,5 +1,6 @@
+import { OperationOutcomeError } from "@medplum/core";
 import { ErrorRequestHandler } from "express";
-import status from "http-status";
+import httpStatus from "http-status";
 import { ZodError } from "zod";
 import MetriportError from "./errors/metriport-error";
 import { httpResponseBody } from "./routes/util";
@@ -18,8 +19,8 @@ const metriportResponseBody = (err: MetriportError): string => {
       status: err.status,
       title: err.name,
       detail: err.message,
+      name: httpStatus[err.status],
     }),
-    name: status[err.status],
   });
 };
 
@@ -27,11 +28,11 @@ const zodResponseBody = (err: ZodError): string => {
   const formatted = err.issues.map(i => `${i.message}, on [${i.path}]`);
   return JSON.stringify({
     ...httpResponseBody({
-      status: status.BAD_REQUEST,
+      status: httpStatus.BAD_REQUEST,
       title: "Missing or invalid parameters",
       detail: formatted.join(", "),
+      name: httpStatus[httpStatus.BAD_REQUEST],
     }),
-    name: status[status.BAD_REQUEST],
   });
 };
 
@@ -43,7 +44,25 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     return res.contentType("json").status(err.status).send(metriportResponseBody(err));
   }
   if (err instanceof ZodError) {
-    return res.contentType("json").status(status.BAD_REQUEST).send(zodResponseBody(err));
+    return res.contentType("json").status(httpStatus.BAD_REQUEST).send(zodResponseBody(err));
+  }
+  if (err instanceof OperationOutcomeError) {
+    const status = httpStatus.INTERNAL_SERVER_ERROR;
+    if (req.path.includes("fhir/R4")) {
+      return res.contentType("json").status(status).send(err.outcome);
+    } else {
+      return res
+        .contentType("json")
+        .status(status)
+        .send(
+          httpResponseBody({
+            status,
+            title: err.name,
+            detail: err.outcome.issue?.map(i => i.diagnostics ?? i.details ?? i.code).join("; "),
+            name: httpStatus[status],
+          })
+        );
+    }
   }
   if (err.statusCode) {
     return res
@@ -55,11 +74,11 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
           title: "MetriportError",
           detail: err.message,
         }),
-        name: status[err.statusCode],
+        name: httpStatus[err.statusCode],
       });
   }
   console.log(`Error: `, err);
-  const internalErrStatus = status.INTERNAL_SERVER_ERROR;
+  const internalErrStatus = httpStatus.INTERNAL_SERVER_ERROR;
   return res
     .contentType("json")
     .status(internalErrStatus)
@@ -69,6 +88,6 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
         title: "InternalServerError",
         detail: "Please try again or reach out to support@metriport.com",
       }),
-      name: status[internalErrStatus],
+      name: httpStatus[internalErrStatus],
     });
 };

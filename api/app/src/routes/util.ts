@@ -63,21 +63,24 @@ export const analyzeRoute = (req: Request): void => {
   }
 };
 
-// https://www.rfc-editor.org/rfc/rfc7807
-export type HttpResponseBody = { status: number; title: string; detail?: string };
+// https://www.rfc-editor.org/rfc/rfc7807 w/ Metriport extension, { name?: string }
+export type HttpResponseBody = { status: number; title: string; detail?: string; name?: string };
 export const httpResponseBody = ({
   status,
   title,
   detail,
+  name,
 }: {
   status: number;
   title: string;
   detail?: string;
+  name?: string;
 }): HttpResponseBody => {
   return {
     status,
     title,
     detail,
+    name,
   };
 };
 
