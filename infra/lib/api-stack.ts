@@ -283,10 +283,8 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
     });
 
-    const withingsWebhookResource = webhookResource.addResource("withings");
-
     this.setupWithingsWebhookAuth({
-      baseResource: withingsWebhookResource,
+      baseResource: webhookResource,
       vpc: this.vpc,
       fargateService: apiService,
     });
