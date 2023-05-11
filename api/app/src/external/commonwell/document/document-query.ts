@@ -11,6 +11,7 @@ import { PassThrough } from "stream";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
+import { processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
@@ -25,7 +26,6 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
-import { processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { DocumentWithFilename, getFileName } from "./shared";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { getDocumentPrimaryId } from "../../../shared/external";
@@ -244,6 +244,8 @@ async function downloadDocsAndUpsertFHIR({
         capture.error(error, {
           extra: {
             context: `s3.documentUpload`,
+            patientId: patient.id,
+            documentReference: doc,
           },
         });
         throw error;
