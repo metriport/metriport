@@ -2,11 +2,34 @@ import { MedplumClient, QueryTypes, ReadablePromise } from "@medplum/core";
 import { Bundle, BundleLink, ExtractResource, ResourceType } from "@medplum/fhirtypes";
 import { Config } from "../../shared/config";
 
+/**
+ * Return an instance of the FHIR API client configured to access the respective
+ * customer's data.
+ */
+export const makeFhirApi = (cxId: string) => new FHIRClient(cxId);
+
+/**
+ * WARNING: THIS IS FOR TENANT MANAGEMENT ONLY!
+ *
+ * Returns an instance of the FHIR API client configured to access the
+ * default tenant, which can be used to manage tenants on the FHIR server.
+ */
+export const makeAdminFhirApi = () => new FHIRClient("DEFAULT");
+
+/**
+ * Don't use this class directly. Use factory functions below instead.
+ * This is exported for testing purposes only.
+ */
 export class FHIRClient extends MedplumClient {
   // Don't send undefined otherwise it'll point to Medplum's server
   static fhirServerUrl = Config.getFHIRServerUrl() ?? "http://0.0.0.0";
-  constructor() {
-    super({ baseUrl: FHIRClient.fhirServerUrl, fhirUrlPath: "fhir" });
+  /**
+   * Creates a new FHIR client configured to access a specific tenant's data.
+   *
+   * @param tenantId
+   */
+  constructor(tenantId: string) {
+    super({ baseUrl: FHIRClient.fhirServerUrl, fhirUrlPath: `fhir/${tenantId}` });
   }
 
   // needed to hack around HAPI FHIR urls returned in search queries
@@ -107,5 +130,3 @@ export class FHIRClient extends MedplumClient {
     await this.post(url, payload);
   }
 }
-
-export const api = new FHIRClient();

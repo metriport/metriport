@@ -1,13 +1,14 @@
 import { AxiosResponse } from "axios";
 import { v4 as uuidv4 } from "uuid";
-import { api as fhirClient } from "../../../../../external/fhir/api";
+import { makeAdminFhirApi } from "../../../../../external/fhir/api";
 import { makeOrgNumber } from "../../../../../models/medical/__tests__/organization";
 import { makePatient } from "./patient";
-import { fhirApi } from "./shared";
+import { api } from "../../../../__tests__/shared";
 
 const patient = makePatient();
 const organizationNumber = makeOrgNumber();
 const cxId = uuidv4();
+const fhirClient = makeAdminFhirApi();
 
 beforeAll(async () => {
   await fhirClient.createTenant({ organizationNumber, cxId });
@@ -18,21 +19,21 @@ afterAll(async () => {
 
 describe("Integration FHIR Patient", () => {
   test("create patient", async () => {
-    const res = await fhirApi.put(`/fhir/R4/Patient/${patient.id}`, patient);
+    const res = await api.put(`/fhir/R4/Patient/${patient.id}`, patient);
     expect(res.status).toBe(201);
     expect(res.data).toBeTruthy();
     validatePatient(res.data);
   });
 
   test("get patient", async () => {
-    const res = await fhirApi.get(`/fhir/R4/Patient/${patient.id}`);
+    const res = await api.get(`/fhir/R4/Patient/${patient.id}`);
     expect(res.status).toBe(200);
     expect(res.data).toBeTruthy();
     validatePatient(res.data);
   });
 
   test("search patient by name", async () => {
-    const res = await fhirApi.get(`/fhir/R4/Patient/?name=${patient.name[0].given[0]}`);
+    const res = await api.get(`/fhir/R4/Patient/?name=${patient.name[0].given[0]}`);
     expect(res.status).toBe(200);
     const body = res.data;
     expect(body.resourceType).toBeTruthy();
@@ -48,12 +49,12 @@ describe("Integration FHIR Patient", () => {
 
   describe(`delete`, () => {
     test("delete patient", async () => {
-      const res = await fhirApi.delete(`/fhir/R4/Patient/${patient.id}`);
+      const res = await api.delete(`/fhir/R4/Patient/${patient.id}`);
       validateDeleteResponse(res, "SUCCESSFUL_DELETE");
     });
 
     test("sequential delete patient", async () => {
-      const res = await fhirApi.delete(`/fhir/R4/Patient/${patient.id}`);
+      const res = await api.delete(`/fhir/R4/Patient/${patient.id}`);
       validateDeleteResponse(res, "SUCCESSFUL_DELETE_ALREADY_DELETED");
     });
   });

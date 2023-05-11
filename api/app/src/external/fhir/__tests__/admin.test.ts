@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { v4 as uuidv4 } from "uuid";
 import { makeOrgNumber } from "../../../models/medical/__tests__/organization";
 import { createTenant, createTenantSafe } from "../admin";
@@ -7,8 +8,12 @@ let apiMock_createTenant: jest.SpyInstance;
 let apiMock_listTenants: jest.SpyInstance;
 beforeEach(() => {
   jest.restoreAllMocks();
-  apiMock_createTenant = jest.spyOn(FHIRClient.prototype, "createTenant").mockImplementation();
-  apiMock_listTenants = jest.spyOn(FHIRClient.prototype, "listTenants").mockImplementation();
+  apiMock_createTenant = jest
+    .spyOn(FHIRClient.prototype, "createTenant")
+    .mockImplementation(async () => {});
+  apiMock_listTenants = jest
+    .spyOn(FHIRClient.prototype, "listTenants")
+    .mockImplementation(async () => []);
 });
 
 describe("fhir admin", () => {

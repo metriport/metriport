@@ -1,26 +1,26 @@
 import { AxiosResponse } from "axios";
 import { makeOrganization } from "./organization";
-import { fhirApi } from "./shared";
+import { api } from "../../../../__tests__/shared";
 
 const org = makeOrganization();
 
 describe("Integration FHIR Org", () => {
   test("create org", async () => {
-    const res = await fhirApi.put(`/fhir/R4/Organization/${org.id}`, org);
+    const res = await api.put(`/fhir/R4/Organization/${org.id}`, org);
     expect(res.status).toBe(201);
     expect(res.data).toBeTruthy();
     validateOrg(res.data);
   });
 
   test("get org", async () => {
-    const res = await fhirApi.get(`/fhir/R4/Organization/${org.id}`);
+    const res = await api.get(`/fhir/R4/Organization/${org.id}`);
     expect(res.status).toBe(200);
     expect(res.data).toBeTruthy();
     validateOrg(res.data);
   });
 
   test("search org by name", async () => {
-    const res = await fhirApi.get(`/fhir/R4/Organization/?name=${org.name}`);
+    const res = await api.get(`/fhir/R4/Organization/?name=${org.name}`);
     expect(res.status).toBe(200);
     const body = res.data;
     expect(body.resourceType).toBeTruthy();
@@ -54,12 +54,12 @@ describe("Integration FHIR Org", () => {
 
   describe(`delete`, () => {
     test("delete org", async () => {
-      const res = await fhirApi.delete(`/fhir/R4/Organization/${org.id}`);
+      const res = await api.delete(`/fhir/R4/Organization/${org.id}`);
       validateDeleteResponse(res, "SUCCESSFUL_DELETE");
     });
 
     test("sequential delete org", async () => {
-      const res = await fhirApi.delete(`/fhir/R4/Organization/${org.id}`);
+      const res = await api.delete(`/fhir/R4/Organization/${org.id}`);
       validateDeleteResponse(res, "SUCCESSFUL_DELETE_ALREADY_DELETED");
     });
   });

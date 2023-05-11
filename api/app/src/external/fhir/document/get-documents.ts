@@ -1,6 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { api } from "../api";
 import { Config } from "../../../shared/config";
+import { makeFhirApi } from "../api";
 
 export function getDocumentSandboxPayload(patientId: string): DocumentReference[] {
   return [
@@ -99,14 +99,17 @@ export function getDocumentSandboxPayload(patientId: string): DocumentReference[
 }
 
 export const getDocuments = async ({
+  cxId,
   patientId,
 }: {
+  cxId: string;
   patientId: string;
 }): Promise<DocumentReference[] | undefined> => {
   // Until we have FHIR in sandbox
   if (Config.isSandbox()) {
     return getDocumentSandboxPayload(patientId);
   }
+  const api = makeFhirApi(cxId);
   const docs: DocumentReference[] = [];
   for await (const page of api.searchResourcePages("DocumentReference", `patient=${patientId}`)) {
     docs.push(...page);

@@ -10,7 +10,6 @@
     "allowUnreachableCode": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
-    "noUnusedLocals": true,
     "checkJs": true,
     // #340 - Left this ones out bc it was causing too many changes
     // "exactOptionalPropertyTypes": true,

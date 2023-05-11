@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { v4 as uuidv4 } from "uuid";
 import * as createTenant from "../../../external/fhir/admin";
 import { MAPIAccess } from "../../../models/medical/mapi-access";
@@ -10,7 +11,9 @@ let createTenantSafeMock: jest.SpyInstance;
 beforeEach(() => {
   jest.restoreAllMocks();
   getOrganizationOrFailMock = jest.spyOn(getOrg, "getOrganizationOrFail");
-  createTenantSafeMock = jest.spyOn(createTenant, "createTenantSafe");
+  createTenantSafeMock = jest
+    .spyOn(createTenant, "createTenantSafe")
+    .mockImplementation(async () => {});
 });
 
 describe("allowMapiAccess", () => {

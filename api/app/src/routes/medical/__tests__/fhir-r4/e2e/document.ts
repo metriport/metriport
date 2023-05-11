@@ -1,6 +1,6 @@
 import { makeBinary } from "./binary";
 import { makePatient } from "./patient";
-import { baseURL, nanoid } from "./shared";
+import { baseURL, nanoid } from "../../../../__tests__/shared";
 
 const defaultId = "2.16.840.1.113883.3.9621.5." + nanoid();
 

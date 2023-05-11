@@ -4,7 +4,6 @@ import { OK } from "http-status";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import {
   createQueryResponse,
-  DocumentQueryResp,
   queryDocumentsAcrossHIEs,
 } from "../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -30,22 +29,15 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
 
-    const documents = await getDocuments({ patientId });
+    const documents = await getDocuments({ cxId, patientId });
     const documentsDTO = toDTO(documents);
-
-    let query: DocumentQueryResp;
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
 
-    if (patient.data.documentQueryStatus === "processing") {
-      query = createQueryResponse("processing", patient);
-    } else {
-      query = createQueryResponse("completed");
-    }
+    const queryResp = createQueryResponse(patient.data.documentQueryStatus ?? "completed", patient);
 
     return res.status(OK).json({
-      queryStatus: query.queryStatus,
-      queryProgress: query.queryProgress,
+      ...queryResp,
       documents: documentsDTO,
     });
   })

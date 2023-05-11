@@ -39,7 +39,7 @@ router.post(
 
     // temp solution until we migrate to FHIR
     const fhirOrg = toFHIR(org);
-    await upsertOrgToFHIRServer(fhirOrg);
+    await upsertOrgToFHIRServer(org.cxId, fhirOrg);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
@@ -74,7 +74,7 @@ router.put(
 
     // temp solution until we migrate to FHIR
     const fhirOrg = toFHIR(org);
-    await upsertOrgToFHIRServer(fhirOrg);
+    await upsertOrgToFHIRServer(org.cxId, fhirOrg);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous

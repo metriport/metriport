@@ -1,4 +1,4 @@
-import { nanoid } from "./shared";
+import { nanoid } from "../../../../__tests__/shared";
 
 const makeData = () =>
   JSON.stringify({
