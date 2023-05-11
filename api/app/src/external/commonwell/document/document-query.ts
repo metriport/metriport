@@ -209,11 +209,8 @@ async function downloadDocsAndUpsertFHIR({
     documents.map(async doc => {
       try {
         const primaryId = getDocumentPrimaryId(doc);
-
         const s3FileName = createS3FileName(patient.cxId, primaryId);
-
         const s3File = await fileExists(s3FileName);
-
         if (s3File) return;
 
         if (doc.content.location) {
