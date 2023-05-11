@@ -1,0 +1,31 @@
+default-group: local
+groups:
+  local:
+    generators:
+      - name: fernapi/fern-typescript-express
+        version: 0.5.23
+        output:
+          location: local-file-system
+          path: ../../api/app/src/fern/generated
+        # https://metriport.slack.com/archives/C053CH9NU0P/p1683754409160589
+        config:
+          doNotHandleUnrecognizedErrors: true
+
+  publish:
+    generators:
+      - name: fernapi/fern-typescript-sdk
+        version: 0.5.16
+        output:
+          location: npm
+          package-name: "@fern-api/metriport"
+          token: ${FERN_NPM_TOKEN}
+        github:
+          repository: fern-metriport/metriport-node
+      - name: fernapi/fern-python-sdk
+        version: 0.3.2
+        output:
+          location: pypi
+          package-name: fern-metriport
+          token: ${FERN_PYPI_TOKEN}
+        github:
+          repository: fern-metriport/metriport-python
