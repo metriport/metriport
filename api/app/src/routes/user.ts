@@ -6,6 +6,7 @@ import { createConnectedUser } from "../command/connected-user/create-connected-
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { createUserToken } from "../command/cx-user/create-user-token";
 import BadRequestError from "../errors/bad-request";
+import NotFoundError from "../errors/not-found";
 import { ConnectedUser } from "../models/connected-user";
 import { Apple } from "../providers/apple";
 import { ConsumerHealthDataType } from "../providers/provider";
@@ -52,9 +53,7 @@ router.post(
     // validate required query params
     const cxId = getCxIdOrFail(req);
     const appUserId = req.query.appUserId as string;
-    if (!appUserId) {
-      return res.sendStatus(status.BAD_REQUEST);
-    }
+    if (!appUserId) throw new BadRequestError();
 
     if (Config.isSandbox()) {
       // limit the amount of users that can be created in sandbox mode
@@ -97,9 +96,7 @@ router.get(
   "/connect/token",
   asyncHandler(async (req: Request, res: Response) => {
     // validate required query params
-    if (!req.query.userId) {
-      return res.sendStatus(status.BAD_REQUEST);
-    }
+    if (!req.query.userId) throw new BadRequestError();
     const userId = getUserIdFrom("query", req).orFail();
     const cxId = getCxIdOrFail(req);
 
@@ -107,9 +104,7 @@ router.get(
     const connectedUser = await ConnectedUser.findOne({
       where: { id: userId, cxId },
     });
-    if (connectedUser == null) {
-      return res.sendStatus(status.BAD_REQUEST);
-    }
+    if (connectedUser == null) throw new NotFoundError("User not found");
 
     const userToken = await createUserToken({ cxId, userId });
 
@@ -144,7 +139,7 @@ router.delete(
     if (providerOAuth2.success) {
       await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
 
-      return res.sendStatus(200);
+      return res.sendStatus(status.OK);
       // } else if (providerOAuth1.success) {
       //   // await Constants.PROVIDER_OAUTH1_MAP[
       //   //   providerOAuth1.data
@@ -152,7 +147,7 @@ router.delete(
     } else if (req.query.provider === PROVIDER_APPLE) {
       const apple = new Apple();
       await apple.revokeProviderAccess(connectedUser);
-      return res.sendStatus(200);
+      return res.sendStatus(status.OK);
     } else {
       throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
     }

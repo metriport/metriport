@@ -83,6 +83,9 @@ jobs:
       - name: Garmin lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/garmin/"
+      - name: Withings lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/withings/"
       - name: Token-auth lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/token-auth/"

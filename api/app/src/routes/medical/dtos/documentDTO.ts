@@ -1,4 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import base64url from "base64url";
 import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
 import { capture } from "../../../shared/notifications";
 
@@ -18,12 +19,13 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
   if (docs) {
     return docs.flatMap(doc => {
       if (doc && doc.id && doc.content) {
+        const decodedId = base64url.decode(doc.id);
         const hasAttachment = doc.content[0];
 
         if (doc.content.length > 1) {
           capture.message("Doc contains more than one content item", {
             extra: {
-              id: doc.id,
+              id: decodedId,
               content_length: doc.content.length,
             },
           });
@@ -36,7 +38,7 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
           hasAttachment.attachment.url
         ) {
           return {
-            id: doc.id,
+            id: decodedId,
             description: doc.description,
             fileName: hasAttachment.attachment.title,
             location: hasAttachment.attachment.url,

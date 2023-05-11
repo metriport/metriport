@@ -6,16 +6,17 @@ import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
 import { DocumentWithFilename } from "../../commonwell/document/shared";
 import { ResourceType } from "../shared";
+import { getDocumentPrimaryId } from "../../../shared/external";
 
 export const toFHIR = (
   doc: DocumentWithFilename,
   organization: Organization,
   patient: Patient
 ): DocumentReference => {
-  const id = doc.id?.replace("urn:uuid:", "");
+  const primaryId = getDocumentPrimaryId(doc);
 
   return {
-    id: id,
+    id: primaryId,
     resourceType: ResourceType.DocumentReference,
     contained: [
       {

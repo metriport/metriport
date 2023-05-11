@@ -22,12 +22,13 @@ import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { toFHIR as toFHIRDocRef } from "../../fhir/document";
-import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
 import { DocumentWithFilename, getFileName } from "./shared";
+import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
+import { getDocumentPrimaryId } from "../../../shared/external";
 
 const s3client = new AWS.S3();
 
@@ -136,7 +137,7 @@ async function internalGetDocuments({
       extra: {
         cwReference: commonWell.lastReferenceHeader,
         patientId: patient.id,
-        cwErrs,
+        cwErrs: `${JSON.stringify(cwErrs, null, 2)}`,
       },
     });
   }
@@ -187,16 +188,15 @@ async function downloadDocsAndUpsertFHIR({
   facilityId: string;
   documents: Document[];
 }): Promise<DocumentReference[]> {
-  const uploadStream = (key: string) => {
+  const uploadStream = (s3FileName: string) => {
     const pass = new PassThrough();
-    const base64key = Buffer.from(key).toString("base64");
 
     return {
       writeStream: pass,
       promise: s3client
         .upload({
           Bucket: Config.getMedicalDocumentsBucketName(),
-          Key: createS3FileName(patient.cxId, base64key),
+          Key: s3FileName,
           Body: pass,
         })
         .promise(),
@@ -208,8 +208,13 @@ async function downloadDocsAndUpsertFHIR({
   const s3Refs = await Promise.allSettled(
     documents.map(async doc => {
       try {
-        if (doc.content?.masterIdentifier?.value && doc.content.location) {
-          const { writeStream, promise } = uploadStream(doc.content.masterIdentifier.value);
+        const primaryId = getDocumentPrimaryId(doc);
+        const s3FileName = createS3FileName(patient.cxId, primaryId);
+        const s3File = await fileExists(s3FileName);
+        if (s3File) return;
+
+        if (doc.content.location) {
+          const { writeStream, promise } = uploadStream(s3FileName);
 
           await downloadDocument({
             cxId: patient.cxId,
@@ -273,6 +278,21 @@ async function downloadDocsAndUpsertFHIR({
   );
 
   return docsNewLocation;
+}
+
+async function fileExists(key: string): Promise<boolean> {
+  try {
+    await s3client
+      .getObject({
+        Bucket: Config.getMedicalDocumentsBucketName(),
+        Key: key,
+      })
+      .promise();
+
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 function reportDocQuery(patient: Patient): void {

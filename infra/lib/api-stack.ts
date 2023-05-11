@@ -113,7 +113,6 @@ export class APIStack extends Stack {
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
     });
-
     const minDBCap = this.isProd(props) ? 2 : 1;
     const maxDBCap = this.isProd(props) ? 8 : 2;
     Aspects.of(dbCluster).add({
@@ -126,11 +125,7 @@ export class APIStack extends Stack {
         }
       },
     });
-
-    // add performance alarms for monitoring prod environment
-    if (this.isProd(props)) {
-      this.addDBClusterPerformanceAlarms(dbCluster, dbClusterName, slackNotification?.alarmAction);
-    }
+    this.addDBClusterPerformanceAlarms(dbCluster, dbClusterName, slackNotification?.alarmAction);
 
     //----------------------------------------------------------
     // DynamoDB
@@ -138,13 +133,12 @@ export class APIStack extends Stack {
 
     // global table for auth token management
     const dynamoConstructName = "APIUserTokens";
-    const replicationRegion = props.config.region === "us-east-1" ? "us-east-2" : "us-east-1";
     const dynamoDBTokenTable = new dynamodb.Table(this, dynamoConstructName, {
       partitionKey: { name: "token", type: dynamodb.AttributeType.STRING },
-      replicationRegions: this.isProd(props) ? [replicationRegion] : undefined,
-      replicationTimeout: this.isProd(props) ? Duration.hours(3) : undefined,
+      replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
+      replicationTimeout: Duration.hours(3),
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: this.isProd(props) ? true : undefined,
+      pointInTimeRecovery: true,
     });
     dynamoDBTokenTable.addGlobalSecondaryIndex({
       indexName: "oauthUserAccessToken_idx",
@@ -154,15 +148,11 @@ export class APIStack extends Stack {
       },
       projectionType: dynamodb.ProjectionType.ALL,
     });
-
-    // add performance alarms for monitoring prod environment
-    if (this.isProd(props)) {
-      this.addDynamoPerformanceAlarms(
-        dynamoDBTokenTable,
-        dynamoConstructName,
-        slackNotification?.alarmAction
-      );
-    }
+    this.addDynamoPerformanceAlarms(
+      dynamoDBTokenTable,
+      dynamoConstructName,
+      slackNotification?.alarmAction
+    );
 
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
@@ -293,6 +283,12 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
     });
 
+    this.setupWithingsWebhookAuth({
+      baseResource: webhookResource,
+      vpc: this.vpc,
+      fargateService: apiService,
+    });
+
     // add webhook path for apple health clients
     const appleHealthResource = webhookResource.addResource("apple");
     const integrationApple = new apig.Integration({
@@ -415,6 +411,40 @@ export class APIStack extends Stack {
     // setup $base/garmin path with token auth
     const garminResource = baseResource.addResource("garmin");
     garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
+  }
+
+  private setupWithingsWebhookAuth(ownProps: {
+    baseResource: apig.Resource;
+    vpc: ec2.IVpc;
+    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+  }) {
+    const { baseResource, vpc, fargateService: server } = ownProps;
+    const digLayer = new lambda.LayerVersion(this, "dig-layer", {
+      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+      code: lambda.Code.fromAsset("../api/lambdas/layers/dig-layer"),
+      description: "Adds dig to the lambdas",
+    });
+
+    const withingsLambda = new lambda_node.NodejsFunction(this, "WithingsLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "../api/lambdas/withings/index.js",
+      environment: {
+        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
+      },
+      vpc,
+      layers: [digLayer],
+      bundling: {
+        minify: false,
+        externalModules: ["aws-sdk", "dig"],
+      },
+    });
+    addErrorAlarmToLambdaFunc(this, withingsLambda, "WithingsAuthFunctionAlarm");
+
+    // Grant lambda access to the api server
+    server.service.connections.allowFrom(withingsLambda, Port.allTcp());
+
+    const withingsResource = baseResource.addResource("withings");
+    withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
   }
 
   private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {
