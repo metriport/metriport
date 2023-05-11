@@ -34,7 +34,7 @@ exports.handler = async req => {
   return defaultResponse();
 };
 
-var lookup = async address => {
+const lookup = async address => {
   return new Promise((resolve, reject) => {
     exec(`dig +short TXT ${address}`, (error, stdout, stderr) => {
       if (error || stderr) {
