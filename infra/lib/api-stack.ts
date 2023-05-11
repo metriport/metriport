@@ -419,6 +419,11 @@ export class APIStack extends Stack {
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
   }) {
     const { baseResource, vpc, fargateService: server } = ownProps;
+    const digLayer = new lambda.LayerVersion(this, "dig-layer", {
+      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+      code: lambda.Code.fromAsset("../api/lambdas/layers/dig-layer"),
+      description: "Adds dig to the lambdas",
+    });
 
     const withingsLambda = new lambda_node.NodejsFunction(this, "WithingsLambda", {
       runtime: lambda.Runtime.NODEJS_16_X,
@@ -427,6 +432,11 @@ export class APIStack extends Stack {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
       },
       vpc,
+      layers: [digLayer],
+      bundling: {
+        minify: false,
+        externalModules: ["aws-sdk", "dig"],
+      },
     });
     addErrorAlarmToLambdaFunc(this, withingsLambda, "WithingsAuthFunctionAlarm");
 

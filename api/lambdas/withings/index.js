@@ -17,26 +17,34 @@ const buildResponse = (status, body) => ({
 const defaultResponse = () => buildResponse(200);
 
 exports.handler = async req => {
-  const withingsIPAddresses1 = await lookup("ipblock-notify.withings.net");
-  const withingsIPAddresses2 = await lookup("ipblock-front.withings.net");
-
-  const withingsWhitelistIpAddresses = [...withingsIPAddresses1, ...withingsIPAddresses2];
-
-  const ipAddress = req.socket.remoteAddress;
-
+  const withingsIPAddresses = await Promise.all([
+    lookup("ipblock-notify.withings.net"),
+    lookup("ipblock-front.withings.net"),
+  ]);
+  const withingsWhitelistIpAddresses = withingsIPAddresses.reduce(
+    (acc, val) => acc.concat(val),
+    []
+  );
+  console.log(withingsWhitelistIpAddresses);
+  const ipAddress = req.requestContext.identity.sourceIp;
   if (withingsWhitelistIpAddresses.includes(ipAddress)) {
     return forwardCallToServer(req);
   }
-
   console.log("Request does not include a valid Withings IP address");
   return defaultResponse();
 };
 
-const lookup = async address => {
+var lookup = async address => {
   return new Promise((resolve, reject) => {
     exec(`dig +short TXT ${address}`, (error, stdout, stderr) => {
       if (error || stderr) {
-        reject("DNS lookup failed");
+        reject(
+          `DNS lookup failed. error: ${JSON.stringify(error, null, 2)}, stderr: ${JSON.stringify(
+            stderr,
+            null,
+            2
+          )}`
+        );
       }
       resolve(stdout.split(" ").map(s => s.replace(/[^0-9.]/g, "")));
     });
