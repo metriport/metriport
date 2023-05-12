@@ -44,7 +44,7 @@ export async function patientManagement(
     patient.details.name[0].family[0],
     patient.details.birthDate,
     patient.details.gender.code,
-    patient.details.address[0].zip
+    patient.details.address[0].zip ?? undefined
   );
   console.log(respD3a);
 
