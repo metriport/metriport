@@ -17,6 +17,8 @@ async function main() {
   const results: PatientCreate[] = [];
   const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];
 
+  // This will insert all the patients into a specific facility.
+  // Based off the apiKey it will determine the cx to add to the patients.
   fs.createReadStream("../insert-patients.csv")
     .pipe(csv())
     .on("data", async data => {
