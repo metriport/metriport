@@ -58,6 +58,7 @@ export async function populateFhirServer({
       cxId,
       patientId: patient.id,
       facilityId: patient.facilityIds[0],
+      override: true,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }).catch((err: any) => {
       log(`Failed to init query of documents for patient ${patient.id}: `, err.message);

@@ -74,7 +74,7 @@ export async function findOrCreatePatient(
     familyName,
     patientData.details.birthDate,
     patientData.details.gender.code,
-    patientData.details.address[0].zip ?? undefined
+    patientData.details.address[0].zip
   );
   console.log(respPatient);
 

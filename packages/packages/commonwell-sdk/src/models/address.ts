@@ -16,13 +16,13 @@ export const addressUseCodesSchema = z.enum(Object.keys(AddressUseCodes) as [str
 // A postal address.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.3 Address)
 export const addressSchema = z.object({
-  use: addressUseCodesSchema.nullish(),
-  line: z.array(z.string()).nullish(),
-  city: z.string().nullish(),
-  state: z.string().nullish(),
-  zip: z.string().nullish(),
-  country: z.string().nullish(),
-  period: periodSchema.nullish(),
+  use: addressUseCodesSchema.optional().nullable(),
+  line: z.array(z.string()).optional().nullable(),
+  city: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  zip: z.string(),
+  country: z.string().optional().nullable(),
+  period: periodSchema.optional().nullable(),
 });
 
 export type Address = z.infer<typeof addressSchema>;
