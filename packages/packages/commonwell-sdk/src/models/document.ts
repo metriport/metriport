@@ -1,10 +1,10 @@
 import { z } from "zod";
+import { addressSchema } from "./address";
+import { genderSchema } from "./demographics";
 import { humanNameSchema } from "./human-name";
 import { identifierUseCodesSchema } from "./identifier";
 import { isoDateTimeSchema } from "./iso-datetime";
 import { periodSchema } from "./period";
-import { addressSchema } from "./address";
-import { genderSchema } from "./demographics";
 
 // Used as a reference, but not exactly the actual definition:
 // https://specification.commonwellalliance.org/services/rest-api-reference#8610-documentreference
@@ -35,23 +35,27 @@ const codeableConceptSchema = z.object({
   text: z.string().optional(),
 });
 
+const containedAddress = addressSchema.partial({
+  zip: true,
+});
+
 const containedSchema = z.object({
   resourceType: resourceTypeSchema,
-  id: z.string(),
-  identifier: z.array(identifierSchema).optional(),
-  name: z.string().or(humanNameSchema).or(z.array(humanNameSchema)).optional(),
+  id: z.string().nullish(),
+  identifier: z.array(identifierSchema).nullish(),
+  name: z.string().or(humanNameSchema).or(z.array(humanNameSchema)).nullish(),
   organization: z
     .object({
       reference: z.string(),
     })
-    .optional(),
+    .nullish(),
   gender: z
     .object({
       coding: z.array(genderSchema).optional(),
     })
-    .optional(),
-  birthDate: z.string().optional(),
-  address: z.array(addressSchema).optional(),
+    .nullish(),
+  birthDate: z.string().nullish(),
+  address: z.array(containedAddress).nullish(),
 });
 
 const statusSchema = z.enum(["current", "superceded", "entered in error"]);
@@ -64,7 +68,7 @@ const eventSchema = codeableConceptSchema;
 export const contentSchema = z.object({
   // _links: resourceTypeSchema, // What's the structure here? -	A reserved property for presenting the link relations for this resource.
   resourceType: resourceTypeSchema,
-  contained: z.array(containedSchema),
+  contained: z.array(containedSchema).nullish(),
   masterIdentifier: identifierSchema,
   identifier: z.array(identifierSchema).optional(),
   subject: z.object({
@@ -130,18 +134,20 @@ export const operationOutcomeSchema = z.object({
   id: z.string(),
   content: z.object({
     resourceType: resourceTypeSchema,
-    issue: z.array(
-      z.object({
-        severity: z.string(),
-        type: z
-          .object({
-            code: z.string(),
-          })
-          .optional()
-          .nullable(),
-        details: z.string(),
-      })
-    ),
+    issue: z
+      .array(
+        z.object({
+          severity: z.string(),
+          type: z
+            .object({
+              code: z.string(),
+            })
+            .optional()
+            .nullable(),
+          details: z.string(),
+        })
+      )
+      .nullish(),
   }),
 });
 export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
