@@ -4,6 +4,7 @@ import { makeFhirAdminApi, makeFhirApi } from "../../external/fhir/api/api-facto
 import { toFHIR as orgToFHIR } from "../../external/fhir/organization";
 import { toFHIR as patientToFHIR } from "../../external/fhir/patient";
 import { Util } from "../../shared/util";
+import { queryDocumentsAcrossHIEs } from "./document/document-query";
 import { getOrganizationOrFail } from "./organization/get-organization";
 import { getPatients } from "./patient/get-patient";
 
@@ -42,12 +43,26 @@ export async function populateFhirServer({
       try {
         const patientToFhir = patientToFHIR(patient);
         await fhirApi.updateResource(patientToFhir);
-      } catch (err) {
-        log("Failed to create patient on FHIR server: ", patient.id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        log(`Failed to create patient on FHIR server, id ${patient.id}: `, err.message);
         throw err;
       }
     })
   );
+
+  log("Triggering document queries...");
+  patientsOnDB.forEach(patient => {
+    if (patient.facilityIds.length < 1) return;
+    queryDocumentsAcrossHIEs({
+      cxId,
+      patientId: patient.id,
+      facilityId: patient.facilityIds[0],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }).catch((err: any) => {
+      log(`Failed to init query of documents for patient ${patient.id}: `, err.message);
+    });
+  });
 
   return {
     patientsOK: res.filter(r => r.status === "fulfilled").length,
