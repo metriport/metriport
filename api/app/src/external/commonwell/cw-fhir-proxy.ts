@@ -2,6 +2,7 @@
 import proxy from "express-http-proxy";
 import Router from "express-promise-router";
 import NotFoundError from "../../errors/not-found";
+import { Organization, OrganizationModel } from "../../models/medical/organization";
 import { asyncHandler } from "../../routes/util";
 import { Config } from "../../shared/config";
 
@@ -31,15 +32,33 @@ const updateQueryString = (path: string, params: string): string | undefined => 
   return undefined;
 };
 
+// Didn't reuse getOrganizationOrFail bc we don't have `cxId` in this context and
+// we want to keep that function requiring `cxId` to avoid cross-tenant data access
+async function getOrgOrFail(orgId: string): Promise<Organization> {
+  const org = await OrganizationModel.findByPk(orgId);
+  if (!org) throw new NotFoundError(`Could not find organization`);
+  return org;
+}
+
 const router = fhirServerUrl
   ? proxy(fhirServerUrl, {
-      proxyReqPathResolver: function (req) {
+      proxyReqPathResolver: async function (req) {
         console.log(`ORIGINAL HEADERS: `, JSON.stringify(req.headers));
         console.log(`ORIGINAL URL: `, req.url);
         const parts = req.url.split("?");
         const path = parts[0];
-        const queryString = parts.length > 1 ? updateQueryString(path, parts[1]) : undefined;
-        const updatedURL = "/fhir" + path + (queryString ? "?" + queryString : "");
+        const queryString = parts[1];
+
+        const queryParams = new URLSearchParams(queryString);
+        const patienIdRaw = queryParams.get("patient.identifier")?.split("|") ?? [];
+        const orgId = patienIdRaw[1];
+        const org = await getOrgOrFail(orgId);
+        const tenant = org.cxId;
+
+        const queryStringUpdated =
+          parts.length > 1 ? updateQueryString(path, queryString) : undefined;
+        const updatedURL =
+          `/fhir/${tenant}` + path + (queryStringUpdated ? "?" + queryStringUpdated : "");
         console.log(`UPDATED URL: `, updatedURL);
         return updatedURL;
       },
