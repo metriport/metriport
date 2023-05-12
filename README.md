@@ -413,7 +413,7 @@ To do basic UI admin operations on the DynamoDB instance, you can do the followi
 
 ```shell
 $ npm install -g dynamodb-admin # only needs to be run once
-$ DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin # admin console will be available at http://localhost:8001/
+$ npm run ddb-admin # admin console will be available at http://localhost:8001/
 ```
 
 To kill and clean-up the back-end, hit `CTRL + C` a few times, and run the following from the `api/app` directory:
@@ -451,6 +451,21 @@ The `./utils` folder contains utilities that help with the development of this a
 Check the scripts on the folder's [package.json](https://github.com/metriport/metriport/blob/develop/utils/package.json) to see how to run these.
 
 ---
+
+### Tests
+
+Unit tests can be executed with:
+
+```shell
+$ npm run test
+```
+
+To run integration tests, make sure to check each package/folder README for requirements, but in general they can be
+executed with:
+
+```shell
+$ npm run test:e2e
+```
 
 ## **Self-Hosted Deployments**
 

@@ -17,7 +17,8 @@
     "lint-staged": "npx lint-staged",
     "prettier-fix": "npm run prettier-fix --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "commit": "cz"
+    "commit": "cz",
+    "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
   },
   "workspaces": {
     "packages": [

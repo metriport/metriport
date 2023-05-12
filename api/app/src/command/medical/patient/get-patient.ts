@@ -13,15 +13,19 @@ export const getPatients = async ({
   facilityId,
   cxId,
 }: {
-  facilityId: string;
+  facilityId?: string;
   cxId: string;
 }): Promise<Patient[]> => {
   const patients = await PatientModel.findAll({
     where: {
       cxId,
-      facilityIds: {
-        [Op.contains]: [facilityId],
-      },
+      ...(facilityId
+        ? {
+            facilityIds: {
+              [Op.contains]: [facilityId],
+            },
+          }
+        : undefined),
     },
     order: [["id", "ASC"]],
   });
