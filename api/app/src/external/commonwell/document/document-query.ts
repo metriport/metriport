@@ -37,9 +37,11 @@ const s3client = new AWS.S3();
 export async function queryDocuments({
   patient,
   facilityId,
+  override,
 }: {
   patient: Patient;
   facilityId: string;
+  override?: boolean;
 }): Promise<void> {
   const { organization, facility } = await getPatientData(patient, facilityId);
 
@@ -59,6 +61,7 @@ export async function queryDocuments({
         organization,
         facilityId,
         documents: cwDocuments,
+        override,
       });
 
       reportDocQuery(patient);
@@ -181,11 +184,13 @@ async function downloadDocsAndUpsertFHIR({
   organization,
   facilityId,
   documents,
+  override = false,
 }: {
   patient: Patient;
   organization: Organization;
   facilityId: string;
   documents: Document[];
+  override?: boolean;
 }): Promise<DocumentReference[]> {
   const uploadStream = (s3FileName: string) => {
     const pass = new PassThrough();
@@ -209,8 +214,11 @@ async function downloadDocsAndUpsertFHIR({
       try {
         const primaryId = getDocumentPrimaryId(doc);
         const s3FileName = createS3FileName(patient.cxId, primaryId);
-        const s3File = await fileExists(s3FileName);
-        if (s3File) return;
+
+        if (!override) {
+          const s3File = await fileExists(s3FileName);
+          if (s3File) return;
+        }
 
         if (doc.content.location) {
           const { writeStream, promise } = uploadStream(s3FileName);

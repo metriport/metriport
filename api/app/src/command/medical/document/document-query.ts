@@ -24,10 +24,12 @@ export async function queryDocumentsAcrossHIEs({
   cxId,
   patientId,
   facilityId,
+  override,
 }: {
   cxId: string;
   patientId: string;
   facilityId: string;
+  override?: boolean;
 }): Promise<DocumentQueryResp> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
   if (patient.data.documentQueryStatus === "processing")
@@ -42,7 +44,7 @@ export async function queryDocumentsAcrossHIEs({
   await updateDocQuery({ patient, status: "processing" });
 
   // intentionally asynchronous, not waiting for the result
-  getDocumentsFromCW({ patient, facilityId }).catch(
+  getDocumentsFromCW({ patient, facilityId, override }).catch(
     processAsyncError(`doc.list.getDocumentsFromCW`)
   );
 
