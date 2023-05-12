@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 
 # copy the dependencies file to the working directory
 COPY package*.json ./
-COPY tsconfig.json ./
+COPY tsconfig*.json ./
 
 # install dependencies
 RUN npm install
