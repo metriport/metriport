@@ -17,18 +17,17 @@ import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
-import { createS3FileName } from "../../../shared/external";
+import { createS3FileName, getDocumentPrimaryId } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { toFHIR as toFHIRDocRef } from "../../fhir/document";
+import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
 import { DocumentWithFilename, getFileName } from "./shared";
-import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
-import { getDocumentPrimaryId } from "../../../shared/external";
 
 const s3client = new AWS.S3();
 
@@ -236,7 +235,7 @@ async function downloadDocsAndUpsertFHIR({
           };
 
           const FHIRDocRef = toFHIRDocRef(docWithFile, organization, patient);
-          await upsertDocumentToFHIRServer(FHIRDocRef);
+          await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
 
           return FHIRDocRef;
         }

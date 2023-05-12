@@ -1,11 +1,11 @@
 import { Organization } from "@medplum/fhirtypes";
-import { api } from "../api";
 import { Config } from "../../../shared/config";
+import { makeFhirApi } from "../api/api-factory";
 
-export const upsertOrgToFHIRServer = async (organization: Organization) => {
+export const upsertOrgToFHIRServer = async (cxId: string, organization: Organization) => {
   if (Config.isSandbox()) {
     return;
   }
 
-  await api.updateResource(organization);
+  await makeFhirApi(cxId).updateResource(organization);
 };

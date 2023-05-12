@@ -2,8 +2,15 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { accountInit } from "../command/account-init";
+import {
+  populateFhirServer,
+  PopulateFhirServerResponse,
+} from "../command/medical/admin-populate-fhir";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
-import { asyncHandler, getCxIdFromQueryOrFail } from "./util";
+import BadRequestError from "../errors/bad-request";
+import { OrganizationModel } from "../models/medical/organization";
+import { getUUIDFrom } from "./schemas/uuid";
+import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
 
 const router = Router();
 
@@ -37,7 +44,7 @@ router.post(
 router.post(
   "/mapi-access",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdFromQueryOrFail(req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const outcome = await allowMapiAccess(cxId);
     return res.sendStatus(outcome === "new" ? httpStatus.CREATED : httpStatus.OK);
   })
@@ -54,9 +61,52 @@ router.post(
 router.delete(
   "/mapi-access",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdFromQueryOrFail(req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     await revokeMapiAccess(cxId);
     return res.sendStatus(httpStatus.NO_CONTENT);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /populate-fhir-server"
+ *
+ * Populate the FHIR server with customer's data.
+ * This an idempotent endpoint, which means it can be called multiple times and it
+ * will not have side effects.
+ *
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.allCustomers - Whether we should populate all customers.
+ * @param req.query.createIfNotExists - Creates the tenant on the FHIR server if
+ *          it does not exist. (optional, default false)
+ * @return 200 When successful, including the patient count.
+ */
+router.post(
+  "/populate-fhir-server",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").optional();
+    const allCustomers = getFrom("query").optional("allCustomers", req) === "true";
+    const createIfNotExists = getFrom("query").optional("createIfNotExists", req) === "true";
+
+    if (cxId && allCustomers) {
+      throw new BadRequestError("Either cxId or allCustomers must be provided, not both");
+    }
+
+    if (cxId) {
+      const result = await populateFhirServer({ cxId, createIfNotExists });
+      return res.json({ [cxId]: result });
+    }
+
+    if (!allCustomers) {
+      throw new BadRequestError("Either cxId or allCustomers must be provided, not both");
+    }
+
+    const allOrgs = await OrganizationModel.findAll();
+    const result: Record<string, PopulateFhirServerResponse> = {};
+    for (const org of allOrgs) {
+      const orgRes = await populateFhirServer({ cxId: org.cxId, createIfNotExists });
+      result[org.cxId] = orgRes;
+    }
+    return res.json(result);
   })
 );
 

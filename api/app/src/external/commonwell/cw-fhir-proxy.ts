@@ -1,24 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Request, Response } from "express";
 import proxy from "express-http-proxy";
 import Router from "express-promise-router";
-import httpStatus from "http-status";
-import { Config } from "../shared/config";
-import { asyncHandler, httpResponseBody } from "./util";
+import NotFoundError from "../../errors/not-found";
+import { asyncHandler } from "../../routes/util";
+import { Config } from "../../shared/config";
 
 const fhirServerUrl = Config.getFHIRServerUrl();
 
 const dummyRouter = Router();
 dummyRouter.all(
   "/*",
-  asyncHandler(async (req: Request, res: Response) => {
-    const status = httpStatus.NOT_FOUND;
-    return res.status(status).send(
-      httpResponseBody({
-        title: "FHIR server is disabled",
-        status,
-      })
-    );
+  asyncHandler(async () => {
+    throw new NotFoundError(`CW FHIR server is disabled`);
   })
 );
 

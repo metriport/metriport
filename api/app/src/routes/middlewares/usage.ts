@@ -31,12 +31,12 @@ export const reportUsage = (
   };
 };
 
-// export const reportMedicalUsage = reportUsage(ApiTypes.medical);
-export const reportDeviceUsage = reportUsage(ApiTypes.devices, getDevicesEntityId);
 /**
  * Reports usage base on the the customer ID on the Request, property 'cxId', and
  * the customer's userId on the request params, 'userId'.
  */
+export const reportDeviceUsage = reportUsage(ApiTypes.devices, getDevicesEntityId);
+
 const reportIt = async (
   req: Request,
   apiType: ApiTypes,

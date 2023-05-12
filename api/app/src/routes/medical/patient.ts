@@ -52,7 +52,7 @@ router.post(
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
-    await upsertPatientToFHIRServer(fhirPatient);
+    await upsertPatientToFHIRServer(patient.cxId, fhirPatient);
 
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })
@@ -90,7 +90,7 @@ router.put(
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(updatedPatient);
-    await upsertPatientToFHIRServer(fhirPatient);
+    await upsertPatientToFHIRServer(updatedPatient.cxId, fhirPatient);
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous - it takes too long to perform
