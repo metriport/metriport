@@ -36,7 +36,7 @@ const updateQueryString = (path: string, params: string): string | undefined => 
 // we want to keep that function requiring `cxId` to avoid cross-tenant data access
 async function getOrgOrFail(orgId: string): Promise<Organization> {
   const org = await OrganizationModel.findByPk(orgId);
-  if (!org) throw new NotFoundError(`Could not find organization`);
+  if (!org) throw new NotFoundError(`Could not find organization ${orgId}`);
   return org;
 }
 
@@ -51,7 +51,7 @@ const router = fhirServerUrl
 
         const queryParams = new URLSearchParams(queryString);
         const patienIdRaw = queryParams.get("patient.identifier")?.split("|") ?? [];
-        const orgId = patienIdRaw[1];
+        const orgId = (patienIdRaw[0] ?? "").replace("urn:oid:", "");
         const org = await getOrgOrFail(orgId);
         const tenant = org.cxId;
 
