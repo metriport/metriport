@@ -109,7 +109,7 @@ export const certificate = {
 function getCertificateContent(cert: string): string | undefined {
   const regex = /-+BEGIN CERTIFICATE-+([\s\S]+?)-+END CERTIFICATE-+/i;
   const matches = cert.match(regex);
-  if (matches && matches.length > 1) {
+  if (matches && matches[1]) {
     const content = matches[1];
     return content.replace(/\r\n|\n|\r/gm, "");
   }

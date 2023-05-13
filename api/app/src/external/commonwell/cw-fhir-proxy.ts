@@ -1,12 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Request, Response } from "express";
 import proxy from "express-http-proxy";
 import Router from "express-promise-router";
+import { IncomingMessage } from "http";
+import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
-import { Organization, OrganizationModel } from "../../models/medical/organization";
 import { asyncHandler } from "../../routes/util";
 import { Config } from "../../shared/config";
+import { getOrgOrFail } from "./cw-fhir-proxy-helpers";
 
 const fhirServerUrl = Config.getFHIRServerUrl();
+const pathSeparator = "/";
+const binaryResourceName = "Binary";
+const docReferenceResourceName = "DocumentReference";
 
 const dummyRouter = Router();
 dummyRouter.all(
@@ -32,51 +38,72 @@ const updateQueryString = (path: string, params: string): string | undefined => 
   return undefined;
 };
 
-// Didn't reuse getOrganizationOrFail bc we don't have `cxId` in this context and
-// we want to keep that function requiring `cxId` to avoid cross-tenant data access
-async function getOrgOrFail(orgId: string): Promise<Organization> {
-  const org = await OrganizationModel.findByPk(orgId);
-  if (!org) throw new NotFoundError(`Could not find organization ${orgId}`);
-  return org;
+type MainType = { updatedPath: string; updatedQuery: string | undefined; tenant: string };
+
+export function processBinary(path: string, queryString?: string): MainType {
+  const pathItems = path.split(pathSeparator);
+  const pos = pathItems.indexOf(binaryResourceName);
+  const updatedPath = pathSeparator + pathItems.slice(pos).join(pathSeparator);
+  const updatedQuery = queryString;
+  const tenant = pos > 0 ? pathItems[pos - 1] ?? "" : "";
+  return { updatedPath, updatedQuery, tenant };
+}
+
+export async function processDocReference(path: string, queryString?: string): Promise<MainType> {
+  if (!queryString) throw new BadRequestError(`Missing query string`);
+  const queryParams = new URLSearchParams(queryString);
+  const patientIdRaw = queryParams.get("patient.identifier")?.split("|") ?? [];
+  const orgId = (patientIdRaw[0] ?? "").replace("urn:oid:", "");
+  const org = await getOrgOrFail(orgId);
+  const tenant = org.cxId;
+  const updatedPath = path;
+  const updatedQuery = queryString ? updateQueryString(path, queryString) : undefined;
+  return { updatedPath, updatedQuery, tenant };
+}
+
+export async function process(path: string, queryString?: string): Promise<MainType> {
+  if (path.includes(binaryResourceName)) return processBinary(path, queryString);
+  if (path.includes(docReferenceResourceName)) return processDocReference(path, queryString);
+  throw new BadRequestError(`Unsupported resource type`);
+}
+
+export async function proxyReqPathResolver(req: Request) {
+  console.log(`ORIGINAL HEADERS: `, JSON.stringify(req.headers));
+  console.log(`ORIGINAL URL: `, req.url);
+  const parts = req.url.split("?");
+  const path = parts[0];
+  const queryString = parts[1];
+  if (!path) throw new BadRequestError(`Missing path`);
+
+  const { updatedPath, updatedQuery, tenant } = await process(path, queryString);
+
+  const updatedURL = `/fhir/${tenant}` + updatedPath + (updatedQuery ? "?" + updatedQuery : "");
+  console.log(`UPDATED URL: `, updatedURL);
+  return updatedURL;
+}
+
+export async function userResDecorator(
+  proxyRes: IncomingMessage, // eslint-disable-line @typescript-eslint/no-unused-vars
+  proxyResData: any,
+  userReq: Request, // eslint-disable-line @typescript-eslint/no-unused-vars
+  userRes: Response // eslint-disable-line @typescript-eslint/no-unused-vars
+) {
+  try {
+    const payloadString = proxyResData.toString("utf8");
+    const updatedPayload = payloadString;
+    const payload = JSON.parse(updatedPayload);
+    return JSON.stringify(payload);
+  } catch (err) {
+    console.log(`Error parsing/transforming response: `, err);
+    console.log(`RAW, ORIGINAL RESPONSE: `, proxyResData);
+    return proxyResData;
+  }
 }
 
 const router = fhirServerUrl
   ? proxy(fhirServerUrl, {
-      proxyReqPathResolver: async function (req) {
-        console.log(`ORIGINAL HEADERS: `, JSON.stringify(req.headers));
-        console.log(`ORIGINAL URL: `, req.url);
-        const parts = req.url.split("?");
-        const path = parts[0];
-        const queryString = parts[1];
-
-        const queryParams = new URLSearchParams(queryString);
-        const patienIdRaw = queryParams.get("patient.identifier")?.split("|") ?? [];
-        const orgId = (patienIdRaw[0] ?? "").replace("urn:oid:", "");
-        const org = await getOrgOrFail(orgId);
-        const tenant = org.cxId;
-
-        const queryStringUpdated =
-          parts.length > 1 ? updateQueryString(path, queryString) : undefined;
-        const updatedURL =
-          `/fhir/${tenant}` + path + (queryStringUpdated ? "?" + queryStringUpdated : "");
-        console.log(`UPDATED URL: `, updatedURL);
-        return updatedURL;
-      },
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      userResDecorator: function (proxyRes, proxyResData, userReq, userRes) {
-        try {
-          const payloadString = proxyResData.toString("utf8");
-          console.log(`ORIGINAL RESPONSE: `, JSON.stringify(JSON.parse(payloadString)));
-          const updatedPayload = payloadString;
-          const payload = JSON.parse(updatedPayload);
-          console.log(`UPDATED RESPONSE: `, JSON.stringify(payload));
-          return JSON.stringify(payload);
-        } catch (err) {
-          console.log(`Error parsing/transforming response: `, err);
-          console.log(`RAW, ORIGINAL RESPONSE: `, proxyResData);
-          return proxyResData;
-        }
-      },
+      proxyReqPathResolver,
+      userResDecorator,
     })
   : dummyRouter;
 

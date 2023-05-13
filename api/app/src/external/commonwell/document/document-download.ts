@@ -3,6 +3,7 @@ import * as stream from "stream";
 import NotFoundError from "../../../errors/not-found";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
+import { Util } from "../../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData } from "../patient-shared";
 
@@ -19,6 +20,8 @@ export async function downloadDocument({
   location: string;
   stream: stream.Writable;
 }): Promise<void> {
+  const { log } = Util.out(`CW downloadDocument - M patient ${patientId}`);
+
   const { organization, facility } = await getPatientData({ id: patientId, cxId }, facilityId);
   const orgName = organization.data.name;
   const orgId = organization.id;
@@ -29,6 +32,7 @@ export async function downloadDocument({
   try {
     await commonWell.retrieveDocument(queryMeta, location, stream);
   } catch (err) {
+    log(`Error retrieving from CW (patientId ${patientId}, location ${location}): `, err);
     capture.error(err, {
       extra: {
         context: `cw.retrieveDocument`,
