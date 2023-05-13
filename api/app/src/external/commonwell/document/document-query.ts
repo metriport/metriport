@@ -270,6 +270,7 @@ async function downloadDocsAndUpsertFHIR({
           log(`Doc without location, skipping - docId ${primaryId}, s3FileName ${s3FileName}`);
         }
       } catch (error) {
+        log(`Error downloading from CW and upserting to FHIR (docId ${doc.id}): ${error}`);
         capture.error(error, {
           extra: {
             context: `s3.documentUpload`,
