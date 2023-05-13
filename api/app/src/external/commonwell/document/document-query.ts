@@ -43,6 +43,8 @@ export async function queryDocuments({
   facilityId: string;
   override?: boolean;
 }): Promise<void> {
+  const { log } = Util.out(`CW queryDocuments - M patient ${patient.id}`);
+
   const { organization, facility } = await getPatientData(patient, facilityId);
 
   try {
@@ -55,6 +57,7 @@ export async function queryDocuments({
       );
     } else {
       const cwDocuments = await internalGetDocuments({ patient, organization, facility });
+      log(`Found ${cwDocuments.length} documents`);
 
       const FHIRDocRefs = await downloadDocsAndUpsertFHIR({
         patient,
@@ -98,7 +101,7 @@ async function internalGetDocuments({
   organization: Organization;
   facility: Facility;
 }): Promise<Document[]> {
-  const { debug } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
+  const { log } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
 
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return [];
@@ -114,16 +117,19 @@ async function internalGetDocuments({
   const cwErrs: OperationOutcome[] = [];
   try {
     const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
-    debug(`resp queryDocuments: ${JSON.stringify(docs, null, 2)}`);
+    log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
 
     for (const item of queryResponse.entry) {
       if (item.content?.resourceType === documentReferenceResourceType) {
         docs.push(item as Document);
       } else if (item.content?.resourceType === operationOutcomeResourceType) {
         cwErrs.push(item as OperationOutcome);
+      } else {
+        log(`Unexpected resource type: ${item.content?.resourceType}`);
       }
     }
   } catch (err) {
+    log(`Error querying docs: ${err}`);
     capture.error(err, {
       extra: {
         context: `cw.queryDocuments`,
@@ -135,6 +141,7 @@ async function internalGetDocuments({
   }
 
   if (cwErrs.length > 0) {
+    log(`Document query contained errors: ${JSON.stringify(cwErrs)}`);
     capture.message("Document query contained errors", {
       extra: {
         cwReference: commonWell.lastReferenceHeader,
@@ -144,16 +151,17 @@ async function internalGetDocuments({
     });
   }
 
+  log(`Document query got ${docs.length} documents${docs.length ? ", processing" : ""}...`);
   const documents: Document[] = docs.flatMap(d => {
     if (d.content.size === 0) {
+      log(`Document is of size 0, skipping - doc id ${d.id}`);
       capture.message("Document is of size 0", {
         extra: d.content,
       });
-
       return [];
     }
 
-    if (d.content?.masterIdentifier?.value && d.content && d.content.location) {
+    if (d.content && d.content.masterIdentifier?.value && d.content.location) {
       return {
         id: d.content.masterIdentifier.value,
         content: { location: d.content.location, ...d.content },
@@ -172,7 +180,7 @@ async function internalGetDocuments({
         raw: d,
       };
     }
-
+    log(`content, master ID or location not present, skipping - ${JSON.stringify(d)}`);
     return [];
   });
 
@@ -192,6 +200,8 @@ async function downloadDocsAndUpsertFHIR({
   documents: Document[];
   override?: boolean;
 }): Promise<DocumentReference[]> {
+  const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
+
   const uploadStream = (s3FileName: string) => {
     const pass = new PassThrough();
 
@@ -217,7 +227,17 @@ async function downloadDocsAndUpsertFHIR({
 
         if (!override) {
           const s3File = await fileExists(s3FileName);
-          if (s3File) return;
+          if (s3File) {
+            // TODO remove this once this is working for a few weeks
+            log(
+              `Doc already exists in S3 and override=false, skipping - ` +
+                `docId ${primaryId}, s3FileName ${s3FileName}`
+            );
+            return;
+          }
+        } else {
+          // TODO remove this once this is working for a few weeks
+          log(`override=true, NOT checking whether doc exists - s3FileName ${s3FileName}`);
         }
 
         if (doc.content.location) {
@@ -246,6 +266,8 @@ async function downloadDocsAndUpsertFHIR({
           await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
 
           return FHIRDocRef;
+        } else {
+          log(`Doc without location, skipping - docId ${primaryId}, s3FileName ${s3FileName}`);
         }
       } catch (error) {
         capture.error(error, {

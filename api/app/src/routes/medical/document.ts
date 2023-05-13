@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { OK } from "http-status";
-import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import {
   createQueryResponse,
@@ -11,6 +10,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import { getDocuments } from "../../external/fhir/document/get-documents";
 import { Config } from "../../shared/config";
+import { stringToBoolean } from "../../shared/types";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 
@@ -60,13 +60,13 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
-    const override = z.boolean().optional().parse(getFrom("query").optional("override", req));
+    const override = stringToBoolean(getFrom("query").optional("override", req));
 
     const { queryStatus, queryProgress } = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
-      override: override,
+      override,
     });
 
     return res.status(OK).json({ queryStatus, queryProgress });
