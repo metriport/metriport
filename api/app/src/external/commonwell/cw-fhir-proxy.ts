@@ -77,7 +77,8 @@ export async function proxyReqPathResolver(req: Request) {
 
   const { updatedPath, updatedQuery, tenant } = await process(path, queryString);
 
-  const updatedURL = `/fhir/${tenant}` + updatedPath + (updatedQuery ? "?" + updatedQuery : "");
+  const updatedURL =
+    `/fhir` + (tenant ? `/${tenant}` : "") + updatedPath + (updatedQuery ? "?" + updatedQuery : "");
   console.log(`UPDATED URL: `, updatedURL);
   return updatedURL;
 }

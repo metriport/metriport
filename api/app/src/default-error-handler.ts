@@ -47,7 +47,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     return res.contentType("json").status(httpStatus.BAD_REQUEST).send(zodResponseBody(err));
   }
   if (err instanceof OperationOutcomeError) {
-    const status = httpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      err.outcome.id === "not-found" ? httpStatus.NOT_FOUND : httpStatus.INTERNAL_SERVER_ERROR;
     if (req.path.includes("fhir/R4")) {
       return res.contentType("json").status(status).send(err.outcome);
     } else {
@@ -58,7 +59,9 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
           httpResponseBody({
             status,
             title: err.name,
-            detail: err.outcome.issue?.map(i => i.diagnostics ?? i.details ?? i.code).join("; "),
+            detail: err.outcome.issue
+              ?.map(i => i.diagnostics ?? i.details?.text ?? i.code)
+              .join("; "),
             name: httpStatus[status],
           })
         );
