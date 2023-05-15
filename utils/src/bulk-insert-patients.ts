@@ -8,6 +8,7 @@ import fs from "fs";
 const apiKey = getEnvVarOrFail("API_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
+const delayTime = 3000;
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -28,7 +29,7 @@ async function main() {
     .on("end", async () => {
       for (const [i, patient] of results.entries()) {
         try {
-          await sleep(3000);
+          await sleep(delayTime);
           const createdPatient = await metriportAPI.createPatient(patient, facilityId);
           console.log(i, createdPatient);
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
