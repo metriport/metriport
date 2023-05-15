@@ -1,7 +1,10 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { makeFhirApi } from "../api/api-factory";
 
-export const upsertDocumentToFHIRServer = async (cxId: string, docRef: DocumentReference) => {
+export const upsertDocumentToFHIRServer = async (
+  cxId: string,
+  docRef: DocumentReference
+): Promise<void> => {
   const fhir = makeFhirApi(cxId);
   try {
     await fhir.updateResource({
