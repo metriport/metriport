@@ -74,7 +74,8 @@ export interface PatientCreate extends BaseDomainCreate {
 }
 
 export function splitName(name: string): string[] {
-  return name.split(/[\s,]+/);
+  // splits by comma delimiter and filters out empty strings
+  return name.split(/[\s,]+/).filter(str => str);
 }
 
 export function joinName(name: string[]): string {

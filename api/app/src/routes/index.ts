@@ -6,6 +6,7 @@ import connect from "./connect";
 import { requestLogger } from "./helpers/requestLogger";
 import internal from "./internal";
 import medical from "./medical";
+import fhirRouter from "./medical/fhir-r4-proxy";
 import { checkMAPIAccess, processAPIKey } from "./middlewares/auth";
 import { reportDeviceUsage } from "./middlewares/usage";
 import nutrition from "./nutrition";
@@ -31,8 +32,9 @@ export default (app: Application) => {
   app.use("/sleep", processAPIKey, reportDeviceUsage, sleep);
   app.use("/user", processAPIKey, reportDeviceUsage, user);
 
-  // medical routes with API key auth
+  // medical routes with API key auth - report usage is on individual routes
   app.use("/medical/v1", processAPIKey, checkMAPIAccess, medical);
+  app.use("/fhir/R4", processAPIKey, checkMAPIAccess, fhirRouter);
 
   // routes with session token auth
   app.use("/connect", connect);

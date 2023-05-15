@@ -4,14 +4,14 @@ import { OK } from "http-status";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import {
   createQueryResponse,
-  DocumentQueryResp,
   queryDocumentsAcrossHIEs,
 } from "../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import { getDocuments } from "../../external/fhir/document/get-documents";
 import { Config } from "../../shared/config";
-import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../util";
+import { stringToBoolean } from "../../shared/types";
+import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 
 const router = Router();
@@ -30,22 +30,15 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
 
-    const documents = await getDocuments({ patientId });
+    const documents = await getDocuments({ cxId, patientId });
     const documentsDTO = toDTO(documents);
-
-    let query: DocumentQueryResp;
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
 
-    if (patient.data.documentQueryStatus === "processing") {
-      query = createQueryResponse("processing", patient);
-    } else {
-      query = createQueryResponse("completed");
-    }
+    const queryResp = createQueryResponse(patient.data.documentQueryStatus ?? "completed", patient);
 
     return res.status(OK).json({
-      queryStatus: query.queryStatus,
-      queryProgress: query.queryProgress,
+      ...queryResp,
       documents: documentsDTO,
     });
   })
@@ -58,6 +51,7 @@ router.get(
  *
  * @param req.query.patientId Patient ID for which to retrieve document metadata.
  * @param req.query.facilityId The facility providing NPI for the document query.
+ * @param req.query.override Whether to override files already downloaded (optional, defaults to false).
  * @return The status of document querying.
  */
 router.post(
@@ -66,11 +60,13 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const override = stringToBoolean(getFrom("query").optional("override", req));
 
     const { queryStatus, queryProgress } = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
+      override,
     });
 
     return res.status(OK).json({ queryStatus, queryProgress });

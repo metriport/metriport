@@ -11,7 +11,7 @@ export type DocumentWithFilename = Document & {
 export function getFileName(patient: Patient, doc: Document): string {
   const prefix = "document_" + makePatientOID("", patient.patientNumber).substring(1);
   const display = doc.content?.type?.coding?.length
-    ? doc.content?.type.coding[0].display
+    ? doc.content?.type.coding[0]?.display
     : undefined;
   const suffix = getSuffix(doc.id);
   const extension = getFileExtension(doc.content?.mimeType);

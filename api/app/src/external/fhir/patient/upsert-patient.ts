@@ -1,11 +1,11 @@
 import { Patient } from "@medplum/fhirtypes";
-import { api } from "../api";
 import { Config } from "../../../shared/config";
+import { makeFhirApi } from "../api/api-factory";
 
-export const upsertPatientToFHIRServer = async (patient: Patient) => {
+export const upsertPatientToFHIRServer = async (cxId: string, patient: Patient) => {
   if (Config.isSandbox()) {
     return;
   }
 
-  await api.updateResource(patient);
+  await makeFhirApi(cxId).updateResource(patient);
 };
