@@ -57,7 +57,7 @@ services:
   postgres:
     image: postgres:14.4-alpine
     restart: always
-    command: -c 'max_connections=200'
+    command: -c 'max_connections=350'
     environment:
       # You can set the value of environment variables
       # in your docker-compose.yml file

@@ -58,7 +58,7 @@ const initDB = async (): Promise<void> => {
     port: dbCreds.port,
     dialect: dbCreds.engine,
     pool: {
-      max: 50,
+      max: 300,
       min: 20,
       acquire: 30000,
       idle: 10000,
