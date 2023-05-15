@@ -221,6 +221,7 @@ async function downloadDocsAndUpsertFHIR({
 
   let completedCount = 0;
 
+  log(`override=true, NOT checking whether docs exist`);
   const s3Refs = await Promise.allSettled(
     documents.map(async doc => {
       try {
@@ -237,9 +238,6 @@ async function downloadDocsAndUpsertFHIR({
             );
             return;
           }
-        } else {
-          // TODO remove this once this is working for a few weeks
-          log(`override=true, NOT checking whether doc exists - s3FileName ${s3FileName}`);
         }
 
         if (doc.content.location) {
