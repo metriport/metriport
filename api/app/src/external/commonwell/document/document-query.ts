@@ -12,6 +12,7 @@ import { updateDocQuery } from "../../../command/medical/document/document-query
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import { processPatientDocumentRequest } from "../../../command/webhook/medical";
+import MetriportError from "../../../errors/metriport-error";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
@@ -24,6 +25,7 @@ import { Util } from "../../../shared/util";
 import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
+import { MAX_FHIR_DOC_ID_LENGTH } from "../../fhir/shared";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
@@ -241,6 +243,12 @@ async function downloadDocsAndUpsertFHIR({
         }
 
         if (doc.content.location) {
+          // Make this before download and insert on S3 bc of https://metriport.slack.com/archives/C04DBBJSKGB/p1684113732495119?thread_ts=1684105959.041439&cid=C04DBBJSKGB
+          const fhirDocId = getDocumentPrimaryId(doc);
+          if (fhirDocId.length > MAX_FHIR_DOC_ID_LENGTH) {
+            throw new MetriportError("FHIR doc ID too long", undefined, { fhirDocId });
+          }
+
           const { writeStream, promise } = uploadStream(s3FileName);
 
           await downloadDocument({
@@ -262,7 +270,7 @@ async function downloadDocsAndUpsertFHIR({
             fileName: data.Key,
           };
 
-          const FHIRDocRef = toFHIRDocRef(docWithFile, organization, patient);
+          const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
           await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
 
           return FHIRDocRef;
@@ -276,6 +284,10 @@ async function downloadDocsAndUpsertFHIR({
             context: `s3.documentUpload`,
             patientId: patient.id,
             documentReference: doc,
+            // TODO test/remove if possible
+            // couldn't test if this will be automatically visible in Sentry just by sending the error
+            // as first param to capture.error
+            ...(error instanceof MetriportError ? { additionalInfo: error.additionalInfo } : {}),
           },
         });
         throw error;
