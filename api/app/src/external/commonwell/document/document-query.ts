@@ -7,6 +7,7 @@ import {
   operationOutcomeResourceType,
 } from "@metriport/commonwell-sdk";
 import * as AWS from "aws-sdk";
+import { chunk } from "lodash";
 import { PassThrough } from "stream";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
@@ -32,6 +33,10 @@ import { downloadDocument } from "./document-download";
 import { DocumentWithFilename, getFileName } from "./shared";
 
 const s3client = new AWS.S3();
+
+const DOC_DOWNLOAD_CHUNK_SIZE = 10;
+const DOC_DOWNLOAD_SINGLE_DELAY_MS_MAX = 1_000;
+const DOC_DOWNLOAD_GROUP_DELAY_MS_MAX = 5_000;
 
 /**
  * This is likely to be a long-running function
@@ -203,6 +208,7 @@ async function downloadDocsAndUpsertFHIR({
   override?: boolean;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
+  log(`override=true, NOT checking whether docs exist`);
 
   const uploadStream = (s3FileName: string) => {
     const pass = new PassThrough();
@@ -219,107 +225,129 @@ async function downloadDocsAndUpsertFHIR({
     };
   };
 
+  const docsNewLocation: DocumentReference[] = [];
   let completedCount = 0;
 
-  const s3Refs = await Promise.allSettled(
-    documents.map(async doc => {
-      try {
-        const primaryId = getDocumentPrimaryId(doc);
-        const s3FileName = createS3FileName(patient.cxId, primaryId);
-
-        if (!override) {
-          const s3File = await fileExists(s3FileName);
-          if (s3File) {
-            // TODO remove this once this is working for a few weeks
-            log(
-              `Doc already exists in S3 and override=false, skipping - ` +
-                `docId ${primaryId}, s3FileName ${s3FileName}`
-            );
-            return;
-          }
-        } else {
-          // TODO remove this once this is working for a few weeks
-          log(`override=true, NOT checking whether doc exists - s3FileName ${s3FileName}`);
-        }
-
-        if (doc.content.location) {
-          // Make this before download and insert on S3 bc of https://metriport.slack.com/archives/C04DBBJSKGB/p1684113732495119?thread_ts=1684105959.041439&cid=C04DBBJSKGB
-          const fhirDocId = getDocumentPrimaryId(doc);
-          if (fhirDocId.length > MAX_FHIR_DOC_ID_LENGTH) {
-            throw new MetriportError("FHIR doc ID too long", undefined, { fhirDocId });
-          }
-
-          const { writeStream, promise } = uploadStream(s3FileName);
-
-          await downloadDocument({
-            cxId: patient.cxId,
-            patientId: patient.id,
-            facilityId: facilityId,
-            location: doc.content?.location,
-            stream: writeStream,
-          });
-
-          const data = await promise;
-
-          const docWithFile: DocumentWithFilename = {
-            ...doc,
-            content: {
-              ...doc.content,
-              location: data.Location,
-            },
-            fileName: data.Key,
-          };
-
-          const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
-          await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
-
-          return FHIRDocRef;
-        } else {
-          log(`Doc without location, skipping - docId ${primaryId}, s3FileName ${s3FileName}`);
-        }
-      } catch (error) {
-        log(`Error downloading from CW and upserting to FHIR (docId ${doc.id}): ${error}`);
-        capture.error(error, {
-          extra: {
-            context: `s3.documentUpload`,
-            patientId: patient.id,
-            documentReference: doc,
-            // TODO test/remove if possible
-            // couldn't test if this will be automatically visible in Sentry just by sending the error
-            // as first param to capture.error
-            ...(error instanceof MetriportError ? { additionalInfo: error.additionalInfo } : {}),
-          },
-        });
-        throw error;
-      } finally {
-        // TODO: eventually we will have to update this to support multiple HIEs
+  // split the list in chunks
+  const chunks = chunk(documents, DOC_DOWNLOAD_CHUNK_SIZE);
+  for (const docChunk of chunks) {
+    const s3Refs = await Promise.allSettled(
+      docChunk.map(async doc => {
         try {
-          const newPatient = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
+          const primaryId = getDocumentPrimaryId(doc);
+          const s3FileName = createS3FileName(patient.cxId, primaryId);
 
-          completedCount = completedCount + 1;
+          if (!override) {
+            const s3File = await fileExists(s3FileName);
+            if (s3File) {
+              // TODO remove this once this is working for a few weeks
+              log(
+                `Doc already exists in S3 and override=false, skipping - ` +
+                  `docId ${primaryId}, s3FileName ${s3FileName}`
+              );
+              return;
+            }
+          }
 
-          await updateDocQuery({
-            patient: newPatient,
-            status: "processing",
-            progress: {
-              completed: completedCount,
-              total: documents.length,
+          if (doc.content.location) {
+            // Make this before download and insert on S3 bc of https://metriport.slack.com/archives/C04DBBJSKGB/p1684113732495119?thread_ts=1684105959.041439&cid=C04DBBJSKGB
+            const fhirDocId = getDocumentPrimaryId(doc);
+            if (fhirDocId.length > MAX_FHIR_DOC_ID_LENGTH) {
+              throw new MetriportError("FHIR doc ID too long", undefined, { fhirDocId });
+            }
+
+            // take some time to avoid throttling other servers
+            await sleepSingleDownload();
+
+            const { writeStream, promise } = uploadStream(s3FileName);
+
+            await downloadDocument({
+              cxId: patient.cxId,
+              patientId: patient.id,
+              facilityId: facilityId,
+              location: doc.content?.location,
+              stream: writeStream,
+            });
+
+            const data = await promise;
+
+            const docWithFile: DocumentWithFilename = {
+              ...doc,
+              content: {
+                ...doc.content,
+                location: data.Location,
+              },
+              fileName: data.Key,
+            };
+
+            const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
+            await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
+
+            return FHIRDocRef;
+          } else {
+            log(`Doc without location, skipping - docId ${primaryId}, s3FileName ${s3FileName}`);
+          }
+        } catch (error) {
+          log(`Error downloading from CW and upserting to FHIR (docId ${doc.id}): ${error}`);
+          capture.error(error, {
+            extra: {
+              context: `s3.documentUpload`,
+              patientId: patient.id,
+              documentReference: doc,
+              // TODO test/remove if possible
+              // couldn't test if this will be automatically visible in Sentry just by sending the error
+              // as first param to capture.error
+              ...(error instanceof MetriportError ? { additionalInfo: error.additionalInfo } : {}),
             },
           });
-        } catch (err) {
-          capture.error(err, {
-            extra: { context: `cw.getDocuments.updateDocQuery` },
-          });
-        }
-      }
-    })
-  );
+          throw error;
+        } finally {
+          // TODO: eventually we will have to update this to support multiple HIEs
+          try {
+            const newPatient = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
 
-  const docsNewLocation: DocumentReference[] = s3Refs.flatMap(ref =>
-    ref.status === "fulfilled" && ref.value ? ref.value : []
-  );
+            completedCount = completedCount + 1;
+
+            await updateDocQuery({
+              patient: newPatient,
+              status: "processing",
+              progress: {
+                completed: completedCount,
+                total: documents.length,
+              },
+            });
+          } catch (err) {
+            capture.error(err, {
+              extra: { context: `cw.getDocuments.updateDocQuery` },
+            });
+          }
+        }
+      })
+    );
+
+    const docGroupLocations: DocumentReference[] = s3Refs.flatMap(ref =>
+      ref.status === "fulfilled" && ref.value ? ref.value : []
+    );
+    docsNewLocation.push(...docGroupLocations);
+
+    // take some time to avoid throttling other servers
+    await sleepBetweenGroups();
+  }
 
   return docsNewLocation;
+}
+
+async function sleepBetweenGroups(): Promise<void> {
+  return sleep(DOC_DOWNLOAD_GROUP_DELAY_MS_MAX, 0.1);
+}
+async function sleepSingleDownload(): Promise<void> {
+  return sleep(DOC_DOWNLOAD_SINGLE_DELAY_MS_MAX, 0.1);
+}
+async function sleep(max: number, multiplierMin = 0.1): Promise<void> {
+  let multiplier = Math.random();
+  if (multiplier < multiplierMin) multiplier += multiplierMin; // at least 10% of the max delay
+  const timeToWait = Math.floor(multiplier * max);
+  await Util.sleep(timeToWait);
 }
 
 async function fileExists(key: string): Promise<boolean> {
