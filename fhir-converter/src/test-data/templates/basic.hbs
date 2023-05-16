@@ -1,0 +1,43 @@
+{
+    "entry": [
+{{#with (getFirstSegments msg.v2 'PID')}}
+{{#if PID}}
+        {
+            "fullUrl": "urn:uuid:{{generateUUID (concat '/Patient?identifier=' PID-3-1)}}",
+            "resource": {
+                "resourceType": "Patient",
+                "id": "{{generateUUID (concat '/Patient?identifier=' PID-3-1)}}",
+                "identifier": [
+{{#if PID-3}}
+                    {
+                        "code": "{{PID-3-5}}"
+                        "value": "{{PID-3-1}}"
+                    }
+{{/if}}
+                  ],
+{{#with (getSegmentLists ../msg.v2 'NK1')}}
+{{#if NK1}},
+                "contact": [
+{{#each NK1 as |contact|}}
+                    {
+                        "telecom": [
+                            {
+                                "value": "{{contact-6-1}}",
+                                "name": "{{contact-2-2}}"
+                            },
+                            {
+                                "value": "{{contact-222}}",
+                            }
+
+                        ],
+                    }
+{{/each}}
+                ]
+{{/if}}
+{{/with}}
+            }
+        }
+{{/if}}
+{{/with}}
+    ]
+}

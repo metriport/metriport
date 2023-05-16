@@ -1,0 +1,24 @@
+<!-- List of Include Files and folders and exception lists for this repo for GeoPolitical scanning. Contact Joerow for detail. -->
+<!-- Consult Global Readiness Notebook @ aka.ms/NExTGeoPol for further details -->
+<!-- This file is consumed by PowerShell scripts in the 'health-localization' repo under the LocBuild\GeoPolitical folder(s) -->
+<!DOCTYPE varsdefined [
+<!ENTITY GitReposFolder "C:\GITs\Repos">
+<!ENTITY GitRepoName "conversion-pilot">
+]>
+
+<GeoPol_Folders>
+<!-- List of Folders to include for GeoPolitical scanning -->
+<GitRepoName>&GitRepoName;</GitRepoName>
+    <Component Include="List here folders to Include in a GeoPol Scan">    
+  <!-- . means the entire repo -->
+  <!-- Use back slash \ to indicate folder path e.g. C:\Temp\Git\ -->
+    <IncludeFolder>.</IncludeFolder>
+  </Component>
+    <Component Exclude="List exceptions here to not be scanned, that have been included above">    
+    <!-- Make sure to consult http://aka.ms/NExtStart if excluding 3rd party or OSS components -->
+    <!-- Use back slash \ to indicate folder path e.g. C:\Temp\Git\ -->
+    <ExcludeFolder>.gitignore</ExcludeFolder>
+    <ExcludeFolder>GeoPol.xml</ExcludeFolder>
+    <ExcludeFolder>test</ExcludeFolder>
+  </Component>
+</GeoPol_Folders>

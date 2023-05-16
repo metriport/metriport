@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import proxy from "express-http-proxy";
 import Router from "express-promise-router";
 import { IncomingMessage } from "http";
+import { MedicalDataSource } from "..";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { asyncHandler } from "../../routes/util";
@@ -93,6 +94,16 @@ export async function userResDecorator(
     const payloadString = proxyResData.toString("utf8");
     const updatedPayload = payloadString;
     const payload = JSON.parse(updatedPayload);
+    // Filter out CW data while we don't manage to do it with FHIR query
+    if (payload.entry) {
+      payload.entry = payload.entry.filter((entry: any) => {
+        const extensions = entry.resource?.extension ?? [];
+        return !extensions.some(
+          (e: any) => e.valueReference?.reference === MedicalDataSource.COMMONWELL
+        );
+      });
+      payload.total = payload.entry?.length != null ? payload.entry.length : undefined;
+    }
     return JSON.stringify(payload);
   } catch (err) {
     console.log(`Error parsing/transforming response: `, err);

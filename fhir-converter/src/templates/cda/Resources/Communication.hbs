@@ -1,0 +1,18 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Communication",
+        "id":"{{ID}}",
+        
+        "status":{{>ValueSet/EventStatus.hbs code=communicationEntry.statusCode.code}},
+
+        "category":
+        [
+            {{>DataType/CodeableConcept.hbs code=communicationEntry.code}},
+        ],   
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Communication/{{ID}}",
+    },
+},

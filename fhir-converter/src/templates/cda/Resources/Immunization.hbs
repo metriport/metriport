@@ -1,0 +1,42 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Immunization",
+        "id":"{{ID}}",
+        "identifier":
+        [
+        	{{#each (toArray imm.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+
+        {{#each (toArray imm.entryRelationship)}}
+            {{#if (contains (toJsonString this.observation.templateId) '"2.16.840.1.113883.10.20.22.4.53"')}}
+                "statusReason":{{>DataType/CodeableConcept.hbs code=this.observation.code}},
+            {{/if}}
+        {{/each}}
+
+        {{#if imm.effectiveTime.low}}
+        	"occurrenceDateTime":"{{formatAsDateTime imm.effectiveTime.low.value}}",
+        {{else}}
+        	"occurrenceDateTime":"{{formatAsDateTime imm.effectiveTime.value}}",
+        {{/if}}
+        
+        {{#each (toArray imm.consumable)}}
+            {{#each (toArray this.manufacturedProduct)}}
+                {{#if (contains (toJsonString this.templateId) '"2.16.840.1.113883.10.20.22.4.54"')}}
+                    "vaccineCode":{{>DataType/CodeableConcept.hbs code=this.manufacturedMaterial.code}},
+                    "lotNumber":"{{this.manufacturedMaterial.IotNumberText._}}",
+                {{/if}}
+            {{/each}}
+        {{/each}}
+
+        "status":"{{imm.statusCode.code}}",
+        "route":{{>DataType/CodeableConcept.hbs code=imm.routeCode}},
+        "site":{{>DataType/CodeableConcept.hbs code=imm.approachSiteCode}},      
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Immunization/{{ID}}",
+    },
+},

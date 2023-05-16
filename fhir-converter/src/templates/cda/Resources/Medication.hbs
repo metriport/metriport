@@ -1,0 +1,19 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Medication",
+        "id":"{{ID}}",
+        "code":        
+            {{#if medication.code.translation}}
+                {{#with (elementAt (toArray medication.code.translation) 0)}}
+                    {{>DataType/CodeableConcept.hbs code=this}},
+                {{/with}},
+            {{else}}
+                {{>DataType/CodeableConcept.hbs code=medication.code}},
+            {{/if}}    
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Medication/{{ID}}",
+    },
+},

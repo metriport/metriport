@@ -1,0 +1,9 @@
+{{#if (eq code 'active')}}
+	"active"
+{{else if (eq code 'aborted')}}
+	"resolved"
+{{else if (eq code 'completed')}}
+	"resolved"
+{{else if (eq code 'suspended')}}
+	"inactive"
+{{/if}}

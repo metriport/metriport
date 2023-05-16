@@ -1,0 +1,39 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Consent",
+        "id":"{{ID}}",
+        "identifier":
+        [
+        	{{#each (toArray consentEntry.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "status":"active",
+        "scope": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/consentscope",
+                "code": "{{consentScope}}"
+              }
+            ]
+        }
+        "category":
+        [
+            {{#if consentEntry.code.translation}}
+                {{>DataType/CodeableConcept.hbs code=consentEntry.code.translation}},
+            {{else}}
+                {{>DataType/CodeableConcept.hbs code=consentEntry.code}},
+            {{/if}}
+        ],
+        "dateTime":"{{formatAsDateTime consentEntry.component.observation.effectiveTime.low.value}}",
+        "provision":
+        {
+            "code":[{{>DataType/CodeableConcept.hbs code=consentEntry.component.observation.value}},]
+        },
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Consent/{{ID}}",
+    },
+},

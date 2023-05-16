@@ -1,0 +1,31 @@
+{
+    "resourceType": "Bundle",
+    "type": "batch",
+    "entry": [
+    	
+        {{>Header.hbs}}
+        
+        {{! Required Sections}}
+        
+        {{! No Required Sections for Process Note}}
+
+        
+        {{! Optional Sections}}
+        
+        {{>Sections/Allergies_and_Adverse_Reactions.hbs}},
+        
+        {{>Sections/Medication.hbs}},
+        
+        {{>Sections/Problems.hbs}},
+        
+        {{>Sections/Results.hbs}},
+        
+        {{>Sections/Vital_Signs.hbs}},
+        
+        {{>Sections/Nutrition.hbs}},
+        
+        {{! Document Resource Creation }}
+        
+        {{>Resources/DocumentReference.hbs docref=msg ID=(generateUUID (toJsonString msg))}}
+      ]
+}
