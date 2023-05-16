@@ -12,15 +12,126 @@ api: "GET /medical/v1/patient/{id}/consolidated"
 
 ## Query Params
 
-<ParamField query="resources" type="string">
+<ParamField query="resources" type="string" optional>
   List of FHIR resources to be returned with the patient
 </ParamField>
 
-<Info>
-  To view the list of all available FHIR resources, please refer to the [FHIR
-  Resources](/medical-api/fhir/resources) section.
-</Info>
+<Info>To view the list of available resources scroll to the bottom of the page.</Info>
 
 ## Response
 
-Returns a patient as you can see when fetching a [patient](/medical-api/api-reference/patient/get-patient) along with the patient's specified [FHIR resources](/medical-api/fhir/resources).
+Returns a [Bundle](/medical-api/fhir/resources/bundle) that contains a property entry which is simply an array of [FHIR resources](/medical-api/fhir/resources).
+
+```json
+{
+  "resourceType": "Bundle",
+  "total": 1,
+  "type": "searchset",
+  "entry": [
+    {
+      "id": 1234,
+      "content": {
+        "resourceType": "DocumentReference",
+        "contained": [],
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org/",
+              "code": "1234-1",
+              "display": "HIV 1 and 2 tests - Meaningful Use set"
+            }
+          ]
+        },
+        "status": "current",
+        "description": "Summarization Of Episode Notes - provided by Metriport",
+        "mimeType": "application/pdf",
+        "location": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+        "context": {
+          "event": [
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "62479008",
+                  "display": "AIDS"
+                }
+              ]
+            }
+          ],
+          "period": {
+            "start": "2022-10-05T22:00:00Z",
+            "end": "2022-10-05T23:00:00Z"
+          }
+        }
+      }
+    }
+  ]
+};
+```
+
+## Available FHIR resources
+
+This is the list of all available FHIR resources you can query for:
+
+- Account
+- AllergyIntolerance
+- Appointment
+- AppointmentResponse
+- AuditEvent
+- Basic
+- BodyStructure
+- CarePlan
+- CareTeam
+- ChargeItem
+- Claim
+- ClaimResponse
+- ClinicalImpression
+- Communication
+- CommunicationRequest
+- Composition
+- Condition
+- Consent
+- Contract
+- Coverage
+- CoverageEligibilityRequest
+- CoverageEligibilityResponse
+- DetectedIssue
+- Device
+- DeviceRequest
+- DeviceUseStatement
+- DiagnosticReport
+- DocumentManifest
+- DocumentReference
+- Encounter
+- EnrollmentRequest
+- EpisodeOfCare
+- ExplanationOfBenefit
+- FamilyMemberHistory
+- Flag
+- Goal
+- GuidanceResponse
+- ImagingStudy
+- Immunization
+- ImmunizationEvaluation
+- ImmunizationRecommendation
+- Invoice
+- List
+- MeasureReport
+- Media
+- MedicationAdministration
+- MedicationDispense
+- MedicationRequest
+- MedicationStatement
+- MolecularSequence
+- NutritionOrder
+- Observation
+- Person
+- Procedure
+- Provenance
+- QuestionnaireResponse
+- RelatedPerson
+- RequestGroup
+- ResearchSubject
+- RiskAssessment
+- ServiceRequest
+- Specimen
