@@ -1,10 +1,10 @@
 ---
 title: "Get Patient's Consolidated Data"
 description: "Gets a Patient's Consolidated Data."
-openapi: "GET /fhir/R4/{resourceType}/{id}/_history"
+api: "GET /medical/v1/patient/{id}/consolidated"
 ---
 
-<!-- ## Path Params
+## Path Params
 
 <ParamField path="id" type="string" required>
   The ID of the Patient.
@@ -16,20 +16,11 @@ openapi: "GET /fhir/R4/{resourceType}/{id}/_history"
   List of FHIR resources to be returned with the patient
 </ParamField>
 
+<Info>
+  To view the list of all available FHIR resources, please refer to the [FHIR
+  Resources](/medical-api/fhir/resources) section.
+</Info>
+
 ## Response
 
-<Snippet file="patient-response.mdx" />
-
-<ResponseExample>
-
-```javascript Metriport SDK
-import { MetriportMedicalApi } from "@metriport/api";
-
-const metriport = new MetriportMedicalApi("YOUR_API_KEY");
-
-const patient = await metriport.getPatient("2.16.840.1.113883.3.666.777");
-```
-
-</ResponseExample>
-
-<Snippet file="patient-response-json.mdx" /> -->
+Returns a patient as you can see when fetching a [patient](/medical-api/api-reference/patient/get-patient) along with the patient's specified [FHIR resources](/medical-api/fhir/resources).
