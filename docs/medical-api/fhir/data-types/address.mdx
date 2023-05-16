@@ -1,0 +1,21 @@
+---
+title: "Address"
+description: "Base StructureDefinition for Address Type: An address expressed using postal conventions (as opposed to GPS or other location definition formats).  This data type may be used to convey addresses for use in delivering mail as well as for visiting locations which might not be valid for mail delivery.  There are a variety of postal address formats defined around the world."
+---
+
+## Properties
+
+| Name       | Required | Type                                                  | Description                                                  |
+| ---------- | -------- | ----------------------------------------------------- | ------------------------------------------------------------ |
+| id         | No       | string                                                | Unique id for inter-element referencing                      |
+| extension  | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations                |
+| use        | No       | code                                                  | home / work / temp / old / billing - purpose of this address |
+| type       | No       | code                                                  | postal / physical / both                                     |
+| text       | No       | string                                                | Text representation of the address                           |
+| line       | No       | string[]                                              | Street name, number, direction & P.O. Box etc.               |
+| city       | No       | string                                                | Name of city, town etc.                                      |
+| district   | No       | string                                                | District name (aka county)                                   |
+| state      | No       | string                                                | Sub-unit of country (abbreviations ok)                       |
+| postalCode | No       | string                                                | Postal code for area                                         |
+| country    | No       | string                                                | Country (e.g. can be ISO 3166 2 or 3 letter code)            |
+| period     | No       | [Period](/medical-api/fhir/data-types/period)         | Time period when address was/is in use                       |

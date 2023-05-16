@@ -1,0 +1,21 @@
+---
+title: "Meta"
+description: "Base StructureDefinition for Meta Type: The metadata about a resource. This is content in the resource that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource."
+---
+
+## Properties
+
+| Name        | Required | Type                                                  | Description                                                                                   |
+| ----------- | -------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| id          | No       | string                                                | Unique id for inter-element referencing                                                       |
+| extension   | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations                                                 |
+| versionId   | No       | id                                                    | Version specific identifier                                                                   |
+| lastUpdated | No       | instant                                               | When the resource version last changed                                                        |
+| source      | No       | uri                                                   | Identifies where the resource comes from                                                      |
+| profile     | No       | canonical[]                                           | Profiles this resource claims to conform to                                                   |
+| security    | No       | [Coding](/medical-api/fhir/data-types/coding)[]       | Security Labels applied to this resource                                                      |
+| tag         | No       | [Coding](/medical-api/fhir/data-types/coding)[]       | Tags applied to this resource                                                                 |
+| project     | No       | uri                                                   | The project that contains this resource.                                                      |
+| author      | No       | Reference&lt;&gt;                                     | The individual, device or organization who initiated the last change.                         |
+| account     | No       | Reference&lt;&gt;                                     | Optional account reference that can be used for sub-project compartments.                     |
+| compartment | No       | Reference&lt;&gt;[]                                   | The list of compartments containing this resource. This is readonly and is set by the server. |

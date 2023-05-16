@@ -1,0 +1,16 @@
+---
+title: "ContactPoint"
+description: "Base StructureDefinition for ContactPoint Type: Details for all kinds of technology mediated contact points for a person or organization, including telephone, email, etc."
+---
+
+## Properties
+
+| Name      | Required | Type                                                  | Description                                                       |
+| --------- | -------- | ----------------------------------------------------- | ----------------------------------------------------------------- |
+| id        | No       | string                                                | Unique id for inter-element referencing                           |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations                     |
+| system    | No       | code                                                  | phone / fax / email / pager / url / sms / other                   |
+| value     | No       | string                                                | The actual contact point details                                  |
+| use       | No       | code                                                  | home / work / temp / old / mobile - purpose of this contact point |
+| rank      | No       | positiveInt                                           | Specify preferred order of use (1 = highest)                      |
+| period    | No       | [Period](/medical-api/fhir/data-types/period)         | Time period when the contact point was/is in use                  |
