@@ -861,7 +861,7 @@ module.exports = function (app) {
         patientId,
       })
       .then(result => {
-        console.log(result);
+        // console.log(result);
         const resultMessage = result.resultMsg;
         if (!retUnusedSegments) {
           delete resultMessage["unusedSegments"];

@@ -231,7 +231,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                 var dataContext = {
                   msg: parsedData,
                 };
-                console.log(dataContext);
+                // console.log(dataContext);
                 getTemplate(templateName).then(
                   compiledTemplate => {
                     try {
