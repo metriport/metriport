@@ -48,5 +48,5 @@ export async function convertCDAToFHIR(
     }
   );
 
-  return resp.data;
+  return resp.data.fhirResource;
 }
