@@ -1,0 +1,27 @@
+{{#if (eq code 'registered')}}
+	"registered"
+{{else if (eq code 'received')}}
+	"registered"
+{{else if (eq code 'preliminary')}}
+	"preliminary"
+{{else if (eq code 'final')}}
+	"final"
+{{else if (eq code 'completed')}}
+	"final"
+{{else if (eq code 'amended')}}
+	"amended"
+{{else if (eq code 'corrected')}}
+	"corrected"
+{{else if (eq code 'cancelled')}}
+	"cancelled"
+{{else if (eq code 'abandoned')}}
+	"cancelled"
+{{else if (eq code 'entered-in-error')}}
+	"entered-in-error"
+{{else if (eq code 'error')}}
+	"entered-in-error"
+{{else if (eq code 'unknown')}}
+	"unknown"
+{{else}}
+    "unknown"
+{{/if}}

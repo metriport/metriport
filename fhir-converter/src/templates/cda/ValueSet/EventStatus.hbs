@@ -1,0 +1,33 @@
+{{#if (eq code 'preparation')}}
+	"preparation"
+{{else if (eq code 'planned')}}
+	"preparation"    
+{{else if (eq code 'active')}}
+	"in-progress"
+{{else if (eq code 'in-progress')}}
+	"in-progress"
+{{else if (eq code 'abandonded')}}
+	"not-done"
+{{else if (eq code 'not-done')}}
+	"not-done"
+{{else if (eq code 'suspended')}}
+	"on-hold"
+{{else if (eq code 'on-hold')}}
+	"on-hold"
+{{else if (eq code 'failed')}}
+	"stopped"
+{{else if (eq code 'stopped')}}
+	"stopped"
+{{else if (eq code 'completed')}}
+	"completed"
+{{else if (eq code 'complete')}}
+	"completed"
+{{else if (eq code 'entered-in-error')}}
+	"entered-in-error"
+{{else if (eq code 'error')}}
+	"entered-in-error"
+{{else if (eq code 'unknown')}}
+	"unknown"
+{{else}}
+    "unknown"
+{{/if}}

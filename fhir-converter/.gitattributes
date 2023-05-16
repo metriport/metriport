@@ -1,0 +1,7 @@
+*.js    text    eol=LF
+*.json  text    eol=LF
+*.hbs   text    eol=LF
+*.xml   text    eol=LF
+*.cda   text    eol=LF
+*.hl7   text    eol=LF
+*.md    text    eol=LF

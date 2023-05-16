@@ -32,8 +32,12 @@ export async function queryDocumentsAcrossHIEs({
   override?: boolean;
 }): Promise<DocumentQueryResp> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (patient.data.documentQueryStatus === "processing")
+  if (patient.data.documentQueryStatus === "processing") {
+    console.log(
+      `[queryDocumentsAcrossHIEs] Patient ${patientId} documentQueryStatus is already 'processing', skipping...`
+    );
     return createQueryResponse("processing", patient);
+  }
 
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return createQueryResponse("completed");

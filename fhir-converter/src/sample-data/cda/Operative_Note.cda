@@ -1,0 +1,820 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<!--
+ Title:        Operative Note
+ Filename:     C-CDA_R2_Operative_Note.xml
+ Created by:   Lantana Consulting Group, LLC
+ 
+ $LastChangedDate: 2014-11-12 23:25:09 -0500 (Wed, 12 Nov 2014) $
+  
+ ********************************************************
+ Disclaimer: This sample file contains representative data elements to represent a Operative Note. 
+ The file depicts a fictional character's health data. Any resemblance to a real person is coincidental. 
+ To illustrate as many data elements as possible, the clinical scenario may not be plausible. 
+ The data in this sample file is not intended to represent real patients, people or clinical events. 
+ This sample is designed to be used in conjunction with the C-CDA Clinical Notes Implementation Guide.
+ ********************************************************
+ -->
+<ClinicalDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:hl7-org:v3" xmlns:cda="urn:hl7-org:v3" xmlns:sdtc="urn:hl7-org:sdtc">
+	<!-- ** CDA Header ** -->
+	<realmCode code="US"/>
+	<typeId root="2.16.840.1.113883.1.3" extension="POCD_HD000040"/>
+	<!-- US General Header Template -->
+	<templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2014-06-09"/>
+	<!-- *** Note:  The next templateId, code and title will differ depending on what type of document is being sent. *** -->
+	<!-- conforms to the document specific requirements  -->
+	<templateId root="2.16.840.1.113883.10.20.22.1.7" extension="2014-06-09"/>
+	<id extension="TT988" root="2.16.840.1.113883.19.5.99999.1"/>
+	<code codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" code="11504-8" displayName="Surgical Operation Note"/>
+	<title>Community Health and Hospitals: Operative Note</title>
+	<effectiveTime value="201209161910-0400"/>
+	<confidentialityCode code="N" codeSystem="2.16.840.1.113883.5.25"/>
+	<languageCode code="en-US"/>
+	<setId extension="sTT988" root="2.16.840.1.113883.19.5.99999.19"/>
+	<versionNumber value="1"/>
+	<recordTarget>
+		<patientRole>
+			<id extension="998991" root="2.16.840.1.113883.19.5.99999.2"/>
+			<!-- Fake ID using HL7 example OID. -->
+			<id extension="111-00-2330" root="2.16.840.1.113883.4.1"/>
+			<!-- Fake Social Security Number using the actual SSN OID. -->
+			<addr use="HP">
+				<!-- HP is "primary home" from codeSystem 2.16.840.1.113883.5.1119 -->
+				<streetAddressLine>1357 Amber Drive</streetAddressLine>
+				<city>Beaverton</city>
+				<state>OR</state>
+				<postalCode>97867</postalCode>
+				<country>US</country>
+				<!-- US is "United States" from ISO 3166-1 Country Codes: 1.0.3166.1 -->
+			</addr>
+			<telecom value="tel:(816)276-6909" use="HP"/>
+			<!-- HP is "primary home" from HL7 AddressUse 2.16.840.1.113883.5.1119 -->
+			<patient>
+				<name use="L">
+					<!-- L is "Legal" from HL7 EntityNameUse 2.16.840.1.113883.5.45 -->
+					<given>Isabella</given>
+					<given>Isa</given>
+					<!-- CL is "Call me" from HL7 EntityNamePartQualifier 2.16.840.1.113883.5.43 -->
+					<family>Jones</family>
+				</name>
+				<administrativeGenderCode code="F" codeSystem="2.16.840.1.113883.5.1" displayName="Female"/>
+				<birthTime value="20050501"/>
+				<maritalStatusCode code="M" displayName="Married" codeSystem="2.16.840.1.113883.5.2" codeSystemName="MaritalStatusCode"/>
+				<religiousAffiliationCode code="1013" displayName="Christian (non-Catholic, non-specific)" codeSystemName="HL7 Religious Affiliation" codeSystem="2.16.840.1.113883.5.1076"/>
+				<raceCode code="1966-1" displayName="Aleut" codeSystem="2.16.840.1.113883.6.238" codeSystemName="Race &amp; Ethnicity - CDC"/>
+				<ethnicGroupCode code="2186-5" displayName="Not Hispanic or Latino" codeSystem="2.16.840.1.113883.6.238" codeSystemName="Race &amp; Ethnicity - CDC"/>
+				<guardian>
+					<code code="GRPRN" displayName="Grandparent" codeSystem="2.16.840.1.113883.5.111" codeSystemName="HL7 Role code"/>
+					<addr use="HP">
+						<!-- HP is "primary home" from codeSystem 2.16.840.1.113883.5.1119 -->
+						<streetAddressLine>1357 Amber Drive</streetAddressLine>
+						<city>Beaverton</city>
+						<state>OR</state>
+						<postalCode>97867</postalCode>
+						<country>US</country>
+						<!-- US is "United States" from ISO 3166-1 Country Codes: 1.0.3166.1 -->
+					</addr>
+					<telecom value="tel:(816)276-6909" use="HP"/>
+					<guardianPerson>
+						<name>
+							<given>Ralph</given>
+							<family>Jones</family>
+						</name>
+					</guardianPerson>
+				</guardian>
+				<birthplace>
+					<place>
+						<addr>
+							<city>Beaverton</city>
+							<state>OR</state>
+							<postalCode>97867</postalCode>
+							<country>US</country>
+						</addr>
+					</place>
+				</birthplace>
+				<languageCommunication>
+					<languageCode code="en"/>
+					<modeCode code="ESP" displayName="Expressed spoken" codeSystem="2.16.840.1.113883.5.60" codeSystemName="LanguageAbilityMode"/>
+					<proficiencyLevelCode code="G" displayName="Good" codeSystem="2.16.840.1.113883.5.61" codeSystemName="LanguageAbilityProficiency"/>
+					<preferenceInd value="true"/>
+				</languageCommunication>
+			</patient>
+			<providerOrganization>
+				<id root="2.16.840.1.113883.19.5.9999.1393"/>
+				<name>Community Health and Hospitals</name>
+				<telecom use="WP" value="tel: 555-555-5000"/>
+				<addr>
+					<streetAddressLine>1001 Village Avenue</streetAddressLine>
+					<city>Portland</city>
+					<state>OR</state>
+					<postalCode>99123</postalCode>
+					<country>US</country>
+				</addr>
+			</providerOrganization>
+		</patientRole>
+	</recordTarget>
+	<author>
+		<time value="20050329224411-0500"/>
+		<assignedAuthor>
+			<id extension="99999999" root="2.16.840.1.113883.4.6"/>
+			<code code="200000000X" codeSystem="2.16.840.1.113883.6.101" displayName="Allopathic &amp; Osteopathic Physicians"/>
+			<addr>
+				<streetAddressLine>1002 Healthcare Drive </streetAddressLine>
+				<city>Portland</city>
+				<state>OR</state>
+				<postalCode>99123</postalCode>
+				<country>US</country>
+			</addr>
+			<telecom use="WP" value="tel:555-555-1002"/>
+			<assignedPerson>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</assignedPerson>
+		</assignedAuthor>
+	</author>
+	<dataEnterer>
+		<assignedEntity>
+			<id root="2.16.840.1.113883.4.6" extension="999999943252"/>
+			<addr>
+				<streetAddressLine>1001 Village Avenue</streetAddressLine>
+				<city>Portland</city>
+				<state>OR</state>
+				<postalCode>99123</postalCode>
+				<country>US</country>
+			</addr>
+			<telecom use="WP" value="tel:555-555-1002"/>
+			<assignedPerson>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</assignedPerson>
+		</assignedEntity>
+	</dataEnterer>
+	<informant>
+		<assignedEntity>
+			<id extension="KP00017" root="2.16.840.1.113883.19.5"/>
+			<addr>
+				<streetAddressLine>1001 Village Avenue</streetAddressLine>
+				<city>Portland</city>
+				<state>OR</state>
+				<postalCode>99123</postalCode>
+				<country>US</country>
+			</addr>
+			<telecom use="WP" value="tel:555-555-1002"/>
+			<assignedPerson>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</assignedPerson>
+		</assignedEntity>
+	</informant>
+	<informant>
+		<relatedEntity classCode="PRS">
+			<!-- classCode PRS represents a person with personal relationship with the patient. -->
+			<code code="SPS" displayName="SPOUSE" codeSystem="2.16.840.1.113883.1.11.19563" codeSystemName="Personal Relationship Role Type Value Set"/>
+			<relatedPerson>
+				<name>
+					<given>Frank</given>
+					<family>Jones</family>
+				</name>
+			</relatedPerson>
+		</relatedEntity>
+	</informant>
+	<custodian>
+		<assignedCustodian>
+			<representedCustodianOrganization>
+				<id extension="99999999" root="2.16.840.1.113883.4.6"/>
+				<name>Community Health and Hospitals</name>
+				<telecom value="tel: 555-555-1002" use="WP"/>
+				<addr use="WP">
+					<streetAddressLine>1002 Healthcare Drive </streetAddressLine>
+					<city>Portland</city>
+					<state>OR</state>
+					<postalCode>99123</postalCode>
+					<country>US</country>
+				</addr>
+			</representedCustodianOrganization>
+		</assignedCustodian>
+	</custodian>
+	<informationRecipient>
+		<intendedRecipient>
+			<informationRecipient>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</informationRecipient>
+			<receivedOrganization>
+				<name>Community Health and Hospitals</name>
+			</receivedOrganization>
+		</intendedRecipient>
+	</informationRecipient>
+	<legalAuthenticator>
+		<time value="200902271300-0500"/>
+		<signatureCode code="S"/>
+		<assignedEntity>
+			<id extension="999999999" root="2.16.840.1.113883.4.6"/>
+			<addr>
+				<streetAddressLine>1001 Village Avenue</streetAddressLine>
+				<city>Portland</city>
+				<state>OR</state>
+				<postalCode>99123</postalCode>
+				<country>US</country>
+			</addr>
+			<telecom use="WP" value="tel:555-555-1002"/>
+			<assignedPerson>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</assignedPerson>
+		</assignedEntity>
+	</legalAuthenticator>
+	<authenticator>
+		<time value="200902271300-0500"/>
+		<signatureCode code="S"/>
+		<assignedEntity>
+			<id extension="999999999" root="2.16.840.1.113883.4.6"/>
+			<addr>
+				<streetAddressLine>1001 Village Avenue</streetAddressLine>
+				<city>Portland</city>
+				<state>OR</state>
+				<postalCode>99123</postalCode>
+				<country>US</country>
+			</addr>
+			<telecom use="WP" value="tel:555-555-1002"/>
+			<assignedPerson>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</assignedPerson>
+		</assignedEntity>
+	</authenticator>
+	<documentationOf typeCode="DOC">
+		<serviceEvent classCode="PCPR">
+			<code code="73761001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Colonoscopy"/>
+			<effectiveTime>
+				<low value="201209091910-0400"/>
+				<high value="201209161910-0400"/>
+			</effectiveTime>
+			<performer typeCode="PPRF">
+				<functionCode code="PCP" codeSystem="2.16.840.1.113883.5.88" codeSystemName="ParticipationFunction" displayName="Primary Care Provider">
+					<originalText>Primary Care Provider</originalText>
+				</functionCode>
+				<time>
+					<low value="201209091910-0400"/>
+					<high value="201209161910-0400"/>
+				</time>
+				<assignedEntity>
+					<id extension="PseudoMD-3" root="2.16.840.1.113883.4.6"/>
+					<code code="207RG0100X" displayName="Gastroenterologist" codeSystemName="Provider Codes" codeSystem="2.16.840.1.113883.6.101"/>
+					<addr>
+						<streetAddressLine>1001 Village Avenue</streetAddressLine>
+						<city>Portland</city>
+						<state>OR</state>
+						<postalCode>99123</postalCode>
+						<country>US</country>
+					</addr>
+					<telecom value="tel:+1-555-555-5000" use="HP"/>
+					<assignedPerson>
+						<name>
+							<prefix>Dr.</prefix>
+							<given>Henry</given>
+							<family>Seven</family>
+						</name>
+					</assignedPerson>
+					<representedOrganization>
+						<id root="2.16.840.1.113883.19.5.9999.1393"/>
+						<name>Community Health and Hospitals</name>
+						<telecom value="tel:+1-555-555-5000" use="HP"/>
+						<addr>
+							<streetAddressLine>1001 Village Avenue</streetAddressLine>
+							<city>Portland</city>
+							<state>OR</state>
+							<postalCode>99123</postalCode>
+							<country>US</country>
+						</addr>
+					</representedOrganization>
+				</assignedEntity>
+			</performer>
+		</serviceEvent>
+	</documentationOf>
+	<authorization typeCode="AUTH">
+		<consent classCode="CONS" moodCode="EVN">
+			<id root="629deb70-5306-11df-9879-0800200c9a66"/>
+			<code codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" code="64293-4" displayName="Procedure consent"/>
+			<statusCode code="completed"/>
+		</consent>
+	</authorization>
+	<!-- ********************************************************
+     CDA Body
+     ******************************************************** -->
+	<component>
+		<structuredBody>
+			<!-- *********************** -->
+			<!--
+********************************************************
+ANESTHESIA
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.25" extension="2014-06-09"/>
+					<code code="59774-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PROCEDURE ANESTHESIA"/>
+					<title>PROCEDURE ANESTHESIA</title>
+					<text>
+						<content ID="Med4">Conscious sedation with propofol 200 mg IV </content>
+					</text>
+					<entry>
+						<procedure classCode="PROC" moodCode="EVN">
+							<templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09"/>
+							<!-- ***** Procedure  Activity Procedure Template ***** -->
+							<id root="d68b7e32-7810-4f5b-9cc2-acd54b0fd85d"/>
+							<code code="73761001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Colonoscopy">
+								<originalText> </originalText>
+							</code>
+							<statusCode code="completed"/>
+							<effectiveTime value="20120512"/>
+							<methodCode nullFlavor="UNK"/>
+							<!-- ****OPTIONAL*****-->
+							<specimen typeCode="SPC">
+								<specimenRole classCode="SPEC">
+									<id root="c2ee9ee9-ae31-4628-a919-fec1cbb58683"/>
+									<specimenPlayingEntity>
+										<code code="309226005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="colonic polyp sample"/>
+									</specimenPlayingEntity>
+								</specimenRole>
+							</specimen>
+							<performer>
+								<assignedEntity>
+									<id root="2.16.840.1.113883.19.5.9999.456" extension="2981823"/>
+									<addr>
+										<streetAddressLine>1001 Village Avenue</streetAddressLine>
+										<city>Portland</city>
+										<state>OR</state>
+										<postalCode>99123</postalCode>
+										<country>US</country>
+									</addr>
+									<telecom use="WP" value="555-555-5000"/>
+									<representedOrganization>
+										<id root="2.16.840.1.113883.19.5.9999.1393"/>
+										<name>Community Health and Hospitals</name>
+										<telecom use="WP" value="555-555-5000"/>
+										<addr>
+											<streetAddressLine>1001 Village Avenue</streetAddressLine>
+											<city>Portland</city>
+											<state>OR</state>
+											<postalCode>99123</postalCode>
+											<country>US</country>
+										</addr>
+									</representedOrganization>
+								</assignedEntity>
+							</performer>
+							<participant typeCode="DEV">
+								<!-- *** Optional *** -->
+								<participantRole classCode="MANU">
+									<templateId root="2.16.840.1.113883.10.20.22.4.37"/>
+									<!--   Product instance template   -->
+									<id root="742aee30-21c5-11e1-bfc2-0800200c9a66"/>
+									<playingDevice>
+										<code code="90412006" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Colonoscope"/>
+									</playingDevice>
+									<scopingEntity>
+										<id root="eb936010-7b17-11db-9fe1-0800200c9b65"/>
+									</scopingEntity>
+								</participantRole>
+							</participant>
+						</procedure>
+					</entry>
+					<entry>
+						<substanceAdministration classCode="SBADM" moodCode="EVN">
+							<templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09"/>
+							<!-- ** MEDICATION ACTIVITY -->
+							<id root="cdbd33f0-6cde-11db-9fe1-0800200c9a66"/>
+							<text>
+								<reference value="#Med4"/>Propofol 20mg/mL injection emulsion 50mL vial </text>
+							<statusCode code="completed"/>
+							<effectiveTime xsi:type="IVL_TS">
+								<low value="20120512"/>
+								<high value="20120512"/>
+							</effectiveTime>
+							<effectiveTime xsi:type="PIVL_TS" institutionSpecified="true" operator="A">
+								<period value="1" unit="h"/>
+							</effectiveTime>
+							<routeCode code="C38276" codeSystem="2.16.840.1.113883.3.26.1.1" codeSystemName="NCI Thesaurus" displayName="INTRAVENOUS"/>
+							<doseQuantity value="20" unit="mg/mL"/>
+							<rateQuantity value="2" unit="ml/min"/>
+							<maxDoseQuantity nullFlavor="UNK">
+								<numerator nullFlavor="UNK"/>
+								<denominator nullFlavor="UNK"/>
+							</maxDoseQuantity>
+							<administrationUnitCode code="C38276" displayName="INTRAVENOUS" codeSystem="2.16.840.1.113883.3.26.1.1" codeSystemName="NCI Thesaurus"/>
+							<consumable>
+								<manufacturedProduct classCode="MANU">
+									<templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09"/>
+									<id root="2a620155-9d11-439e-92b3-5d9815ff4de9"/>
+									<manufacturedMaterial>
+										<code code="153475" codeSystem="2.16.840.1.113883.6.88" codeSystemName="RxNorm" displayName="Propofol 20 MG/ML Injectable Suspension">
+											<originalText>
+												<reference value="#Med4"/>
+											</originalText>
+										</code>
+									</manufacturedMaterial>
+									<manufacturerOrganization>
+										<name>Medication Factory Inc.</name>
+									</manufacturerOrganization>
+								</manufacturedProduct>
+							</consumable>
+						</substanceAdministration>
+					</entry>
+				</section>
+			</component>
+			<!--
+********************************************************
+COMPLICATIONS
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.37" extension="2014-06-09"/>
+					<code code="55109-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Complications"/>
+					<title>COMPLICATIONS</title>
+					<text>
+						<content ID="problem1">Asthmatic symptoms while under general anesthesia.</content>
+					</text>
+					<entry>
+						<observation classCode="OBS" moodCode="EVN">
+							<!-- Problem observation template -->
+							<templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2014-06-09"/>
+							<id root="ab1791b0-5c71-11db-b0de-0800200c9a66"/>
+							<code code="75322-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Complaint"/>
+							<text>
+								<reference value="#problem1"/>
+							</text>
+							<statusCode code="completed"/>
+							<effectiveTime>
+								<low value="20080103"/>
+							</effectiveTime>
+							<value xsi:type="CD" code="233604007" codeSystem="2.16.840.1.113883.6.96" displayName="Pneumonia"/>
+							<entryRelationship typeCode="SUBJ" inversionInd="true">
+								<observation classCode="OBS" moodCode="EVN">
+									<templateId root="2.16.840.1.113883.10.20.22.4.31"/>
+									<!--    Age observation template   -->
+									<code code="445518008" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Age At Onset"/>
+									<statusCode code="completed"/>
+									<value xsi:type="PQ" value="57" unit="a"/>
+								</observation>
+							</entryRelationship>
+							<entryRelationship typeCode="REFR">
+								<observation classCode="OBS" moodCode="EVN">
+									<templateId root="2.16.840.1.113883.10.20.22.4.5" extension="2014-06-09"/>
+									<!-- Health status observation template -->
+									<id root="cd2391b0-5c71-11db-b0de-0800200c9a66"/>
+									<code code="11323-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Health status"/>
+									<text/>
+									<statusCode code="completed"/>
+									<value xsi:type="CD" code="81323004" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Alive and well"/>
+								</observation>
+							</entryRelationship>
+						</observation>
+					</entry>
+				</section>
+			</component>
+			<!--
+********************************************************
+OPERATIVE NOTE FLUIDS
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.7.12"/>
+					<code code="10216-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="SURGICAL OPERATION NOTE FLUIDS"/>
+					<title>OPERATIVE NOTE FLUIDS</title>
+					<text>250 ML Ringers Lactate</text>
+				</section>
+			</component>
+			<!--
+********************************************************
+OPERATIVE NOTE SURGICAL PROCEDURE
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.7.14"/>
+					<code code="10223-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="SURGICAL OPERATION NOTE SURGICAL PROCEDURE"/>
+					<title>SURGICAL PROCEDURE</title>
+					<text>
+						<content ID="Proc1">Laparoscopic Appendectomy</content>
+					</text>
+				</section>
+			</component>
+			<!--
+********************************************************
+PLAN OF TREATMENT
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.10" extension="2014-06-09"/>
+					<!--  **** Plan of Care section template  **** -->
+					<code code="18776-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Treatment plan"/>
+					<title>PLAN OF TREATMENT</title>
+					<text>
+						<table border="1" width="100%">
+							<thead>
+								<tr>
+									<th>Planned Activity</th>
+									<th>Planned Date</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>Colonoscopy</td>
+									<td>20120512</td>
+								</tr>
+							</tbody>
+						</table>
+					</text>
+					<entry>
+						<procedure moodCode="RQO" classCode="PROC">
+							<templateId root="2.16.840.1.113883.10.20.22.4.41" extension="2014-06-09"/>
+							<!-- ** Plan of Care Activity Procedure template ** -->
+							<id root="9a6d1bac-17d3-4195-89c4-1121bc809b5a"/>
+							<code code="73761001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Colonoscopy"/>
+							<statusCode code="new"/>
+							<effectiveTime>
+								<center value="20120512"/>
+							</effectiveTime>
+						</procedure>
+					</entry>
+				</section>
+			</component>
+			<!--
+********************************************************
+PLANNED PROCEDURE
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.30" extension="2014-06-09"/>
+					<!--  ******** Planned Procedure Section template  ******** -->
+					<code code="59772-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Planned Procedure"/>
+					<title>PLANNED PROCEDURE</title>
+					<text>Colonoscopy</text>
+					<entry>
+						<procedure moodCode="RQO" classCode="PROC">
+							<templateId root="2.16.840.1.113883.10.20.22.4.41" extension="2014-06-09"/>
+							<!-- ** Plan of Care Activity Procedure template ** -->
+							<id root="9a6d1bac-17d3-4195-89c4-1121bc809b5a"/>
+							<code code="274025005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Colonic polypectomy"/>
+							<statusCode code="new"/>
+							<effectiveTime>
+								<center value="20000421"/>
+							</effectiveTime>
+						</procedure>
+					</entry>
+				</section>
+			</component>
+			<!--
+********************************************************
+POSTOPERATIVE DIAGNOSIS
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.35"/>
+					<code code="10218-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="POSTOPERATIVE DIAGNOSIS"/>
+					<title>POSTOPERATIVE DIAGNOSIS</title>
+					<text>Appendicitis with periappendiceal abscess</text>
+				</section>
+			</component>
+			<!--
+********************************************************
+PREOPERATIVE DIAGNOSIS
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.34" extension="2014-06-09"/>
+					<code code="10219-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="SURGICAL OPERATION NOTE PREOPERATIVE DX"/>
+					<title>PREOPERATIVE DIAGNOSIS</title>
+					<text ID="preOpDx">Appendicitis</text>
+					<entry>
+						<act moodCode="EVN" classCode="ACT">
+							<templateId root="2.16.840.1.113883.10.20.22.4.65" extension="2014-06-09"/>
+							<!-- ** Preoperative Diagnosis Entry ** -->
+							<code code="10219-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Preoperative Diagnosis"/>
+							<entryRelationship typeCode="SUBJ">
+								<observation classCode="OBS" moodCode="EVN">
+									<!-- Problem observation template -->
+									<templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2014-06-09"/>
+									<id root="ab1791b0-5c71-11db-b0de-0800200c9a66"/>
+									<code code="75322-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Complaint"/>
+									<text>
+										<reference value="#preOpDx"/>
+									</text>
+									<statusCode code="completed"/>
+									<effectiveTime>
+										<low value="20080103"/>
+									</effectiveTime>
+									<value xsi:type="CD" code="74400008" codeSystem="2.16.840.1.113883.6.96" displayName="Appendicitis"/>
+								</observation>
+							</entryRelationship>
+						</act>
+					</entry>
+				</section>
+			</component>
+			<!--
+********************************************************
+PROCEDURE DESCRIPTION
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.27"/>
+					<code code="29554-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PROCEDURE DESCRIPTION"/>
+					<title>PROCEDURE DESCRIPTION</title>
+					<text>The patient was brought to the operating room, placed in the supine position, and general anesthesia was induced. A detailed technical
+            narrative of a laparoscopic appendectomy from initial incision to placement of any dressings follows.</text>
+				</section>
+			</component>
+			<!-- ***********************************
+     PROCEDURE DISPOSITION
+     *********************************** -->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.18.2.12"/>
+					<code code="59775-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PROCEDURE DISPOSITION"/>
+					<title>PROCEDURE DISPOSITION</title>
+					<text>The patient was taken to the Endoscopy Recovery Unit in stable condition.</text>
+				</section>
+			</component>
+			<!--
+********************************************************
+PROCEDURE ESTIMATED BLOOD LOSS
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.18.2.9"/>
+					<code code="59770-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PROCEDURE ESTIMATED BLOOD LOSS"/>
+					<title>PROCEDURE ESTIMATED BLOOD LOSS</title>
+					<text>Minimal</text>
+				</section>
+			</component>
+			<!--
+********************************************************
+PROCEDURE FINDINGS
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.28" extension="2014-06-09"/>
+					<code code="59776-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PROCEDURE FINDINGS"/>
+					<title>PROCEDURE FINDINGS</title>
+					<text>A <content ID="finding1">6 mm sessile polyp</content> was found in the ascending colon and removed by snare, no cautery. Bleeding was
+            controlled. <content ID="finding2">Moderate diverticulosis</content> and <content ID="finding3">hemorrhoids</content> were incidentally
+            noted. </text>
+					<entry>
+						<observation classCode="OBS" moodCode="EVN">
+							<!-- Problem observation template -->
+							<templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2014-06-09"/>
+							<id root="ab1791b0-5c71-11db-b0de-0800200c9a66"/>
+							<code code="75321-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Clinical finding"/>
+							<text>
+								<reference value="#finding1"/>
+							</text>
+							<statusCode code="completed"/>
+							<effectiveTime>
+								<low value="20080103"/>
+							</effectiveTime>
+							<value xsi:type="CD" code="103679000" codeSystem="2.16.840.1.113883.6.96" displayName="Sessile Polyp"/>
+							<author>
+								<templateId root="2.16.840.1.113883.10.20.22.4.119"/>
+								<time value="20050329224411-0500"/>
+								<assignedAuthor>
+									<id extension="99999999" root="2.16.840.1.113883.4.6"/>
+								</assignedAuthor>
+							</author>
+						</observation>
+					</entry>
+					<entry>
+						<observation classCode="OBS" moodCode="EVN">
+							<!-- Problem observation template -->
+							<templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2014-06-09"/>
+							<id root="cd1791b0-5c71-11db-b0de-0800200c9a66"/>
+							<code code="75321-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Clinical finding"/>
+							<text>
+								<reference value="#finding2"/>
+							</text>
+							<statusCode code="completed"/>
+							<effectiveTime>
+								<low value="20080103"/>
+							</effectiveTime>
+							<value xsi:type="CD" code="429430001" codeSystem="2.16.840.1.113883.6.96" displayName="diverticulosis of sigmoid"/>
+							<author>
+								<templateId root="2.16.840.1.113883.10.20.22.4.119"/>
+								<time value="20050329224411-0500"/>
+								<assignedAuthor>
+									<id extension="99999999" root="2.16.840.1.113883.4.6"/>
+								</assignedAuthor>
+							</author>
+						</observation>
+					</entry>
+					<entry>
+						<observation classCode="OBS" moodCode="EVN">
+							<!-- Problem observation template -->
+							<templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2014-06-09"/>
+							<id root="cd1791b0-5c71-11db-b0de-0800200c9a66"/>
+							<code code="75321-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Clinical finding"/>
+							<text>
+								<reference value="#finding3"/>
+							</text>
+							<statusCode code="completed"/>
+							<effectiveTime>
+								<low value="20080103"/>
+							</effectiveTime>
+							<value xsi:type="CD" code="90458007" codeSystem="2.16.840.1.113883.6.96" displayName="internal hemorrhoids"/>
+							<author>
+								<templateId root="2.16.840.1.113883.10.20.22.4.119"/>
+								<time value="20050329224411-0500"/>
+								<assignedAuthor>
+									<id extension="99999999" root="2.16.840.1.113883.4.6"/>
+								</assignedAuthor>
+							</author>
+						</observation>
+					</entry>
+				</section>
+			</component>
+			<!--
+********************************************************
+PROCEDURE IMPLANTS
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.40"/>
+					<code code="59771-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PROCEDURE IMPLANTS"/>
+					<title>PROCEDURE IMPLANTS</title>
+					<text>No implants were placed.</text>
+				</section>
+			</component>
+			<!--
+********************************************************
+PROCEDURE INDICATIONS
+***********************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.29" extension="2014-06-09"/>
+					<code code="59768-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PROCEDURE INDICATIONS"/>
+					<title>PROCEDURE INDICATIONS</title>
+					<text>The procedure is performed for screening in a low risk individual. </text>
+					<entry>
+						<observation classCode="OBS" moodCode="EVN">
+							<templateId root="2.16.840.1.113883.10.20.22.4.19" extension="2014-06-09"/>
+							<id root="db734647-fc99-424c-a864-7e3cda82e703" extension="45665"/>
+							<code code="75321-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Clinical finding"/>
+							<statusCode code="completed"/>
+							<effectiveTime>
+								<low value="20091023"/>
+							</effectiveTime>
+							<value xsi:type="CD" code="414992000" displayName="Painless rectal bleeding" codeSystem="2.16.840.1.113883.6.96"/>
+						</observation>
+					</entry>
+				</section>
+			</component>
+			<!--
+********************************************************
+PROCEDURE SPECIMENS TAKEN
+********************************************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.22.2.31"/>
+					<code code="59773-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PROCEDURE SPECIMENS TAKEN"/>
+					<title>PROCEDURE SPECIMENS TAKEN</title>
+					<text>Ascending colon polyp</text>
+				</section>
+			</component>
+			<!--
+********************************************************
+SURGICAL DRAINS
+***********************************
+-->
+			<component>
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.7.13"/>
+					<code code="11537-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="SURGICAL DRAINS"/>
+					<title>SURGICAL DRAINS</title>
+					<text>Penrose drain placed</text>
+				</section>
+			</component>
+		</structuredBody>
+	</component>
+</ClinicalDocument>

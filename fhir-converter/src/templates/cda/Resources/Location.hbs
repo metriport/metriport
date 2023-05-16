@@ -1,0 +1,31 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Location",
+        "id":"{{ID}}",
+        "identifier":
+        [
+        	{{#each (toArray location.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "name":"{{location.playingEntity.name._}}",
+        "address": {{>DataType/Address.hbs addr=location.addr}},
+        "telecom":
+        [
+        	{{#each (toArray location.telecom)}}
+            	{{>DataType/ContactPoint.hbs contactPoint=this}},
+            {{/each}}
+        ],
+        "type":
+        [
+        	{{#each (toArray location.code)}}
+        		{{>DataType/CodeableConcept.hbs code=this}},
+            {{/each}}
+        ],        
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Location/{{ID}}",
+    },
+},

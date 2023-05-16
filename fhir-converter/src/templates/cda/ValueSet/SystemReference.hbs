@@ -1,0 +1,29 @@
+{{#if code}}
+    {{#if (eq code '2.16.840.1.113883.6.1')}}
+	    "http://loinc.org"
+    {{else if (eq code '2.16.840.1.113883.6.96')}}
+	    "http://snomed.info/sct"
+    {{else if (eq code '2.16.840.1.113883.6.88')}}
+        "http://www.nlm.nih.gov/research/umls/rxnorm"
+    {{else if (eq code '2.16.840.1.113883.3.88.12.3221.8.9')}}
+        "http://snomed.info/sct"
+    {{else if (eq code '2.16.840.1.113883.5.83')}}
+        "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation"
+    {{else if (eq code '2.16.840.1.113883.4.1')}}
+        "http://hl7.org/fhir/sid/us-ssn"
+    {{else if (eq code '2.16.840.1.113883.4.6')}}
+        "http://hl7.org/fhir/sid/us-npi"
+    {{else if (eq code '2.16.840.1.113883.4.572')}}
+        "http://hl7.org/fhir/sid/us-medicare"  
+    {{else if (eq code '2.16.840.1.113883.4.927')}}
+        "http://hl7.org/fhir/sid/us-mbi"  
+    {{else if (eq code '2.16.840.1.113883.6.59')}}
+        "http://hl7.org/fhir/sid/cvx"
+    {{else if (eq code '2.16.840.1.113883.6.101')}}
+        "http://nucc.org/provider-taxonomy"
+    {{else if (eq (length (match code '[0123456789.]+')) 1)}}
+	    "urn:oid:{{code}}"
+    {{else}}
+        "http://terminology.hl7.org/CodeSystem/{{replace code ' ' ''}}"
+    {{/if}}
+{{/if}}

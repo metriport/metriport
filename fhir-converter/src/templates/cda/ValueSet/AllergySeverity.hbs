@@ -1,0 +1,11 @@
+{{#if (eq (toLower sev) 'fatal')}}
+	"severe"
+{{else if (eq (toLower sev) 'moderate to severe')}}
+	"severe"
+{{else if (eq (toLower sev) 'mild to moderate')}}
+	"moderate"
+{{else if (eq (toLower sev) 'mild')}}
+	"mild"
+{{else}}
+	"{{sev}}"
+{{/if}}

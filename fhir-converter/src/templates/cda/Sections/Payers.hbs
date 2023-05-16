@@ -1,0 +1,16 @@
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.18')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.18')}}
+        {{#each (toArray 2_16_840_1_113883_10_20_22_2_18.entry)}}
+            {{#each (toArray this.act.entryRelationship) as |payEntry|}}
+                {{>Resources/Coverage.hbs payerEntry=payEntry.act ID=(generateUUID (toJsonString payEntry.act))}},
+                {{#each (toArray payEntry.act.performer)}}
+                    {{#if (contains (toJsonString this.templateId) '"2.16.840.1.113883.10.20.22.4.87"')}}
+                        {{#if this.assignedEntity.representedOrganization.name._}}
+                            {{>Resources/Organization.hbs org=this.assignedEntity.representedOrganization ID=(generateUUID (toJsonString this.assignedEntity.representedOrganization))}},
+                        {{/if}}
+                    {{/if}}
+                {{/each}}
+            {{/each}}
+        {{/each}}
+    {{/with}} 
+{{/if}}

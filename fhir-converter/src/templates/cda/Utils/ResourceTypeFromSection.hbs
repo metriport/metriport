@@ -1,0 +1,41 @@
+{
+    "resourceType":
+        {{#if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.6.1"')}}
+            "AllergyIntolerance"   
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.1.1"')}}
+            "MedicationStatement"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.5.1"')}}
+            "Condition"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.7.1"')}}
+            "Procedure"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.3.1"')}}
+            "DiagnosticReport"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.22"')}}
+            "Encounter"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.22.1"')}}
+            "Encounter"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.2"')}}
+            "Immunization"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.2.1"')}}
+            "Immunization"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.4.1"')}}
+            "Observation"
+  		{{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.17"')}}
+            "Observation"
+  		{{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.21"')}}
+            "Consent"
+  		{{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.15"')}}
+            "FamilyMemberHistory"        
+  		{{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.14"')}}
+            "Condition"
+  		{{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.23"')}}
+            "Device"
+  		{{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.18"')}}
+            "Coverage"
+  		{{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.10"')}}
+            "CarePlan"
+        {{else if section}}
+            ""
+        {{/if}}
+}
+

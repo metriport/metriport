@@ -1,0 +1,23 @@
+{{#if (eq code 'draft')}}
+	"draft"
+{{else if (eq code 'active')}}
+	"active"
+{{else if (eq code 'suspended')}}
+	"on-hold"
+{{else if (eq code 'on-hold')}}
+	"on-hold"
+{{else if (eq code 'failed')}}
+	"revoked"
+{{else if (eq code 'revoked')}}
+	"revoked"
+{{else if (eq code 'completed')}}
+	"completed"
+{{else if (eq code 'entered-in-error')}}
+	"entered-in-error"
+{{else if (eq code 'error')}}
+	"entered-in-error"
+{{else if (eq code 'unknown')}}
+	"unknown"
+{{else}}
+    "unknown"
+{{/if}}

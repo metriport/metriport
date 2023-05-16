@@ -1,0 +1,19 @@
+{{#if (eq code 'draft')}}
+	"preliminary"
+{{else if (eq code 'preliminary')}}
+	"preliminary"
+{{else if (eq code 'final')}}
+	"final"
+{{else if (eq code 'completed')}}
+	"final"
+{{else if (eq code 'amended')}}
+	"amended"
+{{else if (eq code 'replaced')}}
+	"amended"
+{{else if (eq code 'entered-in-error')}}
+	"entered-in-error"
+{{else if (eq code 'error')}}
+	"entered-in-error"
+{{else}}
+    "preliminary"
+{{/if}}

@@ -1,0 +1,36 @@
+{
+    "resourceType": "Bundle",
+    "type": "batch",
+    "entry": [
+    	
+        {{>Header.hbs}}
+        
+        {{! Required Sections}}
+        
+        {{>Sections/Complications.hbs}},
+        
+        {{>Sections/Postprocedure_Diagnosis.hbs}},
+        
+        {{>Sections/Procedure_Indications.hbs}},
+
+        {{! Optional Sections}}
+        
+        {{>Sections/Allergies_and_Adverse_Reactions.hbs}},
+        
+        {{>Sections/Family_history.hbs}},
+        
+        {{>Sections/Medication.hbs}},
+        
+        {{>Sections/Procedures.hbs}},
+        
+        {{>Sections/Social_History.hbs}},
+        
+        {{>Sections/Procedure_Findings.hbs}},
+        
+        {{>Sections/Procedure_Anesthesia.hbs}},
+        
+        {{! Document Resource Creation }}
+        
+        {{>Resources/DocumentReference.hbs docref=msg ID=(generateUUID (toJsonString msg))}}
+      ]
+}
