@@ -64,6 +64,7 @@ export async function queryDocuments({
         toDTO(getDocumentSandboxPayload(patient.id))
       );
     } else {
+      log(`Querying for documents of patient ${patient.id}...`);
       const cwDocuments = await internalGetDocuments({ patient, organization, facility });
       log(`Found ${cwDocuments.length} documents`);
 
@@ -112,7 +113,10 @@ async function internalGetDocuments({
   const { log } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
 
   const externalData = patient.data.externalData?.COMMONWELL;
-  if (!externalData) return [];
+  if (!externalData) {
+    log(`No external data found for patient ${patient.id}, not querying for docs`);
+    return [];
+  }
   const cwData = externalData as PatientDataCommonwell;
 
   const orgName = organization.data.name;

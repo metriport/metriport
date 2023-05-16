@@ -36,8 +36,8 @@ export async function populateFhirServer({
   log("Creating organization on FHIR server: ", orgOnDB.id);
   await fhirApi.updateResource(orgToFhir);
 
-  log("Creating patients on FHIR server...");
   const patientsOnDB = await getPatients({ cxId });
+  log(`Creating ${patientsOnDB.length} patients on FHIR server...`);
   const res = await Promise.allSettled(
     patientsOnDB.map(async patient => {
       try {
@@ -51,7 +51,7 @@ export async function populateFhirServer({
     })
   );
 
-  log("Triggering document queries...");
+  log(`Triggering document queries for ${patientsOnDB.length} patients...`);
   patientsOnDB.forEach(patient => {
     if (patient.facilityIds.length < 1) return;
     queryDocumentsAcrossHIEs({
