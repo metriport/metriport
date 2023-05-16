@@ -177,7 +177,7 @@ export class Config {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
 
-  static getFHIREngineURL(): string | undefined {
-    return getEnvVar("FHIR_ENGINE_URL");
+  static getFHIRConverterURL(): string | undefined {
+    return getEnvVar("FHIR_CONVERTER_URL");
   }
 }

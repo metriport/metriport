@@ -22,7 +22,8 @@ import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
 import { EnvConfig } from "./env-config";
 import { getSecrets } from "./secrets";
-import { addErrorAlarmToLambdaFunc, isProd, mbToBytes } from "./util";
+import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./util";
+import { createFHIRConverterService } from "./fhir-converter-service";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -155,7 +156,20 @@ export class APIStack extends Stack {
     );
 
     //-------------------------------------------
-    // ECR + ECS + Fargate for Backend Servers
+    // FHIR Converter Service
+    //-------------------------------------------
+    let fhirConverterServiceAddress = "";
+    if (!isSandbox(props.config)) {
+      fhirConverterServiceAddress = createFHIRConverterService(
+        this,
+        props,
+        this.vpc,
+        slackNotification?.alarmAction
+      );
+    }
+
+    //-------------------------------------------
+    // ECR + ECS + Fargate f or Backend Servers
     //-------------------------------------------
     const {
       cluster,
@@ -170,7 +184,8 @@ export class APIStack extends Stack {
       dbCredsSecret,
       dynamoDBTokenTable,
       slackNotification?.alarmAction,
-      dnsZones
+      dnsZones,
+      `http://${fhirConverterServiceAddress}`
     );
 
     // Access grant for Aurora DB

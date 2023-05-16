@@ -4,12 +4,12 @@ import { Bundle } from "@medplum/fhirtypes";
 
 const templateExt = "hbs";
 
-export enum FHIREngineSourceDataType {
+export enum FHIRConverterSourceDataType {
   cda = "cda",
   hl7v2 = "hl7v2",
 }
 
-export enum FHIREngineCDATemplate {
+export enum FHIRConverterCDATemplate {
   ccd = "ccd",
   consultationNote = "ConsultationNote",
   dischargeSummary = "DischargeSummary",
@@ -25,18 +25,18 @@ export enum FHIREngineCDATemplate {
 export async function convertCDAToFHIR(
   patientId: string,
   cda: string,
-  template: FHIREngineCDATemplate = FHIREngineCDATemplate.ccd,
+  template: FHIRConverterCDATemplate = FHIRConverterCDATemplate.ccd,
   keepUnusedSegments = false,
   keepInvalidAccess = false
 ): Promise<Bundle | undefined> {
-  const fhirEngineUrl = Config.getFHIREngineURL();
-  if (!fhirEngineUrl) {
-    console.log(`FHIR_ENGINE_URL is not configured, skipping FHIR conversion...`);
+  const fhirConverterUrl = Config.getFHIRConverterURL();
+  if (!fhirConverterUrl) {
+    console.log(`FHIR_CONVERTER_URL is not configured, skipping FHIR conversion...`);
     return;
   }
 
   const resp = await axios.post(
-    `${fhirEngineUrl}/api/convert/${FHIREngineSourceDataType.cda}/${template}.${templateExt}`,
+    `${fhirConverterUrl}/api/convert/${FHIRConverterSourceDataType.cda}/${template}.${templateExt}`,
     cda,
     {
       params: {

@@ -3,6 +3,7 @@ import { mean } from "lodash";
 import convert from "convert-units";
 import { debug } from "./log";
 import { Sample } from "@metriport/api/lib/devices/models/common/sample";
+import { PassThrough } from "node:stream";
 
 interface MinMaxItem {
   min_item: number;
@@ -105,4 +106,13 @@ export class Util {
    */
   static oneOf = <T>(...values: T[]): NonNullable<T> | undefined =>
     values.find(v => v != null) ?? undefined;
+
+  static async streamToString(stream: PassThrough): Promise<string> {
+    const chunks: Buffer[] = [];
+    return new Promise((resolve, reject) => {
+      stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
+      stream.on("error", err => reject(err));
+      stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    });
+  }
 }

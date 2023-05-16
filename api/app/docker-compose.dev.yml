@@ -27,7 +27,7 @@ services:
       - ENV_TYPE=development
       - TOKEN_TABLE_NAME=token
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
-      - FHIR_ENGINE_URL=http://host.docker.internal:8777
+      - FHIR_CONVERTER_URL=http://host.docker.internal:8777
     networks:
       - metriportNetwork
     ports:

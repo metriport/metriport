@@ -27,7 +27,7 @@ import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { MAX_FHIR_DOC_ID_LENGTH, postFHIRBundle } from "../../fhir/shared";
-import { convertCDAToFHIR } from "../../fhir-engine/engine";
+import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
@@ -195,15 +195,6 @@ async function internalGetDocuments({
   return documents;
 }
 
-async function streamToString(stream: PassThrough): Promise<string> {
-  const chunks: Buffer[] = [];
-  return new Promise((resolve, reject) => {
-    stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
-    stream.on("error", err => reject(err));
-    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-  });
-}
-
 async function downloadDocsAndUpsertFHIR({
   patient,
   organization,
@@ -271,6 +262,9 @@ async function downloadDocsAndUpsertFHIR({
 
             const { writeStream, promise } = uploadStream(s3FileName);
 
+            // listen to stream data as it's passed through
+            const fileStringPromise = Util.streamToString(writeStream);
+
             await downloadDocument({
               cxId: patient.cxId,
               patientId: patient.id,
@@ -295,10 +289,21 @@ async function downloadDocsAndUpsertFHIR({
               doc.content?.mimeType === "application/xml" ||
               doc.content?.mimeType === "text/xml"
             ) {
-              const fileString = await streamToString(writeStream);
-              // note that on purpose, this bundle will not contain the corresponding doc ref
-              const fhirBundle = await convertCDAToFHIR(patient.id, fileString);
-              if (fhirBundle) await postFHIRBundle(patient.cxId, fhirBundle);
+              try {
+                const fileString = await fileStringPromise;
+                // note that on purpose, this bundle will not contain the corresponding doc ref
+                const fhirBundle = await convertCDAToFHIR(patient.id, fileString);
+                if (fhirBundle) await postFHIRBundle(patient.cxId, fhirBundle);
+              } catch (error) {
+                log(`Error converting CDA to FHIR and POSTing Bundle (docId ${doc.id}): ${error}`);
+                capture.error(error, {
+                  extra: {
+                    context: `cw.getDocuments.convertToFHIR`,
+                    patientId: patient.id,
+                    documentReference: doc,
+                  },
+                });
+              }
             }
 
             const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
