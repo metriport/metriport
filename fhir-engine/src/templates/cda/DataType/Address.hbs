@@ -1,0 +1,12 @@
+{
+    "use": {{>ValueSet/AddressUse.hbs code=addr.use}},
+    "line": [
+       	{{#each (toArray addr.streetAddressLine)}}
+           	"{{{this._}}}",
+       	{{/each}}
+    ],
+    "city": "{{addr.city._}}",
+    "state": "{{addr.state._}}",
+    "country": "{{addr.country._}}",
+    "postalCode": "{{addr.postalCode._}}",
+},

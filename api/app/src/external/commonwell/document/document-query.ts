@@ -26,7 +26,8 @@ import { Util } from "../../../shared/util";
 import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { MAX_FHIR_DOC_ID_LENGTH } from "../../fhir/shared";
+import { MAX_FHIR_DOC_ID_LENGTH, postFHIRBundle } from "../../fhir/shared";
+import { convertCDAToFHIR } from "../../fhir-engine/engine";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
@@ -194,6 +195,15 @@ async function internalGetDocuments({
   return documents;
 }
 
+async function streamToString(stream: PassThrough): Promise<string> {
+  const chunks: Buffer[] = [];
+  return new Promise((resolve, reject) => {
+    stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
+    stream.on("error", err => reject(err));
+    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+  });
+}
+
 async function downloadDocsAndUpsertFHIR({
   patient,
   organization,
@@ -279,6 +289,17 @@ async function downloadDocsAndUpsertFHIR({
               },
               fileName: data.Key,
             };
+
+            // make sure the doc is XML/CDA before attempting to convert
+            if (
+              doc.content?.mimeType === "application/xml" ||
+              doc.content?.mimeType === "text/xml"
+            ) {
+              const fileString = await streamToString(writeStream);
+              // note that on purpose, this bundle will not contain the corresponding doc ref
+              const fhirBundle = await convertCDAToFHIR(patient.id, fileString);
+              if (fhirBundle) await postFHIRBundle(patient.cxId, fhirBundle);
+            }
 
             const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
             await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);

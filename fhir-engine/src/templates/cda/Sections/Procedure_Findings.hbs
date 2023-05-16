@@ -1,0 +1,11 @@
+
+        {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.28')}}
+            {{#each (toArray 2_16_840_1_113883_10_20_22_2_28.entry) as |condEntry|}}
+                {{>Resources/Condition.hbs conditionEntry=condEntry.observation ID=(generateUUID (toJsonString condEntry.observation))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                	{{>References/Condition/subject.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+            {{/each}}
+        {{/with}} 
+        
+     

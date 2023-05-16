@@ -1,0 +1,7 @@
+{{#if code}}
+    {{#if (eq (toLower code) 'aborted')}}
+	    "stopped"
+    {{else}}
+        "{{code}}"
+    {{/if}}
+{{/if}}

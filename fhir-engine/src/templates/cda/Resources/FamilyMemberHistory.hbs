@@ -1,0 +1,46 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "FamilyMemberHistory",
+        "id":"{{ID}}",
+        "identifier":
+        [
+        	{{#each (toArray familyEntry.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "status":"completed"
+        "relationship":
+            {{#if familyEntry.subject.relatedSubject.code.translation}}
+                {{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code.translation}},
+            {{else}}
+                {{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code}},
+            {{/if}}
+        "sex":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.subject.administrativeGenderCode}},
+        "bornString":"{{familyEntry.subject.relatedSubject.subject.birthTime.value}}",
+        "condition":
+        [
+            {{#each familyEntry.component}}
+                {
+                    "code":{{>DataType/CodeableConcept.hbs code=this.observation.value}},
+                        {{#each (toArray this.observation.entryRelationship)}}
+                            {{#if (eq this.observation.templateId.root '2.16.840.1.113883.10.20.22.4.47')}}
+                                "contributedToDeath":true,
+                            {{/if}}
+                            {{#if (eq this.observation.templateId.root '2.16.840.1.113883.10.20.22.4.31')}}
+                                "onsetAge":{
+                                        "value": {{this.observation.value.value}},
+                                        "system": "http://unitsofmeasure.org",
+                                        "code": "{{this.observation.value.unit}}"
+                                    },
+                            {{/if}}
+                        {{/each}} 
+                },
+            {{/each}}
+        ],
+    },
+    "request":{
+        "method":"PUT",
+        "url":"FamilyMemberHistory/{{ID}}",
+    },
+},

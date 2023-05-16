@@ -1,0 +1,26 @@
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.57')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.57')}}
+        {{#each (toArray 2_16_840_1_113883_10_20_22_2_57.entry) as |nutrEntry|}}
+        
+                {{>Resources/Observation.hbs observationEntry=nutrEntry.observation ID=(generateUUID (toJsonString nutrEntry.observation))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString nutrEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+            
+                {{#each (toArray this.observation.entryRelationship) as |nutrEntryRel|}}
+                    {{>Resources/Observation.hbs observationEntry=nutrEntryRel.observation ID=(generateUUID (toJsonString nutrEntryRel.observation))}},
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                        {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString nutrEntryRel.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
+
+                    {{#if nutrEntryRel.observation.author.assignedAuthor}}
+                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=nutrEntryRel.observation.author.assignedAuthor) as |practitionerId|}}
+                            {{>Resources/Practitioner.hbs practitioner=nutrEntryRel.observation.author.assignedAuthor ID=practitionerId.Id}},
+                            {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString nutrEntryRel.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                        {{/with}}
+                    {{/if}}
+                {{/each}}
+            
+        {{/each}}
+    {{/with}}
+{{/if}}

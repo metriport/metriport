@@ -1,0 +1,38 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "MedicationAdministration",
+        "id":"{{ID}}",
+        "identifier":
+  		[
+        	{{#each (toArray medicationAdministration.id)}}
+            	{{>DataType/Identifier.hbs id=this}}
+            {{/each}}
+        ],
+        "status":"{{medicationAdministration.statusCode.code}}",
+        "effectivePeriod":
+        	{"start":"{{formatAsDateTime medicationAdministration.effectiveTime.low.value}}",
+            "end":"{{formatAsDateTime medicationAdministration.effectiveTime.high.value}}"
+        	},
+        "dosage":
+        {
+
+                "route":{{>DataType/CodeableConcept.hbs code=medicationAdministration.routeCode}}
+                "dose":
+                {
+                    "value":{{medicationAdministration.doseQuantity.value}},
+                    "unit":"{{medicationAdministration.doseQuantity.unit}}"
+                }
+                "rateQuantity":
+                {
+                    "value":{{medicationAdministration.rateQuantity.value}}
+                    "unit":"{{medicationAdministration.rateQuantity.unit}}"
+                }
+
+        }
+    },
+    "request":{
+        "method":"PUT",
+        "url":"MedicationAdministration/{{ID}}",
+    },
+},

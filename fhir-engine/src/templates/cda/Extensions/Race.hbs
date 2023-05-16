@@ -1,0 +1,48 @@
+{
+  {{#if patient.raceCode}}
+      "url" : "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race",
+      "extension" : [
+          {{#each (concat (toArray patient.raceCode) (toArray patient.sdtc:raceCode))}}
+              {
+                  {{#if this.nullFlavor}}
+                      "url" : "ombCategory",
+                      "valueCoding" : {
+                          "system":"http://terminology.hl7.org/CodeSystem/v3-NullFlavor",
+                          "code":"{{this.nullFlavor}}",
+                          {{#if (eq (toUpper this.nullFlavor) 'ASKU')}}
+                              "display":"Asked but no answer",
+                          {{else}}
+                              "display":"Unknown",
+                          {{/if}}
+                      },
+                  {{else}}
+                      {{#if (or (eq this.code '1002-5') 
+                            (eq this.code '2028-9') 
+                            (eq this.code '2054-5')
+                            (eq this.code '2076-8')
+                            (eq this.code '2106-3'))}}
+                          "url" : "ombCategory",
+                      {{else}}
+                          "url" : "detailed",
+                      {{/if}}
+	                  "valueCoding": {{>DataType/Coding.hbs code=this}},
+                  {{/if}}
+              },
+          {{/each}}
+          {
+              "url": "text",
+              {{#if patient.sdtc:raceCode}}
+                  "valueString":"Mixed",
+              {{else if patient.raceCode.nullFlavor}}
+                  {{#if (eq (toUpper patient.raceCode.nullFlavor) 'ASKU')}}
+                      "valueString":"Asked but no answer",
+                  {{else}}
+                      "valueString":"Unknown",
+                  {{/if}}
+              {{else}}
+                  "valueString":"{{patient.raceCode.displayName}}",
+              {{/if}}
+          }
+      ],                        
+  {{/if}}
+}

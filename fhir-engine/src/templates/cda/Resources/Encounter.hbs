@@ -1,0 +1,43 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Encounter",
+        "id":"{{ID}}",
+        
+        {{#if encounter.statusCode.code}}
+            "status":{{>ValueSet/EncounterStatus.hbs code=encounter.statusCode.code}},
+        {{else}}
+            "status":"unknown",
+        {{/if}}
+        
+        {{#if (elementAt (toArray encounter.code.translation) 0)}}
+            {{#with (elementAt (toArray encounter.code.translation) 0)}}
+                "class":{{>DataType/Coding.hbs code=this}},
+            {{/with}}
+        {{else}}
+            "class":{{>DataType/Coding.hbs code=encounter.code}},     
+        {{/if}}
+        
+        "type":
+        [
+           	{{>DataType/CodeableConcept.hbs code=encounter.code}},
+        ],
+        "identifier":
+        [
+        	{{#each (toArray encounter.id)}}
+        		{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "period": {{>DataType/Period.hbs period=encounter.effectiveTime}},
+        "priority":{{>DataType/CodeableConcept.hbs code=encounter.priorityCode}},
+       
+        "hospitalization":
+            {
+            "dischargeDisposition":{{>DataType/CodeableConcept.hbs code=encounter.dischargeDispositionCode}},
+            },
+     },
+    "request":{
+        "method":"PUT",
+        "url":"Encounter/{{ID}}",
+    },
+},

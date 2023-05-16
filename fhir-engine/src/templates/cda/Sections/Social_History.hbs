@@ -1,0 +1,10 @@
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.17')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.17')}}
+        	{{#each (toArray 2_16_840_1_113883_10_20_22_2_17.entry) as |obsEntry|}}
+            	{{>Resources/Observation.hbs observationCategory="social-history" observationEntry=obsEntry.observation ID=(generateUUID (toJsonString obsEntry.observation))}} 
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+					{{>References/Observation/subject.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+				{{/with}}
+            {{/each}}
+        {{/with}}
+{{/if}}

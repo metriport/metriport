@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<!-- This sample shows illustrative information (excluding structuredBody) for a Consultation Note --> 
+<!-- It was specifically developed to show how a consultation note can complete a referral loop --> 
+<!-- The inFulfillmentOf element links back to the original requested referral --> 
+<!-- Original sample adapted from Lantana samples provided with C-CDA 2.0 Guide -->
+<ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:voc="urn:hl7-org:v3/voc" xmlns:sdtc="urn:hl7-org:sdtc"> > <!-- ** CDA Header ** -->
+    <realmCode code="US"/>
+    <typeId root="2.16.840.1.113883.1.3" extension="POCD_HD000040"/>
+    <!-- Identifies document as conformant to US Realm Header (V2) Template -->
+    <templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2015-08-01"/>
+    <!-- Consultation Note V2  -->
+    <templateId root="2.16.840.1.113883.10.20.22.1.4" extension="2015-08-01"/>
+    <id extension="TT988" root="2.16.840.1.113883.19.5.99999.1"/>
+    <code codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" code="11488-4"
+        displayName="Consultation Note">
+        <!-- Additional SNOMED code which is equivalent to the LOINC consultation note code -->
+        <!-- The quality measure CMS50 v7 requires a concept from 2.16.840.1.113883.3.464.1003.121.12.1006 -->
+        <!-- There is a potential for the LOINC codes to be added to the prior value set, although it is not currently available -->
+        <translation code="371530004" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED-CT"
+            displayName="Clinical consultation report (record artifact)"/>
+    </code>
+    <title>Community Health Consult Note</title>
+    <effectiveTime value="201806230900-0800"/>
+    <confidentialityCode code="N" codeSystem="2.16.840.1.113883.5.25"/>
+    <languageCode code="en-US"/>
+    <setId extension="sTT988" root="2.16.840.1.113883.19.5.99999.19"/>
+    <versionNumber value="1"/>
+    <recordTarget>
+        <patientRole>
+            <!-- Example Social Security Number using the actual SSN OID. -->
+            <id extension="000-00-0000" root="2.16.840.1.113883.4.1"/>
+            <!-- HP is "primary home" from codeSystem 2.16.840.1.113883.5.1119 -->
+            <addr use="HP">
+                <streetAddressLine>2222 Home Street</streetAddressLine>
+                <city>Beaverton</city>
+                <state>OR</state>
+                <postalCode>97867</postalCode>
+                <!-- US is "United States" from ISO 3166-1 Country Codes: 1.0.3166.1 -->
+                <country>US</country>
+            </addr>
+            <!-- HP is "primary home" from HL7 AddressUse 2.16.840.1.113883.5.1119 -->
+            <telecom value="tel:+1(555)555-2003" use="HP"/>
+            <patient>
+                <!-- The first name element represents what the patient is known as -->
+                <name use="L">
+                    <given>Eve</given>
+                    <family qualifier="SP">Betterhalf</family>
+                </name>
+                <!-- The second name element represents another name associated with the patient -->
+                <name use="SRCH">
+                    <given>Eve</given>
+                    <family qualifier="BR">Everywoman</family>
+                </name>
+                <administrativeGenderCode code="F" displayName="Female"
+                    codeSystem="2.16.840.1.113883.5.1" codeSystemName="AdministrativeGender"/>
+                <!-- Date of birth need only be precise to the day -->
+                <birthTime value="19750501"/>
+                <maritalStatusCode code="M" displayName="Married" codeSystem="2.16.840.1.113883.5.2"
+                    codeSystemName="MaritalStatusCode"/>
+                <religiousAffiliationCode code="1013"
+                    displayName="Christian (non-Catholic, non-specific)"
+                    codeSystem="2.16.840.1.113883.5.1076" codeSystemName="HL7 Religious Affiliation"/>
+                <!-- CDC Race and Ethnicity code set contains the five minimum race and ethnicity 
+					categories defined by OMB Standards -->
+                <raceCode code="2106-3" displayName="White" codeSystem="2.16.840.1.113883.6.238"
+                    codeSystemName="Race &amp; Ethnicity - CDC"/>
+                <!-- The raceCode extension is only used if raceCode is valued -->
+                <sdtc:raceCode code="2076-8" displayName="Hawaiian or Other Pacific Islander"
+                    codeSystem="2.16.840.1.113883.6.238" codeSystemName="Race &amp; Ethnicity - CDC"/>
+                <ethnicGroupCode code="2186-5" displayName="Not Hispanic or Latino"
+                    codeSystem="2.16.840.1.113883.6.238" codeSystemName="Race &amp; Ethnicity - CDC"/>
+                <guardian>
+                    <code code="POWATT" displayName="Power of Attorney"
+                        codeSystem="2.16.840.1.113883.1.11.19830" codeSystemName="ResponsibleParty"/>
+                    <addr use="HP">
+                        <streetAddressLine>2222 Home Street</streetAddressLine>
+                        <city>Beaverton</city>
+                        <state>OR</state>
+                        <postalCode>97867</postalCode>
+                        <country>US</country>
+                    </addr>
+                    <telecom value="tel:+1(555)555-2008" use="MC"/>
+                    <guardianPerson>
+                        <name>
+                            <given>Boris</given>
+                            <given qualifier="CL">Bo</given>
+                            <family>Betterhalf</family>
+                        </name>
+                    </guardianPerson>
+                </guardian>
+                <birthplace>
+                    <place>
+                        <addr>
+                            <streetAddressLine>4444 Home Street</streetAddressLine>
+                            <city>Beaverton</city>
+                            <state>OR</state>
+                            <postalCode>97867</postalCode>
+                            <country>US</country>
+                        </addr>
+                    </place>
+                </birthplace>
+                <languageCommunication>
+                    <!-- "eng" is ISO 639-2 alpha-3 code for "English" -->
+                    <languageCode code="eng"/>
+                    <modeCode code="ESP" displayName="Expressed spoken"
+                        codeSystem="2.16.840.1.113883.5.60" codeSystemName="LanguageAbilityMode"/>
+                    <proficiencyLevelCode code="G" displayName="Good"
+                        codeSystem="2.16.840.1.113883.5.61"
+                        codeSystemName="LanguageAbilityProficiency"/>
+                    <!-- Patient's preferred language -->
+                    <preferenceInd value="true"/>
+                </languageCommunication>
+            </patient>
+            <providerOrganization>
+                <!-- Organizations SHOULD have an NPI; this is a real root; fake extension -->
+                <id extension="219BX" root="2.16.840.1.113883.4.6"/>
+                <name>The DoctorsTogether Physician Group</name>
+                <telecom use="WP" value="tel: +1(555)555-5000"/>
+                <addr>
+                    <streetAddressLine>1007 Health Drive</streetAddressLine>
+                    <city>Portland</city>
+                    <state>OR</state>
+                    <postalCode>99123</postalCode>
+                    <country>US</country>
+                </addr>
+            </providerOrganization>
+        </patientRole>
+    </recordTarget>
+    <author>
+        <time value="20130731"/>
+        <assignedAuthor>
+            <id extension="555555555" root="2.16.840.1.113883.4.6"/>
+            <code code="207QA0505X" displayName="Adult Medicine"
+                codeSystem="2.16.840.1.113883.6.101"
+                codeSystemName="Healthcare Provider Taxonomy (HIPAA)"/>
+            <addr>
+                <streetAddressLine>1004 Healthcare Drive </streetAddressLine>
+                <city>Portland</city>
+                <state>OR</state>
+                <postalCode>99123</postalCode>
+                <country>US</country>
+            </addr>
+            <telecom use="WP" value="tel:+1(555)-1004"/>
+            <assignedPerson>
+                <name>
+                    <given>Patricia</given>
+                    <given qualifier="CL">Patty</given>
+                    <family>Primary</family>
+                    <suffix qualifier="AC">M.D.</suffix>
+                </name>
+            </assignedPerson>
+        </assignedAuthor>
+    </author>
+    <dataEnterer>
+        <assignedEntity>
+            <id extension="333777777" root="2.16.840.1.113883.4.6"/>
+            <addr>
+                <streetAddressLine>1007 Healthcare Drive</streetAddressLine>
+                <city>Portland</city>
+                <state>OR</state>
+                <postalCode>99123</postalCode>
+                <country>US</country>
+            </addr>
+            <telecom use="WP" value="tel:+1(555)-1050"/>
+            <assignedPerson>
+                <name>
+                    <given>Ellen</given>
+                    <family>Enter</family>
+                </name>
+            </assignedPerson>
+        </assignedEntity>
+    </dataEnterer>
+    <informant>
+        <assignedEntity>
+            <id extension="888888888" root="2.16.840.1.113883.19.5"/>
+            <addr>
+                <streetAddressLine>1007 Healthcare Drive</streetAddressLine>
+                <city>Portland</city>
+                <state>OR</state>
+                <postalCode>99123</postalCode>
+                <country>US</country>
+            </addr>
+            <telecom use="WP" value="tel:+1(555)-1003"/>
+            <assignedPerson>
+                <name>
+                    <given>Harold</given>
+                    <family>Hippocrates</family>
+                    <suffix qualifier="AC">D.O.</suffix>
+                </name>
+            </assignedPerson>
+        </assignedEntity>
+    </informant>
+    <custodian>
+        <assignedCustodian>
+            <representedCustodianOrganization>
+                <id extension="321CX" root="2.16.840.1.113883.4.6"/>
+                <name>Good Health HIE</name>
+                <telecom use="WP" value="tel:+1(555)-1009"/>
+                <addr use="WP">
+                    <streetAddressLine>1009 Healthcare Drive </streetAddressLine>
+                    <city>Portland</city>
+                    <state>OR</state>
+                    <postalCode>99123</postalCode>
+                    <country>US</country>
+                </addr>
+            </representedCustodianOrganization>
+        </assignedCustodian>
+    </custodian>
+    <informationRecipient>
+        <intendedRecipient>
+            <informationRecipient>
+                <name>
+                    <given>Sara</given>
+                    <family>Specialize</family>
+                    <suffix qualifier="AC">M.D.</suffix>
+                </name>
+            </informationRecipient>
+            <receivedOrganization>
+                <name>The DoctorsApart Physician Group</name>
+            </receivedOrganization>
+        </intendedRecipient>
+    </informationRecipient>
+    <authenticator>
+        <time value="201308011030-0800"/>
+        <signatureCode code="S"/>
+        <assignedEntity>
+            <id extension="555555555" root="2.16.840.1.113883.4.6"/>
+            <code code="207QA0505X" displayName="Adult Medicine"
+                codeSystem="2.16.840.1.113883.6.101"
+                codeSystemName="Healthcare Provider Taxonomy (HIPAA)"/>
+            <addr>
+                <streetAddressLine>1004 Healthcare Drive </streetAddressLine>
+                <city>Portland</city>
+                <state>OR</state>
+                <postalCode>99123</postalCode>
+                <country>US</country>
+            </addr>
+            <telecom use="WP" value="tel:+1(555)-1004"/>
+            <assignedPerson>
+                <name>
+                    <given>Patricia</given>
+                    <given qualifier="CL">Patty</given>
+                    <family>Primary</family>
+                    <suffix qualifier="AC">M.D.</suffix>
+                </name>
+            </assignedPerson>
+        </assignedEntity>
+    </authenticator>
+    <!-- Describes prior orders that are fulfilled (in whole or part) by the service events described in the Consultation Note -->
+    <inFulfillmentOf typeCode="FLFS">
+        <order classCode="ACT" moodCode="RQO">
+            <!-- Note that the following id corresponds to referral request -->
+            <!-- The semantics indicate that the referral was closed/completed -->
+            <id root="9a6d1bac-17d3-4195-89a4-1121bc809b4e"/>
+            <code code="103697008" displayName="Patient referral to specialist"
+                codeSystemName="SNOMED CT" codeSystem="2.16.840.1.113883.6.96"/>
+        </order>
+    </inFulfillmentOf>
+    <componentOf>
+        <encompassingEncounter>
+            <id extension="9937012" root="2.16.840.1.113883.19"/>
+            <code codeSystem="2.16.840.1.113883.6.12" codeSystemName="CPT-4" code="99213"
+                displayName="Evaluation and Management"/>
+            <effectiveTime value="20180623"/>
+            <location>
+                <healthCareFacility>
+                    <id root="2.16.540.1.113883.19.2"/>
+                </healthCareFacility>
+            </location>
+        </encompassingEncounter>
+    </componentOf>
+    <!-- Note that structured body is omitted in this example, so this sample will not validate without errors -->
+    <!-- The structuredBody SHALL contain History of Present Illness Section,  Allergies and Intolerances Section, Problems Section, -->
+    <!-- Assessment and Plan Section, or both an Assessment Section and a Plan of Treatment Section -->
+    <!-- Reason for Referral or Reason for Visit Section -->
+    <component>
+        <structuredBody>
+            <component> </component>
+        </structuredBody>
+    </component>
+</ClinicalDocument>

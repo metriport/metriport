@@ -22,8 +22,10 @@ export const up: Migration = async ({ context: queryInterface }) => {
       }
       patient.data = JSON.stringify(patient.data);
     }
-    await queryInterface.bulkDelete(patientTableName, {}, { transaction });
-    await queryInterface.bulkInsert(patientTableName, patients, { transaction });
+    if (patients.length > 0) {
+      await queryInterface.bulkDelete(patientTableName, {}, { transaction });
+      await queryInterface.bulkInsert(patientTableName, patients, { transaction });
+    }
   });
 };
 
@@ -49,7 +51,9 @@ export const down: Migration = ({ context: queryInterface }) => {
       }
       patient.data = JSON.stringify(patient.data);
     }
-    await queryInterface.bulkDelete(patientTableName, {}, { transaction });
-    await queryInterface.bulkInsert(patientTableName, patients, { transaction });
+    if (patients.length > 0) {
+      await queryInterface.bulkDelete(patientTableName, {}, { transaction });
+      await queryInterface.bulkInsert(patientTableName, patients, { transaction });
+    }
   });
 };

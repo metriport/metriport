@@ -1,0 +1,22 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "DocumentReference",
+        "id":"{{ID}}",
+        "status":"current",
+        "content":
+        [
+          {
+            "attachment":
+            {
+                "contentType":"{{docref.externalDocument.text.mediaType}}"
+                "url":"{{docref.externalDocument.text.reference.value}}",
+            },
+          },
+        ],
+    },
+    "request":{
+        "method":"PUT",
+        "url":"DocumentReference/{{ID}}",
+    },
+},

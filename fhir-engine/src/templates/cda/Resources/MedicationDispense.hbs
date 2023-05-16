@@ -1,0 +1,20 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "MedicationDispense",
+        "id":"{{ID}}",
+        "identifier":
+  		[
+        	{{#each (toArray medDispense.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "status":"{{medDispense.statusCode.code}}",
+        "whenPrepared":"{{formatAsDateTime medDispense.effectiveTime.value}}",
+        "quantity":{{medDispense.quantity.value}},
+    },
+    "request":{
+        "method":"PUT",
+        "url":"MedicationDispense/{{ID}}",
+    },
+},

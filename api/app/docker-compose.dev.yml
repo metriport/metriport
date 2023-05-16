@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile.dev
     deploy:
       restart_policy:
-          condition: on-failure
+        condition: on-failure
     depends_on:
       # Our app does not work without our database
       # so this ensures our database is loaded first
@@ -27,6 +27,7 @@ services:
       - ENV_TYPE=development
       - TOKEN_TABLE_NAME=token
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - FHIR_ENGINE_URL=http://host.docker.internal:8777
     networks:
       - metriportNetwork
     ports:
@@ -41,15 +42,15 @@ services:
   #   npm install -g dynamodb-admin
   #   DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin
   dynamodb:
-      image:  amazon/dynamodb-local
-      container_name: dynamodb
-      hostname: dynamodb
-      restart: always
-      ports:
-        - 8000:8000
-      networks:
-        - metriportNetwork
-      command: "-jar DynamoDBLocal.jar -sharedDb"
+    image: amazon/dynamodb-local
+    container_name: dynamodb
+    hostname: dynamodb
+    restart: always
+    ports:
+      - 8000:8000
+    networks:
+      - metriportNetwork
+    command: "-jar DynamoDBLocal.jar -sharedDb"
   # This is the configuration for our PostgreSQL database container
   # Note the `postgres` name is important, in out Node app when we refer
   # to  `host: "postgres"` that value is mapped on the network to the
