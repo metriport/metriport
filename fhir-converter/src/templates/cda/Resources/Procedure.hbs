@@ -14,7 +14,7 @@
             	{{>DataType/Identifier.hbs id=this}},
             {{/each}}
         ],
-        {{#if (eq procedureEntry.statusCode.code 'active')}}
+        {{#if (eq (toLower procedureEntry.statusCode.code) 'active')}}
             "status":"in-progress",
         {{else}}
         	"status":"{{procedureEntry.statusCode.code}}",

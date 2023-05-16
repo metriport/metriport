@@ -31,7 +31,7 @@
             {{/each}}
         {{/each}}
 
-        {{#if (eq imm.statusCode.code 'active')}}
+        {{#if (eq (toLower imm.statusCode.code) 'active')}}
             "status":"completed",
         {{else}}
         	"status":"{{imm.statusCode.code}}",
