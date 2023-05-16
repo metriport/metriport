@@ -1,0 +1,49 @@
+"coding":
+[
+    {
+    	{{#if mapping}}
+			{{#with (evaluate mapping inCode=CWE-1)}}
+                "code":"{{code}}",
+                "display":"{{display}}",
+                "system":"{{system}}",
+                "version":"{{version}}",
+        	{{/with}}
+		{{else}}
+            "code":"{{CWE-1}}",
+            "display":"{{CWE-2}}",
+            "system":"{{CWE-3}}",
+            "version":"{{CWE-7}}",
+        {{/if}}
+    },
+    {
+        {{#if mapping}}
+            {{#with (evaluate mapping inCode=CWE-4)}}
+                "code":"{{code}}",
+                "display":"{{display}}",
+                "system":"{{system}}",
+                "version":"{{version}}",
+        	{{/with}}
+		{{else}}
+            "code":"{{CWE-4}}",
+            "display":"{{CWE-5}}",
+            "system":"{{CWE-6}}",
+            "version":"{{CWE-8}}",
+        {{/if}}
+    },
+    {
+        {{#if mapping}}
+            {{#with (evaluate mapping inCode=CWE-10)}}
+                "code":"{{code}}",
+                "display":"{{display}}",
+                "system":"{{system}}",
+                "version":"{{version}}",
+        	{{/with}}
+        {{else}}
+            "code":"{{CWE-10}}",
+            "display":"{{CWE-11}}",
+            "system":"{{CWE-12}}",
+            "version":"{{CWE-13}}",
+        {{/if}}
+    },
+],
+"text":"{{CWE-9}}",

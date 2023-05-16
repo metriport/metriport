@@ -1,0 +1,19 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "MedicationRequest",
+        "id":"{{ID}}",
+        "identifier":
+  		[
+        	{{#each (toArray medicationRequest.id)}}
+            	{{>DataType/Identifier.hbs id=this}}
+            {{/each}}
+        ],
+        "intent":"order",
+        "status":"{{medicationRequest.statusCode.code}}",
+    },
+    "request":{
+        "method":"PUT",
+        "url":"MedicationRequest/{{ID}}",
+    },
+},

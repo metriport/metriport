@@ -1,0 +1,30 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Organization",
+        "id":"{{ID}}",
+        "identifier":
+  		[
+        	{{#each (toArray org.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "name":"{{org.name._}}",
+        "address":
+        [
+        	{{#each (toArray org.addr)}}
+        		{{>DataType/Address.hbs addr=this}},
+            {{/each}}
+        ],
+        "telecom":
+        [
+        	{{#each (toArray org.telecom)}}
+        		{{>DataType/ContactPoint.hbs contactPoint=this}},
+            {{/each}}
+        ],
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Organization/{{ID}}",
+    },
+},

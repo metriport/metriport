@@ -1,0 +1,60 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "RelatedPerson",
+        "id":"{{ID}}",
+        "identifier":
+        [
+        	{{#each (toArray relatedPerson.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "relationship":
+        [
+            {{>DataType/CodeableConcept.hbs code=relatedPerson.code}},
+        ],
+        "name":
+        [
+        	{{#each (toArray relatedPerson.guardianPerson.name)}}
+        		{{>DataType/HumanName.hbs name=this}},
+            {{/each}}
+        ],
+        "telecom":
+        [
+        	{{#each (toArray relatedPerson.telecom)}}
+        		{{>DataType/ContactPoint.hbs contactPoint=this}},
+            {{/each}}
+        ],
+        "birthDate":"{{addHyphensDate relatedPerson.guardianPerson.birthTime.value}}",
+        "gender":"{{toLower relatedPerson.guardianPerson.administrativeGenderCode.displayName}}",
+        "address":
+        [
+        	{{#each (toArray relatedPerson.addr)}}
+        		{{>DataType/Address.hbs addr=this}},
+            {{/each}}
+        ],
+        "communication":
+        [
+        	{{#each (toArray relatedPerson.guardianPerson.languageCommunication)}}
+            	{
+        			"language":
+                    {
+                       	"coding":
+                        [
+                          	{
+                               	"system":"http://hl7.org/fhir/ValueSet/languages",
+                               	"code":"{{this.languageCode.code}}", 
+                                "display":{{>ValueSet/Language.hbs code=this.languageCode.code}},
+                            },
+                        ],
+                    },           
+                	"preferred":"{{this.preferenceInd.value}}",
+                },
+            {{/each}}         
+        ],
+    },
+    "request":{
+        "method":"PUT",
+        "url":"RelatedPerson/{{ID}}",
+    },
+},

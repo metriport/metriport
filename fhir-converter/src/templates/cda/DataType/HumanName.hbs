@@ -1,0 +1,17 @@
+{
+	"use":{{>ValueSet/NameUse.hbs code=name.use}},
+	"family":"{{name.family._}}",
+	"given":[
+		{{#each (toArray name.given)}}
+			"{{this._}}",
+		{{/each}}
+	]
+	"prefix":
+    [
+        "{{name.prefix._}}",
+    ],
+	"suffix":
+    [
+        "{{name.suffix._}}",
+    ]
+}

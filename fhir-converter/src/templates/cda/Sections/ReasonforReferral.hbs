@@ -1,0 +1,12 @@
+{{#with (getFirstCdaSectionsByTemplateId msg '1.3.6.1.4.1.19376.1.5.3.1.3.1')}}
+    {{#each (toArray 1_3_6_1_4_1_19376_1_5_3_1_3_1.entry) as |referralEntry|}}
+    
+            {{>Resources/ServiceRequest.hbs serviceEntry=referralEntry.act ID=(generateUUID (toJsonString referralEntry.act))}},
+            {{#if referralEntry.act.author.assignedAuthor}}
+                {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=referralEntry.act.author.assignedAuthor) as |practitionerId|}}
+                    {{>Resources/Practitioner.hbs practitioner=referralEntry.act.author.assignedAuthor ID=practitionerId.Id}},
+                    {{>References/ServiceRequest/requester.hbs ID=(generateUUID (toJsonString referralEntry.act)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                {{/with}}
+            {{/if}}
+    {{/each}}
+{{/with}}

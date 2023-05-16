@@ -1,0 +1,27 @@
+{{#with (toLower code) as |normalizedCode|}}
+    {{#if (eq normalizedCode 'en')}}
+        "English"
+    {{else if (eq normalizedCode 'en-au')}}
+        "English (Australia)"
+    {{else if (eq normalizedCode 'en-ca')}}
+        "English (Canada)"
+    {{else if (eq normalizedCode 'en-in')}}
+        "English (India)"
+    {{else if (eq normalizedCode 'en-gb')}}
+        "English (Great Britain)"
+    {{else if (eq normalizedCode 'en-nz')}}
+        "English (New Zeland)"
+    {{else if (eq normalizedCode 'en-sg')}}
+        "English (Singapore)"
+    {{else if (eq normalizedCode 'en-us')}}
+        "English (United States)"
+    {{else if (eq normalizedCode 'es')}}
+        "Spanish"
+    {{else if (eq normalizedCode 'de')}}
+        "German"
+    {{else if (eq normalizedCode 'da')}}
+        "Danish"
+    {{else if (eq normalizedCode 'fr')}}
+        "French"
+    {{/if}}
+{{/with}}

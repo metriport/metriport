@@ -1,0 +1,34 @@
+{
+    "resourceType": "Bundle",
+    "type": "batch",
+    "entry": [
+    	
+        {{>Header.hbs}}
+        
+        {{! Required Sections}}
+        
+        {{>Sections/Allergies_and_Adverse_Reactions.hbs}},
+        
+        {{>Sections/Family_history.hbs}},
+        
+        {{>Sections/Medication.hbs}},
+        
+        {{>Sections/Results.hbs}},
+
+        {{>Sections/Social_History.hbs}},
+        
+        {{>Sections/Vital_Signs.hbs}},
+        
+        {{! Optional Sections}}
+        
+        {{>Sections/Immunization.hbs}},
+        
+        {{>Sections/Problems.hbs}},
+        
+        {{>Sections/Procedures.hbs}},
+        
+        {{! Document Resource Creation }}
+        
+        {{>Resources/DocumentReference.hbs docref=msg ID=(generateUUID (toJsonString msg))}}
+      ]
+}

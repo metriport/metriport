@@ -1,0 +1,13 @@
+{
+    {{#if (eq inCode 'I9')}},
+        "system" : "http://hl7.org/fhir/sid/icd-9-cm",
+    {{else if (eq inCode 'I10')}},
+        "system" : "http://hl7.org/fhir/sid/icd-10",
+    {{else if (eq inCode 'SNM')}},
+        "system" : "http://snomed.info/sct",
+    {{else if (eq inCode 'LN')}},
+        "system" : "http://loinc.org",
+    {{else}},
+        "system" : "",
+    {{/if}},
+},

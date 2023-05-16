@@ -28,7 +28,8 @@ export function createAPIService(
   dbCredsSecret: secret.ISecret,
   dynamoDBTokenTable: dynamodb.Table,
   alarmAction: SnsAction | undefined,
-  dnsZones: DnsZones
+  dnsZones: DnsZones,
+  fhirConverterServiceUrl: string
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -83,6 +84,9 @@ export function createAPIService(
           }),
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+          }),
+          ...(fhirConverterServiceUrl && {
+            FHIR_CONVERTER_URL: fhirConverterServiceUrl,
           }),
         },
       },

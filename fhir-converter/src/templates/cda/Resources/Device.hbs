@@ -1,0 +1,31 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Device",
+        "id":"{{ID}}",
+        "identifier":
+  		[
+        	{{#each (toArray author.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+		"type":
+		{
+        	"coding": [
+            {
+           		"display":"{{author.assignedAuthoringDevice.manufacturerModelName._}}",
+        	}]
+        }, 
+		"manufacturer":"{{author.assignedAuthoringDevice.manufacturerModelName._}}",
+        "version":
+        [
+            {
+                "value":"{{author.assignedAuthoringDevice.softwareName._}}",
+            },
+        ],
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Device/{{ID}}",
+    },
+},

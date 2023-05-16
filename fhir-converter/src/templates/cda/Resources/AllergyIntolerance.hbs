@@ -1,0 +1,57 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "AllergyIntolerance",
+        "id":"{{ID}}",
+        "identifier":
+        [
+        	{{#each (toArray allergyEntry.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "clinicalStatus": {
+            "coding": [
+                        {
+                            "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            "code": "{{>ValueSet/AllergyStatus.hbs code=allergyStatus.code}}",
+                        }
+                    ]
+        },
+        "reaction":
+        [
+            {
+                "substance":{{>DataType/CodeableConcept.hbs code=allergyEntry.participant.participantRole.playingEntity.code}},
+                "substance":{{>DataType/CodeableConcept.hbs code=allergyEntry.participant.participantRole.playingEntity.code.translation}},  
+
+                {{#each (toArray allergyEntry.entryRelationship)}}
+                    
+                    {{#if (contains (toJsonString this.observation.templateId) '"2.16.840.1.113883.10.20.22.4.9"')}}
+                        "manifestation":
+                        [
+                            {{#if this.observation.value.translation}}
+                                {{>DataType/CodeableConcept.hbs code=this.observation.value.translation}},
+                            {{else}}
+                                {{>DataType/CodeableConcept.hbs code=this.observation.value}},
+                            {{/if}}
+                        ],
+                        "onset": "{{formatAsDateTime this.observation.effectiveTime.low.value}}", 
+                    {{/if}}
+                    
+                    {{#if (contains (toJsonString this.observation.templateId) '"2.16.840.1.113883.10.20.22.4.8"')}}
+                        {{#if this.observation.value.translation}}
+                            "severity":"{{>ValueSet/AllergySeverity.hbs sev=this.observation.value.translation.displayName}}",
+                        {{else}}
+                            "severity":"{{>ValueSet/AllergySeverity.hbs sev=this.observation.value.displayName}}",
+                        {{/if}}
+                    {{/if}}
+                    
+                {{/each}}
+            },
+        ],
+        "onsetDateTime":"{{formatAsDateTime allergyEntry.effectiveTime.low.value}}",
+    },
+    "request":{
+        "method":"PUT",
+        "url":"AllergyIntolerance/{{ID}}",
+    },
+},
