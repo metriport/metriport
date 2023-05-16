@@ -31,7 +31,11 @@
             {{/each}}
         {{/each}}
 
-        "status":"{{imm.statusCode.code}}",
+        {{#if (eq (toLower imm.statusCode.code) 'active')}}
+            "status":"completed",
+        {{else}}
+        	"status":"{{imm.statusCode.code}}",
+        {{/if}}
         "route":{{>DataType/CodeableConcept.hbs code=imm.routeCode}},
         "site":{{>DataType/CodeableConcept.hbs code=imm.approachSiteCode}},      
     },

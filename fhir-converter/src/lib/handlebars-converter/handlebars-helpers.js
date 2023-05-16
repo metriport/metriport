@@ -822,7 +822,7 @@ module.exports.external = [
     name: "toJsonString",
     description: "Converts to JSON string: toJsonString object",
     func: function (o) {
-      console.log(o);
+      // console.log(o);
       return JSON.stringify(o);
     },
   },
