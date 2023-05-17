@@ -7,6 +7,7 @@ import { processAsyncError } from "../../../errors";
 import { queryDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
+import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 
 export type DocumentQueryResp =
@@ -31,11 +32,11 @@ export async function queryDocumentsAcrossHIEs({
   facilityId: string;
   override?: boolean;
 }): Promise<DocumentQueryResp> {
+  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
+
   const patient = await getPatientOrFail({ id: patientId, cxId });
   if (patient.data.documentQueryStatus === "processing") {
-    console.log(
-      `[queryDocumentsAcrossHIEs] Patient ${patientId} documentQueryStatus is already 'processing', skipping...`
-    );
+    log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
   }
 
@@ -48,10 +49,14 @@ export async function queryDocumentsAcrossHIEs({
   await updateDocQuery({ patient, status: "processing" });
 
   // intentionally asynchronous, not waiting for the result
-  getDocumentsFromCW({ patient, facilityId, override }).catch(() => {
-    updateDocQuery({ patient, status: "completed" });
-    processAsyncError(`doc.list.getDocumentsFromCW`);
-  });
+  getDocumentsFromCW({ patient, facilityId, override })
+    .then((amountProcessed: number) => {
+      log(`Finished processing ${amountProcessed} documents.`);
+    })
+    .catch(() => {
+      updateDocQuery({ patient, status: "completed" });
+      processAsyncError(`doc.list.getDocumentsFromCW`);
+    });
 
   return createQueryResponse("processing", patient);
 }

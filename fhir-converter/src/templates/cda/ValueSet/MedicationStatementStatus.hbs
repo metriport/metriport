@@ -3,6 +3,8 @@
     "stopped"
   {{else if (eq (toLower code) 'ordered')}}
     "active"
+  {{else if (eq (toLower code) 'suspended')}}
+    "on-hold"
   {{else}}
     "{{code}}"
   {{/if}}
