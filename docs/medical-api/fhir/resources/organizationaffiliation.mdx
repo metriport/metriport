@@ -1,0 +1,55 @@
+---
+title: "OrganizationAffiliation"
+description: "Defines an affiliation/assotiation/relationship between 2 distinct oganizations, that is not a part-of relationship/sub-division relationship."
+---
+
+## Properties
+
+| Name                      | Required | Type                                                                                  | Description                                                                                                                                                |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| identifier                | No       | [Identifier](/medical-api/fhir/data-types/identifier)[]                               | Business identifiers that are specific to this role                                                                                                        |
+| active                    | No       | boolean                                                                               | Whether this organization affiliation record is in active use                                                                                              |
+| period                    | No       | [Period](/medical-api/fhir/data-types/period)                                         | The period during which the participatingOrganization is affiliated with the primary organization                                                          |
+| organization              | No       | Reference&lt;[Organization](/medical-api/fhir/resources/organization)&gt;             | Organization where the role is available                                                                                                                   |
+| participatingOrganization | No       | Reference&lt;[Organization](/medical-api/fhir/resources/organization)&gt;             | Organization that provides/performs the role (e.g. providing services or is a member of)                                                                   |
+| network                   | No       | Reference&lt;[Organization](/medical-api/fhir/resources/organization)&gt;[]           | Health insurance provider network in which the participatingOrganization provides the role's services (if defined) at the indicated locations (if defined) |
+| code                      | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                     | Definition of the role the participatingOrganization plays                                                                                                 |
+| specialty                 | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                     | Specific specialty of the participatingOrganization in the context of the role                                                                             |
+| location                  | No       | Reference&lt;[Location](/medical-api/fhir/resources/location)&gt;[]                   | The location(s) at which the role occurs                                                                                                                   |
+| healthcareService         | No       | Reference&lt;[HealthcareService](/medical-api/fhir/resources/healthcareservice)&gt;[] | Healthcare services provided through the role                                                                                                              |
+| telecom                   | No       | [ContactPoint](/medical-api/fhir/data-types/contactpoint)[]                           | Contact details at the participatingOrganization relevant to this Affiliation                                                                              |
+| endpoint                  | No       | Reference&lt;[Endpoint](/medical-api/fhir/resources/endpoint)&gt;[]                   | Technical endpoints providing access to services operated for this role                                                                                    |
+
+## Search Parameters
+
+| Name                       | Type      | Description                                                                                                                                                | Expression                                        |
+| -------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| active                     | token     | Whether this organization affiliation record is in active use                                                                                              | OrganizationAffiliation.active                    |
+| date                       | date      | The period during which the participatingOrganization is affiliated with the primary organization                                                          | OrganizationAffiliation.period                    |
+| email                      | token     | A value in an email contact                                                                                                                                | OrganizationAffiliation.telecom                   |
+| endpoint                   | reference | Technical endpoints providing access to services operated for this role                                                                                    | OrganizationAffiliation.endpoint                  |
+| identifier                 | token     | An organization affiliation's Identifier                                                                                                                   | OrganizationAffiliation.identifier                |
+| location                   | reference | The location(s) at which the role occurs                                                                                                                   | OrganizationAffiliation.location                  |
+| network                    | reference | Health insurance provider network in which the participatingOrganization provides the role's services (if defined) at the indicated locations (if defined) | OrganizationAffiliation.network                   |
+| participating-organization | reference | The organization that provides services to the primary organization                                                                                        | OrganizationAffiliation.participatingOrganization |
+| phone                      | token     | A value in a phone contact                                                                                                                                 | OrganizationAffiliation.telecom                   |
+| primary-organization       | reference | The organization that receives the services from the participating organization                                                                            | OrganizationAffiliation.organization              |
+| role                       | token     | Definition of the role the participatingOrganization plays                                                                                                 | OrganizationAffiliation.code                      |
+| service                    | reference | Healthcare services provided through the role                                                                                                              | OrganizationAffiliation.healthcareService         |
+| specialty                  | token     | Specific specialty of the participatingOrganization in the context of the role                                                                             | OrganizationAffiliation.specialty                 |
+| telecom                    | token     | The value in any kind of contact                                                                                                                           | OrganizationAffiliation.telecom                   |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [OrganizationAffiliation](https://www.hl7.org/fhir/StructureDefinition/OrganizationAffiliation).

@@ -1,0 +1,141 @@
+---
+title: "Get Patient's Consolidated Data"
+description: "Get Patient's Consolidated Data in a FHIR Bundle."
+api: "GET /medical/v1/patient/{id}/consolidated"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Query Params
+
+<ParamField query="resources" type="string" optional>
+  A comma separated, case sensitive list of resources to be returned. If none are provided all
+  resources will be included.
+</ParamField>
+
+<Info>
+  You can scroll to the bottom of the page to view all [available
+  resources](/medical-api/api-reference/patient/get-patient-consolidated#available-fhir-resources).
+</Info>
+
+## Response
+
+Returns a [Bundle](/medical-api/fhir/resources/bundle) that contains a property entry which is simply an array of [FHIR resources](/medical-api/fhir/resources).
+
+```json
+{
+  "resourceType": "Bundle",
+  "total": 1,
+  "type": "searchset",
+  "entry": [
+    {
+      "id": 1234,
+      "content": {
+        "resourceType": "DocumentReference",
+        "contained": [],
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org/",
+              "code": "1234-1",
+              "display": "HIV 1 and 2 tests - Meaningful Use set"
+            }
+          ]
+        },
+        "status": "current",
+        "description": "Summarization Of Episode Notes - provided by Metriport",
+        "mimeType": "application/pdf",
+        "location": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+        "context": {
+          "event": [
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "62479008",
+                  "display": "AIDS"
+                }
+              ]
+            }
+          ],
+          "period": {
+            "start": "2022-10-05T22:00:00Z",
+            "end": "2022-10-05T23:00:00Z"
+          }
+        }
+      }
+    }
+  ]
+};
+```
+
+## Available FHIR resources
+
+This is the list of all available [FHIR resources](/medical-api/fhir/resources) you can query for:
+
+- [Account](/medical-api/fhir/resources/account)
+- [AllergyIntolerance](/medical-api/fhir/resources/allergyintolerance)
+- [Appointment](/medical-api/fhir/resources/appointment)
+- [AppointmentResponse](/medical-api/fhir/resources/appointmentresponse)
+- [AuditEvent](/medical-api/fhir/resources/auditevent)
+- [Basic](/medical-api/fhir/resources/basic)
+- [BodyStructure](/medical-api/fhir/resources/bodystructure)
+- [CarePlan](/medical-api/fhir/resources/careplan)
+- [CareTeam](/medical-api/fhir/resources/careteam)
+- [ChargeItem](/medical-api/fhir/resources/chargeitem)
+- [Claim](/medical-api/fhir/resources/claim)
+- [ClaimResponse](/medical-api/fhir/resources/claimresponse)
+- [ClinicalImpression](/medical-api/fhir/resources/clinicalimpression)
+- [Communication](/medical-api/fhir/resources/communication)
+- [CommunicationRequest](/medical-api/fhir/resources/communicationrequest)
+- [Composition](/medical-api/fhir/resources/composition)
+- [Condition](/medical-api/fhir/resources/condition)
+- [Consent](/medical-api/fhir/resources/consent)
+- [Contract](/medical-api/fhir/resources/contract)
+- [Coverage](/medical-api/fhir/resources/coverage)
+- [CoverageEligibilityRequest](/medical-api/fhir/resources/coverageeligibilityrequest)
+- [CoverageEligibilityResponse](/medical-api/fhir/resources/coverageeligibilityresponse)
+- [DetectedIssue](/medical-api/fhir/resources/detectedissue)
+- [Device](/medical-api/fhir/resources/device)
+- [DeviceRequest](/medical-api/fhir/resources/devicerequest)
+- [DeviceUseStatement](/medical-api/fhir/resources/deviceusestatement)
+- [DiagnosticReport](/medical-api/fhir/resources/diagnosticreport)
+- [DocumentManifest](/medical-api/fhir/resources/documentmanifest)
+- [DocumentReference](/medical-api/fhir/resources/documentreference)
+- [Encounter](/medical-api/fhir/resources/encounter)
+- [EnrollmentRequest](/medical-api/fhir/resources/enrollmentrequest)
+- [EpisodeOfCare](/medical-api/fhir/resources/episodeofcare)
+- [ExplanationOfBenefit](/medical-api/fhir/resources/explanationofbenefit)
+- [FamilyMemberHistory](/medical-api/fhir/resources/familymemberhistory)
+- [Flag](/medical-api/fhir/resources/flag)
+- [Goal](/medical-api/fhir/resources/goal)
+- [GuidanceResponse](/medical-api/fhir/resources/guidanceresponse)
+- [ImagingStudy](/medical-api/fhir/resources/imagingstudy)
+- [Immunization](/medical-api/fhir/resources/immunization)
+- [ImmunizationEvaluation](/medical-api/fhir/resources/immunizationevaluation)
+- [ImmunizationRecommendation](/medical-api/fhir/resources/immunizationrecommendation)
+- [Invoice](/medical-api/fhir/resources/invoice)
+- [List](/medical-api/fhir/resources/list)
+- [MeasureReport](/medical-api/fhir/resources/measurereport)
+- [Media](/medical-api/fhir/resources/media)
+- [MedicationAdministration](/medical-api/fhir/resources/medicationadministration)
+- [MedicationDispense](/medical-api/fhir/resources/medicationdispense)
+- [MedicationRequest](/medical-api/fhir/resources/medicationrequest)
+- [MedicationStatement](/medical-api/fhir/resources/medicationstatement)
+- [MolecularSequence](/medical-api/fhir/resources/molecularsequence)
+- [NutritionOrder](/medical-api/fhir/resources/nutritionorder)
+- [Observation](/medical-api/fhir/resources/observation)
+- [Person](/medical-api/fhir/resources/person)
+- [Procedure](/medical-api/fhir/resources/procedure)
+- [Provenance](/medical-api/fhir/resources/provenance)
+- [QuestionnaireResponse](/medical-api/fhir/resources/questionnaireresponse)
+- [RelatedPerson](/medical-api/fhir/resources/relatedperson)
+- [RequestGroup](/medical-api/fhir/resources/requestgroup)
+- [ResearchSubject](/medical-api/fhir/resources/researchsubject)
+- [RiskAssessment](/medical-api/fhir/resources/riskassessment)
+- [ServiceRequest](/medical-api/fhir/resources/servicerequest)
+- [Specimen](/medical-api/fhir/resources/specimen)

@@ -1,0 +1,98 @@
+---
+title: "Device"
+description: "A type of a manufactured item that is used in the provision of healthcare without being substantially changed through that activity. The device may be a medical or non-medical device."
+---
+
+## Properties
+
+| Name                | Required | Type                                                                              | Description                                                                                                                                 |
+| ------------------- | -------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| identifier          | No       | [Identifier](/medical-api/fhir/data-types/identifier)[]                           | Instance identifier                                                                                                                         |
+| definition          | No       | Reference&lt;[DeviceDefinition](/medical-api/fhir/resources/devicedefinition)&gt; | The reference to the definition for the device                                                                                              |
+| udiCarrier          | No       | DeviceUdiCarrier                                                                  | Unique Device Identifier (UDI) Barcode string                                                                                               |
+| - id                | No       | string                                                                            | Unique id for inter-element referencing                                                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                                                                      |
+| - deviceIdentifier  | No       | string                                                                            | Mandatory fixed portion of UDI                                                                                                              |
+| - issuer            | No       | uri                                                                               | UDI Issuing Organization                                                                                                                    |
+| - jurisdiction      | No       | uri                                                                               | Regional UDI authority                                                                                                                      |
+| - carrierAIDC       | No       | base64Binary                                                                      | UDI Machine Readable Barcode String                                                                                                         |
+| - carrierHRF        | No       | string                                                                            | UDI Human Readable Barcode String                                                                                                           |
+| - entryType         | No       | code                                                                              | barcode / rfid / manual +                                                                                                                   |
+| status              | No       | code                                                                              | active / inactive / entered-in-error / unknown                                                                                              |
+| statusReason        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                 | online / paused / standby / offline / not-ready / transduc-discon / hw-discon / off                                                         |
+| distinctIdentifier  | No       | string                                                                            | The distinct identification string                                                                                                          |
+| manufacturer        | No       | string                                                                            | Name of device manufacturer                                                                                                                 |
+| manufactureDate     | No       | dateTime                                                                          | Date when the device was made                                                                                                               |
+| expirationDate      | No       | dateTime                                                                          | Date and time of expiry of this device (if applicable)                                                                                      |
+| lotNumber           | No       | string                                                                            | Lot number of manufacture                                                                                                                   |
+| serialNumber        | No       | string                                                                            | Serial number assigned by the manufacturer                                                                                                  |
+| deviceName          | No       | DeviceDeviceName                                                                  | The name of the device as given by the manufacturer                                                                                         |
+| - id                | No       | string                                                                            | Unique id for inter-element referencing                                                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                                                                      |
+| - name              | Yes      | string                                                                            | The name of the device                                                                                                                      |
+| - type              | Yes      | code                                                                              | udi-label-name / user-friendly-name / patient-reported-name / manufacturer-name / model-name / other                                        |
+| modelNumber         | No       | string                                                                            | The model number for the device                                                                                                             |
+| partNumber          | No       | string                                                                            | The part number of the device                                                                                                               |
+| type                | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | The kind or type of device                                                                                                                  |
+| specialization      | No       | DeviceSpecialization                                                              | The capabilities supported on a device, the standards to which the device conforms for a particular purpose, and used for the communication |
+| - id                | No       | string                                                                            | Unique id for inter-element referencing                                                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                                                                      |
+| - systemType        | Yes      | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | The standard that is used to operate and communicate                                                                                        |
+| - version           | No       | string                                                                            | The version of the standard that is used to operate and communicate                                                                         |
+| version             | No       | DeviceVersion                                                                     | The actual design of the device or software version running on the device                                                                   |
+| - id                | No       | string                                                                            | Unique id for inter-element referencing                                                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                                                                      |
+| - type              | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | The type of the device version                                                                                                              |
+| - component         | No       | [Identifier](/medical-api/fhir/data-types/identifier)                             | A single component of the device version                                                                                                    |
+| - value             | Yes      | string                                                                            | The version text                                                                                                                            |
+| property            | No       | DeviceProperty                                                                    | The actual configuration settings of a device as it actually operates, e.g., regulation status, time properties                             |
+| - id                | No       | string                                                                            | Unique id for inter-element referencing                                                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                                                                      |
+| - type              | Yes      | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | Code that specifies the property DeviceDefinitionPropetyCode (Extensible)                                                                   |
+| - valueQuantity     | No       | [Quantity](/medical-api/fhir/data-types/quantity)[]                               | Property value as a quantity                                                                                                                |
+| - valueCode         | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                 | Property value as a code, e.g., NTP4 (synced to NTP)                                                                                        |
+| patient             | No       | Reference&lt;[Patient](/medical-api/fhir/resources/patient)&gt;                   | Patient to whom Device is affixed                                                                                                           |
+| owner               | No       | Reference&lt;[Organization](/medical-api/fhir/resources/organization)&gt;         | Organization responsible for device                                                                                                         |
+| contact             | No       | [ContactPoint](/medical-api/fhir/data-types/contactpoint)[]                       | Details for human/organization for support                                                                                                  |
+| location            | No       | Reference&lt;[Location](/medical-api/fhir/resources/location)&gt;                 | Where the device is found                                                                                                                   |
+| url                 | No       | uri                                                                               | Network address to contact device                                                                                                           |
+| note                | No       | [Annotation](/medical-api/fhir/data-types/annotation)[]                           | Device notes and comments                                                                                                                   |
+| safety              | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                 | Safety Characteristics of Device                                                                                                            |
+| parent              | No       | Reference&lt;[Device](/medical-api/fhir/resources/device)&gt;                     | The parent device                                                                                                                           |
+
+## Search Parameters
+
+| Name         | Type      | Description                                                                                          | Expression                         |
+| ------------ | --------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| device-name  | string    | A server defined search that may match any of the string fields in Device.deviceName or Device.type. | Device.deviceName.name             |
+| identifier   | token     | Instance id from manufacturer, owner, and others                                                     | Device.identifier                  |
+| location     | reference | A location, where the resource is found                                                              | Device.location                    |
+| manufacturer | string    | The manufacturer of the device                                                                       | Device.manufacturer                |
+| model        | string    | The model of the device                                                                              | Device.modelNumber                 |
+| organization | reference | The organization responsible for the device                                                          | Device.owner                       |
+| patient      | reference | Patient information, if the resource is affixed to a person                                          | Device.patient                     |
+| status       | token     | active / inactive / entered-in-error / unknown                                                       | Device.status                      |
+| type         | token     | The type of the device                                                                               | Device.type                        |
+| udi-carrier  | string    | UDI Barcode (RFID or other technology) string in _HRF_ format.                                       | Device.udiCarrier.carrierHRF       |
+| udi-di       | string    | The udi Device Identifier (DI)                                                                       | Device.udiCarrier.deviceIdentifier |
+| url          | uri       | Network address to contact device                                                                    | Device.url                         |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [Device](https://www.hl7.org/fhir/StructureDefinition/Device).

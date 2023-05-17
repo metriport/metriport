@@ -1,0 +1,13 @@
+---
+title: "CodeableConcept"
+description: "Base StructureDefinition for CodeableConcept Type: A concept that may be defined by a formal reference to a terminology or ontology or may be provided by text."
+---
+
+## Properties
+
+| Name      | Required | Type                                                  | Description                                   |
+| --------- | -------- | ----------------------------------------------------- | --------------------------------------------- |
+| id        | No       | string                                                | Unique id for inter-element referencing       |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations |
+| coding    | No       | [Coding](/medical-api/fhir/data-types/coding)[]       | Code defined by a terminology system          |
+| text      | No       | string                                                | Plain text representation of the concept      |

@@ -1,0 +1,35 @@
+---
+title: "MedicinalProductManufactured"
+description: "The manufactured item as contained in the packaged medicinal product."
+---
+
+## Properties
+
+| Name                    | Required | Type                                                                                                    | Description                                                                                                       |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| manufacturedDoseForm    | Yes      | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                         | Dose form as manufactured and before any transformation into the pharmaceutical product                           |
+| unitOfPresentation      | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                         | The “real world” units in which the quantity of the manufactured item is described                                |
+| quantity                | Yes      | [Quantity](/medical-api/fhir/data-types/quantity)                                                       | The quantity or "count number" of the manufactured item                                                           |
+| manufacturer            | No       | Reference&lt;[Organization](/medical-api/fhir/resources/organization)&gt;[]                             | Manufacturer of the item (Note that this should be named "manufacturer" but it currently causes technical issues) |
+| ingredient              | No       | Reference&lt;[MedicinalProductIngredient](/medical-api/fhir/resources/medicinalproductingredient)&gt;[] | Ingredient                                                                                                        |
+| physicalCharacteristics | No       | [ProdCharacteristic](/medical-api/fhir/data-types/prodcharacteristic)                                   | Dimensions, color etc.                                                                                            |
+| otherCharacteristics    | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                                       | Other codeable characteristics                                                                                    |
+
+## Search Parameters
+
+None
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [MedicinalProductManufactured](https://www.hl7.org/fhir/StructureDefinition/MedicinalProductManufactured).

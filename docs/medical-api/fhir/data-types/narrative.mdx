@@ -1,0 +1,13 @@
+---
+title: "Narrative"
+description: "Base StructureDefinition for Narrative Type: A human-readable summary of the resource conveying the essential clinical and business information for the resource."
+---
+
+## Properties
+
+| Name      | Required | Type                                                  | Description                                   |
+| --------- | -------- | ----------------------------------------------------- | --------------------------------------------- |
+| id        | No       | string                                                | Unique id for inter-element referencing       |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations |
+| status    | Yes      | code                                                  | generated / extensions / additional / empty   |
+| div       | Yes      | xhtml                                                 | Limited xhtml content                         |

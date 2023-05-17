@@ -1,0 +1,69 @@
+---
+title: "NamingSystem"
+description: "A curated namespace that issues unique symbols within that namespace for the identification of concepts, people, devices, etc.  Represents a System used within the Identifier and Coding data types."
+---
+
+## Properties
+
+| Name                | Required | Type                                                              | Description                                             |
+| ------------------- | -------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
+| name                | Yes      | string                                                            | Name for this naming system (computer friendly)         |
+| status              | Yes      | code                                                              | draft / active / retired / unknown                      |
+| kind                | Yes      | code                                                              | codesystem / identifier / root                          |
+| date                | Yes      | dateTime                                                          | Date last changed                                       |
+| publisher           | No       | string                                                            | Name of the publisher (organization or individual)      |
+| contact             | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[]     | Contact details for the publisher                       |
+| responsible         | No       | string                                                            | Who maintains system namespace?                         |
+| type                | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | e.g. driver, provider, patient, bank etc.               |
+| description         | No       | markdown                                                          | Natural language description of the naming system       |
+| useContext          | No       | [UsageContext](/medical-api/fhir/data-types/usagecontext)[]       | The context that the content is intended to support     |
+| jurisdiction        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[] | Intended jurisdiction for naming system (if applicable) |
+| usage               | No       | string                                                            | How/where is it used                                    |
+| uniqueId            | Yes      | NamingSystemUniqueId                                              | Unique identifiers used for system                      |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                 |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations           |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized  |
+| - type              | Yes      | code                                                              | oid / uuid / uri / other                                |
+| - value             | Yes      | string                                                            | The unique identifier                                   |
+| - preferred         | No       | boolean                                                           | Is this the id that should be used for this type        |
+| - comment           | No       | string                                                            | Notes about identifier usage                            |
+| - period            | No       | [Period](/medical-api/fhir/data-types/period)                     | When is identifier valid?                               |
+
+## Search Parameters
+
+| Name                  | Type      | Description                                                                         | Expression                    |
+| --------------------- | --------- | ----------------------------------------------------------------------------------- | ----------------------------- |
+| context               | token     | A use context assigned to the naming system                                         | NamingSystem.useContext.value |
+| context-quantity      | quantity  | A quantity- or range-valued use context assigned to the naming system               | NamingSystem.useContext.value |
+| context-type          | token     | A type of use context assigned to the naming system                                 | NamingSystem.useContext.code  |
+| date                  | date      | The naming system publication date                                                  | NamingSystem.date             |
+| description           | string    | The description of the naming system                                                | NamingSystem.description      |
+| jurisdiction          | token     | Intended jurisdiction for the naming system                                         | NamingSystem.jurisdiction     |
+| name                  | string    | Computationally friendly name of the naming system                                  | NamingSystem.name             |
+| publisher             | string    | Name of the publisher of the naming system                                          | NamingSystem.publisher        |
+| status                | token     | The current status of the naming system                                             | NamingSystem.status           |
+| context-type-quantity | composite | A use context type and quantity- or range-based value assigned to the naming system | NamingSystem.useContext       |
+| context-type-value    | composite | A use context type and value assigned to the naming system                          | NamingSystem.useContext       |
+| contact               | string    | Name of an individual to contact                                                    | NamingSystem.contact.name     |
+| id-type               | token     | oid / uuid / uri / other                                                            | NamingSystem.uniqueId.type    |
+| kind                  | token     | codesystem / identifier / root                                                      | NamingSystem.kind             |
+| period                | date      | When is identifier valid?                                                           | NamingSystem.uniqueId.period  |
+| responsible           | string    | Who maintains system namespace?                                                     | NamingSystem.responsible      |
+| telecom               | token     | Contact details for individual or organization                                      | NamingSystem.contact.telecom  |
+| type                  | token     | e.g. driver, provider, patient, bank etc.                                           | NamingSystem.type             |
+| value                 | string    | The unique identifier                                                               | NamingSystem.uniqueId.value   |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [NamingSystem](https://www.hl7.org/fhir/StructureDefinition/NamingSystem).

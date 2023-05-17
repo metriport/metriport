@@ -1,0 +1,16 @@
+---
+title: "Population"
+description: "Base StructureDefinition for Population Type: A populatioof people with some set of grouping criteria."
+---
+
+## Properties
+
+| Name                   | Required | Type                                                                                                         | Description                                                                            |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| id                     | No       | string                                                                                                       | Unique id for inter-element referencing                                                |
+| extension              | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                        | Additional content defined by implementations                                          |
+| modifierExtension      | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                        | Extensions that cannot be ignored even if unrecognized                                 |
+| age[x]                 | No       | [Range](/medical-api/fhir/data-types/range), [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) | The age of the specific population                                                     |
+| gender                 | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                              | The gender of the specific population                                                  |
+| race                   | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                              | Race of the specific population                                                        |
+| physiologicalCondition | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                              | The existing physiological conditions of the specific population to which this applies |

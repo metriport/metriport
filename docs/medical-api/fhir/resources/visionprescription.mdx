@@ -1,0 +1,65 @@
+---
+title: "VisionPrescription"
+description: "An authorization for the provision of glasses and/or contact lenses to a patient."
+---
+
+## Properties
+
+| Name                | Required | Type                                                                                                                                         | Description                                            |
+| ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| identifier          | No       | [Identifier](/medical-api/fhir/data-types/identifier)[]                                                                                      | Business Identifier for vision prescription            |
+| status              | Yes      | code                                                                                                                                         | active / cancelled / draft / entered-in-error          |
+| created             | Yes      | dateTime                                                                                                                                     | Response creation date                                 |
+| patient             | Yes      | Reference&lt;[Patient](/medical-api/fhir/resources/patient)&gt;                                                                              | Who prescription is for                                |
+| encounter           | No       | Reference&lt;[Encounter](/medical-api/fhir/resources/encounter)&gt;                                                                          | Created during encounter / admission / stay            |
+| dateWritten         | Yes      | dateTime                                                                                                                                     | When prescription was authorized                       |
+| prescriber          | Yes      | Reference&lt;[Practitioner](/medical-api/fhir/resources/practitioner) / [PractitionerRole](/medical-api/fhir/resources/practitionerrole)&gt; | Who authorized the vision prescription                 |
+| lensSpecification   | Yes      | VisionPrescriptionLensSpecification                                                                                                          | Vision lens authorization                              |
+| - id                | No       | string                                                                                                                                       | Unique id for inter-element referencing                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Additional content defined by implementations          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Extensions that cannot be ignored even if unrecognized |
+| - product           | Yes      | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                              | Product to be supplied                                 |
+| - eye               | Yes      | code                                                                                                                                         | right / left                                           |
+| - sphere            | No       | decimal                                                                                                                                      | Power of the lens                                      |
+| - cylinder          | No       | decimal                                                                                                                                      | Lens power for astigmatism                             |
+| - axis              | No       | integer                                                                                                                                      | Lens meridian which contain no power for astigmatism   |
+| - prism             | No       | VisionPrescriptionLensSpecificationPrism                                                                                                     | Eye alignment compensation                             |
+| - id                | No       | string                                                                                                                                       | Unique id for inter-element referencing                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Additional content defined by implementations          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Extensions that cannot be ignored even if unrecognized |
+| - amount            | Yes      | decimal                                                                                                                                      | Amount of adjustment                                   |
+| - base              | Yes      | code                                                                                                                                         | up / down / in / out                                   |
+| - add               | No       | decimal                                                                                                                                      | Added power for multifocal levels                      |
+| - power             | No       | decimal                                                                                                                                      | Contact lens power                                     |
+| - backCurve         | No       | decimal                                                                                                                                      | Contact lens back curvature                            |
+| - diameter          | No       | decimal                                                                                                                                      | Contact lens diameter                                  |
+| - duration          | No       | [Quantity](/medical-api/fhir/data-types/quantity)                                                                                            | Lens wear duration                                     |
+| - color             | No       | string                                                                                                                                       | Color required                                         |
+| - brand             | No       | string                                                                                                                                       | Brand required                                         |
+| - note              | No       | [Annotation](/medical-api/fhir/data-types/annotation)[]                                                                                      | Notes for coatings                                     |
+
+## Search Parameters
+
+| Name        | Type      | Description                                         | Expression                     |
+| ----------- | --------- | --------------------------------------------------- | ------------------------------ |
+| identifier  | token     | Return prescriptions with this external identifier  | VisionPrescription.identifier  |
+| patient     | reference | The identity of a patient to list dispenses for     | VisionPrescription.patient     |
+| encounter   | reference | Return prescriptions with this encounter identifier | VisionPrescription.encounter   |
+| datewritten | date      | Return prescriptions written on this date           | VisionPrescription.dateWritten |
+| prescriber  | reference | Who authorized the vision prescription              | VisionPrescription.prescriber  |
+| status      | token     | The status of the vision prescription               | VisionPrescription.status      |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [VisionPrescription](https://www.hl7.org/fhir/StructureDefinition/VisionPrescription).

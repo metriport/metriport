@@ -1,0 +1,18 @@
+---
+title: "HumanName"
+description: "Base StructureDefinition for HumanName Type: A human's name with the ability to identify parts and usage."
+---
+
+## Properties
+
+| Name      | Required | Type                                                  | Description                                                   |
+| --------- | -------- | ----------------------------------------------------- | ------------------------------------------------------------- |
+| id        | No       | string                                                | Unique id for inter-element referencing                       |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations                 |
+| use       | No       | code                                                  | usual / official / temp / nickname / anonymous / old / maiden |
+| text      | No       | string                                                | Text representation of the full name                          |
+| family    | No       | string                                                | Family name (often called 'Surname')                          |
+| given     | No       | string[]                                              | Given names (not always 'first'). Includes middle names       |
+| prefix    | No       | string[]                                              | Parts that come before the name                               |
+| suffix    | No       | string[]                                              | Parts that come after the name                                |
+| period    | No       | [Period](/medical-api/fhir/data-types/period)         | Time period when name was/is in use                           |

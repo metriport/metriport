@@ -1,0 +1,43 @@
+---
+title: "ResearchSubject"
+description: "A physical entity which is the primary unit of operational and/or administrative interest in a study."
+---
+
+## Properties
+
+| Name        | Required | Type                                                                        | Description                                                                                                                                                                                           |
+| ----------- | -------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| identifier  | No       | [Identifier](/medical-api/fhir/data-types/identifier)[]                     | Business Identifier for research subject in a study                                                                                                                                                   |
+| status      | Yes      | code                                                                        | candidate / eligible / follow-up / ineligible / not-registered / off-study / on-study / on-study-intervention / on-study-observation / pending-on-study / potential-candidate / screening / withdrawn |
+| period      | No       | [Period](/medical-api/fhir/data-types/period)                               | Start and end of participation                                                                                                                                                                        |
+| study       | Yes      | Reference&lt;[ResearchStudy](/medical-api/fhir/resources/researchstudy)&gt; | Study subject is part of                                                                                                                                                                              |
+| individual  | Yes      | Reference&lt;[Patient](/medical-api/fhir/resources/patient)&gt;             | Who is part of study                                                                                                                                                                                  |
+| assignedArm | No       | string                                                                      | What path should be followed                                                                                                                                                                          |
+| actualArm   | No       | string                                                                      | What path was followed                                                                                                                                                                                |
+| consent     | No       | Reference&lt;[Consent](/medical-api/fhir/resources/consent)&gt;             | Agreement to participate in study                                                                                                                                                                     |
+
+## Search Parameters
+
+| Name       | Type      | Description                                                                                                                                                                                           | Expression                 |
+| ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| date       | date      | Start and end of participation                                                                                                                                                                        | ResearchSubject.period     |
+| identifier | token     | Business Identifier for research subject in a study                                                                                                                                                   | ResearchSubject.identifier |
+| individual | reference | Who is part of study                                                                                                                                                                                  | ResearchSubject.individual |
+| patient    | reference | Who is part of study                                                                                                                                                                                  | ResearchSubject.individual |
+| status     | token     | candidate / eligible / follow-up / ineligible / not-registered / off-study / on-study / on-study-intervention / on-study-observation / pending-on-study / potential-candidate / screening / withdrawn | ResearchSubject.status     |
+| study      | reference | Study subject is part of                                                                                                                                                                              | ResearchSubject.study      |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [ResearchSubject](https://www.hl7.org/fhir/StructureDefinition/ResearchSubject).

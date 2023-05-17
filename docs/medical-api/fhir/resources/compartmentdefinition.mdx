@@ -1,0 +1,63 @@
+---
+title: "CompartmentDefinition"
+description: "A compartment definition that defines how resources are accessed on a server."
+---
+
+## Properties
+
+| Name                | Required | Type                                                          | Description                                                                                  |
+| ------------------- | -------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| url                 | Yes      | uri                                                           | Canonical identifier for this compartment definition, represented as a URI (globally unique) |
+| version             | No       | string                                                        | Business version of the compartment definition                                               |
+| name                | Yes      | string                                                        | Name for this compartment definition (computer friendly)                                     |
+| status              | Yes      | code                                                          | draft / active / retired / unknown                                                           |
+| experimental        | No       | boolean                                                       | For testing purposes, not real usage                                                         |
+| date                | No       | dateTime                                                      | Date last changed                                                                            |
+| publisher           | No       | string                                                        | Name of the publisher (organization or individual)                                           |
+| contact             | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[] | Contact details for the publisher                                                            |
+| description         | No       | markdown                                                      | Natural language description of the compartment definition                                   |
+| useContext          | No       | [UsageContext](/medical-api/fhir/data-types/usagecontext)[]   | The context that the content is intended to support                                          |
+| purpose             | No       | markdown                                                      | Why this compartment definition is defined                                                   |
+| code                | Yes      | code                                                          | Patient / Encounter / RelatedPerson / Practitioner / Device                                  |
+| search              | Yes      | boolean                                                       | Whether the search syntax is supported                                                       |
+| resource            | No       | CompartmentDefinitionResource                                 | How a resource is related to the compartment                                                 |
+| - id                | No       | string                                                        | Unique id for inter-element referencing                                                      |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]         | Additional content defined by implementations                                                |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]         | Extensions that cannot be ignored even if unrecognized                                       |
+| - code              | Yes      | code                                                          | Name of resource type                                                                        |
+| - param             | No       | string[]                                                      | Search Parameter Name, or chained parameters                                                 |
+| - documentation     | No       | string                                                        | Additional documentation about the resource and compartment                                  |
+
+## Search Parameters
+
+| Name                  | Type      | Description                                                                                  | Expression                             |
+| --------------------- | --------- | -------------------------------------------------------------------------------------------- | -------------------------------------- |
+| context               | token     | A use context assigned to the compartment definition                                         | CompartmentDefinition.useContext.value |
+| context-quantity      | quantity  | A quantity- or range-valued use context assigned to the compartment definition               | CompartmentDefinition.useContext.value |
+| context-type          | token     | A type of use context assigned to the compartment definition                                 | CompartmentDefinition.useContext.code  |
+| date                  | date      | The compartment definition publication date                                                  | CompartmentDefinition.date             |
+| description           | string    | The description of the compartment definition                                                | CompartmentDefinition.description      |
+| name                  | string    | Computationally friendly name of the compartment definition                                  | CompartmentDefinition.name             |
+| publisher             | string    | Name of the publisher of the compartment definition                                          | CompartmentDefinition.publisher        |
+| status                | token     | The current status of the compartment definition                                             | CompartmentDefinition.status           |
+| url                   | uri       | The uri that identifies the compartment definition                                           | CompartmentDefinition.url              |
+| version               | token     | The business version of the compartment definition                                           | CompartmentDefinition.version          |
+| context-type-quantity | composite | A use context type and quantity- or range-based value assigned to the compartment definition | CompartmentDefinition.useContext       |
+| context-type-value    | composite | A use context type and value assigned to the compartment definition                          | CompartmentDefinition.useContext       |
+| code                  | token     | Patient / Encounter / RelatedPerson / Practitioner / Device                                  | CompartmentDefinition.code             |
+| resource              | token     | Name of resource type                                                                        | CompartmentDefinition.resource.code    |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [CompartmentDefinition](https://www.hl7.org/fhir/StructureDefinition/CompartmentDefinition).

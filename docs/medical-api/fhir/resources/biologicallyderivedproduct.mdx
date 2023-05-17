@@ -1,0 +1,65 @@
+---
+title: "BiologicallyDerivedProduct"
+description: "A material substance originating from a biological entity intended to be transplanted or infused
+into another (possibly the same) biological entity."
+---
+
+## Properties
+
+| Name                | Required | Type                                                                                                                                         | Description                                            |
+| ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| identifier          | No       | [Identifier](/medical-api/fhir/data-types/identifier)[]                                                                                      | External ids for this item                             |
+| productCategory     | No       | code                                                                                                                                         | organ / tissue / fluid / cells / biologicalAgent       |
+| productCode         | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                              | What this biologically derived product is              |
+| status              | No       | code                                                                                                                                         | available / unavailable                                |
+| request             | No       | Reference&lt;[ServiceRequest](/medical-api/fhir/resources/servicerequest)&gt;[]                                                              | Procedure request                                      |
+| quantity            | No       | integer                                                                                                                                      | The amount of this biologically derived product        |
+| parent              | No       | Reference&lt;[BiologicallyDerivedProduct](/medical-api/fhir/resources/biologicallyderivedproduct)&gt;[]                                      | BiologicallyDerivedProduct parent                      |
+| collection          | No       | BiologicallyDerivedProductCollection                                                                                                         | How this product was collected                         |
+| - id                | No       | string                                                                                                                                       | Unique id for inter-element referencing                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Additional content defined by implementations          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Extensions that cannot be ignored even if unrecognized |
+| - collector         | No       | Reference&lt;[Practitioner](/medical-api/fhir/resources/practitioner) / [PractitionerRole](/medical-api/fhir/resources/practitionerrole)&gt; | Individual performing collection                       |
+| - source            | No       | Reference&lt;[Patient](/medical-api/fhir/resources/patient) / [Organization](/medical-api/fhir/resources/organization)&gt;                   | Who is product from                                    |
+| - collected[x]      | No       | dateTime, [Period](/medical-api/fhir/data-types/period)                                                                                      | Time of product collection                             |
+| processing          | No       | BiologicallyDerivedProductProcessing                                                                                                         | Any processing of the product during collection        |
+| - id                | No       | string                                                                                                                                       | Unique id for inter-element referencing                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Additional content defined by implementations          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Extensions that cannot be ignored even if unrecognized |
+| - description       | No       | string                                                                                                                                       | Description of of processing                           |
+| - procedure         | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                              | Procesing code                                         |
+| - additive          | No       | Reference&lt;[Substance](/medical-api/fhir/resources/substance)&gt;                                                                          | Substance added during processing                      |
+| - time[x]           | No       | dateTime, [Period](/medical-api/fhir/data-types/period)                                                                                      | Time of processing                                     |
+| manipulation        | No       | BiologicallyDerivedProductManipulation                                                                                                       | Any manipulation of product post-collection            |
+| - id                | No       | string                                                                                                                                       | Unique id for inter-element referencing                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Additional content defined by implementations          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Extensions that cannot be ignored even if unrecognized |
+| - description       | No       | string                                                                                                                                       | Description of manipulation                            |
+| - time[x]           | No       | dateTime, [Period](/medical-api/fhir/data-types/period)                                                                                      | Time of manipulation                                   |
+| storage             | No       | BiologicallyDerivedProductStorage                                                                                                            | Product storage                                        |
+| - id                | No       | string                                                                                                                                       | Unique id for inter-element referencing                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Additional content defined by implementations          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                        | Extensions that cannot be ignored even if unrecognized |
+| - description       | No       | string                                                                                                                                       | Description of storage                                 |
+| - temperature       | No       | decimal                                                                                                                                      | Storage temperature                                    |
+| - scale             | No       | code                                                                                                                                         | farenheit / celsius / kelvin                           |
+| - duration          | No       | [Period](/medical-api/fhir/data-types/period)                                                                                                | Storage timeperiod                                     |
+
+## Search Parameters
+
+None
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [BiologicallyDerivedProduct](https://www.hl7.org/fhir/StructureDefinition/BiologicallyDerivedProduct).
