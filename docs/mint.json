@@ -18,9 +18,7 @@
   "colors": {
     "primary": "#748DF0",
     "light": "#ADBCF6",
-    "dark": "#4958A9",
-    "ultraLight": "#E6EAFB",
-    "ultraDark": "#1E2362"
+    "dark": "#4958A9"
   },
   "topAnchor": {
     "name": "Home",
