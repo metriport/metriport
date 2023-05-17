@@ -26,7 +26,7 @@
             {{/each}}
         ],
         "birthDate":"{{addHyphensDate relatedPerson.guardianPerson.birthTime.value}}",
-        "gender":"{{toLower relatedPerson.guardianPerson.administrativeGenderCode.displayName}}",
+        "gender":{{>ValueSet/AdministrativeGender.hbs code=relatedPerson.guardianPerson.administrativeGenderCode.displayName}},
         "address":
         [
         	{{#each (toArray relatedPerson.addr)}}
