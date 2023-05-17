@@ -1,7 +1,7 @@
 {{#if code}}
-  {{#if (eq (toLower code) "aborted")}}
+  {{#if (eq (toLower code) 'aborted')}}
     "stopped"
-  {{else if (eq (toLower code) "ordered")}}
+  {{else if (eq (toLower code) 'ordered')}}
     "active"
   {{else}}
     "{{code}}"
