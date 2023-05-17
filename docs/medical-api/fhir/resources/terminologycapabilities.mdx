@@ -1,0 +1,122 @@
+---
+title: "TerminologyCapabilities"
+description: "A TerminologyCapabilities resource documents a set of capabilities (behaviors) of a FHIR Terminology Server that may be used as a statement of actual server functionality or a statement of required or desired server implementation."
+---
+
+## Properties
+
+| Name                | Required | Type                                                              | Description                                                                                      |
+| ------------------- | -------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| url                 | No       | uri                                                               | Canonical identifier for this terminology capabilities, represented as a URI (globally unique)   |
+| version             | No       | string                                                            | Business version of the terminology capabilities                                                 |
+| name                | No       | string                                                            | Name for this terminology capabilities (computer friendly)                                       |
+| title               | No       | string                                                            | Name for this terminology capabilities (human friendly)                                          |
+| status              | Yes      | code                                                              | draft / active / retired / unknown                                                               |
+| experimental        | No       | boolean                                                           | For testing purposes, not real usage                                                             |
+| date                | Yes      | dateTime                                                          | Date last changed                                                                                |
+| publisher           | No       | string                                                            | Name of the publisher (organization or individual)                                               |
+| contact             | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[]     | Contact details for the publisher                                                                |
+| description         | No       | markdown                                                          | Natural language description of the terminology capabilities                                     |
+| useContext          | No       | [UsageContext](/medical-api/fhir/data-types/usagecontext)[]       | The context that the content is intended to support                                              |
+| jurisdiction        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[] | Intended jurisdiction for terminology capabilities (if applicable)                               |
+| purpose             | No       | markdown                                                          | Why this terminology capabilities is defined                                                     |
+| copyright           | No       | markdown                                                          | Use and/or publishing restrictions                                                               |
+| kind                | Yes      | code                                                              | instance / capability / requirements                                                             |
+| software            | No       | TerminologyCapabilitiesSoftware                                   | Software that is covered by this terminology capability statement                                |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - name              | Yes      | string                                                            | A name the software is known by                                                                  |
+| - version           | No       | string                                                            | Version covered by this statement                                                                |
+| implementation      | No       | TerminologyCapabilitiesImplementation                             | If this describes a specific instance                                                            |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - description       | Yes      | string                                                            | Describes this specific instance                                                                 |
+| - url               | No       | url                                                               | Base URL for the implementation                                                                  |
+| lockedDate          | No       | boolean                                                           | Whether lockedDate is supported                                                                  |
+| codeSystem          | No       | TerminologyCapabilitiesCodeSystem                                 | A code system supported by the server                                                            |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - uri               | No       | canonical                                                         | URI for the Code System                                                                          |
+| - version           | No       | TerminologyCapabilitiesCodeSystemVersion                          | Version of Code System supported                                                                 |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - code              | No       | string                                                            | Version identifier for this version                                                              |
+| - isDefault         | No       | boolean                                                           | If this is the default version for this code system                                              |
+| - compositional     | No       | boolean                                                           | If compositional grammar is supported                                                            |
+| - language          | No       | code[]                                                            | Language Displays supported                                                                      |
+| - filter            | No       | TerminologyCapabilitiesCodeSystemVersionFilter                    | Filter Properties supported                                                                      |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - code              | Yes      | code                                                              | Code of the property supported                                                                   |
+| - op                | Yes      | code[]                                                            | Operations supported for the property                                                            |
+| - property          | No       | code[]                                                            | Properties supported for $lookup                                                                 |
+| - subsumption       | No       | boolean                                                           | Whether subsumption is supported                                                                 |
+| expansion           | No       | TerminologyCapabilitiesExpansion                                  | Information about the [ValueSet/$expand](valueset-operation-expand.html) operation               |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - hierarchical      | No       | boolean                                                           | Whether the server can return nested value sets                                                  |
+| - paging            | No       | boolean                                                           | Whether the server supports paging on expansion                                                  |
+| - incomplete        | No       | boolean                                                           | Allow request for incomplete expansions?                                                         |
+| - parameter         | No       | TerminologyCapabilitiesExpansionParameter                         | Supported expansion parameter                                                                    |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - name              | Yes      | code                                                              | Expansion Parameter name                                                                         |
+| - documentation     | No       | string                                                            | Description of support for parameter                                                             |
+| - textFilter        | No       | markdown                                                          | Documentation about text searching works                                                         |
+| codeSearch          | No       | code                                                              | explicit / all                                                                                   |
+| validateCode        | No       | TerminologyCapabilitiesValidateCode                               | Information about the [ValueSet/$validate-code](valueset-operation-validate-code.html) operation |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - translations      | Yes      | boolean                                                           | Whether translations are validated                                                               |
+| translation         | No       | TerminologyCapabilitiesTranslation                                | Information about the [ConceptMap/$translate](conceptmap-operation-translate.html) operation     |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - needsMap          | Yes      | boolean                                                           | Whether the client must identify the map                                                         |
+| closure             | No       | TerminologyCapabilitiesClosure                                    | Information about the [ConceptMap/$closure](conceptmap-operation-closure.html) operation         |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
+| - translation       | No       | boolean                                                           | If cross-system closure is supported                                                             |
+
+## Search Parameters
+
+| Name                  | Type      | Description                                                                                    | Expression                               |
+| --------------------- | --------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| context               | token     | A use context assigned to the terminology capabilities                                         | TerminologyCapabilities.useContext.value |
+| context-quantity      | quantity  | A quantity- or range-valued use context assigned to the terminology capabilities               | TerminologyCapabilities.useContext.value |
+| context-type          | token     | A type of use context assigned to the terminology capabilities                                 | TerminologyCapabilities.useContext.code  |
+| date                  | date      | The terminology capabilities publication date                                                  | TerminologyCapabilities.date             |
+| description           | string    | The description of the terminology capabilities                                                | TerminologyCapabilities.description      |
+| jurisdiction          | token     | Intended jurisdiction for the terminology capabilities                                         | TerminologyCapabilities.jurisdiction     |
+| name                  | string    | Computationally friendly name of the terminology capabilities                                  | TerminologyCapabilities.name             |
+| publisher             | string    | Name of the publisher of the terminology capabilities                                          | TerminologyCapabilities.publisher        |
+| status                | token     | The current status of the terminology capabilities                                             | TerminologyCapabilities.status           |
+| title                 | string    | The human-friendly name of the terminology capabilities                                        | TerminologyCapabilities.title            |
+| url                   | uri       | The uri that identifies the terminology capabilities                                           | TerminologyCapabilities.url              |
+| version               | token     | The business version of the terminology capabilities                                           | TerminologyCapabilities.version          |
+| context-type-quantity | composite | A use context type and quantity- or range-based value assigned to the terminology capabilities | TerminologyCapabilities.useContext       |
+| context-type-value    | composite | A use context type and value assigned to the terminology capabilities                          | TerminologyCapabilities.useContext       |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [TerminologyCapabilities](https://www.hl7.org/fhir/StructureDefinition/TerminologyCapabilities).

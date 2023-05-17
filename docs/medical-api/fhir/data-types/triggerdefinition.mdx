@@ -1,0 +1,16 @@
+---
+title: "TriggerDefinition"
+description: "Base StructureDefinition for TriggerDefinition Type: A description of a triggering event. Triggering events can be named events, data events, or periodic, as determined by the type element."
+---
+
+## Properties
+
+| Name      | Required | Type                                                                                                                             | Description                                                                                                           |
+| --------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| id        | No       | string                                                                                                                           | Unique id for inter-element referencing                                                                               |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                            | Additional content defined by implementations                                                                         |
+| type      | Yes      | code                                                                                                                             | named-event / periodic / data-changed / data-added / data-modified / data-removed / data-accessed / data-access-ended |
+| name      | No       | string                                                                                                                           | Name or URI that identifies the event                                                                                 |
+| timing[x] | No       | [Timing](/medical-api/fhir/data-types/timing), Reference&lt;[Schedule](/medical-api/fhir/resources/schedule)&gt;, date, dateTime | Timing of the event                                                                                                   |
+| data      | No       | [DataRequirement](/medical-api/fhir/data-types/datarequirement)[]                                                                | Triggering data of the event (multiple = 'and')                                                                       |
+| condition | No       | [Expression](/medical-api/fhir/data-types/expression)                                                                            | Whether the event triggers (boolean expression)                                                                       |

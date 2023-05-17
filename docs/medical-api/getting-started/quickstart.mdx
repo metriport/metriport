@@ -23,7 +23,8 @@ Getting started with our Medical API is pretty easy, you'll just need take the f
 4. [Integrate your app with Metriport](#4-integrate-your-app-with-metriport).
 5. [Register your Organization](#5-register-your-organization).
 6. [Create Facilities and Patients](#6-create-facilities-and-patients).
-7. [Get Patient Medical Documents](#7-get-patient-medical-documents). 🎉🎉🎉
+7. [Get Patient Medical Documents](#7-get-patient-medical-documents).
+8. [Get Patient FHIR Resources](#8-get-patient-fhir-resources). 🎉🎉🎉
 
 Let's get into it! 🤘
 
@@ -180,7 +181,7 @@ See the [Create Patient endpoint](/medical-api/api-reference/patient/create-pati
 
 ---
 
-## 7. Get Patient Medical Documents 🎉🎉🎉
+## 7. Get Patient Medical Documents
 
 Now, you're able to access your Patients' medical `Documents`. This involves 2 main steps:
 
@@ -214,6 +215,19 @@ See the [Get Document endpoint](/medical-api/api-reference/document/get-document
 ### Downloading a Document using the Dashboard
 
 - In the side panel that comes up after clicking `Documents`, simply click `Download` on the desired Document.
+
+## 8. Get Patient FHIR Resources 🎉🎉🎉
+
+As we query for Documents we will automatically convert XML C-CDA docs into FHIR resources.
+
+<Tip>
+  Other Documents, like PDFs and images, will be left in their original format and not processed.
+</Tip>
+
+After the conversion from CDA to FHIR, we will store the resulting FHIR resources and make them available to be queried. This will allow you to get the necessary data you might need to better understand and treat your Patients.
+
+To learn more on how to query for a Patient's resources please see the [Get Patient's Consolidated Data
+Query](/medical-api/api-reference/patient/get-patient-consolidated) endpoint.
 
 That's it! You're now well equiped to use the Metriport API to access and manage your Patients' medical data.
 

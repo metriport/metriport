@@ -1,0 +1,13 @@
+---
+title: "Ratio"
+description: "Base StructureDefinition for Ratio Type: A relationship of two Quantity values - expressed as a numerator and a denominator."
+---
+
+## Properties
+
+| Name        | Required | Type                                                  | Description                                   |
+| ----------- | -------- | ----------------------------------------------------- | --------------------------------------------- |
+| id          | No       | string                                                | Unique id for inter-element referencing       |
+| extension   | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations |
+| numerator   | No       | [Quantity](/medical-api/fhir/data-types/quantity)     | Numerator value                               |
+| denominator | No       | [Quantity](/medical-api/fhir/data-types/quantity)     | Denominator value                             |

@@ -1,0 +1,111 @@
+---
+title: "RiskEvidenceSynthesis"
+description: "The RiskEvidenceSynthesis resource describes the likelihood of an outcome in a population plus exposure state where the risk estimate is derived from a combination of research studies."
+---
+
+## Properties
+
+| Name                    | Required | Type                                                                              | Description                                                                                   |
+| ----------------------- | -------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| url                     | No       | uri                                                                               | Canonical identifier for this risk evidence synthesis, represented as a URI (globally unique) |
+| identifier              | No       | [Identifier](/medical-api/fhir/data-types/identifier)[]                           | Additional identifier for the risk evidence synthesis                                         |
+| version                 | No       | string                                                                            | Business version of the risk evidence synthesis                                               |
+| name                    | No       | string                                                                            | Name for this risk evidence synthesis (computer friendly)                                     |
+| title                   | No       | string                                                                            | Name for this risk evidence synthesis (human friendly)                                        |
+| status                  | Yes      | code                                                                              | draft / active / retired / unknown                                                            |
+| date                    | No       | dateTime                                                                          | Date last changed                                                                             |
+| publisher               | No       | string                                                                            | Name of the publisher (organization or individual)                                            |
+| contact                 | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[]                     | Contact details for the publisher                                                             |
+| description             | No       | markdown                                                                          | Natural language description of the risk evidence synthesis                                   |
+| note                    | No       | [Annotation](/medical-api/fhir/data-types/annotation)[]                           | Used for footnotes or explanatory notes                                                       |
+| useContext              | No       | [UsageContext](/medical-api/fhir/data-types/usagecontext)[]                       | The context that the content is intended to support                                           |
+| jurisdiction            | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                 | Intended jurisdiction for risk evidence synthesis (if applicable)                             |
+| copyright               | No       | markdown                                                                          | Use and/or publishing restrictions                                                            |
+| approvalDate            | No       | date                                                                              | When the risk evidence synthesis was approved by publisher                                    |
+| lastReviewDate          | No       | date                                                                              | When the risk evidence synthesis was last reviewed                                            |
+| effectivePeriod         | No       | [Period](/medical-api/fhir/data-types/period)                                     | When the risk evidence synthesis is expected to be used                                       |
+| topic                   | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                 | The category of the EffectEvidenceSynthesis, such as Education, Treatment, Assessment, etc.   |
+| author                  | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[]                     | Who authored the content                                                                      |
+| editor                  | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[]                     | Who edited the content                                                                        |
+| reviewer                | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[]                     | Who reviewed the content                                                                      |
+| endorser                | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[]                     | Who endorsed the content                                                                      |
+| relatedArtifact         | No       | [RelatedArtifact](/medical-api/fhir/data-types/relatedartifact)[]                 | Additional documentation, citations, etc.                                                     |
+| synthesisType           | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | Type of synthesis                                                                             |
+| studyType               | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | Type of study                                                                                 |
+| population              | Yes      | Reference&lt;[EvidenceVariable](/medical-api/fhir/resources/evidencevariable)&gt; | What population?                                                                              |
+| exposure                | No       | Reference&lt;[EvidenceVariable](/medical-api/fhir/resources/evidencevariable)&gt; | What exposure?                                                                                |
+| outcome                 | Yes      | Reference&lt;[EvidenceVariable](/medical-api/fhir/resources/evidencevariable)&gt; | What outcome?                                                                                 |
+| sampleSize              | No       | RiskEvidenceSynthesisSampleSize                                                   | What sample size was involved?                                                                |
+| - id                    | No       | string                                                                            | Unique id for inter-element referencing                                                       |
+| - extension             | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                 |
+| - modifierExtension     | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                        |
+| - description           | No       | string                                                                            | Description of sample size                                                                    |
+| - numberOfStudies       | No       | integer                                                                           | How many studies?                                                                             |
+| - numberOfParticipants  | No       | integer                                                                           | How many participants?                                                                        |
+| riskEstimate            | No       | RiskEvidenceSynthesisRiskEstimate                                                 | What was the estimated risk                                                                   |
+| - id                    | No       | string                                                                            | Unique id for inter-element referencing                                                       |
+| - extension             | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                 |
+| - modifierExtension     | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                        |
+| - description           | No       | string                                                                            | Description of risk estimate                                                                  |
+| - type                  | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | Type of risk estimate                                                                         |
+| - value                 | No       | decimal                                                                           | Point estimate                                                                                |
+| - unitOfMeasure         | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | What unit is the outcome described in?                                                        |
+| - denominatorCount      | No       | integer                                                                           | Sample size for group measured                                                                |
+| - numeratorCount        | No       | integer                                                                           | Number with the outcome                                                                       |
+| - precisionEstimate     | No       | RiskEvidenceSynthesisRiskEstimatePrecisionEstimate                                | How precise the estimate is                                                                   |
+| - id                    | No       | string                                                                            | Unique id for inter-element referencing                                                       |
+| - extension             | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                 |
+| - modifierExtension     | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                        |
+| - type                  | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | Type of precision estimate                                                                    |
+| - level                 | No       | decimal                                                                           | Level of confidence interval                                                                  |
+| - from                  | No       | decimal                                                                           | Lower bound                                                                                   |
+| - to                    | No       | decimal                                                                           | Upper bound                                                                                   |
+| certainty               | No       | RiskEvidenceSynthesisCertainty                                                    | How certain is the risk                                                                       |
+| - id                    | No       | string                                                                            | Unique id for inter-element referencing                                                       |
+| - extension             | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                 |
+| - modifierExtension     | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                        |
+| - rating                | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                 | Certainty rating                                                                              |
+| - note                  | No       | [Annotation](/medical-api/fhir/data-types/annotation)[]                           | Used for footnotes or explanatory notes                                                       |
+| - certaintySubcomponent | No       | RiskEvidenceSynthesisCertaintyCertaintySubcomponent                               | A component that contributes to the overall certainty                                         |
+| - id                    | No       | string                                                                            | Unique id for inter-element referencing                                                       |
+| - extension             | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Additional content defined by implementations                                                 |
+| - modifierExtension     | No       | [Extension](/medical-api/fhir/data-types/extension)[]                             | Extensions that cannot be ignored even if unrecognized                                        |
+| - type                  | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                   | Type of subcomponent of certainty rating                                                      |
+| - rating                | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                 | Subcomponent certainty rating                                                                 |
+| - note                  | No       | [Annotation](/medical-api/fhir/data-types/annotation)[]                           | Used for footnotes or explanatory notes                                                       |
+
+## Search Parameters
+
+| Name                  | Type      | Description                                                                                   | Expression                             |
+| --------------------- | --------- | --------------------------------------------------------------------------------------------- | -------------------------------------- |
+| context               | token     | A use context assigned to the risk evidence synthesis                                         | RiskEvidenceSynthesis.useContext.value |
+| context-quantity      | quantity  | A quantity- or range-valued use context assigned to the risk evidence synthesis               | RiskEvidenceSynthesis.useContext.value |
+| context-type          | token     | A type of use context assigned to the risk evidence synthesis                                 | RiskEvidenceSynthesis.useContext.code  |
+| date                  | date      | The risk evidence synthesis publication date                                                  | RiskEvidenceSynthesis.date             |
+| description           | string    | The description of the risk evidence synthesis                                                | RiskEvidenceSynthesis.description      |
+| effective             | date      | The time during which the risk evidence synthesis is intended to be in use                    | RiskEvidenceSynthesis.effectivePeriod  |
+| identifier            | token     | External identifier for the risk evidence synthesis                                           | RiskEvidenceSynthesis.identifier       |
+| jurisdiction          | token     | Intended jurisdiction for the risk evidence synthesis                                         | RiskEvidenceSynthesis.jurisdiction     |
+| name                  | string    | Computationally friendly name of the risk evidence synthesis                                  | RiskEvidenceSynthesis.name             |
+| publisher             | string    | Name of the publisher of the risk evidence synthesis                                          | RiskEvidenceSynthesis.publisher        |
+| status                | token     | The current status of the risk evidence synthesis                                             | RiskEvidenceSynthesis.status           |
+| title                 | string    | The human-friendly name of the risk evidence synthesis                                        | RiskEvidenceSynthesis.title            |
+| url                   | uri       | The uri that identifies the risk evidence synthesis                                           | RiskEvidenceSynthesis.url              |
+| version               | token     | The business version of the risk evidence synthesis                                           | RiskEvidenceSynthesis.version          |
+| context-type-quantity | composite | A use context type and quantity- or range-based value assigned to the risk evidence synthesis | RiskEvidenceSynthesis.useContext       |
+| context-type-value    | composite | A use context type and value assigned to the risk evidence synthesis                          | RiskEvidenceSynthesis.useContext       |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [RiskEvidenceSynthesis](https://www.hl7.org/fhir/StructureDefinition/RiskEvidenceSynthesis).

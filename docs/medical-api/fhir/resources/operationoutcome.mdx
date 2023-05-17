@@ -1,0 +1,38 @@
+---
+title: "OperationOutcome"
+description: "A collection of error, warning, or information messages that result from a system action."
+---
+
+## Properties
+
+| Name                | Required | Type                                                            | Description                                            |
+| ------------------- | -------- | --------------------------------------------------------------- | ------------------------------------------------------ |
+| issue               | Yes      | OperationOutcomeIssue                                           | A single issue associated with the action              |
+| - id                | No       | string                                                          | Unique id for inter-element referencing                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]           | Additional content defined by implementations          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]           | Extensions that cannot be ignored even if unrecognized |
+| - severity          | Yes      | code                                                            | fatal / error / warning / information                  |
+| - code              | Yes      | code                                                            | Error or warning code                                  |
+| - details           | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) | Additional details about the error                     |
+| - diagnostics       | No       | string                                                          | Additional diagnostic information about the issue      |
+| - location          | No       | string[]                                                        | Deprecated: Path of element(s) related to issue        |
+| - expression        | No       | string[]                                                        | FHIRPath of element(s) related to issue                |
+
+## Search Parameters
+
+None
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [OperationOutcome](https://www.hl7.org/fhir/StructureDefinition/OperationOutcome).

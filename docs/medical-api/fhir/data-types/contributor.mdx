@@ -1,0 +1,14 @@
+---
+title: "Contributor"
+description: "Base StructureDefinition for Contributor Type: A contributor to the content of a knowledge asset, including authors, editors, reviewers, and endorsers."
+---
+
+## Properties
+
+| Name      | Required | Type                                                          | Description                                   |
+| --------- | -------- | ------------------------------------------------------------- | --------------------------------------------- |
+| id        | No       | string                                                        | Unique id for inter-element referencing       |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[]         | Additional content defined by implementations |
+| type      | Yes      | code                                                          | author / editor / reviewer / endorser         |
+| name      | Yes      | string                                                        | Who contributed the content                   |
+| contact   | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[] | Contact details of the contributor            |

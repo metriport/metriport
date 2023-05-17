@@ -1,0 +1,13 @@
+---
+title: "Range"
+description: "Base StructureDefinition for Range Type: A set of ordered Quantities defined by a low and high limit."
+---
+
+## Properties
+
+| Name      | Required | Type                                                  | Description                                   |
+| --------- | -------- | ----------------------------------------------------- | --------------------------------------------- |
+| id        | No       | string                                                | Unique id for inter-element referencing       |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations |
+| low       | No       | [Quantity](/medical-api/fhir/data-types/quantity)     | Low limit                                     |
+| high      | No       | [Quantity](/medical-api/fhir/data-types/quantity)     | High limit                                    |

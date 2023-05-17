@@ -1,0 +1,16 @@
+---
+title: "Coding"
+description: "Base StructureDefinition for Coding Type: A reference to a code defined by a terminology system."
+---
+
+## Properties
+
+| Name         | Required | Type                                                  | Description                                    |
+| ------------ | -------- | ----------------------------------------------------- | ---------------------------------------------- |
+| id           | No       | string                                                | Unique id for inter-element referencing        |
+| extension    | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations  |
+| system       | No       | uri                                                   | Identity of the terminology system             |
+| version      | No       | string                                                | Version of the system - if relevant            |
+| code         | No       | code                                                  | Symbol in syntax defined by the system         |
+| display      | No       | string                                                | Representation defined by the system           |
+| userSelected | No       | boolean                                               | If this coding was chosen directly by the user |

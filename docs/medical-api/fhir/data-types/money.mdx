@@ -1,0 +1,13 @@
+---
+title: "Money"
+description: "Base StructureDefinition for Money Type: An amount of economic utility in some recognized currency."
+---
+
+## Properties
+
+| Name      | Required | Type                                                  | Description                                   |
+| --------- | -------- | ----------------------------------------------------- | --------------------------------------------- |
+| id        | No       | string                                                | Unique id for inter-element referencing       |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations |
+| value     | No       | decimal                                               | Numerical value (with implicit precision)     |
+| currency  | No       | code                                                  | ISO 4217 Currency Code                        |

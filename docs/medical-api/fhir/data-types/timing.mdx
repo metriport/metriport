@@ -1,0 +1,32 @@
+---
+title: "Timing"
+description: "Base StructureDefinition for Timing Type: Specifies an event that may occur multiple times. Timing schedules are used to record when things are planned, expected or requested to occur. The most common usage is in dosage instructions for medications. They are also used when planning care of various kinds, and may be used for reporting the schedule to which past regular activities were carried out."
+---
+
+## Properties
+
+| Name              | Required | Type                                                                                                                                          | Description                                            |
+| ----------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                                                                                                        | Unique id for inter-element referencing                |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                         | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                         | Extensions that cannot be ignored even if unrecognized |
+| event             | No       | dateTime[]                                                                                                                                    | When the event occurs                                  |
+| repeat            | No       | Element                                                                                                                                       | When the event is to occur                             |
+| - id              | No       | string                                                                                                                                        | Unique id for inter-element referencing                |
+| - extension       | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                         | Additional content defined by implementations          |
+| - bounds[x]       | No       | [Duration](/medical-api/fhir/data-types/duration), [Range](/medical-api/fhir/data-types/range), [Period](/medical-api/fhir/data-types/period) | Length/Range of lengths, or (Start and/or end) limits  |
+| - count           | No       | positiveInt                                                                                                                                   | Number of times to repeat                              |
+| - countMax        | No       | positiveInt                                                                                                                                   | Maximum number of times to repeat                      |
+| - duration        | No       | decimal                                                                                                                                       | How long when it happens                               |
+| - durationMax     | No       | decimal                                                                                                                                       | How long when it happens (Max)                         |
+| - durationUnit    | No       | code                                                                                                                                          | s / min / h / d / wk / mo / a - unit of time (UCUM)    |
+| - frequency       | No       | positiveInt                                                                                                                                   | Event occurs frequency times per period                |
+| - frequencyMax    | No       | positiveInt                                                                                                                                   | Event occurs up to frequencyMax times per period       |
+| - period          | No       | decimal                                                                                                                                       | Event occurs frequency times per period                |
+| - periodMax       | No       | decimal                                                                                                                                       | Upper limit of period (3-4 hours)                      |
+| - periodUnit      | No       | code                                                                                                                                          | s / min / h / d / wk / mo / a - unit of time (UCUM)    |
+| - dayOfWeek       | No       | code[]                                                                                                                                        | mon / tue / wed / thu / fri / sat / sun                |
+| - timeOfDay       | No       | time[]                                                                                                                                        | Time of day for action                                 |
+| - when            | No       | code[]                                                                                                                                        | Code for time period of occurrence                     |
+| - offset          | No       | unsignedInt                                                                                                                                   | Minutes from event (before or after)                   |
+| code              | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                               | BID / TID / QID / AM / PM / QD / QOD / +               |

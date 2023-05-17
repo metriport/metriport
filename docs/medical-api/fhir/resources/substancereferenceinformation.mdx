@@ -1,0 +1,63 @@
+---
+title: "SubstanceReferenceInformation"
+description: "Todo."
+---
+
+## Properties
+
+| Name                 | Required | Type                                                                                                   | Description                                            |
+| -------------------- | -------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| comment              | No       | string                                                                                                 | Todo                                                   |
+| gene                 | No       | SubstanceReferenceInformationGene                                                                      | Todo                                                   |
+| - id                 | No       | string                                                                                                 | Unique id for inter-element referencing                |
+| - extension          | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                  | Additional content defined by implementations          |
+| - modifierExtension  | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                  | Extensions that cannot be ignored even if unrecognized |
+| - geneSequenceOrigin | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - gene               | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - source             | No       | Reference&lt;[DocumentReference](/medical-api/fhir/resources/documentreference)&gt;[]                  | Todo                                                   |
+| geneElement          | No       | SubstanceReferenceInformationGeneElement                                                               | Todo                                                   |
+| - id                 | No       | string                                                                                                 | Unique id for inter-element referencing                |
+| - extension          | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                  | Additional content defined by implementations          |
+| - modifierExtension  | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                  | Extensions that cannot be ignored even if unrecognized |
+| - type               | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - element            | No       | [Identifier](/medical-api/fhir/data-types/identifier)                                                  | Todo                                                   |
+| - source             | No       | Reference&lt;[DocumentReference](/medical-api/fhir/resources/documentreference)&gt;[]                  | Todo                                                   |
+| classification       | No       | SubstanceReferenceInformationClassification                                                            | Todo                                                   |
+| - id                 | No       | string                                                                                                 | Unique id for inter-element referencing                |
+| - extension          | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                  | Additional content defined by implementations          |
+| - modifierExtension  | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                  | Extensions that cannot be ignored even if unrecognized |
+| - domain             | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - classification     | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - subtype            | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                                      | Todo                                                   |
+| - source             | No       | Reference&lt;[DocumentReference](/medical-api/fhir/resources/documentreference)&gt;[]                  | Todo                                                   |
+| target               | No       | SubstanceReferenceInformationTarget                                                                    | Todo                                                   |
+| - id                 | No       | string                                                                                                 | Unique id for inter-element referencing                |
+| - extension          | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                  | Additional content defined by implementations          |
+| - modifierExtension  | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                  | Extensions that cannot be ignored even if unrecognized |
+| - target             | No       | [Identifier](/medical-api/fhir/data-types/identifier)                                                  | Todo                                                   |
+| - type               | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - interaction        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - organism           | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - organismType       | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - amount[x]          | No       | [Quantity](/medical-api/fhir/data-types/quantity), [Range](/medical-api/fhir/data-types/range), string | Todo                                                   |
+| - amountType         | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                        | Todo                                                   |
+| - source             | No       | Reference&lt;[DocumentReference](/medical-api/fhir/resources/documentreference)&gt;[]                  | Todo                                                   |
+
+## Search Parameters
+
+None
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [SubstanceReferenceInformation](https://www.hl7.org/fhir/StructureDefinition/SubstanceReferenceInformation).

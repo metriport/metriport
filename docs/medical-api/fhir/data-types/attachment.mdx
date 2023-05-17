@@ -1,0 +1,19 @@
+---
+title: "Attachment"
+description: "Base StructureDefinition for Attachment Type: For referring to data content defined in other formats."
+---
+
+## Properties
+
+| Name        | Required | Type                                                  | Description                                   |
+| ----------- | -------- | ----------------------------------------------------- | --------------------------------------------- |
+| id          | No       | string                                                | Unique id for inter-element referencing       |
+| extension   | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations |
+| contentType | No       | code                                                  | Mime type of the content, with charset etc.   |
+| language    | No       | code                                                  | Human language of the content (BCP-47)        |
+| data        | No       | base64Binary                                          | Data inline, base64ed                         |
+| url         | No       | url                                                   | Uri where the data can be found               |
+| size        | No       | unsignedInt                                           | Number of bytes of content (if url provided)  |
+| hash        | No       | base64Binary                                          | Hash of the data (sha-1, base64ed)            |
+| title       | No       | string                                                | Label to display in place of the data         |
+| creation    | No       | dateTime                                              | Date attachment was first created             |
