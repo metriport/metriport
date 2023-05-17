@@ -1,9 +1,9 @@
+import { Sample } from "@metriport/api/lib/devices/models/common/sample";
+import convert from "convert-units";
 import crypto from "crypto";
 import { mean } from "lodash";
-import convert from "convert-units";
-import { debug } from "./log";
-import { Sample } from "@metriport/api/lib/devices/models/common/sample";
 import { PassThrough } from "node:stream";
+import { debug } from "./log";
 
 interface MinMaxItem {
   min_item: number;
@@ -88,6 +88,13 @@ export class Util {
   });
 
   static sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));
+
+  static async sleepRandom(max: number, multiplierMin = 0.1): Promise<void> {
+    let multiplier = Math.random();
+    if (multiplier < multiplierMin) multiplier += multiplierMin; // at least 10% of the max delay
+    const timeToWait = Math.floor(multiplier * max);
+    await Util.sleep(timeToWait);
+  }
 
   static kilojoulesToKilocalories(kilojoules: number): number {
     return kilojoules * 0.239006;
