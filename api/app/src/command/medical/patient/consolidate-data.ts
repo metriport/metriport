@@ -26,18 +26,25 @@ export async function getConsolidatedPatientData({
   const errorsToReport: Record<string, string> = {};
   const settled = await Promise.allSettled(
     resourcesToUse.map(async resource =>
-      fhir.search(resource, `patient=${patientId}`).catch(err => {
-        if (err instanceof OperationOutcomeError && err.outcome.id === "not-found") throw err;
-        if (err instanceof OperationOutcomeError) errorsToReport[resource] = getMessage(err);
-        else errorsToReport[resource] = err.message;
-        throw err;
-      })
+      (async () => {
+        try {
+          const pages: Resource[] = [];
+          for await (const page of fhir.searchResourcePages(resource, `patient=${patientId}`)) {
+            pages.push(...page);
+          }
+          return pages;
+          //eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (err: any) {
+          if (err instanceof OperationOutcomeError && err.outcome.id === "not-found") throw err;
+          if (err instanceof OperationOutcomeError) errorsToReport[resource] = getMessage(err);
+          else errorsToReport[resource] = err.message;
+          throw err;
+        }
+      })()
     )
   );
 
-  const success: BundleEntry[] = settled.flatMap(s =>
-    s.status === "fulfilled" && s.value.entry ? s.value.entry : []
-  );
+  const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
   const successCount = success.length;
 
   if (Object.keys(errorsToReport).length > 0) {
@@ -56,7 +63,8 @@ export async function getConsolidatedPatientData({
     });
   }
 
-  return { resourceType: "Bundle", total: successCount, type: "searchset", entry: success };
+  const entry: BundleEntry[] = success.map(r => ({ resource: r }));
+  return { resourceType: "Bundle", total: successCount, type: "searchset", entry };
 }
 
 function getMessage(err: OperationOutcomeError): string {
