@@ -180,7 +180,7 @@ See the [Create Patient endpoint](/medical-api/api-reference/patient/create-pati
 
 ---
 
-## 7. Get Patient Medical Documents 🎉🎉🎉
+## 7. Get Patient Medical Documents
 
 Now, you're able to access your Patients' medical `Documents`. This involves 2 main steps:
 
@@ -215,21 +215,20 @@ See the [Get Document endpoint](/medical-api/api-reference/document/get-document
 
 - In the side panel that comes up after clicking `Documents`, simply click `Download` on the desired Document.
 
+## 8. Get Patient FHIR Resources 🎉🎉🎉
+
+As we query for Documents we will automatically convert XML C-CDA docs into FHIR resources.
+
+<Tip>
+  Other Documents, like PDFs and images, will be left in their original format and not processed.
+</Tip>
+
+After the conversion from CDA to FHIR, we will store the resulting FHIR resources and make them available to be queried. This will allow you to get the necessary data you might need to better understand and treat your Patients.
+
+To learn more on how to query for a Patient's resources please see the [Get Patient's Consolidated Data
+Query](/medical-api/api-reference/patient/get-patient-consolidated) endpoint.
+
 That's it! You're now well equiped to use the Metriport API to access and manage your Patients' medical data.
 
 As next steps, we'd recommend scoping out our [Medical API Reference](/medical-api/api-reference/organization/create-organization)
 in further detail to see the other things you can do with the API.
-
-## 8. Get Patient Resources
-
-As we query for documents we will automatically convert CDA docs into FHIR.
-These C-CDA documents can come in multiple formats such as:
-
-- XML
-- PDFs
-- Images
-
-After the conversion from CDA to FHIR we will store the resources that are attached to these documents and make them available to be queried. This will allow you to get the necessary data you might need to better understand and treat your patients.
-
-To learn more on how to query for a patient's resources please see the [Get Patient's Consolidated Data
-Query](/medical-api/api-reference/patient/get-patient-consolidated) endpoint.
