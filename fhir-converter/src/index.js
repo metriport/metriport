@@ -3,6 +3,7 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repo root for license information.
 // -------------------------------------------------------------------------------------------------
 
+require("events").EventEmitter.defaultMaxListeners = 20;
 var express = require("express");
 var app = require("./routes")(express());
 
