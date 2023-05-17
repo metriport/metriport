@@ -219,3 +219,17 @@ That's it! You're now well equiped to use the Metriport API to access and manage
 
 As next steps, we'd recommend scoping out our [Medical API Reference](/medical-api/api-reference/organization/create-organization)
 in further detail to see the other things you can do with the API.
+
+## 8. Get Patient Resources
+
+As we query for documents we will automatically convert CDA docs into FHIR.
+These C-CDA documents can come in multiple formats such as:
+
+- XML
+- PDFs
+- Images
+
+After the conversion from CDA to FHIR we will store the resources that are attached to these documents and make them available to be queried. This will allow you to get the necessary data you might need to better understand and treat your patients.
+
+To learn more on how to query for a patient's resources please see the [Get Patient's Consolidated Data
+Query](/medical-api/api-reference/patient/get-patient-consolidated) endpoint.
