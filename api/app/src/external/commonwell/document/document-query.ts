@@ -23,11 +23,11 @@ import { createS3FileName, getDocumentPrimaryId } from "../../../shared/external
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
+import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { MAX_FHIR_DOC_ID_LENGTH, postFHIRBundle } from "../../fhir/shared";
-import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
@@ -36,8 +36,12 @@ import { DocumentWithFilename, getFileName } from "./shared";
 const s3client = new AWS.S3();
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
-const DOC_DOWNLOAD_SINGLE_DELAY_MS_MAX = 1_000;
-const DOC_DOWNLOAD_GROUP_DELAY_MS_MAX = 5_000;
+
+const DOC_DOWNLOAD_JITTER_DELAY_MAX_MS = 3_000; // in milliseconds
+const DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT = 10; // 1-100% of max delay
+
+const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
+const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
 
 /**
  * This is likely to be a long-running function
@@ -50,7 +54,7 @@ export async function queryDocuments({
   patient: Patient;
   facilityId: string;
   override?: boolean;
-}): Promise<void> {
+}): Promise<number> {
   const { log } = Util.out(`CW queryDocuments - M patient ${patient.id}`);
 
   const { organization, facility } = await getPatientData(patient, facilityId);
@@ -58,11 +62,9 @@ export async function queryDocuments({
   try {
     if (Config.isSandbox()) {
       // if this is sandbox, just send the sandbox payload to the WH
-      processPatientDocumentRequest(
-        organization.cxId,
-        patient.id,
-        toDTO(getDocumentSandboxPayload(patient.id))
-      );
+      const documentsSandbox = getDocumentSandboxPayload(patient.id);
+      processPatientDocumentRequest(organization.cxId, patient.id, toDTO(documentsSandbox));
+      return documentsSandbox.length;
     } else {
       log(`Querying for documents of patient ${patient.id}...`);
       const cwDocuments = await internalGetDocuments({ patient, organization, facility });
@@ -80,6 +82,8 @@ export async function queryDocuments({
 
       // send webhook to cx async when docs are done processing
       processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
+
+      return FHIRDocRefs.length;
     }
   } catch (err) {
     console.log(`Error: `, err);
@@ -261,8 +265,8 @@ async function downloadDocsAndUpsertFHIR({
               throw new MetriportError("FHIR doc ID too long", undefined, { fhirDocId });
             }
 
-            // take some time to avoid throttling other servers
-            await sleepSingleDownload();
+            // add some randomness to avoid overloading the servers
+            await jitterSingleDownload();
 
             const { writeStream, promise } = uploadStream(s3FileName);
 
@@ -361,23 +365,20 @@ async function downloadDocsAndUpsertFHIR({
     docsNewLocation.push(...docGroupLocations);
 
     // take some time to avoid throttling other servers
-    await sleepBetweenGroups();
+    await sleepBetweenChunks();
   }
 
   return docsNewLocation;
 }
 
-async function sleepBetweenGroups(): Promise<void> {
-  return sleep(DOC_DOWNLOAD_GROUP_DELAY_MS_MAX, 0.1);
+async function sleepBetweenChunks(): Promise<void> {
+  return Util.sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
 }
-async function sleepSingleDownload(): Promise<void> {
-  return sleep(DOC_DOWNLOAD_SINGLE_DELAY_MS_MAX, 0.1);
-}
-async function sleep(max: number, multiplierMin = 0.1): Promise<void> {
-  let multiplier = Math.random();
-  if (multiplier < multiplierMin) multiplier += multiplierMin; // at least 10% of the max delay
-  const timeToWait = Math.floor(multiplier * max);
-  await Util.sleep(timeToWait);
+async function jitterSingleDownload(): Promise<void> {
+  return Util.sleepRandom(
+    DOC_DOWNLOAD_JITTER_DELAY_MAX_MS,
+    DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT / 100
+  );
 }
 
 async function fileExists(key: string): Promise<boolean> {
