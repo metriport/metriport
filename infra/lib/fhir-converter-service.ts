@@ -35,6 +35,7 @@ export function createFHIRConverterService(
     {
       cluster: cluster,
       cpu: isProd(props.config) ? 4096 : 1024,
+      memoryLimitMiB: isProd(props.config) ? 8192 : 2048,
       desiredCount: isProd(props.config) ? 2 : 1,
       taskImageOptions: {
         image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
@@ -46,7 +47,6 @@ export function createFHIRConverterService(
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
         },
       },
-      memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
       healthCheckGracePeriod: Duration.seconds(60),
       publicLoadBalancer: false,
     }
