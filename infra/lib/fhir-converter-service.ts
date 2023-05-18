@@ -21,7 +21,7 @@ export function createFHIRConverterService(
   alarmAction: SnsAction | undefined
 ): string {
   // Create a new Amazon Elastic Container Service (ECS) cluster
-  const cluster = new ecs.Cluster(stack, "FHIRConverterCluster", { vpc });
+  const cluster = new ecs.Cluster(stack, "FHIRConverterCluster", { vpc, containerInsights: true });
 
   // Create a Docker image and upload it to the Amazon Elastic Container Registry (ECR)
   const dockerImage = new ecr_assets.DockerImageAsset(stack, "FHIRConverterImage", {
@@ -29,12 +29,12 @@ export function createFHIRConverterService(
   });
 
   // Run some servers on fargate containers
-  const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
+  const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
     "FHIRConverterFargateService",
     {
       cluster: cluster,
-      cpu: isProd(props.config) ? 2048 : 1024,
+      cpu: isProd(props.config) ? 4096 : 1024,
       desiredCount: isProd(props.config) ? 2 : 1,
       taskImageOptions: {
         image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
@@ -97,18 +97,17 @@ export function createFHIRConverterService(
     interval: Duration.seconds(10),
   });
 
-  // hookup autoscaling based on 90% thresholds
   const scaling = fargateService.service.autoScaleTaskCount({
     minCapacity: isProd(props.config) ? 2 : 1,
     maxCapacity: isProd(props.config) ? 10 : 2,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 90,
+    targetUtilizationPercent: 70,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
   scaling.scaleOnMemoryUtilization("autoscale_mem", {
-    targetUtilizationPercent: 90,
+    targetUtilizationPercent: 80,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });

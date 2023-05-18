@@ -37,7 +37,7 @@ export function createAPIService(
   loadBalancerAddress: string;
 } {
   // Create a new Amazon Elastic Container Service (ECS) cluster
-  const cluster = new ecs.Cluster(stack, "APICluster", { vpc });
+  const cluster = new ecs.Cluster(stack, "APICluster", { vpc, containerInsights: true });
 
   // Create a Docker image and upload it to the Amazon Elastic Container Registry (ECR)
   const dockerImage = new ecr_assets.DockerImageAsset(stack, "APIImage", {
