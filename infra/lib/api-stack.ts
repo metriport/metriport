@@ -114,8 +114,8 @@ export class APIStack extends Stack {
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
     });
-    const minDBCap = this.isProd(props) ? 2 : 1;
-    const maxDBCap = this.isProd(props) ? 8 : 2;
+    const minDBCap = this.isProd(props) ? 2 : 0.5;
+    const maxDBCap = this.isProd(props) ? 16 : 2;
     Aspects.of(dbCluster).add({
       visit(node) {
         if (node instanceof rds.CfnDBCluster) {
