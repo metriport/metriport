@@ -1,4 +1,4 @@
-{{! http://hl7.org/fhir/R4/valueset-medication-statement-status.html }}
+{{! https://www.hl7.org/fhir/R4/valueset-medicationrequest-status.html }}
 {{#with (toLower code) as |normalizedCode|}}
   {{#if code}}
     {{#if (or (eq normalizedCode "aborted") (eq normalizedCode "discontinued"))}}

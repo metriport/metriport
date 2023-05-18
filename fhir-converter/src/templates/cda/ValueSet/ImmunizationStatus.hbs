@@ -1,0 +1,22 @@
+{{! https://www.hl7.org/fhir/R4/valueset-immunization-status.html }}
+{{#with (toLower code) as |normalizedCode|}}
+  {{if (eq normalizedCode "completed")}}
+    "completed"
+  {{else if (eq normalizedCode "complete")}}
+    "completed"
+  {{else if (eq normalizedCode "active")}}
+    "completed"
+  {{else if (eq normalizedCode "abandonded")}}
+    "not-done"
+  {{else if (eq normalizedCode "cancelled")}}
+    "not-done"
+  {{else if (eq normalizedCode "not-done")}}
+    "not-done"
+  {{else if (eq normalizedCode "entered-in-error")}}
+    "entered-in-error"
+  {{else if (eq normalizedCode "error")}}
+    "entered-in-error"
+  {{else}}
+    "{{normalizedCode}}"
+  {{/if}}
+{{/with}}
