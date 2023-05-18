@@ -31,11 +31,7 @@
             {{/each}}
         {{/each}}
 
-        {{#if (eq (toLower imm.statusCode.code) 'active')}}
-            "status":"completed",
-        {{else}}
-        	"status":"{{imm.statusCode.code}}",
-        {{/if}}
+        "status":{{>ValueSet/ImmunizationStatus.hbs code=imm.statusCode.code}},
         "route":{{>DataType/CodeableConcept.hbs code=imm.routeCode}},
         "site":{{>DataType/CodeableConcept.hbs code=imm.approachSiteCode}},      
     },

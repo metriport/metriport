@@ -10,7 +10,7 @@
             {{/each}}
         ],
         "intent":"order",
-        "status":"{{medicationRequest.statusCode.code}}",
+        "status":{{>ValueSet/MedicationRequestStatus.hbs code=medicationRequest.statusCode.code}},
     },
     "request":{
         "method":"PUT",
