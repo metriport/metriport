@@ -1,6 +1,6 @@
 import { Sleep as MetriportSleep } from "@metriport/api";
 import { z } from "zod";
-
+import dayjs from "dayjs";
 import { PROVIDER_OURA } from "../../shared/constants";
 import { Util } from "../../shared/util";
 import { streamingDataSchema } from ".";
@@ -29,7 +29,12 @@ export const mapToSleep = (ouraSleep: OuraSleep, date: string): MetriportSleep =
       hrv: {
         sdnn: {
           ...Util.addDataToObject("avg_millis", ouraSleep.average_hrv),
-          // TODO: FIGURE OUT SAMPLES WHEN GIVEN STREAM OF DATA FOR HRV'S
+          samples_millis: ouraSleep.hrv.items.map((item, i) => {
+            return {
+              time: addIntervalToTimestamp(ouraSleep.hrv.timestamp, ouraSleep.hrv.interval, i),
+              value: item,
+            };
+          }),
         },
       },
       respiration: {
@@ -48,13 +53,28 @@ export const mapToSleep = (ouraSleep: OuraSleep, date: string): MetriportSleep =
           min_bpm: min_item,
           max_bpm: max_item,
           avg_bpm: avg_heart_rate,
-          // TODO: FIGURE OUT SAMPLES WHEN GIVEN STREAM OF DATA FOR HEART RATE
+          samples_bpm: ouraSleep.heart_rate.items.map((item, i) => {
+            return {
+              time: addIntervalToTimestamp(
+                ouraSleep.heart_rate.timestamp,
+                ouraSleep.heart_rate.interval,
+                i
+              ),
+              value: item,
+            };
+          }),
         },
       };
     }
   }
 
   return defaultPayload;
+};
+
+const addIntervalToTimestamp = (timestamp: string, interval: number, itemIndex: number): string => {
+  const addIntervalStartTimestamp: number = interval * (itemIndex + 1);
+
+  return dayjs(timestamp).add(addIntervalStartTimestamp, "seconds").toISOString();
 };
 
 // Data retrieved from https://cloud.ouraring.com/v2/docs#tag/Sleep-Periods
