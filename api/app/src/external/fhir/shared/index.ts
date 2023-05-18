@@ -1,4 +1,4 @@
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, OperationOutcomeIssue, Resource } from "@medplum/fhirtypes";
 import { makeFhirApi } from "../api/api-factory";
 
 export enum ResourceType {
@@ -7,14 +7,13 @@ export enum ResourceType {
   DocumentReference = "DocumentReference",
 }
 
+export function operationOutcomeIssueToString(i: OperationOutcomeIssue): string {
+  return i.diagnostics ?? i.details?.text ?? i.code ?? "Unknown error";
+}
+
 export const MAX_FHIR_DOC_ID_LENGTH = 64;
 
-export async function postFHIRBundle(cxId: string, bundle: Bundle) {
+export async function postFHIRBundle(cxId: string, bundle: Bundle): Promise<Bundle<Resource>> {
   const fhir = makeFhirApi(cxId);
-  try {
-    await fhir.executeBatch(bundle);
-  } catch (err) {
-    console.log(`[postFHIRBundle] ` + JSON.stringify(err));
-    throw err;
-  }
+  return fhir.executeBatch(bundle);
 }

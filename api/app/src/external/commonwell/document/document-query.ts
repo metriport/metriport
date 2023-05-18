@@ -13,6 +13,7 @@ import { updateDocQuery } from "../../../command/medical/document/document-query
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import { processPatientDocumentRequest } from "../../../command/webhook/medical";
+import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
@@ -28,7 +29,9 @@ import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { MAX_FHIR_DOC_ID_LENGTH, postFHIRBundle } from "../../fhir/shared";
+import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument } from "./document-download";
 import { DocumentWithFilename, getFileName } from "./shared";
@@ -157,13 +160,13 @@ async function internalGetDocuments({
   }
 
   if (cwErrs.length > 0) {
-    log(`Document query contained errors: ${JSON.stringify(cwErrs)}`);
-    capture.message("Document query contained errors", {
-      extra: {
+    reportCWErrors({
+      errors: cwErrs,
+      context: {
         cwReference: commonWell.lastReferenceHeader,
         patientId: patient.id,
-        cwErrs: `${JSON.stringify(cwErrs, null, 2)}`,
       },
+      log,
     });
   }
 
@@ -201,6 +204,63 @@ async function internalGetDocuments({
   });
 
   return documents;
+}
+
+function reportCWErrors({
+  errors,
+  context,
+  log,
+}: {
+  errors: OperationOutcome[];
+  context: Record<string, unknown>;
+  log: ReturnType<typeof Util.out>["log"];
+}): void {
+  const errorsByCategory = groupCWErrors(errors);
+  for (const [category, errors] of Object.entries(errorsByCategory)) {
+    const msg = `Document query error - ${category}`;
+    log(`${msg}: ${JSON.stringify(errors)}`);
+    capture.error(new Error(msg), {
+      extra: { ...context, errors },
+    });
+  }
+}
+
+function reportFHIRError({
+  patientId,
+  doc,
+  error,
+  log,
+}: {
+  patientId: string;
+  doc: Document;
+  error: unknown;
+  log: ReturnType<typeof Util.out>["log"];
+}) {
+  const errorTitle = `CDA>FHIR ${ConversionError.prefix}`;
+  const extra = {
+    context: `cw.getDocuments.convertToFHIR`,
+    patientId: patientId,
+    documentReference: doc,
+    originalError: error,
+  };
+  const mappingError = tryDetermineFhirError(error);
+  if (mappingError.type === "mapping") {
+    const mappedErrors = mappingError.errors;
+    const groupedErrors = groupFHIRErrors(mappedErrors);
+    for (const [group, errors] of Object.entries(groupedErrors)) {
+      const msg = `${errorTitle} - ${group}`;
+      log(`${msg} (docId ${doc.id}): ${msg}, errors: `, errors);
+      capture.error(new ConversionError(msg, error), {
+        extra: {
+          ...extra,
+          errors,
+        },
+      });
+    }
+  } else {
+    log(`${errorTitle} (docId ${doc.id}): ${error}`);
+    capture.error(new ConversionError(errorTitle, error), { extra });
+  }
 }
 
 async function downloadDocsAndUpsertFHIR({
@@ -303,14 +363,7 @@ async function downloadDocsAndUpsertFHIR({
                 const fhirBundle = await convertCDAToFHIR(patient.id, fileString);
                 if (fhirBundle) await postFHIRBundle(patient.cxId, fhirBundle);
               } catch (error) {
-                log(`Error converting CDA to FHIR and POSTing Bundle (docId ${doc.id}): ${error}`);
-                capture.error(error, {
-                  extra: {
-                    context: `cw.getDocuments.convertToFHIR`,
-                    patientId: patient.id,
-                    documentReference: doc,
-                  },
-                });
+                reportFHIRError({ patientId: patient.id, doc, error, log });
               }
             }
 

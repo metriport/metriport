@@ -3,6 +3,7 @@ import { ErrorRequestHandler } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
 import MetriportError from "./errors/metriport-error";
+import { operationOutcomeIssueToString } from "./external/fhir/shared";
 import { httpResponseBody } from "./routes/util";
 
 // Errors in Metriport are based off of https://www.rfc-editor.org/rfc/rfc7807
@@ -59,9 +60,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
           httpResponseBody({
             status,
             title: err.name,
-            detail: err.outcome.issue
-              ?.map(i => i.diagnostics ?? i.details?.text ?? i.code)
-              .join("; "),
+            detail: err.outcome.issue?.map(i => operationOutcomeIssueToString(i)).join("; "),
             name: httpStatus[status],
           })
         );
