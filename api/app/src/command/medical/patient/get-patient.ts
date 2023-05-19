@@ -4,6 +4,7 @@ import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { Patient, PatientData, PatientModel } from "../../../models/medical/patient";
+import { safeLogId } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
@@ -109,7 +110,7 @@ export const getPatientOrFail = async ({
   const patient = await PatientModel.findOne({
     where: { cxId, id },
   });
-  if (!patient) throw new NotFoundError(`Could not find patient`);
+  if (!patient) throw new NotFoundError(`Could not find patient ${safeLogId(id)}`);
   return patient;
 };
 

@@ -3,11 +3,11 @@ import { Request, Response } from "express";
 import proxy from "express-http-proxy";
 import Router from "express-promise-router";
 import { IncomingMessage } from "http";
-import { MedicalDataSource } from "..";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { asyncHandler } from "../../routes/util";
 import { Config } from "../../shared/config";
+import { downloadedFromCW } from "../fhir/shared";
 import { getOrgOrFail } from "./cw-fhir-proxy-helpers";
 
 const fhirServerUrl = Config.getFHIRServerUrl();
@@ -97,10 +97,7 @@ export async function userResDecorator(
     // Filter out CW data while we don't manage to do it with FHIR query
     if (payload.entry) {
       payload.entry = payload.entry.filter((entry: any) => {
-        const extensions = entry.resource?.extension ?? [];
-        return !extensions.some(
-          (e: any) => e.valueReference?.reference === MedicalDataSource.COMMONWELL
-        );
+        return entry.resource ? !downloadedFromCW(entry.resource) : true;
       });
       payload.total = payload.entry?.length != null ? payload.entry.length : undefined;
     }
