@@ -405,10 +405,6 @@ export async function downloadDocsAndUpsertFHIR({
               context: `s3.documentUpload`,
               patientId: patient.id,
               documentReference: doc,
-              // TODO test/remove if possible
-              // couldn't test if this will be automatically visible in Sentry just by sending the error
-              // as first param to capture.error
-              ...(error instanceof MetriportError ? { additionalInfo: error.additionalInfo } : {}),
             },
           });
           throw error;

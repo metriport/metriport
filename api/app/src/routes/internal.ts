@@ -12,6 +12,7 @@ import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
 import { encodeExternalId } from "../shared/external";
 import { capture } from "../shared/notifications";
+import { stringToBoolean } from "../shared/types";
 import { stringListSchema } from "./schemas/shared";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
@@ -142,7 +143,9 @@ router.post(
     const documentIds = documentIdsRaw
       ? stringListSchema.parse(documentIdsRaw.split(",").map(id => id.trim()))
       : [];
-    reprocessDocuments({ cxId, documentIds }).catch(err => {
+    const override = stringToBoolean(getFrom("query").optional("override", req));
+
+    reprocessDocuments({ cxId, documentIds, override }).catch(err => {
       console.log(`Error re-processing documents for cxId ${cxId}: `, err);
       capture.error(err);
     });
