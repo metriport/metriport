@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.test" });
+// Keep dotenv import and config before everything else
 import { OperationOutcomeError } from "@medplum/core";
 import { OperationOutcome, OperationOutcomeIssue, ResourceType } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
