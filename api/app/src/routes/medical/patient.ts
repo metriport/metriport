@@ -162,14 +162,14 @@ router.delete(
  * Gets all patients corresponding to the specified facility at the customer's organization.
  *
  * @param   req.cxId              The customer ID.
- * @param   req.query.facilityId  The ID of the facility the user patient is associated with.
+ * @param   req.query.facilityId  The ID of the facility the user patient is associated with (optional).
  * @return  The customer's patients associated with the given facility.
  */
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityId = getFrom("query").optional("facilityId", req);
 
     const patients = await getPatients({ cxId, facilityId: facilityId });
 

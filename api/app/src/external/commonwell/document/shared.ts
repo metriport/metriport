@@ -3,9 +3,11 @@ import { contentType, extension } from "mime-types";
 import { Patient } from "../../../models/medical/patient";
 import { makePatientOID } from "../../../shared/oid";
 
-export type DocumentWithFilename = Document & {
-  fileName: string;
-  raw?: unknown;
+export type CWDocumentWithMetriportData = Document & {
+  metriport: {
+    fileName: string;
+    location: string;
+  };
 };
 
 export function getFileName(patient: Patient, doc: Document): string {

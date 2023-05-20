@@ -69,6 +69,7 @@ export function createAPIService(
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
+          AWS_REGION: props.config.region,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,

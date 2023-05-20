@@ -36,6 +36,10 @@ export class Config {
     return getEnvVar("METRIPORT_VERSION");
   }
 
+  static getAWSRegion(): string | undefined {
+    return getEnvVar("AWS_REGION");
+  }
+
   static getSlackAlertUrl(): string | undefined {
     return getEnvVar("SLACK_ALERT_URL");
   }
