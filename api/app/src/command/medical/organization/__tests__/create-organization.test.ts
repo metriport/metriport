@@ -1,0 +1,96 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
+import { randNumber } from "@ngneat/falso";
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.test" });
+// Keep dotenv import and config before everything else
+import { v4 as uuidv4 } from "uuid";
+import * as createTenant from "../../../../external/fhir/admin";
+import { OrganizationModel } from "../../../../models/medical/organization";
+import {
+  makeOrganization,
+  makeOrganizationData,
+} from "../../../../models/medical/__tests__/organization";
+import { makeOrganizationOID } from "../../../../shared/oid";
+import * as createId from "../../customer-sequence/create-id";
+import { createOrganization } from "../create-organization";
+
+let createOrganizationId_mock: jest.SpyInstance;
+let createTenantIfNotExistsMock: jest.SpyInstance;
+
+beforeAll(() => {
+  jest.restoreAllMocks();
+  const organizationNumber = randNumber();
+  createOrganizationId_mock = jest.spyOn(createId, "createOrganizationId").mockResolvedValue({
+    id: makeOrganizationOID(organizationNumber),
+    organizationNumber,
+  });
+  createTenantIfNotExistsMock = jest
+    .spyOn(createTenant, "createTenantIfNotExists")
+    .mockImplementation(async () => {});
+});
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+describe("createOrganization", () => {
+  const cxId = uuidv4();
+
+  it("throws if org exists for customer", async () => {
+    const org = makeOrganization();
+    OrganizationModel.findOne = jest.fn().mockResolvedValueOnce(org);
+    OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(org));
+    const orgCreate = makeOrganizationData();
+
+    await expect(
+      createOrganization({
+        ...orgCreate,
+        cxId,
+      })
+    ).rejects.toThrow();
+  });
+
+  it("creates org with id and number from createOrganizationId", async () => {
+    OrganizationModel.findOne = jest.fn().mockResolvedValueOnce(undefined);
+    const organizationNumber = randNumber();
+    const id = makeOrganizationOID(organizationNumber);
+    createOrganizationId_mock.mockResolvedValueOnce({ id, organizationNumber });
+    const org = makeOrganization({ id, organizationNumber });
+    OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(org));
+    const orgCreate = makeOrganizationData();
+
+    await createOrganization({ ...orgCreate, cxId });
+
+    expect(OrganizationModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({ id, organizationNumber, cxId, data: orgCreate })
+    );
+  });
+
+  it("returns creates org", async () => {
+    OrganizationModel.findOne = jest.fn().mockResolvedValueOnce(undefined);
+    const organizationNumber = randNumber();
+    const id = makeOrganizationOID(organizationNumber);
+    createOrganizationId_mock.mockResolvedValueOnce({ id, organizationNumber });
+    const org = makeOrganization({ id, organizationNumber });
+    OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(org));
+    const orgCreate = makeOrganizationData();
+
+    const res = await createOrganization({ ...orgCreate, cxId });
+
+    expect(res).toBeTruthy();
+    expect(res).toEqual(expect.objectContaining(org));
+  });
+
+  it("calls createTenant", async () => {
+    OrganizationModel.findOne = jest.fn().mockResolvedValueOnce(undefined);
+    const expectedOrg = makeOrganization();
+    OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(expectedOrg));
+    const orgCreate = makeOrganizationData();
+
+    await createOrganization({
+      ...orgCreate,
+      cxId,
+    });
+
+    expect(createTenantIfNotExistsMock).toHaveBeenCalledWith(expectedOrg);
+  });
+});

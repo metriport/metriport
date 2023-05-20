@@ -12,11 +12,14 @@ export const makeOrganizationData = (): OrganizationData => {
     location: makeAddressStrict(),
   };
 };
-export const makeOrganization = (): Organization => {
+export const makeOrganization = ({
+  id,
+  organizationNumber,
+}: Partial<Organization> = {}): Organization => {
   return {
-    ...makeBaseModel(),
+    ...makeBaseModel({ id }),
     cxId: randUuid(),
-    organizationNumber: randNumber(),
+    organizationNumber: organizationNumber != null ? organizationNumber : randNumber(),
     data: makeOrganizationData(),
   };
 };
