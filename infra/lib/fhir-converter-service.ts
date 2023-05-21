@@ -4,10 +4,11 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
-import { isProd } from "./util";
+import { isProd } from "./shared/util";
 
 interface FhirConverterServiceProps extends StackProps {
   config: EnvConfig;
@@ -19,7 +20,7 @@ export function createFHIRConverterService(
   props: FhirConverterServiceProps,
   vpc: ec2.IVpc,
   alarmAction: SnsAction | undefined
-): string {
+): { service: FargateService; address: string } {
   // Create a new Amazon Elastic Container Service (ECS) cluster
   const cluster = new ecs.Cluster(stack, "FHIRConverterCluster", { vpc, containerInsights: true });
 
@@ -112,5 +113,5 @@ export function createFHIRConverterService(
     scaleOutCooldown: Duration.seconds(30),
   });
 
-  return serverAddress;
+  return { service: fargateService.service, address: serverAddress };
 }

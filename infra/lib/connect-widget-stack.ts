@@ -10,7 +10,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { ConnectWidgetConfig, EnvConfig } from "./env-config";
-import { addErrorAlarmToLambdaFunc } from "./util";
+import { addErrorAlarmToLambdaFunc } from "./shared/util";
 
 interface ConnectWidgetStackProps extends StackProps {
   config: Omit<EnvConfig, "connectWidget" | "connectWidgetUrl"> & {

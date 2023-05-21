@@ -6,7 +6,7 @@ import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 import { EnvConfig } from "../lib/env-config";
 import { EnvType } from "../lib/env-type";
 import { SecretsStack } from "../lib/secrets-stack";
-import { getEnvVar } from "../lib/util";
+import { getEnvVar } from "../lib/shared/util";
 
 const app = new cdk.App();
 //-------------------------------------------

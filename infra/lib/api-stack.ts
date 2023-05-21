@@ -7,8 +7,10 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
+import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
@@ -21,9 +23,11 @@ import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
 import { EnvConfig } from "./env-config";
-import { getSecrets } from "./secrets";
-import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./util";
 import { createFHIRConverterService } from "./fhir-converter-service";
+import { createLambda } from "./shared/lambda";
+import { getSecrets } from "./shared/secrets";
+import { createQueue } from "./shared/sqs";
+import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./shared/util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -158,9 +162,9 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // FHIR Converter Service
     //-------------------------------------------
-    let fhirConverterServiceAddress = "";
+    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
     if (!isSandbox(props.config)) {
-      fhirConverterServiceAddress = createFHIRConverterService(
+      fhirConverter = createFHIRConverterService(
         this,
         props,
         this.vpc,
@@ -185,7 +189,7 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       slackNotification?.alarmAction,
       dnsZones,
-      `http://${fhirConverterServiceAddress}`
+      fhirConverter ? `http://${fhirConverter.address}` : undefined
     );
 
     // Access grant for Aurora DB
@@ -276,6 +280,15 @@ export class APIStack extends Stack {
       },
       apiKeyRequired: true,
     });
+
+    // FHIR QUEUES
+    this.setupFHIRConverterConnector({
+      api: apiService.service,
+      apiAddress: apiLoadBalancerAddress,
+      converter: fhirConverter?.service,
+    });
+
+    this.setupTestLambda();
 
     // token auth for connect sessions
     const tokenAuth = this.setupTokenAuthLambda(dynamoDBTokenTable);
@@ -395,6 +408,65 @@ export class APIStack extends Stack {
     new CfnOutput(this, "ClientSecretUserpoolID", {
       description: "Userpool for client secret based apps",
       value: userPoolClientSecret.userPoolId,
+    });
+  }
+
+  private setupFHIRConverterConnector({
+    api,
+    apiAddress,
+    converter,
+  }: {
+    api: FargateService;
+    apiAddress: string;
+    converter?: FargateService;
+  }) {
+    if (converter) {
+      const sqsToHttpLambdaTimeoutSeconds = 5;
+
+      const queue = createQueue({
+        stack: this,
+        name: "FHIRConverter",
+        vpc: this.vpc,
+        producer: api.taskDefinition.taskRole,
+        consumer: converter.taskDefinition.taskRole,
+        visibilityTimeout: Duration.seconds(sqsToHttpLambdaTimeoutSeconds * 6 + 1),
+      });
+
+      const dlq = queue.deadLetterQueue;
+      if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
+
+      const sqsToHttpLambda = createLambda({
+        stack: this,
+        name: "SqsToHttp",
+        vpc: this.vpc,
+        subnets: this.vpc.privateSubnets,
+        entry: "../api/lambdas/sqs-to-http/index.js",
+        envVars: {
+          DESTINATION_URL: `http://${apiAddress}/internal/queue/result`,
+          DLQ_URL: dlq.queue.queueUrl,
+        },
+        timeout: Duration.seconds(sqsToHttpLambdaTimeoutSeconds),
+      });
+
+      // TODO: implement partial batch response:
+      // https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
+      sqsToHttpLambda.addEventSource(
+        new SqsEventSource(queue, {
+          batchSize: 1,
+        })
+      );
+      queue.grantConsumeMessages(sqsToHttpLambda);
+      dlq.queue.grantSendMessages(sqsToHttpLambda);
+    }
+  }
+
+  private setupTestLambda() {
+    return createLambda({
+      stack: this,
+      name: "Tester",
+      vpc: this.vpc,
+      subnets: this.vpc.privateSubnets,
+      entry: "../api/lambdas/tester/index.js",
     });
   }
 

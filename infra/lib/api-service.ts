@@ -11,9 +11,9 @@ import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
-import { Secrets } from "./secrets";
-import { DnsZones } from "./shared";
-import { isProd } from "./util";
+import { DnsZones } from "./shared/dns";
+import { Secrets } from "./shared/secrets";
+import { isProd } from "./shared/util";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
@@ -29,7 +29,7 @@ export function createAPIService(
   dynamoDBTokenTable: dynamodb.Table,
   alarmAction: SnsAction | undefined,
   dnsZones: DnsZones,
-  fhirConverterServiceUrl: string
+  fhirConverterServiceUrl: string | undefined
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
