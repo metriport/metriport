@@ -1,18 +1,44 @@
-import { DocumentReference, Identifier } from "@medplum/fhirtypes";
-import { MedicalDataSource } from "@metriport/api";
+import { DocumentReference, DocumentReferenceContent, Identifier } from "@medplum/fhirtypes";
 import { DocumentIdentifier } from "@metriport/commonwell-sdk";
 import { MedicalDataSourceOid } from "../..";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
-import { DocumentWithFilename } from "../../commonwell/document/shared";
+import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
+import { cwExtension } from "../../commonwell/extension";
 import { ResourceType } from "../shared";
+import { metriportExtension } from "../shared/extension";
 
 export const toFHIR = (
   docId: string,
-  doc: DocumentWithFilename,
+  doc: CWDocumentWithMetriportData,
   organization: Organization,
   patient: Patient
 ): DocumentReference => {
+  const baseAttachment = {
+    contentType: doc.content?.mimeType,
+    size: doc.content?.size,
+    creation: doc.content?.indexed,
+  };
+  const metriportContent: DocumentReferenceContent = {
+    attachment: {
+      ...baseAttachment,
+      title: doc.metriport.fileName,
+      url: doc.metriport.location,
+    },
+    extension: [metriportExtension],
+  };
+  const cwContent = doc.content?.location
+    ? [
+        {
+          attachment: {
+            ...baseAttachment,
+            title: doc.metriport.fileName, // no filename on CW doc refs
+            url: doc.content.location,
+          },
+          extension: [cwExtension],
+        },
+      ]
+    : [];
   return {
     id: docId,
     resourceType: ResourceType.DocumentReference,
@@ -50,24 +76,8 @@ export const toFHIR = (
       id: MedicalDataSourceOid.COMMONWELL,
     },
     description: doc.content?.description,
-    content: [
-      {
-        attachment: {
-          title: doc.fileName,
-          contentType: doc.content?.mimeType,
-          url: doc.content?.location,
-          size: doc.content?.size,
-          creation: doc.content?.indexed,
-        },
-      },
-    ],
-    extension: [
-      {
-        valueReference: {
-          reference: MedicalDataSource.COMMONWELL,
-        },
-      },
-    ],
+    content: [...cwContent, metriportContent],
+    extension: [cwExtension],
     context: doc.content?.context,
   };
 };

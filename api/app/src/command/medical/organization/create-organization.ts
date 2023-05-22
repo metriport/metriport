@@ -1,4 +1,5 @@
 import BadRequestError from "../../../errors/bad-request";
+import { createTenantIfNotExists } from "../../../external/fhir/admin";
 import { OrganizationData, OrganizationModel } from "../../../models/medical/organization";
 import { createOrganizationId } from "../customer-sequence/create-id";
 import { getOrganization } from "./get-organization";
@@ -24,6 +25,9 @@ export const createOrganization = async (
     cxId,
     data: { name, type, location },
   });
+
+  // create tenant on FHIR server
+  await createTenantIfNotExists(org);
 
   return org;
 };

@@ -4,7 +4,7 @@ import {
   DocumentQueryStatus,
 } from "../../../domain/medical/document-reference";
 import { processAsyncError } from "../../../errors";
-import { queryDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
+import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { Util } from "../../../shared/util";
@@ -82,7 +82,7 @@ export const updateDocQuery = async ({
   status,
   progress,
 }: {
-  patient: Patient;
+  patient: Pick<Patient, "id" | "cxId">;
   status: DocumentQueryStatus;
   progress?: {
     completed: number;
@@ -108,7 +108,7 @@ export const updateDocQuery = async ({
       return await existing.update(
         {
           data: {
-            ...patient.data,
+            ...existing.data,
             documentQueryStatus: status,
             documentQueryProgress: progress,
           },

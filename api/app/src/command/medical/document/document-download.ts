@@ -1,7 +1,7 @@
-import * as AWS from "aws-sdk";
+import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 
-const s3client = new AWS.S3();
+const s3client = makeS3Client();
 
 export const downloadDocument = async ({ fileName }: { fileName: string }): Promise<string> => {
   const seconds = 60;

@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/node";
 import axios from "axios";
+import MetriportError from "../errors/metriport-error";
 import { Config } from "./config";
 
 const slackAlertUrl = Config.getSlackAlertUrl();
@@ -71,7 +72,10 @@ export const capture = {
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   error: (error: any, captureContext?: Partial<CaptureContext>): string => {
-    return Sentry.captureException(error, captureContext);
+    return Sentry.captureException(error, {
+      ...captureContext,
+      ...(error instanceof MetriportError ? error.additionalInfo : {}),
+    });
   },
 
   /**

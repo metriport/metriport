@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.test" });
+// Keep dotenv import and config before everything else
 import { v4 as uuidv4 } from "uuid";
 import { makeOrgNumber } from "../../../models/medical/__tests__/organization";
 import { makeFhirAdminApi } from "../api/api-factory";

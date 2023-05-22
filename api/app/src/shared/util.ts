@@ -2,7 +2,7 @@ import { Sample } from "@metriport/api/lib/devices/models/common/sample";
 import convert from "convert-units";
 import crypto from "crypto";
 import { mean } from "lodash";
-import { PassThrough } from "node:stream";
+import { Stream } from "stream";
 import { debug } from "./log";
 
 interface MinMaxItem {
@@ -114,7 +114,7 @@ export class Util {
   static oneOf = <T>(...values: T[]): NonNullable<T> | undefined =>
     values.find(v => v != null) ?? undefined;
 
-  static async streamToString(stream: PassThrough): Promise<string> {
+  static async streamToString(stream: Stream): Promise<string> {
     const chunks: Buffer[] = [];
     return new Promise((resolve, reject) => {
       stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
