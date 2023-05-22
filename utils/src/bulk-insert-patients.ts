@@ -66,7 +66,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
 }): PatientCreate | undefined => {
   const validGender = csvPatient.gender === "Male" || csvPatient.gender === "Female";
 
-  if (!csvPatient.gender || !validGender) {
+  if (!validGender) {
     console.log("Invalid gender provided for patient: ", csvPatient);
     return;
   }
