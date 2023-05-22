@@ -24,7 +24,10 @@ async function main() {
     .pipe(csv())
     .on("data", async data => {
       const metriportPatient = mapCSVPatientToMetriportPatient(data);
-      results.push(metriportPatient);
+
+      if (metriportPatient) {
+        results.push(metriportPatient);
+      }
     })
     .on("end", async () => {
       for (const [i, patient] of results.entries()) {
@@ -60,7 +63,14 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   zipcode: string;
   phone: string;
   gender: string;
-}): PatientCreate => {
+}): PatientCreate | undefined => {
+  const validGender = csvPatient.gender === "Male" || csvPatient.gender === "Female";
+
+  if (!csvPatient.gender || !validGender) {
+    console.log("Invalid gender provided for patient: ", csvPatient);
+    return;
+  }
+
   return {
     firstName: csvPatient.firstname,
     lastName: csvPatient.lastname,
