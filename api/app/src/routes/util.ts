@@ -136,7 +136,7 @@ export function getFrom(context: Context): GetWithParams {
 
 export const getCxId = (req: Request): string | undefined => {
   const cxId = req.cxId;
-  cxId && capture.setUserId(cxId);
+  cxId && capture.setUser({ id: cxId });
   return cxId;
 };
 export const getCxIdOrFail = (req: Request): string => {
@@ -147,7 +147,7 @@ export const getCxIdOrFail = (req: Request): string => {
 
 export const getCxIdFromQuery = (req: Request): string | undefined => {
   const cxId = req.query.cxId as string | undefined;
-  cxId && capture.setUserId(cxId);
+  cxId && capture.setUser({ id: cxId });
   return cxId;
 };
 export const getCxIdFromQueryOrFail = (req: Request): string => {
@@ -158,7 +158,7 @@ export const getCxIdFromQueryOrFail = (req: Request): string => {
 
 export const getCxIdFromHeaders = (req: Request): string | undefined => {
   const cxId = req.header("cxId") as string | undefined;
-  cxId && capture.setUserId(cxId);
+  cxId && capture.setUser({ id: cxId });
   return cxId;
 };
 

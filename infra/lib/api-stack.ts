@@ -7,7 +7,6 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
-import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -19,6 +18,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
+import { DeadLetterQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
@@ -160,17 +160,9 @@ export class APIStack extends Stack {
     );
 
     //-------------------------------------------
-    // FHIR Converter Service
+    // FHIR QUEUES - INITIAL SETUP
     //-------------------------------------------
-    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
-    if (!isSandbox(props.config)) {
-      fhirConverter = createFHIRConverterService(
-        this,
-        props,
-        this.vpc,
-        slackNotification?.alarmAction
-      );
-    }
+    const { queue: fhirConverterQueue, dlq: fhirConverterDlq } = this.setupFHIRConverterConnector();
 
     //-------------------------------------------
     // ECR + ECS + Fargate f or Backend Servers
@@ -189,7 +181,8 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       slackNotification?.alarmAction,
       dnsZones,
-      fhirConverter ? `http://${fhirConverter.address}` : undefined
+      fhirConverterQueue.queueUrl
+      // secrets.fhirConverterUrl?.
     );
 
     // Access grant for Aurora DB
@@ -212,6 +205,33 @@ export class APIStack extends Stack {
       integrationHttpMethod: "ANY",
       uri: `http://${apiLoadBalancerAddress}/{proxy}`,
     });
+
+    //-------------------------------------------
+    // FHIR Converter Service
+    //-------------------------------------------
+    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
+    if (!isSandbox(props.config)) {
+      fhirConverter = createFHIRConverterService(
+        this,
+        props,
+        this.vpc,
+        apiServerUrl,
+        slackNotification?.alarmAction
+      );
+    }
+
+    //-------------------------------------------
+    // FHIR QUEUES - GIVE ACCESS
+    //-------------------------------------------
+    if (apiService.service) {
+      const role = apiService.service.taskDefinition.taskRole;
+      fhirConverterQueue.grantSendMessages(role);
+    }
+    if (fhirConverter?.service) {
+      const role = fhirConverter.service.taskDefinition.taskRole;
+      fhirConverterQueue.grantConsumeMessages(role);
+      fhirConverterDlq && fhirConverterDlq.queue.grantSendMessages(role);
+    }
 
     //-------------------------------------------
     // S3 bucket for Medical Documents
@@ -279,13 +299,6 @@ export class APIStack extends Stack {
         "method.request.path.proxy": true,
       },
       apiKeyRequired: true,
-    });
-
-    // FHIR QUEUES
-    this.setupFHIRConverterConnector({
-      api: apiService.service,
-      apiAddress: apiLoadBalancerAddress,
-      converter: fhirConverter?.service,
     });
 
     this.setupTestLambda();
@@ -411,53 +424,44 @@ export class APIStack extends Stack {
     });
   }
 
-  private setupFHIRConverterConnector({
-    api,
-    apiAddress,
-    converter,
-  }: {
-    api: FargateService;
-    apiAddress: string;
-    converter?: FargateService;
-  }) {
-    if (converter) {
-      const sqsToHttpLambdaTimeoutSeconds = 5;
+  private setupFHIRConverterConnector(): { queue: Queue; dlq?: DeadLetterQueue } {
+    const sqsToHttpLambdaTimeoutSeconds = 5;
 
-      const queue = createQueue({
-        stack: this,
-        name: "FHIRConverter",
-        vpc: this.vpc,
-        producer: api.taskDefinition.taskRole,
-        consumer: converter.taskDefinition.taskRole,
-        visibilityTimeout: Duration.seconds(sqsToHttpLambdaTimeoutSeconds * 6 + 1),
-      });
+    const queue = createQueue({
+      stack: this,
+      name: "FHIRConverter",
+      vpc: this.vpc,
+      visibilityTimeout: Duration.seconds(sqsToHttpLambdaTimeoutSeconds * 6 + 1),
+    });
 
-      const dlq = queue.deadLetterQueue;
-      if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
+    const dlq = queue.deadLetterQueue;
+    if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
 
-      const sqsToHttpLambda = createLambda({
-        stack: this,
-        name: "SqsToHttp",
-        vpc: this.vpc,
-        subnets: this.vpc.privateSubnets,
-        entry: "../api/lambdas/sqs-to-http/index.js",
-        envVars: {
-          DESTINATION_URL: `http://${apiAddress}/internal/queue/result`,
-          DLQ_URL: dlq.queue.queueUrl,
-        },
-        timeout: Duration.seconds(sqsToHttpLambdaTimeoutSeconds),
-      });
+    const sqsToHttpLambda = createLambda({
+      stack: this,
+      name: "SqsToHttp",
+      vpc: this.vpc,
+      subnets: this.vpc.privateSubnets,
+      entry: "../api/lambdas/sqs-to-http/index.js",
+      envVars: {
+        // TODO 706 Remove this, the dest url should come with the SQS message
+        DESTINATION_URL: `http://Stagi-APIFa-L2I135INABM3-e3a33dd4470439f2.elb.us-east-2.amazonaws.com/internal/fhir/result-conversion`,
+        DLQ_URL: dlq.queue.queueUrl,
+      },
+      timeout: Duration.seconds(sqsToHttpLambdaTimeoutSeconds),
+    });
 
-      // TODO: implement partial batch response:
-      // https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
-      sqsToHttpLambda.addEventSource(
-        new SqsEventSource(queue, {
-          batchSize: 1,
-        })
-      );
-      queue.grantConsumeMessages(sqsToHttpLambda);
-      dlq.queue.grantSendMessages(sqsToHttpLambda);
-    }
+    // TODO 706 implement partial batch response:
+    // https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
+    sqsToHttpLambda.addEventSource(
+      new SqsEventSource(queue, {
+        batchSize: 1,
+      })
+    );
+    queue.grantConsumeMessages(sqsToHttpLambda);
+    dlq.queue.grantSendMessages(sqsToHttpLambda);
+
+    return { queue, dlq };
   }
 
   private setupTestLambda() {

@@ -1,13 +1,8 @@
-import axios from "axios";
-import { Config } from "../../shared/config";
-import { Bundle } from "@medplum/fhirtypes";
+import { FHIRConverterSourceDataType } from "./connector";
+import { makeFHIRConverterConnector } from "./connector-factory";
 
 const templateExt = "hbs";
-
-export enum FHIRConverterSourceDataType {
-  cda = "cda",
-  hl7v2 = "hl7v2",
-}
+const connector = makeFHIRConverterConnector();
 
 export enum FHIRConverterCDATemplate {
   ccd = "ccd",
@@ -22,31 +17,31 @@ export enum FHIRConverterCDATemplate {
   transferSummary = "TransferSummary",
 }
 
-export async function convertCDAToFHIR(
-  patientId: string,
-  cda: string,
-  template: FHIRConverterCDATemplate = FHIRConverterCDATemplate.ccd,
+export async function convertCDAToFHIR({
+  cxId,
+  patientId,
+  documentId,
+  cdaPayload,
+  template = FHIRConverterCDATemplate.ccd,
   keepUnusedSegments = false,
-  keepInvalidAccess = false
-): Promise<Bundle | undefined> {
-  const fhirConverterUrl = Config.getFHIRConverterURL();
-  if (!fhirConverterUrl) {
-    console.log(`FHIR_CONVERTER_URL is not configured, skipping FHIR conversion...`);
-    return;
-  }
-
-  const resp = await axios.post(
-    `${fhirConverterUrl}/api/convert/${FHIRConverterSourceDataType.cda}/${template}.${templateExt}`,
-    cda,
-    {
-      params: {
-        unusedSegments: `${keepUnusedSegments}`,
-        invalidAccess: `${keepInvalidAccess}`,
-        patientId,
-      },
-      headers: { "Content-Type": "text/plain" },
-    }
-  );
-
-  return resp.data.fhirResource;
+  keepInvalidAccess = false,
+}: {
+  cxId: string;
+  patientId: string;
+  documentId: string;
+  cdaPayload: string;
+  template?: FHIRConverterCDATemplate;
+  keepUnusedSegments?: boolean;
+  keepInvalidAccess?: boolean;
+}): Promise<void> {
+  return connector.requestConvert({
+    cxId,
+    patientId,
+    documentId,
+    sourceType: FHIRConverterSourceDataType.cda,
+    payload: cdaPayload,
+    template: `${template}.${templateExt}`,
+    unusedSegments: `${keepUnusedSegments}`,
+    invalidAccess: `${keepInvalidAccess}`,
+  });
 }

@@ -1,4 +1,5 @@
 import { SQS } from "aws-sdk";
+import { MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
 import { Config } from "../../shared/config";
 
 const sqsConfig = {
@@ -9,31 +10,46 @@ export const sqs = new SQS({
   region: sqsConfig.awsRegion,
 });
 
-export type SQSMessageAttributes = {
-  cxId?: {
-    DataType: "String";
-    StringValue: string;
-  };
+export type SQSMessageAttributes = Record<string, string> & {
+  cxId?: string;
 };
 
 export async function sendMessageToQueue(
   queueUrl: string,
-  messageBody: object,
+  messageBody: string,
   sqsParams: {
     messageGroupId: string;
     messageDeduplicationId: string;
     messageAttributes?: SQSMessageAttributes;
+    messageAttributesRaw?: SQS.MessageBodyAttributeMap;
     delaySeconds?: number;
   }
 ): Promise<void> {
-  const { messageGroupId, messageAttributes, messageDeduplicationId, delaySeconds } = sqsParams;
+  const {
+    messageGroupId,
+    messageAttributes,
+    messageAttributesRaw,
+    messageDeduplicationId,
+    delaySeconds,
+  } = sqsParams;
   const messageParams: SQS.Types.SendMessageRequest = {
-    MessageBody: JSON.stringify(messageBody),
+    MessageBody: messageBody,
     QueueUrl: queueUrl,
     DelaySeconds: delaySeconds,
     MessageDeduplicationId: messageDeduplicationId,
     MessageGroupId: messageGroupId,
-    MessageAttributes: messageAttributes,
+    MessageAttributes: {
+      ...(messageAttributes
+        ? Object.entries(messageAttributes).reduce((acc, [key, value]) => {
+            acc[key] = {
+              DataType: "String",
+              StringValue: value,
+            };
+            return acc;
+          }, {} as MessageBodyAttributeMap)
+        : {}),
+      ...(messageAttributesRaw ? messageAttributesRaw : {}),
+    },
   };
   messageParams.MessageDeduplicationId = messageDeduplicationId
     ? messageDeduplicationId

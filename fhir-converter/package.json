@@ -12,7 +12,9 @@
     "pretest": "node --experimental-worker src/init-service.js",
     "posttest": "eslint {src,test}/**/*.js",
     "prestart": "node --experimental-worker src/init-service.js",
+    "dev": "nodemon --inspect=0.0.0.0:9277 src/index.js",
     "start": "node --experimental-worker src/index.js",
+    "start-docker-compose": "docker compose -f docker-compose.yml up",
     "eslint": "eslint {src,test}/**/*.js"
   },
   "eslintConfig": {
@@ -94,6 +96,7 @@
   "dependencies": {
     "antlr4": "^4.9.2",
     "applicationinsights": "^1.4.1",
+    "axios": "^0.27.2",
     "body-parser": "^1.19.0",
     "codemirror": "^5.62.0",
     "cookie-parser": "^1.4.4",
@@ -104,17 +107,18 @@
     "handlebars": ">= 4.7.7",
     "lodash": "^4.17.21",
     "memory-cache": "^0.2.0",
+    "minimist": ">= 1.2.6",
     "ncp": "^2.0.0",
     "nodegit": "^0.27.0",
+    "nodemon": "^2.0.22",
     "promise": "^8.0.3",
     "pushover-giting": "0.0.3",
     "swagger-jsdoc": "^6.1.0",
-    "swagger-ui-express": "^4.2.0",
     "swagger-ui-dist": ">= 4.1.3",
+    "swagger-ui-express": "^4.2.0",
     "underscore": "^1.13.1",
     "uuid": "^3.3.2",
-    "xml2js": "^0.4.23",
-    "minimist": ">= 1.2.6"
+    "xml2js": "^0.4.23"
   },
   "license": "MIT"
 }

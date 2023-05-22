@@ -14,7 +14,11 @@ services:
     environment:
       - NODE_ENV=development
       - ENV_TYPE=development
+      - FHIR_API_URL=http://host.docker.internal:8080
     ports:
       - "8777:8080"
+      - "9277:9229"
     # volumes:
     #   - ./src:/usr/src/app/src
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

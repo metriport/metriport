@@ -58,9 +58,11 @@ export type CaptureContext = {
 
 export type SeverityLevel = "fatal" | "error" | "warning" | "log" | "info" | "debug";
 
+export type UserData = Pick<Sentry.User, "id" | "email">;
+
 export const capture = {
-  setUserId: (id: string): void => {
-    Sentry.setUser({ id });
+  setUser: (user: UserData): void => {
+    Sentry.setUser(user);
   },
 
   /**

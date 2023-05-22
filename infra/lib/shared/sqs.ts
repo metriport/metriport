@@ -10,9 +10,8 @@ import { createRetryLambda, DEFAULT_LAMBDA_TIMEOUT_SECONDS } from "./lambda";
 
 export interface QueueProps extends Omit<DefaultQueueStackProps, "dlq"> {
   readonly vpc: IVpc;
-  // readonly subnets: ISubnet[];
-  readonly producer: IGrantable;
-  readonly consumer: IGrantable;
+  readonly producer?: IGrantable;
+  readonly consumer?: IGrantable;
   readonly createDLQ?: boolean;
   readonly createRetryLambda?: boolean;
 }
@@ -30,9 +29,9 @@ export function createQueue(props: QueueProps): Queue {
     ...props,
     ...(dlq ? { dlq: dlq } : {}),
   });
-  queue.grantSendMessages(props.producer);
-  queue.grantConsumeMessages(props.consumer);
-  dlq && dlq.grantSendMessages(props.consumer);
+  props.producer && queue.grantSendMessages(props.producer);
+  props.consumer && queue.grantConsumeMessages(props.consumer);
+  props.consumer && dlq && dlq.grantSendMessages(props.consumer);
 
   const retryLambda = props.createRetryLambda != null ? props.createRetryLambda : true;
   if (dlq && retryLambda) {

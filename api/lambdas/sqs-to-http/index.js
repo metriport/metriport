@@ -1,7 +1,5 @@
+import * as AWS from "aws-sdk";
 import axios from "axios";
-import * as AWS from 'aws-sdk';
-
-
 
 export function getEnv(name) {
   return process.env[name];
@@ -13,7 +11,6 @@ export function getEnvOrFail(name) {
 }
 
 const region = getEnvOrFail("AWS_REGION");
-const destinationUrl = getEnvOrFail("DESTINATION_URL");
 const dlqURL = getEnvOrFail("DLQ_URL");
 
 const sqs = new AWS.SQS({ region });
@@ -43,7 +40,6 @@ const api = axios.create();
 */
 
 export const handler = async function (event) {
-  console.log(`DESTINATION_URL: ${destinationUrl}`);
   try {
     // Process messages from SQS
     const records = event.Records; // SQSRecord[]
@@ -56,22 +52,28 @@ export const handler = async function (event) {
       // Process one record from the SQS message
       try {
         const payload = message.body;
+        const attrib = message.messageAttributes;
+        console.log(`[${i}] Message attributes: ${JSON.stringify(attrib)}`);
+        const cxId = attrib?.cxId?.stringValue;
+        const serverUrl = attrib?.serverUrl?.stringValue;
+        console.log(`[${i}] cxId: ${cxId}, serverUrl: ${serverUrl}`);
+
         console.log(`[${i}] Sending payload: ${JSON.stringify(payload)}`);
-        const res = await api.post(destinationUrl, payload);
+        const res = await api.post(serverUrl, payload, { params: { cxId } });
         console.log(`[${i}] Success: status: ${res.status}, body: ${JSON.stringify(res.body)}`);
 
-        try {
-          const deleteParams = {
-            QueueUrl: sourceQueue,
-            ReceiptHandle: message.receiptHandle,
-          };
-          const deleteResult = await sqs.deleteMessage(deleteParams).promise();
-          console.log(`Message removed from queue, result: ${JSON.stringify(deleteResult)}`);
-        } catch (err) {
-          // TODO Add Sentry reporting code
-          // TODO Add Sentry reporting code
-          console.log(`Failed to remove message from queue: `, err);
-        }
+        // TODO 706 implement partial batch response:
+        // try {
+        //   const deleteParams = {
+        //     QueueUrl: sourceQueue, // TODO pass this as an env var
+        //     ReceiptHandle: message.receiptHandle,
+        //   };
+        //   const deleteResult = await sqs.deleteMessage(deleteParams).promise();
+        //   console.log(`Message removed from queue, result: ${JSON.stringify(deleteResult)}`);
+        // } catch (err) {
+        //   // TODO Add Sentry reporting code
+        //   console.log(`Failed to remove message from queue: `, err);
+        // }
       } catch (err) {
         // TODO Add Sentry reporting code
         // TODO Add Sentry reporting code

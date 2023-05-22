@@ -19,6 +19,7 @@ export function createFHIRConverterService(
   stack: Construct,
   props: FhirConverterServiceProps,
   vpc: ec2.IVpc,
+  apiServerUrl: string,
   alarmAction: SnsAction | undefined
 ): { service: FargateService; address: string } {
   // Create a new Amazon Elastic Container Service (ECS) cluster
@@ -46,6 +47,7 @@ export function createFHIRConverterService(
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
+          FHIR_API_URL: apiServerUrl,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),

@@ -28,7 +28,7 @@ import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { MAX_FHIR_DOC_ID_LENGTH, postFHIRBundle } from "../../fhir/shared";
+import { MAX_FHIR_DOC_ID_LENGTH } from "../../fhir/bundle";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { groupCWErrors } from "../error-categories";
@@ -384,8 +384,12 @@ export async function downloadDocsAndUpsertFHIR({
               try {
                 const fileString = await fileContents;
                 // note that on purpose, this bundle will not contain the corresponding doc ref
-                const fhirBundle = await convertCDAToFHIR(patient.id, fileString);
-                if (fhirBundle) await postFHIRBundle(patient.cxId, fhirBundle);
+                await convertCDAToFHIR({
+                  cxId: patient.cxId,
+                  patientId: patient.id,
+                  documentId: doc.id,
+                  cdaPayload: fileString,
+                });
               } catch (error) {
                 reportFHIRError({ patientId: patient.id, doc, error, log });
               }

@@ -7,10 +7,12 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../env-config";
 import { EnvType } from "../env-type";
 
+export function isStaging(config: EnvConfig): boolean {
+  return config.environmentType === EnvType.staging;
+}
 export function isProd(config: EnvConfig): boolean {
   return config.environmentType === EnvType.production;
 }
-
 export function isSandbox(config: EnvConfig): boolean {
   return config.environmentType === EnvType.sandbox;
 }
