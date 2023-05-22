@@ -38,6 +38,8 @@ import {
 import { PurposeOfUse } from "../models/purpose-of-use";
 import * as document from "./document";
 
+const AXIOS_TIMEOUT = 20_000; // milliseconds
+
 export enum APIMode {
   integration = "integration",
   production = "production",
@@ -88,6 +90,7 @@ export class CommonWell implements CommonWellAPI {
     this.rsaPrivateKey = rsaPrivateKey;
     this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
     this.api = axios.create({
+      timeout: AXIOS_TIMEOUT,
       baseURL:
         apiMode === APIMode.production ? CommonWell.productionUrl : CommonWell.integrationUrl,
       httpsAgent: this.httpsAgent,

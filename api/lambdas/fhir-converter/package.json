@@ -12,6 +12,7 @@
   "dependencies": {
     "aws-sdk": "^2.1248.0",
     "axios": "^1.4.0",
-    "nanoid": "^4.0.2"
+    "nanoid": "^4.0.2",
+    "@sentry/serverless": "^7.46.0"
   }
 }

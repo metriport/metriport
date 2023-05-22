@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.1248.0",
-    "axios": "^1.4.0"
+    "axios": "^1.4.0",
+    "@sentry/serverless": "^7.46.0"
   }
 }

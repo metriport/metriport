@@ -13,6 +13,8 @@ import { SettingsResponse } from "./models/settings-response";
 import { WebhookStatusResponse } from "./models/webhook-status-response";
 import { dateIsValid } from "./util/date-util";
 
+const AXIOS_TIMEOUT = 20_000; // milliseconds
+
 export type Options = {
   sandbox?: boolean;
 };
@@ -32,6 +34,7 @@ export class MetriportDevicesApi {
       typeof options === "string" ? options : options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS;
 
     this.api = axios.create({
+      timeout: AXIOS_TIMEOUT,
       baseURL,
       headers: { "x-api-key": apiKey },
     });

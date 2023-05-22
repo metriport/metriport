@@ -29,8 +29,8 @@ export function createAPIService(
   dynamoDBTokenTable: dynamodb.Table,
   alarmAction: SnsAction | undefined,
   dnsZones: DnsZones,
-  fhirConverterQueueUrl: string | undefined
-  // fhirConverterServiceUrl: string | undefined
+  fhirConverterQueueUrl: string | undefined,
+  fhirConverterServiceUrl: string | undefined
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -49,13 +49,6 @@ export function createAPIService(
     props.config.connectWidgetUrl != undefined
       ? props.config.connectWidgetUrl
       : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
-
-  // TODO 706 Temporary, should be removed when FHIR converter is ready to pull messages from the queue
-  // const fhirConverterServiceUrl = isProd(props.config)
-  //   ? "http://APIIn-APIFa-T9HRY1NIRBOD-1ccf11a307e6fec7.elb.us-west-1.amazonaws.com"
-  //   : isStaging(props.config)
-  //   ? "http://Stagi-APIFa-L2I135INABM3-e3a33dd4470439f2.elb.us-east-2.amazonaws.com"
-  //   : undefined;
 
   // Run some servers on fargate containers
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
@@ -97,9 +90,9 @@ export function createAPIService(
           ...(fhirConverterQueueUrl && {
             FHIR_CONVERTER_QUEUE_URL: fhirConverterQueueUrl,
           }),
-          // ...(fhirConverterServiceUrl && {
-          //   FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
-          // }),
+          ...(fhirConverterServiceUrl && {
+            FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
+          }),
         },
       },
       memoryLimitMiB: isProd(props.config) ? 4096 : 2048,

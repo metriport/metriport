@@ -9,7 +9,6 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
@@ -18,15 +17,15 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
-import { DeadLetterQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
+import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
 import { createLambda } from "./shared/lambda";
 import { getSecrets } from "./shared/secrets";
-import { createQueue } from "./shared/sqs";
+import { provideAccess } from "./shared/sqs";
 import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./shared/util";
 
 interface APIStackProps extends StackProps {
@@ -160,9 +159,24 @@ export class APIStack extends Stack {
     );
 
     //-------------------------------------------
-    // FHIR QUEUES - INITIAL SETUP
+    // FHIR Converter Service
     //-------------------------------------------
-    const { queue: fhirConverterQueue, dlq: fhirConverterDlq } = this.setupFHIRConverterConnector();
+    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
+    if (!isSandbox(props.config)) {
+      fhirConverter = createFHIRConverterService(
+        this,
+        props,
+        this.vpc,
+        slackNotification?.alarmAction
+      );
+    }
+
+    //-------------------------------------------
+    // FHIR QUEUES - Create SQS Queue and DLQ
+    //-------------------------------------------
+    const { queue: fhirConverterQueue, dlq: fhirConverterDLQ } = fhirConverterConnector.createQueue(
+      { stack: this, vpc: this.vpc }
+    );
 
     //-------------------------------------------
     // ECR + ECS + Fargate f or Backend Servers
@@ -181,8 +195,8 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       slackNotification?.alarmAction,
       dnsZones,
-      fhirConverterQueue.queueUrl
-      // secrets.fhirConverterUrl?.
+      fhirConverterQueue.queueUrl,
+      fhirConverter ? `http://${fhirConverter.address}` : undefined
     );
 
     // Access grant for Aurora DB
@@ -207,31 +221,21 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // FHIR Converter Service
+    // FHIR QUEUES - Finish setting it up
     //-------------------------------------------
-    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
-    if (!isSandbox(props.config)) {
-      fhirConverter = createFHIRConverterService(
-        this,
-        props,
-        this.vpc,
-        apiServerUrl,
-        slackNotification?.alarmAction
-      );
-    }
-
-    //-------------------------------------------
-    // FHIR QUEUES - GIVE ACCESS
-    //-------------------------------------------
-    if (apiService.service) {
-      const role = apiService.service.taskDefinition.taskRole;
-      fhirConverterQueue.grantSendMessages(role);
-    }
-    if (fhirConverter?.service) {
-      const role = fhirConverter.service.taskDefinition.taskRole;
-      fhirConverterQueue.grantConsumeMessages(role);
-      fhirConverterDlq && fhirConverterDlq.queue.grantSendMessages(role);
-    }
+    provideAccess({
+      accessType: "send",
+      queue: fhirConverterQueue,
+      resource: apiService.service.taskDefinition.taskRole,
+    });
+    fhirConverterConnector.createLambda({
+      envType: props.config.environmentType,
+      stack: this,
+      vpc: this.vpc,
+      queue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      fhirServerAddress: apiServerUrl,
+    });
 
     //-------------------------------------------
     // S3 bucket for Medical Documents
@@ -422,46 +426,6 @@ export class APIStack extends Stack {
       description: "Userpool for client secret based apps",
       value: userPoolClientSecret.userPoolId,
     });
-  }
-
-  private setupFHIRConverterConnector(): { queue: Queue; dlq?: DeadLetterQueue } {
-    const sqsToHttpLambdaTimeoutSeconds = 5;
-
-    const queue = createQueue({
-      stack: this,
-      name: "FHIRConverter",
-      vpc: this.vpc,
-      visibilityTimeout: Duration.seconds(sqsToHttpLambdaTimeoutSeconds * 6 + 1),
-    });
-
-    const dlq = queue.deadLetterQueue;
-    if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
-
-    const sqsToHttpLambda = createLambda({
-      stack: this,
-      name: "SqsToHttp",
-      vpc: this.vpc,
-      subnets: this.vpc.privateSubnets,
-      entry: "../api/lambdas/sqs-to-http/index.js",
-      envVars: {
-        // TODO 706 Remove this, the dest url should come with the SQS message
-        DESTINATION_URL: `http://Stagi-APIFa-L2I135INABM3-e3a33dd4470439f2.elb.us-east-2.amazonaws.com/internal/fhir/result-conversion`,
-        DLQ_URL: dlq.queue.queueUrl,
-      },
-      timeout: Duration.seconds(sqsToHttpLambdaTimeoutSeconds),
-    });
-
-    // TODO 706 implement partial batch response:
-    // https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
-    sqsToHttpLambda.addEventSource(
-      new SqsEventSource(queue, {
-        batchSize: 1,
-      })
-    );
-    queue.grantConsumeMessages(sqsToHttpLambda);
-    dlq.queue.grantSendMessages(sqsToHttpLambda);
-
-    return { queue, dlq };
   }
 
   private setupTestLambda() {

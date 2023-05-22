@@ -1,5 +1,9 @@
-import * as AWS from 'aws-sdk';
+import * as Sentry from "@sentry/node";
+import * as AWS from "aws-sdk";
 import { nanoid } from "nanoid";
+
+// Get ONE message from the source queue and send to the destination one
+const numberOfMessagesPerExecution = 1; // up to 10
 
 export function getEnv(name) {
   return process.env[name];
@@ -10,34 +14,33 @@ export function getEnvOrFail(name) {
   return value;
 }
 
+const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 const sourceQueue = getEnvOrFail("SOURCE_QUEUE");
 const destinationQueue = getEnvOrFail("DESTINATION_QUEUE");
 
 const sqs = new AWS.SQS({ region });
 
-export const handler = async function () {
+export const handler = async function (event) {
   // Set it up
   console.log(`Running w/ SOURCE_QUEUE = ${sourceQueue}, DESTINATION_QUEUE = ${destinationQueue}`);
 
   try {
-    // ---- Get ONE message (if available) from the DLQ ----
     const requestParams = {
       QueueUrl: sourceQueue,
       AttributeNames: ["All"],
       MessageAttributeNames: ["All"],
-      MaxNumberOfMessages: 1, // up to 10
-      ReceiveRequestAttemptId: new Date().toISOString(),
+      MaxNumberOfMessages: numberOfMessagesPerExecution,
       VisibilityTimeout: 5,
       WaitTimeSeconds: 5,
     };
-    console.log(`Requesting ONE message w/ params: ${JSON.stringify(requestParams)}...`);
+    console.log(`Requesting message w/ params: ${JSON.stringify(requestParams)}...`);
     const receiveResult = await sqs.receiveMessage(requestParams).promise();
     if (!receiveResult.Messages || receiveResult.Messages.length <= 0) {
       console.log(`Didn't get any message from queue: ${sourceQueue}`);
       return;
     }
-    console.log(`Received message: ${JSON.stringify(receiveResult.Messages)}`);
+    console.log(`Received ${receiveResult.Messages} messages`);
 
     // ---- Send the message to the queue ----
     for (const message of receiveResult.Messages) {
@@ -46,7 +49,9 @@ export const handler = async function () {
         return;
       }
       if (!message.ReceiptHandle) {
-        console.log(`Empty receipt handle (cannot delete it), skipping: ${JSON.stringify(message)}`);
+        console.log(
+          `Empty receipt handle (cannot delete it), skipping: ${JSON.stringify(message)}`
+        );
         return;
       }
       const messageAttributes = {};
@@ -80,12 +85,10 @@ export const handler = async function () {
       console.log(`Message removed from DLQ, result: ${JSON.stringify(deleteResult)}`);
     }
   } catch (err) {
-    // TODO Add Sentry reporting code
-    // TODO Add Sentry reporting code
-    // TODO Add Sentry reporting code
-    // TODO Add Sentry reporting code
-    // TODO Add Sentry reporting code
     console.log(`Error retrying message: `, err);
+    Sentry.captureException(err, {
+      extra: { event, context: lambdaName },
+    });
     throw err;
   }
 };

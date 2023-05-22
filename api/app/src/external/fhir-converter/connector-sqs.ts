@@ -19,8 +19,6 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
       console.log(`FHIR_CONVERTER_QUEUE_URL is not configured, skipping FHIR conversion...`);
       return;
     }
-    // TODO 706 Remove this when the converter is ready to pull messages from the queue
-    // Useful for the FHIR server, though
     const fhirConverterUrl = Config.getFHIRConverterServerURL();
     if (!fhirConverterUrl) {
       console.log(`FHIR_CONVERTER_SERVER_URL is not configured, skipping FHIR conversion...`);

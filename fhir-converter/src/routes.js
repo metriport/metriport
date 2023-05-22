@@ -21,10 +21,10 @@ var fileSystemCache = require("./lib/fsCache/cache");
 var handlebarsHelpers = require("./lib/handlebars-converter/handlebars-helpers").external;
 var ncp = require("ncp").ncp;
 
-const axios = require("axios").create();
-
-module.exports = function (app, fhirServerUrl) {
-  const workerPool = new WorkerPool("./src/lib/workers/worker.js", require("os").cpus().length);
+module.exports = function (app) {
+  const amountOfWorkers = require("os").cpus().length;
+  console.log(`Creating a pool of ${amountOfWorkers} workers (${require("os").cpus().length} vCPUs)`)
+  const workerPool = new WorkerPool("./src/lib/workers/worker.js", amountOfWorkers);
   let templateCache = new fileSystemCache(constants.TEMPLATE_FILES_LOCATION);
   templateCache.init();
   let messageCache = new fileSystemCache(constants.SAMPLE_DATA_LOCATION);
@@ -854,7 +854,6 @@ module.exports = function (app, fhirServerUrl) {
     const retUnusedSegments = req.query.unusedSegments == "true";
     const retInvalidAccess = req.query.invalidAccess == "true";
     const startTime = new Date().getTime();
-    const cxId = req.query.cxId;
     const patientId = req.query.patientId;
     workerPool
       .exec({
@@ -874,24 +873,7 @@ module.exports = function (app, fhirServerUrl) {
         if (!retInvalidAccess) {
           delete resultMessage["invalidAccess"];
         }
-
-        if (result.status >= 200 && result.status < 300) {
-          axios
-            .post(fhirServerUrl + "/internal/fhir/result-conversion", resultMessage, {
-              params: { cxId },
-            })
-            .then(() => {
-              console.log(
-                `Successfully posted to FHIR api - status ${result.status}, processed in ${duration}ms`
-              );
-            })
-            .catch(err => {
-              console.log(`Failed to post to FHIR api: ${err}`);
-            });
-        } else {
-          console.log(`Not posting to FHIR api, conversion status: ${result.status}`);
-        }
-
+        console.log(`Processed in ${duration}ms, status ${result.status}.`);
         res.status(result.status);
         res.json(resultMessage);
         return;

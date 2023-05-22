@@ -1,11 +1,11 @@
-import axios, { AxiosInstance, AxiosStatic } from "axios";
+import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
   DocumentList,
   documentListSchema,
-  documentQuerySchema,
   DocumentQuery,
+  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
@@ -57,17 +57,16 @@ export class MetriportMedicalApi {
 
     const baseURL =
       (options.baseAddress || (options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
+    const axiosConfig: CreateAxiosDefaults = {
+      timeout: 20_000,
+      baseURL,
+      headers,
+    };
 
     if (axios) {
-      this.api = axios.create({
-        baseURL,
-        headers,
-      });
+      this.api = axios.create(axiosConfig);
     } else if (options.axios) {
-      this.api = options.axios.create({
-        baseURL,
-        headers,
-      });
+      this.api = options.axios.create(axiosConfig);
     } else {
       throw new Error(`Failed to initialize Axios`);
     }

@@ -92,9 +92,9 @@ jobs:
       - name: Retry SQS lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/retry-sqs/"
-      - name: SQS-to-HTTP lambda install dependencies
+      - name: FHIRConverter lambda install dependencies
         run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/sqs-to-http/"
+        working-directory: "api/lambdas/fhir-converter/"
       - name: Tester lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/tester/"
