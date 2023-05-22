@@ -1,7 +1,7 @@
 {{!-- https://build.fhir.org/ig/HL7/ccda-on-fhir/branches/master/ConceptMap-FC-ImmunizationStatus.html --}}
 {{! https://www.hl7.org/fhir/R4/valueset-immunization-status.html }}
 {{#with (toLower code) as |normalizedCode|}}
-  {{if (eq normalizedCode "complete")}}
+  {{#if (eq normalizedCode "complete")}}
     "completed"
   {{else if (eq normalizedCode "active")}}
     "completed"
