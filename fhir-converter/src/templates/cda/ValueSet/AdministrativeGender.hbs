@@ -1,0 +1,11 @@
+{{#if (or (eq (toLower code) "m") (eq (toLower code) "male"))}}
+  "male"
+{{else if (or (eq (toLower code) "f") (eq (toLower code) "female"))}}
+  "female"
+{{else if (or (eq (toLower code) "un") (eq (toLower code) "other"))}}
+  "other"
+{{else if (or (eq (toLower code) "unk") (eq (toLower code) "unknown"))}}
+  "unknown"
+{{else}}
+  "unknown"
+{{/if}}

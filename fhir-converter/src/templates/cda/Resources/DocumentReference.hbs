@@ -1,0 +1,28 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "DocumentReference",
+        "id":"{{ID}}",
+        "type":
+        	{{#with (elementAt (toArray docref.ClinicalDocument.code) 0)}}
+        		{{>DataType/CodeableConcept.hbs code=this}},
+           	{{/with}},
+        "date":"{{formatAsDateTime (now)}}",
+        "status":"current",
+        "content":
+        [
+            {
+                "attachment":
+                {
+                    "contentType":"text/plain",
+                    "data":"{{{gzip docref._originalData 'utf8' 'base64'}}}",
+                    "hash":"{{{base64Encode (sha1Hash (gzip docref._originalData 'utf8' 'base64')) 'hex'}}}",
+                },
+            },
+        ],
+    },
+    "request":{
+        "method":"PUT",
+        "url":"DocumentReference/{{ID}}",
+    },
+},

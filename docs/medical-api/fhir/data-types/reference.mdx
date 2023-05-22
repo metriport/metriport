@@ -1,0 +1,15 @@
+---
+title: "Reference"
+description: "Base StructureDefinition for Reference Type: A reference from one resource to another."
+---
+
+## Properties
+
+| Name       | Required | Type                                                  | Description                                            |
+| ---------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id         | No       | string                                                | Unique id for inter-element referencing                |
+| extension  | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| reference  | No       | string                                                | Literal reference, Relative, internal or absolute URL  |
+| type       | No       | uri                                                   | Type the reference refers to (e.g. "Patient")          |
+| identifier | No       | [Identifier](/medical-api/fhir/data-types/identifier) | Logical reference, when literal reference is not known |
+| display    | No       | string                                                | Text alternative for the resource                      |

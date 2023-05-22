@@ -1,0 +1,43 @@
+"identifier":
+[
+    {
+        "value":"{{XCN-1}}",
+        "type":
+        {
+            "coding":
+            [
+                {
+                    "code":{{>DataType/_code.hbs mapping="CodeSystem/IDType.hbs" inCode=XCN-13 }},
+                },
+            ],
+        },
+    },
+],
+"name":
+[
+    {
+        "family":"{{XCN-2-1}}",
+        "given":
+        [
+            "{{XCN-4}}",
+        ],
+        "suffix":
+        [
+            "{{XCN-5}}",
+            "{{XCN-7}}",
+            "{{XCN-21}}",
+        ],
+        "prefix":
+        [
+            "{{XCN-6}}",
+        ],
+        "use":{{>DataType/_string.hbs mapping="CodeSystem/NameType.hbs" inCode=XCN-10 }},
+        "period":
+        {
+            "start":"{{formatAsDateTime XCN-17-1}}",
+            "start":"{{formatAsDateTime XCN-19}}",
+            "end":"{{formatAsDateTime XCN-17-2}}",
+            "end":"{{formatAsDateTime XCN-20}}",
+        },
+    },
+],

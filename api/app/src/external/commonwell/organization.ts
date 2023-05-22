@@ -101,7 +101,7 @@ export const update = async (org: Organization): Promise<void> => {
   );
   try {
     const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
-    debug(`resp respUpdate: ${JSON.stringify(respUpdate, null, 2)}`);
+    debug(`resp respUpdate: `, () => JSON.stringify(respUpdate, null, 2));
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {

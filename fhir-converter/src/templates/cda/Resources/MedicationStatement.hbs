@@ -1,0 +1,37 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "MedicationStatement",
+        "id":"{{ID}}",
+        "identifier":
+  		[
+        	{{#each (toArray medicationStatement.id)}}
+            	{{>DataType/Identifier.hbs id=this}}
+            {{/each}}
+        ],
+        "status":{{>ValueSet/MedicationStatementStatus.hbs code=medicationStatement.statusCode.code}},
+        "effectivePeriod":
+        {
+            "start":"{{formatAsDateTime medicationStatement.effectiveTime.low.value}}",
+            "end":"{{formatAsDateTime medicationStatement.effectiveTime.high.value}}"
+        },
+        "dosage":
+        [
+            {
+                "doseAndRate": [
+                {
+                    "doseQuantity":
+                    {
+                        "value":{{medicationStatement.doseQuantity.value}},
+                        "unit":"{{medicationStatement.doseQuantity.unit}}"
+                    }
+                },
+                ],
+            },
+        ]
+    },
+    "request":{
+        "method":"PUT",
+        "url":"MedicationStatement/{{ID}}",
+    },
+},

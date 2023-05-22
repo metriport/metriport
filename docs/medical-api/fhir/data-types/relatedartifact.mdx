@@ -1,0 +1,18 @@
+---
+title: "RelatedArtifact"
+description: "Base StructureDefinition for RelatedArtifact Type: Related artifacts such as additional documentation, justification, or bibliographic references."
+---
+
+## Properties
+
+| Name      | Required | Type                                                  | Description                                                                                                  |
+| --------- | -------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| id        | No       | string                                                | Unique id for inter-element referencing                                                                      |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations                                                                |
+| type      | Yes      | code                                                  | documentation / justification / citation / predecessor / successor / derived-from / depends-on / composed-of |
+| label     | No       | string                                                | Short label                                                                                                  |
+| display   | No       | string                                                | Brief description of the related artifact                                                                    |
+| citation  | No       | markdown                                              | Bibliographic citation for the artifact                                                                      |
+| url       | No       | url                                                   | Where the artifact can be accessed                                                                           |
+| document  | No       | [Attachment](/medical-api/fhir/data-types/attachment) | What document is being referenced                                                                            |
+| resource  | No       | canonical                                             | What resource is being referenced                                                                            |

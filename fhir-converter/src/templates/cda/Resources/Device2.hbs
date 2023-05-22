@@ -1,0 +1,25 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Device",
+        "id":"{{ID}}",
+        "identifier":
+  		[
+        	{{#each (toArray deviceEntry.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+		"type":
+        {{#if deviceEntry.code}}
+            {{>DataType/CodeableConcept.hbs code=deviceEntry.code}},
+        {{else}}
+            {{>DataType/CodeableConcept.hbs code=deviceEntry.participant.participantRole.playingDevice.code}},
+        {{/if}}
+
+        "manufacturer":"{{deviceEntry.participant.participantRole.scopingEntity.desc._}}",
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Device/{{ID}}",
+    },
+},

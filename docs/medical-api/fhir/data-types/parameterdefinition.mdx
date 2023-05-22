@@ -1,0 +1,18 @@
+---
+title: "ParameterDefinition"
+description: "Base StructureDefinition for ParameterDefinition Type: The parameters to the module. This collection specifies both the input and output parameters. Input parameters are provided by the caller as part of the $evaluate operation. Output parameters are included in the GuidanceResponse."
+---
+
+## Properties
+
+| Name          | Required | Type                                                  | Description                                   |
+| ------------- | -------- | ----------------------------------------------------- | --------------------------------------------- |
+| id            | No       | string                                                | Unique id for inter-element referencing       |
+| extension     | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations |
+| name          | No       | code                                                  | Name used to access the parameter value       |
+| use           | Yes      | code                                                  | in / out                                      |
+| min           | No       | integer                                               | Minimum cardinality                           |
+| max           | No       | string                                                | Maximum cardinality (a number of \*)          |
+| documentation | No       | string                                                | A brief description of the parameter          |
+| type          | Yes      | code                                                  | What type of value                            |
+| profile       | No       | canonical                                             | What profile the value is expected to be      |

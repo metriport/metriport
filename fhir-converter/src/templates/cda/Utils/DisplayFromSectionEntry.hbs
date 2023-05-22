@@ -1,0 +1,17 @@
+{{#with (evaluate 'Utils/ResourceTypeFromSection.hbs' section=section)}}
+    {{#if (eq this.resourceType 'AllergyIntolerance')}}
+    	{{#each (toArray ../entry.act.entryRelationship)}}
+        	{{#if (contains (toJsonString this.observation.templateId) '"2.16.840.1.113883.10.20.22.4.7"')}}
+                "display":"{{this.observation.participant.participantRole.playingEntity.code.displayName}}",
+                "display":"{{this.observation.participant.participantRole.playingEntity.code.translation.displayName}}",
+            {{/if}}
+        {{/each}}
+	{{else if (eq this.resourceType 'Observation')}}
+    	"display":"{{../entry.observation.code.originalText._}}",
+        "display":"{{../entry.observation.code.displayName}}",
+        "display":"{{../entry.observation.code.translation.displayName}}",
+    {{/if}}   
+{{/with}}
+
+
+

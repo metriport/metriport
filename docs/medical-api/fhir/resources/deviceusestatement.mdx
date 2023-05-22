@@ -1,0 +1,46 @@
+---
+title: "DeviceUseStatement"
+description: "A record of a device being used by a patient where the record is the result of a report from the patient or another clinician."
+---
+
+## Properties
+
+| Name            | Required | Type                                                                                                                                                                                                                                                                                                                                                                                         | Description                               |
+| --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| identifier      | No       | [Identifier](/medical-api/fhir/data-types/identifier)[]                                                                                                                                                                                                                                                                                                                                      | External identifier for this record       |
+| basedOn         | No       | Reference&lt;[ServiceRequest](/medical-api/fhir/resources/servicerequest)&gt;[]                                                                                                                                                                                                                                                                                                              | Fulfills plan, proposal or order          |
+| status          | Yes      | code                                                                                                                                                                                                                                                                                                                                                                                         | active / completed / entered-in-error +   |
+| subject         | Yes      | Reference&lt;[Patient](/medical-api/fhir/resources/patient) / [Group](/medical-api/fhir/resources/group)&gt;                                                                                                                                                                                                                                                                                 | Patient using device                      |
+| derivedFrom     | No       | Reference&lt;[ServiceRequest](/medical-api/fhir/resources/servicerequest) / [Procedure](/medical-api/fhir/resources/procedure) / [Claim](/medical-api/fhir/resources/claim) / [Observation](/medical-api/fhir/resources/observation) / [QuestionnaireResponse](/medical-api/fhir/resources/questionnaireresponse) / [DocumentReference](/medical-api/fhir/resources/documentreference)&gt;[] | Supporting information                    |
+| timing[x]       | No       | [Timing](/medical-api/fhir/data-types/timing), [Period](/medical-api/fhir/data-types/period), dateTime                                                                                                                                                                                                                                                                                       | How often the device was used             |
+| recordedOn      | No       | dateTime                                                                                                                                                                                                                                                                                                                                                                                     | When statement was recorded               |
+| source          | No       | Reference&lt;[Patient](/medical-api/fhir/resources/patient) / [Practitioner](/medical-api/fhir/resources/practitioner) / [PractitionerRole](/medical-api/fhir/resources/practitionerrole) / [RelatedPerson](/medical-api/fhir/resources/relatedperson)&gt;                                                                                                                                   | Who made the statement                    |
+| device          | Yes      | Reference&lt;[Device](/medical-api/fhir/resources/device)&gt;                                                                                                                                                                                                                                                                                                                                | Reference to device used                  |
+| reasonCode      | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                                                                                                                                                                                                                                                                                                                            | Why device was used                       |
+| reasonReference | No       | Reference&lt;[Condition](/medical-api/fhir/resources/condition) / [Observation](/medical-api/fhir/resources/observation) / [DiagnosticReport](/medical-api/fhir/resources/diagnosticreport) / [DocumentReference](/medical-api/fhir/resources/documentreference) / [Media](/medical-api/fhir/resources/media)&gt;[]                                                                          | Why was DeviceUseStatement performed?     |
+| bodySite        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                                                                                                                                                                                                                                                                              | Target body site                          |
+| note            | No       | [Annotation](/medical-api/fhir/data-types/annotation)[]                                                                                                                                                                                                                                                                                                                                      | Addition details (comments, instructions) |
+
+## Search Parameters
+
+| Name       | Type      | Description                   | Expression                    |
+| ---------- | --------- | ----------------------------- | ----------------------------- |
+| patient    | reference | Search by subject - a patient | DeviceUseStatement.subject    |
+| device     | reference | Search by device              | DeviceUseStatement.device     |
+| identifier | token     | Search by identifier          | DeviceUseStatement.identifier |
+| subject    | reference | Search by subject             | DeviceUseStatement.subject    |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [DeviceUseStatement](https://www.hl7.org/fhir/StructureDefinition/DeviceUseStatement).

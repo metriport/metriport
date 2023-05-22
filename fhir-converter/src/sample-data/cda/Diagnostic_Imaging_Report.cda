@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<!--
+ Title:        Diagnostic Imaging Report
+ Filename:     C-CDA_R2_Diagnostic_Imaging_Report.xml
+ Created by:   Lantana Consulting Group, LLC
+ 
+ $LastChangedDate: 2014-11-12 23:25:09 -0500 (Wed, 12 Nov 2014) $
+  
+ ********************************************************
+ Disclaimer: This sample file contains representative data elements to represent a Diagnostic Imaging Report. 
+ The file depicts a fictional character's health data. Any resemblance to a real person is coincidental. 
+ To illustrate as many data elements as possible, the clinical scenario may not be plausible. 
+ The data in this sample file is not intended to represent real patients, people or clinical events. 
+ This sample is designed to be used in conjunction with the C-CDA Clinical Notes Implementation Guide.
+ ********************************************************
+ -->
+<ClinicalDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:hl7-org:v3" xmlns:mif="urn:hl7-org:v3/mif" xmlns:cda="urn:hl7-org:v3" xmlns:sdtc="urn:hl7-org:sdtc">
+	<!-- ** CDA Header ** -->
+	<realmCode code="US"/>
+	<typeId root="2.16.840.1.113883.1.3" extension="POCD_HD000040"/>
+	<!-- US General Header Template -->
+	<templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2014-06-09"/>
+	<!-- Diagnostic Imaging Report Template -->
+	<templateId root="2.16.840.1.113883.10.20.22.1.5" extension="2014-06-09"/>
+	<id root="2.16.840.1.113883.19.4.27" extension="20060828170821659"/>
+	<code code="18748-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Diagnostic Imaging Report"/>
+	<title>Chest X-Ray, PA and LAT View</title>
+	<effectiveTime value="20050329171504-0500"/>
+	<confidentialityCode code="N" codeSystem="2.16.840.1.113883.5.25"/>
+	<languageCode code="en-US"/>
+	<setId extension="111199021" root="2.16.840.1.113883.19"/>
+	<versionNumber value="1"/>
+	<recordTarget>
+		<!--NEW CONF per base CDA - patientRole SHALL be present of [1..*]-->
+		<patientRole>
+			<id extension="12345" root="2.16.840.1.113883.19.5"/>
+			<addr use="HP">
+				<streetAddressLine>17 Daws Rd.</streetAddressLine>
+				<city>Blue Bell</city>
+				<state>MA</state>
+				<postalCode>02368</postalCode>
+				<country>USA</country>
+			</addr>
+			<telecom value="tel:(781)555-1212" use="HP"/>
+			<patient>
+				<name use="L">
+					<given>Adam</given>
+					<family>Everyman</family>
+				</name>
+				<administrativeGenderCode code="M" codeSystem="2.16.840.1.113883.5.1"/>
+				<birthTime value="19541125"/>
+				<maritalStatusCode code="M" displayName="Married" codeSystem="2.16.840.1.113883.5.2" codeSystemName="MaritalStatusCode"/>
+				<religiousAffiliationCode code="1013" displayName="Christian" codeSystemName="HL7 Religious Affiliation " codeSystem="2.16.840.1.113883.5.1076"/>
+				<raceCode code="2106-3" displayName="White" codeSystem="2.16.840.1.113883.6.238" codeSystemName="Race &amp; Ethnicity - CDC"/>
+				<ethnicGroupCode code="2186-5" displayName="Not Hispanic or Latino" codeSystem="2.16.840.1.113883.6.238" codeSystemName="Race &amp; Ethnicity - CDC"/>
+				<guardian>
+					<code code="GRFTH" displayName="Grandfather" codeSystem="2.16.840.1.113883.5.111" codeSystemName="HL7 Role code"/>
+					<addr use="HP">
+						<streetAddressLine>17 Daws Rd.</streetAddressLine>
+						<city>Blue Bell</city>
+						<state>MA</state>
+						<postalCode>02368</postalCode>
+						<country>USA</country>
+					</addr>
+					<telecom value="tel:(781)555-1212" use="HP"/>
+					<guardianPerson>
+						<name>
+							<given>Ralph</given>
+							<family>Relative</family>
+						</name>
+					</guardianPerson>
+				</guardian>
+				<birthplace>
+					<place>
+						<addr>
+							<state>MA</state>
+							<postalCode>02368</postalCode>
+							<country>USA</country>
+						</addr>
+					</place>
+				</birthplace>
+				<languageCommunication>
+					<languageCode code="fr-CN"/>
+					<modeCode code="RWR" displayName="Received Written" codeSystem="2.16.840.1.113883.5.60" codeSystemName="LanguageAbilityMode"/>
+					<proficiencyLevelCode code="G" displayName="Good" codeSystem="2.16.840.1.113883.5.61" codeSystemName="LanguageAbilityProficiency"/>
+					<preferenceInd value="true"/>
+				</languageCommunication>
+			</patient>
+			<providerOrganization>
+				<id root="2.16.840.1.113883.19.5"/>
+				<name>Good Health Clinic</name>
+				<telecom value="tel:(781)555-1212" use="WP"/>
+				<addr>
+					<streetAddressLine>21 North Ave</streetAddressLine>
+					<city>Burlington</city>
+					<state>MA</state>
+					<postalCode>02368</postalCode>
+					<country>USA</country>
+				</addr>
+			</providerOrganization>
+		</patientRole>
+	</recordTarget>
+	<author>
+		<time value="20050329224411-0500"/>
+		<assignedAuthor>
+			<id extension="KP00017" root="2.16.840.1.113883.4.6"/>
+			<code code="200000000X" codeSystem="2.16.840.1.113883.6.101" displayName="Allopathic &amp; Osteopathic Physicians"/>
+			<addr>
+				<streetAddressLine>21 North Ave.</streetAddressLine>
+				<city>Burlington</city>
+				<state>MA</state>
+				<postalCode>02368</postalCode>
+				<country>USA</country>
+			</addr>
+			<telecom value="tel:(555)555-1003" use="WP"/>
+			<assignedPerson>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</assignedPerson>
+		</assignedAuthor>
+	</author>
+	<dataEnterer>
+		<assignedEntity>
+			<id root="2.16.840.1.113883.19.5" extension="43252"/>
+			<addr>
+				<streetAddressLine>21 North Ave.</streetAddressLine>
+				<city>Burlington</city>
+				<state>MA</state>
+				<postalCode>02368</postalCode>
+				<country>USA</country>
+			</addr>
+			<telecom value="tel:(555)555-1003" use="WP"/>
+			<assignedPerson>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</assignedPerson>
+		</assignedEntity>
+	</dataEnterer>
+	<custodian>
+		<assignedCustodian>
+			<representedCustodianOrganization>
+				<id root="2.16.840.1.113883.19.5"/>
+				<name>Good Health Clinic</name>
+				<telecom value="tel:(555)555-1212" use="WP"/>
+				<addr use="WP">
+					<streetAddressLine>17 Daws Rd.</streetAddressLine>
+					<city>Blue Bell</city>
+					<state>MA</state>
+					<postalCode>02368</postalCode>
+					<country>USA</country>
+				</addr>
+			</representedCustodianOrganization>
+		</assignedCustodian>
+	</custodian>
+	<informationRecipient>
+		<intendedRecipient>
+			<informationRecipient>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</informationRecipient>
+			<receivedOrganization>
+				<name>Good Health Clinic</name>
+			</receivedOrganization>
+		</intendedRecipient>
+	</informationRecipient>
+	<legalAuthenticator>
+		<time value="20050329224411-0500"/>
+		<signatureCode code="S"/>
+		<assignedEntity>
+			<id extension="KP00017" root="2.16.840.1.113883.19.5"/>
+			<addr>
+				<streetAddressLine>21 North Ave.</streetAddressLine>
+				<city>Burlington</city>
+				<state>MA</state>
+				<postalCode>02368</postalCode>
+				<country>USA</country>
+			</addr>
+			<telecom value="tel:(555)555-1003" use="WP"/>
+			<assignedPerson>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</assignedPerson>
+		</assignedEntity>
+	</legalAuthenticator>
+	<authenticator>
+		<time value="20050329224411-0500"/>
+		<signatureCode code="S"/>
+		<assignedEntity>
+			<id extension="KP00017" root="2.16.840.1.113883.19.5"/>
+			<addr>
+				<streetAddressLine>21 North Ave.</streetAddressLine>
+				<city>Burlington</city>
+				<state>MA</state>
+				<postalCode>02368</postalCode>
+				<country>USA</country>
+			</addr>
+			<telecom value="tel:(555)555-1003" use="WP"/>
+			<assignedPerson>
+				<name>
+					<given>Henry</given>
+					<family>Seven</family>
+				</name>
+			</assignedPerson>
+		</assignedEntity>
+	</authenticator>
+	<participant typeCode="REF">
+		<associatedEntity classCode="PROV">
+			<id nullFlavor="NI"/>
+			<addr nullFlavor="NI"/>
+			<telecom nullFlavor="NI"/>
+			<associatedPerson>
+				<name>
+					<given>Amanda</given>
+					<family>Assigned</family>
+					<suffix>MD</suffix>
+				</name>
+			</associatedPerson>
+		</associatedEntity>
+	</participant>
+	<inFulfillmentOf>
+		<order>
+			<id extension="10523475" root="1.2.840.113619.2.62.994044785528.27"/>
+			<!--  {root}.27 of accession number added based on organizational policy (not present in SR sample document because root is not specified by DICOM)-->
+			<id extension="123452" root="1.2.840.113619.2.62.994044785528.28"/>
+			<!--  {root}.28 of filler order number added based on organizational policy (not present in SR sample document because root is not specified by DICOM)-->
+			<id extension="123451" root="1.2.840.113619.2.62.994044785528.29"/>
+			<!--  {root}.29 of placer order number added based on organizational policy (not present in SR sample document because root is not specified by DICOM)-->
+		</order>
+	</inFulfillmentOf>
+	<documentationOf>
+		<serviceEvent classCode="ACT">
+			<id root="1.2.840.113619.2.62.994044785528.114289542805"/>
+			<!-- study instance UID -->
+			<id extension="123453" root="1.2.840.113619.2.62.994044785528.26"/>
+			<!-- {root}.26 of requested procedure ID added based on organizational policy (not present in SR sample document because root is not specified by DICOM)-->
+			<code code="70544" displayName="Magnetic resonance angiography, head; without contrast material(s)" codeSystem="2.16.840.1.113883.6.12" codeSystemName="CPT4"/>
+			<effectiveTime>
+				<low value="20060823222400"/>
+			</effectiveTime>
+			<performer typeCode="PRF">
+				<templateId root="2.16.840.1.113883.10.20.6.2.1"/>
+				<assignedEntity>
+					<id extension="121008" root="2.16.840.1.113883.19.5"/>
+				  <code code="2085R0202X" codeSystem="2.16.840.1.113883.6.101" codeSystemName="Healthcare Provider Taxonomy (HIPAA)" displayName="Diagnostic Radiology"/>
+					<addr nullFlavor="NI"/>
+					<telecom nullFlavor="NI"/>
+					<assignedPerson>
+						<name>
+							<given>Christine</given>
+							<family>Cure</family>
+							<suffix>MD</suffix>
+						</name>
+					</assignedPerson>
+				</assignedEntity>
+			</performer>
+		</serviceEvent>
+	</documentationOf>
+	<!-- transformation of a DICOM SR -->
+	<relatedDocument typeCode="XFRM">
+		<parentDocument>
+			<!-- SOP Instance UID (0008,0018) of SR sample document-->
+			<id root="1.2.840.113619.2.62.994044785528.20060823.200608232232322.9"/>
+		</parentDocument>
+	</relatedDocument>
+	<componentOf>
+		<encompassingEncounter>
+			<id extension="9937012" root="1.3.6.4.1.4.1.2835.12"/>
+			<effectiveTime value="20060828170821"/>
+			<encounterParticipant typeCode="ATND">
+				<templateId root="2.16.840.1.113883.10.20.6.2.2" extension="2014-06-09"/>
+				<assignedEntity>
+					<id extension="44444444" root="2.16.840.1.113883.4.6"/>
+					<code code="208D00000X" codeSystem="2.16.840.1.113883.6.101" codeSystemName="Healthcare Provider Taxonomy (HIPAA)" displayName="General Practice"/>
+					<addr nullFlavor="NI"/>
+					<telecom nullFlavor="NI"/>
+					<assignedPerson>
+						<name>
+							<prefix>Dr.</prefix>
+							<given>Fay</given>
+							<family>Family</family>
+						</name>
+					</assignedPerson>
+				</assignedEntity>
+			</encounterParticipant>
+		</encompassingEncounter>
+	</componentOf>
+	<component>
+		<structuredBody>
+			<component>
+				<!--
+**********************************************************************
+                     DICOM Object Catalog Section
+**********************************************************************
+  -->
+				<section classCode="DOCSECT" moodCode="EVN">
+					<templateId root="2.16.840.1.113883.10.20.6.1.1"/>
+					<code code="121181" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="DICOM Object Catalog"/>
+					<entry>
+						<!--
+**********************************************************************
+                     Study
+**********************************************************************
+  -->
+						<act classCode="ACT" moodCode="EVN">
+							<templateId root="2.16.840.1.113883.10.20.6.2.6"/>
+							<id root="1.2.840.113619.2.62.994044785528.114289542805"/>
+							<code code="113014" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Study"/>
+							<effectiveTime value="20060828170821"/>
+							<!--
+                *****************************************************************
+                      Series
+                *****************************************************************
+              -->
+							<entryRelationship typeCode="COMP">
+								<act classCode="ACT" moodCode="EVN">
+									<templateId root="2.16.840.1.113883.10.20.22.4.63"/>
+									<id root="1.2.840.113619.2.62.994044785528.20060823223142485051"/>
+									<code code="113015" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Series">
+										<qualifier>
+											<name code="121139" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Modality"> </name>
+											<value code="CR" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Computed Radiography"> </value>
+										</qualifier>
+									</code>
+									<effectiveTime value="20060828170821"/>
+									<!--
+                  *****************************************************************
+                  SopInstance UID
+                  *****************************************************************
+                  -->
+									<!--  2 References (chest PA and LAT) -->
+									<entryRelationship typeCode="COMP">
+										<observation classCode="DGIMG" moodCode="EVN">
+											<templateId root="2.16.840.1.113883.10.20.6.2.8"/>
+											<id root="1.2.840.113619.2.62.994044785528.20060823.200608232232322.3"/>
+											<code code="1.2.840.10008.5.1.4.1.1.1" codeSystem="1.2.840.10008.2.6.1" codeSystemName="DCMUID" displayName="Computed Radiography Image Storage"> </code>
+											<text mediaType="application/dicom">
+												<reference value="http://www.example.org/wado?requestType=WADO&amp;studyUID=1.2.840.113619.2.62.994044785528.114289542805&amp;seriesUID=1.2.840.113619.2.62.994044785528.20060823223142485051&amp;objectUID=1.2.840.113619.2.62.994044785528.20060823.200608232232322.3&amp;contentType=application/dicom"/>
+												<!--reference to image 1 (PA) -->
+											</text>
+											<effectiveTime value="20060823223232"/>
+										</observation>
+									</entryRelationship>
+									<entryRelationship typeCode="COMP">
+										<observation classCode="DGIMG" moodCode="EVN">
+											<templateId root="2.16.840.1.113883.10.20.6.2.8"/>
+											<id root="1.2.840.113619.2.62.994044785528.20060823.200608232231422.3"/>
+											<code code="1.2.840.10008.5.1.4.1.1.1" codeSystem="1.2.840.10008.2.6.1" codeSystemName="DCMUID" displayName="Computed Radiography Image Storage"> </code>
+											<text mediaType="application/dicom">
+												<reference value="http://www.example.org/wado?requestType=WADO&amp;studyUID=1.2.840.113619.2.62.994044785528.114289542805&amp;seriesUID=1.2.840.113619.2.62.994044785528.20060823223142485051&amp;objectUID=1.2.840.113619.2.62.994044785528.20060823.200608232231422.3&amp;contentType=application/dicom"/>
+												<!--reference to image 2 (LAT) -->
+											</text>
+											<effectiveTime value="20060823223142"/>
+										</observation>
+									</entryRelationship>
+								</act>
+							</entryRelationship>
+						</act>
+					</entry>
+				</section>
+				<!--
+**********************************************************************
+                    End of  DICOM Object Catalog Section
+**********************************************************************
+  -->
+			</component>
+			<component>
+				<!--
+**********************************************************************
+Reason for study Section
+**********************************************************************
+The original DICOM SR document that is mapped does not contain a "Indications for Procedure" section. The attribute value "Reason for the Requested Procedure"  (0040,1002) within the Referenced Request Sequence (0040,A370) of the SR header has been mapped under the assumption that the header attribute value has been displayed to and included by the legal authenticator.
+-->
+				<section>
+					<code code="121109" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Indications for Procedure"/>
+					<title>Indications for Procedure</title>
+					<text>Suspected lung tumor</text>
+				</section>
+				<!--
+**********************************************************************
+End of Reason for study Section
+**********************************************************************
+-->
+			</component>
+			<component>
+				<!--
+**********************************************************************
+                   History Section
+**********************************************************************
+  -->
+				<section>
+					<code code="11329-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History"/>
+					<title>History</title>
+					<text>
+						<paragraph>
+							<caption>History</caption>
+							<content ID="Fndng1">Sore throat.</content>
+						</paragraph>
+					</text>
+					<entry>
+						<!-- History report element (TEXT) -->
+						<observation classCode="OBS" moodCode="EVN">
+							<templateId root="2.16.840.1.113883.10.20.6.2.12"/>
+							<code code="121060" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="History"/>
+							<effectiveTime value="20060828170821"/>
+							<value xsi:type="ED">
+								<reference value="#Fndng1"/>
+							</value>
+						</observation>
+					</entry>
+				</section>
+				<!--
+**********************************************************************
+                    End of History Section
+**********************************************************************
+  -->
+			</component>
+			<component>
+				<!--
+**********************************************************************
+                     Findings Section
+**********************************************************************
+  -->
+				<section>
+					<templateId root="2.16.840.1.113883.10.20.6.1.2"/>
+					<code code="121070" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Findings"/>
+					<title>Findings</title>
+					<text>
+						<paragraph>
+							<caption>Finding</caption>
+							<content ID="Fndng2">The cardiomediastinum is within normal limits. The trachea is midline. The previously described opacity at the
+                medial right lung base has cleared. There are no new infiltrates. There is a new round density at the left hilus, superiorly (diameter
+                about 45mm). A CT scan is recommended for further evaluation. The pleural spaces are clear. The visualized musculoskeletal structures
+                and the upper abdomen are stable and unremarkable.</content>
+						</paragraph>
+						<paragraph>
+							<caption>Diameter</caption>
+							<content ID="Diam2">45mm</content>
+						</paragraph>
+						<paragraph>
+							<caption>Source of Measurement</caption>
+							<content ID="SrceOfMeas2">
+								<linkHtml href="http://www.example.org/wado?requestType=WADO&amp;studyUID=1.2.840.113619.2.62.994044785528.114289542805&amp;seriesUID=1.2.840.113619.2.62.994044785528.20060823223142485051&amp;objectUID=1.2.840.113619.2.62.994044785528.20060823.200608232232322.3&amp;contentType=application/dicom">Chest_PA </linkHtml>
+							</content>
+						</paragraph>
+					</text>
+					<entry>
+						<observation classCode="OBS" moodCode="EVN">
+							<!-- Text Observation -->
+							<templateId root="2.16.840.1.113883.10.20.6.2.12"/>
+							<code code="121071" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Finding"/>
+							<effectiveTime value="20060828170821"/>
+							<value xsi:type="ED">
+								<reference value="#Fndng2"/>
+							</value>
+							<!-- inferred from measurement -->
+							<entryRelationship typeCode="SPRT">
+								<observation classCode="OBS" moodCode="EVN">
+									<templateId root="2.16.840.1.113883.10.20.6.2.14"/>
+									<code code="246120007" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Nodule size">
+										<originalText>
+											<reference value="#Diam2"/>
+										</originalText>
+									</code>
+									<!-- no DICOM attribute  <statusCode code="completed"/> -->
+									<effectiveTime value="20060823223912"/>
+									<value xsi:type="PQ" value="45" unit="mm">
+										<translation code="mm" codeSystem="2.16.840.1.113883.6.8" codeSystemName="UCUM" codeSystemVersion="1.5"/>
+									</value>
+									<!-- inferred from image -->
+									<entryRelationship typeCode="SUBJ">
+										<observation classCode="DGIMG" moodCode="EVN">
+											<templateId root="2.16.840.1.113883.10.20.6.2.8"/>
+											<!-- (0008,1155) Referenced SOP Instance UID-->
+											<id root="1.2.840.113619.2.62.994044785528.20060823.200608232232322.3"/>
+											<!-- (0008,1150) Referenced SOP Class UID -->
+											<code code="1.2.840.10008.5.1.4.1.1.1" codeSystem="1.2.840.10008.2.6.1" codeSystemName="DCMUID" displayName="Computed Radiography Image Storage"> </code>
+											<text mediaType="application/dicom">
+												<!--reference to CR DICOM image (PA view) -->
+												<reference value="http://www.example.org/wado?requestType=WADO&amp;studyUID=1.2.840.113619.2.62.994044785528.114289542805&amp;seriesUID=1.2.840.113619.2.62.994044785528.20060823223142485051&amp;objectUID=1.2.840.113619.2.62.994044785528.20060823.200608232232322.3&amp;contentType=application/dicom"/>
+											</text>
+											<effectiveTime value="20060823223232"/>
+											<!-- Referenced Frames -->
+											<entryRelationship typeCode="COMP">
+												<observation classCode="ROIBND" moodCode="EVN">
+													<templateId root="2.16.840.1.113883.10.20.6.2.10"/>
+													<code code="121190" codeSystem="1.2.840.10008.2.16.4" displayName="Referenced Frames"/>
+													<entryRelationship typeCode="COMP">
+														<!-- Boundary Observation -->
+														<observation classCode="OBS" moodCode="EVN">
+															<templateId root="2.16.840.1.113883.10.20.6.2.11"/>
+															<code code="113036" codeSystem="1.2.840.10008.2.16.4" displayName="Group of Frames for Display"/>
+															<value xsi:type="INT" value="1"/>
+														</observation>
+													</entryRelationship>
+												</observation>
+											</entryRelationship>
+											<!-- Purpose of Reference -->
+											<entryRelationship typeCode="RSON">
+												<observation classCode="OBS" moodCode="EVN">
+													<templateId root="2.16.840.1.113883.10.20.6.2.9"/>
+													<code code="ASSERTION" codeSystem="2.16.840.1.113883.5.4"/>
+													<value xsi:type="CD" code="121112" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Source of Measurement">
+														<originalText>
+															<reference value="#SrceOfMeas2"/>
+														</originalText>
+													</value>
+												</observation>
+											</entryRelationship>
+										</observation>
+									</entryRelationship>
+								</observation>
+							</entryRelationship>
+						</observation>
+					</entry>
+				</section>
+				<!--
+**********************************************************************
+                    End of Findings Section
+**********************************************************************
+  -->
+			</component>
+			<component>
+				<!--
+**********************************************************************
+                    Impressions Section
+**********************************************************************
+  -->
+				<section>
+					<code code="121072" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Impressions"/>
+					<title>Impressions</title>
+					<text>
+						<paragraph>
+							<caption>Impression</caption>
+							<content ID="Fndng3">No acute cardiopulmonary process. Round density in left superior hilus, further evaluation with CT is recommended
+                as underlying malignancy is not excluded.</content>
+						</paragraph>
+					</text>
+					<entry>
+						<!-- Impression report element (TEXT) -->
+						<observation classCode="OBS" moodCode="EVN">
+							<!-- Text Observation -->
+							<templateId root="2.16.840.1.113883.10.20.6.2.12"/>
+							<code code="121073" codeSystem="1.2.840.10008.2.16.4" codeSystemName="DCM" displayName="Impression"/>
+							<effectiveTime value="20060828170821"/>
+							<value xsi:type="ED">
+								<reference value="#Fndng3"/>
+							</value>
+						</observation>
+					</entry>
+					<entry>
+						<act moodCode="EVN" classCode="ACT">
+							<templateId root="2.16.840.1.113883.10.20.6.2.5"/>
+							<!-- Procedure Context template -->
+							<code code="70548" displayName="Magnetic resonance angiography, head; with contrast material(s)" codeSystem="2.16.840.1.113883.6.12" codeSystemName="CPT4"/>
+							<!-- Note: This code is slightly different than the code used in the header documentationOf and overrides it, which is what this entry is for. -->
+							<effectiveTime value="20060823222400"/>
+						</act>
+					</entry>
+				</section>
+				<!--
+**********************************************************************
+                    End of Impressions Section
+**********************************************************************
+  -->
+			</component>
+		</structuredBody>
+	</component>
+</ClinicalDocument>

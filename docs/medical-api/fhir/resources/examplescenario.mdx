@@ -1,0 +1,119 @@
+---
+title: "ExampleScenario"
+description: "Example of workflow instance."
+---
+
+## Properties
+
+| Name                | Required | Type                                                              | Description                                                                            |
+| ------------------- | -------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| url                 | No       | uri                                                               | Canonical identifier for this example scenario, represented as a URI (globally unique) |
+| identifier          | No       | [Identifier](/medical-api/fhir/data-types/identifier)[]           | Additional identifier for the example scenario                                         |
+| version             | No       | string                                                            | Business version of the example scenario                                               |
+| name                | No       | string                                                            | Name for this example scenario (computer friendly)                                     |
+| status              | Yes      | code                                                              | draft / active / retired / unknown                                                     |
+| experimental        | No       | boolean                                                           | For testing purposes, not real usage                                                   |
+| date                | No       | dateTime                                                          | Date last changed                                                                      |
+| publisher           | No       | string                                                            | Name of the publisher (organization or individual)                                     |
+| contact             | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[]     | Contact details for the publisher                                                      |
+| useContext          | No       | [UsageContext](/medical-api/fhir/data-types/usagecontext)[]       | The context that the content is intended to support                                    |
+| jurisdiction        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[] | Intended jurisdiction for example scenario (if applicable)                             |
+| copyright           | No       | markdown                                                          | Use and/or publishing restrictions                                                     |
+| purpose             | No       | markdown                                                          | The purpose of the example, e.g. to illustrate a scenario                              |
+| actor               | No       | ExampleScenarioActor                                              | Actor participating in the resource                                                    |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                 |
+| - actorId           | Yes      | string                                                            | ID or acronym of the actor                                                             |
+| - type              | Yes      | code                                                              | person / entity                                                                        |
+| - name              | No       | string                                                            | The name of the actor as shown in the page                                             |
+| - description       | No       | markdown                                                          | The description of the actor                                                           |
+| instance            | No       | ExampleScenarioInstance                                           | Each resource and each version that is present in the workflow                         |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                 |
+| - resourceId        | Yes      | string                                                            | The id of the resource for referencing                                                 |
+| - resourceType      | Yes      | code                                                              | The type of the resource                                                               |
+| - name              | No       | string                                                            | A short name for the resource instance                                                 |
+| - description       | No       | markdown                                                          | Human-friendly description of the resource instance                                    |
+| - version           | No       | ExampleScenarioInstanceVersion                                    | A specific version of the resource                                                     |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                 |
+| - versionId         | Yes      | string                                                            | The identifier of a specific version of a resource                                     |
+| - description       | Yes      | markdown                                                          | The description of the resource version                                                |
+| - containedInstance | No       | ExampleScenarioInstanceContainedInstance                          | Resources contained in the instance                                                    |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                 |
+| - resourceId        | Yes      | string                                                            | Each resource contained in the instance                                                |
+| - versionId         | No       | string                                                            | A specific version of a resource contained in the instance                             |
+| process             | No       | ExampleScenarioProcess                                            | Each major process - a group of operations                                             |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                 |
+| - title             | Yes      | string                                                            | The diagram title of the group of operations                                           |
+| - description       | No       | markdown                                                          | A longer description of the group of operations                                        |
+| - preConditions     | No       | markdown                                                          | Description of initial status before the process starts                                |
+| - postConditions    | No       | markdown                                                          | Description of final status after the process ends                                     |
+| - step              | No       | ExampleScenarioProcessStep                                        | Each step of the process                                                               |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                 |
+| - process           | No       | []                                                                | Nested process                                                                         |
+| - pause             | No       | boolean                                                           | If there is a pause in the flow                                                        |
+| - operation         | No       | ExampleScenarioProcessStepOperation                               | Each interaction or action                                                             |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                 |
+| - number            | Yes      | string                                                            | The sequential number of the interaction                                               |
+| - type              | No       | string                                                            | The type of operation - CRUD                                                           |
+| - name              | No       | string                                                            | The human-friendly name of the interaction                                             |
+| - initiator         | No       | string                                                            | Who starts the transaction                                                             |
+| - receiver          | No       | string                                                            | Who receives the transaction                                                           |
+| - description       | No       | markdown                                                          | A comment to be inserted in the diagram                                                |
+| - initiatorActive   | No       | boolean                                                           | Whether the initiator is deactivated right after the transaction                       |
+| - receiverActive    | No       | boolean                                                           | Whether the receiver is deactivated right after the transaction                        |
+| - request           | No       |                                                                   | Each resource instance used by the initiator                                           |
+| - response          | No       |                                                                   | Each resource instance used by the responder                                           |
+| - alternative       | No       | ExampleScenarioProcessStepAlternative                             | Alternate non-typical step action                                                      |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                          |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                 |
+| - title             | Yes      | string                                                            | Label for alternative                                                                  |
+| - description       | No       | markdown                                                          | A human-readable description of each option                                            |
+| - step              | No       | []                                                                | What happens in each alternative option                                                |
+| workflow            | No       | canonical[]                                                       | Another nested workflow                                                                |
+
+## Search Parameters
+
+| Name                  | Type      | Description                                                                            | Expression                       |
+| --------------------- | --------- | -------------------------------------------------------------------------------------- | -------------------------------- |
+| context               | token     | A use context assigned to the example scenario                                         | ExampleScenario.useContext.value |
+| context-quantity      | quantity  | A quantity- or range-valued use context assigned to the example scenario               | ExampleScenario.useContext.value |
+| context-type          | token     | A type of use context assigned to the example scenario                                 | ExampleScenario.useContext.code  |
+| date                  | date      | The example scenario publication date                                                  | ExampleScenario.date             |
+| identifier            | token     | External identifier for the example scenario                                           | ExampleScenario.identifier       |
+| jurisdiction          | token     | Intended jurisdiction for the example scenario                                         | ExampleScenario.jurisdiction     |
+| name                  | string    | Computationally friendly name of the example scenario                                  | ExampleScenario.name             |
+| publisher             | string    | Name of the publisher of the example scenario                                          | ExampleScenario.publisher        |
+| status                | token     | The current status of the example scenario                                             | ExampleScenario.status           |
+| url                   | uri       | The uri that identifies the example scenario                                           | ExampleScenario.url              |
+| version               | token     | The business version of the example scenario                                           | ExampleScenario.version          |
+| context-type-quantity | composite | A use context type and quantity- or range-based value assigned to the example scenario | ExampleScenario.useContext       |
+| context-type-value    | composite | A use context type and value assigned to the example scenario                          | ExampleScenario.useContext       |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [ExampleScenario](https://www.hl7.org/fhir/StructureDefinition/ExampleScenario).

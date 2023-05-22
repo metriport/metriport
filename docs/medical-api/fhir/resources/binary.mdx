@@ -1,0 +1,28 @@
+---
+title: "Binary"
+description: "A resource that represents the data of a single raw artifact as digital content accessible in its native format.  A Binary resource can contain any content, whether text, image, pdf, zip archive, etc."
+---
+
+## Properties
+
+| Name            | Required | Type                      | Description                                                               |
+| --------------- | -------- | ------------------------- | ------------------------------------------------------------------------- |
+| contentType     | Yes      | code                      | MimeType of the binary content                                            |
+| securityContext | No       | Reference&lt;Resource&gt; | Identifies another resource to use as proxy when enforcing access control |
+| data            | No       | base64Binary              | The actual content                                                        |
+| url             | No       | url                       | Uri where the data can be found                                           |
+
+## Search Parameters
+
+None
+
+## Inherited Properties
+
+| Name          | Required | Type                                      | Description                                         |
+| ------------- | -------- | ----------------------------------------- | --------------------------------------------------- |
+| id            | No       | string                                    | Logical id of this artifact                         |
+| meta          | No       | [Meta](/medical-api/fhir/data-types/meta) | Metadata about the resource                         |
+| implicitRules | No       | uri                                       | A set of rules under which this content was created |
+| language      | No       | code                                      | Language of the resource content                    |
+
+To view the FHIR specification for this resource, see [Binary](https://www.hl7.org/fhir/StructureDefinition/Binary).

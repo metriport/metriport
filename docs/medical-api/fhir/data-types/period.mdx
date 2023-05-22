@@ -1,0 +1,13 @@
+---
+title: "Period"
+description: "Base StructureDefinition for Period Type: A time period defined by a start and end date and optionally time."
+---
+
+## Properties
+
+| Name      | Required | Type                                                  | Description                                      |
+| --------- | -------- | ----------------------------------------------------- | ------------------------------------------------ |
+| id        | No       | string                                                | Unique id for inter-element referencing          |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations    |
+| start     | No       | dateTime                                              | Starting time with inclusive boundary            |
+| end       | No       | dateTime                                              | End time with inclusive boundary, if not ongoing |

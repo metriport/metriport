@@ -7,6 +7,7 @@ import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { asyncHandler } from "../../routes/util";
 import { Config } from "../../shared/config";
+import { downloadedFromCW } from "../fhir/shared";
 import { getOrgOrFail } from "./cw-fhir-proxy-helpers";
 
 const fhirServerUrl = Config.getFHIRServerUrl();
@@ -93,6 +94,13 @@ export async function userResDecorator(
     const payloadString = proxyResData.toString("utf8");
     const updatedPayload = payloadString;
     const payload = JSON.parse(updatedPayload);
+    // Filter out CW data while we don't manage to do it with FHIR query
+    if (payload.entry) {
+      payload.entry = payload.entry.filter((entry: any) => {
+        return entry.resource ? !downloadedFromCW(entry.resource) : true;
+      });
+      payload.total = payload.entry?.length != null ? payload.entry.length : undefined;
+    }
     return JSON.stringify(payload);
   } catch (err) {
     console.log(`Error parsing/transforming response: `, err);

@@ -28,7 +28,8 @@ export function createAPIService(
   dbCredsSecret: secret.ISecret,
   dynamoDBTokenTable: dynamodb.Table,
   alarmAction: SnsAction | undefined,
-  dnsZones: DnsZones
+  dnsZones: DnsZones,
+  fhirConverterServiceUrl: string
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -36,7 +37,7 @@ export function createAPIService(
   loadBalancerAddress: string;
 } {
   // Create a new Amazon Elastic Container Service (ECS) cluster
-  const cluster = new ecs.Cluster(stack, "APICluster", { vpc });
+  const cluster = new ecs.Cluster(stack, "APICluster", { vpc, containerInsights: true });
 
   // Create a Docker image and upload it to the Amazon Elastic Container Registry (ECR)
   const dockerImage = new ecr_assets.DockerImageAsset(stack, "APIImage", {
@@ -68,6 +69,7 @@ export function createAPIService(
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
+          AWS_REGION: props.config.region,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
@@ -83,6 +85,9 @@ export function createAPIService(
           }),
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+          }),
+          ...(fhirConverterServiceUrl && {
+            FHIR_CONVERTER_URL: fhirConverterServiceUrl,
           }),
         },
       },

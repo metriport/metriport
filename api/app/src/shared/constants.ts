@@ -13,6 +13,8 @@ import Provider from "../providers/provider";
 import { Whoop } from "../providers/whoop";
 import { Withings } from "../providers/withings";
 
+export const METRIPORT = "METRIPORT";
+
 export const PROVIDER_APPLE = ProviderSource.apple;
 export const PROVIDER_CRONOMETER = ProviderSource.cronometer;
 export const PROVIDER_DEXCOM = ProviderSource.dexcom;

@@ -1,0 +1,71 @@
+---
+title: "SpecimenDefinition"
+description: "A kind of specimen with associated set of requirements."
+---
+
+## Properties
+
+| Name                   | Required | Type                                                                                                                                 | Description                                            |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| identifier             | No       | [Identifier](/medical-api/fhir/data-types/identifier)                                                                                | Business identifier of a kind of specimen              |
+| typeCollected          | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                      | Kind of material to collect                            |
+| patientPreparation     | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                                                                    | Patient preparation for collection                     |
+| timeAspect             | No       | string                                                                                                                               | Time aspect for collection                             |
+| collection             | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                                                                    | Specimen collection procedure                          |
+| typeTested             | No       | SpecimenDefinitionTypeTested                                                                                                         | Specimen in container intended for testing by lab      |
+| - id                   | No       | string                                                                                                                               | Unique id for inter-element referencing                |
+| - extension            | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                | Additional content defined by implementations          |
+| - modifierExtension    | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                | Extensions that cannot be ignored even if unrecognized |
+| - isDerived            | No       | boolean                                                                                                                              | Primary or secondary specimen                          |
+| - type                 | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                      | Type of intended specimen                              |
+| - preference           | Yes      | code                                                                                                                                 | preferred / alternate                                  |
+| - container            | No       | SpecimenDefinitionTypeTestedContainer                                                                                                | The specimen's container                               |
+| - id                   | No       | string                                                                                                                               | Unique id for inter-element referencing                |
+| - extension            | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                | Additional content defined by implementations          |
+| - modifierExtension    | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                | Extensions that cannot be ignored even if unrecognized |
+| - material             | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                      | Container material                                     |
+| - type                 | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                      | Kind of container associated with the kind of specimen |
+| - cap                  | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                      | Color of container cap                                 |
+| - description          | No       | string                                                                                                                               | Container description                                  |
+| - capacity             | No       | [Quantity](/medical-api/fhir/data-types/quantity)                                                                                    | Container capacity                                     |
+| - minimumVolume[x]     | No       | [Quantity](/medical-api/fhir/data-types/quantity), string                                                                            | Minimum volume                                         |
+| - additive             | No       | SpecimenDefinitionTypeTestedContainerAdditive                                                                                        | Additive associated with container                     |
+| - id                   | No       | string                                                                                                                               | Unique id for inter-element referencing                |
+| - extension            | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                | Additional content defined by implementations          |
+| - modifierExtension    | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                | Extensions that cannot be ignored even if unrecognized |
+| - additive[x]          | Yes      | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept), Reference&lt;[Substance](/medical-api/fhir/resources/substance)&gt; | Additive associated with container                     |
+| - preparation          | No       | string                                                                                                                               | Specimen container preparation                         |
+| - requirement          | No       | string                                                                                                                               | Specimen requirements                                  |
+| - retentionTime        | No       | [Duration](/medical-api/fhir/data-types/duration)                                                                                    | Specimen retention time                                |
+| - rejectionCriterion   | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[]                                                                    | Rejection criterion                                    |
+| - handling             | No       | SpecimenDefinitionTypeTestedHandling                                                                                                 | Specimen handling before testing                       |
+| - id                   | No       | string                                                                                                                               | Unique id for inter-element referencing                |
+| - extension            | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                | Additional content defined by implementations          |
+| - modifierExtension    | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                | Extensions that cannot be ignored even if unrecognized |
+| - temperatureQualifier | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)                                                                      | Temperature qualifier                                  |
+| - temperatureRange     | No       | [Range](/medical-api/fhir/data-types/range)                                                                                          | Temperature range                                      |
+| - maxDuration          | No       | [Duration](/medical-api/fhir/data-types/duration)                                                                                    | Maximum preservation time                              |
+| - instruction          | No       | string                                                                                                                               | Preservation instruction                               |
+
+## Search Parameters
+
+| Name       | Type  | Description                                                       | Expression                                   |
+| ---------- | ----- | ----------------------------------------------------------------- | -------------------------------------------- |
+| container  | token | The type of specimen conditioned in container expected by the lab | SpecimenDefinition.typeTested.container.type |
+| identifier | token | The unique identifier associated with the specimen                | SpecimenDefinition.identifier                |
+| type       | token | The type of collected specimen                                    | SpecimenDefinition.typeCollected             |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [SpecimenDefinition](https://www.hl7.org/fhir/StructureDefinition/SpecimenDefinition).

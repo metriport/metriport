@@ -1,0 +1,13 @@
+{
+	{{#if contactPoint.value}}
+		{{#if (contains contactPoint.value 'tel:')}}
+        	"system":"phone",
+        	"value": "{{replace contactPoint.value 'tel:\s*' ''}}",
+            "use": {{>ValueSet/TelecomUse.hbs code=contactPoint.use}},
+        {{else if (contains contactPoint.value 'mailto:')}}
+        	"system":"email",
+        	"value": "{{replace contactPoint.value 'mailto:\s*' ''}}",
+            "use": {{>ValueSet/TelecomUse.hbs code=contactPoint.use}},
+		{{/if}}	
+	{{/if}}
+},

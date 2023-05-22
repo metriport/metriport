@@ -1,0 +1,16 @@
+---
+title: "Count"
+description: "Base StructureDefinition for Count Type: A measured amount (or an amount that can potentially be measured). Note that measured amounts include amounts that are not precisely quantified, including amounts involving arbitrary units and floating currencies."
+---
+
+## Properties
+
+| Name       | Required | Type                                                  | Description                                               |
+| ---------- | -------- | ----------------------------------------------------- | --------------------------------------------------------- |
+| id         | No       | string                                                | Unique id for inter-element referencing                   |
+| extension  | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations             |
+| value      | No       | decimal                                               | Numerical value (with implicit precision)                 |
+| comparator | No       | code                                                  | &lt; / &lt;= / &gt;= / &gt; - how to understand the value |
+| unit       | No       | string                                                | Unit representation                                       |
+| system     | No       | uri                                                   | System that defines coded unit form                       |
+| code       | No       | code                                                  | Coded form of the unit                                    |

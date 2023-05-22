@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  # These are the configurations for our Node app
+  # When Docker Compose starts this container it will automatically
+  # use the Dockerfile in the directory to configure it
+  fhir-converter:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    deploy:
+      restart_policy:
+          condition: on-failure
+    environment:
+      - NODE_ENV=development
+      - ENV_TYPE=development
+    ports:
+      - "8777:8080"
+    # volumes:
+    #   - ./src:/usr/src/app/src

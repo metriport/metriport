@@ -1,0 +1,26 @@
+"line":
+[
+    "{{XAD-1-1}}",
+    "{{XAD-1-2}}",
+    "{{XAD-1-3}}",
+    "{{XAD-2}}",
+    "{{XAD-19}}",
+],
+"city":"{{XAD-3}}",
+"state":"{{XAD-4}}",
+"postalCode":"{{XAD-5}}",
+"country":"{{XAD-6}}",
+{{#if (eq XAD-7 "M" "SH")}},
+    "type":{{>DataType/_string.hbs mapping="CodeSystem/AddressType.hbs" inCode=XAD-7 }},
+{{/if}},
+{{#if (not XAD-9-9)}},
+    "district":"{{XAD-9-2}}",
+{{/if}},
+"district":"{{XAD-9-9}}",
+"period":
+{
+    "start":"{{formatAsDateTime XAD-12-1}}",
+    "start":"{{formatAsDateTime XAD-13}}",
+    "end":"{{formatAsDateTime XAD-12-2}}",
+    "end":"{{formatAsDateTime XAD-14}}",
+},

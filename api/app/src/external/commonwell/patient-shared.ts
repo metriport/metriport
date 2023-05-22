@@ -49,7 +49,7 @@ export async function findOrCreatePerson({
     // TODO: we should be returning instances of CommonwellPerson here, so we return what we get from CW on this function, not
     // the result of calling `makePersonForPatient()`
     const personIds = await searchPersonIds({ commonWell, queryMeta, personalIds: strongIds });
-    if (personIds.length === 1) return { personId: personIds[0], person };
+    if (personIds.length === 1) return { personId: personIds[0] as string, person };
     if (personIds.length > 1) {
       const subject = "Found more than one person for patient personal IDs";
       const message = idsToAlertMessage(commonwellPatientId, personIds);
@@ -70,7 +70,7 @@ export async function findOrCreatePerson({
     if (persons.length > 1) {
       return alertAndReturnMostRecentPerson(
         commonwellPatientId,
-        [persons[0], ...persons.slice(1)], // to match the type requiring at least one element
+        [persons[0] as CommonwellPerson, ...persons.slice(1)], // to match the type requiring at least one element
         commonWell.lastReferenceHeader,
         context
       );
@@ -125,7 +125,7 @@ function alertAndReturnMostRecentPerson(
 function getMostRecentPerson(persons: [CommonwellPerson, ...CommonwellPerson[]]): CommonwellPerson {
   const mostRecent = maxBy(persons, p => p.enrollmentSummary?.dateEnrolled);
   const lastOne = persons[persons.length - 1]; // .at(-1) doesn't expose the correct type
-  return mostRecent ?? lastOne;
+  return (mostRecent ?? lastOne) as CommonwellPerson;
 }
 
 function idsToAlertMessage(cwPatientId: string, personIds: string[]): string {

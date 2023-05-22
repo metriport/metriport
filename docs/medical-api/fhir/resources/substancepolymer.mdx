@@ -1,0 +1,72 @@
+---
+title: "SubstancePolymer"
+description: "Todo."
+---
+
+## Properties
+
+| Name                          | Required | Type                                                              | Description                                            |
+| ----------------------------- | -------- | ----------------------------------------------------------------- | ------------------------------------------------------ |
+| class                         | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | Todo                                                   |
+| geometry                      | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | Todo                                                   |
+| copolymerConnectivity         | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[] | Todo                                                   |
+| modification                  | No       | string[]                                                          | Todo                                                   |
+| monomerSet                    | No       | SubstancePolymerMonomerSet                                        | Todo                                                   |
+| - id                          | No       | string                                                            | Unique id for inter-element referencing                |
+| - extension                   | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations          |
+| - modifierExtension           | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized |
+| - ratioType                   | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | Todo                                                   |
+| - startingMaterial            | No       | SubstancePolymerMonomerSetStartingMaterial                        | Todo                                                   |
+| - id                          | No       | string                                                            | Unique id for inter-element referencing                |
+| - extension                   | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations          |
+| - modifierExtension           | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized |
+| - material                    | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | Todo                                                   |
+| - type                        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | Todo                                                   |
+| - isDefining                  | No       | boolean                                                           | Todo                                                   |
+| - amount                      | No       | [SubstanceAmount](/medical-api/fhir/data-types/substanceamount)   | Todo                                                   |
+| repeat                        | No       | SubstancePolymerRepeat                                            | Todo                                                   |
+| - id                          | No       | string                                                            | Unique id for inter-element referencing                |
+| - extension                   | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations          |
+| - modifierExtension           | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized |
+| - numberOfUnits               | No       | integer                                                           | Todo                                                   |
+| - averageMolecularFormula     | No       | string                                                            | Todo                                                   |
+| - repeatUnitAmountType        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | Todo                                                   |
+| - repeatUnit                  | No       | SubstancePolymerRepeatRepeatUnit                                  | Todo                                                   |
+| - id                          | No       | string                                                            | Unique id for inter-element referencing                |
+| - extension                   | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations          |
+| - modifierExtension           | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized |
+| - orientationOfPolymerisation | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | Todo                                                   |
+| - repeatUnit                  | No       | string                                                            | Todo                                                   |
+| - amount                      | No       | [SubstanceAmount](/medical-api/fhir/data-types/substanceamount)   | Todo                                                   |
+| - degreeOfPolymerisation      | No       | SubstancePolymerRepeatRepeatUnitDegreeOfPolymerisation            | Todo                                                   |
+| - id                          | No       | string                                                            | Unique id for inter-element referencing                |
+| - extension                   | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations          |
+| - modifierExtension           | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized |
+| - degree                      | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | Todo                                                   |
+| - amount                      | No       | [SubstanceAmount](/medical-api/fhir/data-types/substanceamount)   | Todo                                                   |
+| - structuralRepresentation    | No       | SubstancePolymerRepeatRepeatUnitStructuralRepresentation          | Todo                                                   |
+| - id                          | No       | string                                                            | Unique id for inter-element referencing                |
+| - extension                   | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations          |
+| - modifierExtension           | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized |
+| - type                        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)   | Todo                                                   |
+| - representation              | No       | string                                                            | Todo                                                   |
+| - attachment                  | No       | [Attachment](/medical-api/fhir/data-types/attachment)             | Todo                                                   |
+
+## Search Parameters
+
+None
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [SubstancePolymer](https://www.hl7.org/fhir/StructureDefinition/SubstancePolymer).

@@ -1,0 +1,11 @@
+{{!-- https://www.hl7.org/fhir/R4/valueset-reaction-event-severity.html --}}
+{{!-- note that if we cannot map to a severity, it is unknown and should be missing --}}
+{{#if (eq (toLower sev) "fatal")}}
+  "severity":"severe",
+{{else if (or (eq (toLower sev) "moderate to severe") (eq (toLower sev) "severe"))}}
+  "severity":"severe",
+{{else if (or (eq (toLower sev) "mild to moderate") (eq (toLower sev) "moderate"))}}
+  "severity":"moderate",
+{{else if (eq (toLower sev) "mild")}}
+  "severity":"mild",
+{{/if}}

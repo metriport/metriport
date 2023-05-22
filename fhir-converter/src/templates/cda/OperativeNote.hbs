@@ -1,0 +1,28 @@
+{
+    "resourceType": "Bundle",
+    "type": "batch",
+    "entry": [
+    	
+        {{>Header.hbs}}
+        
+        {{! Required Sections}}
+        
+        {{>Sections/Procedure_Anesthesia.hbs}},
+        
+        {{>Sections/Complications.hbs}},
+        
+        {{>Sections/Procedure_Findings.hbs}},
+        
+        {{>Sections/Preoperative_Diagnosis.hbs}},
+        
+        {{>Sections/Postoperative_Diagnosis.hbs}},
+        
+        {{! Optional Sections}}
+        
+        {{>Sections/Procedures.hbs}},
+        
+        {{! Document Resource Creation }}
+        
+        {{>Resources/DocumentReference.hbs docref=msg ID=(generateUUID (toJsonString msg))}}
+      ]
+}

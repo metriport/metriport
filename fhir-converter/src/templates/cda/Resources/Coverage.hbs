@@ -1,0 +1,23 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Coverage",
+        "id":"{{ID}}",
+        "identifier":
+        [
+            {{#each (toArray payerEntry.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ], 
+        "status":{{>ValueSet/FMStatus.hbs payerEntry.statusCode.code}},
+        "relationship":{{>DataType/CodeableConcept.hbs code=payerEntry.code}},      
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Coverage/{{ID}}",
+    },
+},
+
+
+
+  

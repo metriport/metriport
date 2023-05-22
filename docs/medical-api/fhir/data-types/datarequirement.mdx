@@ -1,0 +1,34 @@
+---
+title: "DataRequirement"
+description: "Base StructureDefinition for DataRequirement Type: Describes a required data item for evaluation in terms of the type of data, and optional code or date-based filters of the data."
+---
+
+## Properties
+
+| Name          | Required | Type                                                                                                                         | Description                                                                       |
+| ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| id            | No       | string                                                                                                                       | Unique id for inter-element referencing                                           |
+| extension     | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                        | Additional content defined by implementations                                     |
+| type          | Yes      | code                                                                                                                         | The type of the required data                                                     |
+| profile       | No       | canonical[]                                                                                                                  | The profile of the required data                                                  |
+| subject[x]    | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept), Reference&lt;[Group](/medical-api/fhir/resources/group)&gt; | E.g. Patient, Practitioner, RelatedPerson, Organization, Location, Device         |
+| mustSupport   | No       | string[]                                                                                                                     | Indicates specific structure elements that are referenced by the knowledge module |
+| codeFilter    | No       | Element[]                                                                                                                    | What codes are expected                                                           |
+| - id          | No       | string                                                                                                                       | Unique id for inter-element referencing                                           |
+| - extension   | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                        | Additional content defined by implementations                                     |
+| - path        | No       | string                                                                                                                       | A code-valued attribute to filter on                                              |
+| - searchParam | No       | string                                                                                                                       | A coded (token) parameter to search on                                            |
+| - valueSet    | No       | canonical                                                                                                                    | Valueset for the filter                                                           |
+| - code        | No       | [Coding](/medical-api/fhir/data-types/coding)[]                                                                              | What code is expected                                                             |
+| dateFilter    | No       | Element[]                                                                                                                    | What dates/date ranges are expected                                               |
+| - id          | No       | string                                                                                                                       | Unique id for inter-element referencing                                           |
+| - extension   | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                        | Additional content defined by implementations                                     |
+| - path        | No       | string                                                                                                                       | A date-valued attribute to filter on                                              |
+| - searchParam | No       | string                                                                                                                       | A date valued parameter to search on                                              |
+| - value[x]    | No       | dateTime, [Period](/medical-api/fhir/data-types/period), [Duration](/medical-api/fhir/data-types/duration)                   | The value of the filter, as a Period, DateTime, or Duration value                 |
+| limit         | No       | positiveInt                                                                                                                  | Number of results                                                                 |
+| sort          | No       | Element[]                                                                                                                    | Order of the results                                                              |
+| - id          | No       | string                                                                                                                       | Unique id for inter-element referencing                                           |
+| - extension   | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                        | Additional content defined by implementations                                     |
+| - path        | Yes      | string                                                                                                                       | The name of the attribute to perform the sort                                     |
+| - direction   | Yes      | code                                                                                                                         | ascending / descending                                                            |

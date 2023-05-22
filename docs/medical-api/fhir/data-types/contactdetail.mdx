@@ -1,0 +1,13 @@
+---
+title: "ContactDetail"
+description: "Base StructureDefinition for ContactDetail Type: Specifies contact information for a person or organization."
+---
+
+## Properties
+
+| Name      | Required | Type                                                        | Description                                    |
+| --------- | -------- | ----------------------------------------------------------- | ---------------------------------------------- |
+| id        | No       | string                                                      | Unique id for inter-element referencing        |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[]       | Additional content defined by implementations  |
+| name      | No       | string                                                      | Name of an individual to contact               |
+| telecom   | No       | [ContactPoint](/medical-api/fhir/data-types/contactpoint)[] | Contact details for individual or organization |

@@ -57,6 +57,7 @@ const containedSchema = z.object({
   birthDate: z.string().nullish(),
   address: z.array(containedAddress).nullish(),
 });
+export type Contained = z.infer<typeof containedSchema>;
 
 const statusSchema = z.enum(["current", "superceded", "entered in error"]);
 export type DocumentStatus = z.infer<typeof statusSchema>;

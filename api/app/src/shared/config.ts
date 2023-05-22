@@ -36,6 +36,10 @@ export class Config {
     return getEnvVar("METRIPORT_VERSION");
   }
 
+  static getAWSRegion(): string | undefined {
+    return getEnvVar("AWS_REGION");
+  }
+
   static getSlackAlertUrl(): string | undefined {
     return getEnvVar("SLACK_ALERT_URL");
   }
@@ -175,5 +179,9 @@ export class Config {
 
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+  }
+
+  static getFHIRConverterURL(): string | undefined {
+    return getEnvVar("FHIR_CONVERTER_URL");
   }
 }

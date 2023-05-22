@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.test" });
+// Keep dotenv import and config before everything else
 import { AxiosResponse } from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { makeFhirAdminApi } from "../../../../../external/fhir/api/api-factory";

@@ -1,0 +1,27 @@
+{{!-- https://build.fhir.org/ig/HL7/ccda-on-fhir/branches/master/ConceptMap-FC-ImmunizationStatus.html --}}
+{{! https://www.hl7.org/fhir/R4/valueset-immunization-status.html }}
+{{#with (toLower code) as |normalizedCode|}}
+  {{#if (eq normalizedCode "complete")}}
+    "completed"
+  {{else if (eq normalizedCode "active")}}
+    "completed"
+  {{else if (eq normalizedCode "abandonded")}}
+    "not-done"
+  {{else if (eq normalizedCode "cancelled")}}
+    "not-done"
+  {{else if (eq normalizedCode "held")}}
+    "not-done"
+  {{else if (eq normalizedCode "aborted")}}
+    "not-done"
+  {{else if (eq normalizedCode "new")}}
+    "not-done"
+  {{else if (eq normalizedCode "obsolete")}}
+    "not-done"
+  {{else if (eq normalizedCode "nullified")}}
+    "entered-in-error"
+  {{else if (eq normalizedCode "error")}}
+    "entered-in-error"
+  {{else}}
+    "{{normalizedCode}}"
+  {{/if}}
+{{/with}}

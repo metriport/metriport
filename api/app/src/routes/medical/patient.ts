@@ -162,14 +162,14 @@ router.delete(
  * Gets all patients corresponding to the specified facility at the customer's organization.
  *
  * @param   req.cxId              The customer ID.
- * @param   req.query.facilityId  The ID of the facility the user patient is associated with.
+ * @param   req.query.facilityId  The ID of the facility the user patient is associated with (optional).
  * @return  The customer's patients associated with the given facility.
  */
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityId = getFrom("query").optional("facilityId", req);
 
     const patients = await getPatients({ cxId, facilityId: facilityId });
 
@@ -188,7 +188,7 @@ const resourceSchema = z.enum(resourceTypeForConsolidation).array();
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
- * @return The customer's patients associated with the given facility.
+ * @return Patient's consolidated data.
  */
 router.get(
   "/:id/consolidated",

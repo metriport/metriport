@@ -4,9 +4,10 @@ import {
   DocumentQueryStatus,
 } from "../../../domain/medical/document-reference";
 import { processAsyncError } from "../../../errors";
-import { queryDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
+import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
+import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 
 export type DocumentQueryResp =
@@ -31,9 +32,13 @@ export async function queryDocumentsAcrossHIEs({
   facilityId: string;
   override?: boolean;
 }): Promise<DocumentQueryResp> {
+  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
+
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (patient.data.documentQueryStatus === "processing")
+  if (patient.data.documentQueryStatus === "processing") {
+    log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
+  }
 
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return createQueryResponse("completed");
@@ -44,10 +49,14 @@ export async function queryDocumentsAcrossHIEs({
   await updateDocQuery({ patient, status: "processing" });
 
   // intentionally asynchronous, not waiting for the result
-  getDocumentsFromCW({ patient, facilityId, override }).catch(() => {
-    updateDocQuery({ patient, status: "completed" });
-    processAsyncError(`doc.list.getDocumentsFromCW`);
-  });
+  getDocumentsFromCW({ patient, facilityId, override })
+    .then((amountProcessed: number) => {
+      log(`Finished processing ${amountProcessed} documents.`);
+    })
+    .catch(() => {
+      updateDocQuery({ patient, status: "completed" });
+      processAsyncError(`doc.list.getDocumentsFromCW`);
+    });
 
   return createQueryResponse("processing", patient);
 }
@@ -73,7 +82,7 @@ export const updateDocQuery = async ({
   status,
   progress,
 }: {
-  patient: Patient;
+  patient: Pick<Patient, "id" | "cxId">;
   status: DocumentQueryStatus;
   progress?: {
     completed: number;
@@ -99,7 +108,7 @@ export const updateDocQuery = async ({
       return await existing.update(
         {
           data: {
-            ...patient.data,
+            ...existing.data,
             documentQueryStatus: status,
             documentQueryProgress: progress,
           },

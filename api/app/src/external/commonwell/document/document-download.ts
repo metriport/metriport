@@ -1,9 +1,8 @@
 import { CommonwellError } from "@metriport/commonwell-sdk";
 import * as stream from "stream";
+import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
-import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
-import { Util } from "../../../shared/util";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { getPatientData } from "../patient-shared";
 
@@ -20,8 +19,6 @@ export async function downloadDocument({
   location: string;
   stream: stream.Writable;
 }): Promise<void> {
-  const { log } = Util.out(`CW downloadDocument - M patient ${patientId}`);
-
   const { organization, facility } = await getPatientData({ id: patientId, cxId }, facilityId);
   const orgName = organization.data.name;
   const orgId = organization.id;
@@ -32,19 +29,13 @@ export async function downloadDocument({
   try {
     await commonWell.retrieveDocument(queryMeta, location, stream);
   } catch (err) {
-    log(`Error retrieving from CW (patientId ${patientId}, location ${location}): `, err);
-    capture.error(err, {
-      extra: {
-        context: `cw.retrieveDocument`,
-        patientId,
-        documentLocation: location,
-        cwReference: commonWell.lastReferenceHeader,
-        err,
-      },
-    });
+    const additionalInfo = {
+      cwReferenceHeader: commonWell.lastReferenceHeader,
+      documentLocation: location,
+    };
     if (err instanceof CommonwellError && err.cause?.response?.status === 404) {
-      throw new NotFoundError("Document not found", err);
+      throw new NotFoundError("CW - Document not found", err, additionalInfo);
     }
-    throw err;
+    throw new MetriportError(`CW - Error downloading document`, err, additionalInfo);
   }
 }

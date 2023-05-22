@@ -1,0 +1,17 @@
+{{! https://build.fhir.org/ig/HL7/ccda-on-fhir/branches/master/ConceptMap-CF-MedicationStatus.html }}
+{{! https://www.hl7.org/fhir/R4/valueset-medicationrequest-status.html }}
+{{#with (toLower code) as |normalizedCode|}}
+  {{#if normalizedCode}}
+    {{#if (or (eq normalizedCode "aborted") (eq normalizedCode "discontinued"))}}
+      "stopped"
+    {{else if (eq normalizedCode "ordered")}}
+      "active"
+    {{else if (eq normalizedCode "nullified")}}
+      "entered-in-error"
+    {{else if (eq normalizedCode "suspended")}}
+      "on-hold"
+    {{else}}
+      "{{normalizedCode}}"
+    {{/if}}
+  {{/if}}
+{{/with}}

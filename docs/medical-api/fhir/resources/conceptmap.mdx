@@ -1,0 +1,111 @@
+---
+title: "ConceptMap"
+description: "A statement of relationships from one set of concepts to one or more other concepts - either concepts in code systems, or data element/data element concepts, or classes in class models."
+---
+
+## Properties
+
+| Name                | Required | Type                                                              | Description                                                                                                 |
+| ------------------- | -------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| url                 | No       | uri                                                               | Canonical identifier for this concept map, represented as a URI (globally unique)                           |
+| identifier          | No       | [Identifier](/medical-api/fhir/data-types/identifier)             | Additional identifier for the concept map                                                                   |
+| version             | No       | string                                                            | Business version of the concept map                                                                         |
+| name                | No       | string                                                            | Name for this concept map (computer friendly)                                                               |
+| title               | No       | string                                                            | Name for this concept map (human friendly)                                                                  |
+| status              | Yes      | code                                                              | draft / active / retired / unknown                                                                          |
+| experimental        | No       | boolean                                                           | For testing purposes, not real usage                                                                        |
+| date                | No       | dateTime                                                          | Date last changed                                                                                           |
+| publisher           | No       | string                                                            | Name of the publisher (organization or individual)                                                          |
+| contact             | No       | [ContactDetail](/medical-api/fhir/data-types/contactdetail)[]     | Contact details for the publisher                                                                           |
+| description         | No       | markdown                                                          | Natural language description of the concept map                                                             |
+| useContext          | No       | [UsageContext](/medical-api/fhir/data-types/usagecontext)[]       | The context that the content is intended to support                                                         |
+| jurisdiction        | No       | [CodeableConcept](/medical-api/fhir/data-types/codeableconcept)[] | Intended jurisdiction for concept map (if applicable)                                                       |
+| purpose             | No       | markdown                                                          | Why this concept map is defined                                                                             |
+| copyright           | No       | markdown                                                          | Use and/or publishing restrictions                                                                          |
+| source[x]           | No       | uri, canonical                                                    | The source value set that contains the concepts that are being mapped                                       |
+| target[x]           | No       | uri, canonical                                                    | The target value set which provides context for the mappings                                                |
+| group               | No       | ConceptMapGroup                                                   | Same source and target systems                                                                              |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                                      |
+| - source            | No       | uri                                                               | Source system where concepts to be mapped are defined                                                       |
+| - sourceVersion     | No       | string                                                            | Specific version of the code system                                                                         |
+| - target            | No       | uri                                                               | Target system that the concepts are to be mapped to                                                         |
+| - targetVersion     | No       | string                                                            | Specific version of the code system                                                                         |
+| - element           | Yes      | ConceptMapGroupElement                                            | Mappings for a concept from the source set                                                                  |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                                      |
+| - code              | No       | code                                                              | Identifies element being mapped                                                                             |
+| - display           | No       | string                                                            | Display for the code                                                                                        |
+| - target            | No       | ConceptMapGroupElementTarget                                      | Concept in target system for element                                                                        |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                                      |
+| - code              | No       | code                                                              | Code that identifies the target element                                                                     |
+| - display           | No       | string                                                            | Display for the code                                                                                        |
+| - equivalence       | Yes      | code                                                              | relatedto / equivalent / equal / wider / subsumes / narrower / specializes / inexact / unmatched / disjoint |
+| - comment           | No       | string                                                            | Description of status/issues in mapping                                                                     |
+| - dependsOn         | No       | ConceptMapGroupElementTargetDependsOn                             | Other elements required for this mapping (from context)                                                     |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                                      |
+| - property          | Yes      | uri                                                               | Reference to property mapping depends on                                                                    |
+| - system            | No       | canonical                                                         | Code System (if necessary)                                                                                  |
+| - value             | Yes      | string                                                            | Value of the referenced element                                                                             |
+| - display           | No       | string                                                            | Display for the code (if value is a code)                                                                   |
+| - product           | No       | []                                                                | Other concepts that this mapping also produces                                                              |
+| - unmapped          | No       | ConceptMapGroupUnmapped                                           | What to do when there is no mapping for the source concept                                                  |
+| - id                | No       | string                                                            | Unique id for inter-element referencing                                                                     |
+| - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                               |
+| - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                                      |
+| - mode              | Yes      | code                                                              | provided / fixed / other-map                                                                                |
+| - code              | No       | code                                                              | Fixed code when mode = fixed                                                                                |
+| - display           | No       | string                                                            | Display for the code                                                                                        |
+| - url               | No       | canonical                                                         | canonical reference to an additional ConceptMap to use for mapping if the source concept is unmapped        |
+
+## Search Parameters
+
+| Name                  | Type      | Description                                                                                          | Expression                                         |
+| --------------------- | --------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| context               | token     | A use context assigned to the concept map                                                            | ConceptMap.useContext.value                        |
+| context-quantity      | quantity  | A quantity- or range-valued use context assigned to the concept map                                  | ConceptMap.useContext.value                        |
+| context-type          | token     | A type of use context assigned to the concept map                                                    | ConceptMap.useContext.code                         |
+| date                  | date      | The concept map publication date                                                                     | ConceptMap.date                                    |
+| description           | string    | The description of the concept map                                                                   | ConceptMap.description                             |
+| jurisdiction          | token     | Intended jurisdiction for the concept map                                                            | ConceptMap.jurisdiction                            |
+| name                  | string    | Computationally friendly name of the concept map                                                     | ConceptMap.name                                    |
+| publisher             | string    | Name of the publisher of the concept map                                                             | ConceptMap.publisher                               |
+| status                | token     | The current status of the concept map                                                                | ConceptMap.status                                  |
+| title                 | string    | The human-friendly name of the concept map                                                           | ConceptMap.title                                   |
+| url                   | uri       | The uri that identifies the concept map                                                              | ConceptMap.url                                     |
+| version               | token     | The business version of the concept map                                                              | ConceptMap.version                                 |
+| context-type-quantity | composite | A use context type and quantity- or range-based value assigned to the concept map                    | ConceptMap.useContext                              |
+| context-type-value    | composite | A use context type and value assigned to the concept map                                             | ConceptMap.useContext                              |
+| identifier            | token     | External identifier for the concept map                                                              | ConceptMap.identifier                              |
+| dependson             | uri       | Reference to property mapping depends on                                                             | ConceptMap.group.element.target.dependsOn.property |
+| other                 | reference | canonical reference to an additional ConceptMap to use for mapping if the source concept is unmapped | ConceptMap.group.unmapped.url                      |
+| product               | uri       | Reference to property mapping depends on                                                             | ConceptMap.group.element.target.product.property   |
+| source                | reference | The source value set that contains the concepts that are being mapped                                | ConceptMap.source                                  |
+| source-code           | token     | Identifies element being mapped                                                                      | ConceptMap.group.element.code                      |
+| source-system         | uri       | Source system where concepts to be mapped are defined                                                | ConceptMap.group.source                            |
+| source-uri            | reference | The source value set that contains the concepts that are being mapped                                | ConceptMap.source                                  |
+| target                | reference | The target value set which provides context for the mappings                                         | ConceptMap.target                                  |
+| target-code           | token     | Code that identifies the target element                                                              | ConceptMap.group.element.target.code               |
+| target-system         | uri       | Target system that the concepts are to be mapped to                                                  | ConceptMap.group.target                            |
+| target-uri            | reference | The target value set which provides context for the mappings                                         | ConceptMap.target                                  |
+
+## Inherited Properties
+
+| Name              | Required | Type                                                  | Description                                            |
+| ----------------- | -------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| id                | No       | string                                                | Logical id of this artifact                            |
+| meta              | No       | [Meta](/medical-api/fhir/data-types/meta)             | Metadata about the resource                            |
+| implicitRules     | No       | uri                                                   | A set of rules under which this content was created    |
+| language          | No       | code                                                  | Language of the resource content                       |
+| text              | No       | [Narrative](/medical-api/fhir/data-types/narrative)   | Text summary of the resource, for human interpretation |
+| contained         | No       | Resource[]                                            | Contained, inline Resources                            |
+| extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Additional content defined by implementations          |
+| modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[] | Extensions that cannot be ignored                      |
+
+To view the FHIR specification for this resource, see [ConceptMap](https://www.hl7.org/fhir/StructureDefinition/ConceptMap).

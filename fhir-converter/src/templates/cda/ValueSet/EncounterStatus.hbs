@@ -1,0 +1,35 @@
+{{#if (eq code 'planned')}}
+	"planned"
+{{else if (eq code 'arrived')}}
+	"arrived"
+{{else if (eq code 'triaged')}}
+	"triaged"
+{{else if (eq code 'accepted')}}
+	"triaged"
+{{else if (eq code 'active')}}
+	"in-progress"
+{{else if (eq code 'active')}}
+	"in-progress"
+{{else if (eq code 'onleave')}}
+	"onleave"
+{{else if (eq code 'suspended')}}
+	"onleave"
+{{else if (eq code 'normal')}}
+	"finished"
+{{else if (eq code 'complete')}}
+	"finished"
+{{else if (eq code 'finished')}}
+	"finished"
+{{else if (eq code 'cancelled')}}
+	"cancelled"
+{{else if (eq code 'abandoned')}}
+	"cancelled"
+{{else if (eq code 'error')}}
+	"entered-in-error"
+{{else if (eq code 'entered-in-error')}}
+	"entered-in-error"
+{{else if (eq code 'unknown')}}
+	"unknown"
+{{else}}
+    "unknown"
+{{/if}}

@@ -1,0 +1,14 @@
+---
+title: "Annotation"
+description: "Base StructureDefinition for Annotation Type: A  text note which also  contains information about who made the statement and when."
+---
+
+## Properties
+
+| Name      | Required | Type                                                                                                                                                                                                                                                       | Description                                   |
+| --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| id        | No       | string                                                                                                                                                                                                                                                     | Unique id for inter-element referencing       |
+| extension | No       | [Extension](/medical-api/fhir/data-types/extension)[]                                                                                                                                                                                                      | Additional content defined by implementations |
+| author[x] | No       | Reference&lt;[Practitioner](/medical-api/fhir/resources/practitioner) / [Patient](/medical-api/fhir/resources/patient) / [RelatedPerson](/medical-api/fhir/resources/relatedperson) / [Organization](/medical-api/fhir/resources/organization)&gt;, string | Individual responsible for the annotation     |
+| time      | No       | dateTime                                                                                                                                                                                                                                                   | When the annotation was made                  |
+| text      | Yes      | markdown                                                                                                                                                                                                                                                   | The annotation - text content (as markdown)   |

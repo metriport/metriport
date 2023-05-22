@@ -1,8 +1,9 @@
+import { Sample } from "@metriport/api/lib/devices/models/common/sample";
+import convert from "convert-units";
 import crypto from "crypto";
 import { mean } from "lodash";
-import convert from "convert-units";
+import { Stream } from "stream";
 import { debug } from "./log";
-import { Sample } from "@metriport/api/lib/devices/models/common/sample";
 
 interface MinMaxItem {
   min_item: number;
@@ -88,6 +89,13 @@ export class Util {
 
   static sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));
 
+  static async sleepRandom(max: number, multiplierMin = 0.1): Promise<void> {
+    let multiplier = Math.random();
+    if (multiplier < multiplierMin) multiplier += multiplierMin; // at least 10% of the max delay
+    const timeToWait = Math.floor(multiplier * max);
+    await Util.sleep(timeToWait);
+  }
+
   static kilojoulesToKilocalories(kilojoules: number): number {
     return kilojoules * 0.239006;
   }
@@ -105,4 +113,13 @@ export class Util {
    */
   static oneOf = <T>(...values: T[]): NonNullable<T> | undefined =>
     values.find(v => v != null) ?? undefined;
+
+  static async streamToString(stream: Stream): Promise<string> {
+    const chunks: Buffer[] = [];
+    return new Promise((resolve, reject) => {
+      stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
+      stream.on("error", err => reject(err));
+      stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    });
+  }
 }
