@@ -1,6 +1,8 @@
 import { OperationOutcomeError } from "@medplum/core";
 import { Bundle, BundleEntry, OperationOutcomeIssue, Resource } from "@medplum/fhirtypes";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { makeConsolidatedMockBundle } from "../../../external/fhir/mocks/consolidated";
+import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "./get-patient";
@@ -15,14 +17,19 @@ export async function getConsolidatedPatientData({
   resources?: ResourceTypeForConsolidation[];
 }): Promise<Bundle<Resource>> {
   const { log } = Util.out(`[getConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}]`);
-  const fhir = makeFhirApi(cxId);
 
   // Just validate that the patient exists
   await getPatientOrFail({ id: patientId, cxId });
 
+  if (Config.isSandbox()) {
+    log(`Returning consolidated mock data`);
+    return buildResponse(makeConsolidatedMockBundle());
+  }
+
   const resourcesToUse = resources ?? resourceTypeForConsolidation;
   log(`Getting consolidated data with resources: `, resourcesToUse);
 
+  const fhir = makeFhirApi(cxId);
   const errorsToReport: Record<string, string> = {};
   const settled = await Promise.allSettled(
     resourcesToUse.map(async resource =>
@@ -45,11 +52,10 @@ export async function getConsolidatedPatientData({
   );
 
   const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
-  const successCount = success.length;
 
   if (Object.keys(errorsToReport).length > 0) {
     log(
-      `Failed to get some resources for patient ${patientId} (${successCount} succeeded): ${JSON.stringify(
+      `Failed to get some resources (${success.length} succeeded): ${JSON.stringify(
         errorsToReport
       )}`
     );
@@ -58,13 +64,17 @@ export async function getConsolidatedPatientData({
         context: `getConsolidatedPatientData`,
         patientId,
         errorsToReport,
-        succeeded: successCount,
+        succeeded: success.length,
       },
     });
   }
 
   const entry: BundleEntry[] = success.map(r => ({ resource: r }));
-  return { resourceType: "Bundle", total: successCount, type: "searchset", entry };
+  return buildResponse(entry);
+}
+
+function buildResponse(entries: BundleEntry[]): Bundle<Resource> {
+  return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };
 }
 
 function getMessage(err: OperationOutcomeError): string {
