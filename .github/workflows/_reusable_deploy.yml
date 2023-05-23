@@ -80,24 +80,27 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: "./"
       # lambdas are not on the npm workspaces, so need to 'install' individually
-      - name: Garmin lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/garmin/"
-      - name: Withings lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/withings/"
-      - name: Token-auth lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/token-auth/"
-      - name: Retry SQS lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/retry-sqs/"
       - name: FHIRConverter lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/fhir-converter/"
+      - name: Garmin lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/garmin/"
+      - name: Retry SQS lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/retry-sqs/"
+      - name: SQS to FHIR lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/sqs-to-fhir/"
       - name: Tester lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/tester/"
+      - name: Token-auth lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/token-auth/"
+      - name: Withings lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/withings/"
 
       # BUILD
       # api

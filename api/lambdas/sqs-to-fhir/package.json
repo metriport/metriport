@@ -1,5 +1,5 @@
 {
-  "name": "fhir-converter",
+  "name": "sqs-to-fhir",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,9 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@medplum/core": "^2.0.20",
+    "@sentry/serverless": "^7.46.0",
     "aws-sdk": "^2.1248.0",
-    "axios": "^1.4.0",
     "nanoid": "^4.0.2",
-    "@sentry/serverless": "^7.46.0"
+    "node-fetch": "^3.3.1"
   }
 }

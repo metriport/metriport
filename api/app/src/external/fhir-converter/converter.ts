@@ -1,8 +1,8 @@
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";
 
-const templateExt = "hbs";
 const connector = makeFHIRConverterConnector();
+const templateExt = "hbs";
 
 export enum FHIRConverterCDATemplate {
   ccd = "ccd",
@@ -20,16 +20,16 @@ export enum FHIRConverterCDATemplate {
 export async function convertCDAToFHIR({
   cxId,
   patientId,
-  documentId,
-  cdaPayload,
+  s3FileName,
+  s3BucketName,
   template = FHIRConverterCDATemplate.ccd,
   keepUnusedSegments = false,
   keepInvalidAccess = false,
 }: {
   cxId: string;
   patientId: string;
-  documentId: string;
-  cdaPayload: string;
+  s3FileName: string;
+  s3BucketName: string;
   template?: FHIRConverterCDATemplate;
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
@@ -37,9 +37,8 @@ export async function convertCDAToFHIR({
   return connector.requestConvert({
     cxId,
     patientId,
-    documentId,
     sourceType: FHIRConverterSourceDataType.cda,
-    payload: cdaPayload,
+    payload: JSON.stringify({ s3FileName, s3BucketName }),
     template: `${template}.${templateExt}`,
     unusedSegments: `${keepUnusedSegments}`,
     invalidAccess: `${keepInvalidAccess}`,

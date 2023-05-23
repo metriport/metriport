@@ -8,8 +8,23 @@ import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
+import { getConfig } from "./shared/config";
+import { vCPU } from "./shared/fargate";
 import { isProd } from "./shared/util";
 
+export function settings() {
+  const config = getConfig();
+  const prod = isProd(config);
+  const cpuAmount = prod ? 4 : 1;
+  return {
+    cpuAmount,
+    cpu: cpuAmount * vCPU,
+    memoryLimitMiB: prod ? 8192 : 2048,
+    desiredCount: prod ? 2 : 1,
+    taskCountMin: prod ? 2 : 1,
+    taskCountMax: prod ? 10 : 2,
+  };
+}
 interface FhirConverterServiceProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
@@ -21,6 +36,8 @@ export function createFHIRConverterService(
   vpc: ec2.IVpc,
   alarmAction: SnsAction | undefined
 ): { service: FargateService; address: string } {
+  const { cpu, memoryLimitMiB, desiredCount, taskCountMin, taskCountMax } = settings();
+
   // Create a new Amazon Elastic Container Service (ECS) cluster
   const cluster = new ecs.Cluster(stack, "FHIRConverterCluster", { vpc, containerInsights: true });
 
@@ -35,9 +52,9 @@ export function createFHIRConverterService(
     "FHIRConverterFargateService",
     {
       cluster: cluster,
-      cpu: isProd(props.config) ? 4096 : 1024,
-      memoryLimitMiB: isProd(props.config) ? 8192 : 2048,
-      desiredCount: isProd(props.config) ? 2 : 1,
+      cpu,
+      memoryLimitMiB,
+      desiredCount,
       taskImageOptions: {
         image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
         containerPort: 8080,
@@ -99,8 +116,8 @@ export function createFHIRConverterService(
   });
 
   const scaling = fargateService.service.autoScaleTaskCount({
-    minCapacity: isProd(props.config) ? 2 : 1,
-    maxCapacity: isProd(props.config) ? 10 : 2,
+    minCapacity: taskCountMin,
+    maxCapacity: taskCountMax,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
     targetUtilizationPercent: 70,

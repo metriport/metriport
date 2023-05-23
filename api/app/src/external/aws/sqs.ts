@@ -13,17 +13,28 @@ export const sqs = new SQS({
 export type SQSMessageAttributes = Record<string, string> & {
   cxId?: string;
 };
+export type SQSParameters =
+  | {
+      fifo?: never | false;
+      messageGroupId?: never;
+      messageDeduplicationId?: never;
+      messageAttributes?: SQSMessageAttributes;
+      messageAttributesRaw?: SQS.MessageBodyAttributeMap;
+      delaySeconds?: number;
+    }
+  | {
+      fifo: true;
+      messageGroupId: string;
+      messageDeduplicationId: string;
+      messageAttributes?: SQSMessageAttributes;
+      messageAttributesRaw?: SQS.MessageBodyAttributeMap;
+      delaySeconds?: number;
+    };
 
 export async function sendMessageToQueue(
   queueUrl: string,
   messageBody: string,
-  sqsParams: {
-    messageGroupId: string;
-    messageDeduplicationId: string;
-    messageAttributes?: SQSMessageAttributes;
-    messageAttributesRaw?: SQS.MessageBodyAttributeMap;
-    delaySeconds?: number;
-  }
+  sqsParams: SQSParameters
 ): Promise<void> {
   const {
     messageGroupId,
@@ -51,9 +62,5 @@ export async function sendMessageToQueue(
       ...(messageAttributesRaw ? messageAttributesRaw : {}),
     },
   };
-  messageParams.MessageDeduplicationId = messageDeduplicationId
-    ? messageDeduplicationId
-    : undefined;
-  messageParams.MessageGroupId = messageGroupId ? messageGroupId : undefined;
   await sqs.sendMessage(messageParams).promise();
 }

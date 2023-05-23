@@ -25,10 +25,10 @@ import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { makeS3Client } from "../../aws/s3";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
+import { MAX_FHIR_DOC_ID_LENGTH } from "../../fhir/bundle";
 import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { MAX_FHIR_DOC_ID_LENGTH } from "../../fhir/bundle";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { groupCWErrors } from "../error-categories";
@@ -293,15 +293,6 @@ export async function downloadDocsAndUpsertFHIR({
     };
   };
 
-  const downloadStream = (s3FileName: string) => {
-    return s3Client
-      .getObject({
-        Bucket: Config.getMedicalDocumentsBucketName(),
-        Key: s3FileName,
-      })
-      .createReadStream();
-  };
-
   const docsNewLocation: DocumentReference[] = [];
   let completedCount = 0;
 
@@ -325,19 +316,12 @@ export async function downloadDocsAndUpsertFHIR({
             // add some randomness to avoid overloading the servers
             await jitterSingleDownload();
 
-            let getS3InfoAndContents: () => Promise<{
-              s3Location: string;
-              fileContents: Promise<string>;
-            }>;
+            let getS3Location: () => Promise<string>;
 
             if (!fileExists || override) {
               // Download from CW and upload to S3
-              getS3InfoAndContents = async () => {
+              getS3Location = async () => {
                 const { writeStream, promise } = uploadStream(s3FileName, doc.content.mimeType);
-
-                // listen to stream data as it's passed through
-                const fileContents = Util.streamToString(writeStream);
-
                 await downloadDocument({
                   cxId: patient.cxId,
                   patientId: patient.id,
@@ -345,28 +329,23 @@ export async function downloadDocsAndUpsertFHIR({
                   location: docLocation,
                   stream: writeStream,
                 });
-
                 const data = await promise;
-                return { s3Location: data.Location, fileContents };
+                return data.Location;
               };
             } else {
-              // Download from S3
-              getS3InfoAndContents = async () => {
-                const stream = downloadStream(s3FileName);
-                const fileContents = Util.streamToString(stream);
-
+              // Get S3 address
+              getS3Location = async () => {
                 const signedUrl = s3Client.getSignedUrl("getObject", {
                   Bucket: Config.getMedicalDocumentsBucketName(),
                   Key: s3FileName,
                 });
                 const url = new URL(signedUrl);
                 const s3Location = url.origin + url.pathname;
-
-                return { s3Location, fileContents };
+                return s3Location;
               };
             }
 
-            const { s3Location, fileContents } = await getS3InfoAndContents();
+            const s3Location = await getS3Location();
 
             const docWithFile: CWDocumentWithMetriportData = {
               ...doc,
@@ -382,13 +361,12 @@ export async function downloadDocsAndUpsertFHIR({
               doc.content?.mimeType === "text/xml"
             ) {
               try {
-                const fileString = await fileContents;
                 // note that on purpose, this bundle will not contain the corresponding doc ref
                 await convertCDAToFHIR({
                   cxId: patient.cxId,
                   patientId: patient.id,
-                  documentId: doc.id,
-                  cdaPayload: fileString,
+                  s3FileName,
+                  s3BucketName: Config.getMedicalDocumentsBucketName(),
                 });
               } catch (error) {
                 reportFHIRError({ patientId: patient.id, doc, error, log });

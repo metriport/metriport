@@ -7,7 +7,6 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
   async requestConvert({
     cxId,
     patientId,
-    documentId,
     sourceType,
     payload,
     template,
@@ -27,13 +26,12 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
     const serverUrl = buildUrl(fhirConverterUrl, sourceType, template);
 
     await sendMessageToQueue(queueUrl, payload, {
-      messageGroupId: "fhirConverterGroupId",
-      messageDeduplicationId: documentId,
+      // FIFO only
+      // 706 messageGroupId: "fhirConverterGroupId",
+      // 706 messageDeduplicationId: documentId,
       messageAttributes: {
         cxId,
         serverUrl,
-        sourceType,
-        template,
         unusedSegments,
         invalidAccess,
         patientId,

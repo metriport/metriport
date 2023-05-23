@@ -21,6 +21,7 @@ import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
+import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
 import { createLambda } from "./shared/lambda";
@@ -172,14 +173,23 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
-    // FHIR QUEUES - Create SQS Queue and DLQ
+    // FHIR CONNECTORS, initalize
     //-------------------------------------------
-    const { queue: fhirConverterQueue, dlq: fhirConverterDLQ } = fhirConverterConnector.createQueue(
-      { stack: this, vpc: this.vpc }
-    );
+    const {
+      queue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      bucket: fhirConverterBucket,
+    } = fhirConverterConnector.createQueueAndBucket({ stack: this, vpc: this.vpc });
+
+    const fhirServerQueue = fhirServerConnector.createConnector({
+      envType: props.config.environmentType,
+      stack: this,
+      vpc: this.vpc,
+      fhirConverterBucket,
+    });
 
     //-------------------------------------------
-    // ECR + ECS + Fargate f or Backend Servers
+    // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
     const {
       cluster,
@@ -195,6 +205,7 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       slackNotification?.alarmAction,
       dnsZones,
+      fhirServerQueue?.queueUrl,
       fhirConverterQueue.queueUrl,
       fhirConverter ? `http://${fhirConverter.address}` : undefined
     );
@@ -221,34 +232,38 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // FHIR QUEUES - Finish setting it up
-    //-------------------------------------------
-    provideAccess({
-      accessType: "send",
-      queue: fhirConverterQueue,
-      resource: apiService.service.taskDefinition.taskRole,
-    });
-    fhirConverterConnector.createLambda({
-      envType: props.config.environmentType,
-      stack: this,
-      vpc: this.vpc,
-      queue: fhirConverterQueue,
-      dlq: fhirConverterDLQ,
-      fhirServerAddress: apiServerUrl,
-    });
-
-    //-------------------------------------------
     // S3 bucket for Medical Documents
     //-------------------------------------------
-
     if (props.config.medicalDocumentsBucketName) {
       const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
         bucketName: props.config.medicalDocumentsBucketName,
         publicReadAccess: false,
         encryption: s3.BucketEncryption.S3_MANAGED,
       });
+
+      //-------------------------------------------
+      // FHIR CONNECTORS - Finish setting it up
+      //-------------------------------------------
+      provideAccess({
+        accessType: "send",
+        queue: fhirConverterQueue,
+        resource: apiService.service.taskDefinition.taskRole,
+      });
+      const fhirConverterLambda = fhirServerQueue?.queueUrl
+        ? fhirConverterConnector.createLambda({
+            envType: props.config.environmentType,
+            stack: this,
+            vpc: this.vpc,
+            queue: fhirConverterQueue,
+            dlq: fhirConverterDLQ,
+            fhirConverterBucket,
+            conversionResultQueueUrl: fhirServerQueue.queueUrl,
+          })
+        : undefined;
+
       // Access grant for medical documents bucket
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+      fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     }
 
     //-------------------------------------------

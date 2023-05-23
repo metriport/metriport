@@ -7,9 +7,10 @@ import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
+import { getConfig } from "./config";
 
-const pathToLambdas = "../api/lambdas";
 export const DEFAULT_LAMBDA_TIMEOUT_SECONDS = 10;
+const pathToLambdas = "../api/lambdas";
 
 export const buildEventRule = (scope: Construct, id: string, scheduleExpression: string): Rule =>
   new Rule(scope, id, {
@@ -79,6 +80,7 @@ export interface RetryLambdaProps extends Omit<LambdaProps, "entry"> {
  * @param props.entry The source code entry point, defaults to the Reenque's file name.
  */
 export function createRetryLambda(props: RetryLambdaProps): Lambda {
+  const config = getConfig();
   const retryLambdaName = props.name + "_Retry_";
   const retryLambda = createLambda({
     ...props,
@@ -88,6 +90,7 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
       ...props.envVars,
       SOURCE_QUEUE: props.sourceQueue.queueUrl,
       DESTINATION_QUEUE: props.destinationQueue.queueUrl,
+      ...(config.sentryDSN ? { SENTRY_DSN: config.sentryDSN } : undefined),
     },
   });
   props.sourceQueue.grantConsumeMessages(retryLambda);

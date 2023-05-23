@@ -8,7 +8,6 @@ export function buildUrl(url: string, sourceType: string, template: string): str
 
 export class FHIRConverterConnectorHTTP implements FHIRConverterConnector {
   async requestConvert({
-    cxId,
     patientId,
     sourceType,
     payload,
@@ -25,7 +24,6 @@ export class FHIRConverterConnectorHTTP implements FHIRConverterConnector {
 
     const resp = await axios.post(url, payload, {
       params: {
-        cxId,
         patientId,
         unusedSegments,
         invalidAccess,

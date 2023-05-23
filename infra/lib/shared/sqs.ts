@@ -5,11 +5,8 @@ import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs/lib/construct";
 import { createRetryLambda, DEFAULT_LAMBDA_TIMEOUT_SECONDS } from "./lambda";
 
-// Relevant API docs:
-// https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_aws-sqs.QueueProps.html#contentbaseddeduplication
-
-export type QueueProps = Omit<StandardQueueProps | FifoQueueProps, "dlq"> & {
-  fifo?: boolean;
+export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
+  dlq?: never;
   vpc: IVpc;
   producer?: IGrantable;
   consumer?: IGrantable;
@@ -29,13 +26,12 @@ export function createQueue(props: QueueProps): Queue {
   const dlq =
     props.createDLQ === false ? undefined : defaultDLQ(props.stack, props.name, props.fifo);
   const defaultQueueProps = {
-    ...props,
     ...(dlq ? { dlq: dlq } : {}),
   };
   const queue =
     props.fifo === true
-      ? createFifoQueue({ ...defaultQueueProps, fifo: true })
-      : createStandardQueue(defaultQueueProps);
+      ? createFifoQueue({ ...defaultQueueProps, ...props })
+      : createStandardQueue({ ...defaultQueueProps, ...props });
   props.producer && queue.grantSendMessages(props.producer);
   props.consumer && queue.grantConsumeMessages(props.consumer);
   props.consumer && dlq && dlq.grantSendMessages(props.consumer);
@@ -51,7 +47,7 @@ export function createQueue(props: QueueProps): Queue {
   return queue;
 }
 
-export type StandardQueueProps = {
+type AbstractQueueProps = {
   stack: Construct;
   name: string;
   dlq?: Queue;
@@ -61,6 +57,10 @@ export type StandardQueueProps = {
   receiveMessageWaitTime?: Duration;
   // maximum number of times a message can be processed before being automatically sent to the dead-letter queue
   maxReceiveCount?: number;
+};
+export type StandardQueueProps = AbstractQueueProps & {
+  contentBasedDeduplication?: never;
+  fifo?: never | false;
 };
 
 function createStandardQueue(props: StandardQueueProps): Queue {
@@ -87,9 +87,9 @@ function createStandardQueue(props: StandardQueueProps): Queue {
   });
 }
 
-export type FifoQueueProps = StandardQueueProps & {
+export type FifoQueueProps = AbstractQueueProps & {
   contentBasedDeduplication?: boolean;
-  fifo?: true;
+  fifo: true;
 };
 
 function createFifoQueue(props: FifoQueueProps): Queue {

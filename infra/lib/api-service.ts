@@ -29,6 +29,7 @@ export function createAPIService(
   dynamoDBTokenTable: dynamodb.Table,
   alarmAction: SnsAction | undefined,
   dnsZones: DnsZones,
+  fhirServerQueueUrl: string | undefined,
   fhirConverterQueueUrl: string | undefined,
   fhirConverterServiceUrl: string | undefined
 ): {
@@ -81,11 +82,11 @@ export function createAPIService(
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
           }),
-          ...(props.config.fhirServerUrl && {
-            FHIR_SERVER_URL: props.config.fhirServerUrl,
-          }),
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+          }),
+          ...(fhirServerQueueUrl && {
+            FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
           }),
           ...(fhirConverterQueueUrl && {
             FHIR_CONVERTER_QUEUE_URL: fhirConverterQueueUrl,

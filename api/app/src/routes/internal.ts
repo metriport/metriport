@@ -13,7 +13,6 @@ import { OrganizationModel } from "../models/medical/organization";
 import { encodeExternalId } from "../shared/external";
 import { capture } from "../shared/notifications";
 import { stringToBoolean } from "../shared/types";
-import internalFHIRRouter from "./medical/internal-fhir";
 import { stringListSchema } from "./schemas/shared";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
@@ -176,7 +175,5 @@ router.post(
     return res.json(result);
   })
 );
-
-router.use(`/fhir`, internalFHIRRouter);
 
 export default router;

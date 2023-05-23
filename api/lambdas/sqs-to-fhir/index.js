@@ -1,8 +1,7 @@
+import { MedplumClient } from "@medplum/core";
 import * as Sentry from "@sentry/node";
 import * as AWS from "aws-sdk";
-import axios from "axios";
-
-const AXIOS_TIMEOUT = 10_000; // milliseconds
+import fetch from "node-fetch";
 
 export function getEnv(name) {
   return process.env[name];
@@ -21,8 +20,7 @@ const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
 const sourceQueueURL = getEnvOrFail("QUEUE_URL");
 const dlqURL = getEnvOrFail("DLQ_URL");
-const conversionResultQueueURL = getEnvOrFail("CONVERSION_RESULT_QUEUE_URL");
-const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
+const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 
 // Keep this as early on the file as possible
 Sentry.init({
@@ -35,14 +33,6 @@ Sentry.init({
 
 const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
-const fhirConverter = axios.create({
-  // Only response timeout, no option for connection timeout: https://github.com/axios/axios/issues/4835
-  timeout: AXIOS_TIMEOUT,
-  transitional: {
-    // enables ETIMEDOUT instead of ECONNABORTED for timeouts - https://betterstack.com/community/guides/scaling-nodejs/nodejs-errors/
-    clarifyTimeoutError: true,
-  },
-});
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -84,14 +74,8 @@ export const handler = async function (event) {
 
         const attrib = message.messageAttributes;
         const cxId = attrib.cxId?.stringValue;
-        const patientId = attrib.patientId?.stringValue;
-        const converterUrl = attrib.serverUrl?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
-        if (!patientId) throw new Error(`Missing patientId`);
-        if (!converterUrl) throw new Error(`Missing converterUrl`);
-        const unusedSegments = attrib.unusedSegments?.stringValue;
-        const invalidAccess = attrib.invalidAccess?.stringValue;
-        const log = _log(`${i} - cxId ${cxId}, patient ${patientId}`);
+        const log = _log(`${i} - cxId ${cxId}`);
 
         const bodyAsJson = JSON.parse(message.body);
         const s3BucketName = bodyAsJson.s3BucketName;
@@ -102,14 +86,13 @@ export const handler = async function (event) {
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const payload = await downloadFileContents(s3BucketName, s3FileName);
 
-        const params = { patientId, unusedSegments, invalidAccess };
-        log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
-        const res = await fhirConverter.post(converterUrl, payload, {
-          params,
-          headers: { "Content-Type": "text/plain" },
+        log(`Sending payload to FHIRServer, cxId ${cxId}...`);
+        const fhirApi = new MedplumClient({
+          fetch,
+          baseUrl: fhirServerUrl,
+          fhirUrlPath: `fhir/${cxId}`,
         });
-
-        await sendConversionResult(cxId, s3FileName, res.data, log);
+        await fhirApi.executeBatch(payload);
 
         // To support partial batch response we need to delete the messages that were successfully processed
         // so these are not re-queued in case of failure
@@ -143,31 +126,6 @@ export const handler = async function (event) {
 async function downloadFileContents(s3BucketName, s3FileName) {
   const stream = s3Client.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
   return streamToString(stream);
-}
-
-async function sendConversionResult(cxId, sourceFileName, conversionPayload, log) {
-  const fileName = `${sourceFileName}.json}`;
-  const fileOnS3Info = {
-    s3BucketName: conversionResultBucketName,
-    s3FileName: fileName,
-  };
-  log(`Uploading result to S3, ${JSON.stringify(fileOnS3Info)}`);
-  await s3Client
-    .upload({
-      ...fileOnS3Info,
-      Body: conversionPayload,
-      ContentType: "application/fhir+json",
-    })
-    .promise();
-
-  log(`Sending result info to queue`);
-  const payload = JSON.stringify(fileOnS3Info);
-  const sendParams = {
-    MessageBody: payload,
-    QueueUrl: conversionResultQueueURL,
-    MessageAttributes: { cxId },
-  };
-  await sqs.sendMessage(sendParams).promise();
 }
 
 async function dequeue(message, log) {
