@@ -9,18 +9,24 @@ import { EnvType } from "../env-type";
 import { settings as settingsFhirConverter } from "../fhir-converter-service";
 import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
-import { createQueue as defaultCreateQueue, provideAccess } from "../shared/sqs";
+import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 
 function settings() {
   const { cpuAmount: fhirConverterCPUAmount, taskCountMin: fhirConverterTaskCounMin } =
     settingsFhirConverter();
+  // How long can the lambda run for, max is 900 seconds (15 minutes)
+  const lambdaTimeoutSeconds = 5 * 60;
   return {
     connectorName: "FHIRConverter",
-    lambdaTimeoutSeconds: 60,
-    // Amount of messages the lambda pull from SQS at once
+    // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
-    // Amount of lambda instances running in parallel (fixed if set - doesn't scale out/in, scalable if undefined)
+    // Number of lambda instances running in parallel (fixed if set - doesn't scale out/in, scalable if undefined)
     reservedConcurrentExecutions: fhirConverterCPUAmount * fhirConverterTaskCounMin,
+    lambdaTimeoutSeconds,
+    // How long will it take before Axios returns a timeout error - should be less than the lambda timeout
+    axiosTimeoutSeconds: lambdaTimeoutSeconds - 10, // give the lambda some time to deal with the timeout
+    // Number of times we want to retry a message that timed out when trying to be processed
+    maxTimeoutRetries: 99,
   };
 }
 
@@ -57,7 +63,8 @@ export function createLambda({
   envType,
   stack,
   vpc,
-  queue,
+  sourceQueue,
+  destinationQueue,
   dlq,
   fhirConverterBucket,
   conversionResultQueueUrl,
@@ -65,14 +72,21 @@ export function createLambda({
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
-  queue: Queue;
+  sourceQueue: Queue;
+  destinationQueue: Queue;
   dlq: DeadLetterQueue;
   fhirConverterBucket: s3.Bucket;
   conversionResultQueueUrl: string;
 }): Lambda {
   const config = getConfig();
-  const { connectorName, lambdaTimeoutSeconds, lambdaBatchSize, reservedConcurrentExecutions } =
-    settings();
+  const {
+    connectorName,
+    lambdaTimeoutSeconds,
+    lambdaBatchSize,
+    reservedConcurrentExecutions,
+    axiosTimeoutSeconds,
+    maxTimeoutRetries,
+  } = settings();
   const conversionLambda = defaultCreateLambda({
     stack,
     name: connectorName,
@@ -81,9 +95,10 @@ export function createLambda({
     entry: "../api/lambdas/fhir-converter/index.js",
     envVars: {
       ENV_TYPE: envType,
+      AXIOS_TIMEOUT_SECONDS: String(axiosTimeoutSeconds),
+      MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       ...(config.sentryDSN ? { SENTRY_DSN: config.sentryDSN } : undefined),
-      QUEUE_URL: queue.queueUrl,
-      DLQ_URL: dlq.queue.queueUrl,
+      QUEUE_URL: sourceQueue.queueUrl,
       CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
@@ -94,14 +109,15 @@ export function createLambda({
   fhirConverterBucket.grantReadWrite(conversionLambda);
 
   conversionLambda.addEventSource(
-    new SqsEventSource(queue, {
+    new SqsEventSource(sourceQueue, {
       batchSize: lambdaBatchSize,
       // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
       reportBatchItemFailures: true,
     })
   );
-  provideAccess({ accessType: "both", queue, resource: conversionLambda });
-  provideAccess({ accessType: "send", queue: dlq.queue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: conversionLambda });
 
   return conversionLambda;
 }

@@ -26,7 +26,7 @@ import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
 import { createLambda } from "./shared/lambda";
 import { getSecrets } from "./shared/secrets";
-import { provideAccess } from "./shared/sqs";
+import { provideAccessToQueue } from "./shared/sqs";
 import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./shared/util";
 
 interface APIStackProps extends StackProps {
@@ -244,7 +244,7 @@ export class APIStack extends Stack {
       //-------------------------------------------
       // FHIR CONNECTORS - Finish setting it up
       //-------------------------------------------
-      provideAccess({
+      provideAccessToQueue({
         accessType: "send",
         queue: fhirConverterQueue,
         resource: apiService.service.taskDefinition.taskRole,
@@ -254,7 +254,8 @@ export class APIStack extends Stack {
             envType: props.config.environmentType,
             stack: this,
             vpc: this.vpc,
-            queue: fhirConverterQueue,
+            sourceQueue: fhirConverterQueue,
+            destinationQueue: fhirServerQueue,
             dlq: fhirConverterDLQ,
             fhirConverterBucket,
             conversionResultQueueUrl: fhirServerQueue.queueUrl,

@@ -131,7 +131,7 @@ export const defaultDLQ = (scope: Construct, name: string, fifo?: boolean): Queu
 
 export type AccessType = "send" | "receive" | "both";
 
-export function provideAccess({
+export function provideAccessToQueue({
   queue,
   accessType,
   resource,

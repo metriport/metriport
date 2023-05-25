@@ -2,8 +2,6 @@ import * as Sentry from "@sentry/node";
 import * as AWS from "aws-sdk";
 import axios from "axios";
 
-const AXIOS_TIMEOUT = 10_000; // milliseconds
-
 export function getEnv(name) {
   return process.env[name];
 }
@@ -19,8 +17,9 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
+const AXIOS_TIMEOUT_SECONDS = getEnvOrFail("AXIOS_TIMEOUT_SECONDS");
+const MAX_TIMEOUT_RETRIES = getEnvOrFail("MAX_TIMEOUT_RETRIES");
 const sourceQueueURL = getEnvOrFail("QUEUE_URL");
-const dlqURL = getEnvOrFail("DLQ_URL");
 const conversionResultQueueURL = getEnvOrFail("CONVERSION_RESULT_QUEUE_URL");
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
@@ -37,7 +36,7 @@ const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 const fhirConverter = axios.create({
   // Only response timeout, no option for connection timeout: https://github.com/axios/axios/issues/4835
-  timeout: AXIOS_TIMEOUT,
+  timeout: AXIOS_TIMEOUT_SECONDS * 1_000, // should be less than the lambda timeout
   transitional: {
     // enables ETIMEDOUT instead of ECONNABORTED for timeouts - https://betterstack.com/community/guides/scaling-nodejs/nodejs-errors/
     clarifyTimeoutError: true,
@@ -46,24 +45,29 @@ const fhirConverter = axios.create({
 
 /* Example of a single message/record in event's `Records` array:
 {
-    "messageId": "7f13f086-664b-49f8-b4dc-debcc47c193a",
-    "receiptHandle": "AQEBXyzdOCj9Bo6XjSjuQGeEwyjiUBBFa4TRv6/fU2xWdH5RmU3iAoUeYPyu2SgjyjZ6631dIdbODETcUxZn1gECAg3oLMBZc6SFiOgyzTtBG8/wgrTkDwjtS5wKFB/zD10T/EFRllCGmNXkfN2cppdXtBO+ZIF+pdPw5YGL3EZDCyj5sh2qm26gVdEZ5FPNLqpgPdPb0lRUhCaDHVtpzzXDyPYf+cM+xwGg6ydmRY7gWSD1u1oqPGUEZb/VZPGwPE7X45MS9p5NfyXnSRDRJFvIUkeWZyOlVdRwP7ICUJiWDy8=",
-    "body": "{\"type\":\"reprocess\",\"fruit\":\"apple\"}",
+    "messageId": "2EBA03BC-D6D1-452B-BFC3-B1DD39F32947",
+    "receiptHandle": "quite-long-string",
+    "body": "{\"s3FileName\":\"nononononono\",\"s3BucketName\":\"nononono\"}",
     "attributes": {
         "ApproximateReceiveCount": "1",
         "AWSTraceHeader": "Root=1-646a7c8c-3c5f0ea61b9a8e633bfad33c;Parent=78bb05ac3530ad87;Sampled=0;Lineage=e4161027:0",
         "SentTimestamp": "1684700300546",
         "SequenceNumber": "18878027350649327616",
-        "MessageGroupId": "test-first",
         "SenderId": "AROAWX27OVJFOXNNHQRAU:FHIRConverter_Retry_Lambda",
-        "MessageDeduplicationId": "9cxBDxgnpO3ttGoljnRW2",
         "ApproximateFirstReceiveTimestamp": "1684700300546"
     },
-    "messageAttributes": {},
-    "md5OfBody": "5c4e4cc132cd052442ef41835213c740",
+    "messageAttributes": {
+      cxId: {
+        stringValue: '7006E0FB-33C8-42F4-B675-A3FD05717446',
+        stringListValues: [],
+        binaryListValues: [],
+        dataType: 'String'
+      }
+    },
+    "md5OfBody": "543u5y34ui53uih543uh5ui4",
     "eventSource": "aws:sqs",
-    "eventSourceARN": "arn:aws:sqs:us-east-2:463519787594:FHIRConverterQueue.fifo",
-    "awsRegion": "us-east-2"
+    "eventSourceARN": "arn:aws:sqs:<region>:<acc>>:<queue-name>",
+    "awsRegion": "<region>"
 }
 */
 
@@ -102,31 +106,33 @@ export const handler = async function (event) {
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const payload = await downloadFileContents(s3BucketName, s3FileName);
 
-        const params = { patientId, unusedSegments, invalidAccess };
+        const params = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
         log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
         const res = await fhirConverter.post(converterUrl, payload, {
           params,
           headers: { "Content-Type": "text/plain" },
+          // don't convert to JSON so we don't need to convert it back to string
+          transformResponse: res => res,
         });
 
         await sendConversionResult(cxId, s3FileName, res.data, log);
 
         // To support partial batch response we need to delete the messages that were successfully processed
         // so these are not re-queued in case of failure
-        await dequeue(message, log);
+        await dequeue(message);
         //
       } catch (err) {
-        console.log(`Removing message from queue due to error: ${err}`, message);
-        await dequeue(message, console.log);
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
-        if (err.code === "ETIMEDOUT") {
+        const count = message.attributes?.ApproximateReceiveCount;
+        if (err.code === "ETIMEDOUT" && count <= MAX_TIMEOUT_RETRIES) {
+          console.log(`Timed out, reenqueue (${count} of ${MAX_TIMEOUT_RETRIES}): `, message);
           await reEnqueue(message);
+          Sentry.captureMessage("Conversion timed out", {
+            extra: { event, context: lambdaName, patientId, s3FileName },
+          });
         } else {
-          console.log(`Error processing message: ${err} `, message);
-          Sentry.captureException(err, { extra: { message, context: lambdaName } });
-          // Send to DLQ right away otherwise we'll have to wait for message visibility timeout to expire before
-          // we can process the next message, when the queue is configured as FIFO.
-          await sendToDLQ(message);
+          console.log(`Error processing message: `, message);
+          throw err;
         }
       }
     }
@@ -146,31 +152,31 @@ async function downloadFileContents(s3BucketName, s3FileName) {
 }
 
 async function sendConversionResult(cxId, sourceFileName, conversionPayload, log) {
-  const fileName = `${sourceFileName}.json}`;
-  const fileOnS3Info = {
-    s3BucketName: conversionResultBucketName,
-    s3FileName: fileName,
-  };
-  log(`Uploading result to S3, ${JSON.stringify(fileOnS3Info)}`);
+  const fileName = `${sourceFileName}.json`;
+  log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
   await s3Client
     .upload({
-      ...fileOnS3Info,
+      Bucket: conversionResultBucketName,
+      Key: fileName,
       Body: conversionPayload,
       ContentType: "application/fhir+json",
     })
     .promise();
 
   log(`Sending result info to queue`);
-  const payload = JSON.stringify(fileOnS3Info);
+  const queuePayload = JSON.stringify({
+    s3BucketName: conversionResultBucketName,
+    s3FileName: fileName,
+  });
   const sendParams = {
-    MessageBody: payload,
+    MessageBody: queuePayload,
     QueueUrl: conversionResultQueueURL,
-    MessageAttributes: { cxId },
+    MessageAttributes: { ...singleAtringAttributeToSend("cxId", cxId) },
   };
   await sqs.sendMessage(sendParams).promise();
 }
 
-async function dequeue(message, log) {
+async function dequeue(message) {
   const deleteParams = {
     QueueUrl: sourceQueueURL,
     ReceiptHandle: message.receiptHandle,
@@ -178,7 +184,7 @@ async function dequeue(message, log) {
   try {
     await sqs.deleteMessage(deleteParams).promise();
   } catch (err) {
-    log(`Failed to remove message from queue: `, err);
+    console.log(`Failed to remove message from queue: `, message, err);
     Sentry.captureException(err, {
       extra: { message, deleteParams, context: "dequeue" },
     });
@@ -186,43 +192,22 @@ async function dequeue(message, log) {
 }
 
 async function reEnqueue(message) {
+  await dequeue(message, console.log);
+
   const sendParams = {
     MessageBody: message.body,
     // FIFO only
     // 706 MessageDeduplicationId: message.attributes.MessageDeduplicationId,
     // 706 MessageGroupId: message.attributes.MessageGroupId,
     QueueUrl: sourceQueueURL,
-    MessageAttributes: message.messageAttributes,
+    MessageAttributes: stringAttributesToSend(message.messageAttributes),
   };
   try {
-    // 706 console.log(`Re-enqueue message w/ dedup ID: ${sendParams.MessageDeduplicationId}...`);
-    console.log(`Re-enqueue message: ${JSON.stringify(sendParams)}`);
     await sqs.sendMessage(sendParams).promise();
   } catch (err) {
-    console.log(`Failed to send message to queue: `, err);
+    console.log(`Failed to re-enqueue message: `, message, err);
     Sentry.captureException(err, {
       extra: { message, sendParams, context: "reEnqueue" },
-    });
-  }
-}
-
-async function sendToDLQ(message) {
-  const sendParams = {
-    MessageBody: message.body,
-    // FIFO only
-    // 706 MessageDeduplicationId: message.attributes.MessageDeduplicationId,
-    // 706 MessageGroupId: message.attributes.MessageGroupId,
-    QueueUrl: dlqURL,
-    MessageAttributes: message.messageAttributes,
-  };
-  try {
-    // 706 console.log(`Sending message to DLQ w/ dedup ID: ${sendParams.MessageDeduplicationId}...`);
-    console.log(`Sending message to DLQ: ${JSON.stringify(sendParams)}`);
-    await sqs.sendMessage(sendParams).promise();
-  } catch (err) {
-    console.log(`Failed to send message to queue: `, err);
-    Sentry.captureException(err, {
-      extra: { message, sendParams, context: "sendToDLQ" },
     });
   }
 }
@@ -234,6 +219,26 @@ async function streamToString(stream) {
     stream.on("error", err => reject(err));
     stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
   });
+}
+
+function stringAttributesToSend(inboundMessageAttribs) {
+  let res = {};
+  for (const [key, value] of Object.entries(inboundMessageAttribs)) {
+    res = {
+      ...res,
+      ...singleAtringAttributeToSend(key, value.stringValue),
+    };
+  }
+  return res;
+}
+
+function singleAtringAttributeToSend(name, value) {
+  return {
+    [name]: {
+      DataType: "String",
+      StringValue: value,
+    },
+  };
 }
 
 function _log(prefix) {

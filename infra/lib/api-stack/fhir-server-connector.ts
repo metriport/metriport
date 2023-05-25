@@ -7,14 +7,17 @@ import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
-import { createQueue as defaultCreateQueue, provideAccess } from "../shared/sqs";
+import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 
 const connectorName = "FHIRServer";
-const lambdaTimeoutSeconds = 60;
-// Amount of messages the lambda pull from SQS at once
+// Number of messages the lambda pull from SQS at once
 const lambdaBatchSize = 1;
-// Amount of lambda instances running in parallel (fixed if set - doesn't scale out/in, scalable if undefined)
-const reservedConcurrentExecutions = undefined;
+// Number of lambda instances running in parallel (fixed if set - doesn't scale out/in, scalable if undefined)
+const reservedConcurrentExecutions = 4;
+// How long can the lambda run for, max is 900 seconds (15 minutes)
+const lambdaTimeoutSeconds = 5 * 60;
+// Number of times we want to retry a message that timed out when trying to be processed
+const maxTimeoutRetries = 99;
 
 export function createConnector({
   envType,
@@ -54,9 +57,9 @@ export function createConnector({
     entry: "../api/lambdas/sqs-to-fhir/index.js",
     envVars: {
       ENV_TYPE: envType,
+      MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       ...(config.sentryDSN ? { SENTRY_DSN: config.sentryDSN } : undefined),
       QUEUE_URL: queue.queueUrl,
-      DLQ_URL: dlq.queue.queueUrl,
       ...(fhirServerUrl && {
         FHIR_SERVER_URL: config.fhirServerUrl,
       }),
@@ -73,8 +76,8 @@ export function createConnector({
       reportBatchItemFailures: true,
     })
   );
-  provideAccess({ accessType: "both", queue, resource: sqsToFhirLambda });
-  provideAccess({ accessType: "send", queue: dlq.queue, resource: sqsToFhirLambda });
+  provideAccessToQueue({ accessType: "both", queue, resource: sqsToFhirLambda });
+  provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: sqsToFhirLambda });
 
   return queue;
 }

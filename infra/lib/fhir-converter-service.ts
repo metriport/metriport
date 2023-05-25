@@ -20,11 +20,11 @@ export function settings() {
     cpuAmount,
     cpu: cpuAmount * vCPU,
     memoryLimitMiB: prod ? 8192 : 2048,
-    desiredCount: prod ? 2 : 1,
-    taskCountMin: prod ? 2 : 1,
-    taskCountMax: prod ? 10 : 2,
+    taskCountMin: prod ? 2 : 2,
+    taskCountMax: prod ? 30 : 10,
   };
 }
+
 interface FhirConverterServiceProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
@@ -36,7 +36,7 @@ export function createFHIRConverterService(
   vpc: ec2.IVpc,
   alarmAction: SnsAction | undefined
 ): { service: FargateService; address: string } {
-  const { cpu, memoryLimitMiB, desiredCount, taskCountMin, taskCountMax } = settings();
+  const { cpu, memoryLimitMiB, taskCountMin, taskCountMax } = settings();
 
   // Create a new Amazon Elastic Container Service (ECS) cluster
   const cluster = new ecs.Cluster(stack, "FHIRConverterCluster", { vpc, containerInsights: true });
@@ -54,7 +54,7 @@ export function createFHIRConverterService(
       cluster: cluster,
       cpu,
       memoryLimitMiB,
-      desiredCount,
+      desiredCount: taskCountMin,
       taskImageOptions: {
         image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
         containerPort: 8080,
