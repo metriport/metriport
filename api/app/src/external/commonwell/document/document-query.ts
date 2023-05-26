@@ -173,11 +173,10 @@ export async function internalGetDocuments({
   log(`Document query got ${docs.length} documents${docs.length ? ", processing" : ""}...`);
   const documents: Document[] = docs.flatMap(d => {
     if (d.content.size === 0) {
-      log(`Document is of size 0, skipping - doc id ${d.id}`);
+      log(`Document is of size 0, this may result in a 404 error - doc id ${d.id}`);
       capture.message("Document is of size 0", {
         extra: d.content,
       });
-      return [];
     }
 
     if (d.content && d.content.masterIdentifier?.value && d.content.location) {
@@ -327,7 +326,7 @@ export async function downloadDocsAndUpsertFHIR({
 
             let getS3InfoAndContents: () => Promise<{
               s3Location: string;
-              fileContents: Promise<string>;
+              fileContents: Promise<{ contents: string; size: number }>;
             }>;
 
             if (!fileExists || override) {
@@ -367,12 +366,14 @@ export async function downloadDocsAndUpsertFHIR({
             }
 
             const { s3Location, fileContents } = await getS3InfoAndContents();
+            const file = await fileContents;
 
             const docWithFile: CWDocumentWithMetriportData = {
               ...doc,
               metriport: {
                 fileName: s3FileName,
                 location: s3Location,
+                fileSize: file.size,
               },
             };
 
@@ -382,15 +383,13 @@ export async function downloadDocsAndUpsertFHIR({
               doc.content?.mimeType === "text/xml"
             ) {
               try {
-                const fileString = await fileContents;
                 // note that on purpose, this bundle will not contain the corresponding doc ref
-                const fhirBundle = await convertCDAToFHIR(patient.id, fileString);
+                const fhirBundle = await convertCDAToFHIR(patient.id, fhirDocId, file.contents);
                 if (fhirBundle) await postFHIRBundle(patient.cxId, fhirBundle);
               } catch (error) {
                 reportFHIRError({ patientId: patient.id, doc, error, log });
               }
             }
-
             const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
             await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
 
@@ -399,12 +398,17 @@ export async function downloadDocsAndUpsertFHIR({
             log(`Doc without location, skipping - docId ${fhirDocId}, s3FileName ${s3FileName}`);
           }
         } catch (error) {
-          log(`Error downloading from CW and upserting to FHIR (docId ${doc.id}): ${error}`);
+          const isZeroLength = doc.content.size === 0;
+          const zeroLengthDetailsStr = isZeroLength ? "zero length document" : "";
+          log(
+            `Error downloading ${zeroLengthDetailsStr} from CW and upserting to FHIR (docId ${doc.id}): ${error}`
+          );
           capture.error(error, {
             extra: {
               context: `s3.documentUpload`,
               patientId: patient.id,
               documentReference: doc,
+              isZeroLength,
             },
           });
           throw error;

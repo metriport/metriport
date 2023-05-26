@@ -114,12 +114,17 @@ export class Util {
   static oneOf = <T>(...values: T[]): NonNullable<T> | undefined =>
     values.find(v => v != null) ?? undefined;
 
-  static async streamToString(stream: Stream): Promise<string> {
+  static async streamToString(stream: Stream): Promise<{ contents: string; size: number }> {
     const chunks: Buffer[] = [];
+    let size = 0;
     return new Promise((resolve, reject) => {
-      stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
+      stream.on("data", chunk => {
+        const chunkBuffer = Buffer.from(chunk);
+        chunks.push(chunkBuffer);
+        size += chunkBuffer.length;
+      });
       stream.on("error", err => reject(err));
-      stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      stream.on("end", () => resolve({ contents: Buffer.concat(chunks).toString("utf8"), size }));
     });
   }
 }
