@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Config } from "../../shared/config";
 import { Bundle } from "@medplum/fhirtypes";
+import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extension";
 
 const templateExt = "hbs";
 
@@ -24,6 +25,7 @@ export enum FHIRConverterCDATemplate {
 
 export async function convertCDAToFHIR(
   patientId: string,
+  docId: string,
   cda: string,
   template: FHIRConverterCDATemplate = FHIRConverterCDATemplate.ccd,
   keepUnusedSegments = false,
@@ -48,5 +50,14 @@ export async function convertCDAToFHIR(
     }
   );
 
-  return resp.data.fhirResource;
+  // attach the doc ref id to each resulting FHIR resource, doing this in-memory here
+  // and not in the converter for flexibility
+  const fhirBundle = resp.data.fhirResource as Bundle | undefined;
+  if (fhirBundle?.entry?.length) {
+    for (const resource of fhirBundle.entry) {
+      if (!resource.extension) resource.extension = [];
+      resource.extension?.push(buildDocIdFHIRExtension(docId));
+    }
+  }
+  return fhirBundle;
 }

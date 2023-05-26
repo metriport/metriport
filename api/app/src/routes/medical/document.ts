@@ -19,10 +19,18 @@ const router = Router();
 /** ---------------------------------------------------------------------------
  * GET /document
  *
- * Queries for all available document metadata for the specified patient across HIEs.
+ * Lists all Documents that can be retrieved for a Patient.
  *
- * @param req.query.patientId Patient ID for which to retrieve document metadata.
- * @return The metadata of available documents.
+ *
+ * It also returns the status of querying document references across HIEs,
+ * indicating whether there is an asynchronous query in progress (status processing)
+ * or not (status completed).
+ *
+ * If the query is in progress, you will also receive the total number of documents
+ * to be queried as well as the ones that have already been completed.
+ *
+ * @param req.query.patientId Patient ID for which to list documents.
+ * @return The available documents, including query status and progress - as applicable.
  */
 router.get(
   "/",

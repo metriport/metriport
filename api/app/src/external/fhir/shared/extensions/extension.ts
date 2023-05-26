@@ -1,16 +1,17 @@
 import { Coding, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
+import { METRIPORT } from "../../../../shared/constants";
+import { isCommonwellContent } from "../../../commonwell/extension";
+import { BASE_EXTENSION_URL } from "./base-extension";
 import { DeepRequired } from "ts-essentials";
-import { METRIPORT } from "../../../shared/constants";
-import { isCommonwellContent } from "../../commonwell/extension";
-
-const DATA_SOURCE_EXTENSION_URL =
-  "https://public.metriport.com/fhir/StructureDefinition/data-source.json";
 
 // URL is required: https://www.hl7.org/fhir/R4/extensibility.html#Extension.url
 export type MetriportExtension = Omit<Extension, "url" | "valueCoding"> &
   Required<Pick<Extension, "url">> & {
     valueCoding: Omit<Coding, "system" | "code"> & DeepRequired<Pick<Coding, "system" | "code">>;
   };
+
+// TODO #712: create this extension
+const DATA_SOURCE_EXTENSION_URL = `${BASE_EXTENSION_URL}/data-source.json`;
 
 export const dataSourceExtensionDefaults = {
   url: DATA_SOURCE_EXTENSION_URL,
