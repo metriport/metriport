@@ -391,7 +391,6 @@ export async function downloadDocsAndUpsertFHIR({
               }
             }
             const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
-            // update the stored doc ref based on the actual file content size
             await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
 
             return FHIRDocRef;
