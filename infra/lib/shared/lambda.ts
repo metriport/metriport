@@ -1,4 +1,5 @@
 import { Duration, StackProps } from "aws-cdk-lib";
+import { Metric } from "aws-cdk-lib/aws-cloudwatch";
 import { ISubnet, IVpc } from "aws-cdk-lib/aws-ec2";
 import { Rule, Schedule } from "aws-cdk-lib/aws-events";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -43,7 +44,7 @@ export interface LambdaProps extends StackProps {
 }
 
 export function createLambda(props: LambdaProps): Lambda {
-  return new lambda_node.NodejsFunction(props.stack, props.name, {
+  const lambda = new lambda_node.NodejsFunction(props.stack, props.name, {
     functionName: props.name + "Lambda",
     runtime: Runtime.NODEJS_16_X,
     // TODO move our lambdas to use layers, quicker to deploy and execute them
@@ -66,6 +67,8 @@ export function createLambda(props: LambdaProps): Lambda {
     retryAttempts: props.retryAttempts ?? 0,
     maxEventAge: props.maxEventAge ?? undefined,
   });
+  Metric.grantPutMetricData(lambda);
+  return lambda;
 }
 
 export interface RetryLambdaProps extends Omit<LambdaProps, "entry"> {
@@ -88,9 +91,10 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
     entry: props.entry ?? `${pathToLambdas}/sqs-to-sqs/index.js`,
     envVars: {
       ...props.envVars,
+      ENV_TYPE: config.environmentType,
+      ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       SOURCE_QUEUE: props.sourceQueue.queueUrl,
       DESTINATION_QUEUE: props.destinationQueue.queueUrl,
-      ...(config.sentryDSN ? { SENTRY_DSN: config.sentryDSN } : undefined),
     },
   });
   props.sourceQueue.grantConsumeMessages(retryLambda);

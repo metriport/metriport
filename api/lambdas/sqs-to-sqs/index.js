@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/serverless";
 import * as AWS from "aws-sdk";
 
 const numberOfMessagesPerRetry = 1; // up to 10
@@ -12,14 +12,27 @@ export function getEnvOrFail(name) {
   return value;
 }
 
+// Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
+// Set by us
+const envType = getEnvOrFail("ENV_TYPE");
+const sentryDsn = getEnv("SENTRY_DSN");
 const sourceQueue = getEnvOrFail("SOURCE_QUEUE");
 const destinationQueue = getEnvOrFail("DESTINATION_QUEUE");
 
+// Keep this as early on the file as possible
+Sentry.init({
+  dsn: sentryDsn,
+  enabled: sentryDsn != null,
+  environment: envType,
+  // TODO #499 Review this based on the load on our app and Sentry's quotas
+  tracesSampleRate: 1.0,
+});
+
 const sqs = new AWS.SQS({ region });
 
-export const handler = async function (event) {
+export const handler = Sentry.AWSLambda.wrapHandler(async event => {
   // Set it up
   console.log(
     `Running w/ numberOfMessagesPerRetry = ${numberOfMessagesPerRetry}, ` +
@@ -80,7 +93,7 @@ export const handler = async function (event) {
     });
     throw err;
   }
-};
+});
 
 function attributesToSend(inboundMessageAttribs) {
   let res = {};

@@ -26,15 +26,13 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
     const serverUrl = buildUrl(fhirConverterUrl, sourceType, template);
 
     await sendMessageToQueue(queueUrl, payload, {
-      // FIFO only
-      // 706 messageGroupId: "fhirConverterGroupId",
-      // 706 messageDeduplicationId: documentId,
       messageAttributes: {
         cxId,
         serverUrl,
         unusedSegments,
         invalidAccess,
         patientId,
+        startedAt: new Date().toISOString(),
       },
     });
   }

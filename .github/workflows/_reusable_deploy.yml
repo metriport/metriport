@@ -80,18 +80,18 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: "./"
       # lambdas are not on the npm workspaces, so need to 'install' individually
-      - name: FHIRConverter lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/fhir-converter/"
       - name: Garmin lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/garmin/"
-      - name: Retry SQS lambda install dependencies
+      - name: FHIRConverter lambda install dependencies
         run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/retry-sqs/"
+        working-directory: "api/lambdas/sqs-to-converter/"
       - name: SQS to FHIR lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/sqs-to-fhir/"
+      - name: Retry SQS lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/sqs-to-sqs/"
       - name: Tester lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/tester/"

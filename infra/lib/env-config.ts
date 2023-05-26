@@ -64,6 +64,7 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
   sentryDSN?: string; // API's Sentry DSN
+  lambdasSentryDSN?: string;
   slack?: {
     SLACK_ALERT_URL?: string;
     SLACK_NOTIFICATION_URL?: string;

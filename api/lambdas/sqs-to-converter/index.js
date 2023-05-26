@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/serverless";
 import * as AWS from "aws-sdk";
 import axios from "axios";
 
@@ -15,6 +15,7 @@ export function getEnvOrFail(name) {
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
+const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
 const AXIOS_TIMEOUT_SECONDS = getEnvOrFail("AXIOS_TIMEOUT_SECONDS");
@@ -35,6 +36,7 @@ Sentry.init({
 
 const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
+const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
 const fhirConverter = axios.create({
   // Only response timeout, no option for connection timeout: https://github.com/axios/axios/issues/4835
   timeout: AXIOS_TIMEOUT_SECONDS * 1_000, // should be less than the lambda timeout
@@ -72,7 +74,7 @@ const fhirConverter = axios.create({
 }
 */
 
-export const handler = async function (event) {
+export const handler = Sentry.AWSLambda.wrapHandler(async event => {
   try {
     // Process messages from SQS
     const records = event.Records; // SQSRecord[]
@@ -99,6 +101,7 @@ export const handler = async function (event) {
         const cxId = attrib.cxId?.stringValue;
         const patientId = attrib.patientId?.stringValue;
         const converterUrl = attrib.serverUrl?.stringValue;
+        const jobStartedAt = attrib.startedAt?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
         if (!patientId) throw new Error(`Missing patientId`);
         if (!converterUrl) throw new Error(`Missing converterUrl`);
@@ -112,19 +115,33 @@ export const handler = async function (event) {
         if (!s3BucketName) throw new Error(`Missing s3BucketName`);
         if (!s3FileName) throw new Error(`Missing s3FileName`);
 
+        const metrics = { cxId, patientId };
+
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
+        const downloadStart = Date.now();
         const payload = await downloadFileContents(s3BucketName, s3FileName);
+        metrics.download = {
+          duration: Date.now() - downloadStart,
+          timestamp: new Date().toISOString(),
+        };
 
         const params = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
         log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
+        const conversionStart = Date.now();
         const res = await fhirConverter.post(converterUrl, payload, {
           params,
           headers: { "Content-Type": "text/plain" },
           // don't convert to JSON so we don't need to convert it back to string
           transformResponse: res => res,
         });
+        metrics.conversion = {
+          duration: Date.now() - conversionStart,
+          timestamp: new Date().toISOString(),
+        };
 
-        await sendConversionResult(cxId, s3FileName, res.data, log);
+        await sendConversionResult(cxId, s3FileName, res.data, jobStartedAt, log);
+
+        await reportMetrics(metrics);
         //
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
@@ -152,14 +169,14 @@ export const handler = async function (event) {
     });
     throw err;
   }
-};
+});
 
 async function downloadFileContents(s3BucketName, s3FileName) {
   const stream = s3Client.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
   return streamToString(stream);
 }
 
-async function sendConversionResult(cxId, sourceFileName, conversionPayload, log) {
+async function sendConversionResult(cxId, sourceFileName, conversionPayload, jobStartedAt, log) {
   const fileName = `${sourceFileName}.json`;
   log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
   await s3Client
@@ -179,7 +196,10 @@ async function sendConversionResult(cxId, sourceFileName, conversionPayload, log
   const sendParams = {
     MessageBody: queuePayload,
     QueueUrl: conversionResultQueueURL,
-    MessageAttributes: { ...singleAttributeToSend("cxId", cxId) },
+    MessageAttributes: {
+      ...singleAttributeToSend("cxId", cxId),
+      ...(jobStartedAt ? singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
+    },
   };
   await sqs.sendMessage(sendParams).promise();
 }
@@ -234,6 +254,28 @@ async function dequeue(message) {
   }
 }
 
+async function reportMetrics(metrics) {
+  const { download, conversion } = metrics;
+  const metric = (name, values) => ({
+    MetricName: name,
+    Value: parseFloat(values.duration),
+    Unit: "Milliseconds",
+    Timestamp: values.timestamp,
+    Dimensions: [{ Name: "Service", Value: lambdaName }],
+  });
+  try {
+    await cloudWatch
+      .putMetricData({
+        MetricData: [metric("Download", download), metric("Conversion", conversion)],
+        Namespace: metricsNamespace,
+      })
+      .promise();
+  } catch (err) {
+    console.log(`Failed to report metrics, `, metrics, err);
+    Sentry.captureException(err, { extra: { metrics } });
+  }
+}
+
 async function streamToString(stream) {
   const chunks = [];
   return new Promise((resolve, reject) => {
@@ -248,7 +290,7 @@ function attributesToSend(inboundMessageAttribs) {
   for (const [key, value] of Object.entries(inboundMessageAttribs)) {
     res = {
       ...res,
-      ...singleAttributeToSend(key, value),
+      ...singleAttributeToSend(key, value.stringValue),
     };
   }
   return res;
@@ -257,8 +299,8 @@ function attributesToSend(inboundMessageAttribs) {
 function singleAttributeToSend(name, value) {
   return {
     [name]: {
-      DataType: value.dataType,
-      StringValue: value.stringValue,
+      DataType: "String",
+      StringValue: value,
     },
   };
 }

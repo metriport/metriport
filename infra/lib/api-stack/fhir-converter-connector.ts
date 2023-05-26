@@ -7,7 +7,7 @@ import { DeadLetterQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { settings as settingsFhirConverter } from "../fhir-converter-service";
-import { getConfig } from "../shared/config";
+import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 
@@ -96,10 +96,11 @@ export function createLambda({
     subnets: vpc.privateSubnets,
     entry: "../api/lambdas/sqs-to-converter/index.js",
     envVars: {
+      METRICS_NAMESPACE,
       ENV_TYPE: envType,
       AXIOS_TIMEOUT_SECONDS: String(axiosTimeoutSeconds),
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
-      ...(config.sentryDSN ? { SENTRY_DSN: config.sentryDSN } : undefined),
+      ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
       CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,

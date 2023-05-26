@@ -3,6 +3,8 @@ import "source-map-support/register";
 import { EnvConfig } from "../env-config";
 import { EnvType } from "../env-type";
 
+export const METRICS_NAMESPACE = "Metriport";
+
 let config: EnvConfig | undefined;
 
 export function getConfig(): EnvConfig {

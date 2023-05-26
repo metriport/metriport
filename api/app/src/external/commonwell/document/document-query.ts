@@ -23,6 +23,7 @@ import { createS3FileName, getDocumentPrimaryId } from "../../../shared/external
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
+import { reportMetric } from "../../aws/cloudwatch";
 import { makeS3Client } from "../../aws/s3";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { MAX_FHIR_DOC_ID_LENGTH } from "../../fhir/bundle";
@@ -117,6 +118,7 @@ export async function internalGetDocuments({
   organization: Organization;
   facility: Facility;
 }): Promise<Document[]> {
+  const context = "cw.queryDocument";
   const { log } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
 
   const externalData = patient.data.externalData?.COMMONWELL;
@@ -125,6 +127,16 @@ export async function internalGetDocuments({
     return [];
   }
   const cwData = externalData as PatientDataCommonwell;
+
+  const reportDocQuery = (queryStart: number) => {
+    const queryDuration = Date.now() - queryStart;
+    reportMetric({
+      name: context,
+      value: queryDuration,
+      unit: "Milliseconds",
+      additionalDimension: "CommonWell",
+    });
+  };
 
   const orgName = organization.data.name;
   const orgId = organization.id;
@@ -135,7 +147,9 @@ export async function internalGetDocuments({
   const docs: Document[] = [];
   const cwErrs: OperationOutcome[] = [];
   try {
+    const queryStart = Date.now();
     const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
+    reportDocQuery(queryStart);
     log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
 
     for (const item of queryResponse.entry) {

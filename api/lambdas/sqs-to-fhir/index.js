@@ -1,5 +1,5 @@
 import { MedplumClient } from "@medplum/core";
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/serverless";
 import * as AWS from "aws-sdk";
 import fetch from "node-fetch";
 
@@ -16,6 +16,7 @@ export function getEnvOrFail(name) {
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
+const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
 const MAX_TIMEOUT_RETRIES = getEnvOrFail("MAX_TIMEOUT_RETRIES");
@@ -34,6 +35,7 @@ Sentry.init({
 
 const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
+const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -63,7 +65,7 @@ const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 }
 */
 
-export const handler = async function (event) {
+export const handler = Sentry.AWSLambda.wrapHandler(async event => {
   try {
     // Process messages from SQS
     const records = event.Records; // SQSRecord[]
@@ -89,6 +91,7 @@ export const handler = async function (event) {
         const attrib = message.messageAttributes;
         const cxId = attrib.cxId?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
+        const jobStartedAt = attrib.jobStartedAt?.stringValue;
         const log = _log(`${i} - cxId ${cxId}`);
 
         const bodyAsJson = JSON.parse(message.body);
@@ -97,17 +100,37 @@ export const handler = async function (event) {
         if (!s3BucketName) throw new Error(`Missing s3BucketName`);
         if (!s3FileName) throw new Error(`Missing s3FileName`);
 
+        const metrics = { cxId };
+
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
+        const downloadStart = Date.now();
         const payloadRaw = await downloadFileContents(s3BucketName, s3FileName);
+        metrics.download = {
+          duration: Date.now() - downloadStart,
+          timestamp: new Date().toISOString(),
+        };
         const payload = JSON.parse(payloadRaw).fhirResource;
 
         log(`Sending payload to FHIRServer, cxId ${cxId}...`);
+        const conversionStart = Date.now();
         const fhirApi = new MedplumClient({
           fetch,
           baseUrl: fhirServerUrl,
           fhirUrlPath: `fhir/${cxId}`,
         });
         await fhirApi.executeBatch(payload);
+        metrics.conversion = {
+          duration: Date.now() - conversionStart,
+          timestamp: new Date().toISOString(),
+        };
+        if (jobStartedAt) {
+          metrics.job = {
+            duration: Date.now() - new Date(jobStartedAt).getMilliseconds(),
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+        await reportMetrics(metrics);
         //
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
@@ -135,7 +158,7 @@ export const handler = async function (event) {
     });
     throw err;
   }
-};
+});
 
 async function downloadFileContents(s3BucketName, s3FileName) {
   const stream = s3Client.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
@@ -192,6 +215,32 @@ async function dequeue(message) {
   }
 }
 
+async function reportMetrics(metrics) {
+  const { download, conversion, job } = metrics;
+  const metric = (name, values, serviceName) => ({
+    MetricName: name,
+    Value: parseFloat(values.duration),
+    Unit: "Milliseconds",
+    Timestamp: values.timestamp,
+    Dimensions: [{ Name: "Service", Value: serviceName ?? lambdaName }],
+  });
+  try {
+    await cloudWatch
+      .putMetricData({
+        MetricData: [
+          metric("Download", download),
+          metric("Conversion", conversion),
+          metric("Job", job, "FHIR Conversion Job"),
+        ],
+        Namespace: metricsNamespace,
+      })
+      .promise();
+  } catch (err) {
+    console.log(`Failed to report metrics, `, metrics, err);
+    Sentry.captureException(err, { extra: { metrics } });
+  }
+}
+
 async function streamToString(stream) {
   const chunks = [];
   return new Promise((resolve, reject) => {
@@ -206,7 +255,7 @@ function attributesToSend(inboundMessageAttribs) {
   for (const [key, value] of Object.entries(inboundMessageAttribs)) {
     res = {
       ...res,
-      ...singleAttributeToSend(key, value),
+      ...singleAttributeToSend(key, value.stringValue),
     };
   }
   return res;
@@ -215,8 +264,8 @@ function attributesToSend(inboundMessageAttribs) {
 function singleAttributeToSend(name, value) {
   return {
     [name]: {
-      DataType: value.dataType,
-      StringValue: value.stringValue,
+      DataType: "String",
+      StringValue: value,
     },
   };
 }

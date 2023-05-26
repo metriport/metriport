@@ -5,7 +5,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { getConfig } from "../shared/config";
+import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 
@@ -58,9 +58,10 @@ export function createConnector({
     subnets: vpc.privateSubnets,
     entry: "../api/lambdas/sqs-to-fhir/index.js",
     envVars: {
+      METRICS_NAMESPACE,
       ENV_TYPE: envType,
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
-      ...(config.sentryDSN ? { SENTRY_DSN: config.sentryDSN } : undefined),
+      ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       QUEUE_URL: queue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
       ...(fhirServerUrl && {
