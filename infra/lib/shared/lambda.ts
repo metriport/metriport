@@ -85,7 +85,7 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
   const retryLambda = createLambda({
     ...props,
     name: retryLambdaName,
-    entry: props.entry ?? `${pathToLambdas}/retry-sqs/index.js`,
+    entry: props.entry ?? `${pathToLambdas}/sqs-to-sqs/index.js`,
     envVars: {
       ...props.envVars,
       SOURCE_QUEUE: props.sourceQueue.queueUrl,

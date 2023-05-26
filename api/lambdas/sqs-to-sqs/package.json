@@ -1,5 +1,5 @@
 {
-  "name": "retry-sqs",
+  "name": "sqs-to-sqs",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

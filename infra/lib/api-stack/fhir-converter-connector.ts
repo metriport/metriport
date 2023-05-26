@@ -94,7 +94,7 @@ export function createLambda({
     name: connectorName,
     vpc,
     subnets: vpc.privateSubnets,
-    entry: "../api/lambdas/fhir-converter/index.js",
+    entry: "../api/lambdas/sqs-to-converter/index.js",
     envVars: {
       ENV_TYPE: envType,
       AXIOS_TIMEOUT_SECONDS: String(axiosTimeoutSeconds),
