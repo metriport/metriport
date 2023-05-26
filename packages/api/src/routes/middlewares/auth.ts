@@ -36,7 +36,6 @@ export const checkMAPIAccess = async (
   let hasMAPIAccess = false;
   try {
     const cxId = getCxIdOrFail(req);
-    console.log(cxId, "here");
     const mapiAccess = await MAPIAccess.findOne({ where: { id: cxId } });
     hasMAPIAccess = mapiAccess != null;
   } catch (error) {
