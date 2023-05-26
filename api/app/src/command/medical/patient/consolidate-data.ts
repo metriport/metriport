@@ -175,7 +175,7 @@ export const resourcesSearchableByPatient = [
   "Specimen",
 ] as const;
 
-export const resourcesSearchableBySubject = ["AdverseEvent", "RiskAssessment", "Task"] as const;
+export const resourcesSearchableBySubject = ["AdverseEvent", "Task"] as const;
 
 export const resourceTypeForConsolidation = [
   ...resourcesSearchableByPatient,
