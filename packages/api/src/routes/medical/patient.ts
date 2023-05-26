@@ -6,7 +6,7 @@ import { areDocumentsProcessing } from "../../command/medical/document/document-
 import {
   getConsolidatedPatientData,
   resourceTypeForConsolidation,
-} from "../../command/medical/patient/consolidate-data";
+} from "../../command/medical/patient/get-consolidate-data";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
@@ -33,6 +33,8 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { createConsolidatedPatientData } from "../../command/medical/patient/create-consolidate-data";
+import { bundleEntrySchema } from "./schemas/fhir";
 
 const router = Router();
 
@@ -218,6 +220,29 @@ router.get(
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
     const data = await getConsolidatedPatientData({ cxId, patientId, resources, dateFrom, dateTo });
+
+    return res.json(data);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/consolidated
+ *
+ * Returns a Bundle with the outcome of the query.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient to associate resources to.
+ * @param req.body The FHIR Bundle to create resources.
+ * @return Bundle with operation outcome.
+ */
+router.post(
+  "/:id/consolidated",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const fhirBundle = bundleEntrySchema.parse(req.body);
+
+    const data = await createConsolidatedPatientData({ cxId, patientId, fhirBundle });
 
     return res.json(data);
   })
