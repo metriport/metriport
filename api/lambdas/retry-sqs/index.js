@@ -1,9 +1,7 @@
 import * as Sentry from "@sentry/node";
 import * as AWS from "aws-sdk";
-import { nanoid } from "nanoid";
 
-// Get ONE message from the source queue and send to the destination one
-const numberOfMessagesPerExecution = 1; // up to 10
+const numberOfMessagesPerRetry = 1; // up to 10
 
 export function getEnv(name) {
   return process.env[name];
@@ -23,14 +21,18 @@ const sqs = new AWS.SQS({ region });
 
 export const handler = async function (event) {
   // Set it up
-  console.log(`Running w/ SOURCE_QUEUE = ${sourceQueue}, DESTINATION_QUEUE = ${destinationQueue}`);
+  console.log(
+    `Running w/ numberOfMessagesPerRetry = ${numberOfMessagesPerRetry}, ` +
+      `SOURCE_QUEUE = ${sourceQueue}, ` +
+      `DESTINATION_QUEUE = ${destinationQueue}`
+  );
 
   try {
     const requestParams = {
       QueueUrl: sourceQueue,
       AttributeNames: ["All"],
       MessageAttributeNames: ["All"],
-      MaxNumberOfMessages: numberOfMessagesPerExecution,
+      MaxNumberOfMessages: numberOfMessagesPerRetry,
       VisibilityTimeout: 5,
       WaitTimeSeconds: 5,
     };
@@ -40,7 +42,7 @@ export const handler = async function (event) {
       console.log(`Didn't get any message from queue: ${sourceQueue}`);
       return;
     }
-    console.log(`Received ${receiveResult.Messages} messages`);
+    console.log(`Received ${receiveResult.Messages.length} messages`);
 
     // ---- Send the message to the queue ----
     for (const message of receiveResult.Messages) {
@@ -54,23 +56,10 @@ export const handler = async function (event) {
         );
         return;
       }
-      const messageAttributes = {};
-      if (message.MessageAttributes) {
-        const attributes = message.MessageAttributes;
-        Object.keys(attributes).forEach(prop => {
-          const attrib = attributes[prop];
-          messageAttributes[prop] = {
-            DataType: attrib.DataType,
-            StringValue: attrib.StringValue,
-          };
-        });
-      }
       const sendParams = {
         MessageBody: message.Body,
-        MessageDeduplicationId: nanoid(),
-        MessageGroupId: message.Attributes.MessageGroupId,
         QueueUrl: destinationQueue,
-        MessageAttributes: messageAttributes,
+        MessageAttributes: attributesToSend(message.MessageAttributes),
       };
       console.log(`Sending message w/ params: ${JSON.stringify(sendParams)}...`);
       const sendResult = await sqs.sendMessage(sendParams).promise();
@@ -92,3 +81,23 @@ export const handler = async function (event) {
     throw err;
   }
 };
+
+function attributesToSend(inboundMessageAttribs) {
+  let res = {};
+  for (const [key, value] of Object.entries(inboundMessageAttribs)) {
+    res = {
+      ...res,
+      ...singleAttributeToSend(key, value),
+    };
+  }
+  return res;
+}
+
+function singleAttributeToSend(name, value) {
+  return {
+    [name]: {
+      DataType: value.DataType,
+      StringValue: value.StringValue,
+    },
+  };
+}

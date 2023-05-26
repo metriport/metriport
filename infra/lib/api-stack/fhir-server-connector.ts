@@ -43,7 +43,9 @@ export function createConnector({
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
-    visibilityTimeout: Duration.seconds(lambdaTimeoutSeconds * 6 + 1),
+    // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout
+    // that makes it harder to move messages to the DLQ
+    visibilityTimeout: Duration.seconds(lambdaTimeoutSeconds + 1),
   });
 
   const dlq = queue.deadLetterQueue;
@@ -60,6 +62,7 @@ export function createConnector({
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       ...(config.sentryDSN ? { SENTRY_DSN: config.sentryDSN } : undefined),
       QUEUE_URL: queue.queueUrl,
+      DLQ_URL: dlq.queue.queueUrl,
       ...(fhirServerUrl && {
         FHIR_SERVER_URL: config.fhirServerUrl,
       }),

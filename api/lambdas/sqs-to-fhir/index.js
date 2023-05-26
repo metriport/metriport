@@ -20,6 +20,7 @@ const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
 const MAX_TIMEOUT_RETRIES = getEnvOrFail("MAX_TIMEOUT_RETRIES");
 const sourceQueueURL = getEnvOrFail("QUEUE_URL");
+const dlqURL = getEnvOrFail("DLQ_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 
 // Keep this as early on the file as possible
@@ -66,9 +67,18 @@ export const handler = async function (event) {
   try {
     // Process messages from SQS
     const records = event.Records; // SQSRecord[]
-    if (!records) {
+    if (!records || records.length < 1) {
       console.log(`No records, discarding this event: ${JSON.stringify(event)}`);
       return;
+    }
+    if (records.length > 1) {
+      Sentry.captureMessage("Got more than one message from SQS", {
+        extra: {
+          event,
+          context: lambdaName,
+          additional: `This lambda is supposed to run w/ only 1 message per batch, got ${records.length} (still processing them all)`,
+        },
+      });
     }
     console.log(`Processing ${records.length} records...`);
     for (const [i, message] of records.entries()) {
@@ -76,7 +86,6 @@ export const handler = async function (event) {
       try {
         if (!message.messageAttributes) throw new Error(`Missing message attributes`);
         if (!message.body) throw new Error(`Missing message body`);
-
         const attrib = message.messageAttributes;
         const cxId = attrib.cxId?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
@@ -99,20 +108,22 @@ export const handler = async function (event) {
           fhirUrlPath: `fhir/${cxId}`,
         });
         await fhirApi.executeBatch(payload);
-
-        // To support partial batch response we need to delete the messages that were successfully processed
-        // so these are not re-queued in case of failure
-        await dequeue(message);
         //
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount;
         if (err.code === "ETIMEDOUT" && count <= MAX_TIMEOUT_RETRIES) {
           console.log(`Timed out, reenqueue (${count} of ${MAX_TIMEOUT_RETRIES}): `, message);
+          Sentry.captureMessage("Sending to FHIR server timed out", {
+            extra: { message, context: lambdaName, retryCount: count },
+          });
           await reEnqueue(message);
         } else {
-          console.log(`Error processing message: `, message);
-          throw err;
+          console.log(`Error processing message: `, message, err);
+          Sentry.captureException(err, {
+            extra: { message, context: lambdaName, retryCount: count },
+          });
+          await sendToDLQ(message);
         }
       }
     }
@@ -131,6 +142,41 @@ async function downloadFileContents(s3BucketName, s3FileName) {
   return streamToString(stream);
 }
 
+async function sendToDLQ(message) {
+  await dequeue(message);
+  const sendParams = {
+    MessageBody: message.body,
+    QueueUrl: dlqURL,
+    MessageAttributes: attributesToSend(message.messageAttributes),
+  };
+  try {
+    console.log(`Sending message to DLQ: ${JSON.stringify(sendParams)}`);
+    await sqs.sendMessage(sendParams).promise();
+  } catch (err) {
+    console.log(`Failed to send message to queue: `, message, err);
+    Sentry.captureException(err, {
+      extra: { message, sendParams, context: "sendToDLQ" },
+    });
+  }
+}
+
+async function reEnqueue(message) {
+  await dequeue(message);
+  const sendParams = {
+    MessageBody: message.body,
+    QueueUrl: sourceQueueURL,
+    MessageAttributes: attributesToSend(message.messageAttributes),
+  };
+  try {
+    await sqs.sendMessage(sendParams).promise();
+  } catch (err) {
+    console.log(`Failed to re-enqueue message: `, message, err);
+    Sentry.captureException(err, {
+      extra: { message, sendParams, context: "reEnqueue" },
+    });
+  }
+}
+
 async function dequeue(message) {
   const deleteParams = {
     QueueUrl: sourceQueueURL,
@@ -146,27 +192,6 @@ async function dequeue(message) {
   }
 }
 
-async function reEnqueue(message) {
-  await dequeue(message, console.log);
-
-  const sendParams = {
-    MessageBody: message.body,
-    // FIFO only
-    // 706 MessageDeduplicationId: message.attributes.MessageDeduplicationId,
-    // 706 MessageGroupId: message.attributes.MessageGroupId,
-    QueueUrl: sourceQueueURL,
-    MessageAttributes: stringAttributesToSend(message.messageAttributes),
-  };
-  try {
-    await sqs.sendMessage(sendParams).promise();
-  } catch (err) {
-    console.log(`Failed to re-enqueue message: `, message, err);
-    Sentry.captureException(err, {
-      extra: { message, sendParams, context: "reEnqueue" },
-    });
-  }
-}
-
 async function streamToString(stream) {
   const chunks = [];
   return new Promise((resolve, reject) => {
@@ -176,22 +201,22 @@ async function streamToString(stream) {
   });
 }
 
-function stringAttributesToSend(inboundMessageAttribs) {
+function attributesToSend(inboundMessageAttribs) {
   let res = {};
   for (const [key, value] of Object.entries(inboundMessageAttribs)) {
     res = {
       ...res,
-      ...singleAtringAttributeToSend(key, value.stringValue),
+      ...singleAttributeToSend(key, value),
     };
   }
   return res;
 }
 
-function singleAtringAttributeToSend(name, value) {
+function singleAttributeToSend(name, value) {
   return {
     [name]: {
-      DataType: "String",
-      StringValue: value,
+      DataType: value.dataType,
+      StringValue: value.stringValue,
     },
   };
 }

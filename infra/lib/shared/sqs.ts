@@ -74,6 +74,11 @@ function createStandardQueue(props: StandardQueueProps): Queue {
      * you configure on your function/lambda:
      * https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#events-sqs-queueconfig
      * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
+     *
+     * "The extra time allows for Lambda to retry if your function is throttled while processing a previous batch."
+     * This seems to be the case mostly because of the possibility of a lambda being throttled, but in theory we would
+     * only care about this on FIFO queues, because we wouldn't want a new lambda to process a message while the original,
+     * throttled lambda is about to keep processing it after its unthrottled.
      */
     visibilityTimeout:
       props.visibilityTimeout ?? Duration.seconds(DEFAULT_LAMBDA_TIMEOUT_SECONDS * 6 + 1),
