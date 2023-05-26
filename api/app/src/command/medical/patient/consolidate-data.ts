@@ -1,5 +1,13 @@
 import { OperationOutcomeError } from "@medplum/core";
-import { Bundle, BundleEntry, OperationOutcomeIssue, Resource } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  BundleEntry,
+  ExtractResource,
+  OperationOutcomeIssue,
+  Resource,
+  ResourceType,
+} from "@medplum/fhirtypes";
+import { intersection } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { makeConsolidatedMockBundle } from "../../../external/fhir/mocks/consolidated";
 import { Config } from "../../../shared/config";
@@ -26,30 +34,43 @@ export async function getConsolidatedPatientData({
     return buildResponse(makeConsolidatedMockBundle());
   }
 
-  const resourcesToUse = resources ?? resourceTypeForConsolidation;
-  log(`Getting consolidated data with resources: `, resourcesToUse);
+  const resourcesByPatient = resources
+    ? intersection(resources, resourcesSearchableByPatient)
+    : resourcesSearchableByPatient;
+  const resourcesBySubject = resources
+    ? intersection(resources, resourcesSearchableBySubject)
+    : resourcesSearchableBySubject;
+  log(`Getting consolidated data with resources by patient: ${resourcesByPatient.join(", ")}...`);
+  log(`...and by subject: ${resourcesBySubject.join(", ")}`);
 
   const fhir = makeFhirApi(cxId);
   const errorsToReport: Record<string, string> = {};
-  const settled = await Promise.allSettled(
-    resourcesToUse.map(async resource =>
-      (async () => {
-        try {
-          const pages: Resource[] = [];
-          for await (const page of fhir.searchResourcePages(resource, `patient=${patientId}`)) {
-            pages.push(...page);
-          }
-          return pages;
-          //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-          if (err instanceof OperationOutcomeError && err.outcome.id === "not-found") throw err;
-          if (err instanceof OperationOutcomeError) errorsToReport[resource] = getMessage(err);
-          else errorsToReport[resource] = err.message;
-          throw err;
-        }
-      })()
-    )
-  );
+  const searchResources = async <K extends ResourceType>(
+    resource: K,
+    searchFunction: () => AsyncGenerator<ExtractResource<K>[]>
+  ) => {
+    try {
+      const pages: Resource[] = [];
+      for await (const page of searchFunction()) {
+        pages.push(...page);
+      }
+      return pages;
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err instanceof OperationOutcomeError && err.outcome.id === "not-found") throw err;
+      if (err instanceof OperationOutcomeError) errorsToReport[resource] = getMessage(err);
+      else errorsToReport[resource] = err.message;
+      throw err;
+    }
+  };
+  const settled = await Promise.allSettled([
+    ...resourcesByPatient.map(async resource =>
+      searchResources(resource, () => fhir.searchResourcePages(resource, `patient=${patientId}`))
+    ),
+    ...resourcesBySubject.map(async resource =>
+      searchResources(resource, () => fhir.searchResourcePages(resource, `subject=${patientId}`))
+    ),
+  ]);
 
   const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
 
@@ -89,7 +110,7 @@ function issueToString(issue: OperationOutcomeIssue): string {
   );
 }
 
-export const resourceTypeForConsolidation = [
+export const resourcesSearchableByPatient = [
   "Account",
   "AllergyIntolerance",
   "Appointment",
@@ -152,6 +173,13 @@ export const resourceTypeForConsolidation = [
   "RiskAssessment",
   "ServiceRequest",
   "Specimen",
+] as const;
+
+export const resourcesSearchableBySubject = ["AdverseEvent", "RiskAssessment", "Task"] as const;
+
+export const resourceTypeForConsolidation = [
+  ...resourcesSearchableByPatient,
+  ...resourcesSearchableBySubject,
 ] as const;
 
 export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];
