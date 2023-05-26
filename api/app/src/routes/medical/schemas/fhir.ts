@@ -1,16 +1,6 @@
 import { z } from "zod";
 
-const typeSchema = z.enum([
-  "document",
-  "message",
-  "transaction",
-  "transaction-response",
-  "batch",
-  "batch-response",
-  "history",
-  "searchset",
-  "collection",
-]);
+const typeSchema = z.enum(["collection"]);
 
 export const bundleEntrySchema = z.object({
   resourceType: z.enum(["Bundle"]),
