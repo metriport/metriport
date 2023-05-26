@@ -92,7 +92,7 @@ export const getPatientByDemo = async ({
   capture.message(msg, {
     extra: {
       chosenOne: chosenOne.id,
-      demograhics: demo,
+      demographics: demo,
       patients: matchingPatients.map(p => ({ id: p.id, data: p.data })),
     },
   });
