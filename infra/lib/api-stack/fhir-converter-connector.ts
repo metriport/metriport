@@ -1,4 +1,5 @@
 import { Duration } from "aws-cdk-lib";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -14,19 +15,24 @@ import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shar
 function settings() {
   const { cpuAmount: fhirConverterCPUAmount, taskCountMin: fhirConverterTaskCounMin } =
     settingsFhirConverter();
-  // How long can the lambda run for, max is 900 seconds (15 minutes)
-  const lambdaTimeoutSeconds = 5 * 60;
+  const lambdaTimeoutSeconds = 10 * 60;
   return {
     connectorName: "FHIRConverter",
+    lambdaMemory: 256,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
-    // Number of lambda instances running in parallel (fixed if set - doesn't scale out/in, scalable if undefined)
-    reservedConcurrentExecutions: fhirConverterCPUAmount * fhirConverterTaskCounMin,
+    // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
+    maxConcurrency: fhirConverterCPUAmount * fhirConverterTaskCounMin,
+    // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeoutSeconds,
     // How long will it take before Axios returns a timeout error - should be less than the lambda timeout
     axiosTimeoutSeconds: lambdaTimeoutSeconds - 10, // give the lambda some time to deal with the timeout
+    // Number of times we want to retry a message, this includes throttles!
+    maxReceiveCount: 5,
     // Number of times we want to retry a message that timed out when trying to be processed
     maxTimeoutRetries: 99,
+    // How long messages should be invisible for other consumers, based on the lambda timeout
+    visibilityTimeoutMultiplier: 6,
     delayWhenRetryingSeconds: 10,
   };
 }
@@ -37,7 +43,8 @@ export function createQueueAndBucket({ stack, vpc }: { stack: Construct; vpc: IV
   bucket: s3.Bucket;
 } {
   const config = getConfig();
-  const { connectorName, lambdaTimeoutSeconds } = settings();
+  const { connectorName, lambdaTimeoutSeconds, visibilityTimeoutMultiplier, maxReceiveCount } =
+    settings();
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
@@ -47,7 +54,8 @@ export function createQueueAndBucket({ stack, vpc }: { stack: Construct; vpc: IV
     fifo: false,
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout
     // that makes it harder to move messages to the DLQ
-    visibilityTimeout: Duration.seconds(lambdaTimeoutSeconds + 1),
+    visibilityTimeout: Duration.seconds(visibilityTimeoutMultiplier * lambdaTimeoutSeconds + 1),
+    maxReceiveCount,
   });
 
   const dlq = queue.deadLetterQueue;
@@ -71,6 +79,7 @@ export function createLambda({
   dlq,
   fhirConverterBucket,
   conversionResultQueueUrl,
+  alarmSnsAction,
 }: {
   envType: EnvType;
   stack: Construct;
@@ -80,13 +89,15 @@ export function createLambda({
   dlq: DeadLetterQueue;
   fhirConverterBucket: s3.Bucket;
   conversionResultQueueUrl: string;
+  alarmSnsAction?: SnsAction;
 }): Lambda {
   const config = getConfig();
   const {
     connectorName,
+    lambdaMemory,
     lambdaTimeoutSeconds,
     lambdaBatchSize,
-    reservedConcurrentExecutions,
+    maxConcurrency,
     axiosTimeoutSeconds,
     maxTimeoutRetries,
     delayWhenRetryingSeconds,
@@ -97,6 +108,7 @@ export function createLambda({
     vpc,
     subnets: vpc.privateSubnets,
     entry: "../api/lambdas/sqs-to-converter/index.js",
+    memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,
       ENV_TYPE: envType,
@@ -110,7 +122,7 @@ export function createLambda({
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
     timeout: Duration.seconds(lambdaTimeoutSeconds),
-    reservedConcurrentExecutions,
+    alarmSnsAction,
   });
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
@@ -120,6 +132,7 @@ export function createLambda({
       batchSize: lambdaBatchSize,
       // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
       reportBatchItemFailures: true,
+      maxConcurrency,
     })
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });

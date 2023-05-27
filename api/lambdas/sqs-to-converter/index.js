@@ -95,6 +95,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     console.log(`Processing ${records.length} records...`);
     for (const [i, message] of records.entries()) {
       // Process one record from the SQS message
+      console.log(`Record ${i}, messageId: ${message.messageId}`);
       try {
         if (!message.messageAttributes) throw new Error(`Missing message attributes`);
         if (!message.body) throw new Error(`Missing message body`);
@@ -118,6 +119,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
 
         const metrics = { cxId, patientId };
 
+        await reportMemoryUsage();
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
         const payload = await downloadFileContents(s3BucketName, s3FileName);
@@ -126,6 +128,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           timestamp: new Date().toISOString(),
         };
 
+        await reportMemoryUsage();
         const params = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
         log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
         const conversionStart = Date.now();
@@ -140,8 +143,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           timestamp: new Date().toISOString(),
         };
 
+        await reportMemoryUsage();
         await sendConversionResult(cxId, s3FileName, res.data, jobStartedAt, log);
 
+        await reportMemoryUsage();
         await reportMetrics(metrics);
         //
       } catch (err) {
@@ -288,6 +293,43 @@ async function reportMetrics(metrics) {
     console.log(`Failed to report metrics, `, metrics, err);
     Sentry.captureException(err, { extra: { metrics } });
   }
+}
+
+async function reportMemoryUsage() {
+  var mem = process.memoryUsage();
+  console.log(
+    `[MEM] rss:  ${kbToMbString(mem.rss)}, ` +
+      `heap: ${kbToMbString(mem.heapUsed)}/${kbToMbString(mem.heapTotal)}, ` +
+      `external: ${kbToMbString(mem.external)}, ` +
+      `arrayBuffers: ${kbToMbString(mem.arrayBuffers)}, `
+  );
+  try {
+    await cloudWatch
+      .putMetricData({
+        MetricData: [
+          {
+            MetricName: "Memory total",
+            Value: kbToMb(mem.rss),
+            Unit: "Megabytes",
+            Timestamp: new Date().toISOString(),
+            Dimensions: [{ Name: "Service", Value: lambdaName }],
+          },
+        ],
+        Namespace: metricsNamespace,
+      })
+      .promise();
+  } catch (err) {
+    console.log(`Failed to report memory usage, `, mem, err);
+    Sentry.captureException(err, { extra: { mem } });
+  }
+}
+
+function kbToMbString(value) {
+  return Number(kbToMb(value)).toFixed(2) + "MB";
+}
+
+function kbToMb(value) {
+  return value / 1048576;
 }
 
 async function streamToString(stream) {

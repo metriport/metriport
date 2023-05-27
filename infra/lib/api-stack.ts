@@ -186,6 +186,7 @@ export class APIStack extends Stack {
       stack: this,
       vpc: this.vpc,
       fhirConverterBucket,
+      alarmSnsAction: slackNotification?.alarmAction,
     });
 
     //-------------------------------------------
@@ -259,6 +260,7 @@ export class APIStack extends Stack {
             dlq: fhirConverterDLQ,
             fhirConverterBucket,
             conversionResultQueueUrl: fhirServerQueue.queueUrl,
+            alarmSnsAction: slackNotification?.alarmAction,
           })
         : undefined;
 

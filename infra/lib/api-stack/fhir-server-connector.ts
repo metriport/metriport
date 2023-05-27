@@ -1,4 +1,5 @@
 import { Duration } from "aws-cdk-lib";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -10,14 +11,19 @@ import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 
 const connectorName = "FHIRServer";
+const lambdaMemory = 256;
 // Number of messages the lambda pull from SQS at once
 const lambdaBatchSize = 1;
-// Number of lambda instances running in parallel (fixed if set - doesn't scale out/in, scalable if undefined)
-const reservedConcurrentExecutions = 4;
+// Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
+const maxConcurrency = 4;
 // How long can the lambda run for, max is 900 seconds (15 minutes)
 const lambdaTimeoutSeconds = 14 * 60;
+// Number of times we want to retry a message, this includes throttles!
+const maxReceiveCount = 5;
 // Number of times we want to retry a message that timed out when trying to be processed
 const maxTimeoutRetries = 99;
+// How long messages should be invisible for other consumers, based on the lambda timeout
+const visibilityTimeoutMultiplier = 6;
 const delayWhenRetryingSeconds = 10;
 
 export function createConnector({
@@ -25,11 +31,13 @@ export function createConnector({
   stack,
   vpc,
   fhirConverterBucket,
+  alarmSnsAction,
 }: {
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
   fhirConverterBucket: s3.Bucket;
+  alarmSnsAction?: SnsAction;
 }): Queue | undefined {
   const config = getConfig();
   const fhirServerUrl = config.fhirServerUrl;
@@ -46,7 +54,8 @@ export function createConnector({
     fifo: false,
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout
     // that makes it harder to move messages to the DLQ
-    visibilityTimeout: Duration.seconds(lambdaTimeoutSeconds + 1),
+    visibilityTimeout: Duration.seconds(visibilityTimeoutMultiplier * lambdaTimeoutSeconds + 1),
+    maxReceiveCount,
   });
 
   const dlq = queue.deadLetterQueue;
@@ -58,6 +67,7 @@ export function createConnector({
     vpc,
     subnets: vpc.privateSubnets,
     entry: "../api/lambdas/sqs-to-fhir/index.js",
+    memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,
       ENV_TYPE: envType,
@@ -71,7 +81,7 @@ export function createConnector({
       }),
     },
     timeout: Duration.seconds(lambdaTimeoutSeconds),
-    reservedConcurrentExecutions,
+    alarmSnsAction,
   });
 
   fhirConverterBucket.grantRead(sqsToFhirLambda);
@@ -80,6 +90,7 @@ export function createConnector({
       batchSize: lambdaBatchSize,
       // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
       reportBatchItemFailures: true,
+      maxConcurrency,
     })
   );
   provideAccessToQueue({ accessType: "both", queue, resource: sqsToFhirLambda });

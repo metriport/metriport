@@ -1,14 +1,18 @@
 import { Duration, StackProps } from "aws-cdk-lib";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Metric } from "aws-cdk-lib/aws-cloudwatch";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { ISubnet, IVpc } from "aws-cdk-lib/aws-ec2";
 import { Rule, Schedule } from "aws-cdk-lib/aws-events";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
+import { FilterPattern } from "aws-cdk-lib/aws-logs";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { getConfig } from "./config";
+import { getConfig, METRICS_NAMESPACE } from "./config";
+import { addErrorAlarmToLambdaFunc } from "./util";
 
 export const DEFAULT_LAMBDA_TIMEOUT_SECONDS = 10;
 const pathToLambdas = "../api/lambdas";
@@ -41,6 +45,7 @@ export interface LambdaProps extends StackProps {
   readonly reservedConcurrentExecutions?: number;
   readonly retryAttempts?: number;
   readonly maxEventAge?: Duration;
+  readonly alarmSnsAction?: SnsAction;
 }
 
 export function createLambda(props: LambdaProps): Lambda {
@@ -67,7 +72,39 @@ export function createLambda(props: LambdaProps): Lambda {
     retryAttempts: props.retryAttempts ?? 0,
     maxEventAge: props.maxEventAge ?? undefined,
   });
+
+  // Allow the lambda to publish metrics to cloudwatch
   Metric.grantPutMetricData(lambda);
+
+  // Setup alarm - general errors
+  addErrorAlarmToLambdaFunc(
+    props.stack,
+    lambda,
+    `${props.name}-GeneralLambdaAlarm`,
+    props.alarmSnsAction
+  );
+
+  // Setup alarm - OOM (Out Of Memory) errors
+  const metricFilter = lambda.logGroup?.addMetricFilter(`${props.name}-OOMErrorsFilter`, {
+    metricNamespace: METRICS_NAMESPACE,
+    metricName: `${props.name}-OOMErrors`,
+    filterPattern: FilterPattern.anyTerm(
+      "Runtime exited with error",
+      "signal: killed Runtime.ExitError"
+    ),
+    metricValue: "1",
+  });
+  const metric = metricFilter?.metric();
+  if (metric) {
+    const alarm = metric.createAlarm(props.stack, `${props.name}-OOMLambdaAlarm`, {
+      threshold: 1,
+      evaluationPeriods: 1,
+      alarmDescription: "Alarm if we get an OOM error from the Lambda function",
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    props.alarmSnsAction && alarm.addAlarmAction(props.alarmSnsAction);
+  }
+
   return lambda;
 }
 

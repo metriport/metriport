@@ -86,6 +86,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     console.log(`Processing ${records.length} records...`);
     for (const [i, message] of records.entries()) {
       // Process one record from the SQS message
+      console.log(`Record ${i}, messageId: ${message.messageId}`);
       try {
         if (!message.messageAttributes) throw new Error(`Missing message attributes`);
         if (!message.body) throw new Error(`Missing message body`);
@@ -103,6 +104,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
 
         const metrics = { cxId };
 
+        await reportMemoryUsage();
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
         const payloadRaw = await downloadFileContents(s3BucketName, s3FileName);
@@ -110,18 +112,21 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           duration: Date.now() - downloadStart,
           timestamp: new Date().toISOString(),
         };
+        await reportMemoryUsage();
+        log(`Converting payload to JSON...`);
         const payload = JSON.parse(payloadRaw).fhirResource;
 
+        await reportMemoryUsage();
         log(`Sending payload to FHIRServer, cxId ${cxId}...`);
-        const conversionStart = Date.now();
+        const upsertStart = Date.now();
         const fhirApi = new MedplumClient({
           fetch,
           baseUrl: fhirServerUrl,
           fhirUrlPath: `fhir/${cxId}`,
         });
         await fhirApi.executeBatch(payload);
-        metrics.conversion = {
-          duration: Date.now() - conversionStart,
+        metrics.upsert = {
+          duration: Date.now() - upsertStart,
           timestamp: new Date().toISOString(),
         };
         if (jobStartedAt) {
@@ -131,6 +136,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           };
         }
 
+        await reportMemoryUsage();
         await reportMetrics(metrics);
         //
       } catch (err) {
@@ -230,7 +236,7 @@ async function dequeue(message) {
 }
 
 async function reportMetrics(metrics) {
-  const { download, conversion, job } = metrics;
+  const { download, upsert, job } = metrics;
   const metric = (name, values, serviceName) => ({
     MetricName: name,
     Value: parseFloat(values.duration),
@@ -243,7 +249,7 @@ async function reportMetrics(metrics) {
       .putMetricData({
         MetricData: [
           metric("Download", download),
-          metric("Conversion", conversion),
+          metric("Upsert", upsert),
           metric("Job duration", job, "FHIR Conversion Flow"),
         ],
         Namespace: metricsNamespace,
@@ -253,6 +259,43 @@ async function reportMetrics(metrics) {
     console.log(`Failed to report metrics, `, metrics, err);
     Sentry.captureException(err, { extra: { metrics } });
   }
+}
+
+async function reportMemoryUsage() {
+  var mem = process.memoryUsage();
+  console.log(
+    `[MEM] rss:  ${kbToMbString(mem.rss)}, ` +
+      `heap: ${kbToMbString(mem.heapUsed)}/${kbToMbString(mem.heapTotal)}, ` +
+      `external: ${kbToMbString(mem.external)}, ` +
+      `arrayBuffers: ${kbToMbString(mem.arrayBuffers)}, `
+  );
+  try {
+    await cloudWatch
+      .putMetricData({
+        MetricData: [
+          {
+            MetricName: "Memory total",
+            Value: kbToMb(mem.rss),
+            Unit: "Megabytes",
+            Timestamp: new Date().toISOString(),
+            Dimensions: [{ Name: "Service", Value: lambdaName }],
+          },
+        ],
+        Namespace: metricsNamespace,
+      })
+      .promise();
+  } catch (err) {
+    console.log(`Failed to report memory usage, `, mem, err);
+    Sentry.captureException(err, { extra: { mem } });
+  }
+}
+
+function kbToMbString(value) {
+  return Number(kbToMb(value)).toFixed(2) + "MB";
+}
+
+function kbToMb(value) {
+  return value / 1048576;
 }
 
 async function streamToString(stream) {
