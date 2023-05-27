@@ -7,9 +7,9 @@ import {
   queryDocumentsAcrossHIEs,
 } from "../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import ForbiddenError from "../../errors/forbidden";
+// import ForbiddenError from "../../errors/forbidden";
 import { getDocuments } from "../../external/fhir/document/get-documents";
-import { Config } from "../../shared/config";
+// import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
@@ -79,18 +79,20 @@ router.post(
  * Fetches the document from S3 and sends a presigned URL
  *
  * @param req.query.fileName The file name of the document in s3.
+ * @param req.query.conversionType The doc type to convert to.
  * @return presigned url
  */
 router.get(
   "/downloadUrl",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
+    // const cxId = getCxIdOrFail(req);
     const fileName = getFromQueryOrFail("fileName", req);
-    const fileHasCxId = fileName.includes(cxId);
+    // const fileHasCxId = fileName.includes(cxId);
+    const conversionType = getFrom("query").optional("conversionType", req);
 
-    if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
+    // if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
 
-    const url = await downloadDocument({ fileName });
+    const url = await downloadDocument({ fileName, conversionType });
 
     return res.status(OK).json({ url });
   })
