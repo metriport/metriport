@@ -1,7 +1,11 @@
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { Config } from "../../shared/config";
 import { sendMessageToQueue } from "../aws/sqs";
 import { FHIRConverterConnector, FHIRConverterRequest } from "./connector";
 import { buildUrl } from "./connector-http";
+
+dayjs.extend(utc);
 
 export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
   async requestConvert({
@@ -32,7 +36,7 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
         unusedSegments,
         invalidAccess,
         patientId,
-        startedAt: new Date().toISOString(),
+        startedAt: dayjs.utc().toISOString(),
       },
     });
   }

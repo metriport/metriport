@@ -19,7 +19,8 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
-const MAX_TIMEOUT_RETRIES = getEnvOrFail("MAX_TIMEOUT_RETRIES");
+const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
+const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY"));
 const sourceQueueURL = getEnvOrFail("QUEUE_URL");
 const dlqURL = getEnvOrFail("DLQ_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
@@ -125,7 +126,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         };
         if (jobStartedAt) {
           metrics.job = {
-            duration: Date.now() - new Date(jobStartedAt).getMilliseconds(),
+            duration: Date.now() - new Date(jobStartedAt).getTime(),
             timestamp: new Date().toISOString(),
           };
         }
@@ -135,8 +136,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount;
-        if (err.code === "ETIMEDOUT" && count <= MAX_TIMEOUT_RETRIES) {
-          console.log(`Timed out, reenqueue (${count} of ${MAX_TIMEOUT_RETRIES}): `, message);
+        if (isTimeout(err) && count <= maxTimeoutRetries) {
+          console.log(`Timed out, reenqueue (${count} of ${maxTimeoutRetries}): `, message);
           Sentry.captureMessage("Sending to FHIR server timed out", {
             extra: { message, context: lambdaName, retryCount: count },
           });
@@ -159,6 +160,18 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     throw err;
   }
 });
+
+// Being more generic with errors, not strictly timeouts
+function isTimeout(err) {
+  return (
+    err.code === "ETIMEDOUT" ||
+    err.code === "ERR_BAD_RESPONSE" || // Axios code for 502
+    err.code === "ECONNRESET" ||
+    err.code === "ESOCKETTIMEDOUT" ||
+    err.response?.status === 502 ||
+    err.response?.status === 504
+  );
+}
 
 async function downloadFileContents(s3BucketName, s3FileName) {
   const stream = s3Client.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
@@ -189,6 +202,7 @@ async function reEnqueue(message) {
     MessageBody: message.body,
     QueueUrl: sourceQueueURL,
     MessageAttributes: attributesToSend(message.messageAttributes),
+    DelaySeconds: delayWhenRetryingSeconds, // wait at least that long before retrying
   };
   try {
     await sqs.sendMessage(sendParams).promise();
@@ -230,7 +244,7 @@ async function reportMetrics(metrics) {
         MetricData: [
           metric("Download", download),
           metric("Conversion", conversion),
-          metric("Job", job, "FHIR Conversion Job"),
+          metric("Job duration", job, "FHIR Conversion Flow"),
         ],
         Namespace: metricsNamespace,
       })

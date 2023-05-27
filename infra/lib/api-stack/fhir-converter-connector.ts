@@ -27,6 +27,7 @@ function settings() {
     axiosTimeoutSeconds: lambdaTimeoutSeconds - 10, // give the lambda some time to deal with the timeout
     // Number of times we want to retry a message that timed out when trying to be processed
     maxTimeoutRetries: 99,
+    delayWhenRetryingSeconds: 10,
   };
 }
 
@@ -88,6 +89,7 @@ export function createLambda({
     reservedConcurrentExecutions,
     axiosTimeoutSeconds,
     maxTimeoutRetries,
+    delayWhenRetryingSeconds,
   } = settings();
   const conversionLambda = defaultCreateLambda({
     stack,
@@ -100,6 +102,7 @@ export function createLambda({
       ENV_TYPE: envType,
       AXIOS_TIMEOUT_SECONDS: String(axiosTimeoutSeconds),
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
+      DELAY_WHEN_RETRY: String(delayWhenRetryingSeconds),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,

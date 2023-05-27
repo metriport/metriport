@@ -15,9 +15,10 @@ const lambdaBatchSize = 1;
 // Number of lambda instances running in parallel (fixed if set - doesn't scale out/in, scalable if undefined)
 const reservedConcurrentExecutions = 4;
 // How long can the lambda run for, max is 900 seconds (15 minutes)
-const lambdaTimeoutSeconds = 5 * 60;
+const lambdaTimeoutSeconds = 14 * 60;
 // Number of times we want to retry a message that timed out when trying to be processed
 const maxTimeoutRetries = 99;
+const delayWhenRetryingSeconds = 10;
 
 export function createConnector({
   envType,
@@ -61,6 +62,7 @@ export function createConnector({
       METRICS_NAMESPACE,
       ENV_TYPE: envType,
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
+      DELAY_WHEN_RETRY: String(delayWhenRetryingSeconds),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       QUEUE_URL: queue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
