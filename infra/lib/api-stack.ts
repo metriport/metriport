@@ -289,7 +289,6 @@ export class APIStack extends Stack {
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiLoadBalancerAddress);
 
     this.setupConvertCda({
-      // baseResource: webhookResource,
       vpc: this.vpc,
       fargateService: apiService,
       bucketName: props.config.medicalDocumentsBucketName,
@@ -470,40 +469,24 @@ export class APIStack extends Stack {
   }
 
   private setupConvertCda(ownProps: {
-    // baseResource: apig.Resource;
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     bucketName: string | undefined;
   }) {
     const { vpc, fargateService: server, bucketName } = ownProps;
-    const digLayer = new lambda.LayerVersion(this, "dig-layer", {
-      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      code: lambda.Code.fromAsset("../api/lambdas/layers/dig-layer"),
-      description: "Adds dig to the lambdas",
-    });
 
-    const convertCdaLambda = new lambda_node.NodejsFunction(this, "WithingsLambda", {
+    const convertCdaLambda = new lambda_node.NodejsFunction(this, "ConvertCdaLambda", {
       runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "../api/lambdas/convertCda/index.js",
+      entry: "../api/lambdas/convert-cda/index.js",
       environment: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
       },
       vpc,
-      layers: [digLayer],
-      bundling: {
-        minify: false,
-        // do i need to add all npm modules here?
-        externalModules: ["aws-sdk", "dig"],
-      },
     });
-    addErrorAlarmToLambdaFunc(this, convertCdaLambda, "WithingsAuthFunctionAlarm");
+    addErrorAlarmToLambdaFunc(this, convertCdaLambda, "ConvertCdaAuthFunctionAlarm");
 
     // Grant lambda access to the api server
     server.service.connections.allowFrom(convertCdaLambda, Port.allTcp());
-
-    // dont know if i need this
-    // const convertCdaResource = baseResource.addResource("convertCda");
-    // convertCdaResource.addMethod("ANY", new apig.LambdaIntegration(convertCdaLambda));
   }
 
   private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {
