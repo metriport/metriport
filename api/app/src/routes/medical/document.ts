@@ -88,11 +88,11 @@ router.get(
     // const cxId = getCxIdOrFail(req);
     const fileName = getFromQueryOrFail("fileName", req);
     // const fileHasCxId = fileName.includes(cxId);
-    const conversionType = getFrom("query").optional("conversionType", req);
+    // const conversionType = getFrom("query").optional("conversionType", req);
 
     // if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
 
-    const url = await downloadDocument({ fileName, conversionType });
+    const url = await downloadDocument({ fileName });
 
     return res.status(OK).json({ url });
   })

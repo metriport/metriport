@@ -479,7 +479,9 @@ export class APIStack extends Stack {
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "../api/lambdas/convert-cda/index.js",
       environment: {
-        MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+        ...(bucketName && {
+          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+        }),
       },
       vpc,
     });
