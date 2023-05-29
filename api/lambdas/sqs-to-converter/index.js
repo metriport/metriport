@@ -114,8 +114,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         const bodyAsJson = JSON.parse(message.body);
         const s3BucketName = bodyAsJson.s3BucketName;
         const s3FileName = bodyAsJson.s3FileName;
+        const documentExtension = bodyAsJson.documentExtension;
         if (!s3BucketName) throw new Error(`Missing s3BucketName`);
         if (!s3FileName) throw new Error(`Missing s3FileName`);
+        if (!documentExtension) throw new Error(`Missing documentExtension`);
 
         const metrics = { cxId, patientId };
 
@@ -138,13 +140,17 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           // don't convert to JSON so we don't need to convert it back to string
           transformResponse: res => res,
         });
+        const conversionResult = res.data;
         metrics.conversion = {
           duration: Date.now() - conversionStart,
           timestamp: new Date().toISOString(),
         };
 
         await reportMemoryUsage();
-        await sendConversionResult(cxId, s3FileName, res.data, jobStartedAt, log);
+        const updatedConversion = addExtensionToConversion(conversionResult, documentExtension);
+
+        await reportMemoryUsage();
+        await sendConversionResult(cxId, s3FileName, updatedConversion, jobStartedAt, log);
 
         await reportMemoryUsage();
         await reportMetrics(metrics);
@@ -176,6 +182,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     throw err;
   }
 });
+
+function addExtensionToConversion(conversion, extension) {
+  const fhirBundle = conversion.fhirResource;
+  if (fhirBundle?.entry?.length) {
+    for (const resource of fhirBundle.entry) {
+      if (!resource.extension) resource.extension = [];
+      resource.extension.push(extension);
+    }
+  }
+}
 
 // Being more generic with errors, not strictly timeouts
 function isTimeout(err) {

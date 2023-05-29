@@ -1,4 +1,5 @@
 import { capture } from "../../shared/notifications";
+import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extension";
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";
 
@@ -38,12 +39,15 @@ export async function convertCDAToFHIR(params: {
   } = params;
   // make sure the doc is XML/CDA before attempting to convert
   if (mimeType === "application/xml" || mimeType === "text/xml") {
+    // Build an extension to be added to all resources created by this conversion
+    // so we can get the original doc ref from the resource
+    const documentExtension = buildDocIdFHIRExtension(documentId);
     try {
       return connector.requestConvert({
         cxId: patient.cxId,
         patientId: patient.id,
         sourceType: FHIRConverterSourceDataType.cda,
-        payload: JSON.stringify({ s3FileName, s3BucketName, documentId }),
+        payload: JSON.stringify({ s3FileName, s3BucketName, documentExtension }),
         template: `${template}.${templateExt}`,
         unusedSegments: `${keepUnusedSegments}`,
         invalidAccess: `${keepInvalidAccess}`,

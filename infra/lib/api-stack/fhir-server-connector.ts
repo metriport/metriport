@@ -11,7 +11,7 @@ import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 
 const connectorName = "FHIRServer";
-const lambdaMemory = 256;
+const lambdaMemory = 512;
 // Number of messages the lambda pull from SQS at once
 const lambdaBatchSize = 1;
 // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
