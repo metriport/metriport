@@ -1,5 +1,10 @@
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
-import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
+import {
+  API_KEY_HEADER,
+  BASE_ADDRESS,
+  BASE_ADDRESS_SANDBOX,
+  DEFAULT_AXIOS_TIMEOUT_MILLIS,
+} from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
   DocumentList,
@@ -28,6 +33,7 @@ const DOCUMENT_URL = `/document`;
 
 export type Options = {
   axios?: AxiosStatic; // Set axios if it fails to load
+  timeout?: number;
   additionalHeaders?: Record<string, string>;
 } & (
   | {
@@ -51,14 +57,21 @@ export class MetriportMedicalApi {
    * Creates a new instance of the Metriport Medical API client.
    *
    * @param apiKey Your Metriport API key.
+   * @param options - Optional parameters
+   * @param options.additionalHeaders - HTTP headers to be used in all requests.
+   * @param options.axios - Axios instance, default, useful when the dependency is not being imported
+   *          properly by NPM.
+   * @param options.sandbox - Indicates whether to connect to the sandbox, default false.
+   * @param options.timeout - Connection timeout in milliseconds, default 20 seconds.
    */
-  constructor(apiKey: string, options: Options = { sandbox: false }) {
-    const headers = { "x-api-key": apiKey, ...options.additionalHeaders };
+  constructor(apiKey: string, options: Options = {}) {
+    const headers = { [API_KEY_HEADER]: apiKey, ...options.additionalHeaders };
+    const { sandbox, timeout } = options;
 
     const baseURL =
-      (options.baseAddress || (options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
+      (options.baseAddress || (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
     const axiosConfig: CreateAxiosDefaults = {
-      timeout: 20_000,
+      timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
       headers,
     };
