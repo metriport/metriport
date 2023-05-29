@@ -7,6 +7,7 @@ import { EnvConfig } from "../lib/env-config";
 import { EnvType } from "../lib/env-type";
 import { SecretsStack } from "../lib/secrets-stack";
 import { getEnvVar } from "../lib/util";
+import { TmpStack } from "../lib/tmp-stack";
 
 const app = new cdk.App();
 //-------------------------------------------
@@ -52,7 +53,7 @@ async function deploy() {
   //---------------------------------------------------------------------------------
   // 2. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  new APIStack(app, config.stackName, { env, config, version });
+  const apiStack = new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 3. Deploy the Connect widget stack.
@@ -63,6 +64,10 @@ async function deploy() {
       config,
     });
   }
+
+  // TODO #726: remove
+  new TmpStack(app, "JorgeCDALambdaStack", { env, config, version, vpc: apiStack.vpc });
+  new TmpStack(app, "DimaCDALambdaStack", { env, config, version, vpc: apiStack.vpc });
 
   //---------------------------------------------------------------------------------
   // Execute the updates on AWS
