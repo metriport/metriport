@@ -368,7 +368,7 @@ export async function downloadDocsAndUpsertFHIR({
                 };
               };
             } else {
-              // Get S3 address
+              // Get info from existing S3 file
               uploadToS3 = async () => {
                 const signedUrl = s3Client.getSignedUrl("getObject", {
                   Bucket: s3BucketName,
