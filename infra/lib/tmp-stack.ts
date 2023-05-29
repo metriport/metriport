@@ -8,7 +8,6 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 
 interface TmpStackProps extends StackProps {
   config: EnvConfig;
-  vpc: ec2.IVpc;
   bucketName: string;
   version: string | undefined;
 }
@@ -17,12 +16,19 @@ export class TmpStack extends Stack {
   constructor(scope: Construct, id: string, props: TmpStackProps) {
     super(scope, id, props);
 
+    const vpcConstructId = "TestVpc";
+    const vpc = new ec2.Vpc(this, vpcConstructId, {
+      flowLogs: {
+        apiVPCFlowLogs: { trafficType: ec2.FlowLogTrafficType.REJECT },
+      },
+    });
+
     //-------------------------------------------
     // S3 bucket for Medical Documents
     //-------------------------------------------
 
     const convertCda = this.setupConvertCda({
-      vpc: props.vpc,
+      vpc,
       bucketName: props.bucketName,
     });
 

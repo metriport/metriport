@@ -53,7 +53,7 @@ async function deploy() {
   //---------------------------------------------------------------------------------
   // 2. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  const apiStack = new APIStack(app, config.stackName, { env, config, version });
+  new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 3. Deploy the Connect widget stack.
@@ -70,15 +70,13 @@ async function deploy() {
     env,
     config,
     version,
-    vpc: apiStack.vpc,
     bucketName: "jorge-bucket",
   });
   new TmpStack(app, "DimaCDALambdaStack", {
     env,
     config,
     version,
-    vpc: apiStack.vpc,
-    bucketName: "dima-bucket",
+    bucketName: "dima-test-bucket-666",
   });
 
   //---------------------------------------------------------------------------------
