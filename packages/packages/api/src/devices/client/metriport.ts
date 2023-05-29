@@ -1,5 +1,10 @@
 import axios, { AxiosInstance } from "axios";
-import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
+import {
+  API_KEY_HEADER,
+  BASE_ADDRESS,
+  BASE_ADDRESS_SANDBOX,
+  DEFAULT_AXIOS_TIMEOUT_MILLIS,
+} from "../../shared";
 import { Activity } from "../models/activity";
 import { Biometrics } from "../models/biometrics";
 import { Body } from "../models/body";
@@ -13,10 +18,9 @@ import { SettingsResponse } from "./models/settings-response";
 import { WebhookStatusResponse } from "./models/webhook-status-response";
 import { dateIsValid } from "./util/date-util";
 
-const AXIOS_TIMEOUT = 20_000; // milliseconds
-
 export type Options = {
   sandbox?: boolean;
+  timeout?: number;
 };
 
 export class MetriportDevicesApi {
@@ -26,17 +30,17 @@ export class MetriportDevicesApi {
    * Creates a new instance of the Metriport Devices API client.
    *
    * @param apiKey - Your Metriport API key.
-   * @param options - Structure with `sandbox` property indicating whether to connect to the
-   *           sandbox. If a string is passed, it is assumed to be the base URL (deprecated).
+   * @param options - Optional parameters
+   * @param options.sandbox - Indicates whether to connect to the sandbox, default false.
+   * @param options.timeout - Connection timeout in milliseconds, default 20 seconds.
    */
-  constructor(apiKey: string, options: string | Options = { sandbox: false }) {
-    const baseURL =
-      typeof options === "string" ? options : options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS;
-
+  constructor(apiKey: string, options: Options = {}) {
+    const { sandbox, timeout } = options;
+    const baseURL = sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS;
     this.api = axios.create({
-      timeout: AXIOS_TIMEOUT,
+      timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
-      headers: { "x-api-key": apiKey },
+      headers: { [API_KEY_HEADER]: apiKey },
     });
   }
 
