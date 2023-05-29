@@ -4,10 +4,12 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
+import * as s3 from "aws-cdk-lib/aws-s3";
 
 interface TmpStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
+  bucketName: string;
   version: string | undefined;
 }
 
@@ -21,7 +23,7 @@ export class TmpStack extends Stack {
 
     const convertCda = this.setupConvertCda({
       vpc: props.vpc,
-      bucketName: props.config.medicalDocumentsBucketName,
+      bucketName: props.bucketName,
     });
 
     //-------------------------------------------
@@ -33,7 +35,7 @@ export class TmpStack extends Stack {
     });
   }
 
-  private setupConvertCda(ownProps: { vpc: ec2.IVpc; bucketName: string | undefined }) {
+  private setupConvertCda(ownProps: { vpc: ec2.IVpc; bucketName: string }) {
     const { vpc, bucketName } = ownProps;
 
     const convertCdaLambda = new lambda_node.NodejsFunction(this, "ConvertCdaLambda", {
@@ -47,6 +49,14 @@ export class TmpStack extends Stack {
       memorySize: 512,
       vpc,
     });
+
+    const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
+      bucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
+    // Access grant for medical documents bucket
+    medicalDocumentsBucket.grantReadWrite(convertCdaLambda);
 
     return convertCdaLambda;
   }

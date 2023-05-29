@@ -66,8 +66,20 @@ async function deploy() {
   }
 
   // TODO #726: remove
-  new TmpStack(app, "JorgeCDALambdaStack", { env, config, version, vpc: apiStack.vpc });
-  new TmpStack(app, "DimaCDALambdaStack", { env, config, version, vpc: apiStack.vpc });
+  new TmpStack(app, "JorgeCDALambdaStack", {
+    env,
+    config,
+    version,
+    vpc: apiStack.vpc,
+    bucketName: "JorgeBucket",
+  });
+  new TmpStack(app, "DimaCDALambdaStack", {
+    env,
+    config,
+    version,
+    vpc: apiStack.vpc,
+    bucketName: "DimaBucket",
+  });
 
   //---------------------------------------------------------------------------------
   // Execute the updates on AWS
