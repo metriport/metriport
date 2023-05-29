@@ -315,11 +315,18 @@ export async function downloadDocsAndUpsertFHIR({
   for (const docChunk of chunks) {
     const s3Refs = await Promise.allSettled(
       docChunk.map(async doc => {
+        let errorReported = false;
         try {
           const fhirDocId = getDocumentPrimaryId(doc);
           // Make this before download and insert on S3 bc of https://metriport.slack.com/archives/C04DBBJSKGB/p1684113732495119?thread_ts=1684105959.041439&cid=C04DBBJSKGB
           if (fhirDocId.length > MAX_FHIR_DOC_ID_LENGTH) {
             throw new MetriportError("FHIR doc ID too long", undefined, { fhirDocId });
+          }
+
+          const docLocation = doc.content.location;
+          if (!docLocation) {
+            log(`Doc without location, skipping - docId ${fhirDocId}`);
+            return;
           }
 
           const s3FileName = createS3FileName(patient.cxId, fhirDocId);
@@ -328,17 +335,17 @@ export async function downloadDocsAndUpsertFHIR({
             s3BucketName
           );
 
-          const docLocation = doc.content.location;
-          if (docLocation) {
+          let uploadToS3: () => Promise<{
+            bucket: string;
+            key: string;
+            location: string;
+            size: number | undefined;
+          }>;
+          let file: Awaited<ReturnType<typeof uploadToS3>>;
+
+          try {
             // add some randomness to avoid overloading the servers
             await jitterSingleDownload();
-
-            let uploadToS3: () => Promise<{
-              bucket: string;
-              key: string;
-              location: string;
-              size: number | undefined;
-            }>;
 
             if (!fileExists || override) {
               // Download from CW and upload to S3
@@ -377,46 +384,61 @@ export async function downloadDocsAndUpsertFHIR({
                 };
               };
             }
-            const file = await uploadToS3();
-
-            const docWithFile: CWDocumentWithMetriportData = {
-              ...doc,
-              metriport: {
-                fileName: file.key,
-                location: file.location,
-                fileSize: file.size,
+            file = await uploadToS3();
+          } catch (error) {
+            const isZeroLength = doc.content.size === 0;
+            const zeroLengthDetailsStr = isZeroLength ? "zero length document" : "";
+            log(
+              `Error downloading ${zeroLengthDetailsStr} from CW and upserting to FHIR (docId ${doc.id}): ${error}`
+            );
+            capture.error(error, {
+              extra: {
+                context: `s3.documentUpload`,
+                patientId: patient.id,
+                documentReference: doc,
+                isZeroLength,
               },
-            };
-
-            await convertCDAToFHIR({
-              patient,
-              document: { id: fhirDocId, mimeType: doc.content?.mimeType },
-              s3FileName: file.key,
-              s3BucketName: file.bucket,
             });
-
-            const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
-            await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
-
-            return FHIRDocRef;
-          } else {
-            log(`Doc without location, skipping - docId ${fhirDocId}, s3FileName ${s3FileName}`);
+            errorReported = true;
+            throw error;
           }
-        } catch (error) {
-          const isZeroLength = doc.content.size === 0;
-          const zeroLengthDetailsStr = isZeroLength ? "zero length document" : "";
-          log(
-            `Error downloading ${zeroLengthDetailsStr} from CW and upserting to FHIR (docId ${doc.id}): ${error}`
-          );
-          reportFHIRError({ patientId: patient.id, doc, error, log });
-          capture.error(error, {
-            extra: {
-              context: `s3.documentUpload`,
-              patientId: patient.id,
-              documentReference: doc,
-              isZeroLength,
+          const docWithFile: CWDocumentWithMetriportData = {
+            ...doc,
+            metriport: {
+              fileName: file.key,
+              location: file.location,
+              fileSize: file.size,
             },
+          };
+
+          await convertCDAToFHIR({
+            patient,
+            document: { id: fhirDocId, mimeType: doc.content?.mimeType },
+            s3FileName: file.key,
+            s3BucketName: file.bucket,
           });
+
+          const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
+          try {
+            await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
+          } catch (error) {
+            reportFHIRError({ patientId: patient.id, doc, error, log });
+            errorReported = true;
+            throw error;
+          }
+
+          return FHIRDocRef;
+        } catch (error) {
+          log(`Error processing doc: ${error}`, doc);
+          if (!errorReported) {
+            capture.error(error, {
+              extra: {
+                context: `cw.downloadDocsAndUpsertFHIR`,
+                patientId: patient.id,
+                document: doc,
+              },
+            });
+          }
           throw error;
         } finally {
           // TODO: eventually we will have to update this to support multiple HIEs
@@ -435,7 +457,7 @@ export async function downloadDocsAndUpsertFHIR({
             });
           } catch (err) {
             capture.error(err, {
-              extra: { context: `cw.getDocuments.updateDocQuery` },
+              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient },
             });
           }
         }
