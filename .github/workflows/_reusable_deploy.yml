@@ -89,6 +89,9 @@ jobs:
       - name: Token-auth lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/token-auth/"
+      - name: Convert-cda lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/convert-cda/"
 
       # BUILD
       # api
