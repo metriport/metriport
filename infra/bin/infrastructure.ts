@@ -71,14 +71,14 @@ async function deploy() {
     config,
     version,
     vpc: apiStack.vpc,
-    bucketName: "JorgeBucket",
+    bucketName: "jorge-bucket",
   });
   new TmpStack(app, "DimaCDALambdaStack", {
     env,
     config,
     version,
     vpc: apiStack.vpc,
-    bucketName: "DimaBucket",
+    bucketName: "dima-bucket",
   });
 
   //---------------------------------------------------------------------------------
