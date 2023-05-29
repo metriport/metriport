@@ -44,6 +44,12 @@ export class TmpStack extends Stack {
   private setupConvertCda(ownProps: { vpc: ec2.IVpc; bucketName: string }) {
     const { vpc, bucketName } = ownProps;
 
+    const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
+      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+      code: lambda.Code.fromAsset("../api/lambdas/layers/chromium"),
+      description: "Adds chromium to the lambdas",
+    });
+
     const convertCdaLambda = new lambda_node.NodejsFunction(this, "ConvertCdaLambda", {
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "../api/lambdas/convert-cda/index.js",
@@ -51,6 +57,11 @@ export class TmpStack extends Stack {
         ...(bucketName && {
           MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
         }),
+      },
+      layers: [chromiumLayer],
+      bundling: {
+        minify: false,
+        externalModules: ["aws-sdk", "@sparticuz/chromium"],
       },
       memorySize: 512,
       vpc,

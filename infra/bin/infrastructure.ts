@@ -72,11 +72,11 @@ async function deploy() {
     version,
     bucketName: "jorge-bucket",
   });
-  new TmpStack(app, "DimaCDALambdaStack", {
+  new TmpStack(app, "DimaCDALambdaStackTwo", {
     env,
     config,
     version,
-    bucketName: "dima-test-bucket-666",
+    bucketName: "dima-test-bucket-777",
   });
 
   //---------------------------------------------------------------------------------
