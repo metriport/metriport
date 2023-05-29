@@ -147,10 +147,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         };
 
         await reportMemoryUsage();
-        const updatedConversion = addExtensionToConversion(conversionResult, documentExtension);
+        addExtensionToConversion(conversionResult, documentExtension);
 
         await reportMemoryUsage();
-        await sendConversionResult(cxId, s3FileName, updatedConversion, jobStartedAt, log);
+        await sendConversionResult(cxId, s3FileName, conversionResult, jobStartedAt, log);
 
         await reportMemoryUsage();
         await reportMetrics(metrics);
@@ -159,7 +159,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount;
         if (isTimeout(err) && count <= maxTimeoutRetries) {
-          console.log(`Timed out, reenqueue (${count} of ${maxTimeoutRetries}): `, message);
+          const details = `${err.code}/${err.response?.status}`;
+          console.log(
+            `Timed out (${details}), reenqueue (${count} of ${maxTimeoutRetries}): `,
+            message
+          );
           Sentry.captureMessage("Conversion timed out", {
             extra: { message, context: lambdaName, retryCount: count },
           });

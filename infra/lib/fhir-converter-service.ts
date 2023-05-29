@@ -15,12 +15,14 @@ import { isProd } from "./shared/util";
 export function settings() {
   const config = getConfig();
   const prod = isProd(config);
-  const cpuAmount = prod ? 4 : 1;
+  // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
+  // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
+  const cpuAmount = prod ? 4 : 2;
   return {
     cpuAmount,
     cpu: cpuAmount * vCPU,
-    memoryLimitMiB: prod ? 8192 : 2048,
-    taskCountMin: prod ? 2 : 2,
+    memoryLimitMiB: prod ? 8192 : 4096,
+    taskCountMin: prod ? 2 : 1,
     taskCountMax: prod ? 30 : 10,
   };
 }

@@ -57,6 +57,8 @@ export function createAPIService(
     "APIFargateService",
     {
       cluster: cluster,
+      // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
+      // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
       cpu: isProd(props.config) ? 2048 : 1024,
       desiredCount: isProd(props.config) ? 2 : 1,
       taskImageOptions: {
