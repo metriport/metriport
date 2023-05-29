@@ -213,6 +213,12 @@ export class APIStack extends Stack {
     // S3 bucket for Medical Documents
     //-------------------------------------------
 
+    const convertCda = this.setupConvertCda({
+      vpc: this.vpc,
+      fargateService: apiService,
+      bucketName: props.config.medicalDocumentsBucketName,
+    });
+
     if (props.config.medicalDocumentsBucketName) {
       const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
         bucketName: props.config.medicalDocumentsBucketName,
@@ -221,6 +227,7 @@ export class APIStack extends Stack {
       });
       // Access grant for medical documents bucket
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+      medicalDocumentsBucket.grantReadWrite(convertCda);
     }
 
     //-------------------------------------------
@@ -287,12 +294,6 @@ export class APIStack extends Stack {
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiLoadBalancerAddress);
-
-    this.setupConvertCda({
-      vpc: this.vpc,
-      fargateService: apiService,
-      bucketName: props.config.medicalDocumentsBucketName,
-    });
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
@@ -489,6 +490,8 @@ export class APIStack extends Stack {
 
     // Grant lambda access to the api server
     server.service.connections.allowFrom(convertCdaLambda, Port.allTcp());
+
+    return convertCdaLambda;
   }
 
   private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {
