@@ -184,4 +184,8 @@ export class Config {
   static getFHIRConverterURL(): string | undefined {
     return getEnvVar("FHIR_CONVERTER_URL");
   }
+
+  static getConvertDocLambdaName(): string | undefined {
+    return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
+  }
 }

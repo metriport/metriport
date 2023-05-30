@@ -23,6 +23,7 @@ export type EnvConfig = {
   fhirServerUrl?: string;
   systemRootOID: string;
   medicalDocumentsBucketName?: string;
+  convertCDALambdaName?: string;
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
   };

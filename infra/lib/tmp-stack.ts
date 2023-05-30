@@ -1,4 +1,4 @@
-import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput, Duration, Stack, StackProps } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
@@ -41,7 +41,7 @@ export class TmpStack extends Stack {
     });
   }
 
-  private setupConvertCda(ownProps: { vpc: ec2.IVpc; bucketName: string }) {
+  private setupConvertCda(ownProps: { vpc: ec2.IVpc; bucketName: string | undefined }) {
     const { vpc, bucketName } = ownProps;
 
     const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
@@ -64,6 +64,7 @@ export class TmpStack extends Stack {
         externalModules: ["aws-sdk", "@sparticuz/chromium"],
       },
       memorySize: 512,
+      timeout: Duration.seconds(60),
       vpc,
     });
 

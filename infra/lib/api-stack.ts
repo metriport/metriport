@@ -215,8 +215,8 @@ export class APIStack extends Stack {
 
     const convertCda = this.setupConvertCda({
       vpc: this.vpc,
-      fargateService: apiService,
       bucketName: props.config.medicalDocumentsBucketName,
+      lambdaName: props.config.convertCDALambdaName,
     });
 
     if (props.config.medicalDocumentsBucketName) {
@@ -471,12 +471,19 @@ export class APIStack extends Stack {
 
   private setupConvertCda(ownProps: {
     vpc: ec2.IVpc;
-    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     bucketName: string | undefined;
+    lambdaName: string | undefined;
   }) {
-    const { vpc, fargateService: server, bucketName } = ownProps;
+    const { vpc, bucketName, lambdaName } = ownProps;
+
+    const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
+      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+      code: lambda.Code.fromAsset("../api/lambdas/layers/chromium"),
+      description: "Adds chromium to the lambdas",
+    });
 
     const convertCdaLambda = new lambda_node.NodejsFunction(this, "ConvertCdaLambda", {
+      functionName: lambdaName,
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "../api/lambdas/convert-cda/index.js",
       environment: {
@@ -484,12 +491,14 @@ export class APIStack extends Stack {
           MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
         }),
       },
+      layers: [chromiumLayer],
+      bundling: {
+        minify: false,
+        externalModules: ["aws-sdk", "@sparticuz/chromium"],
+      },
+      memorySize: 512,
       vpc,
     });
-    addErrorAlarmToLambdaFunc(this, convertCdaLambda, "ConvertCdaAuthFunctionAlarm");
-
-    // Grant lambda access to the api server
-    server.service.connections.allowFrom(convertCdaLambda, Port.allTcp());
 
     return convertCdaLambda;
   }
