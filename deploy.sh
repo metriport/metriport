@@ -28,15 +28,15 @@ Deploy()
    else
       cmd="deploy"
    fi
-   # echo "$cmd'ing to env $env"
-   # if [[ "$env" == "staging" ]]; then
-   #    npm run prep-deploy-staging
-   # else
-   #    npm run prep-deploy
-   # fi
+   echo "$cmd'ing to env $env"
+   if [[ "$env" == "staging" ]]; then
+      npm run prep-deploy-staging
+   else
+      npm run prep-deploy
+   fi
    cd ./infra
-   # cdk bootstrap -c env=$env
-   cdk $cmd -c env=$env $stack --exclusively
+   cdk bootstrap -c env=$env
+   cdk $cmd -c env=$env $stack
    cd ../
    echo "Done!"
 }

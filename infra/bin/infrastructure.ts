@@ -7,7 +7,6 @@ import { EnvConfig } from "../lib/env-config";
 import { EnvType } from "../lib/env-type";
 import { SecretsStack } from "../lib/secrets-stack";
 import { getEnvVar } from "../lib/util";
-import { TmpStack } from "../lib/tmp-stack";
 
 const app = new cdk.App();
 //-------------------------------------------
@@ -64,20 +63,6 @@ async function deploy() {
       config,
     });
   }
-
-  // TODO #726: remove
-  new TmpStack(app, "JorgeCDALambdaStack", {
-    env,
-    config,
-    version,
-    bucketName: "jorge-bucket-2345",
-  });
-  new TmpStack(app, "DimaCDALambdaStackTwo", {
-    env,
-    config,
-    version,
-    bucketName: "dima-test-bucket-777",
-  });
 
   //---------------------------------------------------------------------------------
   // Execute the updates on AWS
