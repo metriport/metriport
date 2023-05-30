@@ -3,6 +3,7 @@
 .AppleDouble
 .LSOverride
 node_modules
+nodejs
 
 # Icon must end with two \r
 Icon
