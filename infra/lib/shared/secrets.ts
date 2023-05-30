@@ -1,7 +1,7 @@
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
-import { EnvConfig } from "./env-config";
+import { EnvConfig } from "../env-config";
 
 export type Secrets = { [key: string]: ecs.Secret };
 

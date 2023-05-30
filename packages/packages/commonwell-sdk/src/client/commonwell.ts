@@ -38,6 +38,8 @@ import {
 import { PurposeOfUse } from "../models/purpose-of-use";
 import * as document from "./document";
 
+const DEFAULT_AXIOS_TIMEOUT = 20_000; // milliseconds
+
 export enum APIMode {
   integration = "integration",
   production = "production",
@@ -77,17 +79,22 @@ export class CommonWell implements CommonWellAPI {
    * @param orgCert         The certificate (public key) for the organization.
    * @param rsaPrivateKey   An RSA key corresponding to the specified orgCert.
    * @param apiMode         The mode the client will be running.
+   * @param apiMode         The mode the client will be running.
+   * @param options         Optional parameters
+   * @param options.timeout Connection timeout in milliseconds, default 20 seconds.
    */
   constructor(
     orgCert: string,
     rsaPrivateKey: string,
     orgName: string,
     oid: string,
-    apiMode: APIMode
+    apiMode: APIMode,
+    options: { timeout?: number } = {}
   ) {
     this.rsaPrivateKey = rsaPrivateKey;
     this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
     this.api = axios.create({
+      timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT,
       baseURL:
         apiMode === APIMode.production ? CommonWell.productionUrl : CommonWell.integrationUrl,
       httpsAgent: this.httpsAgent,

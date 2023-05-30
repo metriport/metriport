@@ -11,6 +11,8 @@ import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 dayjs.extend(isToday);
 
+export const MAX_FHIR_DOC_ID_LENGTH = 64;
+
 // HIEs probably don't have records before the year 1800 :)
 const earliestPossibleYear = 1800;
 
@@ -41,7 +43,7 @@ export const toFHIR = (
 ): DocumentReference => {
   const baseAttachment = {
     contentType: doc.content?.mimeType,
-    size: doc.metriport.fileSize, // can't trust the file size from CW, use what we actually saved
+    size: doc.metriport.fileSize != null ? doc.metriport.fileSize : doc.content?.size, // can't trust the file size from CW, use what we actually saved
     creation: doc.content?.indexed,
   };
   const metriportContent: DocumentReferenceContent = {
