@@ -90,7 +90,10 @@ export function createLambda(props: LambdaProps): Lambda {
     metricName: `${props.name}-OOMErrors`,
     filterPattern: FilterPattern.anyTerm(
       "Runtime exited with error",
-      "signal: killed Runtime.ExitError"
+      "signal: killed Runtime.ExitError",
+      "ELIFECYCLE",
+      "JS heap out of memory",
+      "OUT_OF_MEMORY"
     ),
     metricValue: "1",
   });

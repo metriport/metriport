@@ -149,7 +149,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           });
           await reEnqueue(message);
         } else {
-          console.log(`Error processing message: `, message, err);
+          console.log(`Error processing message: `, message, JSON.stringify(err));
           Sentry.captureException(err, {
             extra: { message, context: lambdaName, retryCount: count },
           });
@@ -159,7 +159,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     }
     console.log(`Done`);
   } catch (err) {
-    console.log(`Error processing event: `, event, err);
+    console.log(`Error processing event: `, event, JSON.stringify(err));
     Sentry.captureException(err, {
       extra: { event, context: lambdaName, additional: "outer catch" },
     });
