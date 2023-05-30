@@ -148,6 +148,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
 
         await reportMemoryUsage();
         addExtensionToConversion(conversionResult, documentExtension);
+        removePatientFromConversion(conversionResult, documentExtension);
 
         await reportMemoryUsage();
         await sendConversionResult(cxId, s3FileName, conversionResult, jobStartedAt, log);
@@ -195,6 +196,14 @@ function addExtensionToConversion(conversion, extension) {
       resource.extension.push(extension);
     }
   }
+}
+
+function removePatientFromConversion(conversion) {
+  const entries = conversion.fhirResource?.entry ?? []
+  const pos = entries.findIndex(
+    e => e.resource?.resourceType === "Patient"
+  );
+  if (pos >= 0) conversion.fhirResource.entry.splice(pos, 1);
 }
 
 // Being more generic with errors, not strictly timeouts
