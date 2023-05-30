@@ -5,6 +5,19 @@ import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs/lib/construct";
 import { createRetryLambda, DEFAULT_LAMBDA_TIMEOUT_SECONDS } from "./lambda";
 
+/**
+ * ...set the source queue's visibility timeout to at least six times the timeout that
+ * you configure on your function/lambda:
+ * https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#events-sqs-queueconfig
+ * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
+ *
+ * "The extra time allows for Lambda to retry if your function is throttled while processing a previous batch."
+ * This seems to be the case mostly because of the possibility of a lambda being throttled, but in theory we would
+ * only care about this on FIFO queues because we wouldn't want a new lambda to process a message while the original,
+ * throttled lambda is about to keep processing it after its unthrottled.
+ */
+const DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER = 6;
+
 export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
   dlq?: never;
   vpc: IVpc;
@@ -69,19 +82,9 @@ function createStandardQueue(props: StandardQueueProps): Queue {
     retentionPeriod: Duration.days(14),
     deliveryDelay: props.deliveryDelay ?? Duration.seconds(0),
     receiveMessageWaitTime: props.receiveMessageWaitTime ?? Duration.seconds(0),
-    /**
-     * ...set the source queue's visibility timeout to at least six times the timeout that
-     * you configure on your function/lambda:
-     * https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#events-sqs-queueconfig
-     * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
-     *
-     * "The extra time allows for Lambda to retry if your function is throttled while processing a previous batch."
-     * This seems to be the case mostly because of the possibility of a lambda being throttled, but in theory we would
-     * only care about this on FIFO queues because we wouldn't want a new lambda to process a message while the original,
-     * throttled lambda is about to keep processing it after its unthrottled.
-     */
     visibilityTimeout:
-      props.visibilityTimeout ?? Duration.seconds(DEFAULT_LAMBDA_TIMEOUT_SECONDS * 6 + 1),
+      props.visibilityTimeout ??
+      Duration.seconds(DEFAULT_LAMBDA_TIMEOUT_SECONDS * DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER + 1),
     deadLetterQueue: props.dlq
       ? {
           maxReceiveCount:
@@ -104,14 +107,9 @@ function createFifoQueue(props: FifoQueueProps): Queue {
     retentionPeriod: Duration.days(14),
     deliveryDelay: props.deliveryDelay ?? Duration.seconds(0),
     receiveMessageWaitTime: props.receiveMessageWaitTime ?? Duration.seconds(0),
-    /**
-     * ...set the source queue's visibility timeout to at least six times the timeout that
-     * you configure on your function/lambda:
-     * https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#events-sqs-queueconfig
-     * https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
-     */
     visibilityTimeout:
-      props.visibilityTimeout ?? Duration.seconds(DEFAULT_LAMBDA_TIMEOUT_SECONDS * 6 + 1),
+      props.visibilityTimeout ??
+      Duration.seconds(DEFAULT_LAMBDA_TIMEOUT_SECONDS * DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER + 1),
     contentBasedDeduplication: props.contentBasedDeduplication ?? false, // if false, expects MessageDeduplicationId on message
     deadLetterQueue: props.dlq
       ? {

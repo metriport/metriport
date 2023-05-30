@@ -26,8 +26,7 @@ import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { makeS3Client } from "../../aws/s3";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
-import { MAX_FHIR_DOC_ID_LENGTH } from "../../fhir/bundle";
-import { toFHIR as toFHIRDocRef } from "../../fhir/document";
+import { MAX_FHIR_DOC_ID_LENGTH, toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
@@ -189,7 +188,7 @@ export async function internalGetDocuments({
     if (d.content.size === 0) {
       log(`Document is of size 0, this may result in a 404 error - doc id ${d.id}`);
       capture.message("Document is of size 0", {
-        extra: { document: d },
+        extra: { document: JSON.stringify(d, null, 2) },
       });
     }
 

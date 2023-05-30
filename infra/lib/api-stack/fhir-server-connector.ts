@@ -23,7 +23,7 @@ const maxReceiveCount = 5;
 // Number of times we want to retry a message that timed out when trying to be processed
 const maxTimeoutRetries = 99;
 // How long messages should be invisible for other consumers, based on the lambda timeout
-const visibilityTimeoutMultiplier = 6;
+const visibilityTimeoutMultiplier = 2;
 const delayWhenRetryingSeconds = 10;
 
 export function createConnector({
