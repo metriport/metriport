@@ -6,7 +6,7 @@ import { Patient } from "../../../models/medical/patient";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
 import { ResourceType } from "../shared";
-import { metriportExtension } from "../shared/extensions/extension";
+import { metriportDataSourceExtension } from "../shared/extensions/extension";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 dayjs.extend(isToday);
@@ -52,7 +52,7 @@ export const toFHIR = (
       title: doc.metriport.fileName,
       url: doc.metriport.location,
     },
-    extension: [metriportExtension],
+    extension: [metriportDataSourceExtension],
   };
   const cwContent = doc.content?.location
     ? [
