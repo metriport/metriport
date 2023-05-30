@@ -1,6 +1,13 @@
-import { Bundle, DocumentReference, OperationOutcomeIssue, Resource } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  DocumentReference,
+  OperationOutcomeIssue,
+  Resource,
+  ResourceType as MedplumResourceType,
+} from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeFhirApi } from "../api/api-factory";
+import { Operator, getSearchParameters } from "@medplum/core";
 
 export enum ResourceType {
   Organization = "Organization",
@@ -24,4 +31,24 @@ export function downloadedFromCW(doc: DocumentReference): boolean {
 }
 export function downloadedFromHIEs(doc: DocumentReference): boolean {
   return downloadedFromCW(doc);
+}
+
+// Creates a FHIR data query string based on the specified range.
+// For example, if dateFrom="2022-03-23" & dateTo="2024-01-02", result will look like:
+//  "date=ge2022-03-23&date=le2024-01-02"
+export function isoDateRangeToFHIRDateQuery(dateFrom?: string, dateTo?: string): string {
+  const fhirDateQueryBase = "date=";
+  let fhirDateQuery = `${fhirDateQueryBase}`;
+  if (!dateFrom && !dateTo) return "";
+  if (dateFrom) fhirDateQuery += `${Operator.GREATER_THAN_OR_EQUALS}${dateFrom}`;
+  if (dateTo)
+    fhirDateQuery += `${fhirDateQuery ? `&${fhirDateQueryBase}` : ""}${
+      Operator.LESS_THAN_OR_EQUALS
+    }${dateTo}`;
+  return fhirDateQuery;
+}
+
+export function resourceSupportsDateQuery(resourceType: MedplumResourceType): boolean {
+  const searchParams = getSearchParameters(resourceType);
+  return searchParams ? Boolean(searchParams["date"]) : false;
 }

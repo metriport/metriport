@@ -31,3 +31,7 @@ export const toISODate = (unixTime: number): string => {
 export const toISODateTime = (unixTime: number): string => {
   return dayjs.unix(unixTime).toISOString();
 };
+
+export function parseISODate(date?: string): string | undefined {
+  return dayjs(date, ISO_DATE, true).isValid() ? date : undefined;
+}

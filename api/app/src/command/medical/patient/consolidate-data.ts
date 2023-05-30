@@ -1,4 +1,4 @@
-import { OperationOutcomeError } from "@medplum/core";
+import { OperationOutcomeError, getSearchParameters } from "@medplum/core";
 import {
   Bundle,
   BundleEntry,
@@ -14,15 +14,27 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "./get-patient";
+import {
+  isoDateRangeToFHIRDateQuery,
+  resourceSupportsDateQuery,
+} from "../../../external/fhir/shared";
+
+function fullDateQueryForResource(fullDateQuery: string, resource: ResourceType): string {
+  return resourceSupportsDateQuery(resource) ? fullDateQuery : "";
+}
 
 export async function getConsolidatedPatientData({
   cxId,
   patientId,
   resources,
+  dateFrom,
+  dateTo,
 }: {
   cxId: string;
   patientId: string;
   resources?: ResourceTypeForConsolidation[];
+  dateFrom?: string;
+  dateTo?: string;
 }): Promise<Bundle<Resource>> {
   const { log } = Util.out(`[getConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}]`);
 
@@ -44,6 +56,7 @@ export async function getConsolidatedPatientData({
   log(`...and by subject: ${resourcesBySubject.join(", ")}`);
 
   const fhir = makeFhirApi(cxId);
+  getSearchParameters;
   const errorsToReport: Record<string, string> = {};
   const searchResources = async <K extends ResourceType>(
     resource: K,
@@ -63,12 +76,24 @@ export async function getConsolidatedPatientData({
       throw err;
     }
   };
+  const fhirDateQuery = isoDateRangeToFHIRDateQuery(dateFrom, dateTo);
+  const fullDateQuery = fhirDateQuery ? `&${fhirDateQuery}` : "";
   const settled = await Promise.allSettled([
     ...resourcesByPatient.map(async resource =>
-      searchResources(resource, () => fhir.searchResourcePages(resource, `patient=${patientId}`))
+      searchResources(resource, () =>
+        fhir.searchResourcePages(
+          resource,
+          `patient=${patientId}${fullDateQueryForResource(fullDateQuery, resource)}`
+        )
+      )
     ),
     ...resourcesBySubject.map(async resource =>
-      searchResources(resource, () => fhir.searchResourcePages(resource, `subject=${patientId}`))
+      searchResources(resource, () =>
+        fhir.searchResourcePages(
+          resource,
+          `subject=${patientId}${fullDateQueryForResource(fullDateQuery, resource)}`
+        )
+      )
     ),
   ]);
 
