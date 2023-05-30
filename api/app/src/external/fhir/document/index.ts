@@ -11,6 +11,8 @@ import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 dayjs.extend(isToday);
 
+export const MAX_FHIR_DOC_ID_LENGTH = 64;
+
 // HIEs probably don't have records before the year 1800 :)
 const earliestPossibleYear = 1800;
 

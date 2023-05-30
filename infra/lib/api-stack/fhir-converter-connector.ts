@@ -32,7 +32,7 @@ function settings() {
     // Number of times we want to retry a message that timed out when trying to be processed
     maxTimeoutRetries: 99,
     // How long messages should be invisible for other consumers, based on the lambda timeout
-    visibilityTimeoutMultiplier: 6,
+    visibilityTimeoutMultiplier: 2,
     delayWhenRetryingSeconds: 10,
   };
 }

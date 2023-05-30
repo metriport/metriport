@@ -13,7 +13,7 @@ import {
 import { findOrCreatePatient, findOrCreatePerson } from "./shared-person";
 import { filterTruthy, getEnv, getEnvOrFail } from "./util";
 
-const AXIOS_TIMEOUT = 20_000; // milliseconds
+const AXIOS_TIMEOUT_MILLIS = 20_000;
 
 // Document Contribution
 // https://commonwellalliance.sharepoint.com/sites/ServiceAdopter/SitePages/Document-Contribution-(SOAP,-REST).aspx
@@ -123,7 +123,7 @@ export async function documentContribution({
 
   console.log(`>>> [E3] Populating test data on FHIR server...`);
   const fhirApi = axios.create({
-    timeout: AXIOS_TIMEOUT,
+    timeout: AXIOS_TIMEOUT_MILLIS,
     baseURL: fhirUrl,
   });
   // TODO: #230 we could split convertPatientIdToSubjectId() in two and reuse the part that splits the CW patientId.
