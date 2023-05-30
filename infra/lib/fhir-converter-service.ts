@@ -24,6 +24,8 @@ export function settings() {
     memoryLimitMiB: prod ? 8192 : 4096,
     taskCountMin: prod ? 2 : 1,
     taskCountMax: prod ? 30 : 10,
+    // How long this service can run for
+    maxExecutionTimeout: Duration.minutes(15),
   };
 }
 
@@ -38,7 +40,7 @@ export function createFHIRConverterService(
   vpc: ec2.IVpc,
   alarmAction: SnsAction | undefined
 ): { service: FargateService; address: string } {
-  const { cpu, memoryLimitMiB, taskCountMin, taskCountMax } = settings();
+  const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
 
   // Create a new Amazon Elastic Container Service (ECS) cluster
   const cluster = new ecs.Cluster(stack, "FHIRConverterCluster", { vpc, containerInsights: true });
@@ -69,6 +71,7 @@ export function createFHIRConverterService(
       },
       healthCheckGracePeriod: Duration.seconds(60),
       publicLoadBalancer: false,
+      idleTimeout: maxExecutionTimeout,
     }
   );
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;

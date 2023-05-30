@@ -9,22 +9,33 @@ import { EnvType } from "../env-type";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
+import { isProd } from "../shared/util";
 
-const connectorName = "FHIRServer";
-const lambdaMemory = 512;
-// Number of messages the lambda pull from SQS at once
-const lambdaBatchSize = 1;
-// Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-const maxConcurrency = 4;
-// How long can the lambda run for, max is 900 seconds (15 minutes)
-const lambdaTimeoutSeconds = 14 * 60;
-// Number of times we want to retry a message, this includes throttles!
-const maxReceiveCount = 5;
-// Number of times we want to retry a message that timed out when trying to be processed
-const maxTimeoutRetries = 99;
-// How long messages should be invisible for other consumers, based on the lambda timeout
-const visibilityTimeoutMultiplier = 2;
-const delayWhenRetryingSeconds = 10;
+function settings() {
+  const config = getConfig();
+  const prod = isProd(config);
+  // How long can the lambda run for, max is 900 seconds (15 minutes)
+  // It SHOULD be slightly less than the ALB timeout of the FHIR server
+  const lambdaTimeout = Duration.minutes(15).minus(Duration.seconds(5));
+  return {
+    connectorName: "FHIRServer",
+    lambdaMemory: 512,
+    // Number of messages the lambda pull from SQS at once
+    lambdaBatchSize: 1,
+    // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
+    maxConcurrency: prod ? 4 : 2,
+    // How long can the lambda run for, max is 900 seconds (15 minutes)
+    lambdaTimeout,
+    // Number of times we want to retry a message, this includes throttles!
+    maxReceiveCount: 5,
+    // Number of times we want to retry a message that timed out when trying to be processed
+    maxTimeoutRetries: 99,
+    // How long messages should be invisible for other consumers, based on the lambda timeout
+    // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
+    visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+    delayWhenRetrying: Duration.seconds(10),
+  };
+}
 
 export function createConnector({
   envType,
@@ -45,6 +56,17 @@ export function createConnector({
     console.log("No FHIR Server URL provided, skipping connector creation");
     return undefined;
   }
+  const {
+    connectorName,
+    lambdaMemory,
+    lambdaTimeout,
+    lambdaBatchSize,
+    maxConcurrency,
+    maxReceiveCount,
+    visibilityTimeout,
+    maxTimeoutRetries,
+    delayWhenRetrying,
+  } = settings();
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
@@ -52,9 +74,7 @@ export function createConnector({
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
-    // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout
-    // that makes it harder to move messages to the DLQ
-    visibilityTimeout: Duration.seconds(visibilityTimeoutMultiplier * lambdaTimeoutSeconds + 1),
+    visibilityTimeout,
     maxReceiveCount,
   });
 
@@ -72,7 +92,7 @@ export function createConnector({
       METRICS_NAMESPACE,
       ENV_TYPE: envType,
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
-      DELAY_WHEN_RETRY: String(delayWhenRetryingSeconds),
+      DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       QUEUE_URL: queue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
@@ -80,7 +100,7 @@ export function createConnector({
         FHIR_SERVER_URL: config.fhirServerUrl,
       }),
     },
-    timeout: Duration.seconds(lambdaTimeoutSeconds),
+    timeout: lambdaTimeout,
     alarmSnsAction,
   });
 
