@@ -17,7 +17,7 @@ export const getUserToken = async ({ token }: GetUserTokenCommand): Promise<User
     .promise();
   if (item && item.Item) {
     const token = ddbItemAsOAuth(item.Item);
-    capture.setUserId(token.userId);
+    capture.setUser({ id: token.userId });
     return token;
   }
   // TODO protect the token on log, show only 5 first and last chars

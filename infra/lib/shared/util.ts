@@ -4,13 +4,15 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
-import { EnvConfig } from "./env-config";
-import { EnvType } from "./env-type";
+import { EnvConfig } from "../env-config";
+import { EnvType } from "../env-type";
 
+export function isStaging(config: EnvConfig): boolean {
+  return config.environmentType === EnvType.staging;
+}
 export function isProd(config: EnvConfig): boolean {
   return config.environmentType === EnvType.production;
 }
-
 export function isSandbox(config: EnvConfig): boolean {
   return config.environmentType === EnvType.sandbox;
 }

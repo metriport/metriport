@@ -6,7 +6,34 @@ import { Patient } from "../../../models/medical/patient";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
 import { ResourceType } from "../shared";
-import { metriportExtension } from "../shared/extension";
+import { metriportDataSourceExtension } from "../shared/extensions/extension";
+import dayjs from "dayjs";
+import isToday from "dayjs/plugin/isToday";
+dayjs.extend(isToday);
+
+export const MAX_FHIR_DOC_ID_LENGTH = 64;
+
+// HIEs probably don't have records before the year 1800 :)
+const earliestPossibleYear = 1800;
+
+function getBestDateFromCWDocRef(doc: CWDocumentWithMetriportData): string {
+  const date = dayjs(doc.content?.indexed);
+
+  // if the timestamp from CW for the indexed date is from today, this usually
+  // means that the timestamp is auto-generated, and there may be a more accurate
+  // timestamp in the doc ref.
+  if (date.isToday() && doc.content?.context?.period?.start) {
+    const newDate = dayjs(doc.content.context.period.start);
+
+    // this check is necessary to prevent using weird dates... seen stuff like
+    // this before:  "period": { "start": "0001-01-01T00:00:00Z" }
+    if (newDate.year() >= earliestPossibleYear) {
+      return newDate.toISOString();
+    }
+  }
+
+  return date.toISOString();
+}
 
 export const toFHIR = (
   docId: string,
@@ -16,7 +43,7 @@ export const toFHIR = (
 ): DocumentReference => {
   const baseAttachment = {
     contentType: doc.content?.mimeType,
-    size: doc.content?.size,
+    size: doc.metriport.fileSize != null ? doc.metriport.fileSize : doc.content?.size, // can't trust the file size from CW, use what we actually saved
     creation: doc.content?.indexed,
   };
   const metriportContent: DocumentReferenceContent = {
@@ -25,7 +52,7 @@ export const toFHIR = (
       title: doc.metriport.fileName,
       url: doc.metriport.location,
     },
-    extension: [metriportExtension],
+    extension: [metriportDataSourceExtension],
   };
   const cwContent = doc.content?.location
     ? [
@@ -58,7 +85,7 @@ export const toFHIR = (
       value: doc.content?.masterIdentifier?.value,
     },
     identifier: doc.content?.identifier?.map(idToFHIR),
-    date: doc.content?.indexed,
+    date: getBestDateFromCWDocRef(doc),
     status: "current",
     type: doc.content?.type,
     subject: {

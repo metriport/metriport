@@ -2,7 +2,7 @@ import Axios from "axios";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 
-const axios = Axios.create();
+const axios = Axios.create({ timeout: 10_000 });
 
 export enum ApiTypes {
   devices = "devices",

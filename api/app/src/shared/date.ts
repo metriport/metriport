@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import BadRequestError from "../errors/bad-request";
 
 export const ISO_DATE = "YYYY-MM-DD";
 
@@ -31,3 +32,10 @@ export const toISODate = (unixTime: number): string => {
 export const toISODateTime = (unixTime: number): string => {
   return dayjs.unix(unixTime).toISOString();
 };
+
+export function parseISODate(date?: string): string | undefined {
+  if (date && !dayjs(date, ISO_DATE, true).isValid()) {
+    throw new BadRequestError(`Date must be in format ${ISO_DATE} - got ${date}`);
+  }
+  return date;
+}

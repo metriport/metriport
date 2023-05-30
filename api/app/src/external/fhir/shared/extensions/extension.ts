@@ -1,13 +1,14 @@
 import { Coding, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
+import { METRIPORT } from "../../../../shared/constants";
+import { isCommonwellContent } from "../../../commonwell/extension";
+import { BASE_EXTENSION_URL } from "./base-extension";
 import { DeepRequired } from "ts-essentials";
-import { METRIPORT } from "../../../shared/constants";
-import { isCommonwellContent } from "../../commonwell/extension";
 
-const DATA_SOURCE_EXTENSION_URL =
-  "https://public.metriport.com/fhir/StructureDefinition/data-source.json";
+// TODO #712: create this extension
+const DATA_SOURCE_EXTENSION_URL = `${BASE_EXTENSION_URL}/data-source.json`;
 
 // URL is required: https://www.hl7.org/fhir/R4/extensibility.html#Extension.url
-export type MetriportExtension = Omit<Extension, "url" | "valueCoding"> &
+export type MetriportDataSourceExtension = Omit<Extension, "url" | "valueCoding"> &
   Required<Pick<Extension, "url">> & {
     valueCoding: Omit<Coding, "system" | "code"> & DeepRequired<Pick<Coding, "system" | "code">>;
   };
@@ -19,7 +20,7 @@ export const dataSourceExtensionDefaults = {
   },
 };
 
-export const metriportExtension: MetriportExtension = {
+export const metriportDataSourceExtension: MetriportDataSourceExtension = {
   ...dataSourceExtensionDefaults,
   valueCoding: {
     ...dataSourceExtensionDefaults.valueCoding,
@@ -28,7 +29,7 @@ export const metriportExtension: MetriportExtension = {
 };
 
 export function isMetriportExtension(e: Extension): boolean {
-  return e.valueCoding?.code === metriportExtension.valueCoding.code;
+  return e.valueCoding?.code === metriportDataSourceExtension.valueCoding.code;
 }
 export function isMetriportContent(content: DocumentReferenceContent): boolean {
   // Metriport is the fallback/default.
