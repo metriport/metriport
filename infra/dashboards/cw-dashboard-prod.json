@@ -81,9 +81,9 @@
         },
         {
             "height": 9,
-            "width": 6,
-            "y": 74,
-            "x": 12,
+            "width": 12,
+            "y": 66,
+            "x": 0,
             "type": "metric",
             "properties": {
                 "metrics": [
@@ -93,7 +93,13 @@
                     [ "...", "APIServiceInfrastructureS-APIServicePostConfirmati-XyBrFGVbmoZY", { "region": "us-west-1" } ],
                     [ "...", "APIServiceInfrastructureS-APIServiceRevokeKey01E87-wvDLydkcQ1o7", { "region": "us-west-1" } ],
                     [ "...", "APIServiceInfrastructureS-APIServiceStripeLambdaA5-H3GLBntxQ3oT", { "region": "us-west-1" } ],
-                    [ "...", "us-east-1.edge-lambda-stack-c838c75-WebsiteCloudfrontRedirec-CiksWdG1H4B6", { "region": "us-west-1" } ]
+                    [ "...", "us-east-1.edge-lambda-stack-c838c75-WebsiteCloudfrontRedirec-CiksWdG1H4B6", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverter_Retry_Lambda", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterLambda", { "region": "us-west-1", "color": "#17becf" } ],
+                    [ "...", "FHIRServerLambda", { "region": "us-west-1" } ],
+                    [ "...", "SqsToHttpLambda", { "region": "us-west-1" } ],
+                    [ "...", "StagingAPIInfrastructureSta-WithingsLambda05A37121-Q6Zwi3XUFilj", { "region": "us-west-1", "label": "WithingsLambda" } ],
+                    [ "...", "FHIRServer_Retry_Lambda", { "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -105,9 +111,9 @@
         },
         {
             "height": 9,
-            "width": 6,
-            "y": 74,
-            "x": 18,
+            "width": 12,
+            "y": 75,
+            "x": 0,
             "type": "metric",
             "properties": {
                 "metrics": [
@@ -128,9 +134,9 @@
             }
         },
         {
-            "height": 8,
+            "height": 9,
             "width": 12,
-            "y": 66,
+            "y": 93,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -170,9 +176,9 @@
             }
         },
         {
-            "height": 8,
+            "height": 9,
             "width": 12,
-            "y": 66,
+            "y": 84,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -341,7 +347,7 @@
         },
         {
             "height": 8,
-            "width": 13,
+            "width": 10,
             "y": 56,
             "x": 4,
             "type": "metric",
@@ -524,12 +530,12 @@
         },
         {
             "height": 8,
-            "width": 7,
+            "width": 10,
             "y": 56,
-            "x": 17,
+            "x": 14,
             "type": "log",
             "properties": {
-                "query": "SOURCE '/aws/ecs/containerinsights/APIInfrastructureStack-FHIRConverterCluster3ED284AD-6lmkKWgYr3oi/performance' | stats avg(CpuUtilized) as CPU, avg(MemoryUtilized) as Mem by TaskId\n| filter Type=\"Task\"\n| sort CPU desc, Mem",
+                "query": "SOURCE '/aws/ecs/containerinsights/APIInfrastructureStack-FHIRConverterCluster3ED284AD-6lmkKWgYr3oi/performance' | fields\n\n  CpuUtilized / CpuReserved * 100 as CpuUtilizationPercentage,\n\n  MemoryUtilized / MemoryReserved * 100 as MemoryUtilizationPercentage\n\n| filter Type=\"Task\"\n| stats avg(CpuUtilizationPercentage) as CpuAvgPct, avg(MemoryUtilizationPercentage) as MemAvgPct, @timestamp by TaskId, bin(1m) as When\n| sort When desc, TaskId\n| display CpuAvgPct, MemAvgPct, When, TaskId\n",
                 "region": "us-west-1",
                 "stacked": false,
                 "title": "containerinsights/FHIRConverterCluster",
@@ -538,16 +544,84 @@
         },
         {
             "height": 8,
-            "width": 7,
+            "width": 10,
             "y": 38,
-            "x": 17,
+            "x": 14,
             "type": "log",
             "properties": {
-                "query": "SOURCE '/aws/ecs/containerinsights/FHIRServerStack-FHIRServerClusterC4EE8AC0-00Vo19v9bvc5/performance' | stats avg(CpuUtilized) as CPU, avg(MemoryUtilized) as Mem by TaskId\n| filter Type=\"Task\"\n| sort CPU desc, Mem",
+                "query": "SOURCE '/aws/ecs/containerinsights/FHIRServerStack-FHIRServerClusterC4EE8AC0-00Vo19v9bvc5/performance' | fields\n\n\n\n  CpuUtilized / CpuReserved * 100 as CpuUtilizationPercentage,\n\n\n\n  MemoryUtilized / MemoryReserved * 100 as MemoryUtilizationPercentage\n\n\n\n| filter Type=\"Task\"\n| stats avg(CpuUtilizationPercentage) as CpuAvgPct, avg(MemoryUtilizationPercentage) as MemAvgPct, @timestamp by TaskId, bin(1m) as When\n| sort When desc, TaskId\n| display CpuAvgPct, MemAvgPct, When, TaskId\n\n\n\n\n#fields\n#  CpuUtilized / CpuReserved * 100 as CpuUtilizationPercentage,\n#  MemoryUtilized / MemoryReserved * 100 as MemoryUtilizationPercentage\n#| filter Type=\"Task\"\n#| stats avg(CpuUtilizationPercentage) as CpuAvgPct, avg(MemoryUtilizationPercentage) as MemAvgPct by TaskId\n",
                 "region": "us-west-1",
                 "stacked": false,
                 "title": "containerinsights/FHIRServerCluster",
                 "view": "table"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 66,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/SQS", "NumberOfMessagesReceived", "QueueName", "FHIRConverterQueue", { "region": "us-west-1" } ],
+                    [ "...", "FHIRServerDLQ", { "yAxis": "right", "region": "us-west-1" } ],
+                    [ "...", "FHIRServerQueue", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterDLQ", { "yAxis": "right", "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "SampleCount",
+                "period": 60,
+                "title": "FHIR Queues"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 75,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "Metriport", "Memory total", "Service", "FHIRServerLambda", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterLambda", { "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Lambdas memory",
+                "stat": "Maximum",
+                "period": 300,
+                "yAxis": {
+                    "left": {
+                        "showUnits": false,
+                        "label": "Memory (MB)"
+                    }
+                }
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 84,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/Lambda", "Duration", "FunctionName", "FHIRConverterLambda", { "region": "us-west-1" } ],
+                    [ "...", "FHIRServerLambda", { "region": "us-west-1" } ],
+                    [ "...", "APIInfrastructureStack-WithingsLambda05A37121-TpGQkJmxVpmJ", { "region": "us-west-1" } ],
+                    [ "...", "StagingAPIServiceInfrastr-StagingAPIServicePreSign-z4EFxuKA5ago", { "region": "us-west-1" } ],
+                    [ "...", "APIServiceInfrastructureS-APIServiceStripeLambdaA5-H3GLBntxQ3oT", { "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Lambdas Duration",
+                "stat": "Average",
+                "period": 300
             }
         }
     ]
