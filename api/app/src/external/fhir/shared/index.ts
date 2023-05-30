@@ -41,10 +41,11 @@ export function isoDateRangeToFHIRDateQuery(dateFrom?: string, dateTo?: string):
   let fhirDateQuery = `${fhirDateQueryBase}`;
   if (!dateFrom && !dateTo) return "";
   if (dateFrom) fhirDateQuery += `${Operator.GREATER_THAN_OR_EQUALS}${dateFrom}`;
-  if (dateTo)
-    fhirDateQuery += `${fhirDateQuery ? `&${fhirDateQueryBase}` : ""}${
+  if (dateTo) {
+    fhirDateQuery += `${dateFrom ? `&${fhirDateQueryBase}` : ""}${
       Operator.LESS_THAN_OR_EQUALS
     }${dateTo}`;
+  }
   return fhirDateQuery;
 }
 

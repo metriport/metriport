@@ -30,6 +30,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { parseISODate } from "../../shared/date";
 
 const router = Router();
 
@@ -201,8 +202,8 @@ router.get(
     const resources = resourcesRaw
       ? resourceSchema.parse(resourcesRaw.split(",").map(r => r.trim()))
       : undefined;
-    const dateFrom = getFrom("query").optional("dateFrom", req);
-    const dateTo = getFrom("query").optional("dateTo", req);
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
     const data = await getConsolidatedPatientData({ cxId, patientId, resources, dateFrom, dateTo });
 
