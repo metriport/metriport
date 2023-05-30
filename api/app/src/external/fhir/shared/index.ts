@@ -49,7 +49,27 @@ export function isoDateRangeToFHIRDateQuery(dateFrom?: string, dateTo?: string):
   return fhirDateQuery;
 }
 
-const resourcesSupportingDateQueries: { [index: string]: boolean } = {
+type ResourcesSupporingDateQueries = Extract<
+  MedplumResourceType,
+  | "AllergyIntolerance"
+  | "CarePlan"
+  | "CareTeam"
+  | "ClinicalImpression"
+  | "Composition"
+  | "Consent"
+  | "DiagnosticReport"
+  | "Encounter"
+  | "EpisodeOfCare"
+  | "FamilyMemberHistory"
+  | "Flag"
+  | "Immunization"
+  | "List"
+  | "Observation"
+  | "Procedure"
+  | "RiskAssessment"
+  | "SupplyRequest"
+>;
+const resourcesSupportingDateQueriesMap: { [k in ResourcesSupporingDateQueries]: boolean } = {
   AllergyIntolerance: true,
   CarePlan: true,
   CareTeam: true,
@@ -70,5 +90,5 @@ const resourcesSupportingDateQueries: { [index: string]: boolean } = {
 };
 
 export function resourceSupportsDateQuery(resourceType: MedplumResourceType): boolean {
-  return Boolean(resourcesSupportingDateQueries[resourceType]);
+  return Object.keys(resourcesSupportingDateQueriesMap).includes(resourceType);
 }
