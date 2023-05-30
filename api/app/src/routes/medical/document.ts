@@ -13,6 +13,8 @@ import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
+import { parseISODate } from "../../shared/date";
+import dayjs from "dayjs";
 
 const router = Router();
 
@@ -30,6 +32,8 @@ const router = Router();
  * to be queried as well as the ones that have already been completed.
  *
  * @param req.query.patientId Patient ID for which to list documents.
+ * @param req.query.dateFrom Optional start date that docs will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that docs will be filtered by (inclusive).
  * @return The available documents, including query status and progress - as applicable.
  */
 router.get(
@@ -37,9 +41,19 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
     const documents = await getDocuments({ cxId, patientId });
-    const documentsDTO = toDTO(documents);
+    const documentsDTO = toDTO(documents).map(doc => {
+      if (!doc.indexed) return doc;
+      if (
+        (!dateFrom || dayjs(dateFrom).isBefore(doc.indexed)) &&
+        (!dateTo || dayjs(dateTo).isAfter(doc.indexed))
+      ) {
+        return doc;
+      }
+    });
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
 

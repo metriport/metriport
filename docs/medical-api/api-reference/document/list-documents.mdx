@@ -25,6 +25,16 @@ query, see [Start Document Query endpoint](/medical-api/api-reference/document/s
   The ID of the Facility where the patient is receiving care.
 </ParamField>
 
+<ParamField query="dateFrom" type="string" optional>
+  The start date (inclusive) for which to filter returned document references - formatted
+  `YYYY-MM-DD` as per ISO 8601. If not provided, no start date filter will be applied.
+</ParamField>
+
+<ParamField query="dateTo" type="string" optional>
+  The end date (inclusive) for which to filter returned document references - formatted `YYYY-MM-DD`
+  as per ISO 8601. If not provided, no end date filter will be applied.
+</ParamField>
+
 ## Response
 
 An array of objects describing the Documents that can be retrieved for the Patient.
