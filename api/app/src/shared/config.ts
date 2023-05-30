@@ -181,7 +181,10 @@ export class Config {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
 
-  static getFHIRConverterURL(): string | undefined {
-    return getEnvVar("FHIR_CONVERTER_URL");
+  static getFHIRConverterQueueURL(): string | undefined {
+    return getEnvVar("FHIR_CONVERTER_QUEUE_URL");
+  }
+  static getFHIRConverterServerURL(): string | undefined {
+    return getEnvVar("FHIR_CONVERTER_SERVER_URL");
   }
 }

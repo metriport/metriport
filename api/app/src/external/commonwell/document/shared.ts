@@ -7,7 +7,7 @@ export type CWDocumentWithMetriportData = Document & {
   metriport: {
     fileName: string;
     location: string;
-    fileSize: number;
+    fileSize: number | undefined;
   };
 };
 

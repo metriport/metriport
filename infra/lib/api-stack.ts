@@ -20,10 +20,14 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
+import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
+import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { EnvConfig } from "./env-config";
-import { getSecrets } from "./secrets";
-import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./util";
 import { createFHIRConverterService } from "./fhir-converter-service";
+import { createLambda } from "./shared/lambda";
+import { getSecrets } from "./shared/secrets";
+import { provideAccessToQueue } from "./shared/sqs";
+import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./shared/util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -158,9 +162,9 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // FHIR Converter Service
     //-------------------------------------------
-    let fhirConverterServiceAddress = "";
+    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
     if (!isSandbox(props.config)) {
-      fhirConverterServiceAddress = createFHIRConverterService(
+      fhirConverter = createFHIRConverterService(
         this,
         props,
         this.vpc,
@@ -169,7 +173,24 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
-    // ECR + ECS + Fargate f or Backend Servers
+    // FHIR CONNECTORS, initalize
+    //-------------------------------------------
+    const {
+      queue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      bucket: fhirConverterBucket,
+    } = fhirConverterConnector.createQueueAndBucket({ stack: this, vpc: this.vpc });
+
+    const fhirServerQueue = fhirServerConnector.createConnector({
+      envType: props.config.environmentType,
+      stack: this,
+      vpc: this.vpc,
+      fhirConverterBucket,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    //-------------------------------------------
+    // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
     const {
       cluster,
@@ -185,7 +206,9 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       slackNotification?.alarmAction,
       dnsZones,
-      `http://${fhirConverterServiceAddress}`
+      fhirServerQueue?.queueUrl,
+      fhirConverterQueue.queueUrl,
+      fhirConverter ? `http://${fhirConverter.address}` : undefined
     );
 
     // Access grant for Aurora DB
@@ -212,15 +235,38 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // S3 bucket for Medical Documents
     //-------------------------------------------
-
     if (props.config.medicalDocumentsBucketName) {
       const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
         bucketName: props.config.medicalDocumentsBucketName,
         publicReadAccess: false,
         encryption: s3.BucketEncryption.S3_MANAGED,
       });
+
+      //-------------------------------------------
+      // FHIR CONNECTORS - Finish setting it up
+      //-------------------------------------------
+      provideAccessToQueue({
+        accessType: "send",
+        queue: fhirConverterQueue,
+        resource: apiService.service.taskDefinition.taskRole,
+      });
+      const fhirConverterLambda = fhirServerQueue?.queueUrl
+        ? fhirConverterConnector.createLambda({
+            envType: props.config.environmentType,
+            stack: this,
+            vpc: this.vpc,
+            sourceQueue: fhirConverterQueue,
+            destinationQueue: fhirServerQueue,
+            dlq: fhirConverterDLQ,
+            fhirConverterBucket,
+            conversionResultQueueUrl: fhirServerQueue.queueUrl,
+            alarmSnsAction: slackNotification?.alarmAction,
+          })
+        : undefined;
+
       // Access grant for medical documents bucket
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+      fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     }
 
     //-------------------------------------------
@@ -276,6 +322,8 @@ export class APIStack extends Stack {
       },
       apiKeyRequired: true,
     });
+
+    this.setupTestLambda();
 
     // token auth for connect sessions
     const tokenAuth = this.setupTokenAuthLambda(dynamoDBTokenTable);
@@ -395,6 +443,16 @@ export class APIStack extends Stack {
     new CfnOutput(this, "ClientSecretUserpoolID", {
       description: "Userpool for client secret based apps",
       value: userPoolClientSecret.userPoolId,
+    });
+  }
+
+  private setupTestLambda() {
+    return createLambda({
+      stack: this,
+      name: "Tester",
+      vpc: this.vpc,
+      subnets: this.vpc.privateSubnets,
+      entry: "../api/lambdas/tester/index.js",
     });
   }
 

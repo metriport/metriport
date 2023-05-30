@@ -165,7 +165,7 @@ export class OAuth1DefaultImpl implements OAuth1 {
     for (const oauthUserAccessToken of userAccessTokens) {
       const userTokenList = await getUserTokenByUAT({ oauthUserAccessToken });
       for (const userToken of userTokenList) {
-        capture.setUserId(userToken.userId);
+        capture.setUser({ id: userToken.userId });
         // DynamoDB (Webhook and auth)
         const updatedUserToken = userToken.clone();
         updatedUserToken.oauthUserAccessToken = undefined;

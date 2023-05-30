@@ -1,12 +1,9 @@
 import {
-  Bundle,
   DocumentReference,
   OperationOutcomeIssue,
-  Resource,
   ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
-import { makeFhirApi } from "../api/api-factory";
 import { Operator } from "@medplum/core";
 
 export enum ResourceType {
@@ -17,13 +14,6 @@ export enum ResourceType {
 
 export function operationOutcomeIssueToString(i: OperationOutcomeIssue): string {
   return i.diagnostics ?? i.details?.text ?? i.code ?? "Unknown error";
-}
-
-export const MAX_FHIR_DOC_ID_LENGTH = 64;
-
-export async function postFHIRBundle(cxId: string, bundle: Bundle): Promise<Bundle<Resource>> {
-  const fhir = makeFhirApi(cxId);
-  return fhir.executeBatch(bundle);
 }
 
 export function downloadedFromCW(doc: DocumentReference): boolean {

@@ -23,6 +23,7 @@ export type EnvConfig = {
   fhirServerUrl?: string;
   systemRootOID: string;
   medicalDocumentsBucketName?: string;
+  fhirConverterBucketName?: string;
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
   };
@@ -63,6 +64,7 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
   sentryDSN?: string; // API's Sentry DSN
+  lambdasSentryDSN?: string;
   slack?: {
     SLACK_ALERT_URL?: string;
     SLACK_NOTIFICATION_URL?: string;
