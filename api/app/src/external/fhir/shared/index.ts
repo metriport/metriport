@@ -7,7 +7,7 @@ import {
 } from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeFhirApi } from "../api/api-factory";
-import { Operator, getSearchParameters } from "@medplum/core";
+import { Operator } from "@medplum/core";
 
 export enum ResourceType {
   Organization = "Organization",
@@ -49,7 +49,26 @@ export function isoDateRangeToFHIRDateQuery(dateFrom?: string, dateTo?: string):
   return fhirDateQuery;
 }
 
+const resourcesSupportingDateQueries: { [index: string]: boolean } = {
+  AllergyIntolerance: true,
+  CarePlan: true,
+  CareTeam: true,
+  ClinicalImpression: true,
+  Composition: true,
+  Consent: true,
+  DiagnosticReport: true,
+  Encounter: true,
+  EpisodeOfCare: true,
+  FamilyMemberHistory: true,
+  Flag: true,
+  Immunization: true,
+  List: true,
+  Observation: true,
+  Procedure: true,
+  RiskAssessment: true,
+  SupplyRequest: true,
+};
+
 export function resourceSupportsDateQuery(resourceType: MedplumResourceType): boolean {
-  const searchParams = getSearchParameters(resourceType);
-  return searchParams ? Boolean(searchParams["date"]) : false;
+  return Boolean(resourcesSupportingDateQueries[resourceType]);
 }

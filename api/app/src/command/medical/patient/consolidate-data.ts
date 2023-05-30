@@ -1,4 +1,4 @@
-import { OperationOutcomeError, getSearchParameters } from "@medplum/core";
+import { OperationOutcomeError } from "@medplum/core";
 import {
   Bundle,
   BundleEntry,
@@ -56,7 +56,6 @@ export async function getConsolidatedPatientData({
   log(`...and by subject: ${resourcesBySubject.join(", ")}`);
 
   const fhir = makeFhirApi(cxId);
-  getSearchParameters;
   const errorsToReport: Record<string, string> = {};
   const searchResources = async <K extends ResourceType>(
     resource: K,
