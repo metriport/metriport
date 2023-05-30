@@ -30,7 +30,7 @@ const getConversionUrl = async ({
 }: {
   fileName: string;
   conversionType?: string;
-}): Promise<boolean> => {
+}): Promise<string> => {
   const convertedFileName = fileName.concat(`.${conversionType}`);
   const obj = await doesObjExist({ fileName: convertedFileName });
 
