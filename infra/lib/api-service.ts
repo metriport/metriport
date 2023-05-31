@@ -29,6 +29,7 @@ export function createAPIService(
   dynamoDBTokenTable: dynamodb.Table,
   alarmAction: SnsAction | undefined,
   dnsZones: DnsZones,
+  fhirServerUrl: string | undefined,
   fhirServerQueueUrl: string | undefined,
   fhirConverterQueueUrl: string | undefined,
   fhirConverterServiceUrl: string | undefined
@@ -89,6 +90,9 @@ export function createAPIService(
           }),
           ...(props.config.cdaToVisualizationLambdaName && {
             CONVERT_DOC_LAMBDA_NAME: props.config.cdaToVisualizationLambdaName,
+          }),
+          ...(fhirServerUrl && {
+            FHIR_SERVER_URL: fhirServerQueueUrl,
           }),
           ...(fhirServerQueueUrl && {
             FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
