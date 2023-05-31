@@ -300,7 +300,7 @@ export async function downloadDocsAndUpsertFHIR({
           Bucket: s3BucketName,
           Key: s3FileName,
           Body: pass,
-          ...(contentType ? { ContentType: contentType } : {}),
+          ContentType: contentType ? contentType : "text/xml",
         })
         .promise(),
     };
