@@ -14,6 +14,7 @@ import { stringToBoolean } from "../../shared/types";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { parseISODate } from "../../shared/date";
+import { docConversionTypeSchema } from "./schemas/documents";
 import dayjs from "dayjs";
 
 const router = Router();
@@ -101,6 +102,7 @@ router.post(
  * Fetches the document from S3 and sends a presigned URL
  *
  * @param req.query.fileName The file name of the document in s3.
+ * @param req.query.conversionType The doc type to convert to.
  * @return presigned url
  */
 router.get(
@@ -109,10 +111,12 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const fileName = getFromQueryOrFail("fileName", req);
     const fileHasCxId = fileName.includes(cxId);
+    const type = getFrom("query").optional("conversionType", req);
+    const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
 
     if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
 
-    const url = await downloadDocument({ fileName });
+    const url = await downloadDocument({ fileName, conversionType });
 
     return res.status(OK).json({ url });
   })

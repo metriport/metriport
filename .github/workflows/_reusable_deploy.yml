@@ -98,6 +98,9 @@ jobs:
       - name: Token-auth lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/token-auth/"
+      - name: Cda-to-visualization lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/cda-to-visualization/"
       - name: Withings lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/withings/"
