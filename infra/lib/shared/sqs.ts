@@ -1,4 +1,7 @@
 import { Duration } from "aws-cdk-lib";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import { Stats } from "aws-cdk-lib/aws-cloudwatch";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IGrantable } from "aws-cdk-lib/aws-iam";
 import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
@@ -25,6 +28,7 @@ export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
   consumer?: IGrantable;
   createDLQ?: boolean;
   createRetryLambda?: boolean;
+  alarmSnsAction?: SnsAction;
 };
 
 /**
@@ -37,7 +41,9 @@ export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
  */
 export function createQueue(props: QueueProps): Queue {
   const dlq =
-    props.createDLQ === false ? undefined : defaultDLQ(props.stack, props.name, props.fifo);
+    props.createDLQ === false
+      ? undefined
+      : defaultDLQ(props.stack, props.name, props.fifo, { alarmSnsAction: props.alarmSnsAction });
   const defaultQueueProps = {
     ...(dlq ? { dlq: dlq } : {}),
   };
@@ -125,8 +131,16 @@ function createFifoQueue(props: FifoQueueProps): Queue {
   });
 }
 
-export const defaultDLQ = (scope: Construct, name: string, fifo?: boolean): Queue => {
-  return new Queue(scope, name + "DLQ", {
+export type DefaultDLQProps = {
+  alarmSnsAction?: SnsAction;
+};
+export const defaultDLQ = (
+  scope: Construct,
+  name: string,
+  fifo?: boolean,
+  options?: DefaultDLQProps
+): Queue => {
+  const dlq = new Queue(scope, name + "DLQ", {
     queueName: fifo ? name + "DLQ.fifo" : name + "DLQ",
     fifo: fifo === true ? true : undefined, // https://github.com/aws/aws-cdk/issues/8550
     retentionPeriod: Duration.days(14),
@@ -134,6 +148,16 @@ export const defaultDLQ = (scope: Construct, name: string, fifo?: boolean): Queu
     receiveMessageWaitTime: Duration.millis(0),
     visibilityTimeout: Duration.hours(12), // in case we need time to process this manually
   });
+
+  addMessageCountAlarmToQueue({
+    stack: scope,
+    queue: dlq,
+    threshold: 1,
+    alarmName: `${name}-DLQ-Alarm`,
+    alarmAction: options?.alarmSnsAction,
+  });
+
+  return dlq;
 };
 
 export type AccessType = "send" | "receive" | "both";
@@ -152,4 +176,30 @@ export function provideAccessToQueue({
 
   const receiveOrBoth: AccessType[] = ["both", "receive"];
   if (receiveOrBoth.includes(accessType)) queue.grantConsumeMessages(resource);
+}
+
+export function addMessageCountAlarmToQueue({
+  stack,
+  queue,
+  threshold,
+  alarmName,
+  alarmAction,
+}: {
+  stack: Construct;
+  queue: Queue;
+  threshold: number;
+  alarmName: string;
+  alarmAction?: SnsAction;
+}) {
+  const errMetric = queue.metricNumberOfMessagesReceived({
+    period: Duration.minutes(1),
+    statistic: Stats.SUM,
+  });
+  const alarm = errMetric.createAlarm(stack, alarmName, {
+    threshold,
+    evaluationPeriods: 1,
+    alarmDescription: `Alarm if the count of messages greater than or equal to the threshold (${threshold}) for 1 evaluation period`,
+    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+  });
+  alarmAction && alarm.addAlarmAction(alarmAction);
 }
