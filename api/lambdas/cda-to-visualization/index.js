@@ -4,20 +4,36 @@ const AWS = require("aws-sdk");
 const SaxonJS = require("saxon-js");
 const fs = require("fs");
 const styleSheetText = require("./stylesheet.js");
+const Sentry = require("@sentry/serverless");
 
+export function getEnv(name) {
+  return process.env[name];
+}
 const getEnvOrFail = name => {
   const value = process.env[name];
   if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
   return value;
 };
 
+const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+const envType = getEnvOrFail("ENV_TYPE");
+const sentryDsn = getEnv("SENTRY_DSN");
+
+// Keep this as early on the file as possible
+Sentry.init({
+  dsn: sentryDsn,
+  enabled: sentryDsn != null,
+  environment: envType,
+  // TODO #499 Review this based on the load on our app and Sentry's quotas
+  tracesSampleRate: 1.0,
+});
 
 const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
 
-module.exports = async req => {
+module.exports = Sentry.AWSLambda.wrapHandler(async req => {
   const { fileName, conversionType } = req;
 
   const document = await downloadDocumentFromS3({ fileName });
@@ -35,7 +51,7 @@ module.exports = async req => {
   }
 
   return;
-};
+});
 
 const downloadDocumentFromS3 = async ({ fileName }) => {
   const file = await s3client
@@ -120,28 +136,18 @@ const convertStoreAndReturnPdfDocUrl = async ({ fileName, document }) => {
     });
 
     // Upload generated PDF to S3 bucket
-    await new Promise((resolve, reject) => {
-      s3client
-        .upload({
-          Bucket: bucketName,
-          Key: pdfFilename,
-          Body: fs.readFileSync(pdfFilepath),
-        })
-        .send((err, data) => {
-          console.log(err, data);
-          // Logs error
-          if (err) {
-            console.log(`generate-pdf -> upload to s3 -> ERROR`);
-            console.log(err);
-            reject(err);
-            return;
-          }
-          console.log(`generate-pdf -> upload to s3 -> SUCCESS --> ${htmlFilepath}`);
-          resolve(true);
-        });
-    });
+    await s3client
+      .putObject({
+        Bucket: bucketName,
+        Key: pdfFilename,
+        Body: fs.readFileSync(pdfFilepath),
+      })
+      .promise();
   } catch (error) {
-    throw error;
+    console.log(`Error while converting to pdf: `, err);
+    Sentry.captureException(err, {
+      extra: { context: lambdaName },
+    });
   } finally {
     // Close the puppeteer browser
     if (browser !== null) {
@@ -191,7 +197,10 @@ const convertToHtml = async document => {
 
     return result.principalResult;
   } catch (error) {
-    throw error;
+    console.log(`Error while converting to html: `, err);
+    Sentry.captureException(err, {
+      extra: { context: lambdaName },
+    });
   }
 };
 

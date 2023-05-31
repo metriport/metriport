@@ -2,6 +2,8 @@ import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 import { DocConversionType } from "../../../routes/medical/schemas/documents";
+import { NotFoundError } from "../../../errors/not-found-error";
+import { BadRequestError } from "../../../errors/bad-request-error";
 
 const lambdaClient = makeLambdaClient();
 const s3client = makeS3Client();
@@ -18,10 +20,10 @@ export const downloadDocument = async ({
 }): Promise<string> => {
   const { exists, contentType } = await doesObjExist({ fileName });
 
-  if (!exists) throw new Error("File does not exist");
+  if (!exists) throw new NotFoundError("File does not exist");
 
-  if (contentType !== "application/xml" && contentType !== "text/xml")
-    throw new Error("File is not a PDF or HTML");
+  if (conversionType && contentType !== "application/xml" && contentType !== "text/xml")
+    throw new BadRequestError("File is not a PDF or HTML");
 
   let url;
 
@@ -32,8 +34,6 @@ export const downloadDocument = async ({
   } else {
     url = await getSignedURL({ fileName });
   }
-
-  if (!url) throw new Error("Error while getting url from lambda");
 
   return url;
 };

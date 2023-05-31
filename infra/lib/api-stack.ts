@@ -240,6 +240,8 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       bucketName: props.config.medicalDocumentsBucketName,
       lambdaName: props.config.cdaToVisualizationLambdaName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
     });
 
     if (props.config.medicalDocumentsBucketName) {
@@ -532,8 +534,10 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     bucketName: string | undefined;
     lambdaName: string | undefined;
+    envType: string;
+    sentryDsn: string | undefined;
   }) {
-    const { vpc, bucketName, lambdaName } = ownProps;
+    const { vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
 
     const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
@@ -549,9 +553,11 @@ export class APIStack extends Stack {
         runtime: lambda.Runtime.NODEJS_16_X,
         entry: "../api/lambdas/cda-to-visualization/index.js",
         environment: {
+          ENV_TYPE: envType,
           ...(bucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
           }),
+          ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         },
         layers: [chromiumLayer],
         bundling: {

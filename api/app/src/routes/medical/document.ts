@@ -112,7 +112,7 @@ router.get(
     const fileName = getFromQueryOrFail("fileName", req);
     const fileHasCxId = fileName.includes(cxId);
     const type = getFrom("query").optional("conversionType", req);
-    const conversionType = docConversionTypeSchema.parse(type);
+    const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
 
     if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
 
