@@ -4,6 +4,6 @@ import { SourceInfo } from "./source-info";
 export interface Metadata {
   date: string;
   source: ProviderSource;
-  data_origin?: SourceInfo;
+  data_source?: SourceInfo;
   error?: string;
 }
