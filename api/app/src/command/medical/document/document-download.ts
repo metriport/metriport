@@ -2,8 +2,8 @@ import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 import { DocConversionType } from "../../../routes/medical/schemas/documents";
-import { NotFoundError } from "../../../errors/not-found-error";
-import { BadRequestError } from "../../../errors/bad-request-error";
+import { NotFoundError } from "../../errors/not-found-error";
+import { BadRequestError } from "../../errors/bad-request-error";
 
 const lambdaClient = makeLambdaClient();
 const s3client = makeS3Client();
