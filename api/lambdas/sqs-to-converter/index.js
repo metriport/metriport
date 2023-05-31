@@ -137,8 +137,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         const res = await fhirConverter.post(converterUrl, payload, {
           params,
           headers: { "Content-Type": "text/plain" },
-          // don't convert to JSON so we don't need to convert it back to string
-          transformResponse: res => res,
         });
         const conversionResult = res.data;
         metrics.conversion = {
@@ -148,7 +146,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
 
         await reportMemoryUsage();
         addExtensionToConversion(conversionResult, documentExtension);
-        removePatientFromConversion(conversionResult, documentExtension);
+        removePatientFromConversion(conversionResult);
 
         await reportMemoryUsage();
         await sendConversionResult(cxId, s3FileName, conversionResult, jobStartedAt, log);
@@ -170,7 +168,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           });
           await reEnqueue(message);
         } else {
-          console.log(`Error processing message: `, message, JSON.stringify(err));
+          console.log(
+            `Error processing message: ${JSON.stringify(message)}; ${JSON.stringify(err)}`
+          );
           Sentry.captureException(err, {
             extra: { message, context: lambdaName, retryCount: count },
           });
@@ -180,7 +180,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     }
     console.log(`Done`);
   } catch (err) {
-    console.log(`Error processing event: `, event, JSON.stringify(err));
+    console.log(`Error processing event: ${JSON.stringify(event)}; ${JSON.stringify(err)}`);
     Sentry.captureException(err, {
       extra: { event, context: lambdaName, additional: "outer catch" },
     });
@@ -199,10 +199,8 @@ function addExtensionToConversion(conversion, extension) {
 }
 
 function removePatientFromConversion(conversion) {
-  const entries = conversion.fhirResource?.entry ?? []
-  const pos = entries.findIndex(
-    e => e.resource?.resourceType === "Patient"
-  );
+  const entries = conversion.fhirResource?.entry ?? [];
+  const pos = entries.findIndex(e => e.resource?.resourceType === "Patient");
   if (pos >= 0) conversion.fhirResource.entry.splice(pos, 1);
 }
 
@@ -213,7 +211,7 @@ function isTimeout(err) {
     err.code === "ERR_BAD_RESPONSE" || // Axios code for 502
     err.code === "ECONNRESET" ||
     err.code === "ESOCKETTIMEDOUT" ||
-    err.response?.status === 502 || 
+    err.response?.status === 502 ||
     err.response?.status === 503 ||
     err.response?.status === 504
   );
@@ -231,7 +229,7 @@ async function sendConversionResult(cxId, sourceFileName, conversionPayload, job
     .upload({
       Bucket: conversionResultBucketName,
       Key: fileName,
-      Body: conversionPayload,
+      Body: JSON.stringify(conversionPayload),
       ContentType: "application/fhir+json",
     })
     .promise();
