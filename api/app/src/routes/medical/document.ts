@@ -46,7 +46,7 @@ router.get(
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
     const documents = await getDocuments({ cxId, patientId });
-    const documentsDTO = toDTO(documents).map(doc => {
+    const documentsDTO = toDTO(documents).flatMap(doc => {
       if (!doc.indexed) return doc;
       if (
         (!dateFrom || dayjs(dateFrom).isBefore(doc.indexed)) &&
@@ -54,6 +54,7 @@ router.get(
       ) {
         return doc;
       }
+      return [];
     });
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
