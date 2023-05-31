@@ -92,7 +92,7 @@ export function createAPIService(
             CONVERT_DOC_LAMBDA_NAME: props.config.cdaToVisualizationLambdaName,
           }),
           ...(fhirServerUrl && {
-            FHIR_SERVER_URL: fhirServerQueueUrl,
+            FHIR_SERVER_URL: fhirServerUrl,
           }),
           ...(fhirServerQueueUrl && {
             FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
