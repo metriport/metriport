@@ -25,6 +25,8 @@ api: "GET /body"
   An array of body objects for each of the user's connected providers
 </ResponseField>
 
+<Info>`weight_samples_kg` is available for Withings and Fitbit.</Info>
+
 <ResponseExample>
 
 ```javascript Metriport SDK
@@ -32,10 +34,7 @@ import { MetriportDevicesApi } from "@metriport/api";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
-const response = await metriportClient.getBodyData(
-  "metriportUserId",
-  "date"
-);
+const response = await metriportClient.getBodyData("metriportUserId", "date");
 ```
 
 </ResponseExample>
@@ -52,7 +51,18 @@ const response = await metriportClient.getBodyData(
     "height_cm": 189,
     "lean_mass_kg": 43,
     "muscle_mass_kg": 22,
-    "weight_kg": 78
+    "weight_kg": 78,
+    "weight_samples_kg": [
+      {
+        "time": "2022-12-21T19:42:20.000Z",
+        "value": 78,
+        "data_origin": {
+          "id": "1234",
+          "name": "Body Cardio",
+          "type": "Scale"
+        }
+      }
+    ]
   }
 ]
 ```
