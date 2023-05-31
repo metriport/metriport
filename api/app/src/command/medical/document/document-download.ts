@@ -16,6 +16,13 @@ export const downloadDocument = async ({
   fileName: string;
   conversionType?: DocConversionType;
 }): Promise<string> => {
+  const { exists, contentType } = await doesObjExist({ fileName });
+
+  if (!exists) throw new Error("File does not exist");
+
+  if (contentType !== "application/xml" && contentType !== "text/xml")
+    throw new Error("File is not a PDF or HTML");
+
   let url;
 
   if (conversionType === htmlConversionType) {
@@ -26,7 +33,7 @@ export const downloadDocument = async ({
     url = await getSignedURL({ fileName });
   }
 
-  if (!url) throw new Error("Invalid conversion type for conversion");
+  if (!url) throw new Error("Error while getting url from lambda");
 
   return url;
 };
@@ -39,15 +46,10 @@ const getConversionUrl = async ({
   conversionType?: string;
 }): Promise<string> => {
   const convertedFileName = fileName.concat(`.${conversionType}`);
-  const { exists, contentType } = await doesObjExist({ fileName: convertedFileName });
+  const { exists } = await doesObjExist({ fileName: convertedFileName });
 
-  if (exists) {
-    return getSignedURL({ fileName: convertedFileName });
-  } else if (contentType === "application/xml" || contentType === "text/xml") {
-    return convertDoc({ fileName, conversionType });
-  } else {
-    throw new Error("Invalid file type for conversion");
-  }
+  if (exists) return getSignedURL({ fileName: convertedFileName });
+  else return convertDoc({ fileName, conversionType });
 };
 
 const convertDoc = async ({
