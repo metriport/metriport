@@ -11,7 +11,7 @@ import {
 } from "./models/measurements";
 import dayjs from "dayjs";
 
-type SampleRemoveDataSource = Omit<Sample, "data_origin">;
+type SampleRemoveDataSource = Omit<Sample, "data_source">;
 type SampleWithDataSourceId = SampleRemoveDataSource & { dataSourceId?: string };
 
 export type ResultsMeasurements = {
@@ -52,7 +52,7 @@ export const mapToBody = (
           return {
             ...defaultWeight,
             ...(device && {
-              data_origin: {
+              data_source: {
                 name: device.model,
                 type: device.type,
                 id: device.deviceid,

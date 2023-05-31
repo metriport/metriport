@@ -43,7 +43,7 @@ export const mapToBody = (
       return {
         time: dayjs(dateTime).toISOString(),
         value: weight.weight,
-        data_origin: {
+        data_source: {
           name: weight.source,
         },
       };
