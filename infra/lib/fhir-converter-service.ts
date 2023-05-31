@@ -10,6 +10,7 @@ import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
 import { getConfig } from "./shared/config";
 import { vCPU } from "./shared/fargate";
+import { MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { isProd } from "./shared/util";
 
 export function settings() {
@@ -24,6 +25,8 @@ export function settings() {
     memoryLimitMiB: prod ? 8192 : 4096,
     taskCountMin: prod ? 2 : 1,
     taskCountMax: prod ? 30 : 10,
+    // How long this service can run for
+    maxExecutionTimeout: MAXIMUM_LAMBDA_TIMEOUT,
   };
 }
 
@@ -38,7 +41,7 @@ export function createFHIRConverterService(
   vpc: ec2.IVpc,
   alarmAction: SnsAction | undefined
 ): { service: FargateService; address: string } {
-  const { cpu, memoryLimitMiB, taskCountMin, taskCountMax } = settings();
+  const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
 
   // Create a new Amazon Elastic Container Service (ECS) cluster
   const cluster = new ecs.Cluster(stack, "FHIRConverterCluster", { vpc, containerInsights: true });
@@ -69,6 +72,7 @@ export function createFHIRConverterService(
       },
       healthCheckGracePeriod: Duration.seconds(60),
       publicLoadBalancer: false,
+      idleTimeout: maxExecutionTimeout,
     }
   );
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;

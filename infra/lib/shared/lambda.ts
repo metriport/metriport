@@ -14,7 +14,8 @@ import { Construct } from "constructs";
 import { getConfig, METRICS_NAMESPACE } from "./config";
 import { addErrorAlarmToLambdaFunc } from "./util";
 
-export const DEFAULT_LAMBDA_TIMEOUT_SECONDS = 10;
+export const DEFAULT_LAMBDA_TIMEOUT = Duration.seconds(30);
+export const MAXIMUM_LAMBDA_TIMEOUT = Duration.minutes(15);
 const pathToLambdas = "../api/lambdas";
 
 export const buildEventRule = (scope: Construct, id: string, scheduleExpression: string): Rule =>
@@ -64,7 +65,7 @@ export function createLambda(props: LambdaProps): Lambda {
      * queue's VisibilityTimeout so the message is not processed more than once.
      * See: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
      */
-    timeout: props.timeout ?? Duration.seconds(DEFAULT_LAMBDA_TIMEOUT_SECONDS), // max 900
+    timeout: props.timeout ?? DEFAULT_LAMBDA_TIMEOUT,
     memorySize: props.memory,
     reservedConcurrentExecutions: props.reservedConcurrentExecutions,
     role: props.role ?? undefined,

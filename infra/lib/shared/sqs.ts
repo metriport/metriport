@@ -3,7 +3,7 @@ import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IGrantable } from "aws-cdk-lib/aws-iam";
 import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs/lib/construct";
-import { createRetryLambda, DEFAULT_LAMBDA_TIMEOUT_SECONDS } from "./lambda";
+import { createRetryLambda, DEFAULT_LAMBDA_TIMEOUT } from "./lambda";
 
 /**
  * ...set the source queue's visibility timeout to at least six times the timeout that
@@ -84,7 +84,9 @@ function createStandardQueue(props: StandardQueueProps): Queue {
     receiveMessageWaitTime: props.receiveMessageWaitTime ?? Duration.seconds(0),
     visibilityTimeout:
       props.visibilityTimeout ??
-      Duration.seconds(DEFAULT_LAMBDA_TIMEOUT_SECONDS * DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER + 1),
+      Duration.seconds(
+        DEFAULT_LAMBDA_TIMEOUT.toSeconds() * DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER + 1
+      ),
     deadLetterQueue: props.dlq
       ? {
           maxReceiveCount:
@@ -109,7 +111,9 @@ function createFifoQueue(props: FifoQueueProps): Queue {
     receiveMessageWaitTime: props.receiveMessageWaitTime ?? Duration.seconds(0),
     visibilityTimeout:
       props.visibilityTimeout ??
-      Duration.seconds(DEFAULT_LAMBDA_TIMEOUT_SECONDS * DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER + 1),
+      Duration.seconds(
+        DEFAULT_LAMBDA_TIMEOUT.toSeconds() * DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER + 1
+      ),
     contentBasedDeduplication: props.contentBasedDeduplication ?? false, // if false, expects MessageDeduplicationId on message
     deadLetterQueue: props.dlq
       ? {

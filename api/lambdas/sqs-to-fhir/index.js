@@ -20,7 +20,7 @@ const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
 const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
-const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY"));
+const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
 const sourceQueueURL = getEnvOrFail("QUEUE_URL");
 const dlqURL = getEnvOrFail("DLQ_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
@@ -175,6 +175,7 @@ function isTimeout(err) {
     err.code === "ECONNRESET" ||
     err.code === "ESOCKETTIMEDOUT" ||
     err.response?.status === 502 ||
+    err.response?.status === 503 ||
     err.response?.status === 504
   );
 }

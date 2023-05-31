@@ -18,9 +18,9 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
-const AXIOS_TIMEOUT_SECONDS = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
+const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
-const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY"));
+const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
 const sourceQueueURL = getEnvOrFail("QUEUE_URL");
 const dlqURL = getEnvOrFail("DLQ_URL");
 const conversionResultQueueURL = getEnvOrFail("CONVERSION_RESULT_QUEUE_URL");
@@ -40,7 +40,7 @@ const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
 const fhirConverter = axios.create({
   // Only response timeout, no option for connection timeout: https://github.com/axios/axios/issues/4835
-  timeout: AXIOS_TIMEOUT_SECONDS * 1_000, // should be less than the lambda timeout
+  timeout: axiosTimeoutSeconds * 1_000, // should be less than the lambda timeout
   transitional: {
     // enables ETIMEDOUT instead of ECONNABORTED for timeouts - https://betterstack.com/community/guides/scaling-nodejs/nodejs-errors/
     clarifyTimeoutError: true,
@@ -213,7 +213,8 @@ function isTimeout(err) {
     err.code === "ERR_BAD_RESPONSE" || // Axios code for 502
     err.code === "ECONNRESET" ||
     err.code === "ESOCKETTIMEDOUT" ||
-    err.response?.status === 502 ||
+    err.response?.status === 502 || 
+    err.response?.status === 503 ||
     err.response?.status === 504
   );
 }
