@@ -206,6 +206,7 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       slackNotification?.alarmAction,
       dnsZones,
+      props.config.fhirServerUrl,
       fhirServerQueue?.queueUrl,
       fhirConverterQueue.queueUrl,
       fhirConverter ? `http://${fhirConverter.address}` : undefined
