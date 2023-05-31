@@ -15,4 +15,4 @@ COPY --from=build /app /app
 WORKDIR /app
 RUN ["chmod", "+x", "/app/deploy/webapp.sh"]
 EXPOSE 8080
-CMD [ "npm", "start" ]
+ENTRYPOINT /app/docker-entrypoint.sh

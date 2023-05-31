@@ -84,8 +84,7 @@ export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string
       };
     }
 
-    if (fitbitActivityLog.hasActiveZoneMinutes) {
-      if (!fitbitActivityLog.heartRateZones) throw new Error(`Missing heartRateZones`);
+    if (fitbitActivityLog.hasActiveZoneMinutes && fitbitActivityLog.heartRateZones) {
       const heartZones = fitbitActivityLog.heartRateZones;
 
       const { min_item, max_item } = findMinMaxHeartRate(heartZones);

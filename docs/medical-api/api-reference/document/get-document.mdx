@@ -4,7 +4,7 @@ description: "Gets a presigned URL for downloading the specified document."
 api: "GET /medical/v1/document/downloadUrl"
 ---
 
-This endpoint returns a URL which you can use to download the specified document using the file name provided from the [List Documents endpoint](/medical-api/api-reference/document/list-documents).
+This endpoint returns a URL which you can use to download the specified document and/or convert using the file name provided from the [List Documents endpoint](/medical-api/api-reference/document/list-documents).
 
 <Info>The URL will only be valid for 60 seconds before you need to request a new one.</Info>
 
@@ -12,6 +12,12 @@ This endpoint returns a URL which you can use to download the specified document
 
 <ParamField query="fileName" type="string" required>
   The file name of the document.
+</ParamField>
+
+<ParamField query="conversionType" type="string">
+  The doc type to convert to. Either `html` or `pdf`.
+
+  <Info>This parameter should only be used for converting XML/CDA files.</Info>
 </ParamField>
 
 ## Response

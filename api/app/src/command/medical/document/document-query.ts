@@ -53,9 +53,9 @@ export async function queryDocumentsAcrossHIEs({
     .then((amountProcessed: number) => {
       log(`Finished processing ${amountProcessed} documents.`);
     })
-    .catch(() => {
+    .catch(err => {
       updateDocQuery({ patient, status: "completed" });
-      processAsyncError(`doc.list.getDocumentsFromCW`);
+      processAsyncError(`doc.list.getDocumentsFromCW`)(err);
     });
 
   return createQueryResponse("processing", patient);

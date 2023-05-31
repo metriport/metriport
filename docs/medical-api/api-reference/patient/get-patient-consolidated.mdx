@@ -12,9 +12,26 @@ api: "GET /medical/v1/patient/{id}/consolidated"
 
 ## Query Params
 
+<Tip>
+  You can optionally filter resources by date, using the `dateFrom` and `dateTo` query params. Note
+  that not all resources will support this filter - see the [FHIR R4
+  docs](https://www.hl7.org/fhir/R4/searchparameter-registry.html#clinical-date) for a list of
+  supported resources.
+</Tip>
+
 <ParamField query="resources" type="string" optional>
   A comma separated, case sensitive list of resources to be returned. If none are provided all
   resources will be included.
+</ParamField>
+
+<ParamField query="dateFrom" type="string" optional>
+  The start date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
+  ISO 8601. If not provided, no start date filter will be applied.
+</ParamField>
+
+<ParamField query="dateTo" type="string" optional>
+  The end date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
+  ISO 8601. If not provided, no end date filter will be applied.
 </ParamField>
 
 <Info>
@@ -78,6 +95,7 @@ Returns a [Bundle](/medical-api/fhir/resources/bundle) that contains a property 
 This is the list of all available [FHIR resources](/medical-api/fhir/resources) you can query for:
 
 - [Account](/medical-api/fhir/resources/account)
+- [AdverseEvent](/medical-api/fhir/resources/adverseevent)
 - [AllergyIntolerance](/medical-api/fhir/resources/allergyintolerance)
 - [Appointment](/medical-api/fhir/resources/appointment)
 - [AppointmentResponse](/medical-api/fhir/resources/appointmentresponse)
@@ -139,3 +157,4 @@ This is the list of all available [FHIR resources](/medical-api/fhir/resources) 
 - [RiskAssessment](/medical-api/fhir/resources/riskassessment)
 - [ServiceRequest](/medical-api/fhir/resources/servicerequest)
 - [Specimen](/medical-api/fhir/resources/specimen)
+- [Task](/medical-api/fhir/resources/task)

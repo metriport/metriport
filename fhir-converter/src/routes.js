@@ -22,7 +22,11 @@ var handlebarsHelpers = require("./lib/handlebars-converter/handlebars-helpers")
 var ncp = require("ncp").ncp;
 
 module.exports = function (app) {
-  const workerPool = new WorkerPool("./src/lib/workers/worker.js", require("os").cpus().length);
+  const amountOfWorkers = require("os").cpus().length;
+  console.log(
+    `Creating a pool of ${amountOfWorkers} workers (${require("os").cpus().length} vCPUs)`
+  );
+  const workerPool = new WorkerPool("./src/lib/workers/worker.js", amountOfWorkers);
   let templateCache = new fileSystemCache(constants.TEMPLATE_FILES_LOCATION);
   templateCache.init();
   let messageCache = new fileSystemCache(constants.SAMPLE_DATA_LOCATION);
@@ -852,6 +856,8 @@ module.exports = function (app) {
     const retUnusedSegments = req.query.unusedSegments == "true";
     const retInvalidAccess = req.query.invalidAccess == "true";
     const patientId = req.query.patientId;
+    const fileName = req.query.fileName;
+    const startTime = new Date().getTime();
     workerPool
       .exec({
         type: "/api/convert/:srcDataType/:template",
@@ -861,6 +867,7 @@ module.exports = function (app) {
         patientId,
       })
       .then(result => {
+        const duration = new Date().getTime() - startTime;
         // console.log(result);
         const resultMessage = result.resultMsg;
         if (!retUnusedSegments) {
@@ -869,6 +876,9 @@ module.exports = function (app) {
         if (!retInvalidAccess) {
           delete resultMessage["invalidAccess"];
         }
+        console.log(
+          `[patient ${patientId}] Took ${duration}ms / status ${result.status} to process file ${fileName}`
+        );
         res.status(result.status);
         res.json(resultMessage);
         return;

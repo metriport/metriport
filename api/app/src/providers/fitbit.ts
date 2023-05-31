@@ -35,7 +35,7 @@ export class Fitbit extends Provider implements OAuth2 {
   static AUTHORIZATION_PATH = "/oauth2/authorize";
   static TOKEN_PATH = "/oauth2/token";
   static REVOKE_PATH = "/oauth2/revoke";
-  static API_PATH = "1/user/-/";
+  static API_PATH = "1/user/-";
   static scopes = [
     "activity",
     "cardio_fitness",

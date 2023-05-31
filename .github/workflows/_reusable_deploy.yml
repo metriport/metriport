@@ -83,12 +83,27 @@ jobs:
       - name: Garmin lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/garmin/"
-      - name: Withings lambda install dependencies
+      - name: FHIRConverter lambda install dependencies
         run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/withings/"
+        working-directory: "api/lambdas/sqs-to-converter/"
+      - name: SQS to FHIR lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/sqs-to-fhir/"
+      - name: Retry SQS lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/sqs-to-sqs/"
+      - name: Tester lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/tester/"
       - name: Token-auth lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/token-auth/"
+      - name: Cda-to-visualization lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/cda-to-visualization/"
+      - name: Withings lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/withings/"
 
       # BUILD
       # api
@@ -128,7 +143,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "diff"
-          cdk_version: "2.49.0"
+          cdk_version: "2.79.1"
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -141,7 +156,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "deploy --verbose --require-approval never"
-          cdk_version: "2.49.0"
+          cdk_version: "2.79.1"
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:

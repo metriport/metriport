@@ -30,6 +30,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { parseISODate } from "../../shared/date";
 
 const router = Router();
 
@@ -188,6 +189,8 @@ const resourceSchema = z.enum(resourceTypeForConsolidation).array();
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
+ * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  * @return Patient's consolidated data.
  */
 router.get(
@@ -199,8 +202,10 @@ router.get(
     const resources = resourcesRaw
       ? resourceSchema.parse(resourcesRaw.split(",").map(r => r.trim()))
       : undefined;
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    const data = await getConsolidatedPatientData({ cxId, patientId, resources });
+    const data = await getConsolidatedPatientData({ cxId, patientId, resources, dateFrom, dateTo });
 
     return res.json(data);
   })
