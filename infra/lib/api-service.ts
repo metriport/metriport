@@ -1,5 +1,6 @@
 import { Duration, StackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import { Metric } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -122,6 +123,10 @@ export function createAPIService(
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   // CloudWatch Alarms and Notifications
+
+  // Allow the service to publish metrics to cloudwatch
+  Metric.grantPutMetricData(fargateService.service.taskDefinition.taskRole);
+
   const fargateCPUAlarm = fargateService.service
     .metricCpuUtilization()
     .createAlarm(stack, "CPUAlarm", {
