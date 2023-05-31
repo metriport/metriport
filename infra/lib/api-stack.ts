@@ -566,6 +566,7 @@ export class APIStack extends Stack {
           externalModules: ["aws-sdk", "@sparticuz/chromium"],
         },
         memorySize: 512,
+        timeout: Duration.minutes(1),
         vpc,
       }
     );

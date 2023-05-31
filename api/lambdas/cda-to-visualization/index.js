@@ -1,10 +1,10 @@
-const puppeteer = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
-const AWS = require("aws-sdk");
-const SaxonJS = require("saxon-js");
-const fs = require("fs");
-const styleSheetText = require("./stylesheet.js");
-const Sentry = require("@sentry/serverless");
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
+import * as AWS from "aws-sdk";
+import SaxonJS from "saxon-js";
+import fs from "fs";
+import { styleSheetText } from "./stylesheet.js";
+import * as Sentry from "@sentry/serverless";
 
 export function getEnv(name) {
   return process.env[name];
@@ -33,7 +33,7 @@ const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
 
-module.exports = Sentry.AWSLambda.wrapHandler(async req => {
+export const handler = Sentry.AWSLambda.wrapHandler(async req => {
   const { fileName, conversionType } = req;
 
   const document = await downloadDocumentFromS3({ fileName });
