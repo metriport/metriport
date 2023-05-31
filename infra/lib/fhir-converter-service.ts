@@ -10,6 +10,7 @@ import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
 import { getConfig } from "./shared/config";
 import { vCPU } from "./shared/fargate";
+import { MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { isProd } from "./shared/util";
 
 export function settings() {
@@ -25,7 +26,7 @@ export function settings() {
     taskCountMin: prod ? 2 : 1,
     taskCountMax: prod ? 30 : 10,
     // How long this service can run for
-    maxExecutionTimeout: Duration.minutes(15),
+    maxExecutionTimeout: MAXIMUM_LAMBDA_TIMEOUT,
   };
 }
 
