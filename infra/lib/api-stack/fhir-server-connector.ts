@@ -7,7 +7,7 @@ import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
-import { createLambda as defaultCreateLambda, MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { isProd } from "../shared/util";
 
@@ -16,7 +16,7 @@ function settings() {
   const prod = isProd(config);
   // How long can the lambda run for, max is 900 seconds (15 minutes)
   // It SHOULD be slightly less than the ALB timeout of the FHIR server
-  const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
+  const lambdaTimeout = Duration.minutes(10); // https://github.com/metriport/metriport-internal/issues/740
   return {
     connectorName: "FHIRServer",
     lambdaMemory: 512,
@@ -76,6 +76,7 @@ export function createConnector({
     fifo: false,
     visibilityTimeout,
     maxReceiveCount,
+    alarmSnsAction,
   });
 
   const dlq = queue.deadLetterQueue;

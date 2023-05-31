@@ -24,10 +24,10 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
-import { createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
-import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./shared/util";
+import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -179,7 +179,11 @@ export class APIStack extends Stack {
       queue: fhirConverterQueue,
       dlq: fhirConverterDLQ,
       bucket: fhirConverterBucket,
-    } = fhirConverterConnector.createQueueAndBucket({ stack: this, vpc: this.vpc });
+    } = fhirConverterConnector.createQueueAndBucket({
+      stack: this,
+      vpc: this.vpc,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
 
     const fhirServerQueue = fhirServerConnector.createConnector({
       envType: props.config.environmentType,
@@ -566,6 +570,7 @@ export class APIStack extends Stack {
           externalModules: ["aws-sdk", "@sparticuz/chromium"],
         },
         memorySize: 512,
+        timeout: Duration.minutes(1),
         vpc,
       }
     );
