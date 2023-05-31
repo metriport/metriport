@@ -20,22 +20,18 @@ const s3client = new AWS.S3({
 module.exports = async req => {
   const { fileName, conversionType } = req;
 
-  const { document, contentType } = await downloadDocumentFromS3({ fileName });
+  const document = await downloadDocumentFromS3({ fileName });
 
-  if (contentType === "application/xml" || contentType === "text/xml") {
-    if (conversionType === "html") {
-      const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document });
-      console.log("html", url);
-      return url;
-    }
+  if (conversionType === "html") {
+    const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document });
+    console.log("html", url);
+    return url;
+  }
 
-    if (conversionType === "pdf") {
-      const url = await convertStoreAndReturnPdfDocUrl({ fileName, document });
-      console.log("pdf", url);
-      return url;
-    }
-
-    return;
+  if (conversionType === "pdf") {
+    const url = await convertStoreAndReturnPdfDocUrl({ fileName, document });
+    console.log("pdf", url);
+    return url;
   }
 
   return;
@@ -51,10 +47,7 @@ const downloadDocumentFromS3 = async ({ fileName }) => {
 
   const data = file.Body?.toString("utf-8");
 
-  return {
-    document: data,
-    contentType: file.ContentType,
-  };
+  return data;
 };
 
 const convertStoreAndReturnHtmlDocUrl = async ({ fileName, document }) => {

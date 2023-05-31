@@ -26,7 +26,7 @@ export const downloadDocument = async ({
     url = await getSignedURL({ fileName });
   }
 
-  if (!url) throw new Error("Invalid conversion or file type for conversion");
+  if (!url) throw new Error("Invalid conversion type for conversion");
 
   return url;
 };
@@ -39,10 +39,14 @@ const getConversionUrl = async ({
   conversionType?: string;
 }): Promise<string> => {
   const convertedFileName = fileName.concat(`.${conversionType}`);
-  const objExist = await doesObjExist({ fileName: convertedFileName });
+  const { exists, contentType } = await doesObjExist({ fileName: convertedFileName });
 
-  if (objExist) return getSignedURL({ fileName: convertedFileName });
-  else return convertDoc({ fileName, conversionType });
+  if (contentType === "application/xml" || contentType === "text/xml") {
+    if (exists) return getSignedURL({ fileName: convertedFileName });
+    else return convertDoc({ fileName, conversionType });
+  } else {
+    throw new Error("Invalid file type for conversion");
+  }
 };
 
 const convertDoc = async ({
@@ -65,17 +69,21 @@ const convertDoc = async ({
   return result.Payload.toString();
 };
 
-const doesObjExist = async ({ fileName }: { fileName: string }): Promise<boolean> => {
+const doesObjExist = async ({
+  fileName,
+}: {
+  fileName: string;
+}): Promise<{ exists: true; contentType: string } | { exists: false; contentType?: never }> => {
   try {
-    await s3client
+    const head = await s3client
       .headObject({
         Bucket: Config.getMedicalDocumentsBucketName(),
         Key: fileName,
       })
       .promise();
-    return true;
+    return { exists: true, contentType: head.ContentType ?? "" };
   } catch (error) {
-    return false;
+    return { exists: false };
   }
 };
 
