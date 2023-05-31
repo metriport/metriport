@@ -11,19 +11,14 @@ const getEnvOrFail = name => {
   return value;
 };
 
-// const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const bucketName = "jorge-bucket-2345";
+const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
 const s3client = new AWS.S3({
   signatureVersion: "v4",
-  accessKeyId: "AKIAWX27OVJFIJVFUTGL",
-  secretAccessKey: "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",
 });
 
-const main = async req => {
-  // const { fileName, conversionType } = req;
-  const fileName = "1.xml";
-  const conversionType = "html";
+module.exports = async req => {
+  const { fileName, conversionType } = req;
 
   const { document, contentType } = await downloadDocumentFromS3({ fileName });
 
@@ -227,5 +222,3 @@ function delay(timeout) {
     }, timeout);
   });
 }
-
-main();

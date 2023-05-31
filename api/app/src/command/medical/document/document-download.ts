@@ -26,7 +26,7 @@ export const downloadDocument = async ({
     url = await getSignedURL({ fileName });
   }
 
-  if (url) throw new Error("Invalid conversion or file type for conversion");
+  if (!url) throw new Error("Invalid conversion or file type for conversion");
 
   return url;
 };
