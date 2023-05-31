@@ -41,9 +41,10 @@ const getConversionUrl = async ({
   const convertedFileName = fileName.concat(`.${conversionType}`);
   const { exists, contentType } = await doesObjExist({ fileName: convertedFileName });
 
-  if (contentType === "application/xml" || contentType === "text/xml") {
-    if (exists) return getSignedURL({ fileName: convertedFileName });
-    else return convertDoc({ fileName, conversionType });
+  if (exists) {
+    return getSignedURL({ fileName: convertedFileName });
+  } else if (contentType === "application/xml" || contentType === "text/xml") {
+    return convertDoc({ fileName, conversionType });
   } else {
     throw new Error("Invalid file type for conversion");
   }
