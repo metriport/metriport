@@ -14,6 +14,7 @@ import { stringToBoolean } from "../../shared/types";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { parseISODate } from "../../shared/date";
+import { docConversionTypeSchema } from "./schemas/documents";
 import dayjs from "dayjs";
 
 const router = Router();
@@ -110,7 +111,8 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const fileName = getFromQueryOrFail("fileName", req);
     const fileHasCxId = fileName.includes(cxId);
-    const conversionType = getFrom("query").optional("conversionType", req);
+    const type = getFrom("query").optional("conversionType", req);
+    const conversionType = docConversionTypeSchema.parse(type);
 
     if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
 

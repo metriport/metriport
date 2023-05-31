@@ -87,8 +87,8 @@ export function createAPIService(
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
           }),
-          ...(props.config.convertCDALambdaName && {
-            CONVERT_DOC_LAMBDA_NAME: props.config.convertCDALambdaName,
+          ...(props.config.cdaToVisualizationLambdaName && {
+            CONVERT_DOC_LAMBDA_NAME: props.config.cdaToVisualizationLambdaName,
           }),
           ...(fhirServerQueueUrl && {
             FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,

@@ -1,27 +1,34 @@
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
+import { DocConversionType } from "../../../routes/medical/schemas/documents";
 
 const lambdaClient = makeLambdaClient();
 const s3client = makeS3Client();
+
+const htmlConversionType = "html";
+const pdfConversionType = "pdf";
 
 export const downloadDocument = async ({
   fileName,
   conversionType,
 }: {
   fileName: string;
-  conversionType?: string;
+  conversionType?: DocConversionType;
 }): Promise<string> => {
-  if (conversionType === "html") {
-    const url = await getConversionUrl({ fileName, conversionType });
-    return url;
-  } else if (conversionType === "pdf") {
-    const url = await getConversionUrl({ fileName, conversionType });
-    return url;
+  let url;
+
+  if (conversionType === htmlConversionType) {
+    url = await getConversionUrl({ fileName, conversionType });
+  } else if (conversionType === pdfConversionType) {
+    url = await getConversionUrl({ fileName, conversionType });
   } else {
-    const url = await getSignedURL({ fileName });
-    return url;
+    url = await getSignedURL({ fileName });
   }
+
+  if (url) throw new Error("Invalid conversion or file type for conversion");
+
+  return url;
 };
 
 const getConversionUrl = async ({
@@ -32,10 +39,10 @@ const getConversionUrl = async ({
   conversionType?: string;
 }): Promise<string> => {
   const convertedFileName = fileName.concat(`.${conversionType}`);
-  const obj = await doesObjExist({ fileName: convertedFileName });
+  const objExist = await doesObjExist({ fileName: convertedFileName });
 
-  if (obj) return await getSignedURL({ fileName: convertedFileName });
-  else return await convertDoc({ fileName, conversionType });
+  if (objExist) return getSignedURL({ fileName: convertedFileName });
+  else return convertDoc({ fileName, conversionType });
 };
 
 const convertDoc = async ({
@@ -61,7 +68,7 @@ const convertDoc = async ({
 const doesObjExist = async ({ fileName }: { fileName: string }): Promise<boolean> => {
   try {
     await s3client
-      .getObject({
+      .headObject({
         Bucket: Config.getMedicalDocumentsBucketName(),
         Key: fileName,
       })

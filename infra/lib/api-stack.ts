@@ -236,10 +236,10 @@ export class APIStack extends Stack {
     // S3 bucket for Medical Documents
     //-------------------------------------------
 
-    const convertCda = this.setupConvertCda({
+    const cdaToVisualization = this.setupCdaToVisualization({
       vpc: this.vpc,
       bucketName: props.config.medicalDocumentsBucketName,
-      lambdaName: props.config.convertCDALambdaName,
+      lambdaName: props.config.cdaToVisualizationLambdaName,
     });
 
     if (props.config.medicalDocumentsBucketName) {
@@ -273,7 +273,7 @@ export class APIStack extends Stack {
 
       // Access grant for medical documents bucket
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      medicalDocumentsBucket.grantReadWrite(convertCda);
+      medicalDocumentsBucket.grantReadWrite(cdaToVisualization);
       fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     }
 
@@ -528,7 +528,7 @@ export class APIStack extends Stack {
     withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
   }
 
-  private setupConvertCda(ownProps: {
+  private setupCdaToVisualization(ownProps: {
     vpc: ec2.IVpc;
     bucketName: string | undefined;
     lambdaName: string | undefined;
@@ -541,25 +541,29 @@ export class APIStack extends Stack {
       description: "Adds chromium to the lambdas",
     });
 
-    const convertCdaLambda = new lambda_node.NodejsFunction(this, "ConvertCdaLambda", {
-      functionName: lambdaName,
-      runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "../api/lambdas/convert-cda/index.js",
-      environment: {
-        ...(bucketName && {
-          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
-        }),
-      },
-      layers: [chromiumLayer],
-      bundling: {
-        minify: false,
-        externalModules: ["aws-sdk", "@sparticuz/chromium"],
-      },
-      memorySize: 512,
-      vpc,
-    });
+    const cdaToVisualizationLambda = new lambda_node.NodejsFunction(
+      this,
+      "CdaToVisualizationLambda",
+      {
+        functionName: lambdaName,
+        runtime: lambda.Runtime.NODEJS_16_X,
+        entry: "../api/lambdas/cda-to-visualization/index.js",
+        environment: {
+          ...(bucketName && {
+            MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+          }),
+        },
+        layers: [chromiumLayer],
+        bundling: {
+          minify: false,
+          externalModules: ["aws-sdk", "@sparticuz/chromium"],
+        },
+        memorySize: 512,
+        vpc,
+      }
+    );
 
-    return convertCdaLambda;
+    return cdaToVisualizationLambda;
   }
 
   private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {
