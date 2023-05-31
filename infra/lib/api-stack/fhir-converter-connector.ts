@@ -41,7 +41,15 @@ function settings() {
   };
 }
 
-export function createQueueAndBucket({ stack, vpc }: { stack: Construct; vpc: IVpc }): {
+export function createQueueAndBucket({
+  stack,
+  vpc,
+  alarmSnsAction,
+}: {
+  stack: Construct;
+  vpc: IVpc;
+  alarmSnsAction?: SnsAction;
+}): {
   queue: Queue;
   dlq: DeadLetterQueue;
   bucket: s3.Bucket;
@@ -57,6 +65,7 @@ export function createQueueAndBucket({ stack, vpc }: { stack: Construct; vpc: IV
     fifo: false,
     visibilityTimeout,
     maxReceiveCount,
+    alarmSnsAction,
   });
 
   const dlq = queue.deadLetterQueue;

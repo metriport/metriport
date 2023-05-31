@@ -76,6 +76,7 @@ export function createConnector({
     fifo: false,
     visibilityTimeout,
     maxReceiveCount,
+    alarmSnsAction,
   });
 
   const dlq = queue.deadLetterQueue;
