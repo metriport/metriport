@@ -2,8 +2,8 @@ import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 import { DocConversionType } from "../../../routes/medical/schemas/documents";
-import { NotFoundError } from "../../errors/not-found-error";
-import { BadRequestError } from "../../errors/bad-request-error";
+import NotFoundError from "../../../errors/not-found";
+import BadRequestError from "../../../errors/bad-request";
 
 const lambdaClient = makeLambdaClient();
 const s3client = makeS3Client();
@@ -23,7 +23,9 @@ export const downloadDocument = async ({
   if (!exists) throw new NotFoundError("File does not exist");
 
   if (conversionType && contentType !== "application/xml" && contentType !== "text/xml")
-    throw new BadRequestError("File is not a PDF or HTML");
+    throw new BadRequestError(
+      `Source file must be xml to convert to ${conversionType}, but it was ${contentType}`
+    );
 
   let url;
 
