@@ -32,6 +32,7 @@ import {
   biometricsCategories,
   sleepCategory,
 } from "../command/webhook/withings";
+import { userDevicesSchema, WithingsUserDevices } from "../mappings/withings/models/user";
 import { capture } from "../shared/notifications";
 
 export class Withings extends Provider implements OAuth2 {
@@ -40,7 +41,7 @@ export class Withings extends Provider implements OAuth2 {
   static AUTHORIZATION_PATH = "/oauth2_user/authorize2";
   static TOKEN_PATH = "/v2/oauth2";
   static API_PATH = "v2";
-  static scopes = "user.activity,user.metrics";
+  static scopes = "user.activity,user.metrics,user.info";
 
   private static clientId = Config.getWithingsClientId();
   private static clientSecret = Config.getWithingsClientSecret();
@@ -313,10 +314,32 @@ export class Withings extends Provider implements OAuth2 {
     return withingsMeasurementResp.parse(response.data.body);
   }
 
+  async fetchDevices(accessToken: string): Promise<WithingsUserDevices> {
+    const params = {
+      action: "getdevice",
+    };
+
+    return this.oauth.fetchProviderData<WithingsUserDevices>(
+      `${Withings.URL}/${Withings.API_PATH}/user`,
+      accessToken,
+      async resp => {
+        return userDevicesSchema.parse(resp.data.body.devices);
+      },
+      params
+    );
+  }
+
   override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
     const accessToken = await this.getAccessToken(connectedUser);
 
     const response = await this.fetchMeasurementData(accessToken, date);
+
+    const hasDevices = response.measuregrps.filter(measure => measure.deviceid);
+
+    if (hasDevices.length) {
+      const devices = await this.fetchDevices(accessToken);
+      return mapToBody(date, response, devices);
+    }
 
     return mapToBody(date, response);
   }
