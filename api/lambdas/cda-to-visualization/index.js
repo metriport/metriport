@@ -6,7 +6,7 @@ const fs = require("fs");
 const styleSheetText = require("./stylesheet.js");
 const Sentry = require("@sentry/serverless");
 
-export function getEnv(name) {
+function getEnv(name) {
   return process.env[name];
 }
 const getEnvOrFail = name => {
@@ -33,7 +33,7 @@ const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
 
-module.exports = Sentry.AWSLambda.wrapHandler(async req => {
+exports.handler = Sentry.AWSLambda.wrapHandler(async req => {
   const { fileName, conversionType } = req;
 
   const document = await downloadDocumentFromS3({ fileName });

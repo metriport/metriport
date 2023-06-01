@@ -30,7 +30,7 @@ export async function convertCDAToFHIR(params: {
 }): Promise<void> {
   const {
     patient,
-    document: { id: documentId, mimeType },
+    document: { mimeType },
     s3FileName,
     s3BucketName,
     template = FHIRConverterCDATemplate.ccd,
@@ -41,7 +41,7 @@ export async function convertCDAToFHIR(params: {
   if (mimeType === "application/xml" || mimeType === "text/xml") {
     // Build an extension to be added to all resources created by this conversion
     // so we can get the original doc ref from the resource
-    const documentExtension = buildDocIdFHIRExtension(documentId);
+    const documentExtension = buildDocIdFHIRExtension(s3FileName);
     try {
       return connector.requestConvert({
         cxId: patient.cxId,

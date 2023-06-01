@@ -24,10 +24,10 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
-import { createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
-import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./shared/util";
+import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -179,7 +179,11 @@ export class APIStack extends Stack {
       queue: fhirConverterQueue,
       dlq: fhirConverterDLQ,
       bucket: fhirConverterBucket,
-    } = fhirConverterConnector.createQueueAndBucket({ stack: this, vpc: this.vpc });
+    } = fhirConverterConnector.createQueueAndBucket({
+      stack: this,
+      vpc: this.vpc,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
 
     const fhirServerQueue = fhirServerConnector.createConnector({
       envType: props.config.environmentType,
@@ -238,6 +242,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
 
     const cdaToVisualization = this.setupCdaToVisualization({
+      fargateService: apiService,
       vpc: this.vpc,
       bucketName: props.config.medicalDocumentsBucketName,
       lambdaName: props.config.cdaToVisualizationLambdaName,
@@ -532,13 +537,14 @@ export class APIStack extends Stack {
   }
 
   private setupCdaToVisualization(ownProps: {
+    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     vpc: ec2.IVpc;
     bucketName: string | undefined;
     lambdaName: string | undefined;
     envType: string;
     sentryDsn: string | undefined;
   }) {
-    const { vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
+    const { fargateService, vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
 
     const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
@@ -566,9 +572,12 @@ export class APIStack extends Stack {
           externalModules: ["aws-sdk", "@sparticuz/chromium"],
         },
         memorySize: 512,
+        timeout: Duration.minutes(1),
         vpc,
       }
     );
+
+    cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
     return cdaToVisualizationLambda;
   }
@@ -775,7 +784,7 @@ export class APIStack extends Stack {
 
     const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
     const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
-      threshold: 5000, // IOPs per second
+      threshold: 10000, // IOPs per second
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });

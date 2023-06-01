@@ -147,6 +147,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         await reportMemoryUsage();
         addExtensionToConversion(conversionResult, documentExtension);
         removePatientFromConversion(conversionResult);
+        addMissingRequests(conversionResult);
 
         await reportMemoryUsage();
         await sendConversionResult(cxId, s3FileName, conversionResult, jobStartedAt, log);
@@ -191,9 +192,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
 function addExtensionToConversion(conversion, extension) {
   const fhirBundle = conversion.fhirResource;
   if (fhirBundle?.entry?.length) {
-    for (const resource of fhirBundle.entry) {
-      if (!resource.extension) resource.extension = [];
-      resource.extension.push(extension);
+    for (const bundleEntry of fhirBundle.entry) {
+      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
+      bundleEntry.resource.extension.push(extension);
     }
   }
 }
@@ -202,6 +203,17 @@ function removePatientFromConversion(conversion) {
   const entries = conversion.fhirResource?.entry ?? [];
   const pos = entries.findIndex(e => e.resource?.resourceType === "Patient");
   if (pos >= 0) conversion.fhirResource.entry.splice(pos, 1);
+}
+
+function addMissingRequests(conversion) {
+  conversion.fhirResource.entry.forEach(e => {
+    if (!e.request) {
+      e.request = {
+        method: "PUT",
+        url: `${e.resource.resourceType}/${e.resource.id}}`,
+      };
+    }
+  });
 }
 
 // Being more generic with errors, not strictly timeouts
