@@ -96,9 +96,6 @@ const convertStoreAndReturnPdfDocUrl = async ({ fileName, document }) => {
   const pdfFilename = fileName.concat(".pdf");
   const pdfFilepath = `/tmp/${pdfFilename}`;
 
-  // Defines URL to read htmlFilepath
-  const fetchUrl = `file://${htmlFilepath}`;
-
   // Define
   let browser = null;
 
@@ -114,10 +111,7 @@ const convertStoreAndReturnPdfDocUrl = async ({ fileName, document }) => {
     // Defines page
     let page = await browser.newPage();
 
-    // Navigate to page, wait until dom content is loaded
-    await page.goto(fetchUrl, {
-      waitUntil: "domcontentloaded",
-    });
+    await page.setContent(convertDoc);
 
     // Wait 2.5 seconds
     await delay(2500);
@@ -141,11 +135,12 @@ const convertStoreAndReturnPdfDocUrl = async ({ fileName, document }) => {
         Bucket: bucketName,
         Key: pdfFilename,
         Body: fs.readFileSync(pdfFilepath),
+        ContentType: "application/pdf",
       })
       .promise();
   } catch (error) {
-    console.log(`Error while converting to pdf: `, err);
-    Sentry.captureException(err, {
+    console.log(`Error while converting to pdf: `, error);
+    Sentry.captureException(error, {
       extra: { context: lambdaName },
     });
   } finally {
