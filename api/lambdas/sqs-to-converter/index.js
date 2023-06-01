@@ -191,9 +191,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
 function addExtensionToConversion(conversion, extension) {
   const fhirBundle = conversion.fhirResource;
   if (fhirBundle?.entry?.length) {
-    for (const resource of fhirBundle.entry) {
-      if (!resource.extension) resource.extension = [];
-      resource.extension.push(extension);
+    for (const bundleEntry of fhirBundle.entry) {
+      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
+      bundleEntry.resource.extension.push(extension);
     }
   }
 }
