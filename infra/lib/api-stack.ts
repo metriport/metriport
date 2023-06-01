@@ -242,6 +242,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
 
     const cdaToVisualization = this.setupCdaToVisualization({
+      fargateService: apiService,
       vpc: this.vpc,
       bucketName: props.config.medicalDocumentsBucketName,
       lambdaName: props.config.cdaToVisualizationLambdaName,
@@ -536,13 +537,14 @@ export class APIStack extends Stack {
   }
 
   private setupCdaToVisualization(ownProps: {
+    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     vpc: ec2.IVpc;
     bucketName: string | undefined;
     lambdaName: string | undefined;
     envType: string;
     sentryDsn: string | undefined;
   }) {
-    const { vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
+    const { fargateService, vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
 
     const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
@@ -574,6 +576,8 @@ export class APIStack extends Stack {
         vpc,
       }
     );
+
+    cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
     return cdaToVisualizationLambda;
   }
