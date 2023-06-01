@@ -234,53 +234,6 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // S3 bucket for Medical Documents
-    //-------------------------------------------
-
-    const cdaToVisualization = this.setupCdaToVisualization({
-      vpc: this.vpc,
-      bucketName: props.config.medicalDocumentsBucketName,
-      lambdaName: props.config.cdaToVisualizationLambdaName,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-    });
-
-    if (props.config.medicalDocumentsBucketName) {
-      const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
-        bucketName: props.config.medicalDocumentsBucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-      });
-
-      //-------------------------------------------
-      // FHIR CONNECTORS - Finish setting it up
-      //-------------------------------------------
-      provideAccessToQueue({
-        accessType: "send",
-        queue: fhirConverterQueue,
-        resource: apiService.service.taskDefinition.taskRole,
-      });
-      const fhirConverterLambda = fhirServerQueue?.queueUrl
-        ? fhirConverterConnector.createLambda({
-            envType: props.config.environmentType,
-            stack: this,
-            vpc: this.vpc,
-            sourceQueue: fhirConverterQueue,
-            destinationQueue: fhirServerQueue,
-            dlq: fhirConverterDLQ,
-            fhirConverterBucket,
-            conversionResultQueueUrl: fhirServerQueue.queueUrl,
-            alarmSnsAction: slackNotification?.alarmAction,
-          })
-        : undefined;
-
-      // Access grant for medical documents bucket
-      medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      medicalDocumentsBucket.grantReadWrite(cdaToVisualization);
-      fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    }
-
-    //-------------------------------------------
     // API Gateway
     //-------------------------------------------
 
@@ -293,6 +246,17 @@ export class APIStack extends Stack {
         allowOrigins: ["*"],
         allowHeaders: ["*"],
       },
+    });
+
+    const converterResource = api.root.addResource("converter");
+
+    const cdaToVisualization = this.setupCdaToVisualization({
+      baseResource: converterResource,
+      vpc: this.vpc,
+      bucketName: props.config.medicalDocumentsBucketName,
+      lambdaName: props.config.cdaToVisualizationLambdaName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
     });
 
     // add domain cert + record
@@ -403,6 +367,45 @@ export class APIStack extends Stack {
         period: apig.Period.DAY,
       },
     });
+
+    //-------------------------------------------
+    // S3 bucket for Medical Documents
+    //-------------------------------------------
+
+    if (props.config.medicalDocumentsBucketName) {
+      const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
+        bucketName: props.config.medicalDocumentsBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+      });
+
+      //-------------------------------------------
+      // FHIR CONNECTORS - Finish setting it up
+      //-------------------------------------------
+      provideAccessToQueue({
+        accessType: "send",
+        queue: fhirConverterQueue,
+        resource: apiService.service.taskDefinition.taskRole,
+      });
+      const fhirConverterLambda = fhirServerQueue?.queueUrl
+        ? fhirConverterConnector.createLambda({
+            envType: props.config.environmentType,
+            stack: this,
+            vpc: this.vpc,
+            sourceQueue: fhirConverterQueue,
+            destinationQueue: fhirServerQueue,
+            dlq: fhirConverterDLQ,
+            fhirConverterBucket,
+            conversionResultQueueUrl: fhirServerQueue.queueUrl,
+            alarmSnsAction: slackNotification?.alarmAction,
+          })
+        : undefined;
+
+      // Access grant for medical documents bucket
+      medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+      medicalDocumentsBucket.grantReadWrite(cdaToVisualization);
+      fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+    }
 
     //-------------------------------------------
     // Output
@@ -532,13 +535,14 @@ export class APIStack extends Stack {
   }
 
   private setupCdaToVisualization(ownProps: {
+    baseResource: apig.Resource;
     vpc: ec2.IVpc;
     bucketName: string | undefined;
     lambdaName: string | undefined;
     envType: string;
     sentryDsn: string | undefined;
   }) {
-    const { vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
+    const { baseResource, vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
 
     const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
@@ -568,6 +572,12 @@ export class APIStack extends Stack {
         memorySize: 512,
         vpc,
       }
+    );
+
+    const cdaToVisualizationResource = baseResource.addResource("cdaToVisualization");
+    cdaToVisualizationResource.addMethod(
+      "ANY",
+      new apig.LambdaIntegration(cdaToVisualizationLambda)
     );
 
     return cdaToVisualizationLambda;
