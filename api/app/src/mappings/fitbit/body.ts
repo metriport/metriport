@@ -5,6 +5,8 @@ import { PROVIDER_FITBIT } from "../../shared/constants";
 import { FitbitUser } from "./models/user";
 import { FitbitWeight } from "./models/weight";
 
+const METRIC = "en_US";
+
 export const mapToBody = (
   date: string,
   fitbitUser?: FitbitUser,
@@ -21,7 +23,7 @@ export const mapToBody = (
 
   if (fitbitUser) {
     if (fitbitUser.user.height) {
-      if (fitbitUser.user.heightUnit === "en_US") {
+      if (fitbitUser.user.heightUnit === METRIC) {
         body.height_cm = convert(fitbitUser.user.height).from("in").to("cm");
       } else {
         body.height_cm = fitbitUser.user.height;
@@ -29,7 +31,7 @@ export const mapToBody = (
     }
 
     if (fitbitUser.user.weight) {
-      if (fitbitUser.user.weightUnit === "en_US") {
+      if (fitbitUser.user.weightUnit === METRIC) {
         body.weight_kg = convert(fitbitUser.user.weight).from("lb").to("kg");
       } else {
         body.weight_kg = fitbitUser.user.weight;
