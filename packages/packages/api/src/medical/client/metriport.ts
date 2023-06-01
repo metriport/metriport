@@ -354,7 +354,7 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Fetches the document from S3 and sends a presigned URL
+   * Returns a URL that can be used to download the document.
    *
    * @param req.query.fileName The file name of the document in s3.
    * @param req.query.conversionType The doc type to convert to.
