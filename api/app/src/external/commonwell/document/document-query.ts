@@ -339,6 +339,7 @@ export async function downloadDocsAndUpsertFHIR({
             key: string;
             location: string;
             size: number | undefined;
+            isNew: boolean;
           }>;
           let file: Awaited<ReturnType<typeof uploadToS3>>;
 
@@ -364,6 +365,7 @@ export async function downloadDocsAndUpsertFHIR({
                   key: uploadResult.Key,
                   location: uploadResult.Location,
                   size,
+                  isNew: true,
                 };
               };
             } else {
@@ -380,6 +382,7 @@ export async function downloadDocsAndUpsertFHIR({
                   key: s3FileName,
                   location: s3Location,
                   size: existingSize,
+                  isNew: false,
                 };
               };
             }
@@ -410,12 +413,14 @@ export async function downloadDocsAndUpsertFHIR({
             },
           };
 
-          await convertCDAToFHIR({
-            patient,
-            document: { id: fhirDocId, mimeType: doc.content?.mimeType },
-            s3FileName: file.key,
-            s3BucketName: file.bucket,
-          });
+          if (file.isNew) {
+            await convertCDAToFHIR({
+              patient,
+              document: { id: fhirDocId, mimeType: doc.content?.mimeType },
+              s3FileName: file.key,
+              s3BucketName: file.bucket,
+            });
+          }
 
           const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
           try {
