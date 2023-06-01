@@ -357,7 +357,7 @@ export class MetriportMedicalApi {
    * Returns a URL that can be used to download the document.
    *
    * @param req.query.fileName The file name of the document in s3.
-   * @param req.query.conversionType The doc type to convert to.
+   * @param req.query.conversionType The doc type to convert to. Valid values are "html" and "pdf".
    * @return presigned url
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
