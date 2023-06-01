@@ -354,16 +354,18 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Returns a URL that can be used to download the document.
+   * Fetches the document from S3 and sends a presigned URL
    *
-   * @param fileName The file name of the document in s3.
-   * @return presigned url that expires in 20 seconds
+   * @param req.query.fileName The file name of the document in s3.
+   * @param req.query.conversionType The doc type to convert to.
+   * @return presigned url
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async getDocumentUrl(fileName: string): Promise<{ url: string }> {
+  async getDocumentUrl(fileName: string, conversionType: string): Promise<{ url: string }> {
     const resp = await this.api.get(`${DOCUMENT_URL}/downloadUrl`, {
       params: {
         fileName,
+        conversionType,
       },
     });
 

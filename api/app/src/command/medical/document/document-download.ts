@@ -69,6 +69,8 @@ const convertDoc = async ({
     })
     .promise();
 
+  if (result.StatusCode !== 200) throw new Error("Lambda invocation failed");
+
   if (result.Payload === undefined) throw new Error("Payload is undefined");
 
   return result.Payload.toString();
