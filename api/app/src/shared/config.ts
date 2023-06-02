@@ -68,6 +68,14 @@ export class Config {
     return getEnvVarOrFail("API_URL");
   }
 
+  static getTokenTableName(): string {
+    return getEnvVarOrFail("TOKEN_TABLE_NAME");
+  }
+
+  static getDBCreds(): string {
+    return getEnvVarOrFail("DB_CREDS");
+  }
+
   static getCronometerClientId(): string {
     return getEnvVarOrFail("CRONOMETER_CLIENT_ID");
   }
