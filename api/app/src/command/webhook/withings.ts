@@ -39,11 +39,10 @@ export const processData = async (data: WithingsWebhook) => {
     );
 
     const cxId = connectedUser.cxId;
-    const cxUserId = connectedUser.cxUserId;
 
     const settings = await getSettingsOrFail({ id: cxId });
     const withingsData = await mapData(categoryNum, connectedUser, startdate);
-    const payload = { users: [{ userId: cxUserId, ...withingsData }] };
+    const payload = { users: [{ userId: connectedUser.id, ...withingsData }] };
     const webhookRequest = await createWebhookRequest({ cxId, payload });
     await processRequest(webhookRequest, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
