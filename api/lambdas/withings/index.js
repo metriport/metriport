@@ -52,10 +52,9 @@ const lookup = async address => {
 };
 
 async function forwardCallToServer(req) {
-  console.log(`Verified! Calling server...`);
-
   const convertParams = new URLSearchParams(req.body);
-  console.log(`convertParams - body: ${convertParams}`);
+
+  console.log(`Verified! Calling ${apiServerURL} - body: ${convertParams}`);
 
   const resp = await api.post(apiServerURL, convertParams, { headers: req.headers });
 
