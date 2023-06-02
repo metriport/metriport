@@ -1,7 +1,7 @@
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
 import updateDB from "../sequelize";
-import { Config, getEnvVarOrFail } from "../shared/config";
+import { Config } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev } from "./db-dev";
 import { CustomerSequenceModel } from "./medical/customer-sequence";
@@ -42,8 +42,8 @@ export let docTableNames: DocTableNames;
 
 const initDB = async (): Promise<void> => {
   // make sure we have the env vars we need
-  const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
-  const tokenTableName = getEnvVarOrFail("TOKEN_TABLE_NAME");
+  const sqlDBCreds = Config.getDBCreds();
+  const tokenTableName = Config.getTokenTableName();
   const logDBOperations = Config.isProdEnv() || Config.isSandbox() ? false : true;
 
   docTableNames = {
