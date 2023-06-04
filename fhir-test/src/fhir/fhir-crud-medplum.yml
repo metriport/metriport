@@ -1,0 +1,87 @@
+config:
+  target: "{{ $processEnvironment.MEDPLUM_URL }}"
+  http:
+    timeout: 60
+  plugins:
+    # https://www.artillery.io/docs/guides/plugins/plugin-publish-metrics
+    publish-metrics:
+      - type: cloudwatch
+        region: "{{ $processEnvironment.REGION }}"
+    # https://www.artillery.io/docs/guides/plugins/plugin-metrics-by-endpoint
+    metrics-by-endpoint:
+      # Group metrics by request name rather than URL:
+      useOnlyRequestNames: true
+  phases:
+    - duration: 10
+      arrivalRate: 2
+      name: Warm up
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: Ramp up load
+    - duration: 120
+      arrivalRate: 20
+      rampTo: 100
+      name: Ramp up load
+  variables:
+    codeChallenge: "{{ $randomString() }}"
+
+before:
+  flow:
+    - log: "Get auth token"
+    - post:
+        url: "/auth/login"
+        json:
+          email: "{{ $processEnvironment.MEDPLUM_USER }}"
+          password: "{{ $processEnvironment.MEDPLUM_PASSWORD }}"
+          codeChallengeMethod: "plain"
+          codeChallenge: "{{ codeChallenge }}"
+        capture:
+          - json: $.code
+            as: code
+        name: "Login"
+    - post:
+        url: "/oauth2/token"
+        form:
+          grant_type: "authorization_code"
+          code: "{{ code }}"
+          code_verifier: "{{ codeChallenge }}"
+        capture:
+          - json: $.access_token
+            as: token
+        name: "Get OAuth token"
+
+scenarios:
+  - name: "FHIR CRUD Medplum"
+    flow:
+      - loop:
+          - post:
+              url: "/fhir/R4/Patient"
+              headers:
+                Authorization: "Bearer {{ token }}"
+              json:
+                resourceType: Patient
+                name:
+                  - family: "{{ $randomString() }}"
+              capture:
+                - json: "$.id"
+                  as: "patientId"
+                - json: "$.name[0].family"
+                  as: "familyName"
+              name: "Create Patient"
+          - get:
+              url: "/fhir/R4/Patient/{{ patientId }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
+              name: "Get Patient by ID"
+          - get:
+              url: "/fhir/R4/Patient?name={{ familyName }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
+              name: "Get Patient by name"
+          - delete:
+              url: "/fhir/R4/Patient/{{ patientId }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
+              name: "Delete Patient"
+        count: 2
