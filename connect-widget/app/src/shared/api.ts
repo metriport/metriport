@@ -26,7 +26,7 @@ export function getApiToken(searchParams: URLSearchParams): string {
   const apiToken = searchParams.get(Constants.TOKEN_PARAM);
   if (!apiToken) {
     throw new Error(
-      `Missing query param ${Constants.TOKEN_PARAM}! To learn more, go to the [Connect Widget](https://docs.metriport.com/devices-api/getting-started/connect-widget#token) overview in our documentation.`
+      `Missing ${Constants.TOKEN_PARAM} query param! To learn more, go to the [Connect Widget](https://docs.metriport.com/devices-api/getting-started/connect-widget#token) overview in our documentation.`
     );
   }
   return apiToken;
