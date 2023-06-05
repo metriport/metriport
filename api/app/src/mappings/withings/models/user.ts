@@ -14,6 +14,6 @@ export const userDevicesSchema = z
       hash_deviceid: z.string().optional().nullable(),
     })
   )
-  .optional();
+  .nullish();
 
 export type WithingsUserDevices = z.infer<typeof userDevicesSchema>;
