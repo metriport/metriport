@@ -8,7 +8,7 @@ import { ConnectedUser } from "../models/connected-user";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
-import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";
+import { getProviderTokenFromConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { mapToActivity } from "../mappings/withings/activity";
 import { mapToBody } from "../mappings/withings/body";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
@@ -126,9 +126,7 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
-    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_WITHINGS);
-
-    const token = providerData.token;
+    const token = getProviderTokenFromConnectedUserOrFail(connectedUser, PROVIDER_WITHINGS);
 
     const refreshedToken = await this.checkRefreshToken(token, connectedUser);
 
@@ -187,20 +185,14 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
-    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_WITHINGS);
+    const token = getProviderTokenFromConnectedUserOrFail(connectedUser, PROVIDER_WITHINGS);
 
     const client_id = Config.getWithingsClientId();
     const client_secret = Config.getWithingsClientSecret();
     const timestamp = dayjs().unix();
 
     const nonce = await this.getNonce(client_id, client_secret, timestamp);
-    const status = await this.revokeToken(
-      client_id,
-      client_secret,
-      timestamp,
-      nonce,
-      providerData.token
-    );
+    const status = await this.revokeToken(client_id, client_secret, timestamp, nonce, token);
 
     if (status === 0) {
       await this.oauth.revokeLocal(connectedUser);

@@ -8,7 +8,7 @@ import { Config } from "../shared/config";
 import { PROVIDER_CRONOMETER } from "../shared/constants";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
-import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";
+import { getProviderTokenFromConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 
 const axios = Axios.create();
 
@@ -52,9 +52,7 @@ export class Cronometer extends Provider implements OAuth2 {
   }
 
   private getAccessToken(connectedUser: ConnectedUser): string {
-    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_CRONOMETER);
-
-    return providerData.token;
+    return getProviderTokenFromConnectedUserOrFail(connectedUser, PROVIDER_CRONOMETER);
   }
 
   async revokeProviderAccess(connectedUser: ConnectedUser) {
