@@ -1,0 +1,57 @@
+config:
+  target: "https://yourserver.com"
+  # https://www.artillery.io/docs/guides/guides/test-script-reference#environments---config-profiles
+  # environments:
+  #   staging:
+  #     target: "http://staging.yourserver.com"
+  http:
+    # Responses have to be sent within 60 seconds, or an `ETIMEDOUT` error gets raised.
+    timeout: 60
+  plugins:
+    publish-metrics:
+      # https://www.artillery.io/docs/guides/plugins/plugin-publish-metrics#cloudwatch
+      - type: cloudwatch
+        region: us-east-1
+  phases:
+    - duration: 1
+      arrivalRate: 1
+      name: Warm up
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: Ramp up load
+  variables:
+    auth: "Bearer ....."
+  processor: "./example.js"
+
+before:
+  flow:
+    - log: "Get auth token"
+    - post:
+        url: "/auth/login"
+        json:
+          email: "admin@domain.com"
+          password: "password"
+        capture:
+          - json: $.code
+            as: token
+
+scenarios:
+  - name: "Example"
+    beforeScenario: functionFromProcessor
+    flow:
+      - log: "Got variable {{ requestBodyFromProcessor }}"
+
+      - post:
+          url: "/fhir/R4/"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json: "{{ requestBodyFromProcessor }}"
+          capture:
+            - json: "$.id"
+              as: "patientId"
+
+      - get:
+          url: "/fhir/R4/Patient/{{ patientId }}"
+          beforeRequest: "setJSONBody"
+          afterResponse: "logHeaders"
