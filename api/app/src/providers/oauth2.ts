@@ -5,7 +5,7 @@ import { updateProviderData } from "../command/connected-user/save-connected-use
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { ProviderOAuth2Options } from "../shared/constants";
-import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";
+import { getProviderTokenFromConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 
 export const oauthUserTokenResponse = z.object({
   oauth_token: z.string(),
@@ -147,9 +147,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
   }
 
   async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
-    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, this.providerName);
-
-    const token = providerData.token;
+    const token = getProviderTokenFromConnectedUserOrFail(connectedUser, this.providerName);
 
     const refreshedToken = await this.checkRefreshToken(token, connectedUser);
 
@@ -167,8 +165,6 @@ export class OAuth2DefaultImpl implements OAuth2 {
   }
 
   async revokeLocal(connectedUser: ConnectedUser): Promise<string> {
-    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, this.providerName);
-
     await updateProviderData({
       id: connectedUser.id,
       cxId: connectedUser.cxId,
@@ -176,7 +172,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
       providerItem: undefined,
     });
 
-    return providerData.token;
+    return getProviderTokenFromConnectedUserOrFail(connectedUser, this.providerName);
   }
 
   async fetchProviderData<T>(
