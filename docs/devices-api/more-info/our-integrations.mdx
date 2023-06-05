@@ -39,3 +39,11 @@ your use case if that's something you're looking for.
 ### Withings
 
 For webhooks, Withings data will be returned as a summary for the entire day and will​ be updated as new data is added. We suggest taking this into account by potentially replacing the current data that you have with the new available summary.
+
+### Connecting to Providers
+
+<Warning>
+  Multiple connected users should not access the same provider account - even across enviroments.
+  There are known issues where if you connect one user to an account and then later connect another
+  user to that same provider account, the previous user's tokens will be revoked.
+</Warning>
