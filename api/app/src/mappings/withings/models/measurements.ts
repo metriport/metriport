@@ -41,8 +41,8 @@ export type WithingsMeasurementGrp = z.infer<typeof withingsMeasurementGrp>;
 
 // https://developer.withings.com/api-reference/#operation/measure-getmeas
 export const withingsMeasurementResp = z.object({
-  updatetime: z.number(),
-  timezone: z.string(),
+  updatetime: z.number().nullish(),
+  timezone: z.string().nullish(),
   measuregrps: z.array(withingsMeasurementGrp),
   more: z.number().nullable().optional(),
   offset: z.number().nullable().optional(),
