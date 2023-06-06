@@ -38,8 +38,9 @@ Let's get into it! 🤘
 </Card>
 
 <Tip>
-  To demo the app without having to use your production enviroment simply head over to the `Developers`
-  page and toggle "sandbox". This will allow you to try out the Devices API with up to 10 connected users.
+  To demo the app without having to use your production enviroment simply head over to the
+  `Developers` page and toggle "sandbox". This will allow you to try out the Devices API with up to
+  10 connected users.
 </Tip>
 
 ## 2. Generate an API key
@@ -94,7 +95,8 @@ const metriportClient = new MetriportDevicesApi("YOUR_API_KEY", options);
 ```
 
 <Info>
-  `options` allows you to set the `sandbox` property to access our sandbox environment (optional parameter).
+  `options` allows you to set the `sandbox` property to access our sandbox environment (optional
+  parameter).
 </Info>
 
 ### 3.2. Webhook: expose an endpoint to be called by Metriport
@@ -144,13 +146,20 @@ window.open(`https://connect.metriport.com/?token=${connectToken}`);
 <Info>
   To open the widget in Sandbox mode, add the parameter `&sandbox=true` to the
   URL. For example:
-  
-  ```typescript
-  `https://connect.metriport.com/?token=${connectToken}&sandbox=true`
-  ```
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&sandbox=true`;
+```
+
 </Info>
 
 Head to the [Connect Widget page](/devices-api/getting-started/connect-widget) to learn more about the various Widget customization options, and view some code samples for integrating the Widget on different platforms such as iOS and Android.
+
+<Warning>
+  Multiple connected users should not access the same provider account - even across enviroments.
+  For more info see the section [Connecting to
+  Providers](/devices-api/more-info/our-integrations#connecting-to-providers).
+</Warning>
 
 ## 5. Access your user's health data 🎉🎉🎉
 

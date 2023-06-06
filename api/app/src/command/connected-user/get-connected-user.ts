@@ -29,15 +29,16 @@ export const getConnectedUserOrFail = async ({
   return connectedUser;
 };
 
-export const getProviderDataFromConnectUserOrFail = (
+export const getProviderTokenFromConnectedUserOrFail = (
   connectedUser: ConnectedUser,
   provider: ProviderOptions
 ) => {
   if (!connectedUser.providerMap) throw new NotFoundError("Could not find provider map");
-  const providerData = connectedUser.providerMap[provider];
-  if (!providerData) throw new NotFoundError("Provider map has no data");
 
-  return providerData;
+  const token = connectedUser.providerMap[provider]?.token;
+  if (token) return token;
+
+  throw new NotFoundError(`Could not find connect token for ${provider}`);
 };
 
 export const getConnectedUsers = async ({

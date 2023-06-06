@@ -1,68 +1,67 @@
 import * as AWS from "aws-sdk";
+import { docTableNames } from "./db";
 
-/**
- * Creates the token table. Destroys the existing one.
- * It removes the existing table and recreates it.
- *
- * This is disabled by default (see first command/comment).
- */
-//eslint-disable-next-line @typescript-eslint/no-unused-vars
-const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
-  /*
-   * Important: if you change the structure here, or if you want data there to
-   * be purged across updates on the code/reload, uncomment out the block below.
-   */
-  // try {
-  //   await ddb.deleteTable({ TableName: docTableNames.token }).promise();
-  // } catch (error: any) {
-  //   if (error && error.code !== "ResourceNotFoundException") {
-  //     throw error;
-  //   }
-  // }
-  // const params: AWS.DynamoDB.CreateTableInput = {
-  //   AttributeDefinitions: [
-  //     {
-  //       AttributeName: "token",
-  //       AttributeType: "S",
-  //     },
-  //     {
-  //       AttributeName: "oauthUserAccessToken",
-  //       AttributeType: "S",
-  //     },
-  //   ],
-  //   KeySchema: [
-  //     {
-  //       AttributeName: "token",
-  //       KeyType: "HASH",
-  //     },
-  //   ],
-  //   GlobalSecondaryIndexes: [
-  //     {
-  //       IndexName: "oauthUserAccessToken_idx",
-  //       KeySchema: [
-  //         {
-  //           AttributeName: "oauthUserAccessToken",
-  //           KeyType: "HASH",
-  //         },
-  //       ],
-  //       Projection: {
-  //         ProjectionType: "ALL",
-  //       },
-  //       ProvisionedThroughput: {
-  //         ReadCapacityUnits: 1,
-  //         WriteCapacityUnits: 1,
-  //       },
-  //     },
-  //   ],
-  //   ProvisionedThroughput: {
-  //     ReadCapacityUnits: 1,
-  //     WriteCapacityUnits: 1,
-  //   },
-  //   TableName: docTableNames.token,
-  // };
-  // await ddb.createTable(params).promise();
+//Checks if the table exists in the db
+const tableExists = async (tableName: string, ddb: AWS.DynamoDB) => {
+  try {
+    await ddb.describeTable({ TableName: tableName }).promise();
+    return true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error.code === "ResourceNotFoundException") {
+      return false;
+    }
+  }
 };
 
+//Creates the token table
+const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
+  //Create a new table if it doesn't already exist
+  if (!(await tableExists(docTableNames.token, ddb))) {
+    const params: AWS.DynamoDB.CreateTableInput = {
+      AttributeDefinitions: [
+        {
+          AttributeName: "token",
+          AttributeType: "S",
+        },
+        {
+          AttributeName: "oauthUserAccessToken",
+          AttributeType: "S",
+        },
+      ],
+      KeySchema: [
+        {
+          AttributeName: "token",
+          KeyType: "HASH",
+        },
+      ],
+      GlobalSecondaryIndexes: [
+        {
+          IndexName: "oauthUserAccessToken_idx",
+          KeySchema: [
+            {
+              AttributeName: "oauthUserAccessToken",
+              KeyType: "HASH",
+            },
+          ],
+          Projection: {
+            ProjectionType: "ALL",
+          },
+          ProvisionedThroughput: {
+            ReadCapacityUnits: 1,
+            WriteCapacityUnits: 1,
+          },
+        },
+      ],
+      ProvisionedThroughput: {
+        ReadCapacityUnits: 1,
+        WriteCapacityUnits: 1,
+      },
+      TableName: docTableNames.token,
+    };
+    await ddb.createTable(params).promise();
+  }
+};
 export const initDDBDev = async (): Promise<AWS.DynamoDB.DocumentClient> => {
   AWS.config.update({
     region: "us-west-1",

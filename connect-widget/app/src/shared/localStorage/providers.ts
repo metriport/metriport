@@ -23,7 +23,7 @@ export const getProviders = (
   const validProviders = getValidProviders(providers, providerParams);
 
   if (validProviders) {
-    if (!isDemo) {
+    if (!isDemo && localStorage) {
       localStorage.setItem(providersLocalStorageKey, JSON.stringify(validProviders));
     }
 
@@ -55,11 +55,13 @@ const getValidProviders = (providers: DefaultProvider[], providerParams: string 
 };
 
 const getLocalStorageProviders = (): DefaultProvider[] | null => {
-  const localStorageProviders = localStorage.getItem(providersLocalStorageKey);
+  if (localStorage) {
+    const localStorageProviders = localStorage.getItem(providersLocalStorageKey);
 
-  if (localStorageProviders) {
-    const parsedValue = JSON.parse(localStorageProviders);
-    return parsedValue;
+    if (localStorageProviders) {
+      const parsedValue = JSON.parse(localStorageProviders);
+      return parsedValue;
+    }
   }
 
   return null;

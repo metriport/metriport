@@ -8,7 +8,7 @@ import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "../models/connected-user";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
-import { getProviderDataFromConnectUserOrFail } from "../command/connected-user/get-connected-user";
+import { getProviderTokenFromConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { mapToBiometrics } from "../mappings/dexcom/biometrics";
 import { mapToNutrition } from "../mappings/dexcom/nutrition";
 import { dexcomEvgsResp } from "../mappings/dexcom/models/evgs";
@@ -56,9 +56,7 @@ export class Dexcom extends Provider implements OAuth2 {
   }
 
   private async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
-    const providerData = getProviderDataFromConnectUserOrFail(connectedUser, PROVIDER_DEXCOM);
-
-    const token = providerData.token;
+    const token = getProviderTokenFromConnectedUserOrFail(connectedUser, PROVIDER_DEXCOM);
 
     const refreshedToken = await this.checkRefreshToken(token, connectedUser);
 

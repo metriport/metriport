@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { ApiTypes } from "../command/usage/report-usage";
 import BadRequestError from "../errors/bad-request";
 import { analytics, EventTypes } from "../shared/analytics";
+import { Config } from "../shared/config";
 import { capture } from "../shared/notifications";
 
 export const asyncHandler =
@@ -19,7 +20,7 @@ export const asyncHandler =
       analyzeRoute(req);
       await f(req, res, next);
     } catch (err) {
-      console.error(err);
+      Config.isCloudEnv() && console.error(err);
       next(err);
     }
   };

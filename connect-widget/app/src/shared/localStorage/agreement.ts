@@ -11,19 +11,19 @@ export const setAgreementState = (setAgreement: (value: boolean) => void) => {
 };
 
 const getLocalStorageAgreement = (): boolean => {
-  const localStorageAgreement = localStorage.getItem(agreementLocalStorageKey);
+  if (localStorage) {
+    const localStorageAgreement = localStorage.getItem(agreementLocalStorageKey);
 
-  if (localStorageAgreement) {
-    const parsedValue = JSON.parse(localStorageAgreement);
-
-    return parsedValue;
+    if (localStorageAgreement) {
+      const parsedValue = JSON.parse(localStorageAgreement);
+      return parsedValue;
+    }
   }
-
   return false;
 };
 
 export const acceptAgreement = (setAgreement: (value: boolean) => void, isDemo: boolean): void => {
-  if (!isDemo) {
+  if (!isDemo && localStorage) {
     localStorage.setItem(agreementLocalStorageKey, JSON.stringify(true));
   }
 
