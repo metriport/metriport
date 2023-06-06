@@ -30,7 +30,7 @@ export async function convertCDAToFHIR(params: {
 }): Promise<void> {
   const {
     patient,
-    document: { mimeType },
+    document: { id: documentId, mimeType },
     s3FileName,
     s3BucketName,
     template = FHIRConverterCDATemplate.ccd,
@@ -46,6 +46,7 @@ export async function convertCDAToFHIR(params: {
       return connector.requestConvert({
         cxId: patient.cxId,
         patientId: patient.id,
+        documentId: documentId,
         sourceType: FHIRConverterSourceDataType.cda,
         payload: JSON.stringify({ s3FileName, s3BucketName, documentExtension }),
         template: `${template}.${templateExt}`,
