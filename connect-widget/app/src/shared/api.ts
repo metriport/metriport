@@ -28,6 +28,10 @@ export function getApiToken(searchParams: URLSearchParams): string {
     throw new Error(
       `Missing query param ${Constants.TOKEN_PARAM}! To learn more, go to the [Connect Widget](https://docs.metriport.com/devices-api/getting-started/connect-widget#token) overview in our documentation.`
     );
+  } else if (apiToken === "demo") {
+    throw new Error(
+      `The Connect Widget is running in demo mode! You will not be able to connect providers, unless you acquire a valid connect token. See [Create Connect Token](https://docs.metriport.com/devices-api/api-reference/user/create-connect-token) documentation for reference.`
+    );
   }
   return apiToken;
 }

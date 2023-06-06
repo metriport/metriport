@@ -46,6 +46,7 @@ const ConnectProviders = () => {
       </Flex>
       <Providers
         providers={providers}
+        isDemo={isDemo}
         connectedProviders={connectedProviders}
         setConnectedProviders={setConnectedProviders}
       />
