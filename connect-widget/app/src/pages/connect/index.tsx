@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { setupApi } from "../../shared/api";
+import { setupApi, isDemo } from "../../shared/api";
 import WidgetContainer from "../../shared/components/WidgetContainer";
 import Constants from "../../shared/constants";
 import { acceptAgreement, setAgreementState } from "../../shared/localStorage/agreement";
@@ -11,15 +11,19 @@ import Agreement from "./components/agreement";
 import ConnectProviders from "./components/connect-providers";
 import ErrorDialog from "./components/error-dialog";
 
+type DisplayError = {
+  message: string;
+  link: string;
+  title: string;
+};
+
 const ConnectPage = () => {
   const [agreement, setAgreement] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams] = useSearchParams();
-  const [isError, setIsError] = useState(null);
+  const [error, setError] = useState<DisplayError | null>(null);
 
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
-  const token = searchParams.get(Constants.TOKEN_PARAM);
-  const isDemo = token === "demo";
 
   useEffect(() => {
     try {
@@ -28,7 +32,7 @@ const ConnectPage = () => {
       setAgreementState(setAgreement);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      setIsError(err.message);
+      setError(err);
       capture.error(err, { extra: { context: `connect.setup` } });
     }
     setIsLoading(false);
@@ -44,7 +48,15 @@ const ConnectPage = () => {
         ) : (
           <Agreement onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)} />
         )}
-        {isError && <ErrorDialog message={isError} show onClose={() => setIsError(null)} />}
+        {error && (
+          <ErrorDialog
+            message={error.message}
+            link={error.link}
+            title={error.title}
+            show
+            onClose={() => setError(null)}
+          />
+        )}
       </>
     </WidgetContainer>
   );
