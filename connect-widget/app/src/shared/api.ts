@@ -35,11 +35,11 @@ export function handleToken(token: string | null): void {
   if (!token) {
     isDemo = true;
   } else if (isDemoToken(token)) {
-    //tell the user widget in demo mode && disable connect buttons
+    // tell the user widget in demo mode && disable connect buttons
     isDemo = true;
     throw new DemoTokenError();
   } else {
-    // Invalid vs valid token logic will go here
+    // invalid vs valid token logic will go here
     isDemo = false;
   }
 }
