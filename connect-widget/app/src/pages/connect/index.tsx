@@ -11,16 +11,19 @@ import Agreement from "./components/agreement";
 import ConnectProviders from "./components/connect-providers";
 import ErrorDialog from "./components/error-dialog";
 
+type DisplayError = {
+  message: string;
+  link: string;
+  title: string;
+};
+
 const ConnectPage = () => {
   const [agreement, setAgreement] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams] = useSearchParams();
-  const [isError, setIsError] = useState(null);
-  const [errorLink, setErrorLink] = useState(undefined);
-  const [errorTitle, setErrorTitle] = useState(undefined);
+  const [error, setError] = useState<DisplayError | null>(null);
 
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
-  // const token = searchParams.get(Constants.TOKEN_PARAM);
 
   useEffect(() => {
     try {
@@ -29,9 +32,7 @@ const ConnectPage = () => {
       setAgreementState(setAgreement);
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      setIsError(err.message);
-      setErrorLink(err.link);
-      setErrorTitle(err.title);
+      setError(err);
       capture.error(err, { extra: { context: `connect.setup` } });
     }
     setIsLoading(false);
@@ -47,13 +48,13 @@ const ConnectPage = () => {
         ) : (
           <Agreement onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)} />
         )}
-        {isError && (
+        {error && (
           <ErrorDialog
-            message={isError}
-            link={errorLink}
-            title={errorTitle}
+            message={error.message}
+            link={error.link}
+            title={error.title}
             show
-            onClose={() => setIsError(null)}
+            onClose={() => setError(null)}
           />
         )}
       </>

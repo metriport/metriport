@@ -31,7 +31,7 @@ const Providers = ({
   const [isLoading, setIsLoading] = useState<{ [id: string]: boolean }>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
-  const token = isDemo ? false : searchParams.get(Constants.TOKEN_PARAM);
+  const token = isDemo ? "" : searchParams.get(Constants.TOKEN_PARAM);
 
   const customEventHandler = useCallback(
     //eslint-disable-next-line @typescript-eslint/no-explicit-any

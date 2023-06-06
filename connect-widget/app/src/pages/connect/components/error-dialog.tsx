@@ -59,7 +59,7 @@ const ErrorDialog = ({ show, title, message, link, onClose: closed }: ErrorDialo
           <AlertDialogFooter>
             {actualLink && (
               <a href={actualLink} target="_blank" onClick={close}>
-                <u>See Docs</u>
+                <u>See Documentation</u>
               </a>
             )}
             <Button ref={closeButtonRef} onClick={close} ml={3}>
