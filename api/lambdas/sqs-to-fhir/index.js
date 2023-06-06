@@ -125,7 +125,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           baseUrl: fhirServerUrl,
           fhirUrlPath: `fhir/${cxId}`,
         });
-        await fhirApi.executeBatch(payload);
+        const response = await fhirApi.executeBatch(payload);
         metrics.upsert = {
           duration: Date.now() - upsertStart,
           timestamp: new Date().toISOString(),
@@ -136,6 +136,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             timestamp: new Date().toISOString(),
           };
         }
+
+        processReponse(response, event, log);
 
         await reportMemoryUsage();
         await reportMetrics(metrics);
@@ -186,6 +188,24 @@ function isTimeout(err) {
 async function downloadFileContents(s3BucketName, s3FileName) {
   const stream = s3Client.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
   return streamToString(stream);
+}
+
+function processReponse(response, event, log) {
+  const entries = response.entry ? response.entry : [];
+  const errors = entries.filter(
+    // returns non-2xx responses AND null/undefined
+    e => !e.response?.status?.startsWith("2")
+  );
+  const countError = errors.length;
+  const countSuccess = entries.length - countError;
+  log(`Got ${countError} errors and ${countSuccess} successes from FHIR Server`);
+  if (errors.length > 0) {
+    errors.forEach(e => log(`Error from FHIR Server: ${JSON.stringify(e)}`));
+    captureMessage(`Error upserting Bundle on FHIR server`, {
+      extra: { context: lambdaName, additional: "processReponse", event, countSuccess, countError },
+      level: "error",
+    });
+  }
 }
 
 async function sendToDLQ(message) {
