@@ -2,7 +2,7 @@ import { Flex, Heading } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { getApi } from "../../../shared/api";
+import { getApi, isDemo } from "../../../shared/api";
 import Constants from "../../../shared/constants";
 import { getProviders } from "../../../shared/localStorage/providers";
 import { capture } from "../../../shared/notifications";
@@ -32,8 +32,6 @@ const ConnectProviders = () => {
   }, []);
 
   const searchProviders = searchParams.get(Constants.PROVIDERS_PARAM);
-  const token = searchParams.get(Constants.TOKEN_PARAM);
-  const isDemo = token === "demo";
   const isApple = searchParams.get(Constants.APPLE_PARAM);
   const providers = getProviders(searchProviders, isDemo, isApple);
 
@@ -46,6 +44,7 @@ const ConnectProviders = () => {
       </Flex>
       <Providers
         providers={providers}
+        isDemo={isDemo}
         connectedProviders={connectedProviders}
         setConnectedProviders={setConnectedProviders}
       />

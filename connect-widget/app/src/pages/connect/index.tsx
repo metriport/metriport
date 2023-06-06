@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { setupApi } from "../../shared/api";
+import { setupApi, isDemo } from "../../shared/api";
 import WidgetContainer from "../../shared/components/WidgetContainer";
 import Constants from "../../shared/constants";
 import { acceptAgreement, setAgreementState } from "../../shared/localStorage/agreement";
@@ -16,10 +16,11 @@ const ConnectPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const [isError, setIsError] = useState(null);
+  const [errorLink, setErrorLink] = useState(undefined);
+  const [errorTitle, setErrorTitle] = useState(undefined);
 
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
-  const token = searchParams.get(Constants.TOKEN_PARAM);
-  const isDemo = token === "demo";
+  // const token = searchParams.get(Constants.TOKEN_PARAM);
 
   useEffect(() => {
     try {
@@ -29,6 +30,8 @@ const ConnectPage = () => {
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setIsError(err.message);
+      setErrorLink(err.link);
+      setErrorTitle(err.title);
       capture.error(err, { extra: { context: `connect.setup` } });
     }
     setIsLoading(false);
@@ -44,7 +47,15 @@ const ConnectPage = () => {
         ) : (
           <Agreement onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)} />
         )}
-        {isError && <ErrorDialog message={isError} show onClose={() => setIsError(null)} />}
+        {isError && (
+          <ErrorDialog
+            message={isError}
+            link={errorLink}
+            title={errorTitle}
+            show
+            onClose={() => setIsError(null)}
+          />
+        )}
       </>
     </WidgetContainer>
   );
