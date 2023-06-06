@@ -26,9 +26,7 @@ export const getApi = () => {
 export function getApiToken(searchParams: URLSearchParams): string {
   const apiToken = searchParams.get(Constants.TOKEN_PARAM);
   if (!apiToken) {
-    throw new NoTokenError(
-      `Missing '${Constants.TOKEN_PARAM}' query parameter! To learn more, go to the Connect Widget overview in our documentation.`
-    );
+    throw new NoTokenError();
   }
   return apiToken;
 }
@@ -39,9 +37,7 @@ export function handleToken(token: string | null): void {
   } else if (isDemoToken(token)) {
     //tell the user widget in demo mode && disable connect buttons
     isDemo = true;
-    throw new DemoTokenError(
-      "The Connect Widget is running in demo mode! You will not be able to connect providers unless you acquire a valid connect token. See Create Connect Token documentation for reference."
-    );
+    throw new DemoTokenError();
   } else {
     // Invalid vs valid token logic will go here
     isDemo = false;
