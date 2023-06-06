@@ -6,6 +6,7 @@ export enum FHIRConverterSourceDataType {
 export type FHIRConverterRequest = {
   cxId: string;
   patientId: string;
+  documentId: string;
   sourceType: FHIRConverterSourceDataType;
   payload: string;
   template: string;
