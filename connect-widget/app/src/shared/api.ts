@@ -26,6 +26,7 @@ export const getApi = () => {
 export function getApiToken(searchParams: URLSearchParams): string {
   const apiToken = searchParams.get(Constants.TOKEN_PARAM);
   if (!apiToken) {
+    // tell the user the token is missing && disable connect buttons
     throw new NoTokenError();
   }
   return apiToken;
@@ -33,11 +34,11 @@ export function getApiToken(searchParams: URLSearchParams): string {
 
 export function handleToken(token: string): void {
   if (isDemoToken(token)) {
-    // tell the user widget in demo mode && disable connect buttons
+    // tell the user the widget is in demo mode && disable connect buttons
     throw new DemoTokenError();
   }
   if (!isTokenValid()) {
-    // tell the user token is invalid and && disable connect buttons
+    // tell the user the token is invalid and && disable connect buttons
     throw new InvalidTokenError();
   }
 
@@ -48,7 +49,7 @@ export function handleToken(token: string): void {
 function isTokenValid() {
   try {
     getApi().get("/connect/redirect", {
-      params: { provider: "fitbit" },
+      params: { provider: "fitbit" }, // all we're trying to do here is confirm the token is valid. Doesn't matter which provider to use.
     });
   } catch (err) {
     return false;
