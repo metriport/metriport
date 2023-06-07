@@ -11,6 +11,11 @@ export type Progress = {
 };
 
 export type DocumentQueryProgress = {
+  queryStatus?: DocumentQueryStatus;
+  queryProgress?: {
+    total?: number;
+    completed?: number;
+  };
   download?: Progress;
   convert?: Progress;
 };

@@ -42,6 +42,8 @@ export const progressSchema = z.object({
 });
 
 export const documentQuerySchema = z.object({
+  queryStatus: documentQueryStatusSchema.optional(),
+  queryProgress: documentQueryProgress.optional(),
   download: progressSchema.optional(),
   convert: progressSchema.optional(),
 });
