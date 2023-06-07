@@ -38,8 +38,8 @@ export async function handleToken(token: string): Promise<void> {
     // tell the user the widget is in demo mode && disable connect buttons
     throw new DemoTokenError();
   }
-  await isTokenValid();
-  if (!(await isTokenValid())) {
+  const tokenValid = await isTokenValid();
+  if (!tokenValid) {
     // tell the user the token is invalid and && disable connect buttons
     throw new InvalidTokenError();
   }
