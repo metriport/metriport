@@ -47,7 +47,7 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
-const OSSApi = axios.create();
+const ossApi = axios.create();
 const docProgressURL = `${apiURL}/doc-conversion-status`;
 /* Example of a single message/record in event's `Records` array:
 {
@@ -190,12 +190,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
 
           const cxId = message.messageAttributes?.cxId?.stringValue;
           const patientId = message.messageAttributes?.patientId?.stringValue;
+          const jobId = message.messageAttributes?.jobId?.stringValue;
 
-          if (cxId && patientId) {
-            await OSSApi.post(docProgressURL, {
+          if (cxId && patientId && jobId) {
+            await ossApi.post(docProgressURL, {
               cxId,
               patientId,
               status: "failed",
+              jobId,
             });
           }
         }

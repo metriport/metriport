@@ -34,9 +34,16 @@ export const documentQueryProgress = z.object({
 
 export type DocumentQueryProgress = z.infer<typeof documentQueryProgress>;
 
+export const progressSchema = z.object({
+  status: documentQueryStatusSchema,
+  total: z.number().optional(),
+  successful: z.number().optional(),
+  errors: z.number().optional(),
+});
+
 export const documentQuerySchema = z.object({
-  queryStatus: documentQueryStatusSchema,
-  queryProgress: documentQueryProgress.optional(),
+  download: progressSchema.optional(),
+  convert: progressSchema.optional(),
 });
 
 export type DocumentQuery = z.infer<typeof documentQuerySchema>;

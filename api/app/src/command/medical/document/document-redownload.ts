@@ -113,7 +113,10 @@ async function processDocsOfPatient({
   const { log } = Util.out(`processDocsOfPatient - M patientId ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (patient.data.documentQueryProgress?.status === "processing") {
+  if (
+    patient.data.documentQueryProgress?.download?.status === "processing" ||
+    patient.data.documentQueryProgress?.convert?.status === "processing"
+  ) {
     log(`Patient ${patientId} is already being processed, skipping ${docs.length} docs...`);
     return;
   }
@@ -139,7 +142,7 @@ async function processDocsOfPatient({
     await updateDocQuery({
       id: patientId,
       cxId,
-      docQueryProgress: { status: "processing" },
+      downloadProgress: { status: "processing" },
       restart: true,
     });
 
@@ -154,7 +157,7 @@ async function processDocsOfPatient({
     log(`Error processing docs: `, error);
     capture.error(error, { extra: { context: `processDocsOfPatient`, error } });
   } finally {
-    await updateDocQuery({ id: patientId, cxId, docQueryProgress: { status: "completed" } });
+    await updateDocQuery({ id: patientId, cxId, downloadProgress: { status: "completed" } });
   }
   log(`Done for patient ${patientId}`);
 }

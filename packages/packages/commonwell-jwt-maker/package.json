@@ -40,7 +40,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "^4.3.0-alpha.0",
+    "@metriport/commonwell-sdk": "^4.3.0",
     "commander": "^9.5.0"
   },
   "devDependencies": {
@@ -52,5 +52,6 @@
     "nodemon": "^2.0.20",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.5"
-  }
+  },
+  "gitHead": "2e0c430613d1222cc6f88a7d29d5e012d3b95230"
 }

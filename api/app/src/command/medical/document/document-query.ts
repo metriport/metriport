@@ -2,6 +2,8 @@ import { Transaction } from "sequelize";
 import {
   DocumentQueryProgress,
   DocumentQueryStatus,
+  Progress,
+  ConvertResult,
 } from "../../../domain/medical/document-reference";
 import { processAsyncError } from "../../../errors";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
@@ -25,21 +27,24 @@ export async function queryDocumentsAcrossHIEs({
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (patient.data.documentQueryProgress?.status === "processing") {
+  if (
+    patient.data.documentQueryProgress?.download?.status === "processing" ||
+    patient.data.documentQueryProgress?.convert?.status === "processing"
+  ) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
   }
 
   const externalData = patient.data.externalData?.COMMONWELL;
-  if (!externalData) return createQueryResponse("completed");
+  if (!externalData) return createQueryResponse("failed");
 
   const cwData = externalData as PatientDataCommonwell;
-  if (!cwData.patientId) return createQueryResponse("completed");
+  if (!cwData.patientId) return createQueryResponse("failed");
 
   await updateDocQuery({
     id: patient.id,
     cxId: patient.cxId,
-    docQueryProgress: { status: "processing" },
+    downloadProgress: { status: "processing" },
     restart: true,
   });
 
@@ -52,7 +57,7 @@ export async function queryDocumentsAcrossHIEs({
       updateDocQuery({
         id: patient.id,
         cxId: patient.cxId,
-        docQueryProgress: { status: "completed" },
+        downloadProgress: { status: "failed" },
       });
       processAsyncError(`doc.list.getDocumentsFromCW`)(err);
     });
@@ -64,12 +69,11 @@ export const createQueryResponse = (
   status: DocumentQueryStatus,
   patient?: Patient
 ): DocumentQueryProgress => {
-  if (status === "completed") {
-    return { status };
-  }
-
   return {
-    status,
+    download: {
+      status,
+      ...patient?.data.documentQueryProgress?.download,
+    },
     ...patient?.data.documentQueryProgress,
   };
 };
@@ -77,12 +81,16 @@ export const createQueryResponse = (
 export const updateDocQuery = async ({
   id,
   cxId,
-  docQueryProgress,
+  downloadProgress,
+  convertProgress,
+  convertResult,
   restart,
 }: {
   id: string;
   cxId: string;
-  docQueryProgress: DocumentQueryProgress;
+  downloadProgress?: Progress;
+  convertProgress?: Progress;
+  convertResult?: ConvertResult;
   restart?: boolean;
 }) => {
   const sequelize = PatientModel.sequelize;
@@ -101,15 +109,59 @@ export const updateDocQuery = async ({
     });
 
     if (existing) {
+      const convertSuccess = existing.data.documentQueryProgress?.convert?.successful
+        ? existing.data.documentQueryProgress?.convert?.successful + 1
+        : 1;
+
+      const convertError = existing.data.documentQueryProgress?.convert?.errors
+        ? existing.data.documentQueryProgress?.convert?.errors + 1
+        : 1;
+
+      const docQueryProgressStatus =
+        convertSuccess + convertError === existing.data.documentQueryProgress?.convert?.total
+          ? "completed"
+          : "processing";
+
       return await existing.update(
         {
           data: {
             ...existing.data,
             documentQueryProgress: restart
-              ? { status: docQueryProgress.status }
+              ? { download: downloadProgress }
               : {
                   ...existing.data.documentQueryProgress,
-                  ...docQueryProgress,
+                  ...(downloadProgress
+                    ? {
+                        download: {
+                          ...existing.data.documentQueryProgress?.download,
+                          ...downloadProgress,
+                        },
+                      }
+                    : undefined),
+                  ...(convertProgress
+                    ? {
+                        convert: {
+                          ...existing.data.documentQueryProgress?.convert,
+                          ...convertProgress,
+                        },
+                      }
+                    : undefined),
+                  ...(convertResult
+                    ? {
+                        convert:
+                          convertResult === "success"
+                            ? {
+                                ...existing.data.documentQueryProgress?.convert,
+                                status: docQueryProgressStatus,
+                                successful: convertSuccess,
+                              }
+                            : {
+                                ...existing.data.documentQueryProgress?.convert,
+                                status: docQueryProgressStatus,
+                                errors: convertError,
+                              },
+                      }
+                    : undefined),
                 },
           },
         },

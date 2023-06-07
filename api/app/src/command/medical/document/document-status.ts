@@ -9,5 +9,8 @@ export const areDocumentsProcessing = async ({
 }): Promise<boolean> => {
   const patient = await getPatientOrFail({ id, cxId });
 
-  return patient.data.documentQueryProgress?.status === "processing";
+  return (
+    patient.data.documentQueryProgress?.download?.status === "processing" ||
+    patient.data.documentQueryProgress?.convert?.status === "processing"
+  );
 };

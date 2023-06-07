@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { z } from "zod";
 import httpStatus from "http-status";
 import { accountInit } from "../command/account-init";
 import {
@@ -17,8 +16,9 @@ import { stringToBoolean } from "../shared/types";
 import { stringListSchema } from "./schemas/shared";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
-import { getPatientOrFail } from "../command/medical/patient/get-patient";
 import { updateDocQuery } from "../command/medical/document/document-query";
+import { convertResultSchema } from "../domain/medical/document-reference";
+import { Util } from "../shared/util";
 
 const router = Router();
 
@@ -179,38 +179,22 @@ router.post(
   })
 );
 
-const statusSchema = z.enum(["success", "failed"]);
-
 router.post(
   "/doc-conversion-status",
   asyncHandler(async (req: Request, res: Response) => {
+    const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getUUIDFrom("query", req, "patientId").orFail();
     const status = getFrom("query").orFail("status", req);
-    const convertStatus = statusSchema.parse(status);
+    const docId = getFrom("query").orFail("jobId", req);
+    const convertResult = convertResultSchema.parse(status);
+    const { log } = Util.out(`Doc conversion status`);
 
-    const patient = await getPatientOrFail({ id: patientId, cxId });
-
-    const convertSuccess = patient.data.documentQueryProgress?.convertSuccess
-      ? patient.data.documentQueryProgress.convertSuccess + 1
-      : 1;
-
-    const convertError = patient.data.documentQueryProgress?.convertError
-      ? patient.data.documentQueryProgress.convertError + 1
-      : 1;
-
-    const docQueryProgressStatus =
-      convertSuccess + convertError === patient.data.documentQueryProgress?.convertTotal
-        ? "completed"
-        : "processing";
+    log(`Converted document ${docId} for patient ${patientId} with status ${status}`);
 
     await updateDocQuery({
-      id: patient.id,
-      cxId: patient.cxId,
-      docQueryProgress: {
-        status: docQueryProgressStatus,
-        ...(convertStatus === "success" ? { convertSuccess } : { convertError }),
-      },
+      id: patientId,
+      cxId: cxId,
+      convertResult,
     });
 
     return res.sendStatus(httpStatus.OK);

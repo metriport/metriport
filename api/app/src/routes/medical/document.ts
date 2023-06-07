@@ -2,10 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { OK } from "http-status";
 import { downloadDocument } from "../../command/medical/document/document-download";
-import {
-  createQueryResponse,
-  queryDocumentsAcrossHIEs,
-} from "../../command/medical/document/document-query";
+import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import { getDocuments } from "../../external/fhir/document/get-documents";
@@ -59,13 +56,8 @@ router.get(
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
 
-    const queryResp = createQueryResponse(
-      patient.data.documentQueryProgress?.status ?? "completed",
-      patient
-    );
-
     return res.status(OK).json({
-      ...queryResp,
+      ...patient.data.documentQueryProgress,
       documents: documentsDTO,
     });
   })

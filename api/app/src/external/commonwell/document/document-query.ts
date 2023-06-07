@@ -72,7 +72,7 @@ export async function queryAndProcessDocuments({
       const cwDocuments = await internalGetDocuments({ patient, organization, facility });
       log(`Found ${cwDocuments.length} documents`);
 
-      const { FHIRDocRefs, processingToFhir } = await downloadDocsAndUpsertFHIR({
+      const FHIRDocRefs = await downloadDocsAndUpsertFHIR({
         patient,
         organization,
         facilityId,
@@ -85,18 +85,21 @@ export async function queryAndProcessDocuments({
       // send webhook to cx async when docs are done processing
       processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
 
-      if (processingToFhir) {
-        await updateDocQuery({
-          id: patient.id,
-          cxId: patient.cxId,
-          docQueryProgress: { status: "completed" },
-        });
-      }
+      await updateDocQuery({
+        id: patient.id,
+        cxId: patient.cxId,
+        downloadProgress: { status: "completed" },
+      });
 
       return FHIRDocRefs.length;
     }
   } catch (err) {
     console.log(`Error: `, err);
+    await updateDocQuery({
+      id: patient.id,
+      cxId: patient.cxId,
+      downloadProgress: { status: "failed" },
+    });
     capture.error(err, {
       extra: {
         context: `cw.queryDocuments`,
@@ -285,7 +288,7 @@ export async function downloadDocsAndUpsertFHIR({
   facilityId: string;
   documents: Document[];
   override?: boolean;
-}): Promise<{ FHIRDocRefs: DocumentReference[]; processingToFhir: boolean }> {
+}): Promise<DocumentReference[]> {
   const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
   override && log(`override=true, NOT checking whether docs exist`);
   const s3BucketName = Config.getMedicalDocumentsBucketName();
@@ -458,13 +461,20 @@ export async function downloadDocsAndUpsertFHIR({
             await updateDocQuery({
               id: patient.id,
               cxId: patient.cxId,
-              docQueryProgress: {
+              downloadProgress: {
                 status: "processing",
                 total: documents.length,
-                convertTotal: fhirConvertCount,
-                downloadSuccess: completedCount,
-                downloadError: errorCount,
+                successful: completedCount,
+                errors: errorCount,
               },
+              ...(fhirConvertCount > 0
+                ? {
+                    convertProgress: {
+                      status: "processing",
+                      total: fhirConvertCount,
+                    },
+                  }
+                : undefined),
             });
           } catch (err) {
             capture.error(err, {
@@ -484,7 +494,7 @@ export async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  return { FHIRDocRefs: docsNewLocation, processingToFhir: fhirConvertCount > 0 };
+  return docsNewLocation;
 }
 
 async function sleepBetweenChunks(): Promise<void> {
