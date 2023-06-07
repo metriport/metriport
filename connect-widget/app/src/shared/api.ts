@@ -1,7 +1,7 @@
 import axios from "axios";
 import { URLSearchParams } from "url";
 import Constants from "./constants";
-import { NoTokenError, DemoTokenError } from "./token-errors";
+import { NoTokenError, DemoTokenError, InvalidTokenError } from "./token-errors";
 import { getEnvVarOrFail, isLocalEnv, isSandbox, isDemoToken } from "./util";
 
 function buildBaseURL(searchParams: URLSearchParams): string {
@@ -31,17 +31,31 @@ export function getApiToken(searchParams: URLSearchParams): string {
   return apiToken;
 }
 
-export function handleToken(token: string | null): void {
-  if (!token) {
-    isDemo = true;
-  } else if (isDemoToken(token)) {
+export function handleToken(token: string): void {
+  if (isDemoToken(token)) {
     // tell the user widget in demo mode && disable connect buttons
-    isDemo = true;
     throw new DemoTokenError();
-  } else {
-    // invalid vs valid token logic will go here
-    isDemo = false;
   }
+  if (!isTokenValid()) {
+    // tell the user token is invalid and && disable connect buttons
+    throw new InvalidTokenError();
+  }
+
+  // token is present and valid. Set isDemo to false
+  isDemo = false;
+}
+
+function isTokenValid() {
+  try {
+    getApi().get("/connect/redirect", {
+      params: { provider: "fitbit" },
+    });
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    return false;
+  }
+
+  return true;
 }
 
 // get the session token in query params, and set in the API headers
