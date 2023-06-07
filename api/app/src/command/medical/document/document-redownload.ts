@@ -140,8 +140,7 @@ async function processDocsOfPatient({
   try {
     log(`Processing ${docs.length} documents for patient ${patientId}...`);
     await updateDocQuery({
-      id: patientId,
-      cxId,
+      patient: { id: patientId, cxId },
       downloadProgress: { status: "processing" },
       restart: true,
     });
@@ -157,7 +156,10 @@ async function processDocsOfPatient({
     log(`Error processing docs: `, error);
     capture.error(error, { extra: { context: `processDocsOfPatient`, error } });
   } finally {
-    await updateDocQuery({ id: patientId, cxId, downloadProgress: { status: "completed" } });
+    await updateDocQuery({
+      patient: { id: patientId, cxId },
+      downloadProgress: { status: "completed" },
+    });
   }
   log(`Done for patient ${patientId}`);
 }

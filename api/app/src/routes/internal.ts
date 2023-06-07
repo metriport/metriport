@@ -192,8 +192,7 @@ router.post(
     log(`Converted document ${docId} for patient ${patientId} with status ${status}`);
 
     await updateDocQuery({
-      id: patientId,
-      cxId: cxId,
+      patient: { id: patientId, cxId },
       convertResult,
     });
 

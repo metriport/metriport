@@ -42,8 +42,7 @@ export async function queryDocumentsAcrossHIEs({
   if (!cwData.patientId) return createQueryResponse("failed");
 
   await updateDocQuery({
-    id: patient.id,
-    cxId: patient.cxId,
+    patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "processing" },
     restart: true,
   });
@@ -55,8 +54,7 @@ export async function queryDocumentsAcrossHIEs({
     })
     .catch(err => {
       updateDocQuery({
-        id: patient.id,
-        cxId: patient.cxId,
+        patient: { id: patient.id, cxId: patient.cxId },
         downloadProgress: { status: "failed" },
       });
       processAsyncError(`doc.list.getDocumentsFromCW`)(err);
@@ -79,15 +77,13 @@ export const createQueryResponse = (
 };
 
 export const updateDocQuery = async ({
-  id,
-  cxId,
+  patient,
   downloadProgress,
   convertProgress,
   convertResult,
   restart,
 }: {
-  id: string;
-  cxId: string;
+  patient: Pick<Patient, "id" | "cxId">;
   downloadProgress?: Progress;
   convertProgress?: Progress;
   convertResult?: ConvertResult;
@@ -101,8 +97,8 @@ export const updateDocQuery = async ({
   try {
     const existing = await PatientModel.findOne({
       where: {
-        id,
-        cxId,
+        id: patient.id,
+        cxId: patient.cxId,
       },
       lock: true,
       transaction,
@@ -118,7 +114,7 @@ export const updateDocQuery = async ({
         : 1;
 
       const docQueryProgressStatus =
-        convertSuccess + convertError === existing.data.documentQueryProgress?.convert?.total
+        convertSuccess + convertError >= (existing.data.documentQueryProgress?.convert?.total ?? 0)
           ? "completed"
           : "processing";
 

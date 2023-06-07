@@ -86,8 +86,7 @@ export async function queryAndProcessDocuments({
       processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
 
       await updateDocQuery({
-        id: patient.id,
-        cxId: patient.cxId,
+        patient: { id: patient.id, cxId: patient.cxId },
         downloadProgress: { status: "completed" },
       });
 
@@ -96,8 +95,7 @@ export async function queryAndProcessDocuments({
   } catch (err) {
     console.log(`Error: `, err);
     await updateDocQuery({
-      id: patient.id,
-      cxId: patient.cxId,
+      patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
     });
     capture.error(err, {
@@ -459,8 +457,7 @@ export async function downloadDocsAndUpsertFHIR({
           // TODO: eventually we will have to update this to support multiple HIEs
           try {
             await updateDocQuery({
-              id: patient.id,
-              cxId: patient.cxId,
+              patient: { id: patient.id, cxId: patient.cxId },
               downloadProgress: {
                 status: "processing",
                 total: documents.length,
