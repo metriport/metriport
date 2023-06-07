@@ -39,6 +39,7 @@ const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
 const OSSApi = axios.create();
+const docProgressURL = `${apiURL}/doc-conversion-status`;
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -146,12 +147,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         await reportMemoryUsage();
         await reportMetrics(metrics);
 
-        await OSSApi.post(apiURL, {
+        await OSSApi.post(docProgressURL, {
           cxId,
           patientId,
           status: "success",
         });
-        //
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount;
@@ -174,7 +174,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           const patientId = message.messageAttributes?.patientId?.stringValue;
 
           if (cxId && patientId) {
-            await OSSApi.post(OSSApiUrl, {
+            await OSSApi.post(docProgressURL, {
               cxId,
               patientId,
               status: "failed",
