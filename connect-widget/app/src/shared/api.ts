@@ -46,9 +46,9 @@ export function handleToken(token: string): void {
   isDemo = false;
 }
 
-function isTokenValid() {
+async function isTokenValid() {
   try {
-    getApi().get("/connect/redirect", {
+    await getApi().get("/connect/redirect", {
       params: { provider: "fitbit" }, // all we're trying to do here is confirm the token is valid. Doesn't matter which provider to use.
     });
   } catch (err) {
