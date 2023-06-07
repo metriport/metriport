@@ -3,6 +3,7 @@ import Router from "express-promise-router";
 import { processAppleData } from "../../command/webhook/apple";
 import { appleSchema, mapData } from "../../mappings/apple";
 import { asyncHandler, getCxIdOrFail } from "../util";
+import { capture } from "../../shared/notifications";
 
 const routes = Router();
 /** ---------------------------------------------------------------------------
@@ -17,9 +18,16 @@ routes.post(
     const metriportUserId = req.body.metriportUserId;
     const cxId = getCxIdOrFail(req);
     const payload = JSON.parse(req.body.data);
-    const mappedData = mapData(appleSchema.parse(payload));
 
-    processAppleData(mappedData, metriportUserId, cxId);
+    if (payload.error) {
+      capture.error(new Error(payload.error), {
+        extra: { metriportUserId, context: `webhook.appleError` },
+      });
+    } else {
+      const mappedData = mapData(appleSchema.parse(payload));
+
+      processAppleData(mappedData, metriportUserId, cxId);
+    }
 
     return res.sendStatus(200);
   })
