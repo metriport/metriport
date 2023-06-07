@@ -48,8 +48,12 @@ describe("Integration Document routes", () => {
         getDocumentsMock.mockResolvedValueOnce([]);
 
         const patient = makePatient({ id: randUuid() });
-        patient.data.documentQueryStatus = expectedStatus;
-        patient.data.documentQueryProgress = expectedProgress;
+        patient.data.documentQueryProgress = {
+          status: expectedStatus,
+          total: expectedProgress.total,
+          downloadSuccess: expectedProgress.completed,
+        };
+        // patient.data.documentQueryProgress = expectedProgress;
         getPatientOrFailMock.mockResolvedValueOnce(patient);
 
         const res = await api.get(path, { params: { patientId: patient.id } });
