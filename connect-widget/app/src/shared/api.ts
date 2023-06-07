@@ -50,8 +50,7 @@ function isTokenValid() {
     getApi().get("/connect/redirect", {
       params: { provider: "fitbit" },
     });
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err) {
     return false;
   }
 
