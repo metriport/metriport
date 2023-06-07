@@ -75,7 +75,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
       return;
     }
     if (records.length > 1) {
-      Sentry.captureMessage("Got more than one message from SQS", {
+      captureMessage("Got more than one message from SQS", {
         extra: {
           event,
           context: lambdaName,
@@ -92,9 +92,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         if (!message.body) throw new Error(`Missing message body`);
         const attrib = message.messageAttributes;
         const cxId = attrib.cxId?.stringValue;
+        const jobId = attrib.jobId?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
         const jobStartedAt = attrib.jobStartedAt?.stringValue;
-        const log = _log(`${i} - cxId ${cxId}`);
+        const log = _log(`${i}, cxId ${cxId}, jobId ${jobId}`);
 
         const bodyAsJson = JSON.parse(message.body);
         const s3BucketName = bodyAsJson.s3BucketName;
@@ -124,7 +125,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           baseUrl: fhirServerUrl,
           fhirUrlPath: `fhir/${cxId}`,
         });
-        await fhirApi.executeBatch(payload);
+        const response = await fhirApi.executeBatch(payload);
         metrics.upsert = {
           duration: Date.now() - upsertStart,
           timestamp: new Date().toISOString(),
@@ -136,6 +137,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           };
         }
 
+        processReponse(response, event, log);
+
         await reportMemoryUsage();
         await reportMetrics(metrics);
         //
@@ -144,13 +147,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         const count = message.attributes?.ApproximateReceiveCount;
         if (isTimeout(err) && count <= maxTimeoutRetries) {
           console.log(`Timed out, reenqueue (${count} of ${maxTimeoutRetries}): `, message);
-          Sentry.captureMessage("Sending to FHIR server timed out", {
+          captureMessage("Sending to FHIR server timed out", {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await reEnqueue(message);
         } else {
-          console.log(`Error processing message: `, message, JSON.stringify(err));
-          Sentry.captureException(err, {
+          console.log(
+            `Error processing message: ${JSON.stringify(message)}; ${JSON.stringify(err)}`
+          );
+          captureException(err, {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await sendToDLQ(message);
@@ -159,8 +164,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     }
     console.log(`Done`);
   } catch (err) {
-    console.log(`Error processing event: `, event, JSON.stringify(err));
-    Sentry.captureException(err, {
+    console.log(`Error processing event: ${JSON.stringify(event)}; ${JSON.stringify(err)}`);
+    captureException(err, {
       extra: { event, context: lambdaName, additional: "outer catch" },
     });
     throw err;
@@ -185,6 +190,24 @@ async function downloadFileContents(s3BucketName, s3FileName) {
   return streamToString(stream);
 }
 
+function processReponse(response, event, log) {
+  const entries = response.entry ? response.entry : [];
+  const errors = entries.filter(
+    // returns non-2xx responses AND null/undefined
+    e => !e.response?.status?.startsWith("2")
+  );
+  const countError = errors.length;
+  const countSuccess = entries.length - countError;
+  log(`Got ${countError} errors and ${countSuccess} successes from FHIR Server`);
+  if (errors.length > 0) {
+    errors.forEach(e => log(`Error from FHIR Server: ${JSON.stringify(e)}`));
+    captureMessage(`Error upserting Bundle on FHIR server`, {
+      extra: { context: lambdaName, additional: "processReponse", event, countSuccess, countError },
+      level: "error",
+    });
+  }
+}
+
 async function sendToDLQ(message) {
   await dequeue(message);
   const sendParams = {
@@ -197,7 +220,7 @@ async function sendToDLQ(message) {
     await sqs.sendMessage(sendParams).promise();
   } catch (err) {
     console.log(`Failed to send message to queue: `, message, err);
-    Sentry.captureException(err, {
+    captureException(err, {
       extra: { message, sendParams, context: "sendToDLQ" },
     });
   }
@@ -215,7 +238,7 @@ async function reEnqueue(message) {
     await sqs.sendMessage(sendParams).promise();
   } catch (err) {
     console.log(`Failed to re-enqueue message: `, message, err);
-    Sentry.captureException(err, {
+    captureException(err, {
       extra: { message, sendParams, context: "reEnqueue" },
     });
   }
@@ -230,7 +253,7 @@ async function dequeue(message) {
     await sqs.deleteMessage(deleteParams).promise();
   } catch (err) {
     console.log(`Failed to remove message from queue: `, message, err);
-    Sentry.captureException(err, {
+    captureException(err, {
       extra: { message, deleteParams, context: "dequeue" },
     });
   }
@@ -258,7 +281,7 @@ async function reportMetrics(metrics) {
       .promise();
   } catch (err) {
     console.log(`Failed to report metrics, `, metrics, err);
-    Sentry.captureException(err, { extra: { metrics } });
+    captureException(err, { extra: { metrics } });
   }
 }
 
@@ -287,7 +310,7 @@ async function reportMemoryUsage() {
       .promise();
   } catch (err) {
     console.log(`Failed to report memory usage, `, mem, err);
-    Sentry.captureException(err, { extra: { mem } });
+    captureException(err, { extra: { mem } });
   }
 }
 
@@ -333,4 +356,30 @@ function _log(prefix) {
     optionalParams
       ? console.log(`[${prefix}] ${msg}`, ...optionalParams)
       : console.log(`[${prefix}] ${msg}`);
+}
+
+// Keep all capture* functions regardless of usage, so its easier to keep them in sync/the same
+// so later we can move them to a lambda layer
+function captureException(error, captureContext) {
+  const extra = captureContext ? stringifyExtra(captureContext) : {};
+  return Sentry.captureException(error, {
+    ...captureContext,
+    extra,
+  });
+}
+function captureMessage(message, captureContext) {
+  const extra = captureContext ? stringifyExtra(captureContext) : {};
+  return Sentry.captureMessage(message, {
+    ...captureContext,
+    extra,
+  });
+}
+function stringifyExtra(captureContext) {
+  return Object.entries(captureContext.extra ?? {}).reduce(
+    (acc, [key, value]) => ({
+      ...acc,
+      [key]: JSON.stringify(value, null, 2),
+    }),
+    {}
+  );
 }

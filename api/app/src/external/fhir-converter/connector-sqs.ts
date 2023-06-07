@@ -11,6 +11,7 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
   async requestConvert({
     cxId,
     patientId,
+    documentId,
     sourceType,
     payload,
     template,
@@ -36,6 +37,7 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
         unusedSegments,
         invalidAccess,
         patientId,
+        jobId: documentId,
         startedAt: dayjs.utc().toISOString(),
       },
     });

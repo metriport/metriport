@@ -1,5 +1,7 @@
 import * as Sentry from "@sentry/node";
+import { Extras, ScopeContext } from "@sentry/types";
 import axios from "axios";
+import stringify from "json-stringify-safe";
 import MetriportError from "../errors/metriport-error";
 import { Config } from "./config";
 
@@ -32,7 +34,7 @@ const sendToSlack = async (
     return;
   }
 
-  const payload = JSON.stringify({
+  const payload = stringify({
     text: subject + (message ? `:${"\n```\n"}${message}${"\n```"}` : ""),
     ...(emoji ? { icon_emoji: emoji } : undefined),
   });
@@ -47,16 +49,6 @@ export const sendNotification = async (notif: SlackMessage | string): Promise<vo
 
 export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
   sendToSlack(notif, slackAlertUrl);
-
-export type CaptureContext = {
-  user: { id?: string; email?: string };
-  extra: Record<string, unknown>;
-  tags: {
-    [key: string]: string;
-  };
-};
-
-export type SeverityLevel = "fatal" | "error" | "warning" | "log" | "info" | "debug";
 
 export type UserData = Pick<Sentry.User, "id" | "email">;
 
@@ -73,9 +65,11 @@ export const capture = {
    * @returns — The generated eventId.
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  error: (error: any, captureContext?: Partial<CaptureContext>): string => {
+  error: (error: any, captureContext?: Partial<ScopeContext>): string => {
+    const extra = captureContext ? stringifyExtra(captureContext) : {};
     return Sentry.captureException(error, {
       ...captureContext,
+      extra,
       ...(error instanceof MetriportError ? error.additionalInfo : {}),
     });
   },
@@ -87,7 +81,21 @@ export const capture = {
    * @param captureContext — Additional scope data to apply to exception event.
    * @returns — The generated eventId.
    */
-  message: (message: string, captureContext?: Partial<CaptureContext> | SeverityLevel): string => {
-    return Sentry.captureMessage(message, captureContext);
+  message: (message: string, captureContext?: Partial<ScopeContext>): string => {
+    const extra = captureContext ? stringifyExtra(captureContext) : {};
+    return Sentry.captureMessage(message, {
+      ...captureContext,
+      extra,
+    });
   },
 };
+
+export function stringifyExtra(captureContext: Partial<ScopeContext>): Extras {
+  return Object.entries(captureContext.extra ?? {}).reduce(
+    (acc, [key, value]) => ({
+      ...acc,
+      [key]: stringify(value, null, 2),
+    }),
+    {}
+  );
+}
