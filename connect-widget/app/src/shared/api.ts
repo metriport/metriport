@@ -1,7 +1,7 @@
 import axios from "axios";
 import { URLSearchParams } from "url";
 import Constants from "./constants";
-import { NoTokenError, DemoTokenError } from "./token-errors";
+import { NoTokenError, DemoTokenError, InvalidTokenError } from "./token-errors";
 import { getEnvVarOrFail, isLocalEnv, isSandbox, isDemoToken } from "./util";
 
 function buildBaseURL(searchParams: URLSearchParams): string {
@@ -26,22 +26,36 @@ export const getApi = () => {
 export function getApiToken(searchParams: URLSearchParams): string {
   const apiToken = searchParams.get(Constants.TOKEN_PARAM);
   if (!apiToken) {
+    // tell the user the token is missing && disable connect buttons
     throw new NoTokenError();
   }
   return apiToken;
 }
 
-export function handleToken(token: string | null): void {
-  if (!token) {
-    isDemo = true;
-  } else if (isDemoToken(token)) {
-    // tell the user widget in demo mode && disable connect buttons
-    isDemo = true;
+export function handleToken(token: string): void {
+  if (isDemoToken(token)) {
+    // tell the user the widget is in demo mode && disable connect buttons
     throw new DemoTokenError();
-  } else {
-    // invalid vs valid token logic will go here
-    isDemo = false;
   }
+  if (!isTokenValid()) {
+    // tell the user the token is invalid and && disable connect buttons
+    throw new InvalidTokenError();
+  }
+
+  // token is present and valid. Set isDemo to false
+  isDemo = false;
+}
+
+function isTokenValid() {
+  try {
+    getApi().get("/connect/redirect", {
+      params: { provider: "fitbit" }, // all we're trying to do here is confirm the token is valid. Doesn't matter which provider to use.
+    });
+  } catch (err) {
+    return false;
+  }
+
+  return true;
 }
 
 // get the session token in query params, and set in the API headers
