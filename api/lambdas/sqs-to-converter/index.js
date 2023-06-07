@@ -17,6 +17,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
+const apiURL = getEnvOrFail("API_URL");
 const sentryDsn = getEnv("SENTRY_DSN");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
@@ -46,6 +47,7 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
+const OSSApi = axios.create();
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -151,7 +153,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         addMissingRequests(conversionResult);
 
         await reportMemoryUsage();
-        await sendConversionResult(cxId, s3FileName, conversionResult, jobStartedAt, jobId, log);
+        await sendConversionResult(
+          cxId,
+          patientId,
+          s3FileName,
+          conversionResult,
+          jobStartedAt,
+          jobId,
+          log
+        );
 
         await reportMemoryUsage();
         await reportMetrics(metrics);
@@ -177,6 +187,17 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await sendToDLQ(message);
+
+          const cxId = message.messageAttributes?.cxId?.stringValue;
+          const patientId = message.messageAttributes?.patientId?.stringValue;
+
+          if (cxId && patientId) {
+            await OSSApi.post(apiURL, {
+              cxId,
+              patientId,
+              status: "failed",
+            });
+          }
         }
       }
     }
@@ -235,7 +256,15 @@ async function downloadFileContents(s3BucketName, s3FileName) {
   return streamToString(stream);
 }
 
-async function sendConversionResult(cxId, sourceFileName, conversionPayload, jobStartedAt, jobId, log) {
+async function sendConversionResult(
+  cxId,
+  patientId,
+  sourceFileName,
+  conversionPayload,
+  jobStartedAt,
+  jobId,
+  log
+) {
   const fileName = `${sourceFileName}.json`;
   log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
   await s3Client
@@ -257,6 +286,7 @@ async function sendConversionResult(cxId, sourceFileName, conversionPayload, job
     QueueUrl: conversionResultQueueURL,
     MessageAttributes: {
       ...singleAttributeToSend("cxId", cxId),
+      ...singleAttributeToSend("patientId", patientId),
       ...(jobStartedAt ? singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
       ...(jobId ? singleAttributeToSend("jobId", jobId) : {}),
     },

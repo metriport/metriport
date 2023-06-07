@@ -9,7 +9,6 @@ import {
 import { chunk } from "lodash";
 import { PassThrough } from "stream";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import { processPatientDocumentRequest } from "../../../command/webhook/medical";
 import ConversionError from "../../../errors/conversion-error";
@@ -73,7 +72,7 @@ export async function queryAndProcessDocuments({
       const cwDocuments = await internalGetDocuments({ patient, organization, facility });
       log(`Found ${cwDocuments.length} documents`);
 
-      const FHIRDocRefs = await downloadDocsAndUpsertFHIR({
+      const { FHIRDocRefs, processingToFhir } = await downloadDocsAndUpsertFHIR({
         patient,
         organization,
         facilityId,
@@ -86,6 +85,14 @@ export async function queryAndProcessDocuments({
       // send webhook to cx async when docs are done processing
       processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
 
+      if (processingToFhir) {
+        await updateDocQuery({
+          id: patient.id,
+          cxId: patient.cxId,
+          docQueryProgress: { status: "completed" },
+        });
+      }
+
       return FHIRDocRefs.length;
     }
   } catch (err) {
@@ -97,14 +104,6 @@ export async function queryAndProcessDocuments({
       },
     });
     throw err;
-  } finally {
-    try {
-      await updateDocQuery({ patient, status: "completed" });
-    } catch (err) {
-      capture.error(err, {
-        extra: { context: `cw.getDocuments.updateDocQuery` },
-      });
-    }
   }
 }
 
@@ -286,7 +285,7 @@ export async function downloadDocsAndUpsertFHIR({
   facilityId: string;
   documents: Document[];
   override?: boolean;
-}): Promise<DocumentReference[]> {
+}): Promise<{ FHIRDocRefs: DocumentReference[]; processingToFhir: boolean }> {
   const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
   override && log(`override=true, NOT checking whether docs exist`);
   const s3BucketName = Config.getMedicalDocumentsBucketName();
@@ -308,6 +307,8 @@ export async function downloadDocsAndUpsertFHIR({
 
   const docsNewLocation: DocumentReference[] = [];
   let completedCount = 0;
+  let errorCount = 0;
+  let fhirConvertCount = 0;
 
   // split the list in chunks
   const chunks = chunk(documents, DOC_DOWNLOAD_CHUNK_SIZE);
@@ -324,6 +325,7 @@ export async function downloadDocsAndUpsertFHIR({
 
           const docLocation = doc.content.location;
           if (!docLocation) {
+            errorCount++;
             log(`Doc without location, skipping - docId ${fhirDocId}`);
             return;
           }
@@ -414,6 +416,8 @@ export async function downloadDocsAndUpsertFHIR({
           };
 
           if (file.isNew) {
+            fhirConvertCount++;
+
             await convertCDAToFHIR({
               patient,
               document: { id: fhirDocId, mimeType: doc.content?.mimeType },
@@ -431,8 +435,12 @@ export async function downloadDocsAndUpsertFHIR({
             throw error;
           }
 
+          completedCount++;
+
           return FHIRDocRef;
         } catch (error) {
+          errorCount++;
+
           log(`Error processing doc: ${error}`, doc);
           if (!errorReported) {
             capture.error(error, {
@@ -447,16 +455,15 @@ export async function downloadDocsAndUpsertFHIR({
         } finally {
           // TODO: eventually we will have to update this to support multiple HIEs
           try {
-            const newPatient = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
-
-            completedCount = completedCount + 1;
-
             await updateDocQuery({
-              patient: newPatient,
-              status: "processing",
-              progress: {
-                completed: completedCount,
+              id: patient.id,
+              cxId: patient.cxId,
+              docQueryProgress: {
+                status: "processing",
                 total: documents.length,
+                convertTotal: fhirConvertCount,
+                downloadSuccess: completedCount,
+                downloadError: errorCount,
               },
             });
           } catch (err) {
@@ -477,7 +484,7 @@ export async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  return docsNewLocation;
+  return { FHIRDocRefs: docsNewLocation, processingToFhir: fhirConvertCount > 0 };
 }
 
 async function sleepBetweenChunks(): Promise<void> {

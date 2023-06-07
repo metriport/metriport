@@ -59,7 +59,10 @@ router.get(
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
 
-    const queryResp = createQueryResponse(patient.data.documentQueryStatus ?? "completed", patient);
+    const queryResp = createQueryResponse(
+      patient.data.documentQueryProgress?.status ?? "completed",
+      patient
+    );
 
     return res.status(OK).json({
       ...queryResp,
@@ -86,14 +89,14 @@ router.post(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
 
-    const { queryStatus, queryProgress } = await queryDocumentsAcrossHIEs({
+    const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
       override,
     });
 
-    return res.status(OK).json({ queryStatus, queryProgress });
+    return res.status(OK).json(docQueryProgress);
   })
 );
 

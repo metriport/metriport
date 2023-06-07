@@ -10,16 +10,6 @@ import { Patient, PatientModel } from "../../../models/medical/patient";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 
-export type DocumentQueryResp =
-  | {
-      queryStatus: "completed";
-      queryProgress?: never;
-    }
-  | {
-      queryStatus: "processing";
-      queryProgress: DocumentQueryProgress | undefined;
-    };
-
 // TODO: eventually we will have to update this to support multiple HIEs
 export async function queryDocumentsAcrossHIEs({
   cxId,
@@ -31,11 +21,11 @@ export async function queryDocumentsAcrossHIEs({
   patientId: string;
   facilityId: string;
   override?: boolean;
-}): Promise<DocumentQueryResp> {
+}): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (patient.data.documentQueryStatus === "processing") {
+  if (patient.data.documentQueryProgress?.status === "processing") {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
   }
@@ -46,7 +36,12 @@ export async function queryDocumentsAcrossHIEs({
   const cwData = externalData as PatientDataCommonwell;
   if (!cwData.patientId) return createQueryResponse("completed");
 
-  await updateDocQuery({ patient, status: "processing" });
+  await updateDocQuery({
+    id: patient.id,
+    cxId: patient.cxId,
+    docQueryProgress: { status: "processing" },
+    restart: true,
+  });
 
   // intentionally asynchronous, not waiting for the result
   getDocumentsFromCW({ patient, facilityId, override })
@@ -54,7 +49,11 @@ export async function queryDocumentsAcrossHIEs({
       log(`Finished processing ${amountProcessed} documents.`);
     })
     .catch(err => {
-      updateDocQuery({ patient, status: "completed" });
+      updateDocQuery({
+        id: patient.id,
+        cxId: patient.cxId,
+        docQueryProgress: { status: "completed" },
+      });
       processAsyncError(`doc.list.getDocumentsFromCW`)(err);
     });
 
@@ -64,30 +63,27 @@ export async function queryDocumentsAcrossHIEs({
 export const createQueryResponse = (
   status: DocumentQueryStatus,
   patient?: Patient
-): DocumentQueryResp => {
+): DocumentQueryProgress => {
   if (status === "completed") {
-    return {
-      queryStatus: status,
-    };
+    return { status };
   }
 
   return {
-    queryStatus: status,
-    queryProgress: patient?.data.documentQueryProgress,
+    status,
+    ...patient?.data.documentQueryProgress,
   };
 };
 
 export const updateDocQuery = async ({
-  patient,
-  status,
-  progress,
+  id,
+  cxId,
+  docQueryProgress,
+  restart,
 }: {
-  patient: Pick<Patient, "id" | "cxId">;
-  status: DocumentQueryStatus;
-  progress?: {
-    completed: number;
-    total: number;
-  };
+  id: string;
+  cxId: string;
+  docQueryProgress: DocumentQueryProgress;
+  restart?: boolean;
 }) => {
   const sequelize = PatientModel.sequelize;
   if (!sequelize) throw new Error("Missing sequelize");
@@ -97,8 +93,8 @@ export const updateDocQuery = async ({
   try {
     const existing = await PatientModel.findOne({
       where: {
-        id: patient.id,
-        cxId: patient.cxId,
+        id,
+        cxId,
       },
       lock: true,
       transaction,
@@ -109,8 +105,12 @@ export const updateDocQuery = async ({
         {
           data: {
             ...existing.data,
-            documentQueryStatus: status,
-            documentQueryProgress: progress,
+            documentQueryProgress: restart
+              ? { status: docQueryProgress.status }
+              : {
+                  ...existing.data.documentQueryProgress,
+                  ...docQueryProgress,
+                },
           },
         },
         { transaction }

@@ -18,6 +18,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
+const apiURL = getEnvOrFail("API_URL");
 const sentryDsn = getEnv("SENTRY_DSN");
 const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
 const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
@@ -37,6 +38,7 @@ Sentry.init({
 const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
+const OSSApi = axios.create();
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -93,7 +95,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         const attrib = message.messageAttributes;
         const cxId = attrib.cxId?.stringValue;
         const jobId = attrib.jobId?.stringValue;
+        const patientId = attrib.patientId?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
+        if (!patientId) throw new Error(`Missing patientId`);
         const jobStartedAt = attrib.jobStartedAt?.stringValue;
         const log = _log(`${i}, cxId ${cxId}, jobId ${jobId}`);
 
@@ -137,10 +141,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           };
         }
 
-        processReponse(response, event, log);
+        processResponse(response, event, log);
 
         await reportMemoryUsage();
         await reportMetrics(metrics);
+
+        await OSSApi.post(apiURL, {
+          cxId,
+          patientId,
+          status: "success",
+        });
         //
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
@@ -159,6 +169,17 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await sendToDLQ(message);
+
+          const cxId = message.messageAttributes?.cxId?.stringValue;
+          const patientId = message.messageAttributes?.patientId?.stringValue;
+
+          if (cxId && patientId) {
+            await OSSApi.post(OSSApiUrl, {
+              cxId,
+              patientId,
+              status: "failed",
+            });
+          }
         }
       }
     }
@@ -190,7 +211,7 @@ async function downloadFileContents(s3BucketName, s3FileName) {
   return streamToString(stream);
 }
 
-function processReponse(response, event, log) {
+function processResponse(response, event, log) {
   const entries = response.entry ? response.entry : [];
   const errors = entries.filter(
     // returns non-2xx responses AND null/undefined
@@ -202,7 +223,13 @@ function processReponse(response, event, log) {
   if (errors.length > 0) {
     errors.forEach(e => log(`Error from FHIR Server: ${JSON.stringify(e)}`));
     captureMessage(`Error upserting Bundle on FHIR server`, {
-      extra: { context: lambdaName, additional: "processReponse", event, countSuccess, countError },
+      extra: {
+        context: lambdaName,
+        additional: "processResponse",
+        event,
+        countSuccess,
+        countError,
+      },
       level: "error",
     });
   }
