@@ -59,7 +59,7 @@ router.post(
       // limit the amount of users that can be created in sandbox mode
       const numConnectedUsers = await ConnectedUser.count({ where: { cxId } });
       if (numConnectedUsers >= Config.SANDBOX_USER_LIMIT) {
-        return res.sendStatus(status.BAD_REQUEST).json({
+        return res.status(status.BAD_REQUEST).json({
           message: `Cannot connect more than ${Config.SANDBOX_USER_LIMIT} users in Sandbox mode!`,
         });
       }
