@@ -26,16 +26,19 @@ const ConnectPage = () => {
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
 
   useEffect(() => {
-    try {
-      setupApi(searchParams);
-      storeColorMode(colorMode);
-      setAgreementState(setAgreement);
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setError(err);
-      capture.error(err, { extra: { context: `connect.setup` } });
+    async function setupConnectPage() {
+      try {
+        await setupApi(searchParams);
+        storeColorMode(colorMode);
+        setAgreementState(setAgreement);
+        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        setError(err);
+        capture.error(err, { extra: { context: `connect.setup` } });
+      }
+      setIsLoading(false);
     }
-    setIsLoading(false);
+    setupConnectPage();
   }, [searchParams, colorMode]);
 
   return (

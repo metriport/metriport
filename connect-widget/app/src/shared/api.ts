@@ -3,6 +3,7 @@ import { URLSearchParams } from "url";
 import Constants from "./constants";
 import { NoTokenError, DemoTokenError, InvalidTokenError } from "./token-errors";
 import { getEnvVarOrFail, isLocalEnv, isSandbox, isDemoToken } from "./util";
+import { ProviderSource } from "@metriport/api";
 
 function buildBaseURL(searchParams: URLSearchParams): string {
   if (isLocalEnv()) {
@@ -32,12 +33,13 @@ export function getApiToken(searchParams: URLSearchParams): string {
   return apiToken;
 }
 
-export function handleToken(token: string): void {
+export async function handleToken(token: string): Promise<void> {
   if (isDemoToken(token)) {
     // tell the user the widget is in demo mode && disable connect buttons
     throw new DemoTokenError();
   }
-  if (!isTokenValid()) {
+  const tokenValid = await isTokenValid();
+  if (!tokenValid) {
     // tell the user the token is invalid and && disable connect buttons
     throw new InvalidTokenError();
   }
@@ -49,7 +51,7 @@ export function handleToken(token: string): void {
 async function isTokenValid() {
   try {
     await getApi().get("/connect/redirect", {
-      params: { provider: "fitbit" }, // all we're trying to do here is confirm the token is valid. Doesn't matter which provider to use.
+      params: { provider: ProviderSource.fitbit }, // all we're trying to do here is confirm the token is valid. Doesn't matter which provider to use.
     });
   } catch (err) {
     return false;
@@ -59,10 +61,9 @@ async function isTokenValid() {
 }
 
 // get the session token in query params, and set in the API headers
-export function setupApi(searchParams: URLSearchParams) {
+export async function setupApi(searchParams: URLSearchParams) {
   api.defaults.baseURL = buildBaseURL(searchParams);
   const apiToken = getApiToken(searchParams);
-  handleToken(apiToken);
   if (isLocalEnv()) {
     // insert the API token right into the headers, as we're bypassing
     // API Gateway in local envs
@@ -71,4 +72,6 @@ export function setupApi(searchParams: URLSearchParams) {
     api.defaults.params = { state: apiToken };
   }
   apiInitialized = true;
+
+  await handleToken(apiToken);
 }
