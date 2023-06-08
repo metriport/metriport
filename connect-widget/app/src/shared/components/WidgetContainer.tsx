@@ -7,12 +7,13 @@ import {
   extendTheme,
   ChakraProvider,
 } from "@chakra-ui/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { isDemo } from "../api";
 
 import Constants from "../../shared/constants";
 import { getCustomColor } from "../localStorage/custom-color";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 
 type WidgetContainerProps = {
   children: JSX.Element;
@@ -55,6 +56,14 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
       },
     },
   });
+
+  const [scrolled, setScrolled] = useState(false);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleScroll = (event: any) => {
+    if (event.currentTarget.scrollTop > 120) setScrolled(true);
+    else setScrolled(false);
+  };
 
   const resetScroll = useRef<HTMLDivElement>(null);
 
@@ -99,6 +108,7 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
             ref={resetScroll}
             maxHeight={"80vh"}
             overflowY={"scroll"}
+            onScroll={handleScroll}
             css={{
               "&::-webkit-scrollbar": {
                 width: "0.2rem",
@@ -111,6 +121,18 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
           >
             {children}
           </Box>
+          {children.props.children[0].type.name === "ConnectProviders" && !scrolled && (
+            <Box
+              position="sticky"
+              bottom={0}
+              left={0}
+              right={0}
+              display="flex"
+              justifyContent="center"
+            >
+              <ChevronDownIcon boxSize={12} />
+            </Box>
+          )}
         </Box>
       </Flex>
     </ChakraProvider>
