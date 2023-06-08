@@ -57,11 +57,30 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
     },
   });
 
+  const [displayIcon, setDisplayIcon] = useState(true);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerHeight < 1050) {
+        setDisplayIcon(true);
+      } else {
+        setDisplayIcon(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   const [scrolled, setScrolled] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleScroll = (event: any) => {
-    if (event.currentTarget.scrollTop > 120) setScrolled(true);
+    if (event.currentTarget.scrollTop > window.innerHeight / 6) setScrolled(true);
     else setScrolled(false);
   };
 
@@ -86,6 +105,7 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
         }}
       >
         <Box
+          position="relative"
           bg={useColorModeValue("white", "gray.700")}
           borderRadius="lg"
           width={{ base: 500 }}
@@ -121,18 +141,20 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
           >
             {children}
           </Box>
-          {children.props.children[0].type.name === "ConnectProviders" && !scrolled && (
-            <Box
-              position="sticky"
-              bottom={0}
-              left={0}
-              right={0}
-              display="flex"
-              justifyContent="center"
-            >
-              <ChevronDownIcon boxSize={12} />
-            </Box>
-          )}
+          {children.props.children[0].type.name === "ConnectProviders" &&
+            displayIcon &&
+            !scrolled && (
+              <Box
+                position="absolute"
+                bottom={0}
+                left={0}
+                right={0}
+                display="flex"
+                justifyContent="center"
+              >
+                <ChevronDownIcon boxSize={12} color={decidePrimaryColor} opacity={0.5} />
+              </Box>
+            )}
         </Box>
       </Flex>
     </ChakraProvider>
