@@ -33,7 +33,8 @@ export function createAPIService(
   fhirServerUrl: string | undefined,
   fhirServerQueueUrl: string | undefined,
   fhirConverterQueueUrl: string | undefined,
-  fhirConverterServiceUrl: string | undefined
+  fhirConverterServiceUrl: string | undefined,
+  sidechainFHIRConverterQueueUrl: string | undefined
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -103,6 +104,9 @@ export function createAPIService(
           }),
           ...(fhirConverterServiceUrl && {
             FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
+          }),
+          ...(sidechainFHIRConverterQueueUrl && {
+            SIDECHAIN_FHIR_CONVERTER_QUEUE_URL: sidechainFHIRConverterQueueUrl,
           }),
         },
       },
