@@ -1,4 +1,4 @@
-import { Heading, Flex, Button, Text, Icon, Box, Image, Divider, Link } from "@chakra-ui/react";
+import { Heading, Flex, Text, Icon, Box, Image } from "@chakra-ui/react";
 import { LinkIcon, LockIcon } from "@chakra-ui/icons";
 import { GiHealthNormal } from "react-icons/gi";
 import { ImClipboard } from "react-icons/im";
@@ -6,13 +6,9 @@ import { ImClipboard } from "react-icons/im";
 import hippa from "../../../assets/hipaa.jpg";
 import soc2 from "../../../assets/soc2.png";
 
-type AgreementProps = {
-  onAcceptAgreement: () => void;
-};
-
-const Agreement = ({ onAcceptAgreement }: AgreementProps) => {
+const Agreement = () => {
   return (
-    <>
+    <Box position="relative">
       <Heading fontSize={28} mb={8} textAlign={"center"}>
         This app uses Metriport to connect your accounts
       </Heading>
@@ -42,21 +38,7 @@ const Agreement = ({ onAcceptAgreement }: AgreementProps) => {
           </Box>
         }
       />
-      <Divider mb={4} />
-      <Flex mb={4} px={6} justifyContent={"center"}>
-        <Text textAlign={"center"}>
-          By selecting "Continue" you agree to the{" "}
-          <Link textDecor={"underline"} href="https://metriport.com/privacy/" isExternal>
-            Metriport End User Privacy Policy
-          </Link>
-        </Text>
-      </Flex>
-      <Flex justifyContent={"center"}>
-        <Button width={"90%"} onClick={onAcceptAgreement}>
-          Continue
-        </Button>
-      </Flex>
-    </>
+    </Box>
   );
 };
 

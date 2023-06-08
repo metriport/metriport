@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-
 import { setupApi, isDemo } from "../../shared/api";
 import WidgetContainer from "../../shared/components/WidgetContainer";
 import Constants from "../../shared/constants";
@@ -8,8 +7,10 @@ import { acceptAgreement, setAgreementState } from "../../shared/localStorage/ag
 import { storeColorMode } from "../../shared/localStorage/color-mode";
 import { capture } from "../../shared/notifications";
 import Agreement from "./components/agreement";
+import AgreementFooter from "./components/agreement-footer";
 import ConnectProviders from "./components/connect-providers";
 import ErrorDialog from "./components/error-dialog";
+import { Box } from "@chakra-ui/react";
 
 type DisplayError = {
   message: string;
@@ -46,7 +47,10 @@ const ConnectPage = () => {
         ) : agreement ? (
           <ConnectProviders />
         ) : (
-          <Agreement onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)} />
+          <Box position="relative">
+            <Agreement />
+            <AgreementFooter onAcceptAgreement={() => acceptAgreement(setAgreement, isDemo)} />
+          </Box>
         )}
         {error && (
           <ErrorDialog

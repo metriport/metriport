@@ -93,7 +93,22 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
             <Text mr={2}>Powered by</Text>
             <Image width={150} src={require("../../assets/metriport-logo.png")}></Image>
           </Flex>
-          <Box px={8} py={6} ref={resetScroll} maxHeight={"80vh"} overflowY={"scroll"}>
+          <Box
+            px={8}
+            pt={6}
+            ref={resetScroll}
+            maxHeight={"80vh"}
+            overflowY={"scroll"}
+            css={{
+              "&::-webkit-scrollbar": {
+                width: "0.2rem",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "gray",
+                borderRadius: "0.25rem",
+              },
+            }}
+          >
             {children}
           </Box>
         </Box>
