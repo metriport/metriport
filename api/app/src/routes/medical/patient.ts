@@ -7,6 +7,7 @@ import {
   getConsolidatedPatientData,
   resourceTypeForConsolidation,
 } from "../../command/medical/patient/consolidate-data";
+import { PatientModel as Patient } from "../../models/medical/patient";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
@@ -31,6 +32,7 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { parseISODate } from "../../shared/date";
+import { Config } from "../../shared/config";
 
 const router = Router();
 
@@ -49,6 +51,16 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
     const payload = patientCreateSchema.parse(req.body);
+
+    if (Config.isSandbox()) {
+      // limit the amount of patients that can be created in sandbox mode
+      const numPatients = await Patient.count({ where: { cxId } });
+      if (numPatients >= Config.SANDBOX_PATIENT_LIMIT) {
+        return res.status(status.BAD_REQUEST).json({
+          message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
+        });
+      }
+    }
 
     const patientCreate: PatientCreateCmd = {
       ...schemaCreateToPatient(payload, cxId),
