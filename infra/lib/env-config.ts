@@ -72,6 +72,14 @@ export type EnvConfig = {
     workspaceId: string;
     alertsChannelId: string;
   };
+  sidechainFHIRConverter?: {
+    bucketName: string;
+    url: string;
+    urlBlacklist: string;
+    secretNames: {
+      SIDECHAIN_FHIR_CONVERTER_KEYS: string;
+    };
+  };
 } & (
   | {
       environmentType: EnvType.staging | EnvType.production;

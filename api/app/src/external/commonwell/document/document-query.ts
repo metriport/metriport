@@ -26,6 +26,7 @@ import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { makeS3Client } from "../../aws/s3";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
+import { sidechainConvertCDAToFHIR } from "../../sidechain-fhir-converter/converter";
 import { MAX_FHIR_DOC_ID_LENGTH, toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
@@ -415,6 +416,13 @@ export async function downloadDocsAndUpsertFHIR({
 
           if (file.isNew) {
             await convertCDAToFHIR({
+              patient,
+              document: { id: fhirDocId, mimeType: doc.content?.mimeType },
+              s3FileName: file.key,
+              s3BucketName: file.bucket,
+            });
+            // also do the sidechain conversion (remove when no longer needed)
+            await sidechainConvertCDAToFHIR({
               patient,
               document: { id: fhirDocId, mimeType: doc.content?.mimeType },
               s3FileName: file.key,

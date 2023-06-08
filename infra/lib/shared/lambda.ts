@@ -47,12 +47,13 @@ export interface LambdaProps extends StackProps {
   readonly retryAttempts?: number;
   readonly maxEventAge?: Duration;
   readonly alarmSnsAction?: SnsAction;
+  readonly runtime?: Runtime;
 }
 
 export function createLambda(props: LambdaProps): Lambda {
   const lambda = new lambda_node.NodejsFunction(props.stack, props.name, {
     functionName: props.name + "Lambda",
-    runtime: Runtime.NODEJS_16_X,
+    runtime: props.runtime ?? Runtime.NODEJS_16_X,
     // TODO move our lambdas to use layers, quicker to deploy and execute them
     entry: props.entry,
     // code: Code.fromAsset('lambda'),
