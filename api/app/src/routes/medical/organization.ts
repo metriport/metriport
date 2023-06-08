@@ -6,7 +6,6 @@ import {
   OrganizationCreateCmd,
 } from "../../command/medical/organization/create-organization";
 import { accountInit } from "../../command/account-init";
-import { allowMapiAccess } from "../../command/medical/mapi-access";
 import { toFHIR } from "../../external/fhir/organization";
 import { upsertOrgToFHIRServer } from "../../external/fhir/organization/upsert-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
@@ -19,7 +18,6 @@ import cwCommands from "../../external/commonwell";
 import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
-import { Config } from "../../shared/config";
 
 const router = Router();
 
@@ -38,11 +36,6 @@ router.post(
 
     // Initialize the account before creating the organization
     await accountInit(cxId);
-
-    // Allow MAPI access in sandbox
-    if (Config.isSandbox()) {
-      await allowMapiAccess(cxId);
-    }
 
     const data = organizationCreateSchema.parse(req.body);
 
