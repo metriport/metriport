@@ -84,6 +84,8 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   fhirBundle.type = "batch";
 
   const stringsToReplace = [];
+  let curIndex = 0;
+  let patientIndex = -1;
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
       // add doc id extension
@@ -92,7 +94,7 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
 
       // validate resource id
       let idToUse = bundleEntry.resource.id;
-      if (!uuid.validate(!idToUse)) {
+      if (!uuid.validate(idToUse)) {
         // if it's not valid, we'll need to generate a valid UUID
         const newId = uuid.v4();
         bundleEntry.resource.id = newId;
@@ -114,7 +116,16 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
           url: `${e.resource.resourceType}/${e.resource.id}}`,
         };
       }
+
+      // save index of the patient resource (if any)
+      if (bundleEntry.resource.resourceType === "Patient") {
+        patientIndex = curIndex;
+      }
+      curIndex++;
     }
+
+    // remove the patient resource if it was found in the bundle
+    if (patientIndex >= 0) fhirBundle.entry.splice(patientIndex, 1);
   }
 
   // replace all old ids & blacklisted urls
