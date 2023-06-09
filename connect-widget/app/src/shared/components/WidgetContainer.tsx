@@ -57,17 +57,11 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
     },
   });
 
-  const [displayIcon, setDisplayIcon] = useState(true);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerHeight < 1050) {
-        setDisplayIcon(true);
-        setScrolled(false);
-      } else {
-        setDisplayIcon(false);
-      }
+      setScrolled(false);
     };
 
     window.addEventListener("resize", handleResize);
@@ -142,20 +136,18 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
           >
             {children}
           </Box>
-          {children.props.children[0].type.name === "ConnectProviders" &&
-            displayIcon &&
-            !scrolled && (
-              <Box
-                position="absolute"
-                bottom={0}
-                left={0}
-                right={0}
-                display="flex"
-                justifyContent="center"
-              >
-                <ChevronDownIcon boxSize={12} color={decidePrimaryColor} opacity={0.5} />
-              </Box>
-            )}
+          {children.props.children[0].type.name === "ConnectProviders" && !scrolled && (
+            <Box
+              position="absolute"
+              bottom={0}
+              left={0}
+              right={0}
+              display="flex"
+              justifyContent="center"
+            >
+              <ChevronDownIcon boxSize={12} color={decidePrimaryColor} opacity={0.5} />
+            </Box>
+          )}
         </Box>
       </Flex>
     </ChakraProvider>
