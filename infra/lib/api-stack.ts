@@ -137,11 +137,20 @@ export class APIStack extends Stack {
     // DynamoDB
     //----------------------------------------------------------
 
+    const dynamoDBReplicationRegions = [
+      {
+        production: "us-east-1",
+        staging: "ca-central-1",
+        sandbox: "ca-central-1",
+        infra: "us-east-2",
+      }[props.config.environmentType],
+    ];
+
     // global table for auth token management
     const dynamoConstructName = "APIUserTokens";
     const dynamoDBTokenTable = new dynamodb.Table(this, dynamoConstructName, {
       partitionKey: { name: "token", type: dynamodb.AttributeType.STRING },
-      replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
+      replicationRegions: dynamoDBReplicationRegions,
       replicationTimeout: Duration.hours(3),
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecovery: true,

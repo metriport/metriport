@@ -28,7 +28,7 @@ export class SecretsStack extends Stack {
         secretName: name,
         replicaRegions: props.config.secretReplicaRegion
           ? [{ region: props.config.secretReplicaRegion }]
-          : [],
+          : undefined,
       });
 
     for (const secretName of Object.values(props.config.providerSecretNames)) {

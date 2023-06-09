@@ -1,6 +1,9 @@
 import { EnvConfig } from "../env-config";
 import { EnvType } from "../env-type";
 
+export function isInfra(config: EnvConfig): boolean {
+  return config.environmentType === EnvType.infra;
+}
 export function isStaging(config: EnvConfig): boolean {
   return config.environmentType === EnvType.staging;
 }

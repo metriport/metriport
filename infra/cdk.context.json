@@ -29,5 +29,14 @@
   "hosted-zone:account=463519787594:domainName=metriport.com:region=us-east-2": {
     "Id": "/hostedzone/Z06381181A1ZNHQQAN5CN",
     "Name": "metriport.com."
+  },
+  "availability-zones:account=463519787594:region=ca-central-1": [
+    "ca-central-1a",
+    "ca-central-1b",
+    "ca-central-1d"
+  ],
+  "hosted-zone:account=463519787594:domainName=metriport.com:region=ca-central-1": {
+    "Id": "/hostedzone/Z06381181A1ZNHQQAN5CN",
+    "Name": "metriport.com."
   }
 }

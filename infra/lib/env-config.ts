@@ -82,7 +82,7 @@ export type EnvConfig = {
   };
 } & (
   | {
-      environmentType: EnvType.staging | EnvType.production;
+      environmentType: EnvType.staging | EnvType.production | EnvType.infra;
       connectWidget: ConnectWidgetConfig;
       connectWidgetUrl?: never;
     }
