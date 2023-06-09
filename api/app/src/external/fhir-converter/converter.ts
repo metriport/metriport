@@ -1,5 +1,6 @@
 import { capture } from "../../shared/notifications";
 import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extension";
+import { sidechainConvertCDAToFHIR } from "../sidechain-fhir-converter/converter";
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";
 
@@ -59,5 +60,13 @@ export async function convertCDAToFHIR(params: {
         extra: { context: `convertCDAToFHIR`, ...params },
       });
     }
+
+    // also do the sidechain conversion (remove when no longer needed)
+    await sidechainConvertCDAToFHIR({
+      patient,
+      document: params.document,
+      s3FileName,
+      s3BucketName,
+    });
   }
 }

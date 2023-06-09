@@ -196,6 +196,10 @@ export class Config {
     return getEnvVar("FHIR_CONVERTER_SERVER_URL");
   }
 
+  static getSidechainFHIRConverterQueueURL(): string | undefined {
+    return getEnvVar("SIDECHAIN_FHIR_CONVERTER_QUEUE_URL");
+  }
+
   static getConvertDocLambdaName(): string | undefined {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
   }
