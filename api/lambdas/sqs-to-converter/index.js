@@ -143,6 +143,7 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
 
+  console.log(fhirBundleStr);
   return JSON.parse(fhirBundleStr);
 }
 
