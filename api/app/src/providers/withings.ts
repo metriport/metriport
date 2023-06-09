@@ -303,6 +303,10 @@ export class Withings extends Provider implements OAuth2 {
       params,
     });
 
+    if (response.data.error) {
+      throw new Error(response.data.error);
+    }
+
     return withingsMeasurementResp.parse(response.data.body);
   }
 
