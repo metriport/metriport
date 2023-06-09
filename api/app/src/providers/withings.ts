@@ -305,7 +305,10 @@ export class Withings extends Provider implements OAuth2 {
 
     const statusOk = 0;
 
-    if (response.data.status !== statusOk) {
+    if (response.data?.status !== statusOk) {
+      capture.error(response.data, {
+        extra: { context: `withings.fetch.measurements` },
+      });
       throw new Error(response.data.error);
     }
 
