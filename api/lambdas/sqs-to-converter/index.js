@@ -86,6 +86,8 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   const stringsToReplace = [];
   let curIndex = 0;
   let patientIndex = -1;
+  let operationOutcomeIndex = -1;
+  console.log(fhirBundle);
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
       // add doc id extension
@@ -121,11 +123,17 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
       if (bundleEntry.resource.resourceType === "Patient") {
         patientIndex = curIndex;
       }
+      // save index of the operation outcome resource (if any)
+      if (bundleEntry.resource.resourceType === "OperationOutcome") {
+        operationOutcomeIndex = curIndex;
+      }
       curIndex++;
     }
 
     // remove the patient resource if it was found in the bundle
     if (patientIndex >= 0) fhirBundle.entry.splice(patientIndex, 1);
+    // likewise, remove the operation outcome resource if it was found
+    if (operationOutcomeIndex >= 0) fhirBundle.entry.splice(operationOutcomeIndex, 1);
   }
 
   // replace all old ids & blacklisted urls
@@ -137,6 +145,8 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   }
 
   let fhirBundleStr = JSON.stringify(fhirBundle);
+  console.log(stringsToReplace);
+  console.log(fhirBundleStr);
   for (const stringToReplace of stringsToReplace) {
     // doing this is apparently more efficient than just using replace
     const regex = new RegExp(stringToReplace.old, "g");
