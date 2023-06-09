@@ -234,7 +234,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           const apiKey = await getSidechainConverterAPIKey();
           log(`Calling sidechain converter on url ${sidechainUrl}`);
           res = await fhirConverter.post(sidechainUrl, payload, {
-            params,
             headers: {
               "Content-Type": "application/xml",
               Accept: "application/json",
