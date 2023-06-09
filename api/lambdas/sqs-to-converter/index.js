@@ -113,7 +113,7 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
       if (!bundleEntry.resource.request) {
         bundleEntry.resource.request = {
           method: "PUT",
-          url: `${e.resource.resourceType}/${e.resource.id}}`,
+          url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
         };
       }
 
