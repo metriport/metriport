@@ -58,11 +58,13 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
   });
 
   const [displayIcon, setDisplayIcon] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
       if (window.innerHeight < 1050) {
         setDisplayIcon(true);
+        setScrolled(false);
       } else {
         setDisplayIcon(false);
       }
@@ -76,11 +78,10 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
     };
   }, []);
 
-  const [scrolled, setScrolled] = useState(false);
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleScroll = (event: any) => {
-    if (event.currentTarget.scrollTop > window.innerHeight / 6) setScrolled(true);
+  const handleScroll = (e: any) => {
+    const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 1;
+    if (bottom) setScrolled(true);
     else setScrolled(false);
   };
 
