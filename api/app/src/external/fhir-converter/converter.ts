@@ -44,7 +44,7 @@ export async function convertCDAToFHIR(params: {
     // so we can get the original doc ref from the resource
     const documentExtension = buildDocIdFHIRExtension(s3FileName);
     try {
-      return connector.requestConvert({
+      await connector.requestConvert({
         cxId: patient.cxId,
         patientId: patient.id,
         documentId: documentId,
