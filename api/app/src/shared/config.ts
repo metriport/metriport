@@ -140,6 +140,15 @@ export class Config {
   static getFHIRServerUrl(): string | undefined {
     return getEnvVar("FHIR_SERVER_URL");
   }
+  static getFHIRServerUrlOrFail(): string {
+    const url = Config.getFHIRServerUrl();
+    if (!url) throw new Error(`Missing FHIR_SERVER_URL env var, env: ${Config.getEnvType()}`);
+    return url;
+  }
+
+  static getFHIRServerQueueURL(): string {
+    return getEnvVarOrFail("FHIR_SERVER_QUEUE_URL");
+  }
 
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
@@ -188,6 +197,9 @@ export class Config {
 
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+  }
+  static getSandboxBucketName(): string {
+    return getEnvVarOrFail("SANDBOX_SEED_DATA_BUCKET_NAME");
   }
 
   static getFHIRConverterQueueURL(): string | undefined {
