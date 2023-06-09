@@ -150,7 +150,7 @@ export class Withings extends Provider implements OAuth2 {
           }
         );
 
-        if (response.data.status !== Withings.STATUS_OK) {
+        if (response.data?.status !== Withings.STATUS_OK) {
           console.log(response.data);
           throw new Error(response.data.error);
         }
