@@ -15,7 +15,16 @@ import { capture } from "../shared/notifications";
 import { stringToBoolean } from "../shared/types";
 import { stringListSchema } from "./schemas/shared";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
+import {
+  getETag,
+  asyncHandler,
+  getCxIdFromQueryOrFail,
+  getFrom,
+  getCxIdOrFail,
+  getFromParamsOrFail,
+  getFromQueryOrFail,
+} from "./util";
+import { deletePatient } from "../command/medical/patient/delete-patient";
 
 const router = Router();
 
@@ -173,6 +182,33 @@ router.post(
       result[id] = encodeExternalId(id);
     });
     return res.json(result);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * DELETE /patient/:id
+ *
+ * Deletes a patient from all storages.
+ *
+ * @param req.query.facilityId The facility providing NPI for the patient delete
+ * @return 204 No Content
+ */
+router.delete(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+
+    const patientDeleteCmd = {
+      ...getETag(req),
+      id,
+      cxId,
+      facilityId,
+    };
+    await deletePatient(patientDeleteCmd);
+
+    return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );
 
