@@ -57,11 +57,26 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
     },
   });
 
-  const [scrolled, setScrolled] = useState(false);
+  const childBox = document.getElementById("childBox");
+  const [displayIcon, setDisplayIcon] = useState(false);
+
+  const updateIconVisibility = () => {
+    if (!childBox) return;
+    const isProvidersList = children.props.children[0].type.name === "ConnectProviders";
+    const isContainerSmaller = childBox.scrollHeight > childBox.clientHeight;
+    const isNotScrolledToBottom =
+      childBox.scrollHeight - childBox.scrollTop > childBox.clientHeight + 1;
+
+    setDisplayIcon(isProvidersList && isContainerSmaller && isNotScrolledToBottom);
+  };
+
+  useEffect(() => {
+    updateIconVisibility();
+  }, [children]);
 
   useEffect(() => {
     const handleResize = () => {
-      setScrolled(false);
+      updateIconVisibility();
     };
 
     window.addEventListener("resize", handleResize);
@@ -70,13 +85,10 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [children.props.children[0]]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleScroll = (e: any) => {
-    const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 1;
-    if (bottom) setScrolled(true);
-    else setScrolled(false);
+  const handleScroll = () => {
+    updateIconVisibility();
   };
 
   const resetScroll = useRef<HTMLDivElement>(null);
@@ -120,6 +132,7 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
           <Box
             px={8}
             pt={6}
+            id="childBox"
             ref={resetScroll}
             maxHeight={"80vh"}
             overflowY={"scroll"}
@@ -136,7 +149,7 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
           >
             {children}
           </Box>
-          {children.props.children[0].type.name === "ConnectProviders" && !scrolled && (
+          {displayIcon && (
             <Box
               position="absolute"
               bottom={0}
