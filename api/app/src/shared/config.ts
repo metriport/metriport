@@ -15,6 +15,7 @@ export class Config {
   static readonly SANDBOX_ENV = "sandbox";
   static readonly STAGING_ENV = "staging";
   static readonly SANDBOX_USER_LIMIT = 10;
+  static readonly SANDBOX_PATIENT_LIMIT = 20;
 
   static isCloudEnv(): boolean {
     return process.env.NODE_ENV === this.PROD_ENV;
