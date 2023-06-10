@@ -22,12 +22,15 @@ export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string
   const activityLogs: ActivityLog[] = [];
 
   for (const fitbitActivityLog of filteredLogs) {
+    const activeSeconds = fitbitActivityLog.activeDuration
+      ? convert(fitbitActivityLog.activeDuration).from("ms").to("s")
+      : undefined;
     const activityLog: ActivityLog = {
       metadata: metadata,
       ...Util.addDataToObject("name", fitbitActivityLog.activityName),
       ...Util.addDataToObject("start_time", fitbitActivityLog.originalStartTime),
       durations: {
-        ...Util.addDataToObject("active_seconds", fitbitActivityLog.activeDuration),
+        ...Util.addDataToObject("active_seconds", activeSeconds),
       },
       movement: {
         ...Util.addDataToObject("steps_count", fitbitActivityLog.steps),

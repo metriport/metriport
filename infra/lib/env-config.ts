@@ -22,6 +22,7 @@ export type EnvConfig = {
   loadBalancerDnsName?: string;
   usageReportUrl?: string;
   fhirServerUrl?: string;
+  fhirServerQueueUrl?: string;
   systemRootOID: string;
   medicalDocumentsBucketName?: string;
   cdaToVisualizationLambdaName?: string;
@@ -73,15 +74,25 @@ export type EnvConfig = {
     workspaceId: string;
     alertsChannelId: string;
   };
+  sidechainFHIRConverter?: {
+    bucketName: string;
+    url: string;
+    urlBlacklist: string;
+    secretNames: {
+      SIDECHAIN_FHIR_CONVERTER_KEYS: string;
+    };
+  };
 } & (
   | {
       environmentType: EnvType.staging | EnvType.production;
       connectWidget: ConnectWidgetConfig;
       connectWidgetUrl?: never;
+      sandboxSeedDataBucketName?: never;
     }
   | {
       environmentType: EnvType.sandbox;
       connectWidget?: never;
       connectWidgetUrl: string;
+      sandboxSeedDataBucketName: string;
     }
 );

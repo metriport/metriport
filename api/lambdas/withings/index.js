@@ -17,6 +17,7 @@ const buildResponse = (status, body) => ({
 const defaultResponse = () => buildResponse(200);
 
 exports.handler = async req => {
+  console.log("withings request", req);
   const withingsIPAddresses = await Promise.all([
     lookup("ipblock-notify.withings.net"),
     lookup("ipblock-front.withings.net"),

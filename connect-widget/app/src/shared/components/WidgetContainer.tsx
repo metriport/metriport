@@ -7,11 +7,13 @@ import {
   extendTheme,
   ChakraProvider,
 } from "@chakra-ui/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { isDemo } from "../api";
 
 import Constants from "../../shared/constants";
 import { getCustomColor } from "../localStorage/custom-color";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 
 type WidgetContainerProps = {
   children: JSX.Element;
@@ -21,8 +23,6 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
   const [searchParams] = useSearchParams();
 
   const color = searchParams.get(Constants.CUSTOM_COLOR_PARAM);
-  const token = searchParams.get(Constants.TOKEN_PARAM);
-  const isDemo = token === "demo";
 
   const customColor = getCustomColor(color, isDemo);
 
@@ -57,6 +57,40 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
     },
   });
 
+  const childBox = document.getElementById("childBox");
+  const [displayIcon, setDisplayIcon] = useState(false);
+
+  const updateIconVisibility = () => {
+    if (!childBox) return;
+    const isProvidersList = children.props.children[0].type.name === "ConnectProviders";
+    const isContainerSmaller = childBox.scrollHeight > childBox.clientHeight;
+    const isNotScrolledToBottom =
+      childBox.scrollHeight - childBox.scrollTop > childBox.clientHeight + 1;
+
+    setDisplayIcon(isProvidersList && isContainerSmaller && isNotScrolledToBottom);
+  };
+
+  useEffect(() => {
+    updateIconVisibility();
+  }, [children]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      updateIconVisibility();
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [children.props.children[0]]);
+
+  const handleScroll = () => {
+    updateIconVisibility();
+  };
+
   const resetScroll = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,6 +112,7 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
         }}
       >
         <Box
+          position="relative"
           bg={useColorModeValue("white", "gray.700")}
           borderRadius="lg"
           width={{ base: 500 }}
@@ -94,9 +129,38 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
             <Text mr={2}>Powered by</Text>
             <Image width={150} src={require("../../assets/metriport-logo.png")}></Image>
           </Flex>
-          <Box px={8} py={6} ref={resetScroll} maxHeight={"80vh"} overflowY={"scroll"}>
+          <Box
+            px={8}
+            pt={6}
+            id="childBox"
+            ref={resetScroll}
+            maxHeight={"80vh"}
+            overflowY={"scroll"}
+            onScroll={handleScroll}
+            css={{
+              "&::-webkit-scrollbar": {
+                width: "0.2rem",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "gray",
+                borderRadius: "0.25rem",
+              },
+            }}
+          >
             {children}
           </Box>
+          {displayIcon && (
+            <Box
+              position="absolute"
+              bottom={0}
+              left={0}
+              right={0}
+              display="flex"
+              justifyContent="center"
+            >
+              <ChevronDownIcon boxSize={12} color={decidePrimaryColor} opacity={0.5} />
+            </Box>
+          )}
         </Box>
       </Flex>
     </ChakraProvider>

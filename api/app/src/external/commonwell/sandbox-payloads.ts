@@ -40,9 +40,9 @@ export const details = {
 
 export const createPatientWithLinks = (patient: Patient) => {
   const patientId =
-    patient.identifier?.length && patient.identifier[0].key ? patient.identifier[0].key : "";
+    patient.identifier?.length && patient.identifier[0]?.key ? patient.identifier[0].key : "";
   const orgId =
-    patient.identifier?.length && patient.identifier[0].system ? patient.identifier[0].system : "";
+    patient.identifier?.length && patient.identifier[0]?.system ? patient.identifier[0].system : "";
 
   return {
     ...patient,

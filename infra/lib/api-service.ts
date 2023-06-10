@@ -33,7 +33,8 @@ export function createAPIService(
   fhirServerUrl: string | undefined,
   fhirServerQueueUrl: string | undefined,
   fhirConverterQueueUrl: string | undefined,
-  fhirConverterServiceUrl: string | undefined
+  fhirConverterServiceUrl: string | undefined,
+  sidechainFHIRConverterQueueUrl: string | undefined
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -89,6 +90,9 @@ export function createAPIService(
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
           }),
+          ...(props.config.sandboxSeedDataBucketName && {
+            SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
+          }),
           ...(props.config.cdaToVisualizationLambdaName && {
             CONVERT_DOC_LAMBDA_NAME: props.config.cdaToVisualizationLambdaName,
           }),
@@ -103,6 +107,9 @@ export function createAPIService(
           }),
           ...(fhirConverterServiceUrl && {
             FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
+          }),
+          ...(sidechainFHIRConverterQueueUrl && {
+            SIDECHAIN_FHIR_CONVERTER_QUEUE_URL: sidechainFHIRConverterQueueUrl,
           }),
         },
       },

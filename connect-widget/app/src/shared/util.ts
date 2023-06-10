@@ -51,4 +51,8 @@ export function getEnvVarOrFail(varName: string): string {
   return value;
 }
 
+export function isDemoToken(token: string | null): boolean {
+  return token === Constants.DEMO_TOKEN;
+}
+
 export const sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));
