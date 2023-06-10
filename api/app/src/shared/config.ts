@@ -15,6 +15,7 @@ export class Config {
   static readonly SANDBOX_ENV = "sandbox";
   static readonly STAGING_ENV = "staging";
   static readonly SANDBOX_USER_LIMIT = 10;
+  static readonly SANDBOX_PATIENT_LIMIT = 20;
 
   static isCloudEnv(): boolean {
     return process.env.NODE_ENV === this.PROD_ENV;
@@ -139,6 +140,15 @@ export class Config {
   static getFHIRServerUrl(): string | undefined {
     return getEnvVar("FHIR_SERVER_URL");
   }
+  static getFHIRServerUrlOrFail(): string {
+    const url = Config.getFHIRServerUrl();
+    if (!url) throw new Error(`Missing FHIR_SERVER_URL env var, env: ${Config.getEnvType()}`);
+    return url;
+  }
+
+  static getFHIRServerQueueURL(): string {
+    return getEnvVarOrFail("FHIR_SERVER_QUEUE_URL");
+  }
 
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
@@ -187,6 +197,9 @@ export class Config {
 
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+  }
+  static getSandboxBucketName(): string | undefined {
+    return getEnvVar("SANDBOX_SEED_DATA_BUCKET_NAME");
   }
 
   static getFHIRConverterQueueURL(): string | undefined {

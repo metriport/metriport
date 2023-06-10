@@ -21,6 +21,7 @@ export type EnvConfig = {
   dbUsername: string;
   usageReportUrl?: string;
   fhirServerUrl?: string;
+  fhirServerQueueUrl?: string;
   systemRootOID: string;
   medicalDocumentsBucketName?: string;
   cdaToVisualizationLambdaName?: string;
@@ -85,10 +86,12 @@ export type EnvConfig = {
       environmentType: EnvType.staging | EnvType.production;
       connectWidget: ConnectWidgetConfig;
       connectWidgetUrl?: never;
+      sandboxSeedDataBucketName?: never;
     }
   | {
       environmentType: EnvType.sandbox;
       connectWidget?: never;
       connectWidgetUrl: string;
+      sandboxSeedDataBucketName: string;
     }
 );

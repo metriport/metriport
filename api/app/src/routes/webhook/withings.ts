@@ -13,6 +13,7 @@ const routes = Router();
 routes.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
+    console.log("withings lambda payload:", JSON.stringify(req.body, null, 2));
     processData(req.body);
     return res.sendStatus(200);
   })

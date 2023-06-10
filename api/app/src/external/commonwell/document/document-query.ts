@@ -27,13 +27,13 @@ import { reportMetric } from "../../aws/cloudwatch";
 import { makeS3Client } from "../../aws/s3";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { MAX_FHIR_DOC_ID_LENGTH, toFHIR as toFHIRDocRef } from "../../fhir/document";
-import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument as downloadDocumentFromCW } from "./document-download";
+import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import { CWDocumentWithMetriportData, getFileName } from "./shared";
 
 const s3Client = makeS3Client();
@@ -64,8 +64,11 @@ export async function queryAndProcessDocuments({
 
   try {
     if (Config.isSandbox()) {
-      // if this is sandbox, just send the sandbox payload to the WH
-      const documentsSandbox = getDocumentSandboxPayload(patient.id);
+      const documentsSandbox = await sandboxGetDocRefsAndUpsert({
+        organization,
+        facility,
+        patient,
+      });
       processPatientDocumentRequest(organization.cxId, patient.id, toDTO(documentsSandbox));
       return documentsSandbox.length;
     } else {
