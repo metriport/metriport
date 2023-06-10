@@ -2,10 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { OK } from "http-status";
 import { downloadDocument } from "../../command/medical/document/document-download";
-import {
-  createQueryResponse,
-  queryDocumentsAcrossHIEs,
-} from "../../command/medical/document/document-query";
+import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import { getDocuments } from "../../external/fhir/document/get-documents";
@@ -59,10 +56,8 @@ router.get(
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
 
-    const queryResp = createQueryResponse(patient.data.documentQueryStatus ?? "completed", patient);
-
     return res.status(OK).json({
-      ...queryResp,
+      ...patient.data.documentQueryProgress,
       documents: documentsDTO,
     });
   })
@@ -86,14 +81,14 @@ router.post(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
 
-    const { queryStatus, queryProgress } = await queryDocumentsAcrossHIEs({
+    const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
       override,
     });
 
-    return res.status(OK).json({ queryStatus, queryProgress });
+    return res.status(OK).json(docQueryProgress);
   })
 );
 

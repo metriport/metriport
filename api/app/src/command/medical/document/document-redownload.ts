@@ -113,7 +113,10 @@ async function processDocsOfPatient({
   const { log } = Util.out(`processDocsOfPatient - M patientId ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (patient.data.documentQueryStatus === "processing") {
+  if (
+    patient.data.documentQueryProgress?.download?.status === "processing" ||
+    patient.data.documentQueryProgress?.convert?.status === "processing"
+  ) {
     log(`Patient ${patientId} is already being processed, skipping ${docs.length} docs...`);
     return;
   }
@@ -136,7 +139,11 @@ async function processDocsOfPatient({
 
   try {
     log(`Processing ${docs.length} documents for patient ${patientId}...`);
-    await updateDocQuery({ patient: { id: patientId, cxId }, status: "processing" });
+    await updateDocQuery({
+      patient: { id: patientId, cxId },
+      downloadProgress: { status: "processing" },
+      restart: true,
+    });
 
     await downloadDocsAndUpsertFHIR({
       patient,
@@ -149,7 +156,10 @@ async function processDocsOfPatient({
     log(`Error processing docs: `, error);
     capture.error(error, { extra: { context: `processDocsOfPatient`, error } });
   } finally {
-    await updateDocQuery({ patient: { id: patientId, cxId }, status: "completed" });
+    await updateDocQuery({
+      patient: { id: patientId, cxId },
+      downloadProgress: { status: "completed" },
+    });
   }
   log(`Done for patient ${patientId}`);
 }

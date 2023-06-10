@@ -16,6 +16,9 @@ import { stringToBoolean } from "../shared/types";
 import { stringListSchema } from "./schemas/shared";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
+import { updateDocQuery } from "../command/medical/document/document-query";
+import { convertResultSchema } from "../domain/medical/document-reference";
+import { Util } from "../shared/util";
 
 const router = Router();
 
@@ -173,6 +176,27 @@ router.post(
       result[id] = encodeExternalId(id);
     });
     return res.json(result);
+  })
+);
+
+router.post(
+  "/doc-conversion-status",
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientId = getFrom("query").orFail("patientId", req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const status = getFrom("query").orFail("status", req);
+    const docId = getFrom("query").orFail("jobId", req);
+    const convertResult = convertResultSchema.parse(status);
+    const { log } = Util.out(`Doc conversion status`);
+
+    log(`Converted document ${docId} for patient ${patientId} with status ${status}`);
+
+    await updateDocQuery({
+      patient: { id: patientId, cxId },
+      convertResult,
+    });
+
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
