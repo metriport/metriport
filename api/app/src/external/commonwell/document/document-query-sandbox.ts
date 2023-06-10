@@ -39,10 +39,12 @@ export async function sandboxGetDocRefsAndUpsert({
         s3BucketName: entry.s3Info.bucket,
       });
 
-      entry.docRef.contained?.push({
+      const contained = entry.docRef.contained ?? [];
+      contained.push({
         resourceType: "Patient",
         id: patient.id,
       });
+      entry.docRef.contained = contained;
       await upsertDocumentToFHIRServer(patient.cxId, entry.docRef);
     } catch (err) {
       log(
