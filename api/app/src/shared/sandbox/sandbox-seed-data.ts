@@ -3,12 +3,14 @@ import { PatientData } from "../../models/medical/patient";
 import { aaminaDocRefs } from "./sandbox-seed-data-aamina";
 import { andreasDocRefs } from "./sandbox-seed-data-andreas";
 import { DataEntry } from "./sandbox-seed-data-defaults";
+import { gavinDocRefs } from "./sandbox-seed-data-gavin";
 import { hajraDocRefs } from "./sandbox-seed-data-hajra";
 import { janeDocRefs } from "./sandbox-seed-data-jane";
 import { kylaDocRefs } from "./sandbox-seed-data-kyla";
 import { lexiDocRefs } from "./sandbox-seed-data-lexi";
 import { ollieDocRefs } from "./sandbox-seed-data-ollie";
 import { roryDocRefs } from "./sandbox-seed-data-rory";
+import { williamDocRefs } from "./sandbox-seed-data-william";
 
 export function patientMatches(patient: PatientData): boolean {
   const patientData = getSandboxSeedData(patient.firstName);
@@ -204,6 +206,42 @@ export function getSandboxSeedData(patientKey: string): PatientEntry | undefined
         ],
       },
       docRefs: aaminaDocRefs,
+    },
+    gavin: {
+      demographics: {
+        firstName: "Gavin",
+        lastName: "Blackwell",
+        dob: "1948-05-10",
+        genderAtBirth: "M",
+        address: [
+          {
+            addressLine1: "7028 Stillwater Street",
+            city: "Tallahassee",
+            state: "FL",
+            zip: "34600",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: gavinDocRefs,
+    },
+    william: {
+      demographics: {
+        firstName: "William",
+        lastName: "Donovan",
+        dob: "1955-09-14",
+        genderAtBirth: "M",
+        address: [
+          {
+            addressLine1: "7362 Canterbury Street",
+            city: "New Orleans",
+            state: "LA",
+            zip: "71200",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: williamDocRefs,
     },
   };
   return map[patientKey.toLowerCase()];
