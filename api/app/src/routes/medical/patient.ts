@@ -36,21 +36,6 @@ import {
 
 const router = Router();
 
-// TODO 760 remove if not needed
-// // Check if the demographics match the seed data
-// function sandboxCheckDemoMatch(patient: PatientData) {
-//   if (!patientMatches(patient)) {
-//     const msg = "Patient demographics dont match on sandbox";
-//     console.log(`${msg} - ${JSON.stringify(patient)}`);
-//     capture.message(msg, {
-//       level: "error",
-//       extra: {
-//         patient: JSON.stringify(patient, null, 2),
-//       },
-//     });
-//   }
-// }
-
 /** ---------------------------------------------------------------------------
  * POST /patient
  *
@@ -81,9 +66,6 @@ router.post(
       ...schemaCreateToPatient(payload, cxId),
       facilityId,
     };
-
-    // TODO 760 remove if not needed
-    // if (Config.isSandbox()) sandboxCheckDemoMatch(patientCreate);
 
     const patient = await createPatient(patientCreate);
 
@@ -122,9 +104,6 @@ router.put(
       ...getETag(req),
       id,
     };
-
-    // TODO 760 remove if not needed
-    // if (Config.isSandbox()) sandboxCheckDemoMatch(patientUpdate);
 
     const updatedPatient = await updatePatient(patientUpdate);
 

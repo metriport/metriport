@@ -6,6 +6,7 @@ import { hajraDocRefs } from "./sandbox-seed-data-hajra";
 import { janeDocRefs } from "./sandbox-seed-data-jane";
 import { kylaDocRefs } from "./sandbox-seed-data-kyla";
 import { ollieDocRefs } from "./sandbox-seed-data-ollie";
+import { roryDocRefs } from "./sandbox-seed-data-rory";
 
 export function patientMatches(patient: PatientData): boolean {
   const patientData = getSandboxSeedData(patient.firstName);
@@ -164,7 +165,7 @@ export function getSandboxSeedData(patientKey: string): PatientEntry | undefined
           },
         ],
       },
-      docRefs: hajraDocRefs,
+      docRefs: roryDocRefs,
     },
   };
   return map[patientKey.toLowerCase()];

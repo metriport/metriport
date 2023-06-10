@@ -9,15 +9,13 @@ import {
 } from "@medplum/fhirtypes";
 import { intersection } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { makeConsolidatedMockBundle } from "../../../external/fhir/mocks/consolidated";
-import { Config } from "../../../shared/config";
-import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
-import { getPatientOrFail } from "./get-patient";
 import {
   isoDateRangeToFHIRDateQuery,
   resourceSupportsDateQuery,
 } from "../../../external/fhir/shared";
+import { capture } from "../../../shared/notifications";
+import { Util } from "../../../shared/util";
+import { getPatientOrFail } from "./get-patient";
 
 function fullDateQueryForResource(fullDateQuery: string, resource: ResourceType): string {
   return resourceSupportsDateQuery(resource) ? fullDateQuery : "";
@@ -40,11 +38,6 @@ export async function getConsolidatedPatientData({
 
   // Just validate that the patient exists
   await getPatientOrFail({ id: patientId, cxId });
-
-  if (Config.isSandbox()) {
-    log(`Returning consolidated mock data`);
-    return buildResponse(makeConsolidatedMockBundle());
-  }
 
   const resourcesByPatient = resources
     ? intersection(resources, resourcesSearchableByPatient)
