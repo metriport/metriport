@@ -52,8 +52,13 @@ export function createConnector({
 }): Queue | undefined {
   const config = getConfig();
   const fhirServerUrl = config.fhirServerUrl;
+  const apiURL = config.loadBalancerDnsName;
   if (!fhirServerUrl) {
     console.log("No FHIR Server URL provided, skipping connector creation");
+    return undefined;
+  }
+  if (!apiURL) {
+    console.log("No API URL provided, skipping connector creation");
     return undefined;
   }
   const {
@@ -99,6 +104,9 @@ export function createConnector({
       DLQ_URL: dlq.queue.queueUrl,
       ...(fhirServerUrl && {
         FHIR_SERVER_URL: config.fhirServerUrl,
+      }),
+      ...(apiURL && {
+        API_URL: config.loadBalancerDnsName,
       }),
     },
     timeout: lambdaTimeout,

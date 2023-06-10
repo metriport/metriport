@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import status from "http-status";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import { getCxIdOrFail } from "../util";
+import { Config } from "../../shared/config";
 
 /**
  * Process the API key and get the customer id.
@@ -40,7 +41,7 @@ export const checkMAPIAccess = async (
   } catch (error) {
     console.error(`Failed checking MAPI access with error ${error}`);
   }
-  if (hasMAPIAccess) {
+  if (hasMAPIAccess || Config.isSandbox()) {
     next();
   } else {
     res.status(status.FORBIDDEN);

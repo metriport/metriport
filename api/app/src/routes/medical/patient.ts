@@ -15,6 +15,9 @@ import { processAsyncError } from "../../errors";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/patient";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
+import { PatientModel as Patient } from "../../models/medical/patient";
+import { Config } from "../../shared/config";
+import { parseISODate } from "../../shared/date";
 import {
   asyncHandler,
   getCxIdOrFail,
@@ -30,7 +33,6 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
-import { parseISODate } from "../../shared/date";
 
 const router = Router();
 
@@ -49,6 +51,16 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
     const payload = patientCreateSchema.parse(req.body);
+
+    if (Config.isSandbox()) {
+      // limit the amount of patients that can be created in sandbox mode
+      const numPatients = await Patient.count({ where: { cxId } });
+      if (numPatients >= Config.SANDBOX_PATIENT_LIMIT) {
+        return res.status(status.BAD_REQUEST).json({
+          message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
+        });
+      }
+    }
 
     const patientCreate: PatientCreateCmd = {
       ...schemaCreateToPatient(payload, cxId),
@@ -83,7 +95,6 @@ router.put(
     const payload = patientUpdateSchema.parse(req.body);
 
     const isProcessing = await areDocumentsProcessing({ id, cxId });
-
     if (isProcessing) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
     }
@@ -93,6 +104,7 @@ router.put(
       ...getETag(req),
       id,
     };
+
     const updatedPatient = await updatePatient(patientUpdate);
 
     // temp solution until we migrate to FHIR

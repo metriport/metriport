@@ -1,6 +1,8 @@
+import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import * as AWS from "aws-sdk";
 import axios from "axios";
+import * as uuid from "uuid";
 
 export function getEnv(name) {
   return process.env[name];
@@ -17,6 +19,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
+const apiURL = getEnvOrFail("API_URL");
 const sentryDsn = getEnv("SENTRY_DSN");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
@@ -25,6 +28,13 @@ const sourceQueueURL = getEnvOrFail("QUEUE_URL");
 const dlqURL = getEnvOrFail("DLQ_URL");
 const conversionResultQueueURL = getEnvOrFail("CONVERSION_RESULT_QUEUE_URL");
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
+// sidechain converter config
+const sidechainFHIRConverterUrl = getEnv("SIDECHAIN_FHIR_CONVERTER_URL");
+const sidechainFHIRConverterUrlBlacklist = getEnv("SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST");
+const sidechainFHIRConverterKeysSecretName = isSidechainConnector()
+  ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS")
+  : undefined;
+const baseReplaceUrl = "https://public.metriport.com";
 
 // Keep this as early on the file as possible
 Sentry.init({
@@ -46,12 +56,115 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
+const ossApi = axios.create();
+const docProgressURL = `${apiURL}/doc-conversion-status`;
+
+function isSidechainConnector() {
+  return sidechainFHIRConverterUrl ? true : false;
+}
+
+async function getSidechainConverterAPIKey() {
+  if (!sidechainFHIRConverterKeysSecretName) {
+    throw new Error(`Programming error - sidechainFHIRConverterKeys is not set`);
+  }
+
+  const secret = await getSecret(sidechainFHIRConverterKeysSecretName);
+  if (!secret) {
+    throw new Error(`Config error - sidechainFHIRConverterKeysSecret doesn't exist`);
+  }
+
+  const keys = secret.split(",");
+  if (keys.length < 1) {
+    throw new Error(
+      `Config error - sidechainFHIRConverterKeysSecret needs to be a comma separated string of keys`
+    );
+  }
+  // pick a key at random
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+
+function postProcessSidechainFHIRBundle(fhirBundle, extension) {
+  fhirBundle.type = "batch";
+
+  const stringsToReplace = [];
+  let curIndex = 0;
+  let patientIndex = -1;
+  let operationOutcomeIndex = -1;
+  console.log(fhirBundle);
+  if (fhirBundle?.entry?.length) {
+    for (const bundleEntry of fhirBundle.entry) {
+      // add doc id extension
+      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
+      bundleEntry.resource.extension.push(extension);
+
+      // validate resource id
+      let idToUse = bundleEntry.resource.id;
+      if (!uuid.validate(idToUse)) {
+        // if it's not valid, we'll need to generate a valid UUID
+        const newId = uuid.v4();
+        bundleEntry.resource.id = newId;
+
+        // save the old/new ID pair so we later replace all occurences
+        // of the old one with the new one
+        stringsToReplace.push({ old: idToUse, new: newId });
+
+        idToUse = newId;
+      }
+
+      // change the fullUrl in the resource to match what our converter would generate
+      bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
+
+      // add missing request
+      if (!bundleEntry.resource.request) {
+        bundleEntry.resource.request = {
+          method: "PUT",
+          url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
+        };
+      }
+
+      // save index of the patient resource (if any)
+      if (bundleEntry.resource.resourceType === "Patient") {
+        patientIndex = curIndex;
+      }
+      // save index of the operation outcome resource (if any)
+      if (bundleEntry.resource.resourceType === "OperationOutcome") {
+        operationOutcomeIndex = curIndex;
+      }
+      curIndex++;
+    }
+
+    // remove the patient resource if it was found in the bundle
+    if (patientIndex >= 0) fhirBundle.entry.splice(patientIndex, 1);
+    // likewise, remove the operation outcome resource if it was found
+    if (operationOutcomeIndex >= 0) fhirBundle.entry.splice(operationOutcomeIndex, 1);
+  }
+
+  // replace all old ids & blacklisted urls
+  if (sidechainFHIRConverterUrlBlacklist) {
+    const blacklistedUrls = sidechainFHIRConverterUrlBlacklist.split(",");
+    for (const url of blacklistedUrls) {
+      stringsToReplace.push({ old: url, new: baseReplaceUrl });
+    }
+  }
+
+  let fhirBundleStr = JSON.stringify(fhirBundle);
+  console.log(stringsToReplace);
+  console.log(fhirBundleStr);
+  for (const stringToReplace of stringsToReplace) {
+    // doing this is apparently more efficient than just using replace
+    const regex = new RegExp(stringToReplace.old, "g");
+    fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
+  }
+
+  console.log(fhirBundleStr);
+  return JSON.parse(fhirBundleStr);
+}
 
 /* Example of a single message/record in event's `Records` array:
 {
     "messageId": "2EBA03BC-D6D1-452B-BFC3-B1DD39F32947",
     "receiptHandle": "quite-long-string",
-    "body": "{\"s3FileName\":\"nononononono\",\"s3BucketName\":\"nononono\"}",
+    "body": "{\"s3FileName\":\"nononononono\",\"s3BucketName\":\"nononono\"},\"documentExtension\":\"{...}\"}",
     "attributes": {
         "ApproximateReceiveCount": "1",
         "AWSTraceHeader": "Root=1-646a7c8c-3c5f0ea61b9a8e633bfad33c;Parent=78bb05ac3530ad87;Sampled=0;Lineage=e4161027:0",
@@ -64,7 +177,7 @@ const fhirConverter = axios.create({
       cxId: {
         stringValue: '7006E0FB-33C8-42F4-B675-A3FD05717446',
         stringListValues: [],
-        binaryListValues: [],
+        binaryListValues: [], 
         dataType: 'String'
       }
     },
@@ -102,14 +215,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         const attrib = message.messageAttributes;
         const cxId = attrib.cxId?.stringValue;
         const patientId = attrib.patientId?.stringValue;
-        const converterUrl = attrib.serverUrl?.stringValue;
         const jobStartedAt = attrib.startedAt?.stringValue;
         const jobId = attrib.jobId?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
         if (!patientId) throw new Error(`Missing patientId`);
-        if (!converterUrl) throw new Error(`Missing converterUrl`);
-        const unusedSegments = attrib.unusedSegments?.stringValue;
-        const invalidAccess = attrib.invalidAccess?.stringValue;
         const log = _log(`${i}, cxId ${cxId}, patient ${patientId}, jobId ${jobId}`);
 
         const bodyAsJson = JSON.parse(message.body);
@@ -132,26 +241,63 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         };
 
         await reportMemoryUsage();
-        const params = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
-        log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
         const conversionStart = Date.now();
-        const res = await fhirConverter.post(converterUrl, payload, {
-          params,
-          headers: { "Content-Type": "text/plain" },
-        });
-        const conversionResult = res.data;
+        let res = {};
+        if (isSidechainConnector()) {
+          const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
+          const apiKey = await getSidechainConverterAPIKey();
+          log(`Calling sidechain converter on url ${sidechainUrl}`);
+          res = await fhirConverter.post(sidechainUrl, payload, {
+            headers: {
+              "Content-Type": "application/xml",
+              Accept: "application/json",
+              "x-api-key": apiKey,
+            },
+          });
+        } else {
+          const converterUrl = attrib.serverUrl?.stringValue;
+          if (!converterUrl) throw new Error(`Missing converterUrl`);
+          const unusedSegments = attrib.unusedSegments?.stringValue;
+          const invalidAccess = attrib.invalidAccess?.stringValue;
+          const params = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
+          log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
+          res = await fhirConverter.post(converterUrl, payload, {
+            params,
+            headers: { "Content-Type": "text/plain" },
+          });
+        }
+        const conversionResult = isSidechainConnector() ? { fhirResource: res.data } : res.data;
         metrics.conversion = {
           duration: Date.now() - conversionStart,
           timestamp: new Date().toISOString(),
         };
 
         await reportMemoryUsage();
-        addExtensionToConversion(conversionResult, documentExtension);
-        removePatientFromConversion(conversionResult);
-        addMissingRequests(conversionResult);
+
+        // post-process conversion result
+        const postProcessStart = Date.now();
+        if (isSidechainConnector()) {
+          postProcessSidechainFHIRBundle(conversionResult.fhirResource, documentExtension);
+        } else {
+          addExtensionToConversion(conversionResult, documentExtension);
+          removePatientFromConversion(conversionResult);
+          addMissingRequests(conversionResult);
+        }
+        metrics.postProcess = {
+          duration: Date.now() - postProcessStart,
+          timestamp: new Date().toISOString(),
+        };
 
         await reportMemoryUsage();
-        await sendConversionResult(cxId, s3FileName, conversionResult, jobStartedAt, jobId, log);
+        await sendConversionResult(
+          cxId,
+          patientId,
+          s3FileName,
+          conversionResult,
+          jobStartedAt,
+          jobId,
+          log
+        );
 
         await reportMemoryUsage();
         await reportMetrics(metrics);
@@ -177,6 +323,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await sendToDLQ(message);
+
+          const cxId = message.messageAttributes?.cxId?.stringValue;
+          const patientId = message.messageAttributes?.patientId?.stringValue;
+          const jobId = message.messageAttributes?.jobId?.stringValue;
+
+          if (cxId && patientId && jobId) {
+            await ossApi.post(docProgressURL, {
+              cxId,
+              patientId,
+              status: "failed",
+              jobId,
+            });
+          }
         }
       }
     }
@@ -235,7 +394,15 @@ async function downloadFileContents(s3BucketName, s3FileName) {
   return streamToString(stream);
 }
 
-async function sendConversionResult(cxId, sourceFileName, conversionPayload, jobStartedAt, jobId, log) {
+async function sendConversionResult(
+  cxId,
+  patientId,
+  sourceFileName,
+  conversionPayload,
+  jobStartedAt,
+  jobId,
+  log
+) {
   const fileName = `${sourceFileName}.json`;
   log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
   await s3Client
@@ -247,21 +414,27 @@ async function sendConversionResult(cxId, sourceFileName, conversionPayload, job
     })
     .promise();
 
-  log(`Sending result info to queue`);
-  const queuePayload = JSON.stringify({
-    s3BucketName: conversionResultBucketName,
-    s3FileName: fileName,
-  });
-  const sendParams = {
-    MessageBody: queuePayload,
-    QueueUrl: conversionResultQueueURL,
-    MessageAttributes: {
-      ...singleAttributeToSend("cxId", cxId),
-      ...(jobStartedAt ? singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
-      ...(jobId ? singleAttributeToSend("jobId", jobId) : {}),
-    },
-  };
-  await sqs.sendMessage(sendParams).promise();
+  if (isSidechainConnector()) {
+    log(`Sending result info to queue`);
+    const queuePayload = JSON.stringify({
+      s3BucketName: conversionResultBucketName,
+      s3FileName: fileName,
+    });
+
+    const sendParams = {
+      MessageBody: queuePayload,
+      QueueUrl: conversionResultQueueURL,
+      MessageAttributes: {
+        ...singleAttributeToSend("cxId", cxId),
+        ...singleAttributeToSend("patientId", patientId),
+        ...(jobStartedAt ? singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
+        ...(jobId ? singleAttributeToSend("jobId", jobId) : {}),
+      },
+    };
+    await sqs.sendMessage(sendParams).promise();
+  } else {
+    log(`Skipping sending result info to queue`);
+  }
 }
 
 async function sendToDLQ(message) {
@@ -316,7 +489,7 @@ async function dequeue(message) {
 }
 
 async function reportMetrics(metrics) {
-  const { download, conversion } = metrics;
+  const { download, conversion, postProcess } = metrics;
   const metric = (name, values) => ({
     MetricName: name,
     Value: parseFloat(values.duration),
@@ -327,7 +500,11 @@ async function reportMetrics(metrics) {
   try {
     await cloudWatch
       .putMetricData({
-        MetricData: [metric("Download", download), metric("Conversion", conversion)],
+        MetricData: [
+          metric("Download", download),
+          metric("Conversion", conversion),
+          metric("PostProcess", postProcess),
+        ],
         Namespace: metricsNamespace,
       })
       .promise();

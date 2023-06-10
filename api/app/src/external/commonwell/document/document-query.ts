@@ -9,7 +9,6 @@ import {
 import { chunk } from "lodash";
 import { PassThrough } from "stream";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import { processPatientDocumentRequest } from "../../../command/webhook/medical";
 import ConversionError from "../../../errors/conversion-error";
@@ -27,13 +26,13 @@ import { reportMetric } from "../../aws/cloudwatch";
 import { makeS3Client } from "../../aws/s3";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { MAX_FHIR_DOC_ID_LENGTH, toFHIR as toFHIRDocRef } from "../../fhir/document";
-import { getDocumentSandboxPayload } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument as downloadDocumentFromCW } from "./document-download";
+import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import { CWDocumentWithMetriportData, getFileName } from "./shared";
 
 const s3Client = makeS3Client();
@@ -64,8 +63,11 @@ export async function queryAndProcessDocuments({
 
   try {
     if (Config.isSandbox()) {
-      // if this is sandbox, just send the sandbox payload to the WH
-      const documentsSandbox = getDocumentSandboxPayload(patient.id);
+      const documentsSandbox = await sandboxGetDocRefsAndUpsert({
+        organization,
+        facility,
+        patient,
+      });
       processPatientDocumentRequest(organization.cxId, patient.id, toDTO(documentsSandbox));
       return documentsSandbox.length;
     } else {
@@ -86,10 +88,19 @@ export async function queryAndProcessDocuments({
       // send webhook to cx async when docs are done processing
       processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
 
+      await updateDocQuery({
+        patient: { id: patient.id, cxId: patient.cxId },
+        downloadProgress: { status: "completed" },
+      });
+
       return FHIRDocRefs.length;
     }
   } catch (err) {
     console.log(`Error: `, err);
+    await updateDocQuery({
+      patient: { id: patient.id, cxId: patient.cxId },
+      downloadProgress: { status: "failed" },
+    });
     capture.error(err, {
       extra: {
         context: `cw.queryDocuments`,
@@ -97,14 +108,6 @@ export async function queryAndProcessDocuments({
       },
     });
     throw err;
-  } finally {
-    try {
-      await updateDocQuery({ patient, status: "completed" });
-    } catch (err) {
-      capture.error(err, {
-        extra: { context: `cw.getDocuments.updateDocQuery` },
-      });
-    }
   }
 }
 
@@ -308,6 +311,8 @@ export async function downloadDocsAndUpsertFHIR({
 
   const docsNewLocation: DocumentReference[] = [];
   let completedCount = 0;
+  let errorCount = 0;
+  let fhirConvertCount = 0;
 
   // split the list in chunks
   const chunks = chunk(documents, DOC_DOWNLOAD_CHUNK_SIZE);
@@ -324,6 +329,7 @@ export async function downloadDocsAndUpsertFHIR({
 
           const docLocation = doc.content.location;
           if (!docLocation) {
+            errorCount++;
             log(`Doc without location, skipping - docId ${fhirDocId}`);
             return;
           }
@@ -414,6 +420,8 @@ export async function downloadDocsAndUpsertFHIR({
           };
 
           if (file.isNew) {
+            fhirConvertCount++;
+
             await convertCDAToFHIR({
               patient,
               document: { id: fhirDocId, mimeType: doc.content?.mimeType },
@@ -431,8 +439,12 @@ export async function downloadDocsAndUpsertFHIR({
             throw error;
           }
 
+          completedCount++;
+
           return FHIRDocRef;
         } catch (error) {
+          errorCount++;
+
           log(`Error processing doc: ${error}`, doc);
           if (!errorReported) {
             capture.error(error, {
@@ -447,17 +459,22 @@ export async function downloadDocsAndUpsertFHIR({
         } finally {
           // TODO: eventually we will have to update this to support multiple HIEs
           try {
-            const newPatient = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
-
-            completedCount = completedCount + 1;
-
             await updateDocQuery({
-              patient: newPatient,
-              status: "processing",
-              progress: {
-                completed: completedCount,
+              patient: { id: patient.id, cxId: patient.cxId },
+              downloadProgress: {
+                status: "processing",
                 total: documents.length,
+                successful: completedCount,
+                errors: errorCount,
               },
+              ...(fhirConvertCount > 0
+                ? {
+                    convertProgress: {
+                      status: "processing",
+                      total: fhirConvertCount,
+                    },
+                  }
+                : undefined),
             });
           } catch (err) {
             capture.error(err, {

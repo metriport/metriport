@@ -42,6 +42,7 @@ export class Withings extends Provider implements OAuth2 {
   static TOKEN_PATH = "/v2/oauth2";
   static API_PATH = "v2";
   static scopes = "user.activity,user.metrics,user.info";
+  static STATUS_OK = 0;
 
   private static clientId = Config.getWithingsClientId();
   private static clientSecret = Config.getWithingsClientSecret();
@@ -149,9 +150,7 @@ export class Withings extends Provider implements OAuth2 {
           }
         );
 
-        const statusOk = 0;
-
-        if (response.data.status !== statusOk) {
+        if (response.data?.status !== Withings.STATUS_OK) {
           console.log(response.data);
           throw new Error(response.data.error);
         }
@@ -302,6 +301,13 @@ export class Withings extends Provider implements OAuth2 {
       },
       params,
     });
+
+    if (response.data?.status !== Withings.STATUS_OK) {
+      capture.error(response.data, {
+        extra: { context: `withings.fetch.measurements` },
+      });
+      throw new Error(response.data.error);
+    }
 
     return withingsMeasurementResp.parse(response.data.body);
   }
