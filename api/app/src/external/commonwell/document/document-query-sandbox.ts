@@ -5,6 +5,7 @@ import { Patient } from "../../../models/medical/patient";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
+import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 
 export async function sandboxGetDocRefsAndUpsert({
   patient,
@@ -31,6 +32,8 @@ export async function sandboxGetDocRefsAndUpsert({
       s3FileName: entry.s3Info.key,
       s3BucketName: entry.s3Info.bucket,
     });
+
+    await upsertDocumentToFHIRServer(patient.cxId, entry.docRef);
   }
 
   return entries.map(d => d.docRef);
