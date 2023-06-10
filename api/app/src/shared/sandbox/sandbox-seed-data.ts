@@ -1,7 +1,10 @@
 import { Address } from "../../models/medical/address";
 import { PatientData } from "../../models/medical/patient";
+import { andreasDocRefs } from "./sandbox-seed-data-andreas";
 import { DataEntry } from "./sandbox-seed-data-defaults";
+import { hajraDocRefs } from "./sandbox-seed-data-hajra";
 import { janeDocRefs } from "./sandbox-seed-data-jane";
+import { kylaDocRefs } from "./sandbox-seed-data-kyla";
 import { ollieDocRefs } from "./sandbox-seed-data-ollie";
 
 export function patientMatches(patient: PatientData): boolean {
@@ -91,42 +94,78 @@ export function getSandboxSeedData(patientKey: string): PatientEntry | undefined
       },
       docRefs: ollieDocRefs,
     },
-    // heather: {
-    //   demographics: {
-    //     firstName: "Heather",
-    //     lastName: "Alverez",
-    //     dob: "1939-11-01",
-    //     genderAtBirth: "F",
-    //     address: [
-    //       {
-    //         addressLine1: "670 9th Ave",
-    //         city: "Harrisburg",
-    //         state: "PA",
-    //         zip: "15300",
-    //         country: "USA",
-    //       },
-    //     ],
-    //   },
-    //   docRefs: heatherDocRefs,
-    // },
-    // kyla: {
-    //   demographics: {
-    //     firstName: "Kyla",
-    //     lastName: "Fields",
-    //     dob: "1927-05-23",
-    //     genderAtBirth: "F",
-    //     address: [
-    //       {
-    //         addressLine1: "332 16th St",
-    //         city: "Portland",
-    //         state: "ME",
-    //         zip: "04000",
-    //         country: "USA",
-    //       },
-    //     ],
-    //   },
-    //   docRefs: kylaDocRefs,
-    // },
+    andreas: {
+      demographics: {
+        firstName: "Andreas",
+        lastName: "Sims",
+        dob: "1952-01-01",
+        genderAtBirth: "M",
+        address: [
+          {
+            addressLine1: "4430 York St",
+            city: "Jefferson City",
+            state: "MO",
+            zip: "64000",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: andreasDocRefs,
+    },
+    kyla: {
+      demographics: {
+        firstName: "Kyla",
+        lastName: "Fields",
+        dob: "1927-05-23",
+        genderAtBirth: "F",
+        address: [
+          {
+            addressLine1: "332 16th St",
+            city: "Portland",
+            state: "ME",
+            zip: "04000",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: kylaDocRefs,
+    },
+    hajra: {
+      demographics: {
+        firstName: "Hajra",
+        lastName: "Powers",
+        dob: "2001-04-04",
+        genderAtBirth: "F",
+        address: [
+          {
+            addressLine1: "1984 Juniper Way",
+            city: "Sacramento",
+            state: "CA",
+            zip: "95300",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: hajraDocRefs,
+    },
+    rory: {
+      demographics: {
+        firstName: "Rory",
+        lastName: "Mills",
+        dob: "1959-09-09",
+        genderAtBirth: "M",
+        address: [
+          {
+            addressLine1: "891 E. Galvin Court",
+            city: "Ames",
+            state: "IA",
+            zip: "51500",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: hajraDocRefs,
+    },
   };
   return map[patientKey.toLowerCase()];
 }
