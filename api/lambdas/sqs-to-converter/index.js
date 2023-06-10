@@ -1,7 +1,7 @@
+import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import * as AWS from "aws-sdk";
 import axios from "axios";
-import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as uuid from "uuid";
 
 export function getEnv(name) {
@@ -286,7 +286,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         };
 
         await reportMemoryUsage();
-        await sendConversionResult(cxId, s3FileName, conversionResult, jobStartedAt, jobId, log);
+        await sendConversionResult(
+          cxId,
+          patientId,
+          s3FileName,
+          conversionResult,
+          jobStartedAt,
+          jobId,
+          log
+        );
 
         await reportMemoryUsage();
         await reportMetrics(metrics);
@@ -372,6 +380,7 @@ async function downloadFileContents(s3BucketName, s3FileName) {
 
 async function sendConversionResult(
   cxId,
+  patientId,
   sourceFileName,
   conversionPayload,
   jobStartedAt,
@@ -401,6 +410,7 @@ async function sendConversionResult(
       QueueUrl: conversionResultQueueURL,
       MessageAttributes: {
         ...singleAttributeToSend("cxId", cxId),
+        ...singleAttributeToSend("patientId", patientId),
         ...(jobStartedAt ? singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
         ...(jobId ? singleAttributeToSend("jobId", jobId) : {}),
       },
