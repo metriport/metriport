@@ -1,8 +1,8 @@
 import { Address } from "../../models/medical/address";
 import { PatientData } from "../../models/medical/patient";
 import { DataEntry } from "./sandbox-seed-data-defaults";
-import { heatherDocRefs } from "./sandbox-seed-data-heather";
 import { janeDocRefs } from "./sandbox-seed-data-jane";
+import { ollieDocRefs } from "./sandbox-seed-data-ollie";
 
 export function patientMatches(patient: PatientData): boolean {
   const patientData = getSandboxSeedData(patient.firstName);
@@ -55,7 +55,7 @@ export type PatientEntry = { demographics: DemographicsOnDataEntry; docRefs: Dat
 
 export function getSandboxSeedData(patientKey: string): PatientEntry | undefined {
   const map: Record<string, PatientEntry> = {
-    Jane: {
+    jane: {
       demographics: {
         firstName: "Jane",
         lastName: "Smith",
@@ -73,15 +73,15 @@ export function getSandboxSeedData(patientKey: string): PatientEntry | undefined
       },
       docRefs: janeDocRefs,
     },
-    Heather: {
+    ollie: {
       demographics: {
-        firstName: "Heather",
-        lastName: "Alverez",
-        dob: "1939-11-01",
-        genderAtBirth: "F",
+        firstName: "Ollie",
+        lastName: "Brown",
+        dob: "1946-03-18",
+        genderAtBirth: "M",
         address: [
           {
-            addressLine1: "670 9th Ave",
+            addressLine1: "201 Armada St",
             city: "Harrisburg",
             state: "PA",
             zip: "15300",
@@ -89,8 +89,44 @@ export function getSandboxSeedData(patientKey: string): PatientEntry | undefined
           },
         ],
       },
-      docRefs: heatherDocRefs,
+      docRefs: ollieDocRefs,
     },
+    // heather: {
+    //   demographics: {
+    //     firstName: "Heather",
+    //     lastName: "Alverez",
+    //     dob: "1939-11-01",
+    //     genderAtBirth: "F",
+    //     address: [
+    //       {
+    //         addressLine1: "670 9th Ave",
+    //         city: "Harrisburg",
+    //         state: "PA",
+    //         zip: "15300",
+    //         country: "USA",
+    //       },
+    //     ],
+    //   },
+    //   docRefs: heatherDocRefs,
+    // },
+    // kyla: {
+    //   demographics: {
+    //     firstName: "Kyla",
+    //     lastName: "Fields",
+    //     dob: "1927-05-23",
+    //     genderAtBirth: "F",
+    //     address: [
+    //       {
+    //         addressLine1: "332 16th St",
+    //         city: "Portland",
+    //         state: "ME",
+    //         zip: "04000",
+    //         country: "USA",
+    //       },
+    //     ],
+    //   },
+    //   docRefs: kylaDocRefs,
+    // },
   };
-  return map[patientKey];
+  return map[patientKey.toLowerCase()];
 }
