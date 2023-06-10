@@ -34,6 +34,7 @@ Sentry.init({
   tracesSampleRate: 1.0,
 });
 
+const maxRetries = 10;
 const isSandbox = envType === "sandbox";
 const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
@@ -98,7 +99,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         const patientId = attrib.patientId?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
         if (!patientId) throw new Error(`Missing patientId`);
-        const jobStartedAt = attrib.jobStartedAt?.stringValue;
+        const jobStartedAt = attrib.startedAt?.stringValue;
         const log = _log(`${i}, cxId ${cxId}, patientId ${patientId}, jobId ${jobId}`);
 
         const bodyAsJson = JSON.parse(message.body);
@@ -122,7 +123,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         let payload;
         if (isSandbox) {
           const placeholderUpdated = payloadRaw.replace(placeholderReplaceRegex, patientId);
-          payload = JSON.parse(placeholderUpdated).fhirResource;
+          // when coming from API we don't have the 'fhirResource' root prop
+          payload = JSON.parse(placeholderUpdated);
         } else {
           payload = JSON.parse(payloadRaw).fhirResource;
         }
@@ -130,12 +132,24 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         await reportMemoryUsage();
         log(`Sending payload to FHIRServer...`);
         const upsertStart = Date.now();
+
         const fhirApi = new MedplumClient({
           fetch,
           baseUrl: fhirServerUrl,
           fhirUrlPath: `fhir/${cxId}`,
         });
-        const response = await fhirApi.executeBatch(payload);
+        let response;
+        let count = 0;
+        let retry = true;
+        while (retry) {
+          count++;
+          response = await fhirApi.executeBatch(payload);
+          const errors = getErrorsFromReponse(response);
+          if (errors.length <= 0) break;
+          retry = count < maxRetries;
+          log(`Got ${errors.length} from FHIR, ${retry ? "" : "NOT "}trying again...`);
+        }
+
         metrics.upsert = {
           duration: Date.now() - upsertStart,
           timestamp: new Date().toISOString(),
@@ -200,12 +214,18 @@ async function downloadFileContents(s3BucketName, s3FileName) {
   return streamToString(stream);
 }
 
-function processReponse(response, event, log) {
+function getErrorsFromReponse(response) {
   const entries = response.entry ? response.entry : [];
   const errors = entries.filter(
     // returns non-2xx responses AND null/undefined
     e => !e.response?.status?.startsWith("2")
   );
+  return errors;
+}
+
+function processReponse(response, event, log) {
+  const entries = response.entry ? response.entry : [];
+  const errors = getErrorsFromReponse(response);
   const countError = errors.length;
   const countSuccess = entries.length - countError;
   log(`Got ${countError} errors and ${countSuccess} successes from FHIR Server`);
@@ -279,13 +299,11 @@ async function reportMetrics(metrics) {
     Dimensions: [{ Name: "Service", Value: serviceName ?? lambdaName }],
   });
   try {
+    const MetricData = [metric("Download", download), metric("Upsert", upsert)];
+    job && MetricData.put(metric("Job duration", job, "FHIR Conversion Flow"));
     await cloudWatch
       .putMetricData({
-        MetricData: [
-          metric("Download", download),
-          metric("Upsert", upsert),
-          metric("Job duration", job, "FHIR Conversion Flow"),
-        ],
+        MetricData,
         Namespace: metricsNamespace,
       })
       .promise();
