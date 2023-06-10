@@ -149,6 +149,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           retry = count < maxRetries;
           log(`Got ${errors.length} from FHIR, ${retry ? "" : "NOT "}trying again...`);
         }
+        metrics.errorCount = {
+          count,
+          timestamp: new Date().toISOString(),
+        };
 
         metrics.upsert = {
           duration: Date.now() - upsertStart,
@@ -290,17 +294,25 @@ async function dequeue(message) {
 }
 
 async function reportMetrics(metrics) {
-  const { download, upsert, job } = metrics;
-  const metric = (name, values, serviceName) => ({
+  const { download, upsert, job, errorCount } = metrics;
+  const durationMetric = (name, values, serviceName) => ({
     MetricName: name,
     Value: parseFloat(values.duration),
     Unit: "Milliseconds",
     Timestamp: values.timestamp,
     Dimensions: [{ Name: "Service", Value: serviceName ?? lambdaName }],
   });
+  const countMetric = (name, values) => ({
+    MetricName: name,
+    Value: values.count,
+    Unit: "Count",
+    Timestamp: values.timestamp,
+    Dimensions: [{ Name: "Service", Value: lambdaName }],
+  });
   try {
-    const MetricData = [metric("Download", download), metric("Upsert", upsert)];
-    job && MetricData.put(metric("Job duration", job, "FHIR Conversion Flow"));
+    const MetricData = [durationMetric("Download", download), durationMetric("Upsert", upsert)];
+    job && MetricData.put(durationMetric("Job duration", job, "FHIR Conversion Flow"));
+    errorCount && MetricData.put(countMetric("FHIR Upsert Errors", errorCount));
     await cloudWatch
       .putMetricData({
         MetricData,
