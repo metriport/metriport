@@ -286,6 +286,12 @@ export class APIStack extends Stack {
         queue: fhirConverterQueue,
         resource: apiService.service.taskDefinition.taskRole,
       });
+      fhirServerQueue &&
+        provideAccessToQueue({
+          accessType: "send",
+          queue: fhirServerQueue,
+          resource: apiService.service.taskDefinition.taskRole,
+        });
       const fhirConverterLambda = fhirServerQueue?.queueUrl
         ? fhirConverterConnector.createLambda({
             envType: props.config.environmentType,
