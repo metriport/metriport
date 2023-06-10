@@ -16,7 +16,10 @@ export async function sandboxGetDocRefsAndUpsert({
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
 
-  const entries = getSandboxSeedData(patient.data.firstName);
+  const patientData = getSandboxSeedData(patient.data.firstName);
+  if (!patientData) return [];
+
+  const entries = patientData.docRefs;
   log(`Got ${entries.length} doc refs`);
 
   for (const entry of entries) {
