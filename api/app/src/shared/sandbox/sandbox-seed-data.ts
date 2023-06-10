@@ -1,10 +1,12 @@
 import { Address } from "../../models/medical/address";
 import { PatientData } from "../../models/medical/patient";
+import { aaminaDocRefs } from "./sandbox-seed-data-aamina";
 import { andreasDocRefs } from "./sandbox-seed-data-andreas";
 import { DataEntry } from "./sandbox-seed-data-defaults";
 import { hajraDocRefs } from "./sandbox-seed-data-hajra";
 import { janeDocRefs } from "./sandbox-seed-data-jane";
 import { kylaDocRefs } from "./sandbox-seed-data-kyla";
+import { lexiDocRefs } from "./sandbox-seed-data-lexi";
 import { ollieDocRefs } from "./sandbox-seed-data-ollie";
 import { roryDocRefs } from "./sandbox-seed-data-rory";
 
@@ -166,6 +168,42 @@ export function getSandboxSeedData(patientKey: string): PatientEntry | undefined
         ],
       },
       docRefs: roryDocRefs,
+    },
+    lexi: {
+      demographics: {
+        firstName: "Lexi",
+        lastName: "Stevenson",
+        dob: "1928-03-26",
+        genderAtBirth: "F",
+        address: [
+          {
+            addressLine1: "85 Hillside Street",
+            city: "Springfield",
+            state: "IL",
+            zip: "62600",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: lexiDocRefs,
+    },
+    aamina: {
+      demographics: {
+        firstName: "Aamina",
+        lastName: "Alexander",
+        dob: "1954-10-01",
+        genderAtBirth: "F",
+        address: [
+          {
+            addressLine1: "796 Thorne Lane",
+            city: "Austin",
+            state: "TX",
+            zip: "75400",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: aaminaDocRefs,
     },
   };
   return map[patientKey.toLowerCase()];
