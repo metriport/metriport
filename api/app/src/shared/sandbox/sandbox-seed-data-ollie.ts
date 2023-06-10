@@ -1,18 +1,18 @@
 import { bucket, DataEntry } from "./sandbox-seed-data-defaults";
 
-export const janeDocRefs: DataEntry[] = [
+export const ollieDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane1.xml",
+      key: "ollie1.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTIyMDEzODgtQzk1RC00RkU2LTlCNzAtQTQ4MTZBMDM3NzVB",
+      id: "OWVlMGRhNDYtNDJkNS00ZWU0LWI1N2YtNjRjYWNlYjZmYTY2",
       content: [
         {
           attachment: {
-            title: "jane1.xml",
+            title: "ollie1.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -23,15 +23,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane2.xml",
+      key: "ollie2.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QjIyMDEzODgtQzk1RC00RkU2LTlCNzAtQTQ4MTZBMDM3NzVB",
+      id: "YmE2MzI5NDMtMTcxZi00NmViLWIzOGItMmY2NjBhZDUwYWRm",
       content: [
         {
           attachment: {
-            title: "jane2.xml",
+            title: "ollie2.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -42,15 +42,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane3.xml",
+      key: "ollie3.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzODgtQzk1RC00RkU2LTlCNzAtQTQ4MTZBMDM3NzVB",
+      id: "ZTY3NjJmYzUtOGZiYi00ZTg1LTk0YzgtNzM4ZTVkNTFhZjQ3",
       content: [
         {
           attachment: {
-            title: "jane3.xml",
+            title: "ollie3.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -61,15 +61,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane4.xml",
+      key: "ollie4.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzODgtQzk1RC00RkU2LTFCNzAtQjM4MTZBMDM3NzVB",
+      id: "NjA2NmQ4NjItMWM4MS00NGJmLTlhZTEtYmM3YTE5ZDM0NTg1",
       content: [
         {
           attachment: {
-            title: "jane4.xml",
+            title: "ollie4.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -80,15 +80,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane5.xml",
+      key: "ollie5.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDQzMjItSDM5Mi1CNTQzLTFCNzAtQjM4VzZBMDM3NzZD",
+      id: "NWE1YjY1MWYtZDU4OS00ZDQtODlmNS0wZjhjMGE1MWY1YmE",
       content: [
         {
           attachment: {
-            title: "jane5.xml",
+            title: "ollie5.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -99,15 +99,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane6.xml",
+      key: "ollie6.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzNzctQzk1RC00RkU2LTFCNzAtQjM4MTZBMDM3NzVB",
+      id: "NTg1NmVhYTMtZDQ5Zi00MDE4LTk5ZmQtZjk2ZTUzNjc1ZjU4",
       content: [
         {
           attachment: {
-            title: "jane6.xml",
+            title: "ollie6.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -118,15 +118,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane7.xml",
+      key: "ollie7.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDQzMjItSDM5Mi1CNTQzLTFCNzAtQjM4NDZBMDM3NzZD",
+      id: "M2EwZTU4OWEtY2VhZi00MWU2LWFlODAtNjViYjBkMDZmZDY2",
       content: [
         {
           attachment: {
-            title: "jane7.xml",
+            title: "ollie7.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -137,15 +137,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane8.xml",
+      key: "ollie8.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzNzctQzk1RC0xMjM0LTFCNzAtQjM4MTZBMDM3NzVB",
+      id: "YjRiMjkxMGYtYTdjMC00OGE0LWJhNTEtMzU5MDk5NGVjNDA3",
       content: [
         {
           attachment: {
-            title: "jane8.xml",
+            title: "ollie8.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -156,15 +156,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane9.xml",
+      key: "ollie9.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzNzctNzg5NC0xMjM0LTFCNzAtQjM4MTZBMDM3NzVB",
+      id: "ODQ4NWMzNjItOGM0NC00NGIyLTlhMTgtMmYxNTJhNTljYjIy",
       content: [
         {
           attachment: {
-            title: "jane9.xml",
+            title: "ollie9.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -175,15 +175,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane10.xml",
+      key: "ollie10.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzNzctNzg5NC0xMjM0LTFCNzAtQjM4MTZBMDM3NzVC",
+      id: "Y2Y3NjI5NjYtNjY5NS00Nzc0LWIzMTYtY2E1NTYwODI3NWQy",
       content: [
         {
           attachment: {
-            title: "jane10.xml",
+            title: "ollie10.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -194,15 +194,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane11.pdf",
+      key: "ollie11.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItNzg5NC0xMjM0LTFCNzAtQjM4MTZBMDM3NzVC",
+      id: "Y2RjMjhkNGUtZTg3Mi00NDQ3LThhYzAtZDkwNjkxMzdmNWUz",
       content: [
         {
           attachment: {
-            title: "jane11.pdf",
+            title: "ollie11.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
           },
@@ -213,15 +213,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane12.pdf",
+      key: "ollie12.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItNzg5NC1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
+      id: "ZTBhMGUzOWMtNDVjMi00NDRkLWE5MDItMDFmNmU4ZDg3NmVj",
       content: [
         {
           attachment: {
-            title: "jane12.pdf",
+            title: "ollie12.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
           },
@@ -232,15 +232,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane13.pdf",
+      key: "ollie13.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
+      id: "MDAyN2M2NGYtMzQ1Mi00MDNjLTg1MzYtNTg2YzYzM2JkMDY3",
       content: [
         {
           attachment: {
-            title: "jane13.pdf",
+            title: "ollie13.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
           },
@@ -251,34 +251,15 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane14.jpeg",
+      key: "ollie14.tif",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVD",
+      id: "MGM2MTg5NzMtZDdiNy00NjUtYWMwYi02NDYyYjlhNTJkOWE",
       content: [
         {
           attachment: {
-            title: "jane14.jpeg",
-            url: "http://api.metriport.com",
-            contentType: "image/jpeg",
-          },
-        },
-      ],
-    },
-  },
-  {
-    s3Info: {
-      bucket,
-      key: "jane15.tif",
-    },
-    docRef: {
-      resourceType: "DocumentReference",
-      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzZD",
-      content: [
-        {
-          attachment: {
-            title: "jane15.tif",
+            title: "ollie14.tif",
             url: "http://api.metriport.com",
             contentType: "image/tif",
           },
@@ -289,17 +270,17 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane16.jpeg",
+      key: "ollie15.tif",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4NDZBMDM3NzZD",
+      id: "ZGIzYTk0YWYtZTFiYy00NGViLWJkYmQtNzdjNGQxNWEwZDJm",
       content: [
         {
           attachment: {
-            title: "jane16.jpeg",
+            title: "ollie15.tif",
             url: "http://api.metriport.com",
-            contentType: "image/jpeg",
+            contentType: "image/tif",
           },
         },
       ],
