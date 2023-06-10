@@ -22,6 +22,7 @@ import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
+import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
@@ -185,11 +186,30 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
+    // sidechain FHIR converter queue
+    const {
+      queue: sidechainFHIRConverterQueue,
+      dlq: sidechainFHIRConverterDLQ,
+      bucket: sidechainFHIRConverterBucket,
+    } = sidechainFHIRConverterConnector.createQueueAndBucket({
+      stack: this,
+      vpc: this.vpc,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
+      ? new s3.Bucket(this, "APISandboxSeedDataBucket", {
+          bucketName: props.config.sandboxSeedDataBucketName,
+          publicReadAccess: false,
+          encryption: s3.BucketEncryption.S3_MANAGED,
+        })
+      : undefined;
+
     const fhirServerQueue = fhirServerConnector.createConnector({
       envType: props.config.environmentType,
       stack: this,
       vpc: this.vpc,
-      fhirConverterBucket,
+      fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
@@ -213,7 +233,8 @@ export class APIStack extends Stack {
       props.config.fhirServerUrl,
       fhirServerQueue?.queueUrl,
       fhirConverterQueue.queueUrl,
-      fhirConverter ? `http://${fhirConverter.address}` : undefined
+      fhirConverter ? `http://${fhirConverter.address}` : undefined,
+      sidechainFHIRConverterQueue?.queueUrl
     );
 
     // Access grant for Aurora DB
@@ -279,10 +300,32 @@ export class APIStack extends Stack {
           })
         : undefined;
 
+      // sidechain FHIR converter
+      provideAccessToQueue({
+        accessType: "send",
+        queue: sidechainFHIRConverterQueue,
+        resource: apiService.service.taskDefinition.taskRole,
+      });
+      const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
+        ? sidechainFHIRConverterConnector.createLambda({
+            envType: props.config.environmentType,
+            stack: this,
+            vpc: this.vpc,
+            sourceQueue: sidechainFHIRConverterQueue,
+            destinationQueue: fhirServerQueue,
+            dlq: sidechainFHIRConverterDLQ,
+            fhirConverterBucket: sidechainFHIRConverterBucket,
+            conversionResultQueueUrl: fhirServerQueue.queueUrl,
+            alarmSnsAction: slackNotification?.alarmAction,
+          })
+        : undefined;
+
       // Access grant for medical documents bucket
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       medicalDocumentsBucket.grantReadWrite(cdaToVisualization);
       fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+      sidechainFHIRConverterLambda &&
+        medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
     }
 
     //-------------------------------------------

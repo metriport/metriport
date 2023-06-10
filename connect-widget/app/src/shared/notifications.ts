@@ -1,14 +1,5 @@
 import * as Sentry from "@sentry/react";
-
-export type CaptureContext = {
-  user: { id?: string; email?: string };
-  extra: Record<string, unknown>;
-  tags: {
-    [key: string]: string;
-  };
-};
-
-export type SeverityLevel = "fatal" | "error" | "warning" | "log" | "info" | "debug";
+import { Extras, ScopeContext } from "@sentry/types";
 
 export const capture = {
   /**
@@ -19,8 +10,12 @@ export const capture = {
    * @returns — The generated eventId.
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  error: (error: any, captureContext?: Partial<CaptureContext>): string => {
-    return Sentry.captureException(error, captureContext);
+  error: (error: any, captureContext?: Partial<ScopeContext>): string => {
+    const extra = captureContext ? stringifyExtra(captureContext) : {};
+    return Sentry.captureException(error, {
+      ...captureContext,
+      extra,
+    });
   },
 
   /**
@@ -30,7 +25,21 @@ export const capture = {
    * @param captureContext — Additional scope data to apply to exception event.
    * @returns — The generated eventId.
    */
-  message: (message: string, captureContext?: Partial<CaptureContext> | SeverityLevel): string => {
-    return Sentry.captureMessage(message, captureContext);
+  message: (message: string, captureContext?: Partial<ScopeContext>): string => {
+    const extra = captureContext ? stringifyExtra(captureContext) : {};
+    return Sentry.captureMessage(message, {
+      ...captureContext,
+      extra,
+    });
   },
 };
+
+export function stringifyExtra(captureContext: Partial<ScopeContext>): Extras {
+  return Object.entries(captureContext.extra ?? {}).reduce(
+    (acc, [key, value]) => ({
+      ...acc,
+      [key]: JSON.stringify(value, null, 2),
+    }),
+    {}
+  );
+}

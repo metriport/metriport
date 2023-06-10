@@ -5,6 +5,19 @@ import { EnvConfig } from "../env-config";
 
 export type Secrets = { [key: string]: ecs.Secret };
 
+export function buildSecrets(
+  secrets: Secrets,
+  scope: Construct,
+  secretNames: Record<string, string>
+) {
+  for (const [key, value] of Object.entries(secretNames)) {
+    secrets[key] = ecs.Secret.fromSecretsManager(
+      secret.Secret.fromSecretNameV2(scope, value, value)
+    );
+  }
+  return secrets;
+}
+
 export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
   const secrets: Secrets = {};
   const buildSecrets = (secretNames: Record<string, string>) => {

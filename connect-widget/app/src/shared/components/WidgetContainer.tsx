@@ -9,6 +9,7 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { isDemo } from "../api";
 
 import Constants from "../../shared/constants";
 import { getCustomColor } from "../localStorage/custom-color";
@@ -21,8 +22,6 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
   const [searchParams] = useSearchParams();
 
   const color = searchParams.get(Constants.CUSTOM_COLOR_PARAM);
-  const token = searchParams.get(Constants.TOKEN_PARAM);
-  const isDemo = token === "demo";
 
   const customColor = getCustomColor(color, isDemo);
 

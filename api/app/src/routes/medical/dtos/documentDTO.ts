@@ -1,4 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { isMetriportContent } from "../../../external/fhir/shared/extensions/extension";
 import { decodeExternalId } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
@@ -20,33 +21,27 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
     return docs.flatMap(doc => {
       if (doc && doc.id && doc.content) {
         const decodedId = decodeExternalId(doc.id);
-        const hasAttachment = doc.content[0];
-
-        if (doc.content.length > 1) {
-          capture.message("Doc contains more than one content item", {
+        const contents = doc.content.filter(isMetriportContent);
+        if (contents.length > 1) {
+          capture.message("Doc contains more than one Metriport content item", {
             extra: {
               id: decodedId,
-              content_length: doc.content.length,
+              content_length: contents.length,
             },
           });
         }
-
-        if (
-          hasAttachment &&
-          hasAttachment.attachment &&
-          hasAttachment.attachment.title &&
-          hasAttachment.attachment.url
-        ) {
+        const content = contents[0];
+        if (content && content.attachment && content.attachment.title && content.attachment.url) {
           return {
             id: decodedId,
             description: doc.description,
-            fileName: hasAttachment.attachment.title,
-            location: hasAttachment.attachment.url,
+            fileName: content.attachment.title,
+            location: content.attachment.url,
             type: codeableToDTO(doc.type),
             status: doc.status,
-            indexed: hasAttachment.attachment.creation,
-            mimeType: hasAttachment.attachment.contentType,
-            size: hasAttachment.attachment.size,
+            indexed: content.attachment.creation,
+            mimeType: content.attachment.contentType,
+            size: content.attachment.size,
           };
         }
 

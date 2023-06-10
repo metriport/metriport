@@ -5,7 +5,7 @@ import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import {
   getConsolidatedPatientData,
-  resourceTypeForConsolidation,
+  resourceTypeForConsolidation
 } from "../../command/medical/patient/consolidate-data";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
@@ -15,24 +15,42 @@ import { processAsyncError } from "../../errors";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/patient";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
+import { PatientData, PatientModel as Patient } from "../../models/medical/patient";
+import { Config } from "../../shared/config";
+import { parseISODate } from "../../shared/date";
+import { capture } from "../../shared/notifications";
+import { patientMatches } from "../../shared/sandbox/sandbox-seed-data";
 import {
   asyncHandler,
   getCxIdOrFail,
   getETag,
   getFrom,
   getFromParamsOrFail,
-  getFromQueryOrFail,
+  getFromQueryOrFail
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import {
   patientCreateSchema,
   patientUpdateSchema,
   schemaCreateToPatient,
-  schemaUpdateToPatient,
+  schemaUpdateToPatient
 } from "./schemas/patient";
-import { parseISODate } from "../../shared/date";
 
 const router = Router();
+
+// Check if the demographics match the seed data
+function sandboxCheckDemoMatch(patient: PatientData) {
+  if (!patientMatches(patient)) {
+    const msg = "Patient demographics dont match on sandbox";
+    console.log(`${msg} - ${JSON.stringify(patient)}`);
+    capture.message(msg, {
+      level: "error",
+      extra: {
+        patient: JSON.stringify(patient, null, 2),
+      },
+    });
+  }
+}
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -50,10 +68,22 @@ router.post(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const payload = patientCreateSchema.parse(req.body);
 
+    if (Config.isSandbox()) {
+      // limit the amount of patients that can be created in sandbox mode
+      const numPatients = await Patient.count({ where: { cxId } });
+      if (numPatients >= Config.SANDBOX_PATIENT_LIMIT) {
+        return res.status(status.BAD_REQUEST).json({
+          message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
+        });
+      }
+    }
+
     const patientCreate: PatientCreateCmd = {
       ...schemaCreateToPatient(payload, cxId),
       facilityId,
     };
+
+    if (Config.isSandbox()) sandboxCheckDemoMatch(patientCreate);
 
     const patient = await createPatient(patientCreate);
 
@@ -83,7 +113,6 @@ router.put(
     const payload = patientUpdateSchema.parse(req.body);
 
     const isProcessing = await areDocumentsProcessing({ id, cxId });
-
     if (isProcessing) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
     }
@@ -93,6 +122,9 @@ router.put(
       ...getETag(req),
       id,
     };
+
+    if (Config.isSandbox()) sandboxCheckDemoMatch(patientUpdate);
+
     const updatedPatient = await updatePatient(patientUpdate);
 
     // temp solution until we migrate to FHIR

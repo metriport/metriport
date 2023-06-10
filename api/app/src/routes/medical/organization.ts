@@ -5,6 +5,7 @@ import {
   createOrganization,
   OrganizationCreateCmd,
 } from "../../command/medical/organization/create-organization";
+import { accountInit } from "../../command/account-init";
 import { toFHIR } from "../../external/fhir/organization";
 import { upsertOrgToFHIRServer } from "../../external/fhir/organization/upsert-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
@@ -32,6 +33,10 @@ router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+
+    // Initialize the account before creating the organization
+    await accountInit(cxId);
+
     const data = organizationCreateSchema.parse(req.body);
 
     const createOrg: OrganizationCreateCmd = { cxId, ...data };
