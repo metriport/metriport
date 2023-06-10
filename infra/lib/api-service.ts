@@ -90,6 +90,9 @@ export function createAPIService(
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
           }),
+          ...(props.config.sandboxSeedDataBucketName && {
+            SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
+          }),
           ...(props.config.cdaToVisualizationLambdaName && {
             CONVERT_DOC_LAMBDA_NAME: props.config.cdaToVisualizationLambdaName,
           }),

@@ -34,9 +34,11 @@ Sentry.init({
   tracesSampleRate: 1.0,
 });
 
+const isSandbox = envType === "sandbox";
 const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
+const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -93,9 +95,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         const attrib = message.messageAttributes;
         const cxId = attrib.cxId?.stringValue;
         const jobId = attrib.jobId?.stringValue;
+        const patientId = attrib.patientId?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
+        if (!patientId) throw new Error(`Missing patientId`);
         const jobStartedAt = attrib.jobStartedAt?.stringValue;
-        const log = _log(`${i}, cxId ${cxId}, jobId ${jobId}`);
+        const log = _log(`${i}, cxId ${cxId}, patientId ${patientId}, jobId ${jobId}`);
 
         const bodyAsJson = JSON.parse(message.body);
         const s3BucketName = bodyAsJson.s3BucketName;
@@ -115,10 +119,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         };
         await reportMemoryUsage();
         log(`Converting payload to JSON...`);
-        const payload = JSON.parse(payloadRaw).fhirResource;
+        let payload;
+        if (isSandbox) {
+          const placeholderUpdated = payloadRaw.replace(placeholderReplaceRegex, patientId);
+          payload = JSON.parse(placeholderUpdated).fhirResource;
+        } else {
+          payload = JSON.parse(payloadRaw).fhirResource;
+        }
 
         await reportMemoryUsage();
-        log(`Sending payload to FHIRServer, cxId ${cxId}...`);
+        log(`Sending payload to FHIRServer...`);
         const upsertStart = Date.now();
         const fhirApi = new MedplumClient({
           fetch,
