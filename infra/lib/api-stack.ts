@@ -327,6 +327,8 @@ export class APIStack extends Stack {
         : undefined;
 
       // Access grant for medical documents bucket
+      sandboxSeedDataBucket &&
+        sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       medicalDocumentsBucket.grantReadWrite(cdaToVisualization);
       fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
