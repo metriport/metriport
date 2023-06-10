@@ -198,8 +198,8 @@ export class Config {
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
-  static getSandboxBucketName(): string {
-    return getEnvVarOrFail("SANDBOX_SEED_DATA_BUCKET_NAME");
+  static getSandboxBucketName(): string | undefined {
+    return getEnvVar("SANDBOX_SEED_DATA_BUCKET_NAME");
   }
 
   static getFHIRConverterQueueURL(): string | undefined {
