@@ -1,5 +1,6 @@
 import { MedplumClient } from "@medplum/core";
 import * as Sentry from "@sentry/serverless";
+import { uuid4 } from "@sentry/utils";
 import * as AWS from "aws-sdk";
 import fetch from "node-fetch";
 
@@ -119,12 +120,20 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           timestamp: new Date().toISOString(),
         };
         await reportMemoryUsage();
-        log(`Converting payload to JSON...`);
+        log(`Converting payload to JSON, length ${payloadRaw.length}`);
         let payload;
         if (isSandbox) {
-          const placeholderUpdated = payloadRaw.replace(placeholderReplaceRegex, patientId);
-          // when coming from API we don't have the 'fhirResource' root prop
+          const idsReplaced = replaceIds(payloadRaw);
+          log(`IDs replaced, length: ${idsReplaced.length}`);
+          const placeholderUpdated = idsReplaced.replace(placeholderReplaceRegex, patientId);
           payload = JSON.parse(placeholderUpdated);
+          log(
+            `Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(
+              payload,
+              null,
+              2
+            )}`
+          );
         } else {
           payload = JSON.parse(payloadRaw).fhirResource;
         }
@@ -199,6 +208,25 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     throw err;
   }
 });
+
+function replaceIds(payload) {
+  const fhirBundle = JSON.parse(payload);
+  const stringsToReplace = [];
+  for (const bundleEntry of fhirBundle.entry) {
+    // validate resource id
+    let idToUse = bundleEntry.resource.id;
+    const newId = uuid4();
+    bundleEntry.resource.id = newId;
+    stringsToReplace.push({ old: idToUse, new: newId });
+  }
+  let fhirBundleStr = payload;
+  for (const stringToReplace of stringsToReplace) {
+    // doing this is apparently more efficient than just using replace
+    const regex = new RegExp(stringToReplace.old, "g");
+    fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
+  }
+  return fhirBundleStr;
+}
 
 // Being more generic with errors, not strictly timeouts
 function isTimeout(err) {
