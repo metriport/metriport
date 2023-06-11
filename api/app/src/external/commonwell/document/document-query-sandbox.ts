@@ -40,10 +40,17 @@ export async function sandboxGetDocRefsAndUpsert({
       });
 
       const contained = entry.docRef.contained ?? [];
-      contained.push({
-        resourceType: "Patient",
-        id: patient.id,
-      });
+      const containsPatient = contained.filter(c => c.resourceType === "Patient").length > 0;
+      if (!containsPatient) {
+        contained.push({
+          resourceType: "Patient",
+          id: patient.id,
+        });
+      }
+      entry.docRef.subject = {
+        type: "Patient",
+        reference: `Patient/${patient.id}`,
+      };
       entry.docRef.contained = contained;
       await upsertDocumentToFHIRServer(patient.cxId, entry.docRef);
     } catch (err) {
