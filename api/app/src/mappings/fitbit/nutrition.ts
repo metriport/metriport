@@ -1,5 +1,4 @@
-import { Nutrition } from "@metriport/api";
-import { FoodItem } from "@metriport/api/src/devices/models/common/food-item";
+import { Nutrition, Food } from "@metriport/api";
 import { PROVIDER_FITBIT } from "../../shared/constants";
 import { FitbitFood } from "./models/food";
 import { FitbitWater } from "./models/water";
@@ -15,12 +14,8 @@ export const mapToNutrition = (date: string, food?: FitbitFood, water?: FitbitWa
     summary: {
       macros: {},
     },
-    foods: [] as FoodItem[],
+    foods: [] as Food[],
   };
-
-  food?.foods.forEach(foodItem => {
-    console.log("item:", foodItem);
-  });
 
   if (food) {
     nutrition.summary = {
@@ -36,7 +31,7 @@ export const mapToNutrition = (date: string, food?: FitbitFood, water?: FitbitWa
     };
     food.foods?.forEach(foodItem => {
       const { name, brand, amount, unit } = foodItem.loggedFood;
-      const item: FoodItem = {
+      const item: Food = {
         name,
         brand,
         amount,
