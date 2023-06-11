@@ -1,5 +1,4 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { v4 as uuidv4 } from "uuid";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
@@ -25,11 +24,12 @@ export async function sandboxGetDocRefsAndUpsert({
   const entries = patientData.docRefs;
   log(`Got ${entries.length} doc refs`);
 
-  for (const entry of entries) {
+  for (const [index, entry] of entries.entries()) {
     let prevDocId;
     try {
       prevDocId = entry.docRef.id;
-      entry.docRef.id = encodeExternalId(uuidv4());
+      // TODO find a better way to define a unique doc ID
+      entry.docRef.id = encodeExternalId(patient.id + "_" + index);
       const fhirDocId = entry.docRef.id;
 
       await convertCDAToFHIR({
@@ -39,6 +39,12 @@ export async function sandboxGetDocRefsAndUpsert({
         s3BucketName: entry.s3Info.bucket,
       });
 
+      const contained = entry.docRef.contained ?? [];
+      contained.push({
+        resourceType: "Patient",
+        id: patient.id,
+      });
+      entry.docRef.contained = contained;
       await upsertDocumentToFHIRServer(patient.cxId, entry.docRef);
     } catch (err) {
       log(
