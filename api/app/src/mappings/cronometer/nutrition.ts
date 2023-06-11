@@ -1,8 +1,23 @@
-import { Nutrition } from "@metriport/api";
+import { Nutrition, Food } from "@metriport/api";
 import { PROVIDER_CRONOMETER } from "../../shared/constants";
 import { CronometerDiarySummary } from "./models/diary-summary";
 
 export const mapToNutrition = (diarySummary: CronometerDiarySummary, date: string): Nutrition => {
+  const { macros, nutrients, foods } = diarySummary;
+
+  const foodsLog: Food[] = [];
+
+  foods?.forEach(foodArray => {
+    foodArray.foods.forEach(foodItem => {
+      const consumedAmount = foodItem.serving.split("-");
+      foodsLog.push({
+        name: foodItem.name,
+        amount: parseFloat(consumedAmount[0]),
+        unit: consumedAmount[1].trim(),
+      });
+    });
+  });
+
   return {
     metadata: {
       date: date,
@@ -11,62 +26,63 @@ export const mapToNutrition = (diarySummary: CronometerDiarySummary, date: strin
     summary: {
       // TODO: confirm units
       macros: {
-        alcohol_g: diarySummary.macros.alcohol,
-        carbs_g: diarySummary.macros.total_carbs,
-        cholesterol_mg: diarySummary.nutrients.Cholesterol,
-        energy_kcal: diarySummary.macros.kcal,
-        fat_g: diarySummary.macros.fat,
-        fiber_g: diarySummary.macros.fiber,
-        protein_g: diarySummary.macros.protein,
-        sodium_mg: diarySummary.macros.sodium,
-        sugar_g: diarySummary.nutrients.Sugars,
-        trans_fat_g: diarySummary.nutrients["Trans-Fats"],
-        water_ml: diarySummary.nutrients.Water,
+        alcohol_g: macros.alcohol,
+        carbs_g: macros.total_carbs,
+        cholesterol_mg: nutrients.Cholesterol,
+        energy_kcal: macros.kcal,
+        fat_g: macros.fat,
+        fiber_g: macros.fiber,
+        protein_g: macros.protein,
+        sodium_mg: macros.sodium,
+        sugar_g: nutrients.Sugars,
+        trans_fat_g: nutrients["Trans-Fats"],
+        water_ml: nutrients.Water,
       },
       micros: {
-        caffeine_mg: diarySummary.nutrients.Caffeine,
-        calcium_mg: diarySummary.nutrients.Calcium,
-        copper_mg: diarySummary.nutrients.Copper,
-        folate_mg: diarySummary.nutrients.Folate,
-        iron_mg: diarySummary.nutrients.Iron,
-        magnesium_mg: diarySummary.nutrients.Magnesium,
-        manganese_mg: diarySummary.nutrients.Manganese,
-        phosphorus_mg: diarySummary.nutrients.Phosphorus,
-        potassium_mg: diarySummary.nutrients.Potassium,
-        selenium_mg: diarySummary.nutrients.Selenium,
-        vitamin_A_mg: diarySummary.nutrients["Vitamin A"],
-        vitamin_B1_mg: diarySummary.nutrients["B1 (Thiamine)"],
-        vitamin_B2_mg: diarySummary.nutrients["B2 (Riboflavin)"],
-        vitamin_B3_mg: diarySummary.nutrients["B3 (Niacin)"],
-        vitamin_B5_mg: diarySummary.nutrients["B5 (Pantothenic Acid)"],
-        vitamin_B6_mg: diarySummary.nutrients["B6 (Pyridoxine)"],
-        vitamin_B12_mg: diarySummary.nutrients["B12 (Cobalamin)"],
-        vitamin_C_mg: diarySummary.nutrients["Vitamin C"],
-        vitamin_D_mg: diarySummary.nutrients["Vitamin D"],
-        vitamin_E_mg: diarySummary.nutrients["Vitamin E"],
-        vitamin_K_mg: diarySummary.nutrients["Vitamin K"],
-        zinc_mg: diarySummary.nutrients.Zinc,
+        caffeine_mg: nutrients.Caffeine,
+        calcium_mg: nutrients.Calcium,
+        copper_mg: nutrients.Copper,
+        folate_mg: nutrients.Folate,
+        iron_mg: nutrients.Iron,
+        magnesium_mg: nutrients.Magnesium,
+        manganese_mg: nutrients.Manganese,
+        phosphorus_mg: nutrients.Phosphorus,
+        potassium_mg: nutrients.Potassium,
+        selenium_mg: nutrients.Selenium,
+        vitamin_A_mg: nutrients["Vitamin A"],
+        vitamin_B1_mg: nutrients["B1 (Thiamine)"],
+        vitamin_B2_mg: nutrients["B2 (Riboflavin)"],
+        vitamin_B3_mg: nutrients["B3 (Niacin)"],
+        vitamin_B5_mg: nutrients["B5 (Pantothenic Acid)"],
+        vitamin_B6_mg: nutrients["B6 (Pyridoxine)"],
+        vitamin_B12_mg: nutrients["B12 (Cobalamin)"],
+        vitamin_C_mg: nutrients["Vitamin C"],
+        vitamin_D_mg: nutrients["Vitamin D"],
+        vitamin_E_mg: nutrients["Vitamin E"],
+        vitamin_K_mg: nutrients["Vitamin K"],
+        zinc_mg: nutrients.Zinc,
       },
       aminos: {
-        alanine_g: diarySummary.nutrients.Alanine,
-        arginine_g: diarySummary.nutrients.Arginine,
-        aspartic_acid_g: diarySummary.nutrients["Aspartic acid"],
-        cysteine_g: diarySummary.nutrients.Cystine,
-        glutamic_acid_g: diarySummary.nutrients["Glutamic acid"],
-        glycine_g: diarySummary.nutrients.Glycine,
-        histidine_g: diarySummary.nutrients.Histidine,
-        isoleucine_g: diarySummary.nutrients.Isoleucine,
-        leucine_g: diarySummary.nutrients.Leucine,
-        lysine_g: diarySummary.nutrients.Lysine,
-        methionine_g: diarySummary.nutrients.Methionine,
-        phenylalanine_g: diarySummary.nutrients.Phenylalanine,
-        proline_g: diarySummary.nutrients.Proline,
-        serine_g: diarySummary.nutrients.Serine,
-        threonine_g: diarySummary.nutrients.Threonine,
-        tryptophan_g: diarySummary.nutrients.Tryptophan,
-        tyrosine_g: diarySummary.nutrients.Tyrosine,
-        valine_g: diarySummary.nutrients.Valine,
+        alanine_g: nutrients.Alanine,
+        arginine_g: nutrients.Arginine,
+        aspartic_acid_g: nutrients["Aspartic acid"],
+        cysteine_g: nutrients.Cystine,
+        glutamic_acid_g: nutrients["Glutamic acid"],
+        glycine_g: nutrients.Glycine,
+        histidine_g: nutrients.Histidine,
+        isoleucine_g: nutrients.Isoleucine,
+        leucine_g: nutrients.Leucine,
+        lysine_g: nutrients.Lysine,
+        methionine_g: nutrients.Methionine,
+        phenylalanine_g: nutrients.Phenylalanine,
+        proline_g: nutrients.Proline,
+        serine_g: nutrients.Serine,
+        threonine_g: nutrients.Threonine,
+        tryptophan_g: nutrients.Tryptophan,
+        tyrosine_g: nutrients.Tyrosine,
+        valine_g: nutrients.Valine,
       },
     },
+    foods: foodsLog,
   };
 };
