@@ -59,10 +59,13 @@ const response = await metriportClient.getNutritionData("metriportUserId", "date
         "water_ml": 595.7
       },
       "micros": {
+        "biotin_mg": 52,
         "caffeine_mg": 0,
         "calcium_mg": 297.56,
         "copper_mg": 0.83,
         "folate_mg": 379.01,
+        "folic_acid_mg": 37.12,
+        "iodine_mg": 215.1,
         "iron_mg": 17.68,
         "magnesium_mg": 249.85,
         "manganese_mg": 4.66,
@@ -85,9 +88,11 @@ const response = await metriportClient.getNutritionData("metriportUserId", "date
       "aminos": {
         "alanine_g": 3.12,
         "arginine_g": 3.55,
+        "asparagine_g": 2.94,
         "aspartic_acid_g": 5.38,
         "cysteine_g": 1.16,
         "glutamic_acid_g": 12.28,
+        "glutamine_g": 1.78,
         "glycine_g": 2.76,
         "histidine_g": 1.81,
         "isoleucine_g": 3.12,
@@ -108,6 +113,22 @@ const response = await metriportClient.getNutritionData("metriportUserId", "date
         "name": "Eggs, Cooked",
         "amount": 2,
         "unit": "large"
+      },
+      {
+        "name": "Milk",
+        "brand": "Island Farms",
+        "amount": 2,
+        "unit": "serving",
+        "nutrition_facts": {
+          "macros": {
+            "energy_kcal": 368,
+            "carbs_g": 31,
+            "fat_g": 16.95,
+            "protein_g": 24,
+            "fiber_g": 0,
+            "sodium_mg": 319
+          }
+        }
       },
       {
         "name": "Quaker, Instant Oatmeal, Plain",
