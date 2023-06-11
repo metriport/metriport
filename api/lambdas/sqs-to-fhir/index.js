@@ -1,5 +1,6 @@
 import { MedplumClient } from "@medplum/core";
 import * as Sentry from "@sentry/serverless";
+import { uuid4 } from "@sentry/utils";
 import * as AWS from "aws-sdk";
 import fetch from "node-fetch";
 
@@ -188,6 +189,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await reEnqueue(message);
+          uuid4();
         } else {
           console.log(
             `Error processing message: ${JSON.stringify(message)}; ${JSON.stringify(err)}`
@@ -249,7 +251,7 @@ function getErrorsFromReponse(response) {
   return errors;
 }
 
-function processReponse(response, event, log) {
+function processResponse(response, event, log) {
   const entries = response.entry ? response.entry : [];
   const errors = getErrorsFromReponse(response);
   const countError = errors.length;
