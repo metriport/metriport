@@ -93,34 +93,8 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   console.log(fhirBundle);
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
-      // add doc id extension
-      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
-      bundleEntry.resource.extension.push(extension);
-
       // validate resource id
       let idToUse = bundleEntry.resource.id;
-      if (!uuid.validate(idToUse)) {
-        // if it's not valid, we'll need to generate a valid UUID
-        const newId = uuid.v4();
-        bundleEntry.resource.id = newId;
-
-        // save the old/new ID pair so we later replace all occurences
-        // of the old one with the new one
-        stringsToReplace.push({ old: idToUse, new: newId });
-
-        idToUse = newId;
-      }
-
-      // change the fullUrl in the resource to match what our converter would generate
-      bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
-
-      // add missing request
-      if (!bundleEntry.resource.request) {
-        bundleEntry.resource.request = {
-          method: "PUT",
-          url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
-        };
-      }
 
       // save index of the patient resource (if any)
       if (bundleEntry.resource.resourceType === "Patient") {
@@ -130,6 +104,36 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
       if (bundleEntry.resource.resourceType === "OperationOutcome") {
         operationOutcomeIndex = curIndex;
       }
+
+      if (idToUse) {
+        if (!uuid.validate(idToUse)) {
+          // if it's not valid, we'll need to generate a valid UUID
+          const newId = uuid.v4();
+          bundleEntry.resource.id = newId;
+
+          // save the old/new ID pair so we later replace all occurences
+          // of the old one with the new one
+          stringsToReplace.push({ old: idToUse, new: newId });
+
+          idToUse = newId;
+        }
+
+        // change the fullUrl in the resource to match what our converter would generate
+        bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
+
+        // add missing request
+        if (!bundleEntry.resource.request) {
+          bundleEntry.resource.request = {
+            method: "PUT",
+            url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
+          };
+        }
+
+        // add doc id extension
+        if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
+        bundleEntry.resource.extension.push(extension);
+      }
+
       curIndex++;
     }
 
