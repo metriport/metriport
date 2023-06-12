@@ -1,0 +1,169 @@
+config:
+  target: "{{ $processEnvironment.MEDPLUM_URL }}"
+  http:
+    timeout: 120
+  plugins:
+    # https://www.artillery.io/docs/guides/plugins/plugin-publish-metrics
+    publish-metrics:
+      - type: cloudwatch
+        region: "{{ $processEnvironment.REGION }}"
+    expect: {}
+  phases:
+    - duration: 1
+      arrivalCount: 1
+      name: Functional Test
+  variables:
+    codeChallenge: "{{ $randomString() }}"
+  processor: "./batch.js"
+
+before:
+  flow:
+    - log: "Get auth token"
+    - post:
+        url: "/auth/login"
+        json:
+          email: "{{ $processEnvironment.MEDPLUM_USER }}"
+          password: "{{ $processEnvironment.MEDPLUM_PASSWORD }}"
+          codeChallengeMethod: "plain"
+          codeChallenge: "{{ codeChallenge }}"
+        capture:
+          - json: $.code
+            as: code
+    - post:
+        url: "/oauth2/token"
+        form:
+          grant_type: "authorization_code"
+          code: "{{ code }}"
+          code_verifier: "{{ codeChallenge }}"
+        capture:
+          - json: $.access_token
+            as: token
+
+scenarios:
+  - name: "FHIR Batch Medplum Functional"
+    beforeScenario: makeBodyFunctional
+    flow:
+      - log: "Posting batch {{ requestFile }}"
+      - post:
+          name: "Post Batch"
+          url: "/fhir/R4/"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json: "{{ requestBody }}"
+          expect:
+            - statusCode:
+              - 200
+              - 201
+      - post:
+          name: "RePost Batch"
+          url: "/fhir/R4/"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json: "{{ requestBody }}"
+          afterResponse: "checkOperationOutcomes"
+          expect:
+            - statusCode:
+                - 200
+      # - log: "IDs {{ ids }}"
+      - get:
+          name: "Check it created Condition"
+          url: "/fhir/R4/Condition/{{ ids.condition }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Observation"
+          url: "/fhir/R4/Observation/{{ ids.observation }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Procedure"
+          url: "/fhir/R4/Procedure/{{ ids.procedure }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created DiagnosticReport"
+          url: "/fhir/R4/DiagnosticReport/{{ ids.diagnosticReport }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Patient"
+          url: "/fhir/R4/Patient/{{ ids.patient }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Practitioner"
+          url: "/fhir/R4/Practitioner/{{ ids.practitioner }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Device"
+          url: "/fhir/R4/Device/{{ ids.device }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created MedicationStatement"
+          url: "/fhir/R4/MedicationStatement/{{ ids.medicationStatement }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Medication"
+          url: "/fhir/R4/Medication/{{ ids.medication }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created AllergyIntolerance"
+          url: "/fhir/R4/AllergyIntolerance/{{ ids.allergyIntolerance }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+
+      # Synthea doesn't generate these for CCDA - https://github.com/synthetichealth/synthea/issues/226#issuecomment-340492546
+      # - get:
+      #     name: "Check it created Claim"
+      #     url: "/fhir/R4/Claim/{{ ids.claim }}"
+      #     headers:
+      #       Authorization: "Bearer {{ token }}"
+      #     expect:
+      #       - statusCode: 200
+      # - get:
+      #     name: "Check it created ExplanationOfBenefit"
+      #     url: "/fhir/R4/ExplanationOfBenefit/{{ ids.explanationOfBenefit }}"
+      #     headers:
+      #       Authorization: "Bearer {{ token }}"
+      #     expect:
+      #       - statusCode: 200
+
+      # We don't convert those to FHIR yet
+      # - get:
+      #     name: "Check it created Encounter"
+      #     url: "/fhir/R4/Encounter/{{ ids.encounter }}"
+      #     headers:
+      #       Authorization: "Bearer {{ token }}"
+      #     expect:
+      #       - statusCode: 200
+      # - get:
+      #     name: "Check it created Immunization"
+      #     url: "/fhir/R4/Immunization/{{ ids.immunization }}"
+      #     headers:
+      #       Authorization: "Bearer {{ token }}"
+      #     expect:
+      #       - statusCode: 200

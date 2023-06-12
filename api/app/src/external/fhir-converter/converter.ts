@@ -47,13 +47,14 @@ export async function convertCDAToFHIR(params: {
   if (mimeType === "application/xml" || mimeType === "text/xml") {
     // Sandbox should bypass the CCDA>FHIR conversion
     if (Config.isSandbox()) {
+      const jsonFileName = s3FileName.replace(".xml", ".json");
       log(`Bypassing conversion, sending straight to FHIR server`);
       const fhirServerConnector = makeFHIRServerConnector();
       return fhirServerConnector.upsertBatch({
         cxId: patient.cxId,
         patientId: patient.id,
         documentId: documentId,
-        payload: JSON.stringify({ s3FileName, s3BucketName }),
+        payload: JSON.stringify({ s3FileName: jsonFileName, s3BucketName }),
       });
     }
 

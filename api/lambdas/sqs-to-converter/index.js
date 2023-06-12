@@ -19,6 +19,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
+const apiURL = getEnvOrFail("API_URL");
 const sentryDsn = getEnv("SENTRY_DSN");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
@@ -55,6 +56,8 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
+const ossApi = axios.create();
+const docProgressURL = `${apiURL}/doc-conversion-status`;
 
 function isSidechainConnector() {
   return sidechainFHIRConverterUrl ? true : false;
@@ -320,6 +323,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await sendToDLQ(message);
+
+          const cxId = message.messageAttributes?.cxId?.stringValue;
+          const patientId = message.messageAttributes?.patientId?.stringValue;
+          const jobId = message.messageAttributes?.jobId?.stringValue;
+
+          if (cxId && patientId && jobId) {
+            await ossApi.post(docProgressURL, {
+              cxId,
+              patientId,
+              status: "failed",
+              jobId,
+            });
+          }
         }
       }
     }

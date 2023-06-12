@@ -1,9 +1,9 @@
+import BadRequestError from "../../../errors/bad-request";
+import NotFoundError from "../../../errors/not-found";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
-import { Config } from "../../../shared/config";
 import { DocConversionType } from "../../../routes/medical/schemas/documents";
-import NotFoundError from "../../../errors/not-found";
-import BadRequestError from "../../../errors/bad-request";
+import { Config } from "../../../shared/config";
 
 const lambdaClient = makeLambdaClient();
 const s3client = makeS3Client();
@@ -84,7 +84,11 @@ const doesObjExist = async ({
   try {
     const head = await s3client
       .headObject({
-        Bucket: Config.getMedicalDocumentsBucketName(),
+        // TODO 760 Fix this
+        Bucket: Config.isSandbox()
+          ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            Config.getSandboxBucketName()!
+          : Config.getMedicalDocumentsBucketName(),
         Key: fileName,
       })
       .promise();
@@ -98,7 +102,11 @@ const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string>
   const seconds = 60;
 
   const url = s3client.getSignedUrl("getObject", {
-    Bucket: Config.getMedicalDocumentsBucketName(),
+    // TODO 760 Fix this
+    Bucket: Config.isSandbox()
+      ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        Config.getSandboxBucketName()!
+      : Config.getMedicalDocumentsBucketName(),
     Key: fileName,
     Expires: seconds,
   });

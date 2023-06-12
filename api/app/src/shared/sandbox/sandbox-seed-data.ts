@@ -1,12 +1,20 @@
 import { Address } from "../../models/medical/address";
 import { PatientData } from "../../models/medical/patient";
+import { aaminaDocRefs } from "./sandbox-seed-data-aamina";
 import { andreasDocRefs } from "./sandbox-seed-data-andreas";
+import { damienDocRefs } from "./sandbox-seed-data-damien";
 import { DataEntry } from "./sandbox-seed-data-defaults";
+import { emiliaDocRefs } from "./sandbox-seed-data-emilia";
+import { gavinDocRefs } from "./sandbox-seed-data-gavin";
 import { hajraDocRefs } from "./sandbox-seed-data-hajra";
+import { heatherDocRefs } from "./sandbox-seed-data-heather";
 import { janeDocRefs } from "./sandbox-seed-data-jane";
 import { kylaDocRefs } from "./sandbox-seed-data-kyla";
+import { lexiDocRefs } from "./sandbox-seed-data-lexi";
 import { ollieDocRefs } from "./sandbox-seed-data-ollie";
 import { roryDocRefs } from "./sandbox-seed-data-rory";
+import { wandaDocRefs } from "./sandbox-seed-data-wanda";
+import { williamDocRefs } from "./sandbox-seed-data-william";
 
 export function patientMatches(patient: PatientData): boolean {
   const patientData = getSandboxSeedData(patient.firstName);
@@ -166,6 +174,150 @@ export function getSandboxSeedData(patientKey: string): PatientEntry | undefined
         ],
       },
       docRefs: roryDocRefs,
+    },
+    lexi: {
+      demographics: {
+        firstName: "Lexi",
+        lastName: "Stevenson",
+        dob: "1928-03-26",
+        genderAtBirth: "F",
+        address: [
+          {
+            addressLine1: "85 Hillside Street",
+            city: "Springfield",
+            state: "IL",
+            zip: "62600",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: lexiDocRefs,
+    },
+    aamina: {
+      demographics: {
+        firstName: "Aamina",
+        lastName: "Alexander",
+        dob: "1954-10-01",
+        genderAtBirth: "F",
+        address: [
+          {
+            addressLine1: "796 Thorne Lane",
+            city: "Austin",
+            state: "TX",
+            zip: "75400",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: aaminaDocRefs,
+    },
+    gavin: {
+      demographics: {
+        firstName: "Gavin",
+        lastName: "Blackwell",
+        dob: "1948-05-10",
+        genderAtBirth: "M",
+        address: [
+          {
+            addressLine1: "7028 Stillwater Street",
+            city: "Tallahassee",
+            state: "FL",
+            zip: "34600",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: gavinDocRefs,
+    },
+    william: {
+      demographics: {
+        firstName: "William",
+        lastName: "Donovan",
+        dob: "1955-09-14",
+        genderAtBirth: "M",
+        address: [
+          {
+            addressLine1: "7362 Canterbury Street",
+            city: "New Orleans",
+            state: "LA",
+            zip: "71200",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: williamDocRefs,
+    },
+    wanda: {
+      demographics: {
+        firstName: "Wanda",
+        lastName: "Walsh",
+        dob: "1941-02-19",
+        genderAtBirth: "F",
+        address: [
+          {
+            addressLine1: "7517 Cooper Street",
+            city: "Santa Fe",
+            state: "NM",
+            zip: "87400",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: wandaDocRefs,
+    },
+    damien: {
+      demographics: {
+        firstName: "Damien",
+        lastName: "Jensen",
+        dob: "1964-08-23",
+        genderAtBirth: "M",
+        address: [
+          {
+            addressLine1: "1440 Mallard Dr",
+            city: "Springfield",
+            state: "IL",
+            zip: "61200",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: damienDocRefs,
+    },
+    emilia: {
+      demographics: {
+        firstName: "Emelia",
+        lastName: "Crane",
+        dob: "1944-07-30",
+        genderAtBirth: "F",
+        address: [
+          {
+            addressLine1: "9366 Piper Street",
+            city: "Denver",
+            state: "CO",
+            zip: "81300",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: emiliaDocRefs,
+    },
+    heather: {
+      demographics: {
+        firstName: "Heather",
+        lastName: "Alverez",
+        dob: "1939-11-01",
+        genderAtBirth: "F",
+        address: [
+          {
+            addressLine1: "670 9th Ave",
+            city: "Harrisburg",
+            state: "PA",
+            zip: "15300",
+            country: "USA",
+          },
+        ],
+      },
+      docRefs: heatherDocRefs,
     },
   };
   return map[patientKey.toLowerCase()];

@@ -1,5 +1,6 @@
 import { MedplumClient } from "@medplum/core";
 import * as Sentry from "@sentry/serverless";
+import { uuid4 } from "@sentry/utils";
 import * as AWS from "aws-sdk";
 import fetch from "node-fetch";
 
@@ -18,6 +19,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
+const apiURL = getEnvOrFail("API_URL");
 const sentryDsn = getEnv("SENTRY_DSN");
 const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
 const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
@@ -34,10 +36,13 @@ Sentry.init({
   tracesSampleRate: 1.0,
 });
 
+const maxRetries = 10;
 const isSandbox = envType === "sandbox";
 const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
+const ossApi = axios.create();
+const docProgressURL = `${apiURL}/doc-conversion-status`;
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
 
 /* Example of a single message/record in event's `Records` array:
@@ -98,7 +103,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         const patientId = attrib.patientId?.stringValue;
         if (!cxId) throw new Error(`Missing cxId`);
         if (!patientId) throw new Error(`Missing patientId`);
-        const jobStartedAt = attrib.jobStartedAt?.stringValue;
+        const jobStartedAt = attrib.startedAt?.stringValue;
         const log = _log(`${i}, cxId ${cxId}, patientId ${patientId}, jobId ${jobId}`);
 
         const bodyAsJson = JSON.parse(message.body);
@@ -118,11 +123,20 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           timestamp: new Date().toISOString(),
         };
         await reportMemoryUsage();
-        log(`Converting payload to JSON...`);
+        log(`Converting payload to JSON, length ${payloadRaw.length}`);
         let payload;
         if (isSandbox) {
-          const placeholderUpdated = payloadRaw.replace(placeholderReplaceRegex, patientId);
-          payload = JSON.parse(placeholderUpdated).fhirResource;
+          const idsReplaced = replaceIds(payloadRaw);
+          log(`IDs replaced, length: ${idsReplaced.length}`);
+          const placeholderUpdated = idsReplaced.replace(placeholderReplaceRegex, patientId);
+          payload = JSON.parse(placeholderUpdated);
+          log(
+            `Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(
+              payload,
+              null,
+              2
+            )}`
+          );
         } else {
           payload = JSON.parse(payloadRaw).fhirResource;
         }
@@ -130,12 +144,28 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         await reportMemoryUsage();
         log(`Sending payload to FHIRServer...`);
         const upsertStart = Date.now();
+
         const fhirApi = new MedplumClient({
           fetch,
           baseUrl: fhirServerUrl,
           fhirUrlPath: `fhir/${cxId}`,
         });
-        const response = await fhirApi.executeBatch(payload);
+        let response;
+        let count = 0;
+        let retry = true;
+        while (retry) {
+          count++;
+          response = await fhirApi.executeBatch(payload);
+          const errors = getErrorsFromReponse(response);
+          if (errors.length <= 0) break;
+          retry = count < maxRetries;
+          log(`Got ${errors.length} from FHIR, ${retry ? "" : "NOT "}trying again...`);
+        }
+        metrics.errorCount = {
+          count,
+          timestamp: new Date().toISOString(),
+        };
+
         metrics.upsert = {
           duration: Date.now() - upsertStart,
           timestamp: new Date().toISOString(),
@@ -147,11 +177,17 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           };
         }
 
-        processReponse(response, event, log);
+        processResponse(response, event, log);
 
         await reportMemoryUsage();
         await reportMetrics(metrics);
-        //
+
+        await ossApi.post(docProgressURL, {
+          cxId,
+          patientId,
+          status: "success",
+          jobId,
+        });
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount;
@@ -161,6 +197,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await reEnqueue(message);
+          uuid4();
         } else {
           console.log(
             `Error processing message: ${JSON.stringify(message)}; ${JSON.stringify(err)}`
@@ -169,6 +206,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await sendToDLQ(message);
+
+          const cxId = message.messageAttributes?.cxId?.stringValue;
+          const patientId = message.messageAttributes?.patientId?.stringValue;
+          const jobId = message.messageAttributes?.jobId?.stringValue;
+
+          if (cxId && patientId && jobId) {
+            await ossApi.post(docProgressURL, {
+              cxId,
+              patientId,
+              status: "failed",
+              jobId,
+            });
+          }
         }
       }
     }
@@ -181,6 +231,25 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     throw err;
   }
 });
+
+function replaceIds(payload) {
+  const fhirBundle = JSON.parse(payload);
+  const stringsToReplace = [];
+  for (const bundleEntry of fhirBundle.entry) {
+    // validate resource id
+    let idToUse = bundleEntry.resource.id;
+    const newId = uuid4();
+    bundleEntry.resource.id = newId;
+    stringsToReplace.push({ old: idToUse, new: newId });
+  }
+  let fhirBundleStr = payload;
+  for (const stringToReplace of stringsToReplace) {
+    // doing this is apparently more efficient than just using replace
+    const regex = new RegExp(stringToReplace.old, "g");
+    fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
+  }
+  return fhirBundleStr;
+}
 
 // Being more generic with errors, not strictly timeouts
 function isTimeout(err) {
@@ -200,19 +269,31 @@ async function downloadFileContents(s3BucketName, s3FileName) {
   return streamToString(stream);
 }
 
-function processReponse(response, event, log) {
+function getErrorsFromReponse(response) {
   const entries = response.entry ? response.entry : [];
   const errors = entries.filter(
     // returns non-2xx responses AND null/undefined
     e => !e.response?.status?.startsWith("2")
   );
+  return errors;
+}
+
+function processResponse(response, event, log) {
+  const entries = response.entry ? response.entry : [];
+  const errors = getErrorsFromReponse(response);
   const countError = errors.length;
   const countSuccess = entries.length - countError;
   log(`Got ${countError} errors and ${countSuccess} successes from FHIR Server`);
   if (errors.length > 0) {
     errors.forEach(e => log(`Error from FHIR Server: ${JSON.stringify(e)}`));
     captureMessage(`Error upserting Bundle on FHIR server`, {
-      extra: { context: lambdaName, additional: "processReponse", event, countSuccess, countError },
+      extra: {
+        context: lambdaName,
+        additional: "processResponse",
+        event,
+        countSuccess,
+        countError,
+      },
       level: "error",
     });
   }
@@ -270,22 +351,28 @@ async function dequeue(message) {
 }
 
 async function reportMetrics(metrics) {
-  const { download, upsert, job } = metrics;
-  const metric = (name, values, serviceName) => ({
+  const { download, upsert, job, errorCount } = metrics;
+  const durationMetric = (name, values, serviceName) => ({
     MetricName: name,
     Value: parseFloat(values.duration),
     Unit: "Milliseconds",
     Timestamp: values.timestamp,
     Dimensions: [{ Name: "Service", Value: serviceName ?? lambdaName }],
   });
+  const countMetric = (name, values) => ({
+    MetricName: name,
+    Value: values.count,
+    Unit: "Count",
+    Timestamp: values.timestamp,
+    Dimensions: [{ Name: "Service", Value: lambdaName }],
+  });
   try {
+    const MetricData = [durationMetric("Download", download), durationMetric("Upsert", upsert)];
+    job && MetricData.put(durationMetric("Job duration", job, "FHIR Conversion Flow"));
+    errorCount && MetricData.put(countMetric("FHIR Upsert Errors", errorCount));
     await cloudWatch
       .putMetricData({
-        MetricData: [
-          metric("Download", download),
-          metric("Upsert", upsert),
-          metric("Job duration", job, "FHIR Conversion Flow"),
-        ],
+        MetricData,
         Namespace: metricsNamespace,
       })
       .promise();

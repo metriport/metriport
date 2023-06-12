@@ -2,7 +2,7 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { createWebhookRequest } from "../webhook/webhook-request";
+import { createWebhookRequest } from "./webhook-request";
 import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
 import { processRequest, WebhookMetadataPayload } from "./webhook";
 

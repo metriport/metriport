@@ -1,18 +1,18 @@
 import { bucket, DataEntry } from "./sandbox-seed-data-defaults";
 
-export const heatherDocRefs: DataEntry[] = [
+export const lexiDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather1.xml",
+      key: "lexi1.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzAtQjEzMC1DMTMwLUQxMzAtRUVFRUVFRUVFMTMw",
+      id: "MmRiMmQwYmItMTdiYy00ZTgwLWJmNDktYmE3OTUxMDljM2Qy",
       content: [
         {
           attachment: {
-            title: "heather1.xml",
+            title: "lexi1.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -23,15 +23,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather2.xml",
+      key: "lexi2.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzEtQjEzMS1DMTMxLUQxMzEtRUVFRUVFRUVFMTMx",
+      id: "NDEyNjU5MGQtYzYxYS00ODE0LWI1ZmItYmRjZTAwOGQ3Yzg1",
       content: [
         {
           attachment: {
-            title: "heather2.xml",
+            title: "lexi2.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -42,15 +42,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather3.xml",
+      key: "lexi3.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzItQjEzMi1DMTMyLUQxMzItRUVFRUVFRUVFMTMy",
+      id: "MDY5MDUyYjktMWJmYS00MTJhLTgzYzctOGM0N2YxMTkxMTA5",
       content: [
         {
           attachment: {
-            title: "heather3.xml",
+            title: "lexi3.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -61,15 +61,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather4.xml",
+      key: "lexi4.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzMtQjEzMy1DMTMzLUQxMzMtRUVFRUVFRUVFMTMz",
+      id: "OWNiODE2YzYtM2Y0NS00NWM0LWEwMGEtNTUxMGNjYzQ0YzBi",
       content: [
         {
           attachment: {
-            title: "heather4.xml",
+            title: "lexi4.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -80,15 +80,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather5.xml",
+      key: "lexi5.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzQtQjEzNC1DMTM0LUQxMzQtRUVFRUVFRUVFMTM0",
+      id: "OTgyNjlmZjItNTAzYy00NzljLWExNDktNWJiZmQwNjg3NmQ4",
       content: [
         {
           attachment: {
-            title: "heather5.xml",
+            title: "lexi5.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -99,15 +99,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather6.xml",
+      key: "lexi6.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzUtQjEzNS1DMTM1LUQxMzUtRUVFRUVFRUVFMTM1",
+      id: "MmQwNjRmNWMtYWJlMS00MGFjLWI4ZTMtOGU0N2FhNmZiNWJj",
       content: [
         {
           attachment: {
-            title: "heather6.xml",
+            title: "lexi6.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -118,15 +118,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather7.xml",
+      key: "lexi7.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzYtQjEzNi1DMTM2LUQxMzYtRUVFRUVFRUVFMTM2",
+      id: "YzYxMjQ2MWItZWNmZC00OGFiLWI1Y2UtNGNjYjExZTJmNTQ5",
       content: [
         {
           attachment: {
-            title: "heather7.xml",
+            title: "lexi7.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -137,15 +137,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather8.xml",
+      key: "lexi8.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzctQjEzNy1DMTM3LUQxMzctRUVFRUVFRUVFMTM3",
+      id: "ODVmZWFhZjctMDBjZS00ZWVhLWJhMTQtNTJmODllMDRkODY2",
       content: [
         {
           attachment: {
-            title: "heather8.xml",
+            title: "lexi8.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -156,15 +156,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather9.xml",
+      key: "lexi9.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzgtQjEzOC1DMTM4LUQxMzgtRUVFRUVFRUVFMTM4",
+      id: "MDhkY2E3NTMtM2UwOC00YWRmLTg0M2ItNWZmMDljMDQ3N2Vh",
       content: [
         {
           attachment: {
-            title: "heather9.xml",
+            title: "lexi9.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -175,15 +175,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather10.xml",
+      key: "lexi10.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExMzktQjEzOS1DMTM5LUQxMzktRUVFRUVFRUVFMTM5",
+      id: "NDY2Mzg1NWUtZTA3ZS00NDEwLWFiNjItNDU4Mzg0NDgzNGEw",
       content: [
         {
           attachment: {
-            title: "heather10.xml",
+            title: "lexi10.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
           },
@@ -194,15 +194,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather11.pdf",
+      key: "lexi11.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExNDAtQjE0MC1DMTQwLUQxNDAtRUVFRUVFRUVFMTQw",
+      id: "MmIxMWRkNWItZmY1NC00M2YzLWE4MjItNTk3YTJkZWVhNmEz",
       content: [
         {
           attachment: {
-            title: "heather11.pdf",
+            title: "lexi11.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
           },
@@ -213,15 +213,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather12.pdf",
+      key: "lexi12.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExNDEtQjE0MS1DMTQxLUQxNDEtRUVFRUVFRUVFMTQx",
+      id: "ZTEyYzMyZmYtZWQ1YS00MTFmLWI2ZDUtMDViNjZiMTQ4OWE1",
       content: [
         {
           attachment: {
-            title: "heather12.pdf",
+            title: "lexi12.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
           },
@@ -232,17 +232,17 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather13.tif",
+      key: "lexi13.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExNDItQjE0Mi1DMTQyLUQxNDItRUVFRUVFRUVFMTQy",
+      id: "MDUwNzBjNDAtYWI1Ny00ZTBlLWI5OTktNWViOTA5ZDhhYzQy",
       content: [
         {
           attachment: {
-            title: "heather13.tif",
+            title: "lexi13.pdf",
             url: "http://api.metriport.com",
-            contentType: "application/tif",
+            contentType: "application/pdf",
           },
         },
       ],
@@ -251,15 +251,15 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather14.tif",
+      key: "lexi14.tif",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExNDMtQjE0My1DMTQzLUQxNDMtRUVFRUVFRUVFMTQz",
+      id: "ZGY5MjE3NmQtYzcyOC00YzkyLWFlYTItYWU0NDg4MzBlYWQx",
       content: [
         {
           attachment: {
-            title: "heather14.tif",
+            title: "lexi14.tif",
             url: "http://api.metriport.com",
             contentType: "image/tif",
           },
@@ -270,17 +270,17 @@ export const heatherDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "heather15.tif",
+      key: "lexi15.png",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QUFBQUExNDQtQjE0NC1DMTQ0LUQxNDQtRUVFRUVFRUVFMTQ0",
+      id: "OWUxYWFjMWMtYjRhOS00YTFmLTgyZGItYjhhMTI1MWI2M2U0",
       content: [
         {
           attachment: {
-            title: "heather15.tif",
+            title: "lexi15.png",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/png",
           },
         },
       ],

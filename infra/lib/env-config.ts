@@ -19,6 +19,7 @@ export type EnvConfig = {
   authSubdomain: string; // Authentication subdomain
   dbName: string;
   dbUsername: string;
+  loadBalancerDnsName?: string;
   usageReportUrl?: string;
   fhirServerUrl?: string;
   fhirServerQueueUrl?: string;
