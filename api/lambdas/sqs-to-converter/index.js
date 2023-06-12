@@ -138,9 +138,14 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
     }
 
     // remove the patient resource if it was found in the bundle
-    if (patientIndex >= 0) fhirBundle.entry.splice(patientIndex, 1);
+    let indexModifier = 0;
+    if (patientIndex >= 0) {
+      fhirBundle.entry.splice(patientIndex, 1);
+      indexModifier = 1;
+    }
     // likewise, remove the operation outcome resource if it was found
-    if (operationOutcomeIndex >= 0) fhirBundle.entry.splice(operationOutcomeIndex, 1);
+    if (operationOutcomeIndex >= 0)
+      fhirBundle.entry.splice(operationOutcomeIndex - indexModifier, 1);
   }
 
   // replace all old ids & blacklisted urls
