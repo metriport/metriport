@@ -57,7 +57,7 @@ const fhirConverter = axios.create({
   },
 });
 const ossApi = axios.create();
-const docProgressURL = `${apiURL}/doc-conversion-status`;
+const docProgressURL = `${apiURL}/internal/doc-conversion-status`;
 
 function isSidechainConnector() {
   return sidechainFHIRConverterUrl ? true : false;
@@ -328,7 +328,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           const patientId = message.messageAttributes?.patientId?.stringValue;
           const jobId = message.messageAttributes?.jobId?.stringValue;
 
-          if (cxId && patientId && jobId) {
+          if (cxId && patientId && jobId && isSidechainConnector()) {
             await ossApi.post(docProgressURL, {
               cxId,
               patientId,
