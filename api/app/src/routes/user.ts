@@ -16,6 +16,7 @@ import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../share
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdOrFail } from "./util";
+import { capture } from "../shared/notifications";
 
 const router = Router();
 
@@ -113,51 +114,61 @@ router.get(
   })
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function revokeUserProviderAccess(connectedUser: ConnectedUser, provider: any) {
+async function revokeUserProviderAccess(
+  connectedUser: ConnectedUser,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  provider: any
+): Promise<void> {
   const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(provider);
-
   // TODO #249: implement garmin revoke support
   // const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
   //   req.query.provider
   // );
-
-  if (providerOAuth2.success) {
-    await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
-
-    return true;
-    // } else if (providerOAuth1.success) {
-    //   // await Constants.PROVIDER_OAUTH1_MAP[
-    //   //   providerOAuth1.data
-    //   // ].deregister(connectedUser);
-  } else if (provider === PROVIDER_APPLE) {
-    const apple = new Apple();
-    await apple.revokeProviderAccess(connectedUser);
-    return true;
-  } else {
+  try {
+    if (providerOAuth2.success) {
+      await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
+      // } else if (providerOAuth1.success) {
+      //   // await Constants.PROVIDER_OAUTH1_MAP[
+      //   //   providerOAuth1.data
+      //   // ].deregister(connectedUser);
+    } else if (provider === PROVIDER_APPLE) {
+      const apple = new Apple();
+      await apple.revokeProviderAccess(connectedUser);
+    }
+  } catch (err) {
+    capture.error(err, { extra: { context: "dapi.user.revokeAccess" } });
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
 }
 
 /** ---------------------------------------------------------------------------------------
  * DELETE /user/revoke
- *
- * Revoke access to a provider
- *
- * @param   {string}  req.query.provider    The provider to revoke access.
- * @param   {string}  req.query.userId      The internal user ID.
+*
+* Revoke access to a provider
+*
+* @param   {string}  req.query.provider    The provider to revoke access.
+* @param   {string}  req.query.userId      The internal user ID.
 
- * @return  {{success: boolean}}      If successfully removed.
- */
+* @return  {{success: boolean}}      If successfully removed.
+*/
 router.delete(
   "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = getUserIdFrom("query", req).orFail();
-    const cxId = getCxIdOrFail(req);
-    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+    try {
+      const userId = getUserIdFrom("query", req).orFail();
+      const cxId = getCxIdOrFail(req);
+      const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+      await revokeUserProviderAccess(connectedUser, req.query.provider);
+      return res
+        .status(status.OK)
+        .json({ message: `Access token for ${req.query.provider} has been revoked.` });
+    } catch (err) {
+      console.log(err);
+      capture.error(err, { extra: { context: "dapi.user.revoke" } });
 
-    if (await revokeUserProviderAccess(connectedUser, req.query.provider)) {
-      return res.sendStatus(status.OK);
+      return res
+        .status(status.INTERNAL_SERVER_ERROR)
+        .json({ message: "An unexpected error occurred." });
     }
   })
 );
@@ -182,24 +193,29 @@ router.delete(
       const connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
         return key;
       });
-      try {
-        await Promise.all(
-          connectedProviders.map(async provider => {
+      // const tokenRevokeResults =
+      await Promise.allSettled(
+        connectedProviders.map(async provider => {
+          try {
             await revokeUserProviderAccess(connectedUser, provider);
-          })
-        );
-      } catch (err) {
-        throw new Error(`Unable to revoke access to all providers: ${err}`);
-      }
+          } catch (err) {
+            capture.error(err, {
+              extra: {
+                context: "dapi.routes.user.revokeAll",
+              },
+            });
+          }
+        })
+      );
     }
 
     try {
       await deleteConnectedUser(userId);
     } catch (err) {
-      throw new Error(`Unable to delete user: ${err}`);
+      capture.error(err, { extra: { context: "dapi.routes.user.delete" } });
     }
 
-    return res.sendStatus(status.OK);
+    return res.status(status.OK).json({ message: "User deleted successfully." });
   })
 );
 
