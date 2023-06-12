@@ -14,7 +14,7 @@ export const mapToNutrition = (date: string, food?: FitbitFood, water?: FitbitWa
     summary: {
       macros: {},
     },
-    foods: [] as Food[],
+    foods: [],
   };
 
   if (food) {
