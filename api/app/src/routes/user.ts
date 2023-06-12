@@ -194,7 +194,7 @@ router.delete(
     }
 
     try {
-      await deleteConnectedUser({ id: userId });
+      await deleteConnectedUser(userId);
     } catch (err) {
       throw new Error(`Unable to delete user: ${err}`);
     }
