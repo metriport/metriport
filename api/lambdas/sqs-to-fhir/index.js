@@ -42,7 +42,7 @@ const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
 const ossApi = axios.create();
-const docProgressURL = `${apiURL}/doc-conversion-status`;
+const docProgressURL = `${apiURL}/internal/doc-conversion-status`;
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
 
 /* Example of a single message/record in event's `Records` array:
