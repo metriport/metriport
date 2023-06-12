@@ -35,6 +35,7 @@ const sidechainFHIRConverterKeysSecretName = isSidechainConnector()
   ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS")
   : undefined;
 const baseReplaceUrl = "https://public.metriport.com";
+const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 
 // Keep this as early on the file as possible
 Sentry.init({
@@ -93,6 +94,12 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   console.log(fhirBundle);
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
+      // replace meta's source and profile - trying to keep those short b/c of HAPI constraint of 100 chars on URLs
+      bundleEntry.resource.meta = {
+        lastUpdated: bundleEntry.resource.meta.lastUpdated ?? new Date().toISOString(),
+        source: sourceUrl,
+      };
+
       // validate resource id
       let idToUse = bundleEntry.resource.id;
 
