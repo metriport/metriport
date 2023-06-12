@@ -126,6 +126,7 @@ router.delete(
   "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
     const userId = getUserIdFrom("query", req).orFail();
+    console.log("REVOKE REQUEST", req);
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
@@ -151,6 +152,26 @@ router.delete(
     } else {
       throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
     }
+  })
+);
+
+router.delete(
+  "/delete",
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = getUserIdFrom("query", req).orFail();
+    const cxId = getCxIdOrFail(req);
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+
+    if (connectedUser.providerMap) {
+      const connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
+        return key;
+      });
+      connectedProviders.forEach(provider => {
+        console.log("Need to revoke provider:", provider);
+      });
+    }
+
+    return res.sendStatus(status.OK);
   })
 );
 
