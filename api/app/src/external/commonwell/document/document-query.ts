@@ -10,7 +10,11 @@ import { chunk } from "lodash";
 import { PassThrough } from "stream";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
-import { processPatientDocumentRequest } from "../../../command/webhook/medical";
+import {
+  MAPIWebhookStatus,
+  MAPIWebhookType,
+  processPatientDocumentRequest,
+} from "../../../command/webhook/medical";
 import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import { Facility } from "../../../models/medical/facility";
@@ -68,7 +72,13 @@ export async function queryAndProcessDocuments({
         facility,
         patient,
       });
-      processPatientDocumentRequest(organization.cxId, patient.id, toDTO(documentsSandbox));
+      processPatientDocumentRequest(
+        organization.cxId,
+        patient.id,
+        MAPIWebhookType.documentDownload,
+        MAPIWebhookStatus.completed,
+        toDTO(documentsSandbox)
+      );
       return documentsSandbox.length;
     } else {
       log(`Querying for documents of patient ${patient.id}...`);
@@ -85,8 +95,14 @@ export async function queryAndProcessDocuments({
 
       reportDocQueryUsage(patient);
 
-      // send webhook to cx async when docs are done processing
-      processPatientDocumentRequest(organization.cxId, patient.id, toDTO(FHIRDocRefs));
+      // send webhook to cx async when docs are done downloading
+      processPatientDocumentRequest(
+        organization.cxId,
+        patient.id,
+        MAPIWebhookType.documentDownload,
+        MAPIWebhookStatus.completed,
+        toDTO(FHIRDocRefs)
+      );
 
       await updateDocQuery({
         patient: { id: patient.id, cxId: patient.cxId },
@@ -97,6 +113,12 @@ export async function queryAndProcessDocuments({
     }
   } catch (err) {
     console.log(`Error: `, err);
+    processPatientDocumentRequest(
+      organization.cxId,
+      patient.id,
+      MAPIWebhookType.documentDownload,
+      MAPIWebhookStatus.failed
+    );
     await updateDocQuery({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
