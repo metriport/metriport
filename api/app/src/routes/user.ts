@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createConnectedUser } from "../command/connected-user/create-connected-user";
+import { deleteConnectedUser } from "../command/connected-user/delete-connected-user";
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { createUserToken } from "../command/cx-user/create-user-token";
 import BadRequestError from "../errors/bad-request";
@@ -112,6 +113,32 @@ router.get(
   })
 );
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function revokeUserProviderAccess(connectedUser: ConnectedUser, provider: any) {
+  const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(provider);
+
+  // TODO #249: implement garmin revoke support
+  // const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
+  //   req.query.provider
+  // );
+
+  if (providerOAuth2.success) {
+    await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
+
+    return true;
+    // } else if (providerOAuth1.success) {
+    //   // await Constants.PROVIDER_OAUTH1_MAP[
+    //   //   providerOAuth1.data
+    //   // ].deregister(connectedUser);
+  } else if (provider === PROVIDER_APPLE) {
+    const apple = new Apple();
+    await apple.revokeProviderAccess(connectedUser);
+    return true;
+  } else {
+    throw new BadRequestError(`Provider not supported: ${provider}`);
+  }
+}
+
 /** ---------------------------------------------------------------------------------------
  * DELETE /user/revoke
  *
@@ -126,35 +153,24 @@ router.delete(
   "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
     const userId = getUserIdFrom("query", req).orFail();
-    console.log("REVOKE REQUEST", req);
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
-    const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(req.query.provider);
-
-    // TODO #249: implement garmin revoke support
-    // const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
-    //   req.query.provider
-    // );
-
-    if (providerOAuth2.success) {
-      await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
-
+    if (await revokeUserProviderAccess(connectedUser, req.query.provider)) {
       return res.sendStatus(status.OK);
-      // } else if (providerOAuth1.success) {
-      //   // await Constants.PROVIDER_OAUTH1_MAP[
-      //   //   providerOAuth1.data
-      //   // ].deregister(connectedUser);
-    } else if (req.query.provider === PROVIDER_APPLE) {
-      const apple = new Apple();
-      await apple.revokeProviderAccess(connectedUser);
-      return res.sendStatus(status.OK);
-    } else {
-      throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
     }
   })
 );
 
+/**
+ * DELETE /user/delete
+ *
+ * Revoke access to all providers and permanently delete the user
+ *
+ * @param {string} req.query.userId      The internal user ID.
+ *
+ * @return  {{success: boolean}}      If successfully removed.
+ */
 router.delete(
   "/delete",
   asyncHandler(async (req: Request, res: Response) => {
@@ -166,9 +182,21 @@ router.delete(
       const connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
         return key;
       });
-      connectedProviders.forEach(provider => {
-        console.log("Need to revoke provider:", provider);
-      });
+      try {
+        await Promise.all(
+          connectedProviders.map(async provider => {
+            await revokeUserProviderAccess(connectedUser, provider);
+          })
+        );
+      } catch (err) {
+        throw new Error(`Unable to revoke access to all providers: ${err}`);
+      }
+    }
+
+    try {
+      await deleteConnectedUser({ id: userId });
+    } catch (err) {
+      throw new Error(`Unable to delete user: ${err}`);
     }
 
     return res.sendStatus(status.OK);

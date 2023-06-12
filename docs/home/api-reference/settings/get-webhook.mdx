@@ -13,19 +13,18 @@ Might return an empty body if there's no settings yet stored for your account.
 </ResponseField>
 
 <ResponseField name="webhookStatusDetail" type="string">
-  The message indicating the reason for the webhook being disabled, or 'OK' if
-  the webhook is enabled. This gets updated with the message of the last failed
-  request to the webhook.
+  The message indicating the reason for the webhook being disabled, or 'OK' if the webhook is
+  enabled. This gets updated with the message of the last failed request to the webhook.
 </ResponseField>
 
 <ResponseField name="webhookRequestsProcessing" type="number" required>
-  The number of webhook requests being currently being processed. It gets
-  updated as the requests are processed.
+  The number of webhook requests currently being processed. It gets updated as the requests are
+  processed.
 </ResponseField>
 
 <ResponseField name="webhookRequestsFailed" type="number" required>
-  The number of failed webhook requests for your acccount. It gets updated as
-  the retries are attempted.
+  The number of failed webhook requests for your acccount. It gets updated as the retries are
+  attempted.
 </ResponseField>
 
 <ResponseExample>

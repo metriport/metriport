@@ -99,6 +99,18 @@ export class MetriportDevicesApi {
   }
 
   /**
+   * For the given user ID, revoke the user's access to the specified provider.
+   *
+   * @param {string} userId    - The user ID of the user for which to revoke access.
+   * @returns void.
+   */
+  async deleteUser(userId: string): Promise<void> {
+    await this.api.delete("/user/delete", {
+      params: { userId: userId },
+    });
+  }
+
+  /**
    * Gets the activity info for the specified user ID and date.
    *
    * @param {string} userId - The userId of the user you want to get data for.
