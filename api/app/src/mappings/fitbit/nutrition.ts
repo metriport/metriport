@@ -1,5 +1,4 @@
-import { Nutrition } from "@metriport/api";
-
+import { Nutrition, Food } from "@metriport/api";
 import { PROVIDER_FITBIT } from "../../shared/constants";
 import { FitbitFood } from "./models/food";
 import { FitbitWater } from "./models/water";
@@ -15,6 +14,7 @@ export const mapToNutrition = (date: string, food?: FitbitFood, water?: FitbitWa
     summary: {
       macros: {},
     },
+    foods: [],
   };
 
   if (food) {
@@ -29,6 +29,30 @@ export const mapToNutrition = (date: string, food?: FitbitFood, water?: FitbitWa
         sodium_mg: food.summary.sodium,
       },
     };
+    food.foods?.forEach(foodItem => {
+      const { name, brand, amount, unit } = foodItem.loggedFood;
+      const item: Food = {
+        name,
+        brand,
+        amount,
+        unit: unit.name,
+      };
+
+      if (foodItem.nutritionalValues) {
+        item["nutrition_facts"] = {
+          macros: {
+            energy_kcal: foodItem.nutritionalValues?.calories,
+            carbs_g: foodItem.nutritionalValues?.carbs,
+            fat_g: foodItem.nutritionalValues?.fat,
+            protein_g: foodItem.nutritionalValues?.protein,
+            fiber_g: foodItem.nutritionalValues?.fiber,
+            sodium_mg: foodItem.nutritionalValues?.sodium,
+          },
+        };
+      }
+
+      nutrition.foods?.push(item);
+    });
   }
 
   if (water) {

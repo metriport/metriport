@@ -73,7 +73,7 @@ export class Cronometer extends Provider implements OAuth2 {
       `${Cronometer.URL}/${Cronometer.API_PATH}/diary_summary`,
       {
         day: date,
-        // food: true, TODO
+        food: true,
       },
       {
         headers: {
