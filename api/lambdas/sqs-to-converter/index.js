@@ -31,6 +31,7 @@ const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME")
 // sidechain converter config
 const sidechainFHIRConverterUrl = getEnv("SIDECHAIN_FHIR_CONVERTER_URL");
 const sidechainFHIRConverterUrlBlacklist = getEnv("SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST");
+const sidechainWordsToRemove = getEnv("SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE");
 const sidechainFHIRConverterKeysSecretName = isSidechainConnector()
   ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS")
   : undefined;
@@ -167,7 +168,15 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
 
-  console.log(fhirBundleStr);
+  if (sidechainWordsToRemove) {
+    const words = sidechainWordsToRemove.split(",");
+    for (const word of words) {
+      const regex = new RegExp(word, "gi");
+      fhirBundleStr = fhirBundleStr.replace(regex, "");
+    }
+  }
+
+  console.log(`Bundle being sent to FHIR server: ${JSON.stringify(fhirBundleStr)}`);
   return JSON.parse(fhirBundleStr);
 }
 
