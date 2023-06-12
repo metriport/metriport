@@ -15,7 +15,19 @@ import { capture } from "../shared/notifications";
 import { stringToBoolean } from "../shared/types";
 import { stringListSchema } from "./schemas/shared";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
+import {
+  getETag,
+  asyncHandler,
+  getCxIdFromQueryOrFail,
+  getFrom,
+  getCxIdOrFail,
+  getFromParamsOrFail,
+  getFromQueryOrFail,
+} from "./util";
+import { deletePatient } from "../command/medical/patient/delete-patient";
+import { updateDocQuery } from "../command/medical/document/document-query";
+import { convertResultSchema } from "../domain/medical/document-reference";
+import { Util } from "../shared/util";
 
 const router = Router();
 
@@ -173,6 +185,54 @@ router.post(
       result[id] = encodeExternalId(id);
     });
     return res.json(result);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * DELETE /patient/:id
+ *
+ * Deletes a patient from all storages.
+ *
+ * @param req.query.facilityId The facility providing NPI for the patient delete
+ * @return 204 No Content
+ */
+router.delete(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+
+    const patientDeleteCmd = {
+      ...getETag(req),
+      id,
+      cxId,
+      facilityId,
+    };
+    await deletePatient(patientDeleteCmd);
+
+    return res.sendStatus(httpStatus.NO_CONTENT);
+  })
+);
+
+router.post(
+  "/doc-conversion-status",
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientId = getFrom("query").orFail("patientId", req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const status = getFrom("query").orFail("status", req);
+    const docId = getFrom("query").orFail("jobId", req);
+    const convertResult = convertResultSchema.parse(status);
+    const { log } = Util.out(`Doc conversion status`);
+
+    log(`Converted document ${docId} for patient ${patientId} with status ${status}`);
+
+    await updateDocQuery({
+      patient: { id: patientId, cxId },
+      convertResult,
+    });
+
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

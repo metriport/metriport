@@ -1,0 +1,148 @@
+config:
+  target: "{{ $processEnvironment.MEDPLUM_URL }}"
+  http:
+    timeout: 60
+  plugins:
+    # https://www.artillery.io/docs/guides/plugins/plugin-publish-metrics
+    publish-metrics:
+      - type: cloudwatch
+        region: "{{ $processEnvironment.REGION }}"
+    # https://www.artillery.io/docs/guides/plugins/plugin-metrics-by-endpoint
+    metrics-by-endpoint:
+      # Group metrics by request name rather than URL:
+      useOnlyRequestNames: true
+  phases:
+    - duration: 10
+      arrivalRate: 2
+      name: Warm up
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: Ramp up load
+    - duration: 120
+      arrivalRate: 20
+      rampTo: 100
+      name: Ramp up load
+  variables:
+    codeChallenge: "{{ $randomString() }}"
+  processor: "../base-processor.js"
+
+before:
+  flow:
+    - log: "Get auth token"
+    - post:
+        url: "/auth/login"
+        json:
+          email: "{{ $processEnvironment.MEDPLUM_USER }}"
+          password: "{{ $processEnvironment.MEDPLUM_PASSWORD }}"
+          codeChallengeMethod: "plain"
+          codeChallenge: "{{ codeChallenge }}"
+        capture:
+          - json: $.code
+            as: code
+        name: "Login"
+    - post:
+        url: "/oauth2/token"
+        form:
+          grant_type: "authorization_code"
+          code: "{{ code }}"
+          code_verifier: "{{ codeChallenge }}"
+        capture:
+          - json: $.access_token
+            as: token
+        name: "Get OAuth token"
+
+scenarios:
+  - name: "FHIR CRUD Medplum"
+    flow:
+      - loop:
+          - function: "generateRandomData"
+          - put:
+              name: "Create Patient"
+              url: "/fhir/R4/Patient/{{ id }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
+              json:
+                resourceType: Patient
+                id: "{{ id }}"
+                name:
+                  - family: "{{ $randomString() }}"
+              capture:
+                - json: "$.id"
+                  as: "patientId"
+                - json: "$.name[0].family"
+                  as: "familyName"
+          - get:
+              name: "Get Patient by ID"
+              url: "/fhir/R4/Patient/{{ patientId }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
+          - get:
+              name: "Get Patient by name"
+              url: "/fhir/R4/Patient?name={{ familyName }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
+          - delete:
+              name: "Delete Patient"
+              url: "/fhir/R4/Patient/{{ patientId }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
+        count: 2
+
+      - function: "generateRandomData"
+      - put:
+          name: "Create Organization"
+          url: "/fhir/R4/Organization/{{ id }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            resourceType: Organization
+            id: "{{ id }}"
+            name: "{{ $randomString() }}"
+          capture:
+            - json: "$.id"
+              as: "orgId"
+            - json: "$.name"
+              as: "name"
+      - get:
+          name: "Get Organization by ID"
+          url: "/fhir/R4/Organization/{{ orgId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+      - get:
+          name: "Get Organization by name"
+          url: "/fhir/R4/Organization?name={{ name }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+      - delete:
+          name: "Delete Organization"
+          url: "/fhir/R4/Organization/{{ orgId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+
+      - function: "generateRandomData"
+      - put:
+          name: "Create DocumentReference"
+          url: "/fhir/R4/DocumentReference/{{ id }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            resourceType: DocumentReference
+            id: "{{ id }}"
+            content:
+              - attachment:
+                  contentType: "application/xml"
+                  url: "http://someaddress.com"
+          capture:
+            - json: "$.id"
+              as: "docId"
+      - get:
+          name: "Get DocumentReference by ID"
+          url: "/fhir/R4/DocumentReference/{{ docId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+      - delete:
+          name: "Delete DocumentReference"
+          url: "/fhir/R4/DocumentReference/{{ docId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"

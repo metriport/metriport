@@ -33,8 +33,9 @@ Run desired test (this one runs load testing for HAPI, loading env vars from a `
 $ artillery run --dotenv .env src/healthcheck-medplum.yml
 ```
 
-To run batch tests, first store FHIR Bundles in JSON format under the `src/fhir/batch` - tests will pick a file for
-each request randomly.
+To run batch tests, first store FHIR Bundles in JSON format under the `src/fhir/batch/load` - tests will pick a file for
+each request randomly. We suggest to insert similar sized files and run enough iterations so that the conditions are
+statistically similar between the servers.
 
 To see detailed information about requests/responses, set an env var:
 

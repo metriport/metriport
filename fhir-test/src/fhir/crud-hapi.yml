@@ -1,0 +1,101 @@
+config:
+  target: "{{ $processEnvironment.HAPI_URL }}"
+  http:
+    timeout: 60
+  plugins:
+    # https://www.artillery.io/docs/guides/plugins/plugin-publish-metrics
+    publish-metrics:
+      - type: cloudwatch
+        region: "{{ $processEnvironment.REGION }}"
+    # https://www.artillery.io/docs/guides/plugins/plugin-metrics-by-endpoint
+    metrics-by-endpoint:
+      # Group metrics by request name rather than URL:
+      useOnlyRequestNames: true
+  phases:
+    - duration: 10
+      arrivalRate: 2
+      name: Warm up
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: Ramp up load
+    - duration: 120
+      arrivalRate: 20
+      rampTo: 100
+      name: Ramp up load
+  variables:
+    tenantId: "{{ $processEnvironment.HAPI_TENANT_ID }}"
+  processor: "../base-processor.js"
+
+scenarios:
+  - name: "FHIR CRUD HAPI"
+    flow:
+      - loop:
+          - function: "generateRandomData"
+          - put:
+              name: "Create Patient"
+              url: "/fhir/{{tenantId}}/Patient/{{ id }}"
+              json:
+                resourceType: Patient
+                id: "{{ id }}"
+                name:
+                  - family: "{{ $randomString() }}"
+              capture:
+                - json: "$.id"
+                  as: "patientId"
+                - json: "$.name[0].family"
+                  as: "familyName"
+          - get:
+              name: "Get Patient by ID"
+              url: "/fhir/{{tenantId}}/Patient/{{ patientId }}"
+          - get:
+              name: "Get Patient by name"
+              url: "/fhir/{{tenantId}}/Patient?name={{ familyName }}"
+          - delete:
+              name: "Delete Patient"
+              url: "/fhir/{{tenantId}}/Patient/{{ patientId }}"
+        count: 2
+
+      - function: "generateRandomData"
+      - put:
+          name: "Create Organization"
+          url: "/fhir/{{tenantId}}/Organization/{{ id }}"
+          json:
+            resourceType: Organization
+            id: "{{ id }}"
+            name: "{{ $randomString() }}"
+          capture:
+            - json: "$.id"
+              as: "orgId"
+            - json: "$.name"
+              as: "name"
+      - get:
+          name: "Get Organization by ID"
+          url: "/fhir/{{tenantId}}/Organization/{{ orgId }}"
+      - get:
+          name: "Get Organization by name"
+          url: "/fhir/{{tenantId}}/Organization?name={{ name }}"
+      - delete:
+          name: "Delete Organization"
+          url: "/fhir/{{tenantId}}/Organization/{{ orgId }}"
+
+      - function: "generateRandomData"
+      - put:
+          name: "Create DocumentReference"
+          url: "/fhir/{{tenantId}}/DocumentReference/{{ id }}"
+          json:
+            resourceType: DocumentReference
+            id: "{{ id }}"
+            content:
+              - attachment:
+                  contentType: "application/xml"
+                  url: "http://someaddress.com"
+          capture:
+            - json: "$.id"
+              as: "docId"
+      - get:
+          name: "Get DocumentReference by ID"
+          url: "/fhir/{{tenantId}}/DocumentReference/{{ docId }}"
+      - delete:
+          name: "Delete DocumentReference"
+          url: "/fhir/{{tenantId}}/DocumentReference/{{ docId }}"

@@ -19,6 +19,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const envType = getEnvOrFail("ENV_TYPE");
+const apiURL = getEnvOrFail("API_URL");
 const sentryDsn = getEnv("SENTRY_DSN");
 const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
 const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
@@ -40,7 +41,10 @@ const isSandbox = envType === "sandbox";
 const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
+const ossApi = axios.create();
+const docProgressURL = `${apiURL}/doc-conversion-status`;
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
+const metriportPrefixRegex = new RegExp("Metriport/identifiers/Metriport/", "g");
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -174,11 +178,17 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           };
         }
 
-        processReponse(response, event, log);
+        processResponse(response, event, log);
 
         await reportMemoryUsage();
         await reportMetrics(metrics);
-        //
+
+        await ossApi.post(docProgressURL, {
+          cxId,
+          patientId,
+          status: "success",
+          jobId,
+        });
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount;
@@ -188,6 +198,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await reEnqueue(message);
+          uuid4();
         } else {
           console.log(
             `Error processing message: ${JSON.stringify(message)}; ${JSON.stringify(err)}`
@@ -196,6 +207,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await sendToDLQ(message);
+
+          const cxId = message.messageAttributes?.cxId?.stringValue;
+          const patientId = message.messageAttributes?.patientId?.stringValue;
+          const jobId = message.messageAttributes?.jobId?.stringValue;
+
+          if (cxId && patientId && jobId) {
+            await ossApi.post(docProgressURL, {
+              cxId,
+              patientId,
+              status: "failed",
+              jobId,
+            });
+          }
         }
       }
     }
@@ -225,6 +249,9 @@ function replaceIds(payload) {
     const regex = new RegExp(stringToReplace.old, "g");
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
+
+  fhirBundleStr = fhirBundleStr.replace(metriportPrefixRegex, "");
+
   return fhirBundleStr;
 }
 
@@ -255,7 +282,7 @@ function getErrorsFromReponse(response) {
   return errors;
 }
 
-function processReponse(response, event, log) {
+function processResponse(response, event, log) {
   const entries = response.entry ? response.entry : [];
   const errors = getErrorsFromReponse(response);
   const countError = errors.length;
@@ -264,7 +291,13 @@ function processReponse(response, event, log) {
   if (errors.length > 0) {
     errors.forEach(e => log(`Error from FHIR Server: ${JSON.stringify(e)}`));
     captureMessage(`Error upserting Bundle on FHIR server`, {
-      extra: { context: lambdaName, additional: "processReponse", event, countSuccess, countError },
+      extra: {
+        context: lambdaName,
+        additional: "processResponse",
+        event,
+        countSuccess,
+        countError,
+      },
       level: "error",
     });
   }
@@ -339,8 +372,8 @@ async function reportMetrics(metrics) {
   });
   try {
     const MetricData = [durationMetric("Download", download), durationMetric("Upsert", upsert)];
-    job && MetricData.put(durationMetric("Job duration", job, "FHIR Conversion Flow"));
-    errorCount && MetricData.put(countMetric("FHIR Upsert Errors", errorCount));
+    job && MetricData.push(durationMetric("Job duration", job, "FHIR Conversion Flow"));
+    errorCount && MetricData.push(countMetric("FHIR Upsert Errors", errorCount));
     await cloudWatch
       .putMetricData({
         MetricData,

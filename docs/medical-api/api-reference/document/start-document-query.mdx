@@ -7,17 +7,19 @@ api: "POST /medical/v1/document/query"
 When executed, this endpoint triggers an asynchronous document query with HIEs and immediately returns the status
 of document query, `processing`.
 
+If there are documents that have yet to be stored in FHIR, we will convert them and provide the status of those conversions.
+
 When the asynchronous document query finishes, it stores new/updated document references for future requests and
 updates the status of document query to `completed` - accessible through the [List Documents endpoint](/medical-api/api-reference/document/list-documents).
 
 <Tip>
-  You can also use the [List Documents endpoint](/medical-api/api-reference/document/list-documents) to get the current query status and
-  query progress, while the query is still processing.
+  You can also use the [List Documents endpoint](/medical-api/api-reference/document/list-documents)
+  to get the current query status and query progress, while the query is still processing.
 </Tip>
 
 <Warning>
-  If you were to trigger this endpoint again while the query is still processing, you will get
-  a response that reflects the current query progress. So essentially, only a single document query
+  If you were to trigger this endpoint again while the query is still processing, you will get a
+  response that reflects the current query progress. So essentially, only a single document query
   will be running for a patient at a given time.
 </Warning>
 
@@ -33,20 +35,7 @@ updates the status of document query to `completed` - accessible through the [Li
 
 ## Response
 
-<ResponseField name="queryStatus" type="string" required>
-  The status of querying document references across HIEs, either `processing` or `completed`.
-</ResponseField>
-
-<ResponseField name="queryProgress" type="DocumentQueryProgress">
-  <Expandable title="DocumentQueryProgress properties">
-    <ResponseField name="completed" type="number">
-      The number of documents that have been queried.
-    </ResponseField>
-    <ResponseField name="total" type="number">
-      The total number of documents to be queried.
-    </ResponseField>
-  </Expandable>
-</ResponseField>
+<Snippet file="document-progress.mdx" />
 
 <ResponseExample>
 ```javascript Metriport SDK
@@ -64,10 +53,17 @@ const status = await api.startDocumentQuery(
 
 ```json
 {
-  "queryStatus": "processing",
-  "queryProgress": {
-    "completed": 10,
-    "total": 100
+  "download": {
+    "status": "completed",
+    "total": 100,
+    "successful": 95,
+    "errors": 5
+  },
+  "convert": {
+    "status": "processing",
+    "total": 20,
+    "successful": 15,
+    "errors": 1
   }
 }
 ````

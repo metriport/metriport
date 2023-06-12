@@ -1,5 +1,5 @@
 .env
 node_modules
-src/fhir/batch/load/**/*
+src/fhir/batch/payload-load/**/*
 test-run-report*
 report*
