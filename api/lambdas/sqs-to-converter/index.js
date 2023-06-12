@@ -31,10 +31,12 @@ const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME")
 // sidechain converter config
 const sidechainFHIRConverterUrl = getEnv("SIDECHAIN_FHIR_CONVERTER_URL");
 const sidechainFHIRConverterUrlBlacklist = getEnv("SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST");
+const sidechainWordsToRemove = getEnv("SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE");
 const sidechainFHIRConverterKeysSecretName = isSidechainConnector()
   ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS")
   : undefined;
 const baseReplaceUrl = "https://public.metriport.com";
+const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 
 // Keep this as early on the file as possible
 Sentry.init({
@@ -93,34 +95,14 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   console.log(fhirBundle);
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
-      // add doc id extension
-      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
-      bundleEntry.resource.extension.push(extension);
+      // replace meta's source and profile - trying to keep those short b/c of HAPI constraint of 100 chars on URLs
+      bundleEntry.resource.meta = {
+        lastUpdated: bundleEntry.resource.meta.lastUpdated ?? new Date().toISOString(),
+        source: sourceUrl,
+      };
 
       // validate resource id
       let idToUse = bundleEntry.resource.id;
-      if (!uuid.validate(idToUse)) {
-        // if it's not valid, we'll need to generate a valid UUID
-        const newId = uuid.v4();
-        bundleEntry.resource.id = newId;
-
-        // save the old/new ID pair so we later replace all occurences
-        // of the old one with the new one
-        stringsToReplace.push({ old: idToUse, new: newId });
-
-        idToUse = newId;
-      }
-
-      // change the fullUrl in the resource to match what our converter would generate
-      bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
-
-      // add missing request
-      if (!bundleEntry.resource.request) {
-        bundleEntry.resource.request = {
-          method: "PUT",
-          url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
-        };
-      }
 
       // save index of the patient resource (if any)
       if (bundleEntry.resource.resourceType === "Patient") {
@@ -130,13 +112,48 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
       if (bundleEntry.resource.resourceType === "OperationOutcome") {
         operationOutcomeIndex = curIndex;
       }
+
+      if (idToUse) {
+        if (!uuid.validate(idToUse)) {
+          // if it's not valid, we'll need to generate a valid UUID
+          const newId = uuid.v4();
+          bundleEntry.resource.id = newId;
+
+          // save the old/new ID pair so we later replace all occurences
+          // of the old one with the new one
+          stringsToReplace.push({ old: idToUse, new: newId });
+
+          idToUse = newId;
+        }
+
+        // change the fullUrl in the resource to match what our converter would generate
+        bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
+
+        // add missing request
+        if (!bundleEntry.resource.request) {
+          bundleEntry.resource.request = {
+            method: "PUT",
+            url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
+          };
+        }
+
+        // add doc id extension
+        if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
+        bundleEntry.resource.extension.push(extension);
+      }
+
       curIndex++;
     }
 
     // remove the patient resource if it was found in the bundle
-    if (patientIndex >= 0) fhirBundle.entry.splice(patientIndex, 1);
+    let indexModifier = 0;
+    if (patientIndex >= 0) {
+      fhirBundle.entry.splice(patientIndex, 1);
+      indexModifier = 1;
+    }
     // likewise, remove the operation outcome resource if it was found
-    if (operationOutcomeIndex >= 0) fhirBundle.entry.splice(operationOutcomeIndex, 1);
+    if (operationOutcomeIndex >= 0)
+      fhirBundle.entry.splice(operationOutcomeIndex - indexModifier, 1);
   }
 
   // replace all old ids & blacklisted urls
@@ -156,7 +173,15 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
 
-  console.log(fhirBundleStr);
+  if (sidechainWordsToRemove) {
+    const words = sidechainWordsToRemove.split(",");
+    for (const word of words) {
+      const regex = new RegExp(word, "gi");
+      fhirBundleStr = fhirBundleStr.replace(regex, "");
+    }
+  }
+
+  console.log(`Bundle being sent to FHIR server: ${JSON.stringify(fhirBundleStr)}`);
   return JSON.parse(fhirBundleStr);
 }
 

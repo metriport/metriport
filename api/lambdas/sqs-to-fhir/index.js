@@ -45,6 +45,7 @@ const ossApi = axios.create();
 const docProgressURL = `${apiURL}/internal/doc-conversion-status`;
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
 const metriportPrefixRegex = new RegExp("Metriport/identifiers/Metriport/", "g");
+const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -242,8 +243,13 @@ function replaceIds(payload) {
     const newId = uuid4();
     bundleEntry.resource.id = newId;
     stringsToReplace.push({ old: idToUse, new: newId });
+    // replace meta's source and profile
+    bundleEntry.resource.meta = {
+      lastUpdated: bundleEntry.resource.meta.lastUpdated ?? new Date().toISOString(),
+      source: sourceUrl,
+    };
   }
-  let fhirBundleStr = payload;
+  let fhirBundleStr = JSON.stringify(fhirBundle);
   for (const stringToReplace of stringsToReplace) {
     // doing this is apparently more efficient than just using replace
     const regex = new RegExp(stringToReplace.old, "g");

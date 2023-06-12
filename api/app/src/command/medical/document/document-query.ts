@@ -11,6 +11,11 @@ import { PatientDataCommonwell } from "../../../external/commonwell/patient-shar
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
+import {
+  MAPIWebhookStatus,
+  MAPIWebhookType,
+  processPatientDocumentRequest,
+} from "../../webhook/medical";
 
 // TODO: eventually we will have to update this to support multiple HIEs
 export async function queryDocumentsAcrossHIEs({
@@ -117,6 +122,15 @@ export const updateDocQuery = async ({
         convertSuccess + convertError >= (existing.data.documentQueryProgress?.convert?.total ?? 0)
           ? "completed"
           : "processing";
+
+      if (docQueryProgressStatus === "completed") {
+        processPatientDocumentRequest(
+          patient.cxId,
+          patient.id,
+          MAPIWebhookType.documentConversion,
+          MAPIWebhookStatus.completed
+        );
+      }
 
       return await existing.update(
         {
