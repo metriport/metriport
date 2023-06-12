@@ -44,6 +44,7 @@ const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
 const ossApi = axios.create();
 const docProgressURL = `${apiURL}/doc-conversion-status`;
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
+const metriportPrefixRegex = new RegExp("Metriport/identifiers/Metriport/", "g");
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -248,6 +249,7 @@ function replaceIds(payload) {
     const regex = new RegExp(stringToReplace.old, "g");
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
+  fhirBundleStr = fhirBundleStr.replace(metriportPrefixRegex, "");
   return fhirBundleStr;
 }
 
