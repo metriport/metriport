@@ -249,7 +249,9 @@ function replaceIds(payload) {
     const regex = new RegExp(stringToReplace.old, "g");
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
+
   fhirBundleStr = fhirBundleStr.replace(metriportPrefixRegex, "");
+
   return fhirBundleStr;
 }
 
