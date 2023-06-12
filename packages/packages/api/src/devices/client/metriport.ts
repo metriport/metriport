@@ -106,7 +106,7 @@ export class MetriportDevicesApi {
    */
   async deleteUser(userId: string): Promise<void> {
     await this.api.delete("/user/delete", {
-      params: { userId: userId },
+      params: { userId },
     });
   }
 

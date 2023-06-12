@@ -13,14 +13,14 @@ api: "DELETE /user/revoke"
 <ParamField query="provider" type="string" required>
   The provider you would like to revoke access to.
 
-  Can be one of: `apple`, `cronometer`, `dexcom`, `fitbit`, `oura`, `whoop`, or `withings`.
+Can be one of: `apple`, `cronometer`, `dexcom`, `fitbit`, `oura`, `whoop`, or `withings`.
+
 </ParamField>
 
 <ResponseExample>
 
 ```javascript Metriport SDK
-import { MetriportDevicesApi } from "@metriport/api";
-import { ProviderSource } from "@metriport/api";
+import { MetriportDevicesApi, ProviderSource } from "@metriport/api";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
