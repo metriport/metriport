@@ -368,8 +368,8 @@ async function reportMetrics(metrics) {
   });
   try {
     const MetricData = [durationMetric("Download", download), durationMetric("Upsert", upsert)];
-    job && MetricData.put(durationMetric("Job duration", job, "FHIR Conversion Flow"));
-    errorCount && MetricData.put(countMetric("FHIR Upsert Errors", errorCount));
+    job && MetricData.push(durationMetric("Job duration", job, "FHIR Conversion Flow"));
+    errorCount && MetricData.push(countMetric("FHIR Upsert Errors", errorCount));
     await cloudWatch
       .putMetricData({
         MetricData,
