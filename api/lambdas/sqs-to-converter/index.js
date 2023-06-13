@@ -129,14 +129,6 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
         // change the fullUrl in the resource to match what our converter would generate
         bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
 
-        // add missing request
-        if (!bundleEntry.resource.request) {
-          bundleEntry.resource.request = {
-            method: "PUT",
-            url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
-          };
-        }
-
         // add doc id extension
         if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
         bundleEntry.resource.extension.push(extension);
@@ -306,8 +298,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         } else {
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
-          addMissingRequests(conversionResult);
         }
+        addMissingRequests(conversionResult);
         metrics.postProcess = {
           duration: Date.now() - postProcessStart,
           timestamp: new Date().toISOString(),
@@ -380,6 +372,7 @@ function addExtensionToConversion(conversion, extension) {
   const fhirBundle = conversion.fhirResource;
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
+      if (!bundleEntry.resource) continue;
       if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
       bundleEntry.resource.extension.push(extension);
     }
@@ -393,6 +386,7 @@ function removePatientFromConversion(conversion) {
 }
 
 function addMissingRequests(conversion) {
+  if (!conversion.fhirResource?.entry?.length) return;
   conversion.fhirResource.entry.forEach(e => {
     if (!e.request) {
       e.request = {
