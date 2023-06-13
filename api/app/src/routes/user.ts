@@ -16,7 +16,6 @@ import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../share
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdOrFail } from "./util";
-import { capture } from "../shared/notifications";
 
 const router = Router();
 
@@ -124,19 +123,16 @@ async function revokeUserProviderAccess(
   // const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
   //   req.query.provider
   // );
-  try {
-    if (providerOAuth2.success) {
-      await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
-      // } else if (providerOAuth1.success) {
-      //   // await Constants.PROVIDER_OAUTH1_MAP[
-      //   //   providerOAuth1.data
-      //   // ].deregister(connectedUser);
-    } else if (provider === PROVIDER_APPLE) {
-      const apple = new Apple();
-      await apple.revokeProviderAccess(connectedUser);
-    }
-  } catch (err) {
-    capture.error(err, { extra: { context: "dapi.user.revokeAccess" } });
+  if (providerOAuth2.success) {
+    await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
+    // } else if (providerOAuth1.success) {
+    //   // await Constants.PROVIDER_OAUTH1_MAP[
+    //   //   providerOAuth1.data
+    //   // ].deregister(connectedUser);
+  } else if (provider === PROVIDER_APPLE) {
+    const apple = new Apple();
+    await apple.revokeProviderAccess(connectedUser);
+  } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
 }
@@ -154,22 +150,13 @@ async function revokeUserProviderAccess(
 router.delete(
   "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
-    try {
-      const userId = getUserIdFrom("query", req).orFail();
-      const cxId = getCxIdOrFail(req);
-      const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
-      await revokeUserProviderAccess(connectedUser, req.query.provider);
-      return res
-        .status(status.OK)
-        .json({ message: `Access token for ${req.query.provider} has been revoked.` });
-    } catch (err) {
-      console.log(err);
-      capture.error(err, { extra: { context: "dapi.user.revoke" } });
-
-      return res
-        .status(status.INTERNAL_SERVER_ERROR)
-        .json({ message: "An unexpected error occurred." });
-    }
+    const userId = getUserIdFrom("query", req).orFail();
+    const cxId = getCxIdOrFail(req);
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+    await revokeUserProviderAccess(connectedUser, req.query.provider);
+    return res
+      .status(status.OK)
+      .json({ message: `Access token for ${req.query.provider} has been revoked.` });
   })
 );
 
@@ -193,27 +180,14 @@ router.delete(
       const connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
         return key;
       });
-      // const tokenRevokeResults =
       await Promise.allSettled(
         connectedProviders.map(async provider => {
-          try {
-            await revokeUserProviderAccess(connectedUser, provider);
-          } catch (err) {
-            capture.error(err, {
-              extra: {
-                context: "dapi.routes.user.revokeAll",
-              },
-            });
-          }
+          await revokeUserProviderAccess(connectedUser, provider);
         })
       );
     }
 
-    try {
-      await deleteConnectedUser(userId);
-    } catch (err) {
-      capture.error(err, { extra: { context: "dapi.routes.user.delete" } });
-    }
+    await deleteConnectedUser(userId);
 
     return res.status(status.OK).json({ message: "User deleted successfully." });
   })
