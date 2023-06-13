@@ -10,18 +10,6 @@ api: "GET /user/:userId/connected-providers"
   The user's connected providers
 </ResponseField>
 
-<ResponseExample>
-
-```javascript Metriport SDK
-import { MetriportDevicesApi } from "@metriport/api";
-
-const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
-
-const connectedProviders = await metriportClient.getConnectedProviders("metriportUserId");
-```
-
-</ResponseExample>
-
 ```json
 {
   "connectedProviders": [
@@ -37,3 +25,15 @@ const connectedProviders = await metriportClient.getConnectedProviders("metripor
   ]
 }
 ```
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportDevicesApi } from "@metriport/api";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+
+const connectedProviders = await metriportClient.getConnectedProviders("metriportUserId");
+```
+
+</ResponseExample>

@@ -23,6 +23,12 @@ Can be one of: `apple`, `cronometer`, `dexcom`, `fitbit`, `oura`, `whoop`, or `w
   Feedback on successful token revocation.
 </ResponseField>
 
+```json
+{
+  "message": "Access token for fitbit has been revoked."
+}
+```
+
 <ResponseExample>
 
 ```javascript Metriport SDK
@@ -34,9 +40,3 @@ await metriportClient.revokeUserAccessToProvider("metriportUserId", ProviderSour
 ```
 
 </ResponseExample>
-
-```json
-{
-  "message": "Access token for fitbit has been revoked."
-}
-```

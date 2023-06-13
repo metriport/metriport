@@ -16,6 +16,12 @@ api: "DELETE /user/delete"
   Feedback on successful user deletion.
 </ResponseField>
 
+```json
+{
+  "message": "User deleted successfully."
+}
+```
+
 <ResponseExample>
 
 ```javascript Metriport SDK
@@ -27,9 +33,3 @@ await metriportClient.deleteUser("metriportUserId");
 ```
 
 </ResponseExample>
-
-```json
-{
-  "message": "User deleted successfully."
-}
-```
