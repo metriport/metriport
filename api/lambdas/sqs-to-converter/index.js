@@ -354,11 +354,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           const jobId = message.messageAttributes?.jobId?.stringValue;
 
           if (cxId && patientId && jobId && isSidechainConnector()) {
-            await ossApi.post(docProgressURL, {
-              cxId,
-              patientId,
-              status: "failed",
-              jobId,
+            await ossApi.post(docProgressURL, null, {
+              params: {
+                cxId,
+                patientId,
+                status: "failed",
+                jobId,
+              },
             });
           }
         }

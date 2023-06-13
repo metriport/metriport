@@ -184,11 +184,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         await reportMemoryUsage();
         await reportMetrics(metrics);
 
-        await ossApi.post(docProgressURL, {
-          cxId,
-          patientId,
-          status: "success",
-          jobId,
+        await ossApi.post(docProgressURL, null, {
+          params: {
+            cxId,
+            patientId,
+            status: "success",
+            jobId,
+          },
         });
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
@@ -214,11 +216,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           const jobId = message.messageAttributes?.jobId?.stringValue;
 
           if (cxId && patientId && jobId) {
-            await ossApi.post(docProgressURL, {
-              cxId,
-              patientId,
-              status: "failed",
-              jobId,
+            await ossApi.post(docProgressURL, null, {
+              params: {
+                cxId,
+                patientId,
+                status: "failed",
+                jobId,
+              },
             });
           }
         }
