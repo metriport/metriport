@@ -27,7 +27,7 @@
     "@medplum/core": "^2.0.18",
     "@medplum/fhirtypes": "^2.0.18",
     "@metriport/api": "^4.1.0",
-    "@metriport/commonwell-sdk": "^4.3.0",
+    "@metriport/commonwell-sdk": "^4.3.1",
     "@sentry/node": "^7.45.0",
     "@sentry/tracing": "^7.45.0",
     "aws-sdk": "^2.1243.0",
