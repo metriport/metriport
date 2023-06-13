@@ -130,8 +130,8 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
         bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
 
         // add missing request
-        if (!bundleEntry.resource.request) {
-          bundleEntry.resource.request = {
+        if (!bundleEntry.request) {
+          bundleEntry.request = {
             method: "PUT",
             url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
           };
@@ -380,6 +380,7 @@ function addExtensionToConversion(conversion, extension) {
   const fhirBundle = conversion.fhirResource;
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
+      if (!bundleEntry.resource) continue;
       if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
       bundleEntry.resource.extension.push(extension);
     }
@@ -393,6 +394,7 @@ function removePatientFromConversion(conversion) {
 }
 
 function addMissingRequests(conversion) {
+  if (!conversion.fhirResource?.entry?.length) return;
   conversion.fhirResource.entry.forEach(e => {
     if (!e.request) {
       e.request = {
