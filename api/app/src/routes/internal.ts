@@ -221,11 +221,11 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const status = getFrom("query").orFail("status", req);
-    const docId = getFrom("query").orFail("jobId", req);
+    const docId = getFrom("query").optional("jobId", req);
     const convertResult = convertResultSchema.parse(status);
-    const { log } = Util.out(`Doc conversion status`);
+    const { log } = Util.out(`Doc conversion status - patient ${patientId}`);
 
-    log(`Converted document ${docId} for patient ${patientId} with status ${status}`);
+    log(`Converted document ${docId} with status ${convertResult}`);
 
     await updateDocQuery({
       patient: { id: patientId, cxId },
