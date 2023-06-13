@@ -218,10 +218,10 @@ router.delete(
 router.post(
   "/doc-conversion-status",
   asyncHandler(async (req: Request, res: Response) => {
-    const patientId = getFrom("query").orFail("patientId", req);
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const status = getFrom("query").orFail("status", req);
-    const docId = getFrom("query").orFail("jobId", req);
+    const patientId = getFrom("params").orFail("patientId", req);
+    const cxId = getUUIDFrom("params", req, "cxId").orFail();
+    const status = getFrom("params").orFail("status", req);
+    const docId = getFrom("params").orFail("jobId", req);
     const convertResult = convertResultSchema.parse(status);
     const { log } = Util.out(`Doc conversion status`);
 
