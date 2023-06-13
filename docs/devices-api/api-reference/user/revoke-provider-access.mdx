@@ -17,6 +17,12 @@ Can be one of: `apple`, `cronometer`, `dexcom`, `fitbit`, `oura`, `whoop`, or `w
 
 </ParamField>
 
+## Response
+
+<ResponseField name="message" type="string" required>
+  Feedback on successful token revocation.
+</ResponseField>
+
 <ResponseExample>
 
 ```javascript Metriport SDK
@@ -28,3 +34,9 @@ await metriportClient.revokeUserAccessToProvider("metriportUserId", ProviderSour
 ```
 
 </ResponseExample>
+
+```json
+{
+  "message": "Access token for fitbit has been revoked."
+}
+```
