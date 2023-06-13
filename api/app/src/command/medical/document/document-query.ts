@@ -102,7 +102,7 @@ export const updateDocQuery = async ({
   let transaction: Transaction | undefined = await sequelize.transaction();
 
   try {
-    const existing = await PatientModel.findOne({
+    const existingPatient = await PatientModel.findOne({
       where: {
         id: patient.id,
         cxId: patient.cxId,
@@ -111,19 +111,19 @@ export const updateDocQuery = async ({
       transaction,
     });
 
-    if (existing) {
+    if (existingPatient) {
       const docQueryProgressConvert = setDocQueryProgress({
-        patient: existing,
+        patient: existingPatient,
         downloadProgress,
         convertProgress,
         convertResult,
         restart,
       });
 
-      const updatedPatient = await existing.update(
+      const updatedPatient = await existingPatient.update(
         {
           data: {
-            ...existing.data,
+            ...existingPatient.data,
             documentQueryProgress: docQueryProgressConvert,
           },
         },
