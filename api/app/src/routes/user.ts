@@ -4,7 +4,10 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { createConnectedUser } from "../command/connected-user/create-connected-user";
 import { deleteConnectedUser } from "../command/connected-user/delete-connected-user";
-import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
+import {
+  getConnectedUserOrFail,
+  getConnectedUsers,
+} from "../command/connected-user/get-connected-user";
 import { createUserToken } from "../command/cx-user/create-user-token";
 import BadRequestError from "../errors/bad-request";
 import NotFoundError from "../errors/not-found";
@@ -37,6 +40,46 @@ router.get(
     const results = await getProviderDataForType<User>(req, ConsumerHealthDataType.User);
 
     res.status(status.OK).json(results);
+  })
+);
+
+type UserIdsAndProviders = {
+  metriportUserId: string;
+  appUserId: string;
+  connectedProviders?: string[];
+};
+
+/**
+ * GET /user/users
+ *
+ * Gets all users and their connected providers for the specified customer.
+ *
+ * @return { UserIdsAndProviders[] }
+ */
+router.get(
+  "/users",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const results = await getConnectedUsers({ cxId });
+    const connectedUsers = await Promise.all(
+      results.map(async user => {
+        const connectedUser = await getConnectedUserOrFail({ id: user.id, cxId });
+        let connectedProviders;
+        const userInfo: UserIdsAndProviders = {
+          metriportUserId: user.id,
+          appUserId: user.cxUserId,
+        };
+        if (connectedUser.providerMap) {
+          connectedProviders = Object.keys(connectedUser.providerMap).map((key: string) => {
+            return key;
+          });
+          userInfo.connectedProviders = connectedProviders;
+        }
+        return userInfo;
+      })
+    );
+
+    res.status(status.OK).json({ connectedUsers });
   })
 );
 
