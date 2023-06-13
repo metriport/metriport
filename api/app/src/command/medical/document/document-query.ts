@@ -110,20 +110,16 @@ export const updateDocQuery = async ({
     });
 
     if (existing) {
-      const convertSuccess = existing.data.documentQueryProgress?.convert?.successful
-        ? existing.data.documentQueryProgress?.convert?.successful + 1
-        : 1;
+      const convertProgress = existing.data.documentQueryProgress?.convert;
 
-      const convertError = existing.data.documentQueryProgress?.convert?.errors
-        ? existing.data.documentQueryProgress?.convert?.errors + 1
-        : 1;
+      const convertSuccess = convertProgress?.successful ? convertProgress?.successful + 1 : 1;
+
+      const convertError = convertProgress?.errors ? convertProgress?.errors + 1 : 1;
 
       const docQueryProgressStatus =
-        convertSuccess + convertError >= (existing.data.documentQueryProgress?.convert?.total ?? 0)
-          ? "completed"
-          : "processing";
+        convertSuccess + convertError >= (convertProgress?.total ?? 0) ? "completed" : "processing";
 
-      if (docQueryProgressStatus === "completed") {
+      if (convertProgress && docQueryProgressStatus === "completed") {
         processPatientDocumentRequest(
           patient.cxId,
           patient.id,
