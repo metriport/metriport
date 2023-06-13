@@ -81,26 +81,28 @@ export const createQueryResponse = (
   };
 };
 
+type UpdateDocQueryParams = {
+  patient: Pick<Patient, "id" | "cxId">;
+  downloadProgress?: Progress;
+  convertProgress?: Progress;
+  convertResult?: ConvertResult;
+  restart?: boolean;
+};
+
 export const updateDocQuery = async ({
   patient,
   downloadProgress,
   convertProgress,
   convertResult,
   restart,
-}: {
-  patient: Pick<Patient, "id" | "cxId">;
-  downloadProgress?: Progress;
-  convertProgress?: Progress;
-  convertResult?: ConvertResult;
-  restart?: boolean;
-}) => {
+}: UpdateDocQueryParams) => {
   const sequelize = PatientModel.sequelize;
   if (!sequelize) throw new Error("Missing sequelize");
 
   let transaction: Transaction | undefined = await sequelize.transaction();
 
   try {
-    const existing = await PatientModel.findOne({
+    const existingPatient = await PatientModel.findOne({
       where: {
         id: patient.id,
         cxId: patient.cxId,
@@ -109,19 +111,26 @@ export const updateDocQuery = async ({
       transaction,
     });
 
-    if (existing) {
-      const convertSuccess = existing.data.documentQueryProgress?.convert?.successful
-        ? existing.data.documentQueryProgress?.convert?.successful + 1
-        : 1;
+    if (existingPatient) {
+      const docQueryProgressConvert = setDocQueryProgress({
+        patient: existingPatient,
+        downloadProgress,
+        convertProgress,
+        convertResult,
+        restart,
+      });
 
-      const convertError = existing.data.documentQueryProgress?.convert?.errors
-        ? existing.data.documentQueryProgress?.convert?.errors + 1
-        : 1;
+      const updatedPatient = await existingPatient.update(
+        {
+          data: {
+            ...existingPatient.data,
+            documentQueryProgress: docQueryProgressConvert,
+          },
+        },
+        { transaction }
+      );
 
-      const docQueryProgressStatus =
-        convertSuccess + convertError >= (existing.data.documentQueryProgress?.convert?.total ?? 0)
-          ? "completed"
-          : "processing";
+      const docQueryProgressStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
 
       if (docQueryProgressStatus === "completed") {
         processPatientDocumentRequest(
@@ -132,51 +141,7 @@ export const updateDocQuery = async ({
         );
       }
 
-      return await existing.update(
-        {
-          data: {
-            ...existing.data,
-            documentQueryProgress: restart
-              ? { download: downloadProgress }
-              : {
-                  ...existing.data.documentQueryProgress,
-                  ...(downloadProgress
-                    ? {
-                        download: {
-                          ...existing.data.documentQueryProgress?.download,
-                          ...downloadProgress,
-                        },
-                      }
-                    : undefined),
-                  ...(convertProgress
-                    ? {
-                        convert: {
-                          ...existing.data.documentQueryProgress?.convert,
-                          ...convertProgress,
-                        },
-                      }
-                    : undefined),
-                  ...(convertResult
-                    ? {
-                        convert:
-                          convertResult === "success"
-                            ? {
-                                ...existing.data.documentQueryProgress?.convert,
-                                status: docQueryProgressStatus,
-                                successful: convertSuccess,
-                              }
-                            : {
-                                ...existing.data.documentQueryProgress?.convert,
-                                status: docQueryProgressStatus,
-                                errors: convertError,
-                              },
-                      }
-                    : undefined),
-                },
-          },
-        },
-        { transaction }
-      );
+      return updatedPatient;
     }
   } catch (error) {
     await transaction.rollback();
@@ -185,4 +150,59 @@ export const updateDocQuery = async ({
   } finally {
     transaction && (await transaction.commit());
   }
+};
+
+const setDocQueryProgress = ({
+  patient,
+  downloadProgress,
+  convertProgress,
+  convertResult,
+  restart,
+}: Omit<UpdateDocQueryParams, "patient"> & { patient: Patient }): DocumentQueryProgress => {
+  if (restart) {
+    return { download: downloadProgress };
+  }
+
+  const patientDocProgress = patient.data.documentQueryProgress;
+
+  const docQueryProgress = {
+    ...patientDocProgress,
+  };
+
+  if (downloadProgress) {
+    docQueryProgress.download = {
+      ...patientDocProgress?.download,
+      ...downloadProgress,
+    };
+  }
+
+  if (convertProgress) {
+    docQueryProgress.convert = {
+      ...patientDocProgress?.convert,
+      ...convertProgress,
+    };
+  }
+
+  if (convertResult) {
+    const successfulConvert = patientDocProgress?.convert?.successful ?? 0;
+    const errorsConvert = patientDocProgress?.convert?.errors ?? 0;
+    const totalToConvert = patientDocProgress?.convert?.total ?? 0;
+    const docQueryProgressStatus = successfulConvert + errorsConvert + 1 >= totalToConvert;
+
+    if (convertResult === "success") {
+      docQueryProgress.convert = {
+        ...patientDocProgress?.convert,
+        status: docQueryProgressStatus ? "completed" : "processing",
+        successful: successfulConvert + 1,
+      };
+    } else if (convertResult === "failed") {
+      docQueryProgress.convert = {
+        ...patientDocProgress?.convert,
+        status: docQueryProgressStatus ? "completed" : "processing",
+        errors: errorsConvert + 1,
+      };
+    }
+  }
+
+  return docQueryProgress;
 };
