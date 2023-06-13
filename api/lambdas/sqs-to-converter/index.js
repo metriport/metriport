@@ -182,8 +182,9 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
     }
   }
 
-  console.log(`Bundle being sent to FHIR server: ${JSON.stringify(fhirBundleStr)}`);
-  return JSON.parse(fhirBundleStr);
+  console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
+  fhirBundle = JSON.parse(fhirBundleStr);
+  return;
 }
 
 /* Example of a single message/record in event's `Records` array:
