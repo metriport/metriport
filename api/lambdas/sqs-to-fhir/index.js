@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/serverless";
 import { uuid4 } from "@sentry/utils";
 import * as AWS from "aws-sdk";
 import fetch from "node-fetch";
+import axios from "axios";
 
 export function getEnv(name) {
   return process.env[name];
