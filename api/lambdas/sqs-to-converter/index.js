@@ -95,6 +95,7 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   console.log(fhirBundle);
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
+      if (!bundleEntry.resource) continue;
       // replace meta's source and profile - trying to keep those short b/c of HAPI constraint of 100 chars on URLs
       bundleEntry.resource.meta = {
         lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
@@ -396,7 +397,7 @@ function removePatientFromConversion(conversion) {
 function addMissingRequests(conversion) {
   if (!conversion.fhirResource?.entry?.length) return;
   conversion.fhirResource.entry.forEach(e => {
-    if (!e.request) {
+    if (!e.request && e.resource) {
       e.request = {
         method: "PUT",
         url: `${e.resource.resourceType}/${e.resource.id}`,
