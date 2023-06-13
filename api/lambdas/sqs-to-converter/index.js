@@ -97,7 +97,7 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
     for (const bundleEntry of fhirBundle.entry) {
       // replace meta's source and profile - trying to keep those short b/c of HAPI constraint of 100 chars on URLs
       bundleEntry.resource.meta = {
-        lastUpdated: bundleEntry.resource.meta.lastUpdated ?? new Date().toISOString(),
+        lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
         source: sourceUrl,
       };
 
@@ -342,7 +342,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           await reEnqueue(message);
         } else {
           console.log(
-            `Error processing message: ${JSON.stringify(message)}; ${JSON.stringify(err)}`
+            `Error processing message: ${JSON.stringify(message)}; \n${err}: ${JSON.stringify(err)}`
           );
           captureException(err, {
             extra: { message, context: lambdaName, retryCount: count },
