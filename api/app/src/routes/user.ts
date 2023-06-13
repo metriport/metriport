@@ -16,6 +16,7 @@ import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../share
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdOrFail } from "./util";
+import { capture } from "../shared/notifications";
 
 const router = Router();
 
@@ -125,16 +126,26 @@ async function revokeUserProviderAccess(
   // );
   if (providerOAuth2.success) {
     await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
+  } else if (provider === PROVIDER_APPLE) {
+    const apple = new Apple();
+    await apple.revokeProviderAccess(connectedUser);
     // } else if (providerOAuth1.success) {
     //   // await Constants.PROVIDER_OAUTH1_MAP[
     //   //   providerOAuth1.data
     //   // ].deregister(connectedUser);
-  } else if (provider === PROVIDER_APPLE) {
-    const apple = new Apple();
-    await apple.revokeProviderAccess(connectedUser);
   } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
+}
+
+async function revokeToken(req: Request, res: Response) {
+  const userId = getUserIdFrom("query", req).orFail();
+  const cxId = getCxIdOrFail(req);
+  const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+  await revokeUserProviderAccess(connectedUser, req.query.provider);
+  return res
+    .status(status.OK)
+    .json({ message: `Access token for ${req.query.provider} has been revoked.` });
 }
 
 /** ---------------------------------------------------------------------------------------
@@ -148,15 +159,28 @@ async function revokeUserProviderAccess(
 * @return  {{success: boolean}}      If successfully removed.
 */
 router.delete(
+  "/:id/revoke",
+  asyncHandler(async (req: Request, res: Response) => {
+    return revokeToken(req, res);
+  })
+);
+
+/**
+ * @deprecated use /:id/revoke instead.
+ *
+ * DELETE /user/revoke
+ *
+ * Revoke access to a provider
+ *
+ * @param   {string}  req.query.provider    The provider to revoke access.
+ * @param   {string}  req.query.userId      The internal user ID.
+ *
+ * @return  {{success: boolean}}      If successfully removed.
+ */
+router.delete(
   "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = getUserIdFrom("query", req).orFail();
-    const cxId = getCxIdOrFail(req);
-    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
-    await revokeUserProviderAccess(connectedUser, req.query.provider);
-    return res
-      .status(status.OK)
-      .json({ message: `Access token for ${req.query.provider} has been revoked.` });
+    return revokeToken(req, res);
   })
 );
 
@@ -165,12 +189,12 @@ router.delete(
  *
  * Revoke access to all providers and permanently delete the user
  *
- * @param {string} req.query.userId      The internal user ID.
+ * @param {string} req.params.userId      The internal user ID.
  *
  * @return  {{success: boolean}}      If successfully removed.
  */
 router.delete(
-  "/delete",
+  "/:id",
   asyncHandler(async (req: Request, res: Response) => {
     const userId = getUserIdFrom("query", req).orFail();
     const cxId = getCxIdOrFail(req);
@@ -180,11 +204,21 @@ router.delete(
       const connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
         return key;
       });
+      const rejected: { provider: string; err: unknown }[] = [];
       await Promise.allSettled(
         connectedProviders.map(async provider => {
-          await revokeUserProviderAccess(connectedUser, provider);
+          return revokeUserProviderAccess(connectedUser, provider).catch(err => {
+            rejected.push({ provider, err });
+            throw err;
+          });
         })
       );
+      if (rejected.length > 0) {
+        console.log(`Failed to revoke access to providers`, userId, rejected);
+        capture.message(`Failed to revoke access to providers`, {
+          extra: { rejected, userId },
+        });
+      }
     }
 
     await deleteConnectedUser(userId);
