@@ -2,8 +2,8 @@ import { MedplumClient } from "@medplum/core";
 import * as Sentry from "@sentry/serverless";
 import { uuid4 } from "@sentry/utils";
 import * as AWS from "aws-sdk";
-import fetch from "node-fetch";
 import axios from "axios";
+import fetch from "node-fetch";
 
 export function getEnv(name) {
   return process.env[name];
@@ -205,7 +205,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           uuid4();
         } else {
           console.log(
-            `Error processing message: ${JSON.stringify(message)}; ${JSON.stringify(err)}`
+            `Error processing message: ${JSON.stringify(message)}; \n${err}: ${JSON.stringify(err)}`
           );
           captureException(err, {
             extra: { message, context: lambdaName, retryCount: count },
@@ -250,7 +250,7 @@ function replaceIds(payload) {
     stringsToReplace.push({ old: idToUse, new: newId });
     // replace meta's source and profile
     bundleEntry.resource.meta = {
-      lastUpdated: bundleEntry.resource.meta.lastUpdated ?? new Date().toISOString(),
+      lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
       source: sourceUrl,
     };
   }
