@@ -86,7 +86,7 @@ async function getSidechainConverterAPIKey() {
 }
 
 function postProcessSidechainFHIRBundle(conversionResult, extension) {
-  const fhirBundle = conversionResult.fhirBundle;
+  const fhirBundle = conversionResult.fhirResource;
   fhirBundle.type = "batch";
 
   const stringsToReplace = [];
@@ -184,7 +184,7 @@ function postProcessSidechainFHIRBundle(conversionResult, extension) {
   }
 
   console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
-  conversionResult.fhirBundle = JSON.parse(fhirBundleStr);
+  conversionResult.fhirResource = JSON.parse(fhirBundleStr);
   return;
 }
 
