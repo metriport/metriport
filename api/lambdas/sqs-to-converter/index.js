@@ -85,7 +85,8 @@ async function getSidechainConverterAPIKey() {
   return keys[Math.floor(Math.random() * keys.length)];
 }
 
-function postProcessSidechainFHIRBundle(fhirBundle, extension) {
+function postProcessSidechainFHIRBundle(conversionResult, extension) {
+  const fhirBundle = conversionResult.fhirResource;
   fhirBundle.type = "batch";
 
   const stringsToReplace = [];
@@ -183,7 +184,7 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   }
 
   console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
-  fhirBundle = JSON.parse(fhirBundleStr);
+  conversionResult.fhirResource = JSON.parse(fhirBundleStr);
   return;
 }
 
@@ -304,7 +305,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         // post-process conversion result
         const postProcessStart = Date.now();
         if (isSidechainConnector()) {
-          postProcessSidechainFHIRBundle(conversionResult.fhirResource, documentExtension);
+          postProcessSidechainFHIRBundle(conversionResult, documentExtension);
         } else {
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
