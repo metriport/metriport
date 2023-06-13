@@ -133,7 +133,7 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
         if (!bundleEntry.request) {
           bundleEntry.request = {
             method: "PUT",
-            url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
+            url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}`,
           };
         }
 
@@ -399,7 +399,7 @@ function addMissingRequests(conversion) {
     if (!e.request) {
       e.request = {
         method: "PUT",
-        url: `${e.resource.resourceType}/${e.resource.id}}`,
+        url: `${e.resource.resourceType}/${e.resource.id}`,
       };
     }
   });
