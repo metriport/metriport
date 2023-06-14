@@ -6,7 +6,7 @@ import { Patient } from "../../../models/medical/patient";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
 import { ResourceType } from "../shared";
-import { metriportDataSourceExtension } from "../shared/extensions/extension";
+import { metriportDataSourceExtension } from "../shared/extensions/metriport";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 dayjs.extend(isToday);
