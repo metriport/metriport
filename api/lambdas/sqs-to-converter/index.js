@@ -85,7 +85,7 @@ async function getSidechainConverterAPIKey() {
   return keys[Math.floor(Math.random() * keys.length)];
 }
 
-function postProcessSidechainFHIRBundle(conversionResult, extension) {
+function postProcessSidechainFHIRBundle(conversionResult, extension, patientId) {
   const fhirBundle = conversionResult.fhirResource;
   fhirBundle.type = "batch";
 
@@ -116,7 +116,7 @@ function postProcessSidechainFHIRBundle(conversionResult, extension) {
       }
 
       if (idToUse) {
-        if (!uuid.validate(idToUse)) {
+        if (!uuid.validate(idToUse) && idToUse !== patientId) {
           // if it's not valid, we'll need to generate a valid UUID
           const newId = uuid.v4();
           bundleEntry.resource.id = newId;
@@ -237,18 +237,18 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     for (const [i, message] of records.entries()) {
       // Process one record from the SQS message
       console.log(`Record ${i}, messageId: ${message.messageId}`);
-      try {
-        if (!message.messageAttributes) throw new Error(`Missing message attributes`);
-        if (!message.body) throw new Error(`Missing message body`);
-        const attrib = message.messageAttributes;
-        const cxId = attrib.cxId?.stringValue;
-        const patientId = attrib.patientId?.stringValue;
-        const jobStartedAt = attrib.startedAt?.stringValue;
-        const jobId = attrib.jobId?.stringValue;
-        if (!cxId) throw new Error(`Missing cxId`);
-        if (!patientId) throw new Error(`Missing patientId`);
-        const log = _log(`${i}, cxId ${cxId}, patient ${patientId}, jobId ${jobId}`);
+      if (!message.messageAttributes) throw new Error(`Missing message attributes`);
+      if (!message.body) throw new Error(`Missing message body`);
+      const attrib = message.messageAttributes;
+      const cxId = attrib.cxId?.stringValue;
+      const patientId = attrib.patientId?.stringValue;
+      const jobStartedAt = attrib.startedAt?.stringValue;
+      const jobId = attrib.jobId?.stringValue;
+      if (!cxId) throw new Error(`Missing cxId`);
+      if (!patientId) throw new Error(`Missing patientId`);
+      const log = _log(`${i}, cxId ${cxId}, patient ${patientId}, jobId ${jobId}`);
 
+      try {
         const bodyAsJson = JSON.parse(message.body);
         const s3BucketName = bodyAsJson.s3BucketName;
         const s3FileName = bodyAsJson.s3FileName;
@@ -305,7 +305,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         // post-process conversion result
         const postProcessStart = Date.now();
         if (isSidechainConnector()) {
-          postProcessSidechainFHIRBundle(conversionResult, documentExtension);
+          postProcessSidechainFHIRBundle(conversionResult, documentExtension, patientId);
         } else {
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
@@ -352,11 +352,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           });
           await sendToDLQ(message);
 
-          const cxId = message.messageAttributes?.cxId?.stringValue;
-          const patientId = message.messageAttributes?.patientId?.stringValue;
-          const jobId = message.messageAttributes?.jobId?.stringValue;
-
-          if (cxId && patientId && jobId && isSidechainConnector()) {
+          if (cxId && patientId && isSidechainConnector()) {
             await ossApi.post(docProgressURL, null, {
               params: {
                 cxId,
