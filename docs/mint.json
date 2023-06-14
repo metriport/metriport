@@ -353,8 +353,7 @@
         "medical-api/more-info/webhooks",
         "medical-api/more-info/sdk",
         "medical-api/more-info/sandbox",
-        "medical-api/more-info/etag",
-        "medical-api/more-info/faq"
+        "medical-api/more-info/etag"
       ]
     },
     {
@@ -403,8 +402,7 @@
         "devices-api/more-info/apple-health",
         "devices-api/more-info/react-native",
         "devices-api/more-info/cordova",
-        "devices-api/more-info/models",
-        "devices-api/more-info/faq"
+        "devices-api/more-info/models"
       ]
     }
   ],
