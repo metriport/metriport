@@ -48,7 +48,7 @@ export function mapData(data: AppleHealth, hourly: boolean): AppleWebhookPayload
 export const createMetadata = (date: string, hourly: boolean): Metadata => {
   return {
     date: dayjs(date).format(ISO_DATE),
-    ...(hourly ? { hour: dayjs(date).format("HH:mm:ss") } : undefined),
+    ...(hourly ? { hour: dayjs(date).format("HH:00") } : undefined),
     source: PROVIDER_APPLE,
   };
 };
