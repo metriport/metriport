@@ -3,15 +3,14 @@ import { ActivityLog } from "@metriport/api/lib/devices/models/common/activity-l
 import dayjs from "dayjs";
 
 import { AppleHealth, createMetadata } from ".";
-import { ISO_DATE } from "../../shared/date";
 import { activityTypeMapping } from "./activity-types";
 
-export function mapDataToActivity(data: AppleHealth) {
+export function mapDataToActivity(data: AppleHealth, hourly: boolean) {
   const activity: Activity[] = [];
   const dateToIndex: { [key: string]: number } = {};
 
   data.HKQuantityTypeIdentifierActiveEnergyBurned?.forEach(appleItem => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -31,7 +30,7 @@ export function mapDataToActivity(data: AppleHealth) {
     dateToIndex[date] = activity.length;
 
     activity.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       summary: {
         energy_expenditure: {
           active_kcal: appleItem.value,
@@ -41,7 +40,7 @@ export function mapDataToActivity(data: AppleHealth) {
   });
 
   data.HKQuantityTypeIdentifierBasalEnergyBurned?.forEach(appleItem => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -61,7 +60,7 @@ export function mapDataToActivity(data: AppleHealth) {
     dateToIndex[date] = activity.length;
 
     activity.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       summary: {
         energy_expenditure: {
           basal_metabolic_rate_kcal: appleItem.value,
@@ -71,7 +70,7 @@ export function mapDataToActivity(data: AppleHealth) {
   });
 
   data.HKQuantityTypeIdentifierStepCount?.forEach(appleItem => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -91,7 +90,7 @@ export function mapDataToActivity(data: AppleHealth) {
     dateToIndex[date] = activity.length;
 
     activity.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       summary: {
         movement: {
           steps_count: appleItem.value,
@@ -101,7 +100,7 @@ export function mapDataToActivity(data: AppleHealth) {
   });
 
   data.HKQuantityTypeIdentifierFlightsClimbed?.forEach(appleItem => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -121,7 +120,7 @@ export function mapDataToActivity(data: AppleHealth) {
     dateToIndex[date] = activity.length;
 
     activity.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       summary: {
         movement: {
           floors_count: appleItem.value,
@@ -131,11 +130,11 @@ export function mapDataToActivity(data: AppleHealth) {
   });
 
   data.HKWorkout?.forEach(workoutItem => {
-    const date = dayjs(workoutItem.startTime).format(ISO_DATE);
+    const date = dayjs(workoutItem.startTime).format();
     const index = dateToIndex[date];
 
     const payload: ActivityLog = {
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       name: activityTypeMapping[workoutItem.type],
       start_time: workoutItem.startTime,
       end_time: workoutItem.endTime,
@@ -170,7 +169,7 @@ export function mapDataToActivity(data: AppleHealth) {
     dateToIndex[date] = activity.length;
 
     activity.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       activity_logs: [payload],
     });
   });
