@@ -15,8 +15,8 @@ When data gets added to Apple Health by a user it will simply send that data to 
 </Info>
 
 <Tip>
-  As a prerequisite we suggest looking at our [webhooks docs](/home/api-info/webhooks) to understand how
-  the flow works.
+  As a prerequisite we suggest looking at our [webhooks docs](/home/api-info/webhooks) to understand
+  how the flow works.
 </Tip>
 
 ## Initial Setup
@@ -137,6 +137,12 @@ This will be a daily average of all data types.
 
 **Step 2:** Once this data is queried we will then listen on an hourly basis for any updates to the Apple Health.
 If there are changes then a query will be sent via webhook with just the data that's been added.
+
+<Info>
+  When listening for hourly changes you'll notice that the metadata contains an `hour` field. This
+  is to signify the hour of the day in which the data is aggregated as shown in the [
+  model](/devices-api/more-info/models#metadata).
+</Info>
 
 <Info>
   To understand the data you should expect to receive from Apple Health checkout our [data

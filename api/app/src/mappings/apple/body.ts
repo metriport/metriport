@@ -2,14 +2,13 @@ import { Body } from "@metriport/api";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthItem, createMetadata } from ".";
-import { ISO_DATE } from "../../shared/date";
 
-export function mapDataToBody(data: AppleHealth) {
+export function mapDataToBody(data: AppleHealth, hourly: boolean) {
   const body: Body[] = [];
   const dateToIndex: { [key: string]: number } = {};
 
   const addToBody = (appleItem: AppleHealthItem, key: string) => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -23,7 +22,7 @@ export function mapDataToBody(data: AppleHealth) {
     dateToIndex[date] = body.length;
 
     body.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       [key]: appleItem.value,
     });
   };
