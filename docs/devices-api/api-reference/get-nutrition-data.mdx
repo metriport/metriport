@@ -32,10 +32,7 @@ import { MetriportDevicesApi } from "@metriport/api";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
-const response = await metriportClient.getNutritionData(
-  "metriportUserId",
-  "date"
-);
+const response = await metriportClient.getNutritionData("metriportUserId", "date");
 ```
 
 </ResponseExample>
@@ -44,72 +41,121 @@ const response = await metriportClient.getNutritionData(
 [
   {
     "metadata": {
-      "date": "2022-12-21",
+      "date": "2023-06-11",
       "source": "cronometer"
     },
     "summary": {
       "macros": {
         "alcohol_g": 0,
-        "carbs_g": 220,
-        "cholesterol_mg": 340,
-        "energy": 2342,
-        "fat_g": 56,
-        "fiber_g": 82,
-        "protein_g": 156,
-        "sodium_mg": 1430,
-        "sugar_g": 12,
-        "trans_fat_g": 0
+        "carbs_g": 129.2,
+        "cholesterol_mg": 460.26,
+        "energy_kcal": 955.4,
+        "fat_g": 24,
+        "fiber_g": 17,
+        "protein_g": 64.1,
+        "sodium_mg": 467.4,
+        "sugar_g": 20.69,
+        "trans_fat_g": 0.46,
+        "water_ml": 595.7
       },
       "micros": {
         "biotin_mg": 52,
-        "caffeine_mg": 240,
-        "calcium_mg": 564,
-        "copper_mg": 134,
-        "folate_mg": 84,
-        "folic_acid_mg": 12,
-        "iodine_mg": 435,
-        "iron_mg": 232,
-        "magnesium_mg": 4543,
-        "manganese_mg": 198,
-        "phosphorus_mg": 124,
-        "potassium_mg": 128,
-        "selenium_mg": 192,
-        "vitamin_A_mg": 76,
-        "vitamin_B12_mg": 346,
-        "vitamin_B1_mg": 234,
-        "vitamin_B2_mg": 598,
-        "vitamin_B3_mg": 34,
-        "vitamin_B5_mg": 198,
-        "vitamin_B6_mg": 234,
-        "vitamin_C_mg": 654,
-        "vitamin_D_mg": 23,
-        "vitamin_E_mg": 546,
-        "vitamin_K_mg": 432,
-        "zinc_mg": 124
+        "caffeine_mg": 0,
+        "calcium_mg": 297.56,
+        "copper_mg": 0.83,
+        "folate_mg": 379.01,
+        "folic_acid_mg": 37.12,
+        "iodine_mg": 215.1,
+        "iron_mg": 17.68,
+        "magnesium_mg": 249.85,
+        "manganese_mg": 4.66,
+        "phosphorus_mg": 895.25,
+        "potassium_mg": 1328.13,
+        "selenium_mg": 142.33,
+        "vitamin_A_mg": 684.81,
+        "vitamin_B1_mg": 0.75,
+        "vitamin_B2_mg": 1.01,
+        "vitamin_B3_mg": 20.54,
+        "vitamin_B5_mg": 4.02,
+        "vitamin_B6_mg": 1.48,
+        "vitamin_B12_mg": 1.49,
+        "vitamin_C_mg": 13.4,
+        "vitamin_D_mg": 92.44,
+        "vitamin_E_mg": 2.25,
+        "vitamin_K_mg": 44.02,
+        "zinc_mg": 6.57
       },
       "aminos": {
-        "alanine_g": 0,
-        "arginine_g": 0,
-        "asparagine_g": 0,
-        "aspartic_acid_g": 0,
-        "cysteine_g": 0,
-        "glutamic_acid_g": 0,
-        "glutamine_g": 0,
-        "glycine_g": 0,
-        "histidine_g": 0,
-        "isoleucine_g": 0,
-        "leucine_g": 0,
-        "lysine_g": 0,
-        "methionine_g": 0,
-        "phenylalanine_g": 0,
-        "proline_g": 0,
-        "serine_g": 0,
-        "threonine_g": 0,
-        "tryptophan_g": 0,
-        "tyrosine_g": 0,
-        "valine_g": 0
+        "alanine_g": 3.12,
+        "arginine_g": 3.55,
+        "asparagine_g": 2.94,
+        "aspartic_acid_g": 5.38,
+        "cysteine_g": 1.16,
+        "glutamic_acid_g": 12.28,
+        "glutamine_g": 1.78,
+        "glycine_g": 2.76,
+        "histidine_g": 1.81,
+        "isoleucine_g": 3.12,
+        "leucine_g": 4.87,
+        "lysine_g": 4.26,
+        "methionine_g": 1.58,
+        "phenylalanine_g": 2.94,
+        "proline_g": 3.43,
+        "serine_g": 3.01,
+        "threonine_g": 2.5,
+        "tryptophan_g": 0.78,
+        "tyrosine_g": 2.12,
+        "valine_g": 3.29
       }
-    }
+    },
+    "foods": [
+      {
+        "name": "Eggs, Cooked",
+        "amount": 2,
+        "unit": "large"
+      },
+      {
+        "name": "Milk",
+        "brand": "Island Farms",
+        "amount": 200,
+        "unit": "ml",
+        "nutrition_facts": {
+          "macros": {
+            "energy_kcal": 124,
+            "carbs_g": 9.32,
+            "fat_g": 6.7,
+            "protein_g": 6.64,
+            "fiber_g": 0,
+            "sodium_mg": 83
+          }
+        }
+      },
+      {
+        "name": "Quaker, Instant Oatmeal, Plain",
+        "amount": 1,
+        "unit": "cup"
+      },
+      {
+        "name": "Banana, Fresh",
+        "amount": 1,
+        "unit": "large"
+      },
+      {
+        "name": "Angel Hair Pasta, Whole Wheat, Cooked in Unsalted Water",
+        "amount": 200,
+        "unit": "g"
+      },
+      {
+        "name": "Chicken Breast, Skin Removed Before Cooking",
+        "amount": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Caesar Salad, Without Dressing",
+        "amount": 1,
+        "unit": "cup, chopped"
+      }
+    ]
   }
 ]
 ```

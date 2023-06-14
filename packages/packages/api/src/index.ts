@@ -4,6 +4,7 @@ export { Activity } from "./devices/models/activity";
 export { Biometrics } from "./devices/models/biometrics";
 export { Body } from "./devices/models/body";
 export { ProviderSource } from "./devices/models/common/provider-source";
+export { Food } from "./devices/models/common/food";
 export { Nutrition } from "./devices/models/nutrition";
 export { Sleep } from "./devices/models/sleep";
 export { User } from "./devices/models/user";

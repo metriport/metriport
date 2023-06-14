@@ -18,6 +18,12 @@ api: "GET /user/connect/token"
   <Info>The token will expire 10 minutes after it is created, and can be reused for the duration of the session.</Info>
 </ResponseField>
 
+```json
+{
+  "token": "YXM-S_TFApXrAjLpfdmdG"
+}
+```
+
 <ResponseExample>
 
 ```javascript Metriport SDK
@@ -29,9 +35,3 @@ const response = await metriportClient.getConnectToken("metriportUserId");
 ```
 
 </ResponseExample>
-
-```json
-{
-  "token": "YXM-S_TFApXrAjLpfdmdG"
-}
-```
