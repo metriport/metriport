@@ -2,7 +2,6 @@ import { Biometrics } from "@metriport/api";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthItem, createMetadata } from ".";
-import { ISO_DATE } from "../../shared/date";
 
 enum BiometricsSource {
   blood_glucose = "blood_glucose",
@@ -18,7 +17,7 @@ enum BloodPressureType {
   systolic_mm_Hg = "systolic_mm_Hg",
 }
 
-export function mapDataToBiometrics(data: AppleHealth) {
+export function mapDataToBiometrics(data: AppleHealth, hourly: boolean) {
   const biometrics: Biometrics[] = [];
   const dateToIndex: { [key: string]: number } = {};
 
@@ -27,7 +26,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
     sourceKey: BiometricsSource,
     key: string
   ) => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -44,7 +43,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
     dateToIndex[date] = biometrics.length;
 
     biometrics.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       [sourceKey]: {
         [key]: appleItem.value,
       },
@@ -52,7 +51,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
   };
 
   const addToHRV = (appleItem: AppleHealthItem) => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -72,7 +71,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
     dateToIndex[date] = biometrics.length;
 
     biometrics.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       hrv: {
         sdnn: {
           avg_millis: appleItem.value,
@@ -82,7 +81,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
   };
 
   const addToTemp = (appleItem: AppleHealthItem) => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -102,7 +101,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
     dateToIndex[date] = biometrics.length;
 
     biometrics.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       temperature: {
         core: {
           avg_celcius: appleItem.value,
@@ -112,7 +111,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
   };
 
   const addToBloodPressure = (appleItem: AppleHealthItem, bpType: BloodPressureType) => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     const createSamples = () => {
@@ -151,7 +150,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
     dateToIndex[date] = biometrics.length;
 
     biometrics.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       blood_pressure: {
         [bpType]: {
           samples: [
@@ -166,7 +165,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
   };
 
   const addToSpo2 = (appleItem: AppleHealthItem) => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -186,7 +185,7 @@ export function mapDataToBiometrics(data: AppleHealth) {
     dateToIndex[date] = biometrics.length;
 
     biometrics.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       respiration: {
         spo2: {
           avg_pct: appleItem.value,

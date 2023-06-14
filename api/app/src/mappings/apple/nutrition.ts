@@ -2,19 +2,18 @@ import { Nutrition } from "@metriport/api";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthItem, createMetadata } from ".";
-import { ISO_DATE } from "../../shared/date";
 
 enum NutritionSource {
   macros = "macros",
   micros = "micros",
 }
 
-export function mapDataToNutrition(data: AppleHealth) {
+export function mapDataToNutrition(data: AppleHealth, hourly: boolean) {
   const nutrition: Nutrition[] = [];
   const dateToIndex: { [key: string]: number } = {};
 
   const addToNutrition = (appleItem: AppleHealthItem, sourceKey: NutritionSource, key: string) => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
     const index = dateToIndex[date];
 
     if (index || index === 0) {
@@ -34,7 +33,7 @@ export function mapDataToNutrition(data: AppleHealth) {
     dateToIndex[date] = nutrition.length;
 
     nutrition.push({
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       summary: {
         [sourceKey]: {
           [key]: appleItem.value,

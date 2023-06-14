@@ -15,8 +15,8 @@ When data gets added to Apple Health by a user it will simply send that data to 
 </Info>
 
 <Tip>
-  As a prerequisite we suggest looking at our [webhooks docs](/home/api-info/webhooks) to understand how
-  the flow works.
+  As a prerequisite we suggest looking at our [webhooks docs](/home/api-info/webhooks) to understand
+  how the flow works.
 </Tip>
 
 ## Initial Setup
@@ -142,3 +142,40 @@ If there are changes then a query will be sent via webhook with just the data th
   To understand the data you should expect to receive from Apple Health checkout our [data
   models](/devices-api/more-info/models).
 </Info>
+
+<Info>
+  When listening for hourly changes you'll notice that the metadata contains an `hour` field as
+  shown below. This is to signify the hour of the day in which the data is aggregated which will be
+  in the format of `HH:00`. To learn more view [ model](/devices-api/more-info/models#metadata).
+</Info>
+
+```json
+{
+  "body": [
+    {
+      "metadata": {
+        "date": "2023-06-14",
+        "hour": "17:00",
+        "source": "apple"
+      },
+      "weight_kg": 72
+    },
+    {
+      "metadata": {
+        "date": "2023-06-14",
+        "hour": "18:00",
+        "source": "apple"
+      },
+      "weight_kg": 74
+    },
+    {
+      "metadata": {
+        "date": "2023-06-14",
+        "hour": "19:00",
+        "source": "apple"
+      },
+      "weight_kg": 74
+    }
+  ]
+}
+```
