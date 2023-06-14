@@ -1,21 +1,23 @@
 import { Transaction } from "sequelize";
 import {
+  ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
   Progress,
-  ConvertResult,
 } from "../../../domain/medical/document-reference";
 import { processAsyncError } from "../../../errors";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
+import { startTransaction } from "../../../models/transaction";
+import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import { getPatientOrFail } from "../patient/get-patient";
 import {
   MAPIWebhookStatus,
   MAPIWebhookType,
   processPatientDocumentRequest,
 } from "../../webhook/medical";
+import { getPatientOrFail } from "../patient/get-patient";
 
 // TODO: eventually we will have to update this to support multiple HIEs
 export async function queryDocumentsAcrossHIEs({
@@ -96,10 +98,7 @@ export const updateDocQuery = async ({
   convertResult,
   restart,
 }: UpdateDocQueryParams) => {
-  const sequelize = PatientModel.sequelize;
-  if (!sequelize) throw new Error("Missing sequelize");
-
-  let transaction: Transaction | undefined = await sequelize.transaction();
+  let transaction: Transaction | undefined = await startTransaction(PatientModel.prototype);
 
   try {
     const existingPatient = await PatientModel.findOne({
@@ -112,7 +111,7 @@ export const updateDocQuery = async ({
     });
 
     if (existingPatient) {
-      const docQueryProgressConvert = setDocQueryProgress({
+      const documentQueryProgress = getDocQueryProgress({
         patient: existingPatient,
         downloadProgress,
         convertProgress,
@@ -124,15 +123,15 @@ export const updateDocQuery = async ({
         {
           data: {
             ...existingPatient.data,
-            documentQueryProgress: docQueryProgressConvert,
+            documentQueryProgress,
           },
         },
         { transaction }
       );
 
-      const docQueryProgressStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
+      const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
 
-      if (docQueryProgressStatus === "completed") {
+      if (conversionStatus === "completed") {
         processPatientDocumentRequest(
           patient.cxId,
           patient.id,
@@ -152,32 +151,30 @@ export const updateDocQuery = async ({
   }
 };
 
-const setDocQueryProgress = ({
+export const getDocQueryProgress = ({
   patient,
   downloadProgress,
   convertProgress,
   convertResult,
   restart,
-}: Omit<UpdateDocQueryParams, "patient"> & { patient: Patient }): DocumentQueryProgress => {
+}: Omit<UpdateDocQueryParams, "patient"> & {
+  patient: Pick<Patient, "data" | "id">;
+}): DocumentQueryProgress => {
   if (restart) {
     return { download: downloadProgress };
   }
 
-  const patientDocProgress = patient.data.documentQueryProgress;
-
-  const docQueryProgress = {
-    ...patientDocProgress,
-  };
+  const patientDocProgress = patient.data.documentQueryProgress ?? {};
 
   if (downloadProgress) {
-    docQueryProgress.download = {
+    patientDocProgress.download = {
       ...patientDocProgress?.download,
       ...downloadProgress,
     };
   }
 
   if (convertProgress) {
-    docQueryProgress.convert = {
+    patientDocProgress.convert = {
       ...patientDocProgress?.convert,
       ...convertProgress,
     };
@@ -187,22 +184,33 @@ const setDocQueryProgress = ({
     const successfulConvert = patientDocProgress?.convert?.successful ?? 0;
     const errorsConvert = patientDocProgress?.convert?.errors ?? 0;
     const totalToConvert = patientDocProgress?.convert?.total ?? 0;
-    const docQueryProgressStatus = successfulConvert + errorsConvert + 1 >= totalToConvert;
+    const isConversionCompleted = successfulConvert + errorsConvert + 1 >= totalToConvert;
 
     if (convertResult === "success") {
-      docQueryProgress.convert = {
+      patientDocProgress.convert = {
         ...patientDocProgress?.convert,
-        status: docQueryProgressStatus ? "completed" : "processing",
+        status: isConversionCompleted ? "completed" : "processing",
         successful: successfulConvert + 1,
       };
     } else if (convertResult === "failed") {
-      docQueryProgress.convert = {
+      patientDocProgress.convert = {
         ...patientDocProgress?.convert,
-        status: docQueryProgressStatus ? "completed" : "processing",
+        status: isConversionCompleted ? "completed" : "processing",
         errors: errorsConvert + 1,
       };
+    } else {
+      const msg = `Invalid conversion result - ${convertResult}`;
+      const extra = {
+        patient: { id: patient.id, data: patient.data },
+        downloadProgress,
+        convertProgress,
+        convertResult,
+        restart,
+      };
+      console.log(msg, extra);
+      capture.message(msg, { extra });
     }
   }
 
-  return docQueryProgress;
+  return patientDocProgress;
 };
