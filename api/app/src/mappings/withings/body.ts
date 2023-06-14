@@ -44,6 +44,7 @@ export const mapToBody = (
         const defaultWeight = {
           time: dayjs(weight.time).toISOString(),
           value: Number(weight.value.toFixed(2)),
+          data_source: {},
         };
 
         if (weight.dataSourceId && devices && devices.length) {
@@ -53,6 +54,7 @@ export const mapToBody = (
             ...defaultWeight,
             ...(device && {
               data_source: {
+                standardized_type: "DEVICE",
                 name: device.model,
                 type: device.type,
                 id: device.deviceid,
@@ -61,6 +63,7 @@ export const mapToBody = (
           };
         }
 
+        defaultWeight["data_source"] = { standardized_type: "MANUALLY ENTERED" };
         return defaultWeight;
       });
     }
