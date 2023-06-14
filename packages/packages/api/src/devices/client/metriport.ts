@@ -86,16 +86,26 @@ export class MetriportDevicesApi {
   }
 
   /**
-   * For the given user ID, revoke the user's access to the specified provider.
+   * For the given user ID, revokes the user's access to the specified provider.
    *
    * @param {string}          userId    - The user ID of the user for which to revoke access.
    * @param {ProviderSource}  provider  - The data provider to revoke access to.
    * @returns void.
    */
   async revokeUserAccessToProvider(userId: string, provider: ProviderSource): Promise<void> {
-    await this.api.delete("/user/revoke", {
-      params: { userId: userId, provider: provider.toString() },
+    await this.api.delete(`/user/${userId}/revoke`, {
+      params: { provider: provider.toString() },
     });
+  }
+
+  /**
+   * For the given user ID, revokes access tokens for all providers and deletes the user.
+   *
+   * @param {string} userId    - The user ID of the user to be deleted.
+   * @returns void.
+   */
+  async deleteUser(userId: string): Promise<void> {
+    await this.api.delete(`/user/${userId}`);
   }
 
   /**
