@@ -31,10 +31,12 @@ const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME")
 // sidechain converter config
 const sidechainFHIRConverterUrl = getEnv("SIDECHAIN_FHIR_CONVERTER_URL");
 const sidechainFHIRConverterUrlBlacklist = getEnv("SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST");
+const sidechainWordsToRemove = getEnv("SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE");
 const sidechainFHIRConverterKeysSecretName = isSidechainConnector()
   ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS")
   : undefined;
 const baseReplaceUrl = "https://public.metriport.com";
+const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 
 // Keep this as early on the file as possible
 Sentry.init({
@@ -57,7 +59,7 @@ const fhirConverter = axios.create({
   },
 });
 const ossApi = axios.create();
-const docProgressURL = `${apiURL}/doc-conversion-status`;
+const docProgressURL = `${apiURL}/internal/doc-conversion-status`;
 
 function isSidechainConnector() {
   return sidechainFHIRConverterUrl ? true : false;
@@ -83,7 +85,8 @@ async function getSidechainConverterAPIKey() {
   return keys[Math.floor(Math.random() * keys.length)];
 }
 
-function postProcessSidechainFHIRBundle(fhirBundle, extension) {
+function postProcessSidechainFHIRBundle(conversionResult, extension) {
+  const fhirBundle = conversionResult.fhirResource;
   fhirBundle.type = "batch";
 
   const stringsToReplace = [];
@@ -93,34 +96,15 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   console.log(fhirBundle);
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
-      // add doc id extension
-      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
-      bundleEntry.resource.extension.push(extension);
+      if (!bundleEntry.resource) continue;
+      // replace meta's source and profile - trying to keep those short b/c of HAPI constraint of 100 chars on URLs
+      bundleEntry.resource.meta = {
+        lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
+        source: sourceUrl,
+      };
 
       // validate resource id
       let idToUse = bundleEntry.resource.id;
-      if (!uuid.validate(idToUse)) {
-        // if it's not valid, we'll need to generate a valid UUID
-        const newId = uuid.v4();
-        bundleEntry.resource.id = newId;
-
-        // save the old/new ID pair so we later replace all occurences
-        // of the old one with the new one
-        stringsToReplace.push({ old: idToUse, new: newId });
-
-        idToUse = newId;
-      }
-
-      // change the fullUrl in the resource to match what our converter would generate
-      bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
-
-      // add missing request
-      if (!bundleEntry.resource.request) {
-        bundleEntry.resource.request = {
-          method: "PUT",
-          url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
-        };
-      }
 
       // save index of the patient resource (if any)
       if (bundleEntry.resource.resourceType === "Patient") {
@@ -130,13 +114,48 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
       if (bundleEntry.resource.resourceType === "OperationOutcome") {
         operationOutcomeIndex = curIndex;
       }
+
+      if (idToUse) {
+        if (!uuid.validate(idToUse)) {
+          // if it's not valid, we'll need to generate a valid UUID
+          const newId = uuid.v4();
+          bundleEntry.resource.id = newId;
+
+          // save the old/new ID pair so we later replace all occurences
+          // of the old one with the new one
+          stringsToReplace.push({ old: idToUse, new: newId });
+
+          idToUse = newId;
+        }
+
+        // change the fullUrl in the resource to match what our converter would generate
+        bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
+
+        // add missing request
+        if (!bundleEntry.request) {
+          bundleEntry.request = {
+            method: "PUT",
+            url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}`,
+          };
+        }
+
+        // add doc id extension
+        if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
+        bundleEntry.resource.extension.push(extension);
+      }
+
       curIndex++;
     }
 
     // remove the patient resource if it was found in the bundle
-    if (patientIndex >= 0) fhirBundle.entry.splice(patientIndex, 1);
+    let indexModifier = 0;
+    if (patientIndex >= 0) {
+      fhirBundle.entry.splice(patientIndex, 1);
+      indexModifier = 1;
+    }
     // likewise, remove the operation outcome resource if it was found
-    if (operationOutcomeIndex >= 0) fhirBundle.entry.splice(operationOutcomeIndex, 1);
+    if (operationOutcomeIndex >= 0)
+      fhirBundle.entry.splice(operationOutcomeIndex - indexModifier, 1);
   }
 
   // replace all old ids & blacklisted urls
@@ -156,8 +175,17 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
 
-  console.log(fhirBundleStr);
-  return JSON.parse(fhirBundleStr);
+  if (sidechainWordsToRemove) {
+    const words = sidechainWordsToRemove.split(",");
+    for (const word of words) {
+      const regex = new RegExp(word, "gi");
+      fhirBundleStr = fhirBundleStr.replace(regex, "");
+    }
+  }
+
+  console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
+  conversionResult.fhirResource = JSON.parse(fhirBundleStr);
+  return;
 }
 
 /* Example of a single message/record in event's `Records` array:
@@ -277,7 +305,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         // post-process conversion result
         const postProcessStart = Date.now();
         if (isSidechainConnector()) {
-          postProcessSidechainFHIRBundle(conversionResult.fhirResource, documentExtension);
+          postProcessSidechainFHIRBundle(conversionResult, documentExtension);
         } else {
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
@@ -317,7 +345,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           await reEnqueue(message);
         } else {
           console.log(
-            `Error processing message: ${JSON.stringify(message)}; ${JSON.stringify(err)}`
+            `Error processing message: ${JSON.stringify(message)}; \n${err}: ${JSON.stringify(err)}`
           );
           captureException(err, {
             extra: { message, context: lambdaName, retryCount: count },
@@ -328,12 +356,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           const patientId = message.messageAttributes?.patientId?.stringValue;
           const jobId = message.messageAttributes?.jobId?.stringValue;
 
-          if (cxId && patientId && jobId) {
-            await ossApi.post(docProgressURL, {
-              cxId,
-              patientId,
-              status: "failed",
-              jobId,
+          if (cxId && patientId && jobId && isSidechainConnector()) {
+            await ossApi.post(docProgressURL, null, {
+              params: {
+                cxId,
+                patientId,
+                status: "failed",
+                jobId,
+              },
             });
           }
         }
@@ -353,6 +383,7 @@ function addExtensionToConversion(conversion, extension) {
   const fhirBundle = conversion.fhirResource;
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
+      if (!bundleEntry.resource) continue;
       if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
       bundleEntry.resource.extension.push(extension);
     }
@@ -366,11 +397,12 @@ function removePatientFromConversion(conversion) {
 }
 
 function addMissingRequests(conversion) {
+  if (!conversion.fhirResource?.entry?.length) return;
   conversion.fhirResource.entry.forEach(e => {
-    if (!e.request) {
+    if (!e.request && e.resource) {
       e.request = {
         method: "PUT",
-        url: `${e.resource.resourceType}/${e.resource.id}}`,
+        url: `${e.resource.resourceType}/${e.resource.id}`,
       };
     }
   });

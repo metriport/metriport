@@ -114,6 +114,8 @@ export function createLambda({
   if (!config.sidechainFHIRConverter)
     throw Error(`Missing config! Path: config.sidechainFHIRConverter`);
   const sidechainFHIRConverterUrl = config.sidechainFHIRConverter.url;
+  const sidechainUrlBlacklist = config.sidechainFHIRConverter.urlBlacklist;
+  const sidechainWordsToRemove = config.sidechainFHIRConverter.wordsToRemove;
 
   const conversionLambda = defaultCreateLambda({
     stack,
@@ -129,11 +131,14 @@ export function createLambda({
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
+      ...(config.loadBalancerDnsName ? { API_URL: config.loadBalancerDnsName } : {}),
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
       CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
       SIDECHAIN_FHIR_CONVERTER_URL: sidechainFHIRConverterUrl,
+      SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST: sidechainUrlBlacklist,
+      SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE: sidechainWordsToRemove,
       ...config.sidechainFHIRConverter.secretNames,
     },
     timeout: lambdaTimeout,

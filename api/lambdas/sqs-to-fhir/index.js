@@ -2,6 +2,7 @@ import { MedplumClient } from "@medplum/core";
 import * as Sentry from "@sentry/serverless";
 import { uuid4 } from "@sentry/utils";
 import * as AWS from "aws-sdk";
+import axios from "axios";
 import fetch from "node-fetch";
 
 export function getEnv(name) {
@@ -42,8 +43,10 @@ const sqs = new AWS.SQS({ region });
 const s3Client = new AWS.S3({ signatureVersion: "v4", region });
 const cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
 const ossApi = axios.create();
-const docProgressURL = `${apiURL}/doc-conversion-status`;
+const docProgressURL = `${apiURL}/internal/doc-conversion-status`;
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
+const metriportPrefixRegex = new RegExp("Metriport/identifiers/Metriport/", "g");
+const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -182,11 +185,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         await reportMemoryUsage();
         await reportMetrics(metrics);
 
-        await ossApi.post(docProgressURL, {
-          cxId,
-          patientId,
-          status: "success",
-          jobId,
+        await ossApi.post(docProgressURL, null, {
+          params: {
+            cxId,
+            patientId,
+            status: "success",
+            jobId,
+          },
         });
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
@@ -200,7 +205,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           uuid4();
         } else {
           console.log(
-            `Error processing message: ${JSON.stringify(message)}; ${JSON.stringify(err)}`
+            `Error processing message: ${JSON.stringify(message)}; \n${err}: ${JSON.stringify(err)}`
           );
           captureException(err, {
             extra: { message, context: lambdaName, retryCount: count },
@@ -212,11 +217,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           const jobId = message.messageAttributes?.jobId?.stringValue;
 
           if (cxId && patientId && jobId) {
-            await ossApi.post(docProgressURL, {
-              cxId,
-              patientId,
-              status: "failed",
-              jobId,
+            await ossApi.post(docProgressURL, null, {
+              params: {
+                cxId,
+                patientId,
+                status: "failed",
+                jobId,
+              },
             });
           }
         }
@@ -241,13 +248,21 @@ function replaceIds(payload) {
     const newId = uuid4();
     bundleEntry.resource.id = newId;
     stringsToReplace.push({ old: idToUse, new: newId });
+    // replace meta's source and profile
+    bundleEntry.resource.meta = {
+      lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
+      source: sourceUrl,
+    };
   }
-  let fhirBundleStr = payload;
+  let fhirBundleStr = JSON.stringify(fhirBundle);
   for (const stringToReplace of stringsToReplace) {
     // doing this is apparently more efficient than just using replace
     const regex = new RegExp(stringToReplace.old, "g");
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
+
+  fhirBundleStr = fhirBundleStr.replace(metriportPrefixRegex, "");
+
   return fhirBundleStr;
 }
 
@@ -368,8 +383,8 @@ async function reportMetrics(metrics) {
   });
   try {
     const MetricData = [durationMetric("Download", download), durationMetric("Upsert", upsert)];
-    job && MetricData.put(durationMetric("Job duration", job, "FHIR Conversion Flow"));
-    errorCount && MetricData.put(countMetric("FHIR Upsert Errors", errorCount));
+    job && MetricData.push(durationMetric("Job duration", job, "FHIR Conversion Flow"));
+    errorCount && MetricData.push(countMetric("FHIR Upsert Errors", errorCount));
     await cloudWatch
       .putMetricData({
         MetricData,
