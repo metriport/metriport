@@ -1,0 +1,100 @@
+---
+title: FAQ
+---
+
+## Frequently Asked Questions
+
+### Subscription
+
+1. **I'm following the steps to create a subscription to get access to the Devices API, but I don't see the button to create a subscription in the settings page.**
+
+   To create a subscription, you'll need to temporarily toggle Sandbox to "off", under the "Developers" tab, for the "Products & Billing" tab to appear on the left hand panel — here you'll be able to create and manage a subscription.
+
+2. **How is rate limiting currently configured with the Devices API?**
+
+   The limit is currently 500 requests per day.
+
+### General
+
+1.  **What happens when you use the same provider account with multiple connected users?**
+
+    Certain providers will de-authenticate access tokens for a certain account if new tokens are issued. We recommend that every time you go to authenticate with a certain provider, you make sure you revoke access to previously authenticated connected users.
+
+2.  **How do I set this up with my database? Shouldn't I specify which database I want the data to be stored?**
+
+    If you make a REST request to our API from your server and/or setup Webhooks, then you’ll be able to store the resulting data in your database.
+
+    For this, we recommend:
+
+    - Following the [Quickstart](https://docs.metriport.com/devices-api/getting-started/connect-quickstart) guide.
+    - Taking a look through our [API Reference](https://docs.metriport.com/devices-api/api-reference/get-activity-data) to get familiar with the types of data you can query.
+
+3.  **Is any data stored on your database in the cloud managed solution of the Devices API?**
+
+    The only data the managed solution stores are user IDs and access tokens — the actual health data is not stored and only delivered through Webhooks or REST requests on demand.
+
+    For example, if you want to store data in your database with the managed solution, all you'll have to do is [something like this](https://github.com/metriport/metriport-demo-app/blob/3abf00a79feeaa3464fb2809574081bb3fa38841/server/app/src/routes/activity.ts#L34-L40). If you also want to store the access tokens in your database though, you can self-host, however then you'll need to get OAuth access keys to all of the data providers yourself.
+
+4.  **Is there any particular reason why the key `samples` exists?**
+
+    `samples` is just what we use throughout our API to denote time/value pairs of data. You can think of this as "time series data samples".
+
+5.  **How often can I expect Webhook requests to come through?**
+
+    You can expect Webhook requests to come through within minutes of a user making new data available (ie if a user steps on a Withings scale and it syncs to their app, you can expect a Webhook shortly after).
+
+6.  **What timezone can we expect the queries to assume when the data becomes available?**
+
+    For simplicity, all queries assume the UTC timezone for the specified date starting at 00:00 to 23:59.
+
+7.  **Do you provide any timestamps with the response data?**
+
+    Yes, we provide UTC timestamps with all response [data](https://docs.metriport.com/devices-api/api-reference/get-activity-data#response).
+
+8.  **Are there any solutions to integrate with Metriport using Python, rather than JavaScript?**
+
+    Our widget is actually able to be used [directly in the browser via URL](https://docs.metriport.com/devices-api/getting-started/connect-widget#url-parameters), so you don't need to initialize any JavaScript. If you’re using Python, we would recommend opening our widget in a new window/pop-up with the appropriate params via a link.
+
+### Provider Specific
+
+1. **For Apple Health, will workouts and sleep always come with the timestamps?**
+
+   Correct, workouts will always come with timestamps and the metrics you get from those sessions are `distance`, `seconds` and `kcal`. All the other metrics that could have been collected will be in the daily average.
+
+2. **Do Withings Webhooks events come in real time?**
+
+   The Withings Webhook payloads should be arriving in real-time, however, Withings has warnings in their docs where they may be potentially delayed at times.
+
+3. **Where can I find an example of a Webhook body for Withings?**
+
+   All of our data is standardized to our main models, and you can expect any of the main models to be included in the payload for each provider (ie Activity, Biometrics, Nutrition, Sleep, User, etc). Note that the Withings scale payload will come in the [Body](https://docs.metriport.com/devices-api/more-info/models#body) model.
+
+4. **When I try to access data from Apple Health or Garmin, everything is returning empty. What could be the reason for this?**
+
+   In [step 3 of the Quickstart guide](https://docs.metriport.com/devices-api/getting-started/connect-quickstart#3-integrate-your-app-with-metriport), we mention that for Garmin and Apple Health, you'll need to setup [Webhooks](https://docs.metriport.com/home/api-info/webhooks) to get the data. TL;DR, this is a limitation of the Garmin API, so historical queries are generally not supported, and you'll get new data as it becomes available via Webhook POSTs. This is similar for Apple Health, as Apple doesn’t provide an API, so you’ll need to set up [Webhooks](https://docs.metriport.com/home/api-info/webhooks) for this.
+
+5. **For which events do you send callbacks for Apple Health? Is it daily based?**
+
+   Callbacks are hourly based, and for any new data that's been added to Apple Health.
+
+6. **How much historical data can I get from Apple Health and Garmin, since these providers are Webhook based?**
+
+   Currently, we have it configured for only 30 days of historical data for these providers, so the payload isn't too large.
+
+7. **At what point does the app trigger a fetch from Apple Health and send data to Metirport?**
+
+   We do this as soon as new data becomes available from Apple Health.
+
+### Troubleshooting
+
+1. **Why am I getting an "Oops something went wrong” error?**
+
+   This is most likely because the connect token is already expired — it's only valid for 10 minutes, as per [the docs](https://docs.metriport.com/devices-api/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app), and should be re-generated every-time before opening the `ConnectWidget`.
+
+2. **I'm trying to make a request but am getting the "forbidden" message. I used the Secret Key that I found in my developer dashboard and "1" as my `user_id`.**
+
+   For this, you'll need to create a [User ID here](https://docs.metriport.com/devices-api/api-reference/user/create-user), and make sure you select `api.sandbox` as the API base.
+
+3. **Under `users`, I see the key `sleep`. Will this change based on the data type? If so, do you have a list of all the possible values this key could be?**
+
+   Yes, the key(s) for the user(s) payload will be any one of the [available data types](https://docs.metriport.com/devices-api/api-reference/get-activity-data) (i.e. `activity`, `biometrics`, `body`, `nutrition`, `user`, or `sleep`).
