@@ -1,5 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { isMetriportContent } from "../../../external/fhir/shared/extensions/extension";
+import { isMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
 import { decodeExternalId } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
