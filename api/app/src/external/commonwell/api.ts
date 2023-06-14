@@ -8,7 +8,6 @@ import {
 import { CertificatePurpose } from "@metriport/commonwell-sdk/lib/models/certificates";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
-
 import { Config } from "../../shared/config";
 import { CommonWellMock } from "./mock";
 
@@ -78,33 +77,38 @@ export const metriportQueryMeta: RequestMetadata = baseQueryMeta("Metriport");
 
 const commonwellCertificate = Config.getMetriportCert();
 const commonwellCertificateContent = getCertificateContent(commonwellCertificate);
-const x509 = new X509Certificate(commonwellCertificate);
 
-const thumbprint = x509.fingerprint;
+export function getCertData() {
+  const x509 = new X509Certificate(commonwellCertificate);
+  const thumbprint = x509.fingerprint;
+  const validFrom = dayjs(x509.validFrom).toString();
+  const validTo = dayjs(x509.validTo).toString();
+  return { validFrom, validTo, thumbprint };
+}
 
-const validFrom = dayjs(x509.validFrom).toString();
-const validTo = dayjs(x509.validTo).toString();
-
-export const certificate = {
-  Certificates: [
-    {
-      startDate: validFrom,
-      endDate: validTo,
-      expirationDate: validTo,
-      thumbprint: thumbprint,
-      content: commonwellCertificateContent,
-      purpose: CertificatePurpose.Authentication,
-    },
-    {
-      startDate: validFrom,
-      endDate: validTo,
-      expirationDate: validTo,
-      thumbprint: thumbprint,
-      content: commonwellCertificateContent,
-      purpose: CertificatePurpose.Signing,
-    },
-  ],
-};
+export function getCertificate() {
+  const { validFrom, validTo, thumbprint } = getCertData();
+  return {
+    Certificates: [
+      {
+        startDate: validFrom,
+        endDate: validTo,
+        expirationDate: validTo,
+        thumbprint: thumbprint,
+        content: commonwellCertificateContent,
+        purpose: CertificatePurpose.Authentication,
+      },
+      {
+        startDate: validFrom,
+        endDate: validTo,
+        expirationDate: validTo,
+        thumbprint: thumbprint,
+        content: commonwellCertificateContent,
+        purpose: CertificatePurpose.Signing,
+      },
+    ],
+  };
+}
 
 function getCertificateContent(cert: string): string | undefined {
   const regex = /-+BEGIN CERTIFICATE-+([\s\S]+?)-+END CERTIFICATE-+/i;

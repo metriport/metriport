@@ -17,7 +17,7 @@ import { downloadDocsAndUpsertFHIR } from "../../../external/commonwell/document
 import { hasCommonwellContent, isCommonwellContent } from "../../../external/commonwell/extension";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { downloadedFromHIEs } from "../../../external/fhir/shared";
-import { isMetriportContent } from "../../../external/fhir/shared/extensions/extension";
+import { isMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
 import { decodeExternalId } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
