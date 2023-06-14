@@ -85,7 +85,7 @@ async function getSidechainConverterAPIKey() {
   return keys[Math.floor(Math.random() * keys.length)];
 }
 
-function postProcessSidechainFHIRBundle(conversionResult, extension) {
+function postProcessSidechainFHIRBundle(conversionResult, extension, patientId) {
   const fhirBundle = conversionResult.fhirResource;
   fhirBundle.type = "batch";
 
@@ -116,7 +116,7 @@ function postProcessSidechainFHIRBundle(conversionResult, extension) {
       }
 
       if (idToUse) {
-        if (!uuid.validate(idToUse)) {
+        if (!uuid.validate(idToUse) && !(idToUse === patientId)) {
           // if it's not valid, we'll need to generate a valid UUID
           const newId = uuid.v4();
           bundleEntry.resource.id = newId;
@@ -305,7 +305,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         // post-process conversion result
         const postProcessStart = Date.now();
         if (isSidechainConnector()) {
-          postProcessSidechainFHIRBundle(conversionResult, documentExtension);
+          postProcessSidechainFHIRBundle(conversionResult, documentExtension, patientId);
         } else {
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
