@@ -7,7 +7,11 @@ struct WidgetView: View {
     @ObservedObject var webviewController = WebviewController()
     
     // Initialize the Metriport healthkit package
-    var healthStore = MetriportHealthStoreManager(clientApiKey: "eXV6N0FISEVTMGJ3azhKTVg2bFZBOmY1NjUwYWE0LWRkZWQtNDIwZi05YjM2LWVlMmRiZmNjZTNlYQ");
+    var healthStore = MetriportHealthStoreManager(
+        clientApiKey: "ck9kMkJzWU5qSS1nQ0wtVzVTenFTOjIxZmE0MzJlLTcyM2ItNGExZC1hM2IyLWJkOWNkNzVhMDcxNw",
+        sandbox: false,
+        apiUrl: "https://be9518f61823.ngrok.app"
+    );
     
     var body: some View {
         VStack {
@@ -21,7 +25,12 @@ struct WidgetView: View {
             }
             .sheet(isPresented: $webviewController.showWebView) {
                 // Custom widget to access all of the providers
-                MetriportWidget(url: "\(webviewController.webUrl)/?token=\(webviewController.token)&colorMode=dark", healthStore: healthStore)
+                MetriportWidget(
+                    healthStore: healthStore,
+                    token: "nACWvytLD_q40pftLfku8",
+                    sandbox: false,
+                    url: "http://192.168.0.135:3001"
+                )
             }
         }
         .padding()
