@@ -16,6 +16,12 @@ api: "POST /user"
   The Metriport user ID to be used in subsequent requests for this user.
 </ResponseField>
 
+```json
+{
+  "userId": "66d4f01f-6ebe-44f8-8bbc-15a65adbe8c2"
+}
+```
+
 <ResponseExample>
 
 ```javascript Metriport SDK
@@ -27,9 +33,3 @@ const metriportUserId = await metriportClient.getMetriportUserId("your-app-user-
 ```
 
 </ResponseExample>
-
-```json
-{
-  "userId": "66d4f01f-6ebe-44f8-8bbc-15a65adbe8c2"
-}
-```

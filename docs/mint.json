@@ -353,7 +353,8 @@
         "medical-api/more-info/webhooks",
         "medical-api/more-info/sdk",
         "medical-api/more-info/sandbox",
-        "medical-api/more-info/etag"
+        "medical-api/more-info/etag",
+        "medical-api/more-info/faq"
       ]
     },
     {
@@ -374,6 +375,7 @@
               "pages": [
                 "devices-api/api-reference/user/create-user",
                 "devices-api/api-reference/user/create-connect-token",
+                "devices-api/api-reference/user/delete-user",
                 "devices-api/api-reference/user/revoke-provider-access",
                 "devices-api/api-reference/user/get-connected-providers"
               ]
@@ -401,7 +403,8 @@
         "devices-api/more-info/apple-health",
         "devices-api/more-info/react-native",
         "devices-api/more-info/cordova",
-        "devices-api/more-info/models"
+        "devices-api/more-info/models",
+        "devices-api/more-info/faq"
       ]
     }
   ],
