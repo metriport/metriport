@@ -1,14 +1,16 @@
 ---
 title: "Revoke Provider Access"
 description: "Revokes the access token for a given provider."
-api: "DELETE /user/revoke"
+api: "DELETE /user/:id/revoke"
 ---
 
-## Query Params
+## Path Params
 
-<ParamField query="userId" type="string" required>
+<ParamField path="userId" type="string" required>
   The Metriport user ID to revoke access for.
 </ParamField>
+
+## Query Params
 
 <ParamField query="provider" type="string" required>
   The provider you would like to revoke access to.

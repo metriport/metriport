@@ -15,7 +15,7 @@ import { Config } from "../shared/config";
 import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../shared/constants";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
-import { asyncHandler, getCxIdOrFail } from "./util";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "./util";
 import { capture } from "../shared/notifications";
 
 const router = Router();
@@ -138,8 +138,7 @@ async function revokeUserProviderAccess(
   }
 }
 
-async function revokeToken(req: Request, res: Response) {
-  const userId = getUserIdFrom("query", req).orFail();
+async function revokeToken(req: Request, res: Response, userId: string) {
   const cxId = getCxIdOrFail(req);
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
   await revokeUserProviderAccess(connectedUser, req.query.provider);
@@ -154,14 +153,15 @@ async function revokeToken(req: Request, res: Response) {
 * Revoke access to a provider
 *
 * @param   {string}  req.query.provider    The provider to revoke access.
-* @param   {string}  req.query.userId      The internal user ID.
+* @param   {string}  req.params.userId      The internal user ID.
 
 * @return  {{success: boolean}}      If successfully removed.
 */
 router.delete(
   "/:id/revoke",
   asyncHandler(async (req: Request, res: Response) => {
-    return revokeToken(req, res);
+    const userId = getFromParamsOrFail("id", req);
+    return revokeToken(req, res, userId);
   })
 );
 
@@ -180,7 +180,8 @@ router.delete(
 router.delete(
   "/revoke",
   asyncHandler(async (req: Request, res: Response) => {
-    return revokeToken(req, res);
+    const userId = getUserIdFrom("query", req).orFail();
+    return revokeToken(req, res, userId);
   })
 );
 
@@ -196,7 +197,7 @@ router.delete(
 router.delete(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = getUserIdFrom("query", req).orFail();
+    const userId = getFromParamsOrFail("id", req);
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 

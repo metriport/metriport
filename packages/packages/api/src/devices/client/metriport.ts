@@ -93,8 +93,8 @@ export class MetriportDevicesApi {
    * @returns void.
    */
   async revokeUserAccessToProvider(userId: string, provider: ProviderSource): Promise<void> {
-    await this.api.delete("/user/revoke", {
-      params: { userId: userId, provider: provider.toString() },
+    await this.api.delete(`/user/${userId}revoke`, {
+      params: { provider: provider.toString() },
     });
   }
 
@@ -105,9 +105,7 @@ export class MetriportDevicesApi {
    * @returns void.
    */
   async deleteUser(userId: string): Promise<void> {
-    await this.api.delete("/user/delete", {
-      params: { userId },
-    });
+    await this.api.delete(`/user/${userId}`);
   }
 
   /**

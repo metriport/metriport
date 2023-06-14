@@ -1,12 +1,12 @@
 ---
 title: "Delete User"
 description: "Revokes access tokens for all providers and deletes the user."
-api: "DELETE /user/delete"
+api: "DELETE /user/:id"
 ---
 
-## Query Params
+## Path Params
 
-<ParamField query="userId" type="string" required>
+<ParamField path="userId" type="string" required>
   The Metriport user ID to delete.
 </ParamField>
 
