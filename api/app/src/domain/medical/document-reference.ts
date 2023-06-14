@@ -11,7 +11,13 @@ export type Progress = {
 };
 
 export type DocumentQueryProgress = {
+  /**
+   * @deprecated
+   */
   queryStatus?: DocumentQueryStatus;
+  /**
+   * @deprecated
+   */
   queryProgress?: {
     total?: number;
     completed?: number;
