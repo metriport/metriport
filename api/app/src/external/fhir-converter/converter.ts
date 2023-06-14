@@ -23,6 +23,12 @@ export enum FHIRConverterCDATemplate {
   transferSummary = "TransferSummary",
 }
 
+/**
+ * Requests a document conversion to external services if the document type is XML (CCDA).
+ *
+ * @returns boolean indicating whether the conversion was requested successfuly for
+ *    for the given document
+ */
 export async function convertCDAToFHIR(params: {
   patient: { cxId: string; id: string };
   document: { id: string; mimeType?: string };
@@ -31,7 +37,7 @@ export async function convertCDAToFHIR(params: {
   template?: FHIRConverterCDATemplate;
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
-}): Promise<void> {
+}): Promise<boolean> {
   const {
     patient,
     document: { id: documentId, mimeType },
@@ -50,12 +56,13 @@ export async function convertCDAToFHIR(params: {
       const jsonFileName = s3FileName.replace(".xml", ".json");
       log(`Bypassing conversion, sending straight to FHIR server`);
       const fhirServerConnector = makeFHIRServerConnector();
-      return fhirServerConnector.upsertBatch({
+      await fhirServerConnector.upsertBatch({
         cxId: patient.cxId,
         patientId: patient.id,
         documentId: documentId,
         payload: JSON.stringify({ s3FileName: jsonFileName, s3BucketName }),
       });
+      return true;
     }
 
     // Build an extension to be added to all resources created by this conversion
@@ -77,6 +84,7 @@ export async function convertCDAToFHIR(params: {
       capture.error(error, {
         extra: { context: `convertCDAToFHIR`, ...params },
       });
+      return false;
     }
 
     // also do the sidechain conversion (remove when no longer needed)
@@ -86,5 +94,8 @@ export async function convertCDAToFHIR(params: {
       s3FileName,
       s3BucketName,
     });
+
+    return true;
   }
+  return false;
 }
