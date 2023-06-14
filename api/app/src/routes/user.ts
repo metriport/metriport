@@ -15,7 +15,7 @@ import { Config } from "../shared/config";
 import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../shared/constants";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "./util";
+import { asyncHandler, getCxIdOrFail } from "./util";
 import { capture } from "../shared/notifications";
 
 const router = Router();
@@ -158,9 +158,9 @@ async function revokeToken(req: Request, res: Response, userId: string) {
 * @return  {{success: boolean}}      If successfully removed.
 */
 router.delete(
-  "/:id/revoke",
+  "/:userId/revoke",
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = getFromParamsOrFail("id", req);
+    const userId = getUserIdFrom("params", req).orFail();
     return revokeToken(req, res, userId);
   })
 );
@@ -195,9 +195,9 @@ router.delete(
  * @return  {{success: boolean}}      If successfully removed.
  */
 router.delete(
-  "/:id",
+  "/:userId",
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = getFromParamsOrFail("id", req);
+    const userId = getUserIdFrom("params", req).orFail();
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 

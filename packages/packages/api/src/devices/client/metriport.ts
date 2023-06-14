@@ -93,7 +93,7 @@ export class MetriportDevicesApi {
    * @returns void.
    */
   async revokeUserAccessToProvider(userId: string, provider: ProviderSource): Promise<void> {
-    await this.api.delete(`/user/${userId}revoke`, {
+    await this.api.delete(`/user/${userId}/revoke`, {
       params: { provider: provider.toString() },
     });
   }
