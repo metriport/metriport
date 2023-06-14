@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { Activity, Body, Biometrics, Nutrition, Sleep } from "@metriport/api";
+import { Metadata } from "@metriport/api/lib/devices/models/common/metadata";
+import dayjs from "dayjs";
 
+import { ISO_DATE } from "../../shared/date";
 import { mapDataToActivity } from "./activity";
 import { mapDataToBody } from "./body";
 import { mapDataToBiometrics } from "./biometrics";
@@ -16,35 +19,36 @@ export type AppleWebhookPayload = {
   sleep?: Sleep[];
 };
 
-export function mapData(data: AppleHealth): AppleWebhookPayload {
+export function mapData(data: AppleHealth, hourly: boolean): AppleWebhookPayload {
   const payload: AppleWebhookPayload = {};
 
-  const activityData = mapDataToActivity(data);
+  const activityData = mapDataToActivity(data, hourly);
 
   if (activityData.length) payload.activity = activityData;
 
-  const bodyData = mapDataToBody(data);
+  const bodyData = mapDataToBody(data, hourly);
 
   if (bodyData.length) payload.body = bodyData;
 
-  const biometricsData = mapDataToBiometrics(data);
+  const biometricsData = mapDataToBiometrics(data, hourly);
 
   if (biometricsData.length) payload.biometrics = biometricsData;
 
-  const nutritionData = mapDataToNutrition(data);
+  const nutritionData = mapDataToNutrition(data, hourly);
 
   if (nutritionData.length) payload.nutrition = nutritionData;
 
-  const sleepData = mapDataToSleep(data);
+  const sleepData = mapDataToSleep(data, hourly);
 
   if (sleepData.length) payload.sleep = sleepData;
 
   return payload;
 }
 
-export const createMetadata = (date: string) => {
+export const createMetadata = (date: string, hourly: boolean): Metadata => {
   return {
-    date,
+    date: dayjs(date).format(ISO_DATE),
+    ...(hourly ? { hour: dayjs(date).format("HH:mm") } : undefined),
     source: PROVIDER_APPLE,
   };
 };
