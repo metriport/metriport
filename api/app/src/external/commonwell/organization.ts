@@ -4,7 +4,7 @@ import { Config, getEnvVarOrFail } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { OID_PREFIX } from "../../shared/oid";
 import { Util } from "../../shared/util";
-import { certificate, makeCommonWellAPI, metriportQueryMeta } from "./api";
+import { getCertificate, makeCommonWellAPI, metriportQueryMeta } from "./api";
 
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
@@ -73,7 +73,7 @@ export const create = async (org: Organization): Promise<void> => {
     debug(`resp respCreate: ${JSON.stringify(respCreate, null, 2)}`);
     const respAddCert = await commonWell.addCertificateToOrg(
       metriportQueryMeta,
-      certificate,
+      getCertificate(),
       org.id
     );
     debug(`resp respAddCert: ${JSON.stringify(respAddCert, null, 2)}`);

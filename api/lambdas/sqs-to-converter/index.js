@@ -85,7 +85,8 @@ async function getSidechainConverterAPIKey() {
   return keys[Math.floor(Math.random() * keys.length)];
 }
 
-function postProcessSidechainFHIRBundle(fhirBundle, extension) {
+function postProcessSidechainFHIRBundle(conversionResult, extension, patientId) {
+  const fhirBundle = conversionResult.fhirResource;
   fhirBundle.type = "batch";
 
   const stringsToReplace = [];
@@ -95,6 +96,7 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
   console.log(fhirBundle);
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
+      if (!bundleEntry.resource) continue;
       // replace meta's source and profile - trying to keep those short b/c of HAPI constraint of 100 chars on URLs
       bundleEntry.resource.meta = {
         lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
@@ -114,7 +116,7 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
       }
 
       if (idToUse) {
-        if (!uuid.validate(idToUse)) {
+        if (!uuid.validate(idToUse) && idToUse !== patientId) {
           // if it's not valid, we'll need to generate a valid UUID
           const newId = uuid.v4();
           bundleEntry.resource.id = newId;
@@ -130,10 +132,10 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
         bundleEntry.fullUrl = `urn:uuid:${idToUse}`;
 
         // add missing request
-        if (!bundleEntry.resource.request) {
-          bundleEntry.resource.request = {
+        if (!bundleEntry.request) {
+          bundleEntry.request = {
             method: "PUT",
-            url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}}`,
+            url: `${bundleEntry.resource.resourceType}/${bundleEntry.resource.id}`,
           };
         }
 
@@ -181,8 +183,9 @@ function postProcessSidechainFHIRBundle(fhirBundle, extension) {
     }
   }
 
-  console.log(`Bundle being sent to FHIR server: ${JSON.stringify(fhirBundleStr)}`);
-  return JSON.parse(fhirBundleStr);
+  console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
+  conversionResult.fhirResource = JSON.parse(fhirBundleStr);
+  return;
 }
 
 /* Example of a single message/record in event's `Records` array:
@@ -234,18 +237,18 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     for (const [i, message] of records.entries()) {
       // Process one record from the SQS message
       console.log(`Record ${i}, messageId: ${message.messageId}`);
-      try {
-        if (!message.messageAttributes) throw new Error(`Missing message attributes`);
-        if (!message.body) throw new Error(`Missing message body`);
-        const attrib = message.messageAttributes;
-        const cxId = attrib.cxId?.stringValue;
-        const patientId = attrib.patientId?.stringValue;
-        const jobStartedAt = attrib.startedAt?.stringValue;
-        const jobId = attrib.jobId?.stringValue;
-        if (!cxId) throw new Error(`Missing cxId`);
-        if (!patientId) throw new Error(`Missing patientId`);
-        const log = _log(`${i}, cxId ${cxId}, patient ${patientId}, jobId ${jobId}`);
+      if (!message.messageAttributes) throw new Error(`Missing message attributes`);
+      if (!message.body) throw new Error(`Missing message body`);
+      const attrib = message.messageAttributes;
+      const cxId = attrib.cxId?.stringValue;
+      const patientId = attrib.patientId?.stringValue;
+      const jobStartedAt = attrib.startedAt?.stringValue;
+      const jobId = attrib.jobId?.stringValue;
+      if (!cxId) throw new Error(`Missing cxId`);
+      if (!patientId) throw new Error(`Missing patientId`);
+      const log = _log(`${i}, cxId ${cxId}, patient ${patientId}, jobId ${jobId}`);
 
+      try {
         const bodyAsJson = JSON.parse(message.body);
         const s3BucketName = bodyAsJson.s3BucketName;
         const s3FileName = bodyAsJson.s3FileName;
@@ -302,7 +305,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         // post-process conversion result
         const postProcessStart = Date.now();
         if (isSidechainConnector()) {
-          postProcessSidechainFHIRBundle(conversionResult.fhirResource, documentExtension);
+          postProcessSidechainFHIRBundle(conversionResult, documentExtension, patientId);
         } else {
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
@@ -349,11 +352,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           });
           await sendToDLQ(message);
 
-          const cxId = message.messageAttributes?.cxId?.stringValue;
-          const patientId = message.messageAttributes?.patientId?.stringValue;
-          const jobId = message.messageAttributes?.jobId?.stringValue;
-
-          if (cxId && patientId && jobId && isSidechainConnector()) {
+          if (cxId && patientId && isSidechainConnector()) {
             await ossApi.post(docProgressURL, null, {
               params: {
                 cxId,
@@ -380,6 +379,7 @@ function addExtensionToConversion(conversion, extension) {
   const fhirBundle = conversion.fhirResource;
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
+      if (!bundleEntry.resource) continue;
       if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
       bundleEntry.resource.extension.push(extension);
     }
@@ -393,11 +393,12 @@ function removePatientFromConversion(conversion) {
 }
 
 function addMissingRequests(conversion) {
+  if (!conversion.fhirResource?.entry?.length) return;
   conversion.fhirResource.entry.forEach(e => {
-    if (!e.request) {
+    if (!e.request && e.resource) {
       e.request = {
         method: "PUT",
-        url: `${e.resource.resourceType}/${e.resource.id}}`,
+        url: `${e.resource.resourceType}/${e.resource.id}`,
       };
     }
   });
