@@ -1,0 +1,35 @@
+---
+title: "Delete User"
+description: "Revokes access tokens for all providers and deletes the user."
+api: "DELETE /user/:userId"
+---
+
+## Path Params
+
+<ParamField path="userId" type="string" required>
+  The Metriport user ID to delete.
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string" required>
+  Feedback on successful user deletion.
+</ResponseField>
+
+```json
+{
+  "message": "User deleted successfully."
+}
+```
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportDevicesApi } from "@metriport/api";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+
+await metriportClient.deleteUser("metriportUserId");
+```
+
+</ResponseExample>
