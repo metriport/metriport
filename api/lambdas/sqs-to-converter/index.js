@@ -116,7 +116,7 @@ function postProcessSidechainFHIRBundle(conversionResult, extension, patientId) 
       }
 
       if (idToUse) {
-        if (!uuid.validate(idToUse) && !(idToUse === patientId)) {
+        if (!uuid.validate(idToUse) && idToUse !== patientId) {
           // if it's not valid, we'll need to generate a valid UUID
           const newId = uuid.v4();
           bundleEntry.resource.id = newId;
