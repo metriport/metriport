@@ -2,16 +2,15 @@ import { Sleep } from "@metriport/api";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthSleepItem, SleepType, createMetadata } from ".";
-import { ISO_DATE } from "../../shared/date";
 
-export function mapDataToSleep(data: AppleHealth) {
+export function mapDataToSleep(data: AppleHealth, hourly: boolean) {
   const sleep: Sleep[] = [];
 
   const addToSleep = (appleItem: AppleHealthSleepItem) => {
-    const date = dayjs(appleItem.date).format(ISO_DATE);
+    const date = dayjs(appleItem.date).format();
 
     const sleepPayload: Sleep = {
-      metadata: createMetadata(date),
+      metadata: createMetadata(date, hourly),
       start_time: appleItem.date,
       end_time: appleItem.endDate,
     };

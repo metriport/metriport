@@ -16,6 +16,7 @@ routes.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const metriportUserId = req.body.metriportUserId;
+    const hourly = req.body.hourly;
     const cxId = getCxIdOrFail(req);
     const payload = JSON.parse(req.body.data);
 
@@ -24,7 +25,7 @@ routes.post(
         extra: { metriportUserId, context: `webhook.appleError` },
       });
     } else {
-      const mappedData = mapData(appleSchema.parse(payload));
+      const mappedData = mapData(appleSchema.parse(payload), hourly);
 
       processAppleData(mappedData, metriportUserId, cxId);
     }
