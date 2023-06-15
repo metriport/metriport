@@ -374,9 +374,10 @@
               "pages": [
                 "devices-api/api-reference/user/create-user",
                 "devices-api/api-reference/user/create-connect-token",
-                "devices-api/api-reference/user/delete-user",
+                "devices-api/api-reference/user/get-users-and-providers",
+                "devices-api/api-reference/user/get-connected-providers",
                 "devices-api/api-reference/user/revoke-provider-access",
-                "devices-api/api-reference/user/get-connected-providers"
+                "devices-api/api-reference/user/delete-user"
               ]
             }
           ]

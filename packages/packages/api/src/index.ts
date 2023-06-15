@@ -8,6 +8,7 @@ export { Food } from "./devices/models/common/food";
 export { Nutrition } from "./devices/models/nutrition";
 export { Sleep } from "./devices/models/sleep";
 export { User } from "./devices/models/user";
+export { UserIdsAndProviders } from "./devices/models/common/ids-and-providers";
 export { SourceType } from "./devices/models/common/source-type";
 // Medical API
 export { MetriportMedicalApi } from "./medical/client/metriport";

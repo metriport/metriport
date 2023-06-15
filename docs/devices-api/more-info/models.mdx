@@ -194,6 +194,8 @@ export interface SleepBiometrics {
 
 ## User
 
+### User
+
 ```typescript
 export interface User extends MetriportData {
   age?: number;
@@ -206,6 +208,16 @@ export interface User extends MetriportData {
   region?: string; // can be state, province, etc.
   sex?: Sex;
 }
+```
+
+### User Ids and ProviderSource
+
+```typescript
+export type UserIdsAndProviders = {
+  metriportUserId: string;
+  appUserId: string;
+  connectedProviders?: string[];
+};
 ```
 
 ## Common

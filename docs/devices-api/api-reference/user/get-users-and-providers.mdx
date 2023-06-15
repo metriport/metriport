@@ -1,0 +1,37 @@
+---
+title: "Get Users and Providers"
+description: "Returns a list of users with their IDs and connected providers."
+api: "GET /user/users"
+---
+
+## Response
+
+<ResponseField name="connectedUsers" type="array" required>
+  The user's connected providers
+</ResponseField>
+
+```json
+{
+  "connectedUsers": [
+    {
+      "metriportUserId": "3a3a7677-25bb-4f1b-bf3c-6e0ff46ce905",
+      "appUserId": "my-app-user-1"
+    },
+    {
+      "metriportUserId": "951faef1-5cfd-464a-81f7-31f76edf309e",
+      "appUserId": "my-app-user-2",
+      "connectedProviders": ["fitbit", "cronometer"]
+    }
+  ]
+}
+```
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportDevicesApi } from "@metriport/api";
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+const connectedProviders = await metriportClient.getUsersAndProviders();
+```
+
+</ResponseExample>
