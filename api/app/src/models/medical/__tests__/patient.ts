@@ -10,7 +10,7 @@ import dayjs from "dayjs";
 import { ISO_DATE } from "../../../shared/date";
 import { USState } from "../../../shared/geographic-locations";
 import { makeBaseModel } from "../../__tests__/base-model";
-import { Patient, PatientData, PersonalIdentifier } from "../patient";
+import { Patient, PatientData, PatientModel, PersonalIdentifier } from "../patient";
 import { makeAddressStrict } from "./location-address";
 
 export const makePersonalIdentifier = (): PersonalIdentifier => {
@@ -20,23 +20,26 @@ export const makePersonalIdentifier = (): PersonalIdentifier => {
     state: rand(Object.values(USState)),
   };
 };
-export const makePatientData = (data?: Partial<PatientData>): PatientData => {
+export const makePatientData = (data: Partial<PatientData> = {}): PatientData => {
   return {
-    firstName: data?.firstName ?? randFirstName(),
-    lastName: data?.lastName ?? randLastName(),
-    dob: data?.dob ?? dayjs(randPastDate()).format(ISO_DATE),
-    genderAtBirth: data?.genderAtBirth ?? rand(["F", "M"]),
-    personalIdentifiers: data?.personalIdentifiers ?? [makePersonalIdentifier()],
-    address: data?.address ?? [makeAddressStrict()],
+    firstName: data.firstName ?? randFirstName(),
+    lastName: data.lastName ?? randLastName(),
+    dob: data.dob ?? dayjs(randPastDate()).format(ISO_DATE),
+    genderAtBirth: data.genderAtBirth ?? rand(["F", "M"]),
+    personalIdentifiers: data.personalIdentifiers ?? [makePersonalIdentifier()],
+    address: data.address ?? [makeAddressStrict()],
+    documentQueryProgress: data.documentQueryProgress,
   };
 };
-export const makePatient = (data?: Partial<Patient>): Patient => {
+export const makePatient = (params: Partial<Patient> = {}): Patient => {
   return {
     ...makeBaseModel(),
-    ...(data?.id ? { id: data.id } : {}),
-    cxId: data?.cxId ?? randUuid(),
-    patientNumber: data?.patientNumber ?? randNumber(),
-    facilityIds: data?.facilityIds ?? [randUuid()],
-    data: makePatientData(data?.data),
+    ...(params.id ? { id: params.id } : {}),
+    cxId: params.cxId ?? randUuid(),
+    patientNumber: params.patientNumber ?? randNumber(),
+    facilityIds: params.facilityIds ?? [randUuid()],
+    data: makePatientData(params.data),
   };
 };
+export const makePatientModel = (params?: Partial<Patient>): PatientModel =>
+  makePatient(params) as PatientModel;

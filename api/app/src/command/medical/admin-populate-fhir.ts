@@ -24,9 +24,11 @@ export type PopulateFhirServerResponse = { patientsOK: number; patientsError: nu
 export async function populateFhirServer({
   cxId,
   createIfNotExists = false,
+  triggerDocQuery = false,
 }: {
   cxId: string;
   createIfNotExists?: boolean;
+  triggerDocQuery?: boolean;
 }): Promise<PopulateFhirServerResponse> {
   const fhirApi = makeFhirApi(cxId);
   const adminFhirApi = makeFhirAdminApi();
@@ -44,6 +46,10 @@ export async function populateFhirServer({
   const orgToFhir = orgToFHIR(orgOnDB);
   log("Creating organization on FHIR server: ", orgOnDB.id);
   await fhirApi.updateResource(orgToFhir);
+
+  if (!triggerDocQuery) {
+    log(`NOT Triggering doc queries`);
+  }
 
   const patientsOnDB = await getPatients({ cxId });
 
@@ -67,19 +73,21 @@ export async function populateFhirServer({
       })
     );
 
-    log(`Triggering ASYNC doc query for ${patientChunk.length} patients (chunk ${i}/${n})...`);
-    patientChunk.forEach(patient => {
-      if (patient.facilityIds.length < 1) return;
-      queryDocumentsAcrossHIEs({
-        cxId,
-        patientId: patient.id,
-        facilityId: patient.facilityIds[0],
-        override: true,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      }).catch((err: any) => {
-        log(`Failed to init query of documents for patient ${patient.id}: `, err.message);
+    if (triggerDocQuery) {
+      log(`Triggering ASYNC doc query for ${patientChunk.length} patients (chunk ${i}/${n})...`);
+      patientChunk.forEach(patient => {
+        if (patient.facilityIds.length < 1) return;
+        queryDocumentsAcrossHIEs({
+          cxId,
+          patientId: patient.id,
+          facilityId: patient.facilityIds[0],
+          override: true,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }).catch((err: any) => {
+          log(`Failed to init query of documents for patient ${patient.id}: `, err.message);
+        });
       });
-    });
+    }
 
     patientsOK += res.filter(r => r.status === "fulfilled").length;
     patientsError += res.filter(r => r.status === "rejected").length;

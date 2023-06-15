@@ -110,6 +110,7 @@ export async function queryAndProcessDocuments({
         downloadProgress: { status: "completed" },
       });
 
+      log(`Finished processing ${fhirDocRefs.length} documents.`);
       return fhirDocRefs.length;
     }
   } catch (err) {
