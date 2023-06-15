@@ -8,7 +8,7 @@ import {
   DocumentQueryStatus,
   Progress,
 } from "../../../../domain/medical/document-reference";
-import { PatientModel } from "../../../../models/medical/patient";
+import { PatientData, PatientModel } from "../../../../models/medical/patient";
 import { makePatientData } from "../../../../models/medical/__tests__/patient";
 import * as transaction from "../../../../models/transaction";
 import { getDocQueryProgress, updateDocQuery } from "../document-query";
@@ -23,21 +23,17 @@ beforeEach(() => {
 
 describe("document-query", () => {
   describe("updateDocQuery", () => {
-    it("sets download progress completed", async () => {
-      const tx = {
-        commit: jest.fn(),
-        rollback: jest.fn(),
-      };
+    const tx = {
+      commit: jest.fn(),
+      rollback: jest.fn(),
+    };
+    let patientModel_update: jest.SpyInstance;
+    beforeEach(() => {
       startTransaction_mock.mockResolvedValue(tx);
-      const thePatient = {
-        data: {},
-      };
-      const patient = {
-        update: jest.fn(() => {
-          return Promise.resolve(thePatient);
-        }),
-        ...thePatient,
-      };
+      patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
+    });
+    it("sets download progress completed", async () => {
+      const patient = { data: {} };
       patientModel_findOne.mockResolvedValue(patient);
       const downloadProgress = { status: "completed" as const };
       const documentQueryProgress = { download: downloadProgress };
@@ -47,7 +43,7 @@ describe("document-query", () => {
         downloadProgress,
       });
 
-      expect(patient.update).toHaveBeenCalledWith(
+      expect(patientModel_update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             documentQueryProgress,
@@ -58,20 +54,7 @@ describe("document-query", () => {
     });
 
     it("sets download progress failed", async () => {
-      const tx = {
-        commit: jest.fn(),
-        rollback: jest.fn(),
-      };
-      startTransaction_mock.mockResolvedValue(tx);
-      const thePatient = {
-        data: {},
-      };
-      const patient = {
-        update: jest.fn(() => {
-          return Promise.resolve(thePatient);
-        }),
-        ...thePatient,
-      };
+      const patient = { data: {} };
       patientModel_findOne.mockResolvedValue(patient);
       const downloadProgress = { status: "failed" as const };
       const documentQueryProgress = { download: downloadProgress };
@@ -81,7 +64,7 @@ describe("document-query", () => {
         downloadProgress,
       });
 
-      expect(patient.update).toHaveBeenCalledWith(
+      expect(patientModel_update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             documentQueryProgress,
@@ -89,6 +72,28 @@ describe("document-query", () => {
         }),
         expect.anything()
       );
+    });
+
+    it("send a modified object to Sequelize", async () => {
+      const data: PatientData = makePatientData();
+      const patient = { data };
+      patientModel_findOne.mockResolvedValue(patient);
+      const downloadProgress = { status: "failed" as const };
+
+      await updateDocQuery({
+        patient: { id: "theId", cxId: "theCxId" },
+        downloadProgress,
+      });
+
+      // ".mock.calls[0][0]" means the first parameter of the first call to that function
+      const patientSentToSequelize = patientModel_update.mock.calls[0]?.[0] as
+        | PatientModel
+        | undefined;
+      expect(patientSentToSequelize).toBeTruthy();
+      expect(patientSentToSequelize === patient).toBeFalsy();
+      const docProgress = patientSentToSequelize?.data;
+      expect(docProgress).toBeTruthy();
+      expect(docProgress === data).toBeFalsy();
     });
   });
 
@@ -129,13 +134,12 @@ describe("document-query", () => {
       expect(res.convert).toBeTruthy();
       expect(res.convert?.status).toEqual(expectedStatus);
       expect(res.convert?.total).toEqual(total);
-      successful
+      successful != null
         ? expect(res.convert?.successful).toEqual(successful + (result === "success" ? 1 : 0))
-        : expect(res.convert?.successful).toBeUndefined();
-      expect(res.convert?.successful).toEqual((successful ?? 0) + (result === "success" ? 1 : 0));
+        : expect(res.convert?.successful).toEqual(0);
       errors != null
         ? expect(res.convert?.errors).toEqual(errors + (result === "failed" ? 1 : 0))
-        : expect(res.convert?.errors).toBeUndefined();
+        : expect(res.convert?.errors).toEqual(0);
     };
 
     describe("success", () => {

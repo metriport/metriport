@@ -11,6 +11,7 @@
     "build": "npm run build --workspaces",
     "build:cloud": "npm run build:cloud --workspaces",
     "build:staging": "npm run build:cloud -w api && npm run build:staging -w connect-widget && npm run build:cloud -w infra",
+    "package": "npm i && npm run build && npm run test",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "lint-fix": "npm run lint-fix --workspaces --if-present",
