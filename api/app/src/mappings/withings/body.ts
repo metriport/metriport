@@ -1,4 +1,4 @@
-import { Body } from "@metriport/api";
+import { Body, SourceType } from "@metriport/api";
 import { Sample } from "@metriport/api/lib/devices/models/common/sample";
 import { Util } from "../../shared/util";
 import convert from "convert-units";
@@ -54,7 +54,7 @@ export const mapToBody = (
             ...defaultWeight,
             ...(device && {
               data_source: {
-                standardized_type: "DEVICE",
+                source_type: SourceType.device,
                 name: device.model,
                 type: device.type,
                 id: device.deviceid,
@@ -63,7 +63,7 @@ export const mapToBody = (
           };
         }
 
-        defaultWeight["data_source"] = { standardized_type: "MANUALLY ENTERED" };
+        defaultWeight["data_source"] = { source_type: SourceType.manual };
         return defaultWeight;
       });
     }

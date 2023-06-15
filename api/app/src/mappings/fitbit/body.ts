@@ -1,7 +1,8 @@
-import { Body } from "@metriport/api";
+import { Body, SourceType } from "@metriport/api";
 import convert from "convert-units";
 import dayjs from "dayjs";
 import { PROVIDER_FITBIT } from "../../shared/constants";
+import { METRIC, US_LOCALE } from "./constants";
 import { FitbitUser } from "./models/user";
 import { FitbitWeight } from "./models/weight";
 
@@ -23,7 +24,7 @@ export const mapToBody = (
 
   if (fitbitUser) {
     if (fitbitUser.user.height) {
-      if (fitbitUser.user.heightUnit === "en_US") {
+      if (fitbitUser.user.heightUnit === US_LOCALE) {
         body.height_cm = parseFloat(fitbitUser.user.height.toFixed(DECIMAL_PLACES));
       } else {
         body.height_cm = parseFloat(
@@ -33,7 +34,7 @@ export const mapToBody = (
     }
 
     if (fitbitUser.user.weight) {
-      if (fitbitUser.user.weightUnit === "METRIC") {
+      if (fitbitUser.user.weightUnit === METRIC) {
         body.weight_kg = parseFloat(fitbitUser.user.weight.toFixed(DECIMAL_PLACES));
       } else {
         body.weight_kg = parseFloat(
@@ -43,7 +44,7 @@ export const mapToBody = (
     }
   }
 
-  if (fitbitWeight) {
+  if (fitbitWeight.length > 0) {
     body.weight_samples_kg = fitbitWeight.map(weight => {
       const dateTime = date + "T" + weight.time;
       return {
@@ -51,7 +52,7 @@ export const mapToBody = (
         value: weight.weight,
         data_source: {
           name: weight.source,
-          standardized_type: checkSource(weight.source),
+          source_type: checkSource(weight.source),
         },
       };
     });
@@ -61,5 +62,5 @@ export const mapToBody = (
 };
 
 function checkSource(weight: string) {
-  return weight === "API" ? "MANUALLY_ENTERED" : "DEVICE";
+  return weight === "API" ? SourceType.manual : SourceType.device;
 }
