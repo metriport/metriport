@@ -3,9 +3,7 @@ import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
-  Progress,
 } from "../../../domain/medical/document-reference";
-import { processAsyncError } from "../../../errors";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
@@ -16,6 +14,7 @@ import {
   MAPIWebhookType,
   processPatientDocumentRequest,
 } from "../../webhook/medical";
+import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
 // TODO: eventually we will have to update this to support multiple HIEs
@@ -50,21 +49,11 @@ export async function queryDocumentsAcrossHIEs({
   const updatedPatient = await updateDocQuery({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "processing" },
-    restart: true,
+    reset: true,
   });
 
   // intentionally asynchronous, not waiting for the result
-  getDocumentsFromCW({ patient, facilityId, override })
-    .then((amountProcessed: number) => {
-      log(`Finished processing ${amountProcessed} documents.`);
-    })
-    .catch(err => {
-      updateDocQuery({
-        patient: { id: patient.id, cxId: patient.cxId },
-        downloadProgress: { status: "failed" },
-      });
-      processAsyncError(`doc.list.getDocumentsFromCW`)(err);
-    });
+  getDocumentsFromCW({ patient, facilityId, override });
 
   return createQueryResponse("processing", updatedPatient);
 }
@@ -82,65 +71,74 @@ export const createQueryResponse = (
   };
 };
 
-type UpdateDocQueryParams = {
+type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
-  downloadProgress?: Progress;
-  convertProgress?: Progress;
-  convertResult?: ConvertResult;
-  restart?: boolean;
+  convertResult: ConvertResult;
 };
 
-export const updateDocQuery = async ({
-  patient,
-  downloadProgress,
-  convertProgress,
-  convertResult,
-  restart,
-}: UpdateDocQueryParams) => {
-  let transaction: Transaction | undefined = await startTransaction(PatientModel.prototype);
+type UpdateDocQueryParams =
+  | (SetDocQueryProgress & { convertResult?: never })
+  | (UpdateResult & { downloadProgress?: never; convertProgress?: never; reset?: never });
 
+/**
+ *
+ * @param param.downloadProgress if undefined, don't update; if null, remove/reset it
+ * @param param.convertProgress if undefined, don't update; if null, remove/reset it
+ * @returns
+ */
+export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Patient> {
+  let updatedPatient: Patient;
+  if (params.convertResult) {
+    updatedPatient = await updateConversionProgress(params);
+  } else {
+    updatedPatient = await appendDocQueryProgress(params);
+  }
+  const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
+
+  const { patient } = params;
+  if (conversionStatus === "completed") {
+    processPatientDocumentRequest(
+      patient.cxId,
+      patient.id,
+      MAPIWebhookType.documentConversion,
+      MAPIWebhookStatus.completed
+    );
+  }
+  return updatedPatient;
+}
+
+export const updateConversionProgress = async ({
+  patient,
+  convertResult,
+}: UpdateResult): Promise<Patient> => {
+  const patientFilter = {
+    id: patient.id,
+    cxId: patient.cxId,
+  };
+
+  let transaction: Transaction | undefined = await startTransaction(PatientModel.prototype);
   try {
-    const patientFilter = {
-      id: patient.id,
-      cxId: patient.cxId,
-    };
-    const existingPatient = await PatientModel.findOne({
-      where: patientFilter,
+    const existingPatient = await getPatientOrFail({
+      ...patientFilter,
       lock: true,
       transaction,
     });
 
-    if (existingPatient) {
-      const documentQueryProgress = getDocQueryProgress({
-        patient: existingPatient,
-        downloadProgress,
-        convertProgress,
-        convertResult,
-        restart,
-      });
+    const documentQueryProgress = calculateConversionProgress({
+      patient: existingPatient,
+      convertResult,
+    });
 
-      const updatedPatient = {
-        ...existingPatient,
-        data: {
-          ...existingPatient.data,
-          documentQueryProgress,
-        },
-      };
-      await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+    const updatedPatient = {
+      ...existingPatient,
+      data: {
+        ...existingPatient.data,
+        documentQueryProgress,
+      },
+    };
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
-      const conversionStatus = documentQueryProgress.convert?.status;
-
-      if (conversionStatus === "completed") {
-        processPatientDocumentRequest(
-          patient.cxId,
-          patient.id,
-          MAPIWebhookType.documentConversion,
-          MAPIWebhookStatus.completed
-        );
-      }
-
-      return updatedPatient;
-    }
+    return updatedPatient;
   } catch (error) {
     await transaction.rollback();
     transaction = undefined;
@@ -150,54 +148,31 @@ export const updateDocQuery = async ({
   }
 };
 
-export const getDocQueryProgress = ({
+export const calculateConversionProgress = ({
   patient,
-  downloadProgress,
-  convertProgress,
   convertResult,
-  restart,
-}: Omit<UpdateDocQueryParams, "patient"> & {
+}: UpdateResult & {
   patient: Pick<Patient, "data" | "id">;
 }): DocumentQueryProgress => {
-  if (restart) {
-    return { download: downloadProgress };
-  }
+  const docQueryProgress = patient.data.documentQueryProgress ?? {};
 
-  const patientDocProgress = patient.data.documentQueryProgress ?? {};
+  const totalToConvert = docQueryProgress?.convert?.total ?? 0;
 
-  if (downloadProgress) {
-    patientDocProgress.download = {
-      ...patientDocProgress?.download,
-      ...downloadProgress,
-    };
-  }
+  const successfulConvert = docQueryProgress?.convert?.successful ?? 0;
+  const successful = convertResult === "success" ? successfulConvert + 1 : successfulConvert;
 
-  if (convertProgress) {
-    patientDocProgress.convert = {
-      ...patientDocProgress?.convert,
-      ...convertProgress,
-    };
-  }
+  const errorsConvert = docQueryProgress?.convert?.errors ?? 0;
+  const errors = convertResult === "failed" ? errorsConvert + 1 : errorsConvert;
 
-  if (convertResult) {
-    const totalToConvert = patientDocProgress?.convert?.total ?? 0;
+  const isConversionCompleted = successful + errors >= totalToConvert;
+  const status = isConversionCompleted ? "completed" : "processing";
 
-    const successfulConvert = patientDocProgress?.convert?.successful ?? 0;
-    const successful = convertResult === "success" ? successfulConvert + 1 : successfulConvert;
+  docQueryProgress.convert = {
+    ...docQueryProgress?.convert,
+    status,
+    successful,
+    errors,
+  };
 
-    const errorsConvert = patientDocProgress?.convert?.errors ?? 0;
-    const errors = convertResult === "failed" ? errorsConvert + 1 : errorsConvert;
-
-    const isConversionCompleted = successful + errors >= totalToConvert;
-    const status = isConversionCompleted ? "completed" : "processing";
-
-    patientDocProgress.convert = {
-      ...patientDocProgress?.convert,
-      status,
-      successful,
-      errors,
-    };
-  }
-
-  return patientDocProgress;
+  return docQueryProgress;
 };

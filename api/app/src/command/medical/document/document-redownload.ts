@@ -142,7 +142,7 @@ async function processDocsOfPatient({
     await updateDocQuery({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "processing" },
-      restart: true,
+      reset: true,
     });
 
     await downloadDocsAndUpsertFHIR({

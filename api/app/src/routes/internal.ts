@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { z } from "zod";
 import { accountInit } from "../command/account-init";
 import {
   populateFhirServer,
@@ -10,13 +11,14 @@ import { updateDocQuery } from "../command/medical/document/document-query";
 import { reprocessDocuments } from "../command/medical/document/document-redownload";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { deletePatient } from "../command/medical/patient/delete-patient";
-import { convertResultSchema } from "../domain/medical/document-reference";
+import { convertResult } from "../domain/medical/document-reference";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
 import { encodeExternalId } from "../shared/external";
 import { capture } from "../shared/notifications";
 import { stringToBoolean } from "../shared/types";
 import { Util } from "../shared/util";
+import { documentQueryProgressSchema } from "./schemas/internal";
 import { stringListSchema } from "./schemas/shared";
 import { getUUIDFrom } from "./schemas/uuid";
 import {
@@ -103,13 +105,14 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const allCustomers = getFrom("query").optional("allCustomers", req) === "true";
     const createIfNotExists = getFrom("query").optional("createIfNotExists", req) === "true";
+    const triggerDocQuery = getFrom("query").optional("triggerDocQuery", req) === "true";
 
     if (cxId && allCustomers) {
       throw new BadRequestError("Either cxId or allCustomers must be provided, not both");
     }
 
     if (cxId) {
-      const result = await populateFhirServer({ cxId, createIfNotExists });
+      const result = await populateFhirServer({ cxId, createIfNotExists, triggerDocQuery });
       return res.json({ [cxId]: result });
     }
 
@@ -120,7 +123,11 @@ router.post(
     const allOrgs = await OrganizationModel.findAll();
     const result: Record<string, PopulateFhirServerResponse> = {};
     for (const org of allOrgs) {
-      const orgRes = await populateFhirServer({ cxId: org.cxId, createIfNotExists });
+      const orgRes = await populateFhirServer({
+        cxId: org.cxId,
+        createIfNotExists,
+        triggerDocQuery,
+      });
       result[org.cxId] = orgRes;
     }
     return res.json(result);
@@ -215,6 +222,8 @@ router.delete(
   })
 );
 
+const convertResultSchema = z.enum(convertResult);
+
 router.post(
   "/doc-conversion-status",
   asyncHandler(async (req: Request, res: Response) => {
@@ -233,6 +242,33 @@ router.post(
     });
 
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+router.post(
+  "/docs/override-progress",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("query").orFail("patientId", req);
+    const docQueryProgressRaw = req.body;
+    const docQueryProgress = documentQueryProgressSchema.parse(docQueryProgressRaw);
+    const downloadProgress = docQueryProgress.download;
+    const convertProgress = docQueryProgress.convert;
+    if (!downloadProgress && !convertProgress) {
+      throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
+    }
+
+    console.log(
+      `Updating patient ${patientId}'s docQueryProgress to ${JSON.stringify(docQueryProgress)}`
+    );
+
+    const updatedPatient = await updateDocQuery({
+      patient: { id: patientId, cxId },
+      downloadProgress,
+      convertProgress,
+    });
+
+    return res.json(updatedPatient.data.documentQueryProgress);
   })
 );
 
