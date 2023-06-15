@@ -47,7 +47,7 @@ export async function queryDocumentsAcrossHIEs({
   const cwData = externalData as PatientDataCommonwell;
   if (!cwData.patientId) return createQueryResponse("failed");
 
-  await updateDocQuery({
+  const updatedPatient = await updateDocQuery({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "processing" },
     restart: true,
@@ -66,7 +66,7 @@ export async function queryDocumentsAcrossHIEs({
       processAsyncError(`doc.list.getDocumentsFromCW`)(err);
     });
 
-  return createQueryResponse("processing", patient);
+  return createQueryResponse("processing", updatedPatient);
 }
 
 export const createQueryResponse = (

@@ -1,22 +1,29 @@
 import cwCommands from "../../../external/commonwell";
+import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
+import { Config } from "../../../shared/config";
+import { capture } from "../../../shared/notifications";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
-import { Config } from "../../../shared/config";
-import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { capture } from "../../../shared/notifications";
 
 export type PatientDeleteCmd = BaseUpdateCmdWithCustomer & {
   facilityId: string;
 };
 
-export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<void> => {
+export type DeleteOptions = {
+  allEnvs?: boolean;
+};
+
+export const deletePatient = async (
+  patientDelete: PatientDeleteCmd,
+  options: DeleteOptions = {}
+): Promise<void> => {
   const { id, cxId, facilityId, eTag } = patientDelete;
 
   const patient = await getPatientOrFail({ id, cxId });
   validateVersionForUpdate(patient, eTag);
 
-  if (Config.isSandbox()) {
+  if (options.allEnvs || Config.isSandbox()) {
     const fhirApi = makeFhirApi(cxId);
 
     try {
@@ -34,6 +41,8 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
         extra: {
           context: `cw.deletePatient`,
           patientId: patient.id,
+          facilityId,
+          options,
         },
       });
     }

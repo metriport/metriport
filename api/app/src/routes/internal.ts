@@ -6,28 +6,28 @@ import {
   populateFhirServer,
   PopulateFhirServerResponse,
 } from "../command/medical/admin-populate-fhir";
+import { updateDocQuery } from "../command/medical/document/document-query";
 import { reprocessDocuments } from "../command/medical/document/document-redownload";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
+import { deletePatient } from "../command/medical/patient/delete-patient";
+import { convertResultSchema } from "../domain/medical/document-reference";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
 import { encodeExternalId } from "../shared/external";
 import { capture } from "../shared/notifications";
 import { stringToBoolean } from "../shared/types";
+import { Util } from "../shared/util";
 import { stringListSchema } from "./schemas/shared";
 import { getUUIDFrom } from "./schemas/uuid";
 import {
-  getETag,
   asyncHandler,
   getCxIdFromQueryOrFail,
-  getFrom,
   getCxIdOrFail,
+  getETag,
+  getFrom,
   getFromParamsOrFail,
   getFromQueryOrFail,
 } from "./util";
-import { deletePatient } from "../command/medical/patient/delete-patient";
-import { updateDocQuery } from "../command/medical/document/document-query";
-import { convertResultSchema } from "../domain/medical/document-reference";
-import { Util } from "../shared/util";
 
 const router = Router();
 
@@ -233,6 +233,28 @@ router.post(
     });
 
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * Delete a patient regardless of the environment
+ */
+router.delete(
+  "/patient/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+
+    const patientDeleteCmd = {
+      ...getETag(req),
+      id,
+      cxId,
+      facilityId,
+    };
+    await deletePatient(patientDeleteCmd, { allEnvs: true });
+
+    return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );
 
