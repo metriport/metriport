@@ -1,4 +1,4 @@
-import { User } from "@metriport/api";
+import { User, UserIdsAndProviders } from "@metriport/api";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -42,12 +42,6 @@ router.get(
     res.status(status.OK).json(results);
   })
 );
-
-type UserIdsAndProviders = {
-  metriportUserId: string;
-  appUserId: string;
-  connectedProviders?: string[];
-};
 
 /**
  * GET /user/users
