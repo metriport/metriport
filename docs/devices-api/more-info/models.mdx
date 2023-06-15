@@ -364,6 +364,17 @@ export interface Metadata {
 }
 ```
 
+### Source Info
+
+```typescript
+export interface SourceInfo {
+  source_type?: SourceType;
+  id?: string;
+  name?: string;
+  type?: string;
+}
+```
+
 ### Provider Source
 
 ```typescript
@@ -404,6 +415,16 @@ export interface Respiration {
 export interface Sample {
   time: string;
   value: number;
+  data_source?: SourceInfo;
+}
+```
+
+### Source Type
+
+```typescript
+export enum SourceType {
+  manual = "MANUAL_ENTRY",
+  device = "DEVICE",
 }
 ```
 
