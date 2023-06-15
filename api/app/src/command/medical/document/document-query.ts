@@ -10,7 +10,6 @@ import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../externa
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { startTransaction } from "../../../models/transaction";
-import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import {
   MAPIWebhookStatus,
@@ -101,11 +100,12 @@ export const updateDocQuery = async ({
   let transaction: Transaction | undefined = await startTransaction(PatientModel.prototype);
 
   try {
+    const patientFilter = {
+      id: patient.id,
+      cxId: patient.cxId,
+    };
     const existingPatient = await PatientModel.findOne({
-      where: {
-        id: patient.id,
-        cxId: patient.cxId,
-      },
+      where: patientFilter,
       lock: true,
       transaction,
     });
@@ -119,17 +119,16 @@ export const updateDocQuery = async ({
         restart,
       });
 
-      const updatedPatient = await existingPatient.update(
-        {
-          data: {
-            ...existingPatient.data,
-            documentQueryProgress,
-          },
+      const updatedPatient = {
+        ...existingPatient,
+        data: {
+          ...existingPatient.data,
+          documentQueryProgress,
         },
-        { transaction }
-      );
+      };
+      await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
-      const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
+      const conversionStatus = documentQueryProgress.convert?.status;
 
       if (conversionStatus === "completed") {
         processPatientDocumentRequest(
@@ -181,35 +180,23 @@ export const getDocQueryProgress = ({
   }
 
   if (convertResult) {
-    const successfulConvert = patientDocProgress?.convert?.successful ?? 0;
-    const errorsConvert = patientDocProgress?.convert?.errors ?? 0;
     const totalToConvert = patientDocProgress?.convert?.total ?? 0;
-    const isConversionCompleted = successfulConvert + errorsConvert + 1 >= totalToConvert;
 
-    if (convertResult === "success") {
-      patientDocProgress.convert = {
-        ...patientDocProgress?.convert,
-        status: isConversionCompleted ? "completed" : "processing",
-        successful: successfulConvert + 1,
-      };
-    } else if (convertResult === "failed") {
-      patientDocProgress.convert = {
-        ...patientDocProgress?.convert,
-        status: isConversionCompleted ? "completed" : "processing",
-        errors: errorsConvert + 1,
-      };
-    } else {
-      const msg = `Invalid conversion result - ${convertResult}`;
-      const extra = {
-        patient: { id: patient.id, data: patient.data },
-        downloadProgress,
-        convertProgress,
-        convertResult,
-        restart,
-      };
-      console.log(msg, extra);
-      capture.message(msg, { extra });
-    }
+    const successfulConvert = patientDocProgress?.convert?.successful ?? 0;
+    const successful = convertResult === "success" ? successfulConvert + 1 : successfulConvert;
+
+    const errorsConvert = patientDocProgress?.convert?.errors ?? 0;
+    const errors = convertResult === "failed" ? errorsConvert + 1 : errorsConvert;
+
+    const isConversionCompleted = successful + errors >= totalToConvert;
+    const status = isConversionCompleted ? "completed" : "processing";
+
+    patientDocProgress.convert = {
+      ...patientDocProgress?.convert,
+      status,
+      successful,
+      errors,
+    };
   }
 
   return patientDocProgress;
