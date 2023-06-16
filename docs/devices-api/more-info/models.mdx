@@ -58,6 +58,7 @@ export interface Nutrition extends MetriportData {
     micros?: Micros;
     aminos?: Aminos;
   };
+  foods?: Food[];
 }
 ```
 
@@ -135,6 +136,22 @@ export interface Aminos {
   tryptophan_g?: number;
   tyrosine_g?: number;
   valine_g?: number;
+}
+```
+
+### Food
+
+```typescript
+export interface Food {
+  name?: string;
+  brand?: string;
+  amount?: number;
+  unit?: string;
+  nutrition_facts?: {
+    macros?: Macros;
+    micros?: Micros;
+    aminos?: Aminos;
+  };
 }
 ```
 
@@ -347,6 +364,17 @@ export interface Metadata {
 }
 ```
 
+### Source Info
+
+```typescript
+export interface SourceInfo {
+  source_type?: SourceType;
+  id?: string;
+  name?: string;
+  type?: string;
+}
+```
+
 ### Provider Source
 
 ```typescript
@@ -387,6 +415,16 @@ export interface Respiration {
 export interface Sample {
   time: string;
   value: number;
+  data_source?: SourceInfo;
+}
+```
+
+### Source Type
+
+```typescript
+export enum SourceType {
+  manual = "MANUAL_ENTRY",
+  device = "DEVICE",
 }
 ```
 

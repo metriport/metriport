@@ -23,14 +23,16 @@ export const fitbitFoodResp = z.object({
         }),
         units: z.array(z.number()),
       }),
-      nutritionalValues: z.object({
-        calories: z.number(),
-        carbs: z.number(),
-        fat: z.number(),
-        fiber: z.number(),
-        protein: z.number(),
-        sodium: z.number(),
-      }),
+      nutritionalValues: z
+        .object({
+          calories: z.number(),
+          carbs: z.number(),
+          fat: z.number(),
+          fiber: z.number(),
+          protein: z.number(),
+          sodium: z.number(),
+        })
+        .nullish(),
     })
   ),
   goals: z.object({ calories: z.number() }).optional(),

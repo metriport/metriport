@@ -1,0 +1,89 @@
+---
+title: FAQ
+---
+
+## Frequently Asked Questions
+
+### General
+
+<AccordionGroup>
+
+    <Accordion title="What are the limitations of the sandbox mode?">
+
+        Sandbox mode is the same as the Production environment, with exception of the data being de-identified example clinical data.
+
+    </Accordion>
+
+    <Accordion title="What is the latency of new data that’s shared back into the networks? Is it longer term, or would we be able to get the nuance of procedures and latest clinical notes from a recent inpatient stay?">
+
+        Depending on the workflow of the system, this info could be available immediately, or at most, up to 24 hours. Any net-new clinical data, including the nuance of procedures and latest clinical notes, should always be available within 24 hours.
+
+    </Accordion>
+
+    <Accordion title="Can flowsheet data be pushed directly into Epic through Metriport?">
+
+        Epic sites will not auto-reconcile structured flowsheet data. Depending on the data types you are talking about as flowsheet data, that data may be discretely available as part of another document section. For example, Epic sites will discretely parse Problems, Medications, Allergies, Immunizations, Procedures, Results, Notes, Encounters, History, as well as other data types. That may not appear alongside the flowsheet documentation at the Epic site, but other decision support tools or reconciliation workflows might be possible at the Epic site.
+
+    </Accordion>
+
+    <Accordion title="When creating a new facility we have to provide name, NPI, address, and TIN (optional). What should I specify?">
+
+
+        An NPI is sufficient. If you need an example NPI for Sandbox, feel free to use `1234567893`. In Production, you'll need to enter your actual NPI.
+
+    </Accordion>
+
+    <Accordion title="What steps should we take to start using the API after Prod access has been enabled?">
+
+        To begin using the API in production, we recommend the following flow:
+
+        - Create your Organization and Facility in Production, as per our [Quickstart guide](https://docs.metriport.com/medical-api/getting-started/quickstart#5-register-your-organization).
+        - Once this is done, let us know before registering any Patients, so we can also enable your Carequality access for better medical record coverage.
+        - From here, we'll confirm when you're good to register your Patients. At this point, we recommend scheduling a go-live call with us before making your first Document Queries, so we can be available for live support.
+
+    </Accordion>
+
+    <Accordion title="What is the expected flow for implementing Webhooks?">
+
+        The expected flow is:
+
+        - Start a document query — this will start the async process for fetching a patient's documents.
+        - From here, you can use the List Documents endpoint to check the status of the query you initiated.
+
+    </Accordion>
+
+    <Accordion title="Say we have Patient A — do we need to create a `Patient A` in every hospital where we think they might be in order to get their data?
+        Is there no way for you to automatically search all the hospitals for this patient, and pull all of the data related to this patient for us automatically?">
+
+            We will search all hospitals automatically for the patient's data, so there is no heavy lifting required on your end for that.
+
+            To clarify a bit on the docs:
+            - The Organization is your corporation.
+            - The Facility is your practice where the patient is receiving care.
+            - The Patient is created under your Facility.
+
+            From here, when you request records for that patient, we'll automatically hunt everything down for you from other hospitals, clinics, etc. — then provide you with the results we found.
+
+    </Accordion>
+
+    <Accordion title="Where can I find a list of all medical document types that Metriport supports in the C-CDA standard?">
+
+        We support all documents in the C-CDA standard, namely:
+
+        - Care Plan
+        - Consultation Note
+        - Continuity of Care Document
+        - Diagnostic Imaging Report
+        - Discharge Summary
+        - History and Physical
+        - Operative Note
+        - Procedure Note
+        - Progress Note
+        - Transfer Summary
+        - Unstructured Document
+
+        In addition to this, there might be PDFs of things such as patient appointment follow ups and prescription order forms, as well as JPEGs/TIFFs of things like x-rays and surgical procedures.
+
+    </Accordion>
+
+</AccordionGroup>
