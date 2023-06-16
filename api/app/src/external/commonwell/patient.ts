@@ -29,30 +29,33 @@ const updateContext = "cw.patient.update";
 const deleteContext = "cw.patient.delete";
 
 export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus {
-  if (!data) return "needs-review";
-  return (data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell).personId
-    ? "linked"
-    : "needs-review";
+  if (!data) return "processing";
+
+  return (data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell).status ?? "processing";
 }
 
 type StoreIdsFunction = (params: {
   commonwellPatientId: string;
   personId?: string;
+  status?: LinkStatus;
 }) => Promise<void>;
 
 function getStoreIdsFn(patientId: string, cxId: string): StoreIdsFunction {
   return async ({
     commonwellPatientId,
     personId,
+    status,
   }: {
     commonwellPatientId: string;
     personId?: string;
+    status?: LinkStatus;
   }): Promise<void> => {
     await setCommonwellId({
       patientId,
       cxId,
       commonwellPatientId,
       commonwellPersonId: personId,
+      commonwellStatus: status,
     });
   };
 }
@@ -322,12 +325,13 @@ async function findOrCreatePersonAndLink({
     });
   } catch (err) {
     log(`Error calling findOrCreatePerson @ CW`);
+    await storeIds({ commonwellPatientId, status: "failed" });
     throw err;
   }
   if (!findOrCreateResponse) return undefined;
   const { personId, person } = findOrCreateResponse;
 
-  await storeIds({ commonwellPatientId, personId });
+  await storeIds({ commonwellPatientId, personId, status: "completed" });
 
   // Link Person to Patient
   try {
@@ -394,6 +398,7 @@ async function registerPatient({
       `ERR - ${msg} - Patient created @ CW but not the Person - ` +
         `Patient @ Commonwell: ${JSON.stringify(respPatient)}`
     );
+    await storeIds({ commonwellPatientId, status: "failed" });
     throw new Error(msg);
   }
   return { commonwellPatientId, patientRefLink };

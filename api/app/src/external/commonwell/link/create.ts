@@ -58,6 +58,7 @@ export const create = async (
       cxId: patient.cxId,
       commonwellPatientId: cwPatientId,
       commonwellPersonId: personId,
+      commonwellStatus: "completed",
     });
 
     if (!link._links?.self?.href) {
