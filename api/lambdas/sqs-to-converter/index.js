@@ -193,8 +193,9 @@ async function postToSidechainConverter(payload, patientId, log) {
   const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
   let attempt = 0;
   let timeBetweenAttemptsMillis = SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS;
+  let apiKey;
   while (attempt++ < MAX_SIDECHAIN_ATTEMPTS) {
-    const apiKey = await getSidechainConverterAPIKey();
+    apiKey = await getSidechainConverterAPIKey();
     log(`(${attempt}) Calling sidechain converter on url ${sidechainUrl}`);
     try {
       const res = await fhirConverter.post(sidechainUrl, payload, {
@@ -207,10 +208,10 @@ async function postToSidechainConverter(payload, patientId, log) {
       return res;
     } catch (error) {
       if ([401, 429].includes(error.response?.status)) {
-        const msg = "Sidechain quota error, trying again";
+        const msg = "Sidechain quota/auth error, trying again";
         const extra = { url: sidechainUrl, statusCode: error.response?.status, attempt, error };
         log(msg, extra);
-        captureMessage(msg, { extra, level: "info" });
+        captureMessage(msg, { extra, level: "info", apiKey });
         await sleep(timeBetweenAttemptsMillis);
         timeBetweenAttemptsMillis *= 2;
       } else {
