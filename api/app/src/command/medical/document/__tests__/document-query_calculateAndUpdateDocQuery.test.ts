@@ -3,17 +3,23 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
 import { v4 as uuidv4 } from "uuid";
-import { ConvertResult, DocumentQueryStatus } from "../../../../domain/medical/document-reference";
+import {
+  ConvertResult,
+  DocumentQueryProgress,
+  DocumentQueryStatus,
+} from "../../../../domain/medical/document-reference";
+import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/document-reference";
 import { PatientModel } from "../../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { calculateConversionProgress, updateConversionProgress } from "../document-query";
 
-describe("calculateAndUpdateDocQuery", () => {
-  describe("calculateAndUpdateDocQuery", () => {
+describe("docQuery-conversionProgress", () => {
+  describe("updateConversionProgress", () => {
     const patient = { data: {} };
     let patientModel: PatientModel;
     let patientModel_update: jest.SpyInstance;
+    let patientModel_findOne: jest.SpyInstance;
     beforeEach(() => {
       jest.restoreAllMocks();
       mockStartTransaction();
@@ -21,7 +27,7 @@ describe("calculateAndUpdateDocQuery", () => {
       patientModel = {
         ...patient,
       } as PatientModel;
-      jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+      patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
     });
 
     it("calculateAndUpdateDocQuery send a modified object to Sequelize", async () => {
@@ -37,6 +43,35 @@ describe("calculateAndUpdateDocQuery", () => {
       expect(patientSentToSequelize === patientModel).toBeFalsy();
       expect(patientSentToSequelize?.data).toBeTruthy();
       expect(patientSentToSequelize?.data === patientModel.data).toBeFalsy();
+    });
+
+    it("updates 13 successul to 14 when success", async () => {
+      const patient = makePatient();
+      patient.data.documentQueryProgress = makeDocumentQueryProgress({
+        convert: {
+          status: `processing`,
+          total: 21,
+          successful: 13,
+          errors: 0,
+        },
+      });
+      patientModel_findOne.mockResolvedValue(patient);
+
+      const res = await updateConversionProgress({
+        patient: { id: uuidv4(), cxId: uuidv4() },
+        convertResult: "success",
+      });
+
+      // ".mock.calls[0][0]" means the first parameter of the first call to that function
+      const patientSentToSequelize = patientModel_update.mock.calls[0]?.[0] as
+        | PatientModel
+        | undefined;
+      expect(patientSentToSequelize).toBeTruthy();
+      expect(patientSentToSequelize?.data).toBeTruthy();
+      expect(patientSentToSequelize?.data.documentQueryProgress).toBeTruthy();
+      expect(patientSentToSequelize?.data.documentQueryProgress?.convert).toBeTruthy();
+      expect(patientSentToSequelize?.data.documentQueryProgress?.convert?.successful).toEqual(14);
+      expect(res.data.documentQueryProgress?.convert?.successful).toEqual(14);
     });
   });
 
@@ -55,7 +90,7 @@ describe("calculateAndUpdateDocQuery", () => {
       successful?: number;
       originalStatus: DocumentQueryStatus;
       expectedStatus: DocumentQueryStatus;
-    }) => {
+    }): DocumentQueryProgress => {
       const patient = makePatient({
         id: uuidv4(),
         data: makePatientData({
@@ -75,6 +110,7 @@ describe("calculateAndUpdateDocQuery", () => {
       errors != null
         ? expect(res.convert?.errors).toEqual(errors + (result === "failed" ? 1 : 0))
         : expect(res.convert?.errors).toEqual(0);
+      return res;
     };
 
     describe("success", () => {
@@ -127,6 +163,17 @@ describe("calculateAndUpdateDocQuery", () => {
           expectedStatus: "completed",
         });
       });
+    });
+    it("13 success and gets success", async () => {
+      const res = testIt({
+        result: "success",
+        total: 21,
+        successful: 13,
+        errors: 0,
+        originalStatus: "processing",
+        expectedStatus: "processing",
+      });
+      expect(res.convert?.successful).toEqual(14);
     });
   });
 });

@@ -144,7 +144,7 @@ export const updateConversionProgress = async ({
     transaction = undefined;
     throw error;
   } finally {
-    transaction && (await transaction.commit());
+    if (transaction) await transaction.commit();
   }
 };
 
