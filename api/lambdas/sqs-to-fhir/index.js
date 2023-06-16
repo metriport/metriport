@@ -246,8 +246,9 @@ async function notifyApi(params, log) {
     let attempt = 0;
     while (attempt++ < MAX_API_NOTIFICATION_ATTEMPTS) {
       try {
-        log(`(${attempt}) Notifying API w/ ${JSON.stringify(params)}`);
+        log(`(${attempt}) Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
         await ossApi.post(docProgressURL, null, { params });
+        return;
       } catch (error) {
         const msg = "Error notifying API, trying again";
         const extra = { url: docProgressURL, statusCode: error.response?.status, attempt, error };

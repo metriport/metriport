@@ -37,7 +37,8 @@ const sidechainFHIRConverterKeysSecretName = isSidechainConnector()
   : undefined;
 const baseReplaceUrl = "https://public.metriport.com";
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
-const MAX_SIDE_CHAIN_ATTEMPTS = 5;
+const MAX_SIDECHAIN_ATTEMPTS = 5;
+const SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS = 500;
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
 // Keep this as early on the file as possible
@@ -191,7 +192,8 @@ function postProcessSidechainFHIRBundle(conversionResult, extension, patientId) 
 async function postToSidechainConverter(payload, patientId, log) {
   const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
   let attempt = 0;
-  while (attempt++ < MAX_SIDE_CHAIN_ATTEMPTS) {
+  let timeBetweenAttemptsMillis = SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS;
+  while (attempt++ < MAX_SIDECHAIN_ATTEMPTS) {
     const apiKey = await getSidechainConverterAPIKey();
     log(`(${attempt}) Calling sidechain converter on url ${sidechainUrl}`);
     try {
@@ -209,6 +211,8 @@ async function postToSidechainConverter(payload, patientId, log) {
         const extra = { url: sidechainUrl, statusCode: error.response?.status, attempt, error };
         log(msg, extra);
         captureMessage(msg, { extra, level: "info" });
+        await sleep(timeBetweenAttemptsMillis);
+        timeBetweenAttemptsMillis *= 2;
       } else {
         throw error;
       }
@@ -423,8 +427,9 @@ async function notifyApi(params, log) {
     let attempt = 0;
     while (attempt++ < MAX_API_NOTIFICATION_ATTEMPTS) {
       try {
-        log(`(${attempt}) Notifying API w/ ${JSON.stringify(params)}`);
+        log(`(${attempt}) Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
         await ossApi.post(docProgressURL, null, { params });
+        return;
       } catch (error) {
         const msg = "Error notifying API, trying again";
         const extra = { url: docProgressURL, statusCode: error.response?.status, attempt, error };
@@ -671,4 +676,8 @@ function stringifyExtra(captureContext) {
     }),
     {}
   );
+}
+
+function sleep(timeInMs) {
+  return new Promise(resolve => setTimeout(resolve, timeInMs));
 }
