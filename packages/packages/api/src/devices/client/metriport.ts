@@ -16,8 +16,8 @@ import { GetConnectTokenResponse } from "./models/get-connect-token-response";
 import { GetMetriportUserIDResponse } from "./models/get-metriport-user-id-response";
 import { SettingsResponse } from "./models/settings-response";
 import { WebhookStatusResponse } from "./models/webhook-status-response";
-import { GetUsersAndProvidersResponse } from "./models/get-users-and-providers-response";
-import { UserIdsAndProviders } from "../models/common/ids-and-providers";
+import { GetConnectedUsersResponse } from "./models/get-connected-users-response";
+import { ConnectedUserInfo } from "../models/common/connected-user-info";
 import { dateIsValid } from "./util/date-util";
 
 export type Options = {
@@ -77,10 +77,10 @@ export class MetriportDevicesApi {
   /**
    * Returns all your users and their connected providers.
    *
-   * @returns List of users with their IDs and providers.
+   * @returns List of connected users, containing their ids and providers.
    */
-  async getUsersAndProviders(): Promise<{ connectedUsers: UserIdsAndProviders[] }> {
-    const resp = await this.api.get<GetUsersAndProvidersResponse>("/user/users");
+  async getConnectedUsers(): Promise<{ connectedUsers: ConnectedUserInfo[] }> {
+    const resp = await this.api.get<GetConnectedUsersResponse>("/user/user");
     return resp.data;
   }
 

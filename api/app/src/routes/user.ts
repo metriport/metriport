@@ -1,4 +1,4 @@
-import { User, UserIdsAndProviders } from "@metriport/api";
+import { User, ConnectedUserInfo } from "@metriport/api";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -45,14 +45,14 @@ router.get(
 );
 
 /**
- * GET /user/users
+ * GET /user/user
  *
  * Gets all users and their connected providers for the specified customer.
  *
- * @return { UserIdsAndProviders[] }
+ * @return { ConnectedUserInfo[] }
  */
 router.get(
-  "/users",
+  "/user",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const results = await getConnectedUsers({ cxId });
@@ -60,7 +60,7 @@ router.get(
       results.map(async user => {
         const connectedUser = await getConnectedUserOrFail({ id: user.id, cxId });
         let connectedProviders;
-        const userInfo: UserIdsAndProviders = {
+        const userInfo: ConnectedUserInfo = {
           metriportUserId: user.id,
           appUserId: user.cxUserId,
         };
