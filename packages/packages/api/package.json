@@ -1,10 +1,6 @@
 {
   "name": "@metriport/api",
-<<<<<<< HEAD
-  "version": "4.1.1-alpha.4",
-=======
-  "version": "4.1.2",
->>>>>>> master
+  "version": "4.1.4",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -54,5 +50,5 @@
     "ts-essentials": "^9.3.1",
     "typescript": "^4.9.5"
   },
-  "gitHead": "2ff617224fe375edd9162aac770ad3418cdc7124"
+  "gitHead": "311f4ba08192472543a5d8d606af79edd6779bab"
 }
