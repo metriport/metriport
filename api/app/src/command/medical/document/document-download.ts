@@ -37,7 +37,7 @@ export const downloadDocument = async ({
     url = await getSignedURL({ fileName });
   }
 
-  return url;
+  return url.replace(/['"]+/g, "");
 };
 
 const getConversionUrl = async ({
