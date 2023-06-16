@@ -11,6 +11,7 @@ import { updateDocQuery } from "../command/medical/document/document-query";
 import { reprocessDocuments } from "../command/medical/document/document-redownload";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { deletePatient } from "../command/medical/patient/delete-patient";
+import { getPatientOrFail } from "../command/medical/patient/get-patient";
 import { convertResult } from "../domain/medical/document-reference";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
@@ -236,10 +237,18 @@ router.post(
 
     log(`Converted document ${docId} with status ${convertResult}`);
 
+    // TODO 785 remove this once we're confident with the flow
+    const patientPre = await getPatientOrFail({ id: patientId, cxId });
+    log(`Status pre-update: ${JSON.stringify(patientPre.data.documentQueryProgress)}`);
+
     await updateDocQuery({
       patient: { id: patientId, cxId },
       convertResult,
     });
+
+    // TODO 785 remove this once we're confident with the flow
+    const patientPost = await getPatientOrFail({ id: patientId, cxId });
+    log(`Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
 
     return res.sendStatus(httpStatus.OK);
   })
