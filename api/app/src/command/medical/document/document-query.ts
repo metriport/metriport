@@ -3,6 +3,7 @@ import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
+  Progress,
 } from "../../../domain/medical/document-reference";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
@@ -16,6 +17,22 @@ import {
 } from "../../webhook/medical";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
+
+export function isProgressEqual(a?: Progress, b?: Progress): boolean {
+  return (
+    a?.errors === b?.errors &&
+    a?.status === b?.status &&
+    a?.successful === b?.successful &&
+    a?.total === b?.total
+  );
+}
+
+export function isDocumentQueryProgressEqual(
+  a?: DocumentQueryProgress,
+  b?: DocumentQueryProgress
+): boolean {
+  return isProgressEqual(a?.convert, b?.convert) && isProgressEqual(a?.download, b?.download);
+}
 
 // TODO: eventually we will have to update this to support multiple HIEs
 export async function queryDocumentsAcrossHIEs({
@@ -115,7 +132,7 @@ export const updateConversionProgress = async ({
     id: patient.id,
     cxId: patient.cxId,
   };
-
+  const { log } = Util.out(`updateConversionProgress - patient ${patient.id}`);
   let transaction: Transaction | undefined = await startTransaction(PatientModel.prototype);
   try {
     const existingPatient = await getPatientOrFail({
@@ -137,6 +154,38 @@ export const updateConversionProgress = async ({
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+
+    // START TODO 785 remove this once we're confident with the flow
+    const maxUpdateRetry = 3;
+    let curAttempt = 1;
+    while (curAttempt++ < maxUpdateRetry) {
+      const patientPost = await getPatientOrFail({
+        id: patient.id,
+        cxId: patient.cxId,
+        transaction,
+      });
+      log(
+        `[txn attempt ${curAttempt}] Status post-update: ${JSON.stringify(
+          patientPost.data.documentQueryProgress
+        )}`
+      );
+      if (
+        !isDocumentQueryProgressEqual(documentQueryProgress, patientPost.data.documentQueryProgress)
+      ) {
+        log(`[txn attempt ${curAttempt}] Status post-update not expected... trying again`);
+        await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+      } else {
+        log(`[txn attempt ${curAttempt}] Status post-update is as expected!`);
+        break;
+      }
+    }
+    const patientPost = await getPatientOrFail({
+      id: patient.id,
+      cxId: patient.cxId,
+      transaction,
+    });
+    log(`txn final Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
+    // END TODO 785
 
     return updatedPatient;
   } catch (error) {

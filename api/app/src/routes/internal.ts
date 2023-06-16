@@ -7,7 +7,10 @@ import {
   populateFhirServer,
   PopulateFhirServerResponse,
 } from "../command/medical/admin-populate-fhir";
-import { updateDocQuery } from "../command/medical/document/document-query";
+import {
+  isDocumentQueryProgressEqual,
+  updateDocQuery,
+} from "../command/medical/document/document-query";
 import { reprocessDocuments } from "../command/medical/document/document-redownload";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { deletePatient } from "../command/medical/patient/delete-patient";
@@ -237,18 +240,45 @@ router.post(
 
     log(`Converted document ${docId} with status ${convertResult}`);
 
-    // TODO 785 remove this once we're confident with the flow
+    // START TODO 785 remove this once we're confident with the flow
     const patientPre = await getPatientOrFail({ id: patientId, cxId });
     log(`Status pre-update: ${JSON.stringify(patientPre.data.documentQueryProgress)}`);
+    // END TODO 785
 
-    await updateDocQuery({
+    let expectedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       convertResult,
     });
 
-    // TODO 785 remove this once we're confident with the flow
+    // START TODO 785 remove this once we're confident with the flow
+    const maxUpdateRetry = 3;
+    let curAttempt = 1;
+    while (curAttempt++ < maxUpdateRetry) {
+      const patientPost = await getPatientOrFail({ id: patientId, cxId });
+      log(
+        `[attempt ${curAttempt}] Status post-update: ${JSON.stringify(
+          patientPost.data.documentQueryProgress
+        )}`
+      );
+      if (
+        !isDocumentQueryProgressEqual(
+          expectedPatient.data.documentQueryProgress,
+          patientPost.data.documentQueryProgress
+        )
+      ) {
+        log(`[attempt ${curAttempt}] Status post-update not expected... trying again`);
+        expectedPatient = await updateDocQuery({
+          patient: { id: patientId, cxId },
+          convertResult,
+        });
+      } else {
+        log(`[attempt ${curAttempt}] Status post-update is as expected!`);
+        break;
+      }
+    }
     const patientPost = await getPatientOrFail({ id: patientId, cxId });
-    log(`Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
+    log(`final Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
+    // END TODO 785
 
     return res.sendStatus(httpStatus.OK);
   })
