@@ -95,8 +95,6 @@ router.post(
 router.get(
   "/connect/token",
   asyncHandler(async (req: Request, res: Response) => {
-    // validate required query params
-    if (!req.query.userId) throw new BadRequestError();
     const userId = getUserIdFrom("query", req).orFail();
     const cxId = getCxIdOrFail(req);
 
