@@ -241,15 +241,13 @@ router.get(
     const userId = getUserIdFrom("params", req).orFail();
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
-
+    let connectedProviders: string[] = [];
     if (connectedUser.providerMap) {
-      const connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
+      connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
         return key;
       });
-      return res.status(status.OK).json({ connectedProviders });
-    } else {
-      throw new BadRequestError(`User ${userId} has no provider map`);
     }
+    return res.status(status.OK).json({ connectedProviders });
   })
 );
 
