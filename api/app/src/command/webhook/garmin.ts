@@ -25,7 +25,11 @@ type WebhookDataPayload = {
   users: WebhookUserPayload[];
 };
 type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
-type WebhookUserPayload = { id: string } & WebhookUserDataPayload;
+
+/**
+ * @deprecated userId will soon be discontinued from use. Use id instead.
+ */
+type WebhookUserPayload = { id: string; userId: string } & WebhookUserDataPayload;
 
 /**
  * Does the bulk of processing webhook incoming data, including storing and sending
@@ -56,6 +60,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
         ).flatMap(u => u);
         const cxIdAndUserIdList = connectedUsers.map(t => ({
           cxId: t.cxId,
+          cxUserId: t.cxUserId,
           id: t.id,
         }));
         if (cxIdAndUserIdList.length < 1) {
@@ -66,8 +71,9 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
     );
     // Flatten the list so each item has one cxId/userId and one data record
     const dataByUser = dataWithListOfCxIdAndUserId.flatMap(v =>
-      v.cxIdAndUserIdList.map(({ cxId, id }) => ({
+      v.cxIdAndUserIdList.map(({ cxId, id, cxUserId }) => ({
         cxId,
+        cxUserId,
         id,
         typedData: v.typedData,
       }))
@@ -81,6 +87,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
           // flat list of each data record and its respective user
           const dataAndUserList = dataByCustomer[cxId].map(v => ({
             id: v.id,
+            userId: v.cxUserId,
             typedData: v.typedData,
           }));
           // split the list in chunks
@@ -93,6 +100,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
             const users: WebhookUserPayload[] = [];
             for (const id of Object.keys(dataByUser)) {
               const usersData = dataByUser[id].map(dbu => dbu.typedData);
+              const userId = dataByUser[id].map(dbu => dbu.userId)[0];
               // for each user, group together data by type
               const usersDataByType = groupBy(usersData, ud => ud.type);
               const data: MetriportData[] = [];
@@ -100,9 +108,11 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
                 const dataOfType: TypedData<MetriportData>[] = usersDataByType[type];
                 data.push(...dataOfType.map(d => d.data));
                 users.push({
-                  id: id,
+                  id,
+                  userId,
                   [type]: data,
                 });
+                console.log("user push", users);
               }
             }
             const payload: WebhookDataPayloadWithoutMessageId = { users };
