@@ -43,6 +43,7 @@ export const deletePatient = async (
           patientId: patient.id,
           facilityId,
           options,
+          err,
         },
       });
     }

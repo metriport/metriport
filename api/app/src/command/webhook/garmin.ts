@@ -130,15 +130,15 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
           const msg = getErrorMessage(err);
           log(`Failed to process data of customer ${cxId}: ${msg}`);
           capture.error(err, {
-            extra: { context: `webhook.processData.customer` },
+            extra: { context: `webhook.processData.customer`, err },
           });
         }
       })
     );
   } catch (err) {
-    log(`Error on processData: `, err);
+    log(`Error on processData: ${err}`);
     capture.error(err, {
-      extra: { context: `webhook.processData.global` },
+      extra: { context: `webhook.processData.global`, err },
     });
   }
 };
