@@ -112,7 +112,6 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
                   userId,
                   [type]: data,
                 });
-                console.log("user push", users);
               }
             }
             const payload: WebhookDataPayloadWithoutMessageId = { users };
