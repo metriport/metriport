@@ -93,7 +93,7 @@ function postProcessSidechainFHIRBundle(conversionResult, extension, patientId) 
   let curIndex = 0;
   let patientIndex = -1;
   let operationOutcomeIndex = -1;
-  console.log(fhirBundle);
+
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
       if (!bundleEntry.resource) continue;
@@ -167,8 +167,6 @@ function postProcessSidechainFHIRBundle(conversionResult, extension, patientId) 
   }
 
   let fhirBundleStr = JSON.stringify(fhirBundle);
-  console.log(stringsToReplace);
-  console.log(fhirBundleStr);
   for (const stringToReplace of stringsToReplace) {
     // doing this is apparently more efficient than just using replace
     const regex = new RegExp(stringToReplace.old, "g");

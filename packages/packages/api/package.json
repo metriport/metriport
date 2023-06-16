@@ -1,6 +1,10 @@
 {
   "name": "@metriport/api",
+<<<<<<< HEAD
   "version": "4.1.1-alpha.4",
+=======
+  "version": "4.1.2",
+>>>>>>> master
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",

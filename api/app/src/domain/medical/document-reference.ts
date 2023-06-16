@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 export const documentQueryStatus = ["processing", "completed", "failed"] as const;
 export type DocumentQueryStatus = (typeof documentQueryStatus)[number];
 
@@ -26,6 +24,5 @@ export type DocumentQueryProgress = {
   convert?: Progress;
 };
 
-export const convertResultSchema = z.enum(["success", "failed"]);
-
-export type ConvertResult = z.infer<typeof convertResultSchema>;
+export const convertResult = ["success", "failed"] as const;
+export type ConvertResult = (typeof convertResult)[number];
