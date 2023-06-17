@@ -79,6 +79,12 @@ export async function queryAndProcessDocuments({
         MAPIWebhookStatus.completed,
         toDTO(documentsSandbox)
       );
+
+      await updateDocQuery({
+        patient: { id: patient.id, cxId: patient.cxId },
+        downloadProgress: { status: "completed" },
+      });
+
       return documentsSandbox.length;
     } else {
       log(`Querying for documents of patient ${patient.id}...`);
