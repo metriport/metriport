@@ -156,9 +156,9 @@ export const updateConversionProgress = async ({
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     // START TODO 785 remove this once we're confident with the flow
-    const maxUpdateRetry = 3;
+    const maxAttempts = 3;
     let curAttempt = 1;
-    while (curAttempt++ < maxUpdateRetry) {
+    while (curAttempt++ < maxAttempts) {
       const patientPost = await getPatientOrFail({
         id: patient.id,
         cxId: patient.cxId,
@@ -172,19 +172,15 @@ export const updateConversionProgress = async ({
       if (
         !isDocumentQueryProgressEqual(documentQueryProgress, patientPost.data.documentQueryProgress)
       ) {
-        log(`[txn attempt ${curAttempt}] Status post-update not expected... trying again`);
+        log(
+          `[txn attempt ${curAttempt}] Status post-update not expected... trying to update again`
+        );
         await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
       } else {
         log(`[txn attempt ${curAttempt}] Status post-update is as expected!`);
         break;
       }
     }
-    const patientPost = await getPatientOrFail({
-      id: patient.id,
-      cxId: patient.cxId,
-      transaction,
-    });
-    log(`txn final Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
     // END TODO 785
 
     return updatedPatient;

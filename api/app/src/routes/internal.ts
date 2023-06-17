@@ -251,9 +251,10 @@ router.post(
     });
 
     // START TODO 785 remove this once we're confident with the flow
-    const maxUpdateRetry = 3;
+    const maxAttempts = 3;
     let curAttempt = 1;
-    while (curAttempt++ < maxUpdateRetry) {
+    let verifiedSuccess = false;
+    while (curAttempt++ < maxAttempts) {
       const patientPost = await getPatientOrFail({ id: patientId, cxId });
       log(
         `[attempt ${curAttempt}] Status post-update: ${JSON.stringify(
@@ -266,18 +267,21 @@ router.post(
           patientPost.data.documentQueryProgress
         )
       ) {
-        log(`[attempt ${curAttempt}] Status post-update not expected... trying again`);
+        log(`[attempt ${curAttempt}] Status post-update not expected... trying to update again`);
         expectedPatient = await updateDocQuery({
           patient: { id: patientId, cxId },
           convertResult,
         });
       } else {
         log(`[attempt ${curAttempt}] Status post-update is as expected!`);
+        verifiedSuccess = true;
         break;
       }
     }
-    const patientPost = await getPatientOrFail({ id: patientId, cxId });
-    log(`final Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
+    if (!verifiedSuccess) {
+      const patientPost = await getPatientOrFail({ id: patientId, cxId });
+      log(`final Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
+    }
     // END TODO 785
 
     return res.sendStatus(httpStatus.OK);
