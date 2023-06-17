@@ -20,6 +20,7 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
+import { createConversionChecker } from "./api-stack/fhir-conversion-checker";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
@@ -335,6 +336,13 @@ export class APIStack extends Stack {
       sidechainFHIRConverterLambda &&
         medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
     }
+
+    createConversionChecker({
+      stack: this,
+      vpc: this.vpc,
+      url: apiLoadBalancerAddress,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
 
     //-------------------------------------------
     // API Gateway
