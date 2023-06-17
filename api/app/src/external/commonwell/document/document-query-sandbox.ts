@@ -71,6 +71,10 @@ export async function sandboxGetDocRefsAndUpsert({
 
   await updateDocQuery({
     patient: { id: patient.id, cxId: patient.cxId },
+    downloadProgress: {
+      total: entries.length,
+      status: "processing",
+    },
     ...(fhirConvertCount > 0
       ? {
           convertProgress: {
