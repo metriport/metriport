@@ -20,9 +20,9 @@ export const reportUsage = ({ cxId, entityId, apiType }: ReportUsageCommand): vo
   if (!url) return;
   const payload = { cxId, entityId, apiType };
 
-  // intentionally failing silently
+  // intentionally asynchronous
   axios.post(`${url}`, payload).catch(err => {
     console.log(`Failed to report usage (${payload}): `, err.message);
-    capture.error(err, { extra: payload });
+    capture.error(err, { extra: { payload, err } });
   });
 };

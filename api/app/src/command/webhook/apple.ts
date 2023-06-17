@@ -23,9 +23,9 @@ export const processAppleData = async (
     await processRequest(webhookRequest, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (err) {
-    log(`Error on processAppleData: `, err);
+    log(`Error on processAppleData: ${err}`);
     capture.error(err, {
-      extra: { metriportUserId, context: `webhook.processAppleData` },
+      extra: { metriportUserId, data, context: `webhook.processAppleData`, err },
     });
   }
 };

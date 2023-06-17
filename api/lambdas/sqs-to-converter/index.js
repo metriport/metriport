@@ -37,6 +37,9 @@ const sidechainFHIRConverterKeysSecretName = isSidechainConnector()
   : undefined;
 const baseReplaceUrl = "https://public.metriport.com";
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
+const MAX_SIDECHAIN_ATTEMPTS = 5;
+const SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS = 500;
+const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
 // Keep this as early on the file as possible
 Sentry.init({
@@ -186,6 +189,39 @@ function postProcessSidechainFHIRBundle(conversionResult, extension, patientId) 
   return;
 }
 
+async function postToSidechainConverter(payload, patientId, log) {
+  const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
+  let attempt = 0;
+  let timeBetweenAttemptsMillis = SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS;
+  let apiKey;
+  while (attempt++ < MAX_SIDECHAIN_ATTEMPTS) {
+    apiKey = await getSidechainConverterAPIKey();
+    log(`(${attempt}) Calling sidechain converter on url ${sidechainUrl}`);
+    try {
+      const res = await fhirConverter.post(sidechainUrl, payload, {
+        headers: {
+          "Content-Type": "application/xml",
+          Accept: "application/json",
+          "x-api-key": apiKey,
+        },
+      });
+      return res;
+    } catch (error) {
+      if ([401, 429].includes(error.response?.status)) {
+        const msg = "Sidechain quota/auth error, trying again";
+        const extra = { url: sidechainUrl, statusCode: error.response?.status, attempt, error };
+        log(msg, extra);
+        captureMessage(msg, { extra, level: "info", apiKey });
+        await sleep(timeBetweenAttemptsMillis);
+        timeBetweenAttemptsMillis *= 2;
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw new Error(`Too many errors from sidechain converter`);
+}
+
 /* Example of a single message/record in event's `Records` array:
 {
     "messageId": "2EBA03BC-D6D1-452B-BFC3-B1DD39F32947",
@@ -203,7 +239,7 @@ function postProcessSidechainFHIRBundle(conversionResult, extension, patientId) 
       cxId: {
         stringValue: '7006E0FB-33C8-42F4-B675-A3FD05717446',
         stringListValues: [],
-        binaryListValues: [], 
+        binaryListValues: [],
         dataType: 'String'
       }
     },
@@ -240,19 +276,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
       const attrib = message.messageAttributes;
       const cxId = attrib.cxId?.stringValue;
       const patientId = attrib.patientId?.stringValue;
-      const jobStartedAt = attrib.startedAt?.stringValue;
       const jobId = attrib.jobId?.stringValue;
+      const jobStartedAt = attrib.startedAt?.stringValue;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
-      const log = _log(`${i}, cxId ${cxId}, patient ${patientId}, jobId ${jobId}`);
+      const log = _log(`${i}, patient ${patientId}, job ${jobId}`);
 
       try {
         const bodyAsJson = JSON.parse(message.body);
         const s3BucketName = bodyAsJson.s3BucketName;
-        const s3FileName = bodyAsJson.s3FileName;
-        const documentExtension = bodyAsJson.documentExtension;
         if (!s3BucketName) throw new Error(`Missing s3BucketName`);
+        const s3FileName = bodyAsJson.s3FileName;
         if (!s3FileName) throw new Error(`Missing s3FileName`);
+        const documentExtension = bodyAsJson.documentExtension;
         if (!documentExtension) throw new Error(`Missing documentExtension`);
 
         const metrics = { cxId, patientId };
@@ -260,7 +296,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         await reportMemoryUsage();
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
-        const payload = await downloadFileContents(s3BucketName, s3FileName);
+        const payloadRaw = await downloadFileContents(s3BucketName, s3FileName);
         metrics.download = {
           duration: Date.now() - downloadStart,
           timestamp: new Date().toISOString(),
@@ -268,18 +304,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
 
         await reportMemoryUsage();
         const conversionStart = Date.now();
-        let res = {};
+        let conversionResult = {};
         if (isSidechainConnector()) {
-          const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
-          const apiKey = await getSidechainConverterAPIKey();
-          log(`Calling sidechain converter on url ${sidechainUrl}`);
-          res = await fhirConverter.post(sidechainUrl, payload, {
-            headers: {
-              "Content-Type": "application/xml",
-              Accept: "application/json",
-              "x-api-key": apiKey,
-            },
-          });
+          const res = await postToSidechainConverter(payloadRaw, patientId, log);
+          conversionResult = { fhirResource: res.data };
         } else {
           const converterUrl = attrib.serverUrl?.stringValue;
           if (!converterUrl) throw new Error(`Missing converterUrl`);
@@ -287,12 +315,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           const invalidAccess = attrib.invalidAccess?.stringValue;
           const params = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
           log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
-          res = await fhirConverter.post(converterUrl, payload, {
+          const res = await fhirConverter.post(converterUrl, payloadRaw, {
             params,
             headers: { "Content-Type": "text/plain" },
           });
+          conversionResult = res.data;
         }
-        const conversionResult = isSidechainConnector() ? { fhirResource: res.data } : res.data;
         metrics.conversion = {
           duration: Date.now() - conversionStart,
           timestamp: new Date().toISOString(),
@@ -350,15 +378,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           });
           await sendToDLQ(message);
 
-          if (cxId && patientId && isSidechainConnector()) {
-            await ossApi.post(docProgressURL, null, {
-              params: {
-                cxId,
-                patientId,
-                status: "failed",
-                jobId,
-              },
-            });
+          if (isSidechainConnector()) {
+            await notifyApi({ cxId, patientId, status: "failed", jobId }, log);
           }
         }
       }
@@ -400,6 +421,25 @@ function addMissingRequests(conversion) {
       };
     }
   });
+}
+
+async function notifyApi(params, log) {
+  if (params.cxId && params.patientId) {
+    let attempt = 0;
+    while (attempt++ < MAX_API_NOTIFICATION_ATTEMPTS) {
+      try {
+        log(`(${attempt}) Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
+        await ossApi.post(docProgressURL, null, { params });
+        return;
+      } catch (error) {
+        const msg = "Error notifying API, trying again";
+        const extra = { url: docProgressURL, statusCode: error.response?.status, attempt, error };
+        log(msg, extra);
+        captureMessage(msg, { extra, level: "info" });
+      }
+    }
+    throw new Error(`Too many errors from API`);
+  }
 }
 
 // Being more generic with errors, not strictly timeouts
@@ -637,4 +677,8 @@ function stringifyExtra(captureContext) {
     }),
     {}
   );
+}
+
+function sleep(timeInMs) {
+  return new Promise(resolve => setTimeout(resolve, timeInMs));
 }

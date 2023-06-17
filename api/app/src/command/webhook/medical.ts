@@ -1,10 +1,10 @@
+import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { createWebhookRequest } from "./webhook-request";
-import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
 import { processRequest, WebhookMetadataPayload } from "./webhook";
+import { createWebhookRequest } from "./webhook-request";
 
 const log = Util.log(`Medical Webhook`);
 
@@ -50,9 +50,9 @@ export const processPatientDocumentRequest = async (
 
     reportUsageCmd({ cxId, entityId: patientId, apiType });
   } catch (err) {
-    log(`Error on processPatientDocumentRequest: `, err);
+    log(`Error on processPatientDocumentRequest: ${err}`);
     capture.error(err, {
-      extra: { patientId, context: `webhook.processPatientDocumentRequest` },
+      extra: { patientId, context: `webhook.processPatientDocumentRequest`, err },
     });
   }
   return true;
