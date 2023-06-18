@@ -340,7 +340,7 @@ export class APIStack extends Stack {
     createConversionChecker({
       stack: this,
       vpc: this.vpc,
-      url: apiLoadBalancerAddress,
+      apiAddress: apiLoadBalancerAddress,
       alarmSnsAction: slackNotification?.alarmAction,
     });
 

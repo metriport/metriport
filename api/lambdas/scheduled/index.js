@@ -14,6 +14,7 @@ export function getEnvOrFail(name) {
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
 const url = getEnvOrFail("URL");
+const timeoutMillis = Number(getEnvOrFail("TIMEOUT_MILLIS"));
 
 // Keep this as early on the file as possible
 Sentry.init({
@@ -68,6 +69,7 @@ export const sendRequest = async ({ url, method, data }) => {
         "Content-Type": "application/json",
         // ...(authToken ? { "api-key": authToken } : undefined),
       },
+      timeout: timeoutMillis,
     });
 
     data && req.write(JSON.stringify(data));
