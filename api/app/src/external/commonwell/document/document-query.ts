@@ -83,15 +83,16 @@ export async function queryAndProcessDocuments({
     } else {
       log(`Querying for documents of patient ${patient.id}...`);
       const cwDocuments = await internalGetDocuments({ patient, organization, facility });
-      log(`Found ${cwDocuments.length} documents`);
+      log(`Got ${cwDocuments.length} documents from CW`);
 
-      const FHIRDocRefs = await downloadDocsAndUpsertFHIR({
+      const fhirDocRefs = await downloadDocsAndUpsertFHIR({
         patient,
         organization,
         facilityId,
         documents: cwDocuments,
         override,
       });
+      log(`Downloaded and upserted ${fhirDocRefs.length} docs`);
 
       reportDocQueryUsage(patient);
 
@@ -101,7 +102,7 @@ export async function queryAndProcessDocuments({
         patient.id,
         MAPIWebhookType.documentDownload,
         MAPIWebhookStatus.completed,
-        toDTO(FHIRDocRefs)
+        toDTO(fhirDocRefs)
       );
 
       await updateDocQuery({
@@ -109,7 +110,8 @@ export async function queryAndProcessDocuments({
         downloadProgress: { status: "completed" },
       });
 
-      return FHIRDocRefs.length;
+      log(`Finished processing ${fhirDocRefs.length} documents.`);
+      return fhirDocRefs.length;
     }
   } catch (err) {
     console.log(`Error: `, err);

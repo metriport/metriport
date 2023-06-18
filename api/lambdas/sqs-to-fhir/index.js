@@ -27,6 +27,7 @@ const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS")
 const sourceQueueURL = getEnvOrFail("QUEUE_URL");
 const dlqURL = getEnvOrFail("DLQ_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
+const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
 // Keep this as early on the file as possible
 Sentry.init({
@@ -97,25 +98,25 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     for (const [i, message] of records.entries()) {
       // Process one record from the SQS message
       console.log(`Record ${i}, messageId: ${message.messageId}`);
-      try {
-        if (!message.messageAttributes) throw new Error(`Missing message attributes`);
-        if (!message.body) throw new Error(`Missing message body`);
-        const attrib = message.messageAttributes;
-        const cxId = attrib.cxId?.stringValue;
-        const jobId = attrib.jobId?.stringValue;
-        const patientId = attrib.patientId?.stringValue;
-        if (!cxId) throw new Error(`Missing cxId`);
-        if (!patientId) throw new Error(`Missing patientId`);
-        const jobStartedAt = attrib.startedAt?.stringValue;
-        const log = _log(`${i}, cxId ${cxId}, patientId ${patientId}, jobId ${jobId}`);
+      if (!message.messageAttributes) throw new Error(`Missing message attributes`);
+      if (!message.body) throw new Error(`Missing message body`);
+      const attrib = message.messageAttributes;
+      const cxId = attrib.cxId?.stringValue;
+      const patientId = attrib.patientId?.stringValue;
+      const jobId = attrib.jobId?.stringValue;
+      const jobStartedAt = attrib.startedAt?.stringValue;
+      if (!cxId) throw new Error(`Missing cxId`);
+      if (!patientId) throw new Error(`Missing patientId`);
+      const log = _log(`${i}, patient ${patientId}, job ${jobId}`);
 
+      try {
         const bodyAsJson = JSON.parse(message.body);
         const s3BucketName = bodyAsJson.s3BucketName;
-        const s3FileName = bodyAsJson.s3FileName;
         if (!s3BucketName) throw new Error(`Missing s3BucketName`);
+        const s3FileName = bodyAsJson.s3FileName;
         if (!s3FileName) throw new Error(`Missing s3FileName`);
 
-        const metrics = { cxId };
+        const metrics = { cxId, patientId };
 
         await reportMemoryUsage();
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
@@ -125,6 +126,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           duration: Date.now() - downloadStart,
           timestamp: new Date().toISOString(),
         };
+
         await reportMemoryUsage();
         log(`Converting payload to JSON, length ${payloadRaw.length}`);
         let payload;
@@ -133,13 +135,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           log(`IDs replaced, length: ${idsReplaced.length}`);
           const placeholderUpdated = idsReplaced.replace(placeholderReplaceRegex, patientId);
           payload = JSON.parse(placeholderUpdated);
-          log(
-            `Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(
-              payload,
-              null,
-              2
-            )}`
-          );
+          log(`Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(payload)}`);
         } else {
           payload = JSON.parse(payloadRaw).fhirResource;
         }
@@ -185,14 +181,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
         await reportMemoryUsage();
         await reportMetrics(metrics);
 
-        await ossApi.post(docProgressURL, null, {
-          params: {
-            cxId,
-            patientId,
-            status: "success",
-            jobId,
-          },
-        });
+        await notifyApi({ cxId, patientId, status: "success", jobId }, log);
       } catch (err) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount;
@@ -202,7 +191,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await reEnqueue(message);
-          uuid4();
         } else {
           console.log(
             `Error processing message: ${JSON.stringify(message)}; \n${err}: ${JSON.stringify(err)}`
@@ -212,20 +200,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
           });
           await sendToDLQ(message);
 
-          const cxId = message.messageAttributes?.cxId?.stringValue;
-          const patientId = message.messageAttributes?.patientId?.stringValue;
-          const jobId = message.messageAttributes?.jobId?.stringValue;
-
-          if (cxId && patientId && jobId) {
-            await ossApi.post(docProgressURL, null, {
-              params: {
-                cxId,
-                patientId,
-                status: "failed",
-                jobId,
-              },
-            });
-          }
+          await notifyApi({ cxId, patientId, status: "failed", jobId }, log);
         }
       }
     }
@@ -264,6 +239,25 @@ function replaceIds(payload) {
   fhirBundleStr = fhirBundleStr.replace(metriportPrefixRegex, "");
 
   return fhirBundleStr;
+}
+
+async function notifyApi(params, log) {
+  if (params.cxId && params.patientId) {
+    let attempt = 0;
+    while (attempt++ < MAX_API_NOTIFICATION_ATTEMPTS) {
+      try {
+        log(`(${attempt}) Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
+        await ossApi.post(docProgressURL, null, { params });
+        return;
+      } catch (error) {
+        const msg = "Error notifying API, trying again";
+        const extra = { url: docProgressURL, statusCode: error.response?.status, attempt, error };
+        log(msg, extra);
+        captureMessage(msg, { extra, level: "info" });
+      }
+    }
+    throw new Error(`Too many errors from API`);
+  }
 }
 
 // Being more generic with errors, not strictly timeouts

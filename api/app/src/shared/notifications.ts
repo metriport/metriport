@@ -94,7 +94,7 @@ export function stringifyExtra(captureContext: Partial<ScopeContext>): Extras {
   return Object.entries(captureContext.extra ?? {}).reduce(
     (acc, [key, value]) => ({
       ...acc,
-      [key]: stringify(value, null, 2),
+      [key]: typeof value === "string" ? value : stringify(value, null, 2),
     }),
     {}
   );

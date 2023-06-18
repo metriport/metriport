@@ -142,7 +142,7 @@ async function processDocsOfPatient({
     await updateDocQuery({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "processing" },
-      restart: true,
+      reset: true,
     });
 
     await downloadDocsAndUpsertFHIR({
@@ -153,7 +153,7 @@ async function processDocsOfPatient({
       override,
     });
   } catch (error) {
-    log(`Error processing docs: `, error);
+    log(`Error processing docs: ${error}`);
     capture.error(error, { extra: { context: `processDocsOfPatient`, error } });
   } finally {
     await updateDocQuery({
@@ -238,7 +238,7 @@ function convertDocRefToCW(docs: DocumentReference[], isOverride: boolean): Docu
       };
       return cwDoc;
     } catch (error) {
-      console.log(`[convertDocRefToCW] Error converting docRef ${d.id} to CW: `, error);
+      console.log(`[convertDocRefToCW] Error converting docRef ${d.id} to CW: ${error}`);
       capture.error(error, {
         extra: {
           context: `convertDocRefToCW`,

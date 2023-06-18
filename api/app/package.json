@@ -60,6 +60,7 @@
     "zod": "^3.20.2"
   },
   "devDependencies": {
+    "@faker-js/faker": "^8.0.2",
     "@ngneat/falso": "^6.4.0",
     "@tsconfig/node18": "^1.0.1",
     "@types/convert-units": "^2.3.5",

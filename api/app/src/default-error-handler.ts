@@ -79,7 +79,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
         name: httpStatus[err.statusCode],
       });
   }
-  console.log(`Error: `, err);
+  console.log(`Error: ${err}`);
   const internalErrStatus = httpStatus.INTERNAL_SERVER_ERROR;
   return res
     .contentType("json")

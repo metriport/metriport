@@ -7,6 +7,9 @@ import { sanitize, validate } from "./shared";
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer & PatientNoExternalData;
 
+// TODO build unit test to validate the patient is being sent correctly to Sequelize
+// See: document-query.test.ts, "send a modified object to Sequelize"
+// See: https://metriport.slack.com/archives/C04DMKE9DME/p1686779391180389
 export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Patient> => {
   const { id, cxId, eTag } = patientUpdate;
 
