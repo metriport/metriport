@@ -183,10 +183,19 @@ export class OAuth2DefaultImpl implements OAuth2 {
     params?: { [k: string]: string | number }
   ): Promise<T> {
     try {
-      const resp = await axios.get(endpoint, {
-        headers: {
+      let headers;
+      if (params?.locale) {
+        headers = {
           Authorization: `Bearer ${access_token}`,
-        },
+          "Accept-Language": params.locale,
+        };
+      } else {
+        headers = {
+          Authorization: `Bearer ${access_token}`,
+        };
+      }
+      const resp = await axios.get(endpoint, {
+        headers,
         params,
       });
       return await callBack(resp);
