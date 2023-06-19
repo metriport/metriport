@@ -1,0 +1,21 @@
+<ResponseField name="download" type="Progress">
+  <Expandable title="Download Properties">
+    <ResponseField name="status" type="string" required>
+      The status of querying document references across HIEs, either `processing` or `completed`.
+    </ResponseField>
+
+    <ResponseField name="total" type="number">
+      The total number of documents to be queried.
+    </ResponseField>
+
+    <ResponseField name="successful" type="number">
+      The number of documents successfully downloaded.
+    </ResponseField>
+
+    <ResponseField name="errors" type="number">
+      The number of documents that failed to download.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+

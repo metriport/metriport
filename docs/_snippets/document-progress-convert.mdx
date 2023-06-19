@@ -1,0 +1,20 @@
+<ResponseField name="convert" type="Progress">
+  <Expandable title="Convert Properties">
+    <ResponseField name="status" type="string" required>
+      The status of converting CCDA documents to FHIR, either `processing` or `completed`.
+    </ResponseField>
+
+    <ResponseField name="total" type="number">
+      The total number of documents to be converted.
+    </ResponseField>
+
+    <ResponseField name="successful" type="number">
+      The number of documents successfully converted.
+    </ResponseField>
+
+    <ResponseField name="errors" type="number">
+      The number of documents that failed to convert.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
