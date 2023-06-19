@@ -1,5 +1,5 @@
 import { Transaction } from "sequelize";
-import * as transaction from "../transaction";
+import * as transaction from "../transaction-starter";
 
 export function mockStartTransaction(): jest.SpyInstance {
   const tx = {

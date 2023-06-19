@@ -1,11 +1,16 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import { faker } from "@faker-js/faker";
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
 import { DocumentQueryProgress } from "../../../../domain/medical/document-reference";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-reference";
 import { Patient, PatientModel } from "../../../../models/medical/patient";
-import { makePatient, makePatientData } from "../../../../models/medical/__tests__/patient";
+import {
+  makePatient,
+  makePatientData,
+  makePatientModel,
+} from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { appendDocQueryProgress } from "../append-doc-query-progress";
 
@@ -14,6 +19,7 @@ let patient: Patient;
 let patientModel: PatientModel;
 
 let patientModel_update: jest.SpyInstance;
+let patientModel_findOne: jest.SpyInstance;
 beforeEach(() => {
   documentQueryProgress = {
     download: makeProgress(),
@@ -23,7 +29,7 @@ beforeEach(() => {
   patientModel = patient as unknown as PatientModel;
   mockStartTransaction();
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
-  jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
 });
 
 afterEach(() => {
@@ -52,8 +58,23 @@ const checkUnchanged = (prop: keyof DocumentQueryProgress) => {
     expect.anything()
   );
 };
+const checkConvertTotal = (patient: Patient, expectedTotal: number) => {
+  expect(patientModel_update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({
+        documentQueryProgress: expect.objectContaining({
+          convert: expect.objectContaining({
+            total: expectedTotal,
+          }),
+        }),
+      }),
+    }),
+    expect.anything()
+  );
+  expect(patient.data.documentQueryProgress?.convert?.total).toEqual(expectedTotal);
+};
 
-describe("setDocQueryProgress", () => {
+describe("appendDocQueryProgress", () => {
   describe("download", () => {
     it("sets download progress processing", async () => {
       const downloadProgress = { status: "processing" as const };
@@ -139,6 +160,86 @@ describe("setDocQueryProgress", () => {
         download: undefined,
       });
     });
+  });
+
+  it("sets convert.total to zero when no prior convert and downloadErrors is provided", async () => {
+    const convertibleDownloadErrors = faker.number.int({ min: 1, max: 10 });
+    const convertProgress = { status: "completed" as const };
+    const patient = makePatientModel({
+      data: makePatientData({
+        documentQueryProgress: { convert: undefined },
+      }),
+    });
+    patientModel_findOne.mockResolvedValueOnce(patient);
+
+    const res = await appendDocQueryProgress({
+      patient: { id: "theId", cxId: "theCxId" },
+      convertProgress,
+      convertibleDownloadErrors,
+    });
+    checkConvertTotal(res, 0);
+  });
+
+  it("sets convert.total to zero when convert.total - downloadErrors is lower than zero", async () => {
+    const total = faker.number.int({ min: 0, max: 10 });
+    const convertibleDownloadErrors = faker.number.int({ min: 11, max: 20 });
+    const convertProgress = { status: "completed" as const };
+    const patient = makePatientModel({
+      data: makePatientData({
+        documentQueryProgress: { convert: { status: "processing", total } },
+      }),
+    });
+    patientModel_findOne.mockResolvedValueOnce(patient);
+
+    const res = await appendDocQueryProgress({
+      patient: { id: "theId", cxId: "theCxId" },
+      convertProgress,
+      convertibleDownloadErrors,
+    });
+    checkConvertTotal(res, 0);
+  });
+
+  it("decreases convert.total when downloadErrors is provided", async () => {
+    const total = faker.number.int({ min: 3, max: 100 });
+    const convertibleDownloadErrors = faker.number.int({ min: 1, max: total - 1 });
+    const convertProgress = { status: "completed" as const };
+    const patient = makePatientModel({
+      data: makePatientData({
+        documentQueryProgress: { convert: { status: "processing", total } },
+      }),
+    });
+    patientModel_findOne.mockResolvedValueOnce(patient);
+    const expectedTotal = total - convertibleDownloadErrors;
+
+    const res = await appendDocQueryProgress({
+      patient: { id: "theId", cxId: "theCxId" },
+      convertProgress,
+      convertibleDownloadErrors,
+    });
+    checkConvertTotal(res, expectedTotal);
+  });
+
+  it("decreases convert.total when converProgress sets total and downloadErrors is provided", async () => {
+    const total = faker.number.int({ min: 3, max: 100 });
+    const convertibleDownloadErrors = faker.number.int({ min: 1, max: total - 1 });
+    const convertProgress = {
+      status: "completed" as const,
+      total: faker.number.int({ min: 200 }),
+    };
+    const patient = makePatientModel({
+      data: makePatientData({
+        documentQueryProgress: { convert: { status: "processing", total } },
+      }),
+    });
+    patientModel_findOne.mockResolvedValueOnce(patient);
+    const expectedTotal = convertProgress.total - convertibleDownloadErrors;
+
+    const res = await appendDocQueryProgress({
+      patient: { id: "theId", cxId: "theCxId" },
+      convertProgress,
+      convertibleDownloadErrors,
+    });
+    checkConvertTotal(res, expectedTotal);
   });
 
   it("returns the result of DB update", async () => {

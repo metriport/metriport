@@ -1,7 +1,13 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import {
+  MAPIWebhookStatus,
+  MAPIWebhookType,
+  processPatientDocumentRequest,
+} from "../../../command/webhook/medical";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
+import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { encodeExternalId } from "../../../shared/external";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
@@ -9,6 +15,7 @@ import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 
 export async function sandboxGetDocRefsAndUpsert({
+  organization,
   patient,
 }: {
   organization: Organization;
@@ -34,7 +41,10 @@ export async function sandboxGetDocRefsAndUpsert({
 
       await convertCDAToFHIR({
         patient,
-        document: { id: fhirDocId, mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
+        document: {
+          id: fhirDocId,
+          content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
+        },
         s3FileName: entry.s3Info.key,
         s3BucketName: entry.s3Info.bucket,
       });
@@ -64,5 +74,15 @@ export async function sandboxGetDocRefsAndUpsert({
     }
   }
 
-  return entries.map(d => d.docRef);
+  const result = entries.map(d => d.docRef);
+
+  processPatientDocumentRequest(
+    organization.cxId,
+    patient.id,
+    MAPIWebhookType.documentDownload,
+    MAPIWebhookStatus.completed,
+    toDTO(result)
+  );
+
+  return result;
 }

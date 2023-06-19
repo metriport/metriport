@@ -1,9 +1,11 @@
 import { Progress } from "../../../domain/medical/document-reference";
 import { Patient, PatientModel } from "../../../models/medical/patient";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
 
 export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
+  convertibleDownloadErrors?: number;
 } & (
   | {
       downloadProgress?: Progress | undefined | null;
@@ -27,44 +29,56 @@ export async function appendDocQueryProgress({
   patient,
   downloadProgress,
   convertProgress,
+  convertibleDownloadErrors,
   reset,
 }: SetDocQueryProgress): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
   };
-  const existingPatient = await getPatientOrFail(patientFilter);
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const existingPatient = await getPatientOrFail({
+      ...patientFilter,
+      lock: true,
+      transaction,
+    });
 
-  const documentQueryProgress =
-    reset || !existingPatient.data.documentQueryProgress
-      ? {}
-      : existingPatient.data.documentQueryProgress;
+    const documentQueryProgress =
+      reset || !existingPatient.data.documentQueryProgress
+        ? {}
+        : existingPatient.data.documentQueryProgress;
 
-  if (downloadProgress) {
-    documentQueryProgress.download = {
-      ...documentQueryProgress.download,
-      ...downloadProgress,
+    if (downloadProgress) {
+      documentQueryProgress.download = {
+        ...documentQueryProgress.download,
+        ...downloadProgress,
+      };
+    } else if (downloadProgress === null) {
+      documentQueryProgress.download = undefined;
+    }
+
+    if (convertProgress) {
+      documentQueryProgress.convert = {
+        ...documentQueryProgress.convert,
+        ...convertProgress,
+      };
+    } else if (convertProgress === null) {
+      documentQueryProgress.convert = undefined;
+    }
+
+    const convert = documentQueryProgress.convert;
+    if (convertibleDownloadErrors && convert) {
+      convert.total = Math.max((convert.total ?? 0) - convertibleDownloadErrors, 0);
+    }
+
+    const updatedPatient = {
+      ...existingPatient,
+      data: {
+        ...existingPatient.data,
+        documentQueryProgress,
+      },
     };
-  } else if (downloadProgress === null) {
-    documentQueryProgress.download = undefined;
-  }
-
-  if (convertProgress) {
-    documentQueryProgress.convert = {
-      ...documentQueryProgress.convert,
-      ...convertProgress,
-    };
-  } else if (convertProgress === null) {
-    documentQueryProgress.convert = undefined;
-  }
-
-  const updatedPatient = {
-    ...existingPatient,
-    data: {
-      ...existingPatient.data,
-      documentQueryProgress,
-    },
-  };
-  await PatientModel.update(updatedPatient, { where: patientFilter });
-  return updatedPatient;
+    await PatientModel.update(updatedPatient, { where: patientFilter });
+    return updatedPatient;
+  });
 }
