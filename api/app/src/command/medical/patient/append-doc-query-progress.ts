@@ -78,7 +78,7 @@ export async function appendDocQueryProgress({
         documentQueryProgress,
       },
     };
-    await PatientModel.update(updatedPatient, { where: patientFilter });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
     return updatedPatient;
   });
 }
