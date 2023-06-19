@@ -4,13 +4,15 @@ description: "Triggers a document query for the specified patient across HIEs."
 api: "POST /medical/v1/document/query"
 ---
 
-When executed, this endpoint triggers an asynchronous document query with HIEs and immediately returns the status
-of document query, `processing`.
+When executed, this endpoint triggers an asynchronous document query across HIEs. This is a two step process where the documents will first be downloaded from the respective HIE and then converted to FHIR.
 
-If there are documents that have yet to be stored in FHIR, we will convert them and provide the status of those conversions.
+Each process will contain its own `total` and `status` as well as the count for `successful` transactions and `errors`.
 
 When the asynchronous document query finishes, it stores new/updated document references for future requests and
-updates the status of document query to `completed` - accessible through the [List Documents endpoint](/medical-api/api-reference/document/list-documents).
+updates the status of download to `completed`. Meanwhile in the background files will be converted and the convert count will be incremented.
+Once all documents have been converted it too will be marked as `completed`.
+
+This will all be accessible through the [List Documents endpoint](/medical-api/api-reference/document/list-documents).
 
 <Tip>
   You can also use the [List Documents endpoint](/medical-api/api-reference/document/list-documents)
