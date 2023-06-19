@@ -19,6 +19,8 @@ export async function sandboxGetDocRefsAndUpsert({
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
 
+  await Util.sleep(3000);
+
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) return [];
 
@@ -73,7 +75,7 @@ export async function sandboxGetDocRefsAndUpsert({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
       total: entries.length,
-      status: "processing",
+      status: "completed",
     },
     ...(fhirConvertCount > 0
       ? {
