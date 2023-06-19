@@ -180,20 +180,15 @@ export class OAuth2DefaultImpl implements OAuth2 {
     access_token: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     callBack: (response: AxiosResponse<any, any>) => Promise<T>,
-    params?: { [k: string]: string | number }
+    params?: { [k: string]: string | number },
+    extraHeaders?: { [l: string]: string }
   ): Promise<T> {
     try {
-      let headers;
-      if (params?.locale) {
-        headers = {
-          Authorization: `Bearer ${access_token}`,
-          "Accept-Language": params.locale,
-        };
-      } else {
-        headers = {
-          Authorization: `Bearer ${access_token}`,
-        };
-      }
+      const headers = {
+        Authorization: `Bearer ${access_token}`,
+        ...(extraHeaders && extraHeaders),
+      };
+
       const resp = await axios.get(endpoint, {
         headers,
         params,

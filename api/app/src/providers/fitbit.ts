@@ -220,7 +220,7 @@ export class Fitbit extends Provider implements OAuth2 {
 
   async fetchUserProfile(
     accessToken: string,
-    params: { [k: string]: string | number } | undefined
+    extraHeaders?: { [k: string]: string }
   ): Promise<FitbitUser> {
     return this.oauth.fetchProviderData<FitbitUser>(
       `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
@@ -228,14 +228,15 @@ export class Fitbit extends Provider implements OAuth2 {
       async resp => {
         return fitbitUserResp.parse(resp.data);
       },
-      params
+      undefined,
+      extraHeaders
     );
   }
 
   async fetchWeights(
     accessToken: string,
     date: string,
-    params: { [k: string]: string | number } | undefined
+    extraHeaders?: { [k: string]: string }
   ): Promise<FitbitWeight> {
     return this.oauth.fetchProviderData<FitbitWeight>(
       `${Fitbit.URL}/${Fitbit.API_PATH}/body/log/weight/date/${date}.json`,
@@ -243,20 +244,21 @@ export class Fitbit extends Provider implements OAuth2 {
       async resp => {
         return weightSchema.parse(resp.data.weight);
       },
-      params
+      undefined,
+      extraHeaders
     );
   }
 
   override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
     const accessToken = await this.oauth.getAccessToken(connectedUser);
 
-    const params = {
-      locale: "en_GB", // For higher precision in weight readings, we are retrieving data in stones and converting it to kg
+    const extraHeaders = {
+      "Accept-Language": "en_GB", // For higher precision in weight readings, we are retrieving data in stones and converting it to kg
     };
 
     const [resUser, resWeight] = await Promise.allSettled([
-      this.fetchUserProfile(accessToken, params),
-      this.fetchWeights(accessToken, date, params),
+      this.fetchUserProfile(accessToken, extraHeaders),
+      this.fetchWeights(accessToken, date, extraHeaders),
     ]);
 
     const user = resUser.status === "fulfilled" ? resUser.value : undefined;
