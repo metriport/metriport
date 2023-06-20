@@ -1,4 +1,4 @@
-import { Progress } from "../../../domain/medical/document-reference";
+import { getStatusFromProgress, Progress } from "../../../domain/medical/document-reference";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
@@ -69,6 +69,8 @@ export async function appendDocQueryProgress({
     const convert = documentQueryProgress.convert;
     if (convert && convertibleDownloadErrors != null && convertibleDownloadErrors > 0) {
       convert.total = Math.max((convert.total ?? 0) - convertibleDownloadErrors, 0);
+      // since we updated the total above, we should update the status as well
+      convert.status = getStatusFromProgress(convert);
     }
 
     const updatedPatient = {

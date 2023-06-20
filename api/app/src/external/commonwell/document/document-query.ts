@@ -565,7 +565,6 @@ export async function downloadDocsAndUpsertFHIR({
     toDTO(docsNewLocation)
   );
   // send webhook to CXs if docs are done converting (at this point only if no conversions to be done)
-  // const patientAfterDownload = await getPatientOrFail({ id: patient.id, cxId: patient.cxId });
   const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
   if (conversionStatus === "completed") {
     processPatientDocumentRequest(

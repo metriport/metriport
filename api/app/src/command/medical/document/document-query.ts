@@ -1,4 +1,5 @@
 import {
+  calculateConversionProgress,
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
@@ -161,41 +162,4 @@ export const updateConversionProgress = async ({
 
     return updatedPatient;
   });
-};
-
-export const calculateConversionProgress = ({
-  patient,
-  convertResult,
-}: UpdateResult & {
-  patient: Pick<Patient, "data" | "id">;
-}): DocumentQueryProgress => {
-  const { log } = Util.out(`calculateConversionProgress - patient ${patient.id}`);
-  const docQueryProgress = patient.data.documentQueryProgress ?? {};
-
-  // TODO 785 remove this once we're confident with the flow
-  log(
-    `IN convert result: ${convertResult}; docQueryProgress : ${JSON.stringify(docQueryProgress)}`
-  );
-
-  const totalToConvert = docQueryProgress?.convert?.total ?? 0;
-
-  const successfulConvert = docQueryProgress?.convert?.successful ?? 0;
-  const successful = convertResult === "success" ? successfulConvert + 1 : successfulConvert;
-
-  const errorsConvert = docQueryProgress?.convert?.errors ?? 0;
-  const errors = convertResult === "failed" ? errorsConvert + 1 : errorsConvert;
-
-  const isConversionCompleted = successful + errors >= totalToConvert;
-  const status = isConversionCompleted ? "completed" : "processing";
-
-  docQueryProgress.convert = {
-    ...docQueryProgress?.convert,
-    status,
-    successful,
-    errors,
-  };
-
-  // TODO 785 remove this once we're confident with the flow
-  log(`OUT docQueryProgress: ${JSON.stringify(docQueryProgress)}`);
-  return docQueryProgress;
 };
