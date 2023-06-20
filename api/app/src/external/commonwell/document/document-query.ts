@@ -479,14 +479,12 @@ export async function downloadDocsAndUpsertFHIR({
           };
 
           if (file.isNew) {
-            const conversionRequested = await convertCDAToFHIR({
+            await convertCDAToFHIR({
               patient,
               document: { ...doc, id: fhirDocId },
               s3FileName: file.key,
               s3BucketName: file.bucket,
             });
-
-            if (!conversionRequested) errorCountConvertible++;
           }
 
           const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);

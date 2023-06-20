@@ -37,7 +37,7 @@ export async function sandboxGetDocRefsAndUpsert({
   const entries = patientData.docRefs;
   log(`Got ${entries.length} doc refs`);
 
-  let convertibleDocCount = patientData.docRefs
+  const convertibleDocCount = patientData.docRefs
     .map(entry => {
       return {
         content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
@@ -53,7 +53,7 @@ export async function sandboxGetDocRefsAndUpsert({
       entry.docRef.id = encodeExternalId(patient.id + "_" + index);
       const fhirDocId = entry.docRef.id;
 
-      const conversionRequested = await convertCDAToFHIR({
+      await convertCDAToFHIR({
         patient,
         document: {
           id: fhirDocId,
@@ -62,8 +62,6 @@ export async function sandboxGetDocRefsAndUpsert({
         s3FileName: entry.s3Info.key,
         s3BucketName: entry.s3Info.bucket,
       });
-
-      if (!conversionRequested) convertibleDocCount = convertibleDocCount - 1;
 
       const contained = entry.docRef.contained ?? [];
       const containsPatient = contained.filter(c => c.resourceType === "Patient").length > 0;
