@@ -27,7 +27,8 @@ export async function sandboxGetDocRefsAndUpsert({
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
 
-  await Util.sleep(3000);
+  // Mimic Prod by waiting for docs to download
+  await Util.sleep(Math.random() * 5000);
 
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) return [];

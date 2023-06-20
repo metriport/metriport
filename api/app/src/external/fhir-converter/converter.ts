@@ -63,7 +63,8 @@ export async function convertCDAToFHIR(params: {
     if (Config.isSandbox()) {
       const jsonFileName = s3FileName.replace(".xml", ".json");
       log(`Bypassing conversion, sending straight to FHIR server`);
-      await Util.sleep(3000);
+      // Mimic prod by waiting for doc to convert to FHIR
+      await Util.sleep(Math.random() * 5000);
       const fhirServerConnector = makeFHIRServerConnector();
       await fhirServerConnector.upsertBatch({
         cxId: patient.cxId,
