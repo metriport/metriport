@@ -354,6 +354,20 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Returns the document query status for the specified patient.
+   *
+   * @param patientId Patient ID for which to retrieve document query status.
+   * @return The document query progress & status indicating whether its being executed or not.
+   */
+  async getDocumentQuery(patientId: string): Promise<DocumentQuery> {
+    const resp = await this.api.get(`${DOCUMENT_URL}/query`, {
+      params: { patientId },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return documentQuerySchema.parse(resp.data);
+  }
+
+  /**
    * Returns a URL that can be used to download the document.
    *
    * @param req.query.fileName The file name of the document in s3.

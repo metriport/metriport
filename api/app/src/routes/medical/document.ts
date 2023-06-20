@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { OK } from "http-status";
@@ -7,12 +8,11 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import { getDocuments } from "../../external/fhir/document/get-documents";
 import { Config } from "../../shared/config";
+import { parseISODate } from "../../shared/date";
 import { stringToBoolean } from "../../shared/types";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
-import { parseISODate } from "../../shared/date";
 import { docConversionTypeSchema } from "./schemas/documents";
-import dayjs from "dayjs";
 
 const router = Router();
 
@@ -65,6 +65,24 @@ router.get(
 
 /** ---------------------------------------------------------------------------
  * GET /document/query
+ *
+ * Returns the document query status for the specified patient.
+ *
+ * @param req.query.patientId Patient ID for which to retrieve document query status.
+ * @return The status of document querying across HIEs.
+ */
+router.get(
+  "/query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    return res.status(OK).json(patient.data.documentQueryProgress);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /document/query
  *
  * Triggers a document query for the specified patient across HIEs.
  *

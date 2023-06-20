@@ -7,11 +7,6 @@ api: "GET /medical/v1/document"
 This endpoint returns the document references available at Metriport which are associated with the
 given Patient.
 
-It also returns the status of querying document references across HIEs, indicating whether
-there is an asynchronous query in progress (status `processing`) or not (status `completed`).
-
-If the query is in progress, you will also receive the total number of documents to be queried as well as the ones that have already been completed.
-
 To start a new document
 query, see [Start Document Query endpoint](/medical-api/api-reference/document/start-document-query).
 
