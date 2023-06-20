@@ -24,7 +24,10 @@ export const patientLinksSchema = z.object({
 });
 export type PatientLinks = z.infer<typeof patientLinksSchema>;
 
-export const linkStatusSchema = z.literal("linked").or(z.literal("needs-review"));
+export const linkStatusSchema = z
+  .literal("completed")
+  .or(z.literal("processing"))
+  .or(z.literal("failed"));
 export type LinkStatus = z.infer<typeof linkStatusSchema>;
 
 export const linkStatusAcrossHIEsSchema = z.record(
