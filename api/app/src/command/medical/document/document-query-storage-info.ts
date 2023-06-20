@@ -5,6 +5,7 @@ import { Patient } from "../../../models/medical/patient";
 import { Config } from "../../../shared/config";
 import { createS3FileName, getDocumentPrimaryId } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
+import { Util } from "../../../shared/util";
 
 const s3Client = makeS3Client();
 const s3BucketName = Config.getMedicalDocumentsBucketName();
@@ -13,7 +14,7 @@ export type S3Info = {
   fhirDocId: string;
   docId: string;
   fileExists: boolean;
-  fielSize: number | undefined;
+  fileSize: number | undefined;
   fileName: string;
   fileLocation: string;
 };
@@ -39,11 +40,13 @@ export async function getS3Info(
   documents: Document[],
   patient: Pick<Patient, "cxId" | "id">
 ): Promise<S3Info[]> {
+  const { log } = Util.out(`getS3Info - patient ${patient.id}`);
+
   const errors: { error: unknown; message: string; docId: string; fhirDocId: string }[] = [];
   const s3Info = await Promise.allSettled(
     documents.map(docToFile(patient)).map(async (doc): Promise<S3Info> => {
       try {
-        const { exists: fileExists, size: fielSize } = await getFileInfoFromS3(
+        const { exists: fileExists, size: fileSize } = await getFileInfoFromS3(
           doc.fileName,
           doc.fileLocation
         );
@@ -51,7 +54,7 @@ export async function getS3Info(
           fhirDocId: doc.fhirDocId,
           docId: doc.docId,
           fileExists,
-          fielSize,
+          fileSize,
           fileName: doc.fileName,
           fileLocation: doc.fileLocation,
         };
@@ -67,9 +70,10 @@ export async function getS3Info(
     })
   );
   if (errors.length > 0) {
-    capture.message(`Errors getting info from S3`, {
-      extra: { errors, patientId: patient.id },
-    });
+    const msg = `Errors getting info from S3`;
+    const extra = { errors, patientId: patient.id };
+    log(msg, extra);
+    capture.message(msg, { extra });
   }
   const successful: S3Info[] = s3Info.flatMap(ref =>
     ref.status === "fulfilled" && ref.value ? ref.value : []

@@ -333,7 +333,7 @@ function convertToNonExistingS3Info(patient: Patient): (doc: Document) => S3Info
     return {
       ...simpleFile,
       fileExists: false,
-      fielSize: undefined,
+      fileSize: undefined,
     };
   };
 }
@@ -452,7 +452,7 @@ export async function downloadDocsAndUpsertFHIR({
                   bucket: fileInfo.fileLocation,
                   key: fileInfo.fileName,
                   location: s3Location,
-                  size: fileInfo.fielSize,
+                  size: fileInfo.fileSize,
                   isNew: false,
                 };
               };
