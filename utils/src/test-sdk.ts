@@ -11,7 +11,7 @@ async function main() {
   const api = new MetriportMedicalApi(apiKey, { baseAddress: apiAddress });
 
   console.log(`Getting doc query status...`);
-  const res = await api.getDocumentQuery(patientId);
+  const res = await api.getDocumentQueryStatus(patientId);
   console.log(`Doc query status: ${JSON.stringify(res, null, 2)}`);
 
   console.log(`Done`);

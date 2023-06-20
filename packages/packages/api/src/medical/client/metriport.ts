@@ -359,7 +359,7 @@ export class MetriportMedicalApi {
    * @param patientId Patient ID for which to retrieve document query status.
    * @return The document query progress & status indicating whether its being executed or not.
    */
-  async getDocumentQuery(patientId: string): Promise<DocumentQuery> {
+  async getDocumentQueryStatus(patientId: string): Promise<DocumentQuery> {
     const resp = await this.api.get(`${DOCUMENT_URL}/query`, {
       params: { patientId },
     });
