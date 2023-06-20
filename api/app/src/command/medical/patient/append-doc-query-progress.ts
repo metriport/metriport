@@ -67,7 +67,7 @@ export async function appendDocQueryProgress({
     }
 
     const convert = documentQueryProgress.convert;
-    if (convertibleDownloadErrors && convert) {
+    if (convert && convertibleDownloadErrors != null && convertibleDownloadErrors > 0) {
       convert.total = Math.max((convert.total ?? 0) - convertibleDownloadErrors, 0);
     }
 

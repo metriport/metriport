@@ -3,11 +3,7 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
 import { PatientModel } from "../../../../models/medical/patient";
-import {
-  makePatient,
-  makePatientData,
-  makePatientModel,
-} from "../../../../models/medical/__tests__/patient";
+import { makePatient, makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import * as whMedical from "../../../webhook/medical";
 import * as docQueryProgress from "../../patient/append-doc-query-progress";
@@ -17,7 +13,6 @@ import { updateDocQuery } from "../document-query";
 const patientModel = makePatientModel();
 let docQuery_updateConversionProgress: jest.SpyInstance;
 let appendDocQueryProgress_mock: jest.SpyInstance;
-let processPatientDocumentRequest_mock: jest.SpyInstance;
 beforeEach(() => {
   jest.restoreAllMocks();
   mockStartTransaction();
@@ -28,9 +23,7 @@ beforeEach(() => {
   appendDocQueryProgress_mock = jest
     .spyOn(docQueryProgress, "appendDocQueryProgress")
     .mockImplementation(async () => patientModel);
-  processPatientDocumentRequest_mock = jest
-    .spyOn(whMedical, "processPatientDocumentRequest")
-    .mockImplementation(async () => true);
+  jest.spyOn(whMedical, "processPatientDocumentRequest").mockImplementation(async () => true);
 });
 
 describe("document-query", () => {
@@ -55,24 +48,6 @@ describe("document-query", () => {
         const res = await updateDocQuery({ patient, convertResult: "success" });
         expect(res).toEqual(patientModel);
       });
-
-      it(`triggers webhook when conversion is completed`, async () => {
-        const patient = makePatient({
-          data: makePatientData({
-            documentQueryProgress: {
-              convert: { status: "completed" },
-            },
-          }),
-        });
-        docQuery_updateConversionProgress.mockResolvedValueOnce(patient);
-        await updateDocQuery({ patient, convertResult: "success" });
-        expect(processPatientDocumentRequest_mock).toHaveBeenCalledWith(
-          patient.cxId,
-          patient.id,
-          whMedical.MAPIWebhookType.documentConversion,
-          whMedical.MAPIWebhookStatus.completed
-        );
-      });
     });
 
     describe("appendDocQueryProgress", () => {
@@ -88,24 +63,6 @@ describe("document-query", () => {
         const patient = makePatient();
         const res = await updateDocQuery({ patient, convertProgress: { status: "processing" } });
         expect(res).toEqual(patientModel);
-      });
-
-      it(`triggers webhook when conversion is completed`, async () => {
-        const patient = makePatient({
-          data: makePatientData({
-            documentQueryProgress: {
-              convert: { status: "completed" },
-            },
-          }),
-        });
-        appendDocQueryProgress_mock.mockResolvedValueOnce(patient);
-        await updateDocQuery({ patient, convertProgress: { status: "processing" } });
-        expect(processPatientDocumentRequest_mock).toHaveBeenCalledWith(
-          patient.cxId,
-          patient.id,
-          whMedical.MAPIWebhookType.documentConversion,
-          whMedical.MAPIWebhookStatus.completed
-        );
       });
     });
   });

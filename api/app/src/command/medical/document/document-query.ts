@@ -9,11 +9,6 @@ import { PatientDataCommonwell } from "../../../external/commonwell/patient-shar
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { Util } from "../../../shared/util";
-import {
-  MAPIWebhookStatus,
-  MAPIWebhookType,
-  processPatientDocumentRequest,
-} from "../../webhook/medical";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
@@ -97,29 +92,13 @@ type UpdateDocQueryParams =
   | (UpdateResult & { downloadProgress?: never; convertProgress?: never; reset?: never });
 
 /**
- *
- * @param param.downloadProgress if undefined, don't update; if null, remove/reset it
- * @param param.convertProgress if undefined, don't update; if null, remove/reset it
- * @returns
+ * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
  */
 export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Patient> {
-  let updatedPatient: Patient;
   if (params.convertResult) {
-    updatedPatient = await updateConversionProgress(params);
-  } else {
-    updatedPatient = await appendDocQueryProgress(params);
+    return updateConversionProgress(params);
   }
-  const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
-  if (conversionStatus === "completed") {
-    const { patient } = params;
-    processPatientDocumentRequest(
-      patient.cxId,
-      patient.id,
-      MAPIWebhookType.documentConversion,
-      MAPIWebhookStatus.completed
-    );
-  }
-  return updatedPatient;
+  return appendDocQueryProgress(params);
 }
 
 export const updateConversionProgress = async ({
