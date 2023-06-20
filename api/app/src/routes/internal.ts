@@ -292,8 +292,8 @@ router.post(
     const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
     if (conversionStatus === "completed") {
       processPatientDocumentRequest(
-        expectedPatient.cxId,
-        expectedPatient.id,
+        cxId,
+        patientId,
         MAPIWebhookType.documentConversion,
         MAPIWebhookStatus.completed
       );
