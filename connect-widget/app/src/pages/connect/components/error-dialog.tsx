@@ -33,14 +33,17 @@ const ErrorDialog = ({ show, title, message, link, onClose: closed }: ErrorDialo
   });
 
   useEffect(() => {
-    if (
-      title !== NoTokenError.DEFAULT_TITLE &&
-      title !== DemoTokenError.DEFAULT_TITLE &&
-      title !== InvalidTokenError.DEFAULT_TITLE
-    ) {
-      isOpen &&
-        capture.message("Error dialog displayed", { extra: { show, title, message, link } });
+    const defaultTitles = [
+      NoTokenError.DEFAULT_TITLE,
+      DemoTokenError.DEFAULT_TITLE,
+      InvalidTokenError.DEFAULT_TITLE,
+    ];
+    let errorTitle = "Error dialog displayed";
+    if (title && defaultTitles.includes(title)) {
+      errorTitle = title;
     }
+
+    isOpen && capture.message(errorTitle, { extra: { show, title, message, link } });
   }, [isOpen]);
 
   useEffect(() => {
