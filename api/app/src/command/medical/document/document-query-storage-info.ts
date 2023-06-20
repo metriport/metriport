@@ -26,8 +26,8 @@ type SimpleFile = {
   fileLocation: string;
 };
 
-// TODO convert from Document to a Metriport shape, not Commonwell's
 export function docToFile(patient: Pick<Patient, "cxId" | "id">) {
+  // TODO convert the input from CW Document to a Metriport shape
   return (doc: Document): SimpleFile => {
     const fhirDocId = getDocumentPrimaryId(doc);
     const fileName = createS3FileName(patient.cxId, patient.id, fhirDocId);
