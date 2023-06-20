@@ -15,6 +15,11 @@ import { reprocessDocuments } from "../command/medical/document/document-redownl
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { deletePatient } from "../command/medical/patient/delete-patient";
 import { getPatientOrFail } from "../command/medical/patient/get-patient";
+import {
+  MAPIWebhookStatus,
+  MAPIWebhookType,
+  processPatientDocumentRequest,
+} from "../command/webhook/medical";
 import { convertResult } from "../domain/medical/document-reference";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
@@ -283,6 +288,16 @@ router.post(
       log(`final Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
     }
     // END TODO 785
+
+    const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
+    if (conversionStatus === "completed") {
+      processPatientDocumentRequest(
+        expectedPatient.cxId,
+        expectedPatient.id,
+        MAPIWebhookType.documentConversion,
+        MAPIWebhookStatus.completed
+      );
+    }
 
     return res.sendStatus(httpStatus.OK);
   })

@@ -7,7 +7,6 @@ import {
   operationOutcomeResourceType,
 } from "@metriport/commonwell-sdk";
 import { chunk, partition } from "lodash";
-import { updateDocQuery } from "../../../command/medical/document/document-query";
 import {
   docToFile,
   getFileInfoFromS3,
@@ -16,6 +15,7 @@ import {
   S3Info,
   uploadStream,
 } from "../../../command/medical/document/document-query-storage-info";
+import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import {
   MAPIWebhookStatus,
@@ -105,7 +105,7 @@ export async function queryAndProcessDocuments({
       MAPIWebhookType.documentDownload,
       MAPIWebhookStatus.failed
     );
-    await updateDocQuery({
+    await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
     });
@@ -290,22 +290,16 @@ async function initPatientDocQuery(
   totalDocs: number,
   convertibleDocs: number
 ): Promise<Patient> {
-  return updateDocQuery({
+  return appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
       status: "processing",
       total: totalDocs,
     },
-    convertProgress:
-      convertibleDocs > 0
-        ? {
-            status: "processing",
-            total: convertibleDocs,
-          }
-        : {
-            status: "completed",
-            total: 0,
-          },
+    convertProgress: {
+      status: "processing",
+      total: convertibleDocs,
+    },
   });
 }
 
@@ -523,7 +517,7 @@ export async function downloadDocsAndUpsertFHIR({
         } finally {
           // TODO: eventually we will have to update this to support multiple HIEs
           try {
-            await updateDocQuery({
+            await appendDocQueryProgress({
               patient: { id: patient.id, cxId: patient.cxId },
               downloadProgress: {
                 status: "processing",
@@ -549,9 +543,17 @@ export async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  await updateDocQuery({
+  const updatedPatient = await appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "completed" },
+    ...(convertibleDocCount <= 0
+      ? {
+          convertProgress: {
+            status: "completed",
+            total: 0,
+          },
+        }
+      : undefined),
     convertibleDownloadErrors: errorCountConvertible,
   });
   // send webhook to CXs when docs are done downloading
@@ -562,6 +564,16 @@ export async function downloadDocsAndUpsertFHIR({
     MAPIWebhookStatus.completed,
     toDTO(docsNewLocation)
   );
+  // send webhook to CXs if docs are done converting (at this point only if no conversions to be done)
+  const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
+  if (conversionStatus === "completed") {
+    processPatientDocumentRequest(
+      updatedPatient.cxId,
+      updatedPatient.id,
+      MAPIWebhookType.documentConversion,
+      MAPIWebhookStatus.completed
+    );
+  }
 
   return docsNewLocation;
 }

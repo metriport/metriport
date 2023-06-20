@@ -4,6 +4,7 @@ dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
 import { v4 as uuidv4 } from "uuid";
 import {
+  calculateConversionProgress,
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
@@ -12,7 +13,7 @@ import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/
 import { PatientModel } from "../../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
-import { calculateConversionProgress, updateConversionProgress } from "../document-query";
+import { updateConversionProgress } from "../document-query";
 
 describe("docQuery-conversionProgress", () => {
   describe("updateConversionProgress", () => {
