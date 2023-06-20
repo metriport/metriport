@@ -1,4 +1,3 @@
-import { Transaction } from "sequelize";
 import {
   ConvertResult,
   DocumentQueryProgress,
@@ -8,7 +7,7 @@ import {
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
-import { startTransaction } from "../../../models/transaction";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { Util } from "../../../shared/util";
 import {
   MAPIWebhookStatus,
@@ -133,8 +132,7 @@ export const updateConversionProgress = async ({
     cxId: patient.cxId,
   };
   const { log } = Util.out(`updateConversionProgress - patient ${patient.id}`);
-  let transaction: Transaction | undefined = await startTransaction(PatientModel.prototype);
-  try {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
@@ -184,13 +182,7 @@ export const updateConversionProgress = async ({
     // END TODO 785
 
     return updatedPatient;
-  } catch (error) {
-    await transaction.rollback();
-    transaction = undefined;
-    throw error;
-  } finally {
-    transaction && (await transaction.commit());
-  }
+  });
 };
 
 export const calculateConversionProgress = ({

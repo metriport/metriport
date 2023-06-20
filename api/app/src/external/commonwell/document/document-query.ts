@@ -28,7 +28,7 @@ import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { makeS3Client } from "../../aws/s3";
-import { convertCDAToFHIR } from "../../fhir-converter/converter";
+import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { MAX_FHIR_DOC_ID_LENGTH, toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
@@ -72,15 +72,6 @@ export async function queryAndProcessDocuments({
         facility,
         patient,
       });
-
-      processPatientDocumentRequest(
-        organization.cxId,
-        patient.id,
-        MAPIWebhookType.documentDownload,
-        MAPIWebhookStatus.completed,
-        toDTO(documentsSandbox)
-      );
-
       return documentsSandbox.length;
     } else {
       log(`Querying for documents of patient ${patient.id}...`);
@@ -94,23 +85,8 @@ export async function queryAndProcessDocuments({
         documents: cwDocuments,
         override,
       });
-      log(`Downloaded and upserted ${fhirDocRefs.length} docs`);
 
       reportDocQueryUsage(patient);
-
-      // send webhook to cx async when docs are done downloading
-      processPatientDocumentRequest(
-        organization.cxId,
-        patient.id,
-        MAPIWebhookType.documentDownload,
-        MAPIWebhookStatus.completed,
-        toDTO(fhirDocRefs)
-      );
-
-      await updateDocQuery({
-        patient: { id: patient.id, cxId: patient.cxId },
-        downloadProgress: { status: "completed" },
-      });
 
       log(`Finished processing ${fhirDocRefs.length} documents.`);
       return fhirDocRefs.length;
@@ -338,7 +314,26 @@ export async function downloadDocsAndUpsertFHIR({
   const docsNewLocation: DocumentReference[] = [];
   let completedCount = 0;
   let errorCount = 0;
-  let fhirConvertCount = 0;
+  let errorCountConvertible = 0;
+  const convertibleDocCount = documents.filter(isConvertible).length;
+
+  await updateDocQuery({
+    patient: { id: patient.id, cxId: patient.cxId },
+    downloadProgress: {
+      status: "processing",
+      total: documents.length,
+    },
+    convertProgress:
+      convertibleDocCount > 0
+        ? {
+            status: "processing",
+            total: convertibleDocCount,
+          }
+        : {
+            status: "completed",
+            total: 0,
+          },
+  });
 
   // split the list in chunks
   const chunks = chunk(documents, DOC_DOWNLOAD_CHUNK_SIZE);
@@ -346,6 +341,7 @@ export async function downloadDocsAndUpsertFHIR({
     const s3Refs = await Promise.allSettled(
       docChunk.map(async doc => {
         let errorReported = false;
+        const isConvertibleDoc = isConvertible(doc);
         try {
           const fhirDocId = getDocumentPrimaryId(doc);
           // Make this before download and insert on S3 bc of https://metriport.slack.com/archives/C04DBBJSKGB/p1684113732495119?thread_ts=1684105959.041439&cid=C04DBBJSKGB
@@ -356,6 +352,7 @@ export async function downloadDocsAndUpsertFHIR({
           const docLocation = doc.content.location;
           if (!docLocation) {
             errorCount++;
+            if (isConvertibleDoc) errorCountConvertible++;
             log(`Doc without location, skipping - docId ${fhirDocId}`);
             return;
           }
@@ -446,13 +443,12 @@ export async function downloadDocsAndUpsertFHIR({
           };
 
           if (file.isNew) {
-            const conversionRequested = await convertCDAToFHIR({
+            await convertCDAToFHIR({
               patient,
-              document: { id: fhirDocId, mimeType: doc.content?.mimeType },
+              document: { ...doc, id: fhirDocId },
               s3FileName: file.key,
               s3BucketName: file.bucket,
             });
-            if (conversionRequested) fhirConvertCount++;
           }
 
           const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
@@ -469,6 +465,7 @@ export async function downloadDocsAndUpsertFHIR({
           return FHIRDocRef;
         } catch (error) {
           errorCount++;
+          if (isConvertibleDoc) errorCountConvertible++;
 
           log(`Error processing doc: ${error}`, doc);
           if (!errorReported) {
@@ -488,18 +485,9 @@ export async function downloadDocsAndUpsertFHIR({
               patient: { id: patient.id, cxId: patient.cxId },
               downloadProgress: {
                 status: "processing",
-                total: documents.length,
                 successful: completedCount,
                 errors: errorCount,
               },
-              ...(fhirConvertCount > 0
-                ? {
-                    convertProgress: {
-                      status: "processing",
-                      total: fhirConvertCount,
-                    },
-                  }
-                : undefined),
             });
           } catch (err) {
             capture.error(err, {
@@ -518,6 +506,20 @@ export async function downloadDocsAndUpsertFHIR({
     // take some time to avoid throttling other servers
     await sleepBetweenChunks();
   }
+
+  await updateDocQuery({
+    patient: { id: patient.id, cxId: patient.cxId },
+    downloadProgress: { status: "completed" },
+    convertibleDownloadErrors: errorCountConvertible,
+  });
+  // send webhook to CXs when docs are done downloading
+  processPatientDocumentRequest(
+    organization.cxId,
+    patient.id,
+    MAPIWebhookType.documentDownload,
+    MAPIWebhookStatus.completed,
+    toDTO(docsNewLocation)
+  );
 
   return docsNewLocation;
 }
