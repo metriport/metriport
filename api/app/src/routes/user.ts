@@ -38,45 +38,48 @@ const router = Router();
 router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
-    const results = await getProviderDataForType<User>(req, ConsumerHealthDataType.User);
+    let results;
+    if (Object.keys(req.query).length == 0) {
+      const connectedUsers = await listConnectedUsers(req);
+      results = { connectedUsers };
+    } else {
+      results = await getProviderDataForType<User>(req, ConsumerHealthDataType.User);
+    }
 
     res.status(status.OK).json(results);
   })
 );
 
 /**
- * GET /user/user
+ * Returns a list of all users and their providers for the client using cxId.
  *
- * Gets all users and their connected providers for the specified customer.
+ * @param {Request}   req    Request for the `/user` endpoint.
  *
- * @return { ConnectedUserInfo[] }
+ * @returns {ConnectedUserInfo[]}
  */
-router.get(
-  "/user",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const results = await getConnectedUsers({ cxId });
-    const connectedUsers = await Promise.all(
-      results.map(async user => {
-        const connectedUser = await getConnectedUserOrFail({ id: user.id, cxId });
-        let connectedProviders;
-        const userInfo: ConnectedUserInfo = {
-          metriportUserId: user.id,
-          appUserId: user.cxUserId,
-        };
-        if (connectedUser.providerMap) {
-          connectedProviders = Object.keys(connectedUser.providerMap).map((key: string) => {
-            return key;
-          });
-          userInfo.connectedProviders = connectedProviders;
-        }
-        return userInfo;
-      })
-    );
+async function listConnectedUsers(req: Request): Promise<ConnectedUserInfo[]> {
+  const cxId = getCxIdOrFail(req);
+  const results = await getConnectedUsers({ cxId });
+  const connectedUsers = await Promise.all(
+    results.map(async user => {
+      const connectedUser = await getConnectedUserOrFail({ id: user.id, cxId });
+      let connectedProviders;
+      const userInfo: ConnectedUserInfo = {
+        metriportUserId: user.id,
+        appUserId: user.cxUserId,
+      };
+      if (connectedUser.providerMap) {
+        connectedProviders = Object.keys(connectedUser.providerMap).map((key: string) => {
+          return key;
+        });
+        userInfo.connectedProviders = connectedProviders;
+      }
+      return userInfo;
+    })
+  );
 
-    res.status(status.OK).json({ connectedUsers });
-  })
-);
+  return connectedUsers;
+}
 
 /** ---------------------------------------------------------------------------
  * POST /user

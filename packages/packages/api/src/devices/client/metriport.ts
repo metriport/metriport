@@ -80,7 +80,7 @@ export class MetriportDevicesApi {
    * @returns List of connected users, containing their ids and providers.
    */
   async getConnectedUsers(): Promise<{ connectedUsers: ConnectedUserInfo[] }> {
-    const resp = await this.api.get<GetConnectedUsersResponse>("/user/user");
+    const resp = await this.api.get<GetConnectedUsersResponse>("/user");
     return resp.data;
   }
 
