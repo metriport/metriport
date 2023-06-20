@@ -9,6 +9,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
+import { DemoTokenError, InvalidTokenError, NoTokenError } from "../../../shared/token-errors";
 import { capture } from "../../../shared/notifications";
 
 export const DEFAULT_ERROR_MESSAGE = `Something went wrong, you can try again.`;
@@ -32,7 +33,14 @@ const ErrorDialog = ({ show, title, message, link, onClose: closed }: ErrorDialo
   });
 
   useEffect(() => {
-    isOpen && capture.message("Error dialog displayed", { extra: { show, title, message, link } });
+    if (
+      title !== NoTokenError.DEFAULT_TITLE &&
+      title !== DemoTokenError.DEFAULT_TITLE &&
+      title !== InvalidTokenError.DEFAULT_TITLE
+    ) {
+      isOpen &&
+        capture.message("Error dialog displayed", { extra: { show, title, message, link } });
+    }
   }, [isOpen]);
 
   useEffect(() => {
