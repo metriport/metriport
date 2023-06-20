@@ -14,6 +14,7 @@ import { Util } from "../../../shared/util";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
+import { isConvertible } from "../../fhir-converter/converter";
 
 export async function sandboxGetDocRefsAndUpsert({
   organization,
@@ -34,9 +35,13 @@ export async function sandboxGetDocRefsAndUpsert({
   const entries = patientData.docRefs;
   log(`Got ${entries.length} doc refs`);
 
-  let convertibleDocCount = patientData.docRefs.filter(
-    docRef => docRef.docRef.content?.[0]?.attachment?.contentType === "application/xml"
-  ).length;
+  let convertibleDocCount = patientData.docRefs
+    .map(entry => {
+      return {
+        content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
+      };
+    })
+    .filter(isConvertible).length;
 
   for (const [index, entry] of entries.entries()) {
     let prevDocId;
