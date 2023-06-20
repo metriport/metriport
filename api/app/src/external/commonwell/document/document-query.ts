@@ -479,12 +479,20 @@ export async function downloadDocsAndUpsertFHIR({
           };
 
           if (file.isNew) {
-            await convertCDAToFHIR({
-              patient,
-              document: { ...doc, id: fhirDocId },
-              s3FileName: file.key,
-              s3BucketName: file.bucket,
-            });
+            try {
+              await convertCDAToFHIR({
+                patient,
+                document: { ...doc, id: fhirDocId },
+                s3FileName: file.key,
+                s3BucketName: file.bucket,
+              });
+            } catch (err) {
+              // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function
+              log(
+                `Error triggering conversion of doc ${doc.id}, just increasing errorCountConvertible - ${err}`
+              );
+              errorCountConvertible++;
+            }
           }
 
           const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
@@ -568,8 +576,8 @@ export async function downloadDocsAndUpsertFHIR({
   const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
   if (conversionStatus === "completed") {
     processPatientDocumentRequest(
-      updatedPatient.cxId,
-      updatedPatient.id,
+      organization.cxId,
+      patient.id,
       MAPIWebhookType.documentConversion,
       MAPIWebhookStatus.completed
     );
