@@ -5,6 +5,7 @@ dotenv.config({ path: ".env.test" });
 import { PatientModel } from "../../../../models/medical/patient";
 import { makePatient, makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
+import * as whMedical from "../../../webhook/medical";
 import * as docQueryProgress from "../../patient/append-doc-query-progress";
 import * as docQuery from "../document-query";
 import { updateDocQuery } from "../document-query";
@@ -22,6 +23,7 @@ beforeEach(() => {
   appendDocQueryProgress_mock = jest
     .spyOn(docQueryProgress, "appendDocQueryProgress")
     .mockImplementation(async () => patientModel);
+  jest.spyOn(whMedical, "processPatientDocumentRequest").mockImplementation(async () => true);
 });
 
 describe("document-query", () => {
@@ -32,32 +34,36 @@ describe("document-query", () => {
   });
 
   describe("updateDocQuery", () => {
-    it(`Calls updateConversionProgress when convertResult is present`, async () => {
-      const patient = makePatient();
-      await updateDocQuery({ patient, convertResult: "success" });
-      expect(docQuery_updateConversionProgress).toHaveBeenCalled();
+    describe("updateConversionProgress", () => {
+      it(`Calls updateConversionProgress when convertResult is present`, async () => {
+        const patient = makePatient();
+        await updateDocQuery({ patient, convertResult: "success" });
+        expect(docQuery_updateConversionProgress).toHaveBeenCalled();
+      });
+
+      // TODO check params are passed to updateConversionProgress
+
+      it(`return result of updateConversionProgress`, async () => {
+        const patient = makePatient();
+        const res = await updateDocQuery({ patient, convertResult: "success" });
+        expect(res).toEqual(patientModel);
+      });
     });
 
-    // TODO check params are passed to updateConversionProgress
+    describe("appendDocQueryProgress", () => {
+      it(`Calls appendDocQueryProgress when convertResult is not present`, async () => {
+        const patient = makePatient();
+        await updateDocQuery({ patient, convertProgress: { status: "processing" } });
+        expect(appendDocQueryProgress_mock).toHaveBeenCalled();
+      });
 
-    it(`return result of updateConversionProgress`, async () => {
-      const patient = makePatient();
-      const res = await updateDocQuery({ patient, convertResult: "success" });
-      expect(res).toEqual(patientModel);
-    });
+      // TODO check params are passed to appendDocQueryProgress
 
-    it(`Calls appendDocQueryProgress when convertResult is not present`, async () => {
-      const patient = makePatient();
-      await updateDocQuery({ patient, convertProgress: { status: "processing" } });
-      expect(appendDocQueryProgress_mock).toHaveBeenCalled();
-    });
-
-    // TODO check params are passed to appendDocQueryProgress
-
-    it(`return result of appendDocQueryProgress`, async () => {
-      const patient = makePatient();
-      const res = await updateDocQuery({ patient, convertProgress: { status: "processing" } });
-      expect(res).toEqual(patientModel);
+      it(`return result of appendDocQueryProgress`, async () => {
+        const patient = makePatient();
+        const res = await updateDocQuery({ patient, convertProgress: { status: "processing" } });
+        expect(res).toEqual(patientModel);
+      });
     });
   });
 });
