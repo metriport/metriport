@@ -1,5 +1,5 @@
 import { MedicalDataSource } from ".";
 
-export type LinkStatus = "linked" | "needs-review";
+export type LinkStatus = "completed" | "processing" | "failed";
 
 export type LinkStatusAcrossHIEs = { [k in MedicalDataSource]: LinkStatus };

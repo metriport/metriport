@@ -89,6 +89,7 @@ export const findCurrentLink = async (
         cxId: patient.cxId,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
+        commonwellStatus: "failed",
       });
       return;
     }
@@ -101,6 +102,7 @@ export const findCurrentLink = async (
         cxId: patient.cxId,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
+        commonwellStatus: "failed",
       });
 
       return;
@@ -108,7 +110,7 @@ export const findCurrentLink = async (
 
     const correctLink = patientLinkToPerson._embedded.patientLink[0];
 
-    if (!correctLink.assuranceLevel) {
+    if (!correctLink?.assuranceLevel) {
       console.log(`Link has no assurance level`, patientCWId);
       return;
     }

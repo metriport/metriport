@@ -2,8 +2,8 @@ import { Document } from "@metriport/commonwell-sdk";
 import base64url from "base64url";
 import { HL7OID } from "../external";
 
-export const createS3FileName = (cxId: string, fileName: string): string => {
-  return `${cxId}-${fileName}`;
+export const createS3FileName = (cxId: string, patientId: string, fileName: string): string => {
+  return `${cxId}/${patientId}/${cxId}_${patientId}_${fileName}`;
 };
 
 export const getDocumentPrimaryId = (document: Document): string => {
