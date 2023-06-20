@@ -110,9 +110,8 @@ export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Pati
     updatedPatient = await appendDocQueryProgress(params);
   }
   const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
-
-  const { patient } = params;
   if (conversionStatus === "completed") {
+    const { patient } = params;
     processPatientDocumentRequest(
       patient.cxId,
       patient.id,

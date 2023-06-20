@@ -6,9 +6,16 @@ import {
   OperationOutcome,
   operationOutcomeResourceType,
 } from "@metriport/commonwell-sdk";
-import { chunk } from "lodash";
-import { PassThrough } from "stream";
+import { chunk, partition } from "lodash";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
+import {
+  docToFile,
+  getFileInfoFromS3,
+  getS3Info,
+  getUrl,
+  S3Info,
+  uploadStream,
+} from "../../../command/medical/document/document-query-storage-info";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import {
   MAPIWebhookStatus,
@@ -22,24 +29,23 @@ import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
-import { createS3FileName, getDocumentPrimaryId } from "../../../shared/external";
+import { getDocumentPrimaryId } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
-import { makeS3Client } from "../../aws/s3";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
+import { makeFhirApi } from "../../fhir/api/api-factory";
 import { MAX_FHIR_DOC_ID_LENGTH, toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
+import { getAllPages } from "../../fhir/shared/paginated";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument as downloadDocumentFromCW } from "./document-download";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import { CWDocumentWithMetriportData, getFileName } from "./shared";
-
-const s3Client = makeS3Client();
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -279,6 +285,59 @@ function reportFHIRError({
   }
 }
 
+async function initPatientDocQuery(
+  patient: Patient,
+  totalDocs: number,
+  convertibleDocs: number
+): Promise<Patient> {
+  return updateDocQuery({
+    patient: { id: patient.id, cxId: patient.cxId },
+    downloadProgress: {
+      status: "processing",
+      total: totalDocs,
+    },
+    convertProgress:
+      convertibleDocs > 0
+        ? {
+            status: "processing",
+            total: convertibleDocs,
+          }
+        : {
+            status: "completed",
+            total: 0,
+          },
+  });
+}
+
+type DocumentWithLocation = Document & { content: { location: string } };
+
+// custom type guard, this is dangerous as the compiler can't tell whether we're checking or not - but either this or exclamation point
+function isValidDoc(doc: Document): doc is DocumentWithLocation {
+  const fhirDocId = getDocumentPrimaryId(doc);
+  // Make this before download and insert on S3 bc of https://metriport.slack.com/archives/C04DBBJSKGB/p1684113732495119?thread_ts=1684105959.041439&cid=C04DBBJSKGB
+  if (fhirDocId.length > MAX_FHIR_DOC_ID_LENGTH) {
+    capture.message("FHIR doc ID too long", { extra: { fhirDocId, docId: doc.id } });
+    return false;
+  }
+  const docLocation = doc.content.location;
+  if (!docLocation) {
+    console.log(`Doc without location, skipping - fhirDocId ${fhirDocId}, docId ${doc.id}`);
+    return false;
+  }
+  return true;
+}
+
+function convertToNonExistingS3Info(patient: Patient): (doc: Document) => S3Info {
+  return (doc: Document): S3Info => {
+    const simpleFile = docToFile(patient)(doc);
+    return {
+      ...simpleFile,
+      fileExists: false,
+      fileSize: undefined,
+    };
+  };
+}
+
 export async function downloadDocsAndUpsertFHIR({
   patient,
   organization,
@@ -294,74 +353,56 @@ export async function downloadDocsAndUpsertFHIR({
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
   override && log(`override=true, NOT checking whether docs exist`);
-  const s3BucketName = Config.getMedicalDocumentsBucketName();
 
-  const uploadStream = (s3FileName: string, contentType?: string) => {
-    const pass = new PassThrough();
-    return {
-      writeStream: pass,
-      promise: s3Client
-        .upload({
-          Bucket: s3BucketName,
-          Key: s3FileName,
-          Body: pass,
-          ContentType: contentType ? contentType : "text/xml",
-        })
-        .promise(),
-    };
-  };
-
+  const fhirApi = makeFhirApi(patient.cxId);
   const docsNewLocation: DocumentReference[] = [];
   let completedCount = 0;
   let errorCount = 0;
   let errorCountConvertible = 0;
-  const convertibleDocCount = documents.filter(isConvertible).length;
 
-  await updateDocQuery({
-    patient: { id: patient.id, cxId: patient.cxId },
-    downloadProgress: {
-      status: "processing",
-      total: documents.length,
-    },
-    convertProgress:
-      convertibleDocCount > 0
-        ? {
-            status: "processing",
-            total: convertibleDocCount,
-          }
-        : {
-            status: "completed",
-            total: 0,
-          },
-  });
+  const validDocs = documents.filter(isValidDoc);
+  log(`I have ${validDocs.length} valid docs to process`);
+
+  // Get File info from S3 (or from memory, if override = true)
+  const getFilesWithStorageInfo = async () =>
+    override
+      ? validDocs.map(convertToNonExistingS3Info(patient))
+      : await getS3Info(validDocs, patient);
+
+  // Get all DocumentReferences for this patient + File info from S3
+  const [foundOnFHIR, filesWithStorageInfo] = await Promise.all([
+    getAllPages(() => fhirApi.searchResourcePages("DocumentReference", `patient=${patient.id}`)),
+    getFilesWithStorageInfo(),
+  ]);
+
+  const [foundOnStorage, notFoundOnStorage] = partition(
+    filesWithStorageInfo,
+    (f: S3Info) => f.fileExists
+  );
+  // Make sure the found ones are on FHIR, otherwise also download them and store on FHIR
+  const foundButNotOnFHIR = foundOnStorage.filter(f => !foundOnFHIR.find(d => d.id === f.docId));
+  const filesToDownload = notFoundOnStorage.concat(foundButNotOnFHIR);
+
+  const docsToDownload = filesToDownload.flatMap(f => validDocs.find(d => d.id === f.docId) ?? []);
+
+  const fileInfoByDocId = (docId: string) => filesWithStorageInfo.find(f => f.docId === docId);
+
+  const convertibleDocCount = docsToDownload.filter(isConvertible).length;
+  log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
+  await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount);
 
   // split the list in chunks
-  const chunks = chunk(documents, DOC_DOWNLOAD_CHUNK_SIZE);
+  const chunks = chunk(docsToDownload, DOC_DOWNLOAD_CHUNK_SIZE);
   for (const docChunk of chunks) {
     const s3Refs = await Promise.allSettled(
       docChunk.map(async doc => {
         let errorReported = false;
         const isConvertibleDoc = isConvertible(doc);
         try {
-          const fhirDocId = getDocumentPrimaryId(doc);
-          // Make this before download and insert on S3 bc of https://metriport.slack.com/archives/C04DBBJSKGB/p1684113732495119?thread_ts=1684105959.041439&cid=C04DBBJSKGB
-          if (fhirDocId.length > MAX_FHIR_DOC_ID_LENGTH) {
-            throw new MetriportError("FHIR doc ID too long", undefined, { fhirDocId });
-          }
-
-          const docLocation = doc.content.location;
-          if (!docLocation) {
-            errorCount++;
-            if (isConvertibleDoc) errorCountConvertible++;
-            log(`Doc without location, skipping - docId ${fhirDocId}`);
-            return;
-          }
-
-          const s3FileName = createS3FileName(patient.cxId, fhirDocId);
-          const { exists: fileExists, size: existingSize } = await getFileInfoFromS3(
-            s3FileName,
-            s3BucketName
-          );
+          const fileInfo = fileInfoByDocId(doc.id);
+          if (!fileInfo)
+            throw new MetriportError("Missing file info", undefined, { docId: doc.id });
+          const fhirDocId = fileInfo.fhirDocId;
 
           let uploadToS3: () => Promise<{
             bucket: string;
@@ -376,15 +417,19 @@ export async function downloadDocsAndUpsertFHIR({
             // add some randomness to avoid overloading the servers
             await jitterSingleDownload();
 
-            if (!fileExists || override) {
+            if (!fileInfo.fileExists) {
               // Download from CW and upload to S3
               uploadToS3 = async () => {
-                const { writeStream, promise } = uploadStream(s3FileName, doc.content.mimeType);
+                const { writeStream, promise } = uploadStream(
+                  fileInfo.fileName,
+                  fileInfo.fileLocation,
+                  doc.content.mimeType
+                );
                 await downloadDocumentFromCW({
                   cxId: patient.cxId,
                   patientId: patient.id,
                   facilityId: facilityId,
-                  location: docLocation,
+                  location: doc.content.location,
                   stream: writeStream,
                 });
                 const uploadResult = await promise;
@@ -400,17 +445,14 @@ export async function downloadDocsAndUpsertFHIR({
             } else {
               // Get info from existing S3 file
               uploadToS3 = async () => {
-                const signedUrl = s3Client.getSignedUrl("getObject", {
-                  Bucket: s3BucketName,
-                  Key: s3FileName,
-                });
+                const signedUrl = getUrl(fileInfo.fileName, fileInfo.fileLocation);
                 const url = new URL(signedUrl);
                 const s3Location = url.origin + url.pathname;
                 return {
-                  bucket: s3BucketName,
-                  key: s3FileName,
+                  bucket: fileInfo.fileLocation,
+                  key: fileInfo.fileName,
                   location: s3Location,
-                  size: existingSize,
+                  size: fileInfo.fileSize,
                   isNew: false,
                 };
               };
@@ -532,23 +574,6 @@ async function jitterSingleDownload(): Promise<void> {
     DOC_DOWNLOAD_JITTER_DELAY_MAX_MS,
     DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT / 100
   );
-}
-
-async function getFileInfoFromS3(
-  key: string,
-  bucket: string
-): Promise<{ exists: true; size: number } | { exists: false; size?: never }> {
-  try {
-    const head = await s3Client
-      .headObject({
-        Bucket: bucket,
-        Key: key,
-      })
-      .promise();
-    return { exists: true, size: head.ContentLength ?? 0 };
-  } catch (err) {
-    return { exists: false };
-  }
 }
 
 function reportDocQueryUsage(patient: Patient): void {
