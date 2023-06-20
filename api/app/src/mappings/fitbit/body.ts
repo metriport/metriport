@@ -2,10 +2,11 @@ import { Body, SourceType } from "@metriport/api";
 import convert from "convert-units";
 import dayjs from "dayjs";
 import { PROVIDER_FITBIT } from "../../shared/constants";
-import { METRIC, US_LOCALE } from "./constants";
+import { US_LOCALE } from "./constants";
 import { FitbitUser } from "./models/user";
 import { FitbitWeight } from "./models/weight";
 
+const STONES_TO_LB = 14;
 const DECIMAL_PLACES = 2;
 
 export const mapToBody = (
@@ -34,13 +35,7 @@ export const mapToBody = (
     }
 
     if (fitbitUser.user.weight) {
-      if (fitbitUser.user.weightUnit === METRIC) {
-        body.weight_kg = parseFloat(fitbitUser.user.weight.toFixed(DECIMAL_PLACES));
-      } else {
-        body.weight_kg = parseFloat(
-          convert(fitbitUser.user.weight).from("lb").to("kg").toFixed(DECIMAL_PLACES)
-        );
-      }
+      body.weight_kg = convertStonesToKg(fitbitUser.user.weight);
     }
   }
 
@@ -49,7 +44,7 @@ export const mapToBody = (
       const dateTime = date + "T" + weight.time;
       return {
         time: dayjs(dateTime).toISOString(),
-        value: weight.weight,
+        value: convertStonesToKg(weight.weight),
         data_source: {
           name: weight.source,
           source_type: checkSource(weight.source),
@@ -63,4 +58,12 @@ export const mapToBody = (
 
 function checkSource(weight: string) {
   return weight === "API" ? SourceType.manual : SourceType.device;
+}
+
+function convertStonesToKg(weight_stones: number): number {
+  let weight_kg = convert(weight_stones * STONES_TO_LB)
+    .from("lb")
+    .to("kg");
+  weight_kg = parseFloat(weight_kg.toFixed(DECIMAL_PLACES));
+  return weight_kg;
 }

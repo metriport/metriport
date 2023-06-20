@@ -138,8 +138,6 @@ router.post(
 router.get(
   "/connect/token",
   asyncHandler(async (req: Request, res: Response) => {
-    // validate required query params
-    if (!req.query.userId) throw new BadRequestError();
     const userId = getUserIdFrom("query", req).orFail();
     const cxId = getCxIdOrFail(req);
 
@@ -284,15 +282,13 @@ router.get(
     const userId = getUserIdFrom("params", req).orFail();
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
-
+    let connectedProviders: string[] = [];
     if (connectedUser.providerMap) {
-      const connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
+      connectedProviders = Object.keys(connectedUser.providerMap).map(key => {
         return key;
       });
-      return res.status(status.OK).json({ connectedProviders });
-    } else {
-      throw new BadRequestError(`User ${userId} has no provider map`);
     }
+    return res.status(status.OK).json({ connectedProviders });
   })
 );
 

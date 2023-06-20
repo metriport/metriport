@@ -15,6 +15,11 @@ import { reprocessDocuments } from "../command/medical/document/document-redownl
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { deletePatient } from "../command/medical/patient/delete-patient";
 import { getPatientOrFail } from "../command/medical/patient/get-patient";
+import {
+  MAPIWebhookStatus,
+  MAPIWebhookType,
+  processPatientDocumentRequest,
+} from "../command/webhook/medical";
 import { convertResult } from "../domain/medical/document-reference";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
@@ -284,6 +289,16 @@ router.post(
     }
     // END TODO 785
 
+    const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
+    if (conversionStatus === "completed") {
+      processPatientDocumentRequest(
+        expectedPatient.cxId,
+        expectedPatient.id,
+        MAPIWebhookType.documentConversion,
+        MAPIWebhookStatus.completed
+      );
+    }
+
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -300,17 +315,17 @@ router.post(
     if (!downloadProgress && !convertProgress) {
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
     }
-
+    const patient = await getPatientOrFail({ cxId, id: patientId });
     console.log(
-      `Updating patient ${patientId}'s docQueryProgress to ${JSON.stringify(docQueryProgress)}`
+      `Updating patient ${patientId}'s docQueryProgress ` +
+        `from ${JSON.stringify(patient.data.documentQueryProgress)} ` +
+        `to ${JSON.stringify(docQueryProgress)}`
     );
-
     const updatedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       downloadProgress,
       convertProgress,
     });
-
     return res.json(updatedPatient.data.documentQueryProgress);
   })
 );

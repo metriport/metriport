@@ -18,9 +18,14 @@ import { capture } from "../../shared/notifications";
 import { driversLicenseURIs } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { makePersonForPatient } from "./patient-conversion";
+import { LinkStatus } from "../patient-link";
 
 export class PatientDataCommonwell extends PatientExternalDataEntry {
-  constructor(public patientId: string, public personId?: string | undefined) {
+  constructor(
+    public patientId: string,
+    public personId?: string | undefined,
+    public status?: LinkStatus | undefined
+  ) {
     super();
   }
 }

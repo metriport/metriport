@@ -4,23 +4,26 @@ description: "Triggers a document query for the specified patient across HIEs."
 api: "POST /medical/v1/document/query"
 ---
 
-When executed, this endpoint triggers an asynchronous document query with HIEs and immediately returns the status
-of document query, `processing`.
+When executed, this endpoint triggers an asynchronous document query across HIEs. This is a two step process where the documents will
+first be downloaded from the respective HIE and, if they are C-CDA/XML, then converted to FHIR.
 
-If there are documents that have yet to be stored in FHIR, we will convert them and provide the status of those conversions.
+Each process (download, conversion) will contain its own `total` and `status` as well as the count for `successful` operations and `errors`.
 
 When the asynchronous document query finishes, it stores new/updated document references for future requests and
-updates the status of document query to `completed` - accessible through the [List Documents endpoint](/medical-api/api-reference/document/list-documents).
+updates the status of download to `completed`. Meanwhile, in the background, files will be converted and the convert count will be
+incremented. Once all documents have been converted it too will be marked as `completed`.
+
+If there's no document to be converted, the total will be set to zero and the status to `completed`.
 
 <Tip>
-  You can also use the [List Documents endpoint](/medical-api/api-reference/document/list-documents)
-  to get the current query status and query progress, while the query is still processing.
+  To get updates about the document query progress, including download and conversion status,
+  check out our [webhooks guide](/medical-api/more-info/webhooks).
 </Tip>
 
 <Warning>
   If you were to trigger this endpoint again while the query is still processing, you will get a
   response that reflects the current query progress. So essentially, only a single document query
-  will be running for a patient at a given time.
+  will be running for a patient at any given time.
 </Warning>
 
 ## Query Params
@@ -35,7 +38,15 @@ updates the status of document query to `completed` - accessible through the [Li
 
 ## Response
 
-<Snippet file="document-progress.mdx" />
+<Snippet file="document-progress-download.mdx" />
+
+```json
+{
+  "download": {
+    "status": "processing"
+  }
+}
+````
 
 <ResponseExample>
 ```javascript Metriport SDK
@@ -44,26 +55,9 @@ import { MetriportMedicalApi } from "@metriport/api";
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
 const status = await api.startDocumentQuery(
-"2.16.840.1.113883.3.666.5.2004.4.2005",
-"2.16.840.1.113883.3.666.123",
+  "2.16.840.1.113883.3.666.5.2004.4.2005",
+  "2.16.840.1.113883.3.666.123",
 );
 
 ````
 </ResponseExample>
-
-```json
-{
-  "download": {
-    "status": "completed",
-    "total": 100,
-    "successful": 95,
-    "errors": 5
-  },
-  "convert": {
-    "status": "processing",
-    "total": 20,
-    "successful": 15,
-    "errors": 1
-  }
-}
-````

@@ -42,7 +42,7 @@ export {
   facilityListSchema,
   facilitySchema,
 } from "./medical/models/facility";
-export { Link, MedicalDataSource, PatientLinks } from "./medical/models/link";
+export { Link, MedicalDataSource, PatientLinks, LinkStatus } from "./medical/models/link";
 export {
   Organization,
   OrganizationCreate,
