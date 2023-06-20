@@ -13,6 +13,7 @@ import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
+import { updateDocQuery } from "../../../command/medical/document/document-query";
 
 export async function sandboxGetDocRefsAndUpsert({
   organization,
@@ -33,6 +34,10 @@ export async function sandboxGetDocRefsAndUpsert({
   const entries = patientData.docRefs;
   log(`Got ${entries.length} doc refs`);
 
+  let convertibleDocCount = patientData.docRefs.filter(
+    docRef => docRef.docRef.content?.[0]?.attachment?.contentType === "application/xml"
+  ).length;
+
   for (const [index, entry] of entries.entries()) {
     let prevDocId;
     try {
@@ -41,7 +46,7 @@ export async function sandboxGetDocRefsAndUpsert({
       entry.docRef.id = encodeExternalId(patient.id + "_" + index);
       const fhirDocId = entry.docRef.id;
 
-      await convertCDAToFHIR({
+      const conversionRequested = await convertCDAToFHIR({
         patient,
         document: {
           id: fhirDocId,
@@ -50,6 +55,8 @@ export async function sandboxGetDocRefsAndUpsert({
         s3FileName: entry.s3Info.key,
         s3BucketName: entry.s3Info.bucket,
       });
+
+      if (!conversionRequested) convertibleDocCount = convertibleDocCount - 1;
 
       const contained = entry.docRef.contained ?? [];
       const containsPatient = contained.filter(c => c.resourceType === "Patient").length > 0;
@@ -75,6 +82,22 @@ export async function sandboxGetDocRefsAndUpsert({
       );
     }
   }
+
+  await updateDocQuery({
+    patient: { id: patient.id, cxId: patient.cxId },
+    downloadProgress: {
+      total: entries.length,
+      status: "completed",
+    },
+    ...(convertibleDocCount > 0
+      ? {
+          convertProgress: {
+            status: "processing",
+            total: convertibleDocCount,
+          },
+        }
+      : undefined),
+  });
 
   const result = entries.map(d => d.docRef);
 
