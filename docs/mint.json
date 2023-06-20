@@ -128,6 +128,14 @@
           ]
         },
         {
+          "group": "Link",
+          "pages": [
+            "medical-api/api-reference/link/get-links",
+            "medical-api/api-reference/link/create-link",
+            "medical-api/api-reference/link/remove-link"
+          ]
+        },
+        {
           "group": "Document",
           "pages": [
             "medical-api/api-reference/document/start-document-query",
