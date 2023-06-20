@@ -15,6 +15,7 @@ import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { isConvertible } from "../../fhir-converter/converter";
+import { sandboxSleepTime } from "./shared";
 
 export async function sandboxGetDocRefsAndUpsert({
   organization,
@@ -28,7 +29,7 @@ export async function sandboxGetDocRefsAndUpsert({
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
 
   // Mimic Prod by waiting for docs to download
-  await Util.sleep(Math.random() * 5000);
+  await Util.sleep(Math.random() * sandboxSleepTime);
 
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) return [];
