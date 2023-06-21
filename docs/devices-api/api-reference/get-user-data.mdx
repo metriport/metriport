@@ -32,10 +32,7 @@ import { MetriportDevicesApi } from "@metriport/api";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
-const response = await metriportClient.getUserData(
-  "metriportUserId",
-  "date"
-);
+const response = await metriportClient.getUserData("metriportUserId", "date");
 ```
 
 </ResponseExample>
