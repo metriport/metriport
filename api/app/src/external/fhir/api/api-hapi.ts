@@ -36,7 +36,7 @@ export class HapiFhirClient extends MedplumClient implements FhirClient {
 
     const promise = new ReadablePromise(
       (async () => {
-        const bundle = await this.get<Bundle<ExtractResource<K>>>(url, { requestCache: false });
+        const bundle = await this.get<Bundle<ExtractResource<K>>>(url);
         return bundle;
       })()
     );
