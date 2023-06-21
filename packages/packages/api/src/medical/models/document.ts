@@ -26,7 +26,7 @@ export const documentReferenceSchema = z.object({
 });
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
 
-export const documentQueryStatusSchema = z.enum(["processing", "completed"]);
+export const documentQueryStatusSchema = z.enum(["processing", "completed", "failed"]);
 export type DocumentQueryStatus = z.infer<typeof documentQueryStatusSchema>;
 
 export const documentQueryProgress = z.object({
