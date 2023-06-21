@@ -494,6 +494,9 @@ export async function downloadDocsAndUpsertFHIR({
               );
               errorCountConvertible++;
             }
+          } else {
+            // count this doc as an error so we can decrement the total to be converted in the query status
+            errorCountConvertible++;
           }
 
           const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
