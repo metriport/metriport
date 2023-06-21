@@ -9,22 +9,24 @@ export const documentReferenceSchema = z.object({
   indexed: z.string().optional(), // ISO-8601
   mimeType: z.string().optional(),
   size: z.number().optional(), // bytes
-  type: z.object({
-    coding: z
-      .array(
-        z.object({
-          system: z.string().optional().nullable(),
-          code: z.string().optional().nullable(),
-          display: z.string().optional().nullable(),
-        })
-      )
-      .optional(),
-    text: z.string().optional(),
-  }).optional(),
+  type: z
+    .object({
+      coding: z
+        .array(
+          z.object({
+            system: z.string().optional().nullable(),
+            code: z.string().optional().nullable(),
+            display: z.string().optional().nullable(),
+          })
+        )
+        .optional(),
+      text: z.string().optional(),
+    })
+    .optional(),
 });
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
 
-export const documentQueryStatusSchema = z.enum(["processing", "completed"]);
+export const documentQueryStatusSchema = z.enum(["processing", "completed", "failed"]);
 export type DocumentQueryStatus = z.infer<typeof documentQueryStatusSchema>;
 
 export const documentQueryProgress = z.object({
