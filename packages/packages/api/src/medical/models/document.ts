@@ -20,7 +20,7 @@ export const documentReferenceSchema = z.object({
       )
       .optional(),
     text: z.string().optional(),
-  }),
+  }).optional(),
 });
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
 
