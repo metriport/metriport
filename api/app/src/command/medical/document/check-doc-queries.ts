@@ -6,12 +6,6 @@ import { Progress } from "../../../domain/medical/document-reference";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import {
-  MAPIWebhookStatus,
-  MAPIWebhookType,
-  processPatientDocumentRequest,
-} from "../../webhook/medical";
-import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 
 dayjs.extend(duration);
 
