@@ -95,7 +95,7 @@ export async function convertCDAToFHIR(params: {
       capture.error(error, {
         extra: { context: `convertCDAToFHIR`, ...params },
       });
-      return false;
+      throw error;
     }
 
     // also do the sidechain conversion (remove when no longer needed)

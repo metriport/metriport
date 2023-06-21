@@ -162,84 +162,114 @@ describe("appendDocQueryProgress", () => {
     });
   });
 
-  it("sets convert.total to zero when no prior convert and downloadErrors is provided", async () => {
-    const convertibleDownloadErrors = faker.number.int({ min: 1, max: 10 });
-    const convertProgress = { status: "completed" as const };
-    const patient = makePatientModel({
-      data: makePatientData({
-        documentQueryProgress: { convert: undefined },
-      }),
-    });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+  describe("convert", () => {
+    it("sets convert.total to zero when no prior convert and downloadErrors is provided", async () => {
+      const convertibleDownloadErrors = faker.number.int({ min: 1, max: 10 });
+      const convertProgress = { status: "completed" as const };
+      const patient = makePatientModel({
+        data: makePatientData({
+          documentQueryProgress: { convert: undefined },
+        }),
+      });
+      patientModel_findOne.mockResolvedValueOnce(patient);
 
-    const res = await appendDocQueryProgress({
-      patient: { id: "theId", cxId: "theCxId" },
-      convertProgress,
-      convertibleDownloadErrors,
+      const res = await appendDocQueryProgress({
+        patient,
+        convertProgress,
+        convertibleDownloadErrors,
+      });
+      checkConvertTotal(res, 0);
     });
-    checkConvertTotal(res, 0);
-  });
 
-  it("sets convert.total to zero when convert.total - downloadErrors is lower than zero", async () => {
-    const total = faker.number.int({ min: 0, max: 10 });
-    const convertibleDownloadErrors = faker.number.int({ min: 11, max: 20 });
-    const convertProgress = { status: "completed" as const };
-    const patient = makePatientModel({
-      data: makePatientData({
-        documentQueryProgress: { convert: { status: "processing", total } },
-      }),
-    });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    it("sets convert.total to zero when convert.total - downloadErrors is lower than zero", async () => {
+      const total = faker.number.int({ min: 0, max: 10 });
+      const convertibleDownloadErrors = faker.number.int({ min: 11, max: 20 });
+      const convertProgress = { status: "completed" as const };
+      const patient = makePatientModel({
+        data: makePatientData({
+          documentQueryProgress: { convert: { status: "processing", total } },
+        }),
+      });
+      patientModel_findOne.mockResolvedValueOnce(patient);
 
-    const res = await appendDocQueryProgress({
-      patient: { id: "theId", cxId: "theCxId" },
-      convertProgress,
-      convertibleDownloadErrors,
+      const res = await appendDocQueryProgress({
+        patient,
+        convertProgress,
+        convertibleDownloadErrors,
+      });
+      checkConvertTotal(res, 0);
     });
-    checkConvertTotal(res, 0);
-  });
 
-  it("decreases convert.total when downloadErrors is provided", async () => {
-    const total = faker.number.int({ min: 3, max: 100 });
-    const convertibleDownloadErrors = faker.number.int({ min: 1, max: total - 1 });
-    const convertProgress = { status: "completed" as const };
-    const patient = makePatientModel({
-      data: makePatientData({
-        documentQueryProgress: { convert: { status: "processing", total } },
-      }),
-    });
-    patientModel_findOne.mockResolvedValueOnce(patient);
-    const expectedTotal = total - convertibleDownloadErrors;
+    it("decreases convert.total when downloadErrors is provided", async () => {
+      const total = faker.number.int({ min: 3, max: 100 });
+      const convertibleDownloadErrors = faker.number.int({ min: 1, max: total - 1 });
+      const convertProgress = { status: "completed" as const };
+      const patient = makePatientModel({
+        data: makePatientData({
+          documentQueryProgress: { convert: { status: "processing", total } },
+        }),
+      });
+      patientModel_findOne.mockResolvedValueOnce(patient);
+      const expectedTotal = total - convertibleDownloadErrors;
 
-    const res = await appendDocQueryProgress({
-      patient: { id: "theId", cxId: "theCxId" },
-      convertProgress,
-      convertibleDownloadErrors,
+      const res = await appendDocQueryProgress({
+        patient,
+        convertProgress,
+        convertibleDownloadErrors,
+      });
+      checkConvertTotal(res, expectedTotal);
     });
-    checkConvertTotal(res, expectedTotal);
-  });
 
-  it("decreases convert.total when converProgress sets total and downloadErrors is provided", async () => {
-    const total = faker.number.int({ min: 3, max: 100 });
-    const convertibleDownloadErrors = faker.number.int({ min: 1, max: total - 1 });
-    const convertProgress = {
-      status: "completed" as const,
-      total: faker.number.int({ min: 200 }),
-    };
-    const patient = makePatientModel({
-      data: makePatientData({
-        documentQueryProgress: { convert: { status: "processing", total } },
-      }),
-    });
-    patientModel_findOne.mockResolvedValueOnce(patient);
-    const expectedTotal = convertProgress.total - convertibleDownloadErrors;
+    it("decreases convert.total when converProgress sets total and downloadErrors is provided", async () => {
+      const total = faker.number.int({ min: 3, max: 100 });
+      const convertibleDownloadErrors = faker.number.int({ min: 1, max: total - 1 });
+      const convertProgress = {
+        status: "completed" as const,
+        total: faker.number.int({ min: 200 }),
+      };
+      const patient = makePatientModel({
+        data: makePatientData({
+          documentQueryProgress: { convert: { status: "processing", total } },
+        }),
+      });
+      patientModel_findOne.mockResolvedValueOnce(patient);
+      const expectedTotal = convertProgress.total - convertibleDownloadErrors;
 
-    const res = await appendDocQueryProgress({
-      patient: { id: "theId", cxId: "theCxId" },
-      convertProgress,
-      convertibleDownloadErrors,
+      const res = await appendDocQueryProgress({
+        patient,
+        convertProgress,
+        convertibleDownloadErrors,
+      });
+      checkConvertTotal(res, expectedTotal);
     });
-    checkConvertTotal(res, expectedTotal);
+
+    it("updates status when when convert.total is updated", async () => {
+      const total = faker.number.int({ min: 3, max: 100 });
+      const convertibleDownloadErrors = 1;
+      const downloadProgress = { status: "completed" as const };
+      const patient = makePatientModel({
+        data: makePatientData({
+          documentQueryProgress: {
+            convert: {
+              status: "processing" as const,
+              total,
+              successful: total - 1,
+              errors: 0,
+            },
+          },
+        }),
+      });
+      patientModel_findOne.mockResolvedValueOnce(patient);
+      const res = await appendDocQueryProgress({
+        patient,
+        downloadProgress,
+        convertibleDownloadErrors,
+      });
+      expect(res.data.documentQueryProgress?.convert?.status).toEqual("completed");
+      expect(res.data.documentQueryProgress?.convert?.total).toEqual(
+        total - convertibleDownloadErrors
+      );
+    });
   });
 
   it("returns the result of DB update", async () => {

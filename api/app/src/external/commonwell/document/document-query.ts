@@ -16,6 +16,7 @@ import {
   uploadStream,
 } from "../../../command/medical/document/document-query-storage-info";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import {
   MAPIWebhookStatus,
@@ -479,12 +480,23 @@ export async function downloadDocsAndUpsertFHIR({
           };
 
           if (file.isNew) {
-            await convertCDAToFHIR({
-              patient,
-              document: { ...doc, id: fhirDocId },
-              s3FileName: file.key,
-              s3BucketName: file.bucket,
-            });
+            try {
+              await convertCDAToFHIR({
+                patient,
+                document: { ...doc, id: fhirDocId },
+                s3FileName: file.key,
+                s3BucketName: file.bucket,
+              });
+            } catch (err) {
+              // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function
+              log(
+                `Error triggering conversion of doc ${doc.id}, just increasing errorCountConvertible - ${err}`
+              );
+              errorCountConvertible++;
+            }
+          } else {
+            // count this doc as an error so we can decrement the total to be converted in the query status
+            errorCountConvertible++;
           }
 
           const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
@@ -565,14 +577,23 @@ export async function downloadDocsAndUpsertFHIR({
     toDTO(docsNewLocation)
   );
   // send webhook to CXs if docs are done converting (at this point only if no conversions to be done)
-  const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
-  if (conversionStatus === "completed") {
+  const patientFromDB = await getPatientOrFail({ cxId: patient.cxId, id: patient.id });
+  const conversionStatusFromDB = patientFromDB.data.documentQueryProgress?.convert?.status;
+  const conversionStatusFromAppend = updatedPatient.data.documentQueryProgress?.convert?.status;
+  if (conversionStatusFromAppend === "completed" || conversionStatusFromDB === "completed") {
     processPatientDocumentRequest(
-      updatedPatient.cxId,
-      updatedPatient.id,
+      organization.cxId,
+      patient.id,
       MAPIWebhookType.documentConversion,
       MAPIWebhookStatus.completed
     );
+    if (conversionStatusFromAppend !== conversionStatusFromDB) {
+      log(
+        `Conversion status from DB and append are different! ` +
+          `fromAppend: ${conversionStatusFromAppend}, ` +
+          `fromDB: ${conversionStatusFromDB}`
+      );
+    }
   }
 
   return docsNewLocation;
