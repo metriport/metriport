@@ -5,10 +5,7 @@
     "dark": "/logo/dark.png"
   },
   "api": {
-    "baseUrl": [
-      "https://api.metriport.com",
-      "https://api.sandbox.metriport.com"
-    ],
+    "baseUrl": ["https://api.metriport.com", "https://api.sandbox.metriport.com"],
     "auth": {
       "method": "key",
       "name": "x-api-key"
@@ -59,23 +56,15 @@
   "navigation": [
     {
       "group": "Home",
-      "pages": [
-        "home/welcome"
-      ]
+      "pages": ["home/welcome"]
     },
     {
       "group": "API Info",
-      "pages": [
-        "home/api-info/api-keys",
-        "home/api-info/webhooks",
-        "home/api-info/error-responses"
-      ]
+      "pages": ["home/api-info/api-keys", "home/api-info/webhooks", "home/api-info/error-responses"]
     },
     {
       "group": "Getting Started",
-      "pages": [
-        "medical-api/getting-started/quickstart"
-      ]
+      "pages": ["medical-api/getting-started/quickstart"]
     },
     {
       "group": "API Reference",
@@ -121,7 +110,6 @@
           "pages": [
             "medical-api/api-reference/patient/create-patient",
             "medical-api/api-reference/patient/get-patient",
-            "medical-api/api-reference/patient/get-patient-consolidated",
             "medical-api/api-reference/patient/update-patient",
             "medical-api/api-reference/patient/list-patients",
             "medical-api/api-reference/patient/delete-patient"
@@ -134,12 +122,28 @@
             "medical-api/api-reference/document/list-documents",
             "medical-api/api-reference/document/get-document"
           ]
+        },
+        {
+          "group": "FHIR",
+          "pages": [
+            "medical-api/api-reference/fhir/get-patient-consolidated",
+            "medical-api/api-reference/fhir/add-patient-data"
+          ]
+        },
+        {
+          "group": "Link",
+          "pages": [
+            "medical-api/api-reference/link/get-links",
+            "medical-api/api-reference/link/create-link",
+            "medical-api/api-reference/link/remove-link"
+          ]
         }
       ]
     },
     {
       "group": "FHIR",
       "pages": [
+        "medical-api/fhir/overview",
         {
           "group": "Data Types",
           "pages": [
@@ -335,6 +339,10 @@
             "medical-api/fhir/resources/verificationresult",
             "medical-api/fhir/resources/visionprescription"
           ]
+        },
+        {
+          "group": "Extensions",
+          "pages": ["medical-api/fhir/extensions/doc-id"]
         }
       ]
     },

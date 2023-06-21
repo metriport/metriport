@@ -1,0 +1,36 @@
+---
+title: "Document ID"
+description: "Associates a FHIR Resource to the corresponding C-CDA Document."
+---
+
+In some cases, when querying for FHIR Resources, you may want to download the Document
+corresponding to a Resource - you can use the information found in this extension to
+do so.
+
+For example, this is helpful to answer questions such as "what Progress Note does this Encounter
+correspond to?".
+
+## Properties
+
+Example extension:
+
+```json
+{
+  "url": "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
+  "valueString": "1A5512D2-0EE9-11EE-B2A6-A2F55214B7C1-MLKJ392874kjshhKJSHDFdskjfh98234uiy"
+}
+```
+
+<Tip>
+  You can use the value of the `valueString` property as input to the [Get Document URL
+  endpoint](/medical-api/api-reference/document/get-document) to download the C-CDA Document from
+  which the FHIR Resource was derived from.
+</Tip>
+
+<ResponseField name="url" type="string" required>
+  The URL of this extension's JSON structure specification.
+</ResponseField>
+
+<ResponseField name="valueString" type="string" required>
+  The ID of the C-CDA Document the FHIR Resource was derived from.
+</ResponseField>
