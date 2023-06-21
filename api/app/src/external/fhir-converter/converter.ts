@@ -7,6 +7,7 @@ import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extens
 import { sidechainConvertCDAToFHIR } from "../sidechain-fhir-converter/converter";
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";
+import { sandboxSleepTime } from "../commonwell/document/shared";
 
 const connector = makeFHIRConverterConnector();
 const templateExt = "hbs";
@@ -63,6 +64,8 @@ export async function convertCDAToFHIR(params: {
     if (Config.isSandbox()) {
       const jsonFileName = s3FileName.replace(".xml", ".json");
       log(`Bypassing conversion, sending straight to FHIR server`);
+      // Mimic prod by waiting for doc to convert to FHIR
+      await Util.sleep(Math.random() * sandboxSleepTime);
       const fhirServerConnector = makeFHIRServerConnector();
       await fhirServerConnector.upsertBatch({
         cxId: patient.cxId,
