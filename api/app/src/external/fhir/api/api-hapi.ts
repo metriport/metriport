@@ -56,7 +56,7 @@ export class HapiFhirClient extends MedplumClient implements FhirClient {
       const searchParams: URLSearchParams = url.searchParams;
       const bundle = isNext
         ? await this.searchNoAppend(resourceType, searchParams)
-        : await this.search(resourceType, searchParams);
+        : await this.search(resourceType, searchParams, { cache: "no-cache" });
       const nextLink: BundleLink | undefined = bundle?.link?.find(link => link.relation === "next");
       if (!bundle?.entry?.length && !nextLink) {
         break;

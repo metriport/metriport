@@ -2,6 +2,7 @@ export class NoTokenError extends Error {
   title: string;
   link: string;
   icon?: string;
+  static DEFAULT_TITLE = "Missing Connect Token";
 
   constructor(message?: string, link?: string, icon?: string) {
     super(
@@ -12,7 +13,7 @@ export class NoTokenError extends Error {
     this.link = link
       ? link
       : "https://docs.metriport.com/devices-api/getting-started/connect-widget#token";
-    this.title = "Missing Connect Token";
+    this.title = NoTokenError.DEFAULT_TITLE;
     this.icon = icon;
   }
 }
@@ -21,6 +22,7 @@ export class DemoTokenError extends Error {
   title: string;
   link: string;
   icon?: string;
+  static DEFAULT_TITLE = "Demo Mode";
 
   constructor(message?: string, link?: string, icon?: string) {
     super(
@@ -31,7 +33,7 @@ export class DemoTokenError extends Error {
     this.link = link
       ? link
       : "https://docs.metriport.com/devices-api/api-reference/user/create-connect-token";
-    this.title = "Demo Mode";
+    this.title = DemoTokenError.DEFAULT_TITLE;
     this.icon = icon;
   }
 }
@@ -40,6 +42,7 @@ export class InvalidTokenError extends Error {
   title: string;
   link: string;
   icon?: string;
+  static DEFAULT_TITLE = "Invalid Connect Token";
 
   constructor(message?: string, link?: string, icon?: string) {
     super(
@@ -50,7 +53,7 @@ export class InvalidTokenError extends Error {
     this.link = link
       ? link
       : "https://docs.metriport.com/devices-api/api-reference/user/create-connect-token";
-    this.title = "Invalid Connect Token";
+    this.title = InvalidTokenError.DEFAULT_TITLE;
     this.icon = icon;
   }
 }
