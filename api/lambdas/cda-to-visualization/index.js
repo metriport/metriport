@@ -5,6 +5,7 @@ const SaxonJS = require("saxon-js");
 const fs = require("fs");
 const styleSheetText = require("./stylesheet.js");
 const Sentry = require("@sentry/serverless");
+import * as uuid from "uuid";
 
 function getEnv(name) {
   return process.env[name];
@@ -87,14 +88,16 @@ const convertStoreAndReturnHtmlDocUrl = async ({ fileName, document }) => {
 
 const convertStoreAndReturnPdfDocUrl = async ({ fileName, document }) => {
   const convertDoc = await convertToHtml(document);
+  const tmpFileName = uuid.v4();
 
-  const htmlFilepath = `/tmp/${fileName}`;
+  const htmlFilepath = `/tmp/${tmpFileName}`;
 
   fs.writeFileSync(htmlFilepath, convertDoc);
 
   // Defines filename + path for downloaded HTML file
   const pdfFilename = fileName.concat(".pdf");
-  const pdfFilepath = `/tmp/${pdfFilename}`;
+  const tmpPDFFileName = tmpFileName.concat(".pdf");
+  const pdfFilepath = `/tmp/${tmpPDFFileName}`;
 
   // Define
   let browser = null;
