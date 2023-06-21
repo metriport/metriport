@@ -16,6 +16,7 @@ import {
   uploadStream,
 } from "../../../command/medical/document/document-query-storage-info";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import {
   MAPIWebhookStatus,
@@ -565,14 +566,23 @@ export async function downloadDocsAndUpsertFHIR({
     toDTO(docsNewLocation)
   );
   // send webhook to CXs if docs are done converting (at this point only if no conversions to be done)
-  const conversionStatus = updatedPatient.data.documentQueryProgress?.convert?.status;
-  if (conversionStatus === "completed") {
+  const patientFromDB = await getPatientOrFail({ cxId: patient.cxId, id: patient.id });
+  const conversionStatusFromDB = patientFromDB.data.documentQueryProgress?.convert?.status;
+  const conversionStatusFromAppend = updatedPatient.data.documentQueryProgress?.convert?.status;
+  if (conversionStatusFromAppend === "completed" || conversionStatusFromDB === "completed") {
     processPatientDocumentRequest(
       updatedPatient.cxId,
       updatedPatient.id,
       MAPIWebhookType.documentConversion,
       MAPIWebhookStatus.completed
     );
+    if (conversionStatusFromAppend !== conversionStatusFromDB) {
+      log(
+        `Conversion status from DB and append are different! ` +
+          `fromAppend: ${conversionStatusFromAppend}, ` +
+          `fromDB: ${conversionStatusFromDB}`
+      );
+    }
   }
 
   return docsNewLocation;
