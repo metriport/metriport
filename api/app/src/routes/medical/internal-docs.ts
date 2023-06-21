@@ -2,13 +2,18 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { z } from "zod";
+import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import {
   isDocumentQueryProgressEqual,
   updateDocQuery,
 } from "../../command/medical/document/document-query";
 import { reprocessDocuments } from "../../command/medical/document/document-redownload";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { MAPIWebhookStatus, MAPIWebhookType, processPatientDocumentRequest } from "../../command/webhook/medical";
+import {
+  MAPIWebhookStatus,
+  MAPIWebhookType,
+  processPatientDocumentRequest,
+} from "../../command/webhook/medical";
 import { convertResult } from "../../domain/medical/document-reference";
 import BadRequestError from "../../errors/bad-request";
 import { encodeExternalId } from "../../shared/external";
@@ -61,14 +66,14 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/docs/encode-ids
+ * GET /internal/docs/encode-ids
  *
  * Encode the document IDs using the same logic used to send docs to the FHIR server.
  *
  * @param req.query.documentIds - The comma-separated list of document IDs to re-download.
  * @return 200
  */
-router.post(
+router.get(
   "/encode-ids",
   asyncHandler(async (req: Request, res: Response) => {
     const documentIdsRaw = getFrom("query").optional("documentIds", req);
@@ -186,10 +191,12 @@ router.post(
 );
 
 router.post(
-  "/check-conversions",
+  "/check-doc-queries",
   asyncHandler(async (req: Request, res: Response) => {
-    // TODO 798 Implement this
-    return res.sendStatus(200);
+    const patientIdsRaw = getFrom("query").optional("patientIds", req);
+    const patientIds = patientIdsRaw?.split(",") ?? [];
+    checkDocumentQueries(patientIds);
+    return res.sendStatus(httpStatus.ACCEPTED);
   })
 );
 

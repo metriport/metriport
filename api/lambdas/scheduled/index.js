@@ -11,6 +11,9 @@ export function getEnvOrFail(name) {
   return value;
 }
 
+// Automatically set by AWS
+const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
+// Set by us
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
 const url = getEnvOrFail("URL");
@@ -31,20 +34,19 @@ Sentry.init({
  * Usually applied to scheduled jobs, it gets triggered by CloudWatch events
  * and calls an endpoint with no authentication.
  */
-export const handler = Sentry.AWSLambda.wrapHandler(async event => {
+exports.handler = async event => {
   try {
     console.log(`Calling POST ${url}`);
 
     await sendRequest({ url, method: "POST" });
 
-    console.log(`Success, request completed. (not waiting for a response)`);
+    console.log(`Done, request completed. (not waiting for a response)`);
   } catch (error) {
     console.log(`Error calling ${url}; ${JSON.stringify(error)}`);
-    captureException(error, { extra: { url, event, err: error } });
+    captureException(error, { extra: { url, event, lambdaName, error } });
     throw error;
   }
-  console.log(`Done`);
-});
+};
 
 /**
  * Sends a POST request without waiting for the response, only for

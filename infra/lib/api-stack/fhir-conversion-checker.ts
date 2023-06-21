@@ -20,12 +20,12 @@ function settings(
 ) {
   return {
     ...props,
-    name: "FHIRConversionChecker",
+    name: "ScheduledDocumentQueryChecker",
     lambdaMemory: 256,
     lambdaTimeout: Duration.seconds(100), // How long can the lambda run for, max is 900 seconds (15 minutes)
     runtime: Runtime.NODEJS_18_X,
     scheduleExpression: config.scheduleExpressions, // See: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
-    url: "http://" + props.apiAddress + "/internal/docs/check-conversions",
+    url: "http://" + props.apiAddress + "/internal/docs/check-doc-queries",
     httpTimeoutMillis: 3_000,
   };
 }
