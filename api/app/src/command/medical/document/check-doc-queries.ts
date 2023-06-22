@@ -1,16 +1,11 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
 import { Progress } from "../../../domain/medical/document-reference";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import {
-  MAPIWebhookStatus,
-  MAPIWebhookType,
-  processPatientDocumentRequest,
-} from "../../webhook/medical";
-import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 
 dayjs.extend(duration);
 
@@ -29,58 +24,33 @@ const MAX_DOWNLOAD_TIME = dayjs.duration({ minutes: 30 });
 export async function checkDocumentQueries(patientIds: string[]): Promise<void> {
   const { log } = Util.out(`checkDocumentQueries - patientIds ${patientIds.join(", ")}`);
   try {
+    const patientsToUpdate: Record<string, { convert?: Progress; download?: Progress }> = {};
+
     const patientsWithDownloadsProcessing = await getDownloadsToUpdate(patientIds);
-    log(
-      `Got ${
-        patientsWithDownloadsProcessing.length
-      } patients with downloads 'processing' to be moved to 'completed': ${patientsWithDownloadsProcessing.join(
-        ", "
-      )}`
-    );
     for (const patient of patientsWithDownloadsProcessing) {
-      await appendDocQueryProgress({
-        patient,
-        downloadProgress: {
-          status: "completed",
-        },
-      });
-      processPatientDocumentRequest(
-        patient.cxId,
-        patient.id,
-        MAPIWebhookType.documentDownload,
-        MAPIWebhookStatus.completed
-        // Can we send these without the list of documents?
-        // Concerned with either:
-        // - doing one patient at a time and taking so long that rolls over the next execution; OR
-        // - doing all patients at once and hammering the FHIR server
-        // toDTO(docsNewLocation)
-      );
+      patientsToUpdate[patient.id] = {
+        download: patient.data.documentQueryProgress?.download ?? ({} as Progress),
+      };
+      // not updating the DB nor triggering webhook at this time
     }
 
     const patientsWithConversionsInProgress = await getConversionsToUpdate(patientIds);
-    log(
-      `Got ${
-        patientsWithConversionsInProgress.length
-      } patients with conversions 'processing' to be moved to 'completed': ${patientsWithConversionsInProgress.join(
-        ", "
-      )}`
-    );
     for (const patient of patientsWithConversionsInProgress) {
-      await appendDocQueryProgress({
-        patient,
-        convertProgress: {
-          status: "completed",
-        },
-      });
-      processPatientDocumentRequest(
-        patient.cxId,
-        patient.id,
-        MAPIWebhookType.documentConversion,
-        MAPIWebhookStatus.completed
-      );
+      patientsToUpdate[patient.id] = {
+        ...patientsToUpdate[patient.id],
+        convert: patient.data.documentQueryProgress?.convert ?? ({} as Progress),
+      };
     }
 
-    log(`Done`);
+    const amount = Object.keys(patientsToUpdate).length;
+    if (amount > 0) {
+      const msg = "Patients with unexpected doc query status";
+      const extra = { amount, patientsToUpdate };
+      capture.message(msg, { extra, level: "warning" });
+      log(msg, stringify(extra));
+    }
+
+    log(`Done (${amount} patients found)`);
   } catch (error) {
     const msg = "Error checking document queries";
     log(msg, error);
@@ -102,45 +72,10 @@ export async function getPatientsToUpdate(
   const query = getQuery(propertyName, maxTime, patientIds);
   const patientsWithDocQueriesInProgress = (await PatientModel.sequelize?.query(query, {
     type: QueryTypes.SELECT,
-    // nest: true,
     mapToModel: true,
     instance: new PatientModel(),
   })) as Patient[];
 
-  // const patientsWithDocQueriesInProgress = await PatientModel.findAll({
-  //   where: {
-  //     [Op.and]: [
-  //       Sequelize.json("data->'documentQueryProgress'->'convert'->>'status'", "processing"),
-  //       {
-  //         [Op.or]: [
-  //           // ### 1st attempt
-  //           // Sequelize.json(
-  //           //   "data->'documentQueryProgress'->'convert'->'total')::int <= ((data->'documentQueryProgress'->'convert'->'successful')::int + (data->'documentQueryProgress'->'convert'->'errors')::int)"
-  //           // ),
-  //           //
-  //           // ### 2nd attempt
-  //             quelize.json("data->'documentQueryProgress'->'convert'->'total')::int"): {
-  //             [Op.lte]: "Sequelize.json("
-  //           },
-  //           Sequelize.where(
-  //             // Sequelize.col(
-  //             Sequelize.json("data->'documentQueryProgress'->'convert'->'total')::int"),
-  //             // ),
-  //             {
-  //               [Op.lte]: Sequelize.json(
-  //                 "data->'documentQueryProgress'->'convert'->'total')::int <= ((data->'documentQueryProgress'->'convert'->'successful')::int + (data->'documentQueryProgress'->'convert'->'errors')::int)"
-  //               ),
-  //             }
-  //           ),
-  //           //
-  //           {
-  //             updatedAt: { [Op.lt]: dayjs().subtract(30, "minutes").toISOString() },
-  //           },
-  //         ],
-  //       },
-  //     ],
-  //   },
-  // });
   return patientsWithDocQueriesInProgress;
 }
 
