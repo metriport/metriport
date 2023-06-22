@@ -35,7 +35,7 @@ Sentry.init({
  * Usually applied to scheduled jobs, it gets triggered by CloudWatch events
  * and calls an endpoint with no authentication.
  */
-export const handler = async event => {
+export const handler = Sentry.AWSLambda.wrapHandler(async event => {
   try {
     console.log(`Calling POST ${url}`);
 
@@ -47,7 +47,7 @@ export const handler = async event => {
     captureException(error, { extra: { url, event, lambdaName, error } });
     throw error;
   }
-};
+});
 
 // write a function to convert object keys into an array
 

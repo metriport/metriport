@@ -1,13 +1,30 @@
+import * as Sentry from "@sentry/serverless";
 import axios from "axios";
 const { exec } = require("child_process");
 
-const getEnvOrFail = name => {
-  const value = process.env[name];
+export function getEnv(name) {
+  return process.env[name];
+}
+export function getEnvOrFail(name) {
+  const value = getEnv(name);
   if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
   return value;
-};
-const api = axios.create();
+}
+
+const envType = getEnvOrFail("ENV_TYPE");
+const sentryDsn = getEnv("SENTRY_DSN");
 const apiServerURL = getEnvOrFail("API_URL");
+
+const api = axios.create();
+
+// Keep this as early on the file as possible
+Sentry.init({
+  dsn: sentryDsn,
+  enabled: sentryDsn != null,
+  environment: envType,
+  // TODO #499 Review this based on the load on our app and Sentry's quotas
+  tracesSampleRate: 1.0,
+});
 
 const buildResponse = (status, body) => ({
   statusCode: status,
@@ -16,7 +33,7 @@ const buildResponse = (status, body) => ({
 
 const defaultResponse = () => buildResponse(200);
 
-exports.handler = async req => {
+export const handler = Sentry.AWSLambda.wrapHandler(async req => {
   console.log("withings request", req);
   const withingsIPAddresses = await Promise.all([
     lookup("ipblock-notify.withings.net"),
@@ -33,7 +50,7 @@ exports.handler = async req => {
   }
   console.log("Request does not include a valid Withings IP address");
   return defaultResponse();
-};
+});
 
 const lookup = async address => {
   return new Promise((resolve, reject) => {

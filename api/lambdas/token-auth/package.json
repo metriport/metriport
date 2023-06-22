@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.1248.0"
+    "aws-sdk": "^2.1248.0",
+    "@sentry/serverless": "^7.46.0"
   }
 }
