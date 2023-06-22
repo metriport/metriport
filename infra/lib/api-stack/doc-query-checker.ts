@@ -7,17 +7,14 @@ import { EnvConfig } from "../env-config";
 import { getConfig } from "../shared/config";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
 
-export type ConversionCheckerProps = {
+export type DocQueryCheckerProps = {
   stack: Construct;
   vpc: IVpc;
   apiAddress: string;
   alarmSnsAction?: SnsAction;
 };
 
-function settings(
-  props: ConversionCheckerProps,
-  config: NonNullable<EnvConfig["fhirConversionChecker"]>
-) {
+function settings(props: DocQueryCheckerProps, config: NonNullable<EnvConfig["docQueryChecker"]>) {
   return {
     ...props,
     name: "ScheduledDocumentQueryChecker",
@@ -30,9 +27,9 @@ function settings(
   };
 }
 
-export function createConversionChecker(props: ConversionCheckerProps): Lambda | undefined {
+export function createDocQueryChecker(props: DocQueryCheckerProps): Lambda | undefined {
   const config = getConfig();
-  if (!config.fhirConversionChecker) return;
+  if (!config.docQueryChecker) return;
 
   const {
     stack,
@@ -46,7 +43,7 @@ export function createConversionChecker(props: ConversionCheckerProps): Lambda |
     scheduleExpression,
     url,
     httpTimeoutMillis,
-  } = settings(props, config.fhirConversionChecker);
+  } = settings(props, config.docQueryChecker);
 
   const lambda = createScheduledLambda({
     stack,
