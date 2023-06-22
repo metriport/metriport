@@ -7,10 +7,10 @@ import {
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
-  DocumentList,
   documentListSchema,
   DocumentQuery,
   documentQuerySchema,
+  DocumentReference,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
@@ -324,15 +324,15 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation.
    * @return The list of available document references.
    */
-  async listDocuments(patientId: string, facilityId: string): Promise<DocumentList> {
+  async listDocuments(patientId: string, facilityId: string): Promise<DocumentReference[]> {
     const resp = await this.api.get(`${DOCUMENT_URL}`, {
       params: {
         patientId,
         facilityId,
       },
     });
-    if (!resp.data) return { documents: [] };
-    return documentListSchema.parse(resp.data);
+    if (!resp.data) return [];
+    return documentListSchema.parse(resp.data).documents;
   }
 
   /**
