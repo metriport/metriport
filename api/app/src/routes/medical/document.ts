@@ -42,6 +42,9 @@ router.get(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
+    // Confirm the CX can access this patient
+    await getPatientOrFail({ cxId, id: patientId });
+
     const documents = await getDocuments({ cxId, patientId });
     const documentsDTO = toDTO(documents).flatMap(doc => {
       if (!doc.indexed) return doc;
@@ -54,10 +57,7 @@ router.get(
       return [];
     });
 
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-
     return res.status(OK).json({
-      ...patient.data.documentQueryProgress,
       documents: documentsDTO,
     });
   })

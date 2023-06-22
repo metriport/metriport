@@ -58,9 +58,7 @@ export const documentQuerySchema = z.object({
 
 export type DocumentQuery = z.infer<typeof documentQuerySchema>;
 
-export const documentListSchema = z
-  .object({
-    documents: z.array(documentReferenceSchema),
-  })
-  .merge(documentQuerySchema);
+export const documentListSchema = z.object({
+  documents: z.array(documentReferenceSchema),
+});
 export type DocumentList = z.infer<typeof documentListSchema>;

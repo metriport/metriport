@@ -322,7 +322,7 @@ export class MetriportMedicalApi {
    *
    * @param patientId Patient ID for which to retrieve document metadata.
    * @param facilityId The facility providing the NPI to support this operation.
-   * @return The metadata of available documents.
+   * @return The list of available document references.
    */
   async listDocuments(patientId: string, facilityId: string): Promise<DocumentList> {
     const resp = await this.api.get(`${DOCUMENT_URL}`, {
@@ -331,7 +331,7 @@ export class MetriportMedicalApi {
         facilityId,
       },
     });
-    if (!resp.data) [];
+    if (!resp.data) return { documents: [] };
     return documentListSchema.parse(resp.data);
   }
 
