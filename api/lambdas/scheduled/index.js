@@ -2,10 +2,10 @@ import * as Sentry from "@sentry/serverless";
 import * as https from "https";
 import * as URL from "url";
 
-export function getEnv(name) {
+function getEnv(name) {
   return process.env[name];
 }
-export function getEnvOrFail(name) {
+function getEnvOrFail(name) {
   const value = getEnv(name);
   if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
   return value;
@@ -34,7 +34,7 @@ Sentry.init({
  * Usually applied to scheduled jobs, it gets triggered by CloudWatch events
  * and calls an endpoint with no authentication.
  */
-exports.handler = async event => {
+export const handler = async event => {
   try {
     console.log(`Calling POST ${url}`);
 
@@ -58,7 +58,7 @@ exports.handler = async event => {
  * @param {Record<string, unknown>} param.data
  * @returns {Promise<ClientRequest>}
  */
-export const sendRequest = async ({ url, method, data }) => {
+async function sendRequest({ url, method, data }) {
   const decodedURL = URL.parse(url);
   return new Promise(resolve => {
     const req = https.request({
@@ -80,7 +80,7 @@ export const sendRequest = async ({ url, method, data }) => {
       resolve(req);
     });
   });
-};
+}
 
 // Keep all capture* functions regardless of usage, so its easier to keep them in sync/the same
 // so later we can move them to a lambda layer

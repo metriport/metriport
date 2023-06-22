@@ -14,7 +14,10 @@ export type DocQueryCheckerProps = {
   alarmSnsAction?: SnsAction;
 };
 
-function settings(props: DocQueryCheckerProps, config: NonNullable<EnvConfig["docQueryChecker"]>) {
+function getSettings(
+  props: DocQueryCheckerProps,
+  config: NonNullable<EnvConfig["docQueryChecker"]>
+) {
   return {
     ...props,
     name: "ScheduledDocumentQueryChecker",
@@ -22,8 +25,8 @@ function settings(props: DocQueryCheckerProps, config: NonNullable<EnvConfig["do
     lambdaTimeout: Duration.seconds(100), // How long can the lambda run for, max is 900 seconds (15 minutes)
     runtime: Runtime.NODEJS_18_X,
     scheduleExpression: config.scheduleExpressions, // See: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
-    url: "http://" + props.apiAddress + "/internal/docs/check-doc-queries",
-    httpTimeoutMillis: 3_000,
+    url: `http://${props.apiAddress}/internal/docs/check-doc-queries`,
+    httpTimeout: Duration.seconds(3),
   };
 }
 
@@ -35,29 +38,27 @@ export function createDocQueryChecker(props: DocQueryCheckerProps): Lambda | und
     stack,
     vpc,
     runtime,
-    apiAddress,
     alarmSnsAction,
     name,
     lambdaMemory,
     lambdaTimeout,
     scheduleExpression,
     url,
-    httpTimeoutMillis,
-  } = settings(props, config.docQueryChecker);
+    httpTimeout,
+  } = getSettings(props, config.docQueryChecker);
 
   const lambda = createScheduledLambda({
     stack,
     name,
     vpc,
     scheduleExpression,
-    url: apiAddress,
+    url,
     runtime,
     memory: lambdaMemory,
     timeout: lambdaTimeout,
     alarmSnsAction,
     envVars: {
-      URL: url,
-      TIMEOUT_MILLIS: String(httpTimeoutMillis),
+      TIMEOUT_MILLIS: String(httpTimeout.toMilliseconds()),
       ENV_TYPE: config.environmentType,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
     },
