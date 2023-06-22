@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/serverless";
+import * as http from "http";
 import * as https from "https";
 import * as URL from "url";
 
@@ -48,6 +49,8 @@ export const handler = async event => {
   }
 };
 
+// write a function to convert object keys into an array
+
 /**
  * Sends a POST request without waiting for the response, only for
  * the confirmation the request was received.
@@ -61,7 +64,8 @@ export const handler = async event => {
 async function sendRequest({ url, method, data }) {
   const decodedURL = URL.parse(url);
   return new Promise(resolve => {
-    const req = https.request({
+    const httpx = decodedURL.protocol === "https:" ? https : http;
+    const req = httpx.request({
       protocol: decodedURL.protocol,
       host: decodedURL.hostname,
       port: decodedURL.port ?? undefined,
