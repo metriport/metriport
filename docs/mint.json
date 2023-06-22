@@ -374,9 +374,9 @@
               "pages": [
                 "devices-api/api-reference/user/create-user",
                 "devices-api/api-reference/user/create-connect-token",
-                "devices-api/api-reference/user/delete-user",
+                "devices-api/api-reference/user/get-connected-providers",
                 "devices-api/api-reference/user/revoke-provider-access",
-                "devices-api/api-reference/user/get-connected-providers"
+                "devices-api/api-reference/user/delete-user"
               ]
             }
           ]
@@ -389,7 +389,8 @@
             "devices-api/api-reference/get-body-data",
             "devices-api/api-reference/get-nutrition-data",
             "devices-api/api-reference/get-sleep-data",
-            "devices-api/api-reference/get-user-data"
+            "devices-api/api-reference/get-user-data",
+            "devices-api/api-reference/get-connected-users"
           ]
         }
       ]
