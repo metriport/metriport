@@ -12,6 +12,8 @@ dayjs.extend(duration);
 const MAX_CONVERSION_TIME = dayjs.duration({ minutes: 30 });
 const MAX_DOWNLOAD_TIME = dayjs.duration({ minutes: 30 });
 
+type PatientInfoFromCheck = { convert?: Progress; download?: Progress; lastUpdatedAt: Date };
+
 /**
  * Ops-driven function to check the status of all document queries in progress.
  * NOT TO BE USED BY CUSTOMERS DIRECTLY.
@@ -24,12 +26,13 @@ const MAX_DOWNLOAD_TIME = dayjs.duration({ minutes: 30 });
 export async function checkDocumentQueries(patientIds: string[]): Promise<void> {
   const { log } = Util.out(`checkDocumentQueries - patientIds ${patientIds.join(", ")}`);
   try {
-    const patientsToUpdate: Record<string, { convert?: Progress; download?: Progress }> = {};
+    const patientsToUpdate: Record<string, PatientInfoFromCheck> = {};
 
     const patientsWithDownloadsProcessing = await getDownloadsToUpdate(patientIds);
     for (const patient of patientsWithDownloadsProcessing) {
       patientsToUpdate[patient.id] = {
         download: patient.data.documentQueryProgress?.download ?? ({} as Progress),
+        lastUpdatedAt: patient.updatedAt,
       };
       // not updating the DB nor triggering webhook at this time
     }
@@ -39,6 +42,7 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
       patientsToUpdate[patient.id] = {
         ...patientsToUpdate[patient.id],
         convert: patient.data.documentQueryProgress?.convert ?? ({} as Progress),
+        lastUpdatedAt: patient.updatedAt,
       };
     }
 
@@ -70,11 +74,18 @@ export async function getPatientsToUpdate(
   patientIds?: string[]
 ): Promise<Patient[]> {
   const query = getQuery(propertyName, maxTime, patientIds);
+
   const patientsWithDocQueriesInProgress = (await PatientModel.sequelize?.query(query, {
     type: QueryTypes.SELECT,
     mapToModel: true,
     instance: new PatientModel(),
   })) as Patient[];
+
+  // 'updatedAt' is not being set by sequelize, so we need to set it manually
+  patientsWithDocQueriesInProgress.forEach(patient => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!patient.updatedAt) patient.updatedAt = (patient as any)["updated_at"];
+  });
 
   return patientsWithDocQueriesInProgress;
 }
