@@ -41,6 +41,7 @@ export const mapToBody = (
 
   if (fitbitWeight && fitbitWeight.length > 0) {
     body.weight_samples_kg = fitbitWeight.map(weight => {
+      console.log("SAMPLES KG NAME", weight.source);
       const dateTime = date + "T" + weight.time;
       return {
         time: dayjs(dateTime).toISOString(),
@@ -56,8 +57,10 @@ export const mapToBody = (
   return body;
 };
 
-function checkSource(weight: string) {
-  return weight === "API" ? SourceType.manual : SourceType.device;
+function checkSource(weight_src: string) {
+  return weight_src.toLowerCase() === "api" || weight_src.toLowerCase() === "web"
+    ? SourceType.manual
+    : SourceType.device;
 }
 
 function convertStonesToKg(weight_stones: number): number {
