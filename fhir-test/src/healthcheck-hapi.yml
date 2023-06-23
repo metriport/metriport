@@ -1,0 +1,23 @@
+config:
+  target: "{{ $processEnvironment.HAPI_URL }}"
+  plugins:
+    publish-metrics:
+      # https://www.artillery.io/docs/guides/plugins/plugin-publish-metrics#cloudwatch
+      - type: cloudwatch
+        region: "{{ $processEnvironment.REGION }}"
+  phases:
+    - duration: 10
+      arrivalRate: 10
+      name: Warm up
+    - duration: 60
+      arrivalRate: 50
+      rampTo: 200
+      name: Ramp up load
+
+scenarios:
+  - name: 'Healthcheck HAPI'
+    flow:
+      - loop:
+          - get:
+              url: '/'
+        count: 10

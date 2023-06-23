@@ -1,5 +1,5 @@
 import { intersectionWith, isEqual } from "lodash";
-import { Op } from "sequelize";
+import { Op, Transaction } from "sequelize";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
@@ -100,17 +100,37 @@ export const getPatientByDemo = async ({
   return chosenOne;
 };
 
-export const getPatientOrFail = async ({
-  id,
-  cxId,
-}: {
+export type GetPatient = {
   id: string;
   cxId: string;
-}): Promise<PatientModel> => {
+} & (
+  | {
+      transaction?: never;
+      lock?: never;
+    }
+  | {
+      transaction: Transaction;
+      lock?: boolean;
+    }
+);
+
+export const getPatient = async ({
+  id,
+  cxId,
+  transaction,
+  lock,
+}: GetPatient): Promise<PatientModel | undefined> => {
   const patient = await PatientModel.findOne({
     where: { cxId, id },
+    transaction,
+    lock,
   });
-  if (!patient) throw new NotFoundError(`Could not find patient ${safeLogId(id)}`);
+  return patient ?? undefined;
+};
+
+export const getPatientOrFail = async (params: GetPatient): Promise<PatientModel> => {
+  const patient = await getPatient(params);
+  if (!patient) throw new NotFoundError(`Could not find patient ${safeLogId(params.id)}`);
   return patient;
 };
 

@@ -15,6 +15,9 @@ import { processAsyncError } from "../../errors";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/patient";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
+import { PatientModel as Patient } from "../../models/medical/patient";
+import { Config } from "../../shared/config";
+import { parseISODate } from "../../shared/date";
 import {
   asyncHandler,
   getCxIdOrFail,
@@ -51,6 +54,16 @@ router.post(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const payload = patientCreateSchema.parse(req.body);
 
+    if (Config.isSandbox()) {
+      // limit the amount of patients that can be created in sandbox mode
+      const numPatients = await Patient.count({ where: { cxId } });
+      if (numPatients >= Config.SANDBOX_PATIENT_LIMIT) {
+        return res.status(status.BAD_REQUEST).json({
+          message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
+        });
+      }
+    }
+
     const patientCreate: PatientCreateCmd = {
       ...schemaCreateToPatient(payload, cxId),
       facilityId,
@@ -84,7 +97,6 @@ router.put(
     const payload = patientUpdateSchema.parse(req.body);
 
     const isProcessing = await areDocumentsProcessing({ id, cxId });
-
     if (isProcessing) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
     }
@@ -94,6 +106,7 @@ router.put(
       ...getETag(req),
       id,
     };
+
     const updatedPatient = await updatePatient(patientUpdate);
 
     // temp solution until we migrate to FHIR
@@ -190,6 +203,8 @@ const resourceSchema = z.enum(resourceTypeForConsolidation).array();
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
+ * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  * @return Patient's consolidated data.
  */
 router.get(
@@ -201,8 +216,10 @@ router.get(
     const resources = resourcesRaw
       ? resourceSchema.parse(resourcesRaw.split(",").map(r => r.trim()))
       : undefined;
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    const data = await getConsolidatedPatientData({ cxId, patientId, resources });
+    const data = await getConsolidatedPatientData({ cxId, patientId, resources, dateFrom, dateTo });
 
     return res.json(data);
   })

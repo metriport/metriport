@@ -1,5 +1,6 @@
 import { Duration, StackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import { Metric } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -11,9 +12,9 @@ import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
-import { Secrets } from "./secrets";
-import { DnsZones } from "./shared";
-import { isProd } from "./util";
+import { DnsZones } from "./shared/dns";
+import { Secrets } from "./shared/secrets";
+import { isProd } from "./shared/util";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
@@ -29,7 +30,11 @@ export function createAPIService(
   dynamoDBTokenTable: dynamodb.Table,
   alarmAction: SnsAction | undefined,
   dnsZones: DnsZones,
-  fhirConverterServiceUrl: string
+  fhirServerUrl: string | undefined,
+  fhirServerQueueUrl: string | undefined,
+  fhirConverterQueueUrl: string | undefined,
+  fhirConverterServiceUrl: string | undefined,
+  sidechainFHIRConverterQueueUrl: string | undefined
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -55,6 +60,8 @@ export function createAPIService(
     "APIFargateService",
     {
       cluster: cluster,
+      // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
+      // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
       cpu: isProd(props.config) ? 2048 : 1024,
       desiredCount: isProd(props.config) ? 2 : 1,
       taskImageOptions: {
@@ -80,14 +87,29 @@ export function createAPIService(
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
           }),
-          ...(props.config.fhirServerUrl && {
-            FHIR_SERVER_URL: props.config.fhirServerUrl,
-          }),
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
           }),
+          ...(props.config.sandboxSeedDataBucketName && {
+            SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
+          }),
+          ...(props.config.cdaToVisualizationLambdaName && {
+            CONVERT_DOC_LAMBDA_NAME: props.config.cdaToVisualizationLambdaName,
+          }),
+          ...(fhirServerUrl && {
+            FHIR_SERVER_URL: fhirServerUrl,
+          }),
+          ...(fhirServerQueueUrl && {
+            FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
+          }),
+          ...(fhirConverterQueueUrl && {
+            FHIR_CONVERTER_QUEUE_URL: fhirConverterQueueUrl,
+          }),
           ...(fhirConverterServiceUrl && {
-            FHIR_CONVERTER_URL: fhirConverterServiceUrl,
+            FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
+          }),
+          ...(sidechainFHIRConverterQueueUrl && {
+            SIDECHAIN_FHIR_CONVERTER_QUEUE_URL: sidechainFHIRConverterQueueUrl,
           }),
         },
       },
@@ -112,6 +134,10 @@ export function createAPIService(
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   // CloudWatch Alarms and Notifications
+
+  // Allow the service to publish metrics to cloudwatch
+  Metric.grantPutMetricData(fargateService.service.taskDefinition.taskRole);
+
   const fargateCPUAlarm = fargateService.service
     .metricCpuUtilization()
     .createAlarm(stack, "CPUAlarm", {

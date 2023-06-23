@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.test" });
 import { Observation } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
 import { HapiFhirClient } from "../../../external/fhir/api/api-hapi";

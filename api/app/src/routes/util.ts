@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { ApiTypes } from "../command/usage/report-usage";
 import BadRequestError from "../errors/bad-request";
 import { analytics, EventTypes } from "../shared/analytics";
+import { Config } from "../shared/config";
 import { capture } from "../shared/notifications";
 
 export const asyncHandler =
@@ -19,7 +20,7 @@ export const asyncHandler =
       analyzeRoute(req);
       await f(req, res, next);
     } catch (err) {
-      console.error(err);
+      Config.isCloudEnv() && console.error(err);
       next(err);
     }
   };
@@ -136,7 +137,7 @@ export function getFrom(context: Context): GetWithParams {
 
 export const getCxId = (req: Request): string | undefined => {
   const cxId = req.cxId;
-  cxId && capture.setUserId(cxId);
+  cxId && capture.setUser({ id: cxId });
   return cxId;
 };
 export const getCxIdOrFail = (req: Request): string => {
@@ -147,7 +148,7 @@ export const getCxIdOrFail = (req: Request): string => {
 
 export const getCxIdFromQuery = (req: Request): string | undefined => {
   const cxId = req.query.cxId as string | undefined;
-  cxId && capture.setUserId(cxId);
+  cxId && capture.setUser({ id: cxId });
   return cxId;
 };
 export const getCxIdFromQueryOrFail = (req: Request): string => {
@@ -158,7 +159,7 @@ export const getCxIdFromQueryOrFail = (req: Request): string => {
 
 export const getCxIdFromHeaders = (req: Request): string | undefined => {
   const cxId = req.header("cxId") as string | undefined;
-  cxId && capture.setUserId(cxId);
+  cxId && capture.setUser({ id: cxId });
   return cxId;
 };
 

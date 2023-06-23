@@ -17,7 +17,7 @@ import { downloadDocsAndUpsertFHIR } from "../../../external/commonwell/document
 import { hasCommonwellContent, isCommonwellContent } from "../../../external/commonwell/extension";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { downloadedFromHIEs } from "../../../external/fhir/shared";
-import { isMetriportContent } from "../../../external/fhir/shared/extensions/extension";
+import { isMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
 import { decodeExternalId } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -113,7 +113,10 @@ async function processDocsOfPatient({
   const { log } = Util.out(`processDocsOfPatient - M patientId ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (patient.data.documentQueryStatus === "processing") {
+  if (
+    patient.data.documentQueryProgress?.download?.status === "processing" ||
+    patient.data.documentQueryProgress?.convert?.status === "processing"
+  ) {
     log(`Patient ${patientId} is already being processed, skipping ${docs.length} docs...`);
     return;
   }
@@ -136,7 +139,11 @@ async function processDocsOfPatient({
 
   try {
     log(`Processing ${docs.length} documents for patient ${patientId}...`);
-    await updateDocQuery({ patient: { id: patientId, cxId }, status: "processing" });
+    await updateDocQuery({
+      patient: { id: patientId, cxId },
+      downloadProgress: { status: "processing" },
+      reset: true,
+    });
 
     await downloadDocsAndUpsertFHIR({
       patient,
@@ -146,10 +153,13 @@ async function processDocsOfPatient({
       override,
     });
   } catch (error) {
-    log(`Error processing docs: `, error);
+    log(`Error processing docs: ${error}`);
     capture.error(error, { extra: { context: `processDocsOfPatient`, error } });
   } finally {
-    await updateDocQuery({ patient: { id: patientId, cxId }, status: "completed" });
+    await updateDocQuery({
+      patient: { id: patientId, cxId },
+      downloadProgress: { status: "completed" },
+    });
   }
   log(`Done for patient ${patientId}`);
 }
@@ -228,7 +238,7 @@ function convertDocRefToCW(docs: DocumentReference[], isOverride: boolean): Docu
       };
       return cwDoc;
     } catch (error) {
-      console.log(`[convertDocRefToCW] Error converting docRef ${d.id} to CW: `, error);
+      console.log(`[convertDocRefToCW] Error converting docRef ${d.id} to CW: ${error}`);
       capture.error(error, {
         extra: {
           context: `convertDocRefToCW`,

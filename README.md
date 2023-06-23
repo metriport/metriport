@@ -439,7 +439,7 @@ $ npm run start # available on port 3001 by default
 $ npm run start -w connect-widget
 ```
 
-To debug the Connect Widget, you can attach a run a Chrome window by launching the `Run Chrome` configuration in VS Code.
+To debug the Connect Widget, you can run a Chrome window by launching the `Run Chrome` configuration in VS Code.
 
 ### Utils
 

@@ -56,7 +56,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
         ).flatMap(u => u);
         const cxIdAndUserIdList = connectedUsers.map(t => ({
           cxId: t.cxId,
-          cxUserId: t.cxUserId,
+          userId: t.id,
         }));
         if (cxIdAndUserIdList.length < 1) {
           log(`Could not find account for UAT ${uat}`);
@@ -66,9 +66,9 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
     );
     // Flatten the list so each item has one cxId/userId and one data record
     const dataByUser = dataWithListOfCxIdAndUserId.flatMap(v =>
-      v.cxIdAndUserIdList.map(({ cxId, cxUserId }) => ({
+      v.cxIdAndUserIdList.map(({ cxId, userId }) => ({
         cxId,
-        cxUserId,
+        userId,
         typedData: v.typedData,
       }))
     );
@@ -80,7 +80,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
         try {
           // flat list of each data record and its respective user
           const dataAndUserList = dataByCustomer[cxId].map(v => ({
-            cxUserId: v.cxUserId,
+            userId: v.userId,
             typedData: v.typedData,
           }));
           // split the list in chunks
@@ -88,11 +88,12 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
           // transform each chunk into a payload
           const payloads = chunks.map(c => {
             // groups by user
-            const dataByUser = groupBy(c, v => v.cxUserId);
+            const dataByUser = groupBy(c, v => v.userId);
             // now convert that into an array of WebhookUserPayload (all the data of a user for this chunk)
             const users: WebhookUserPayload[] = [];
-            for (const cxUserId of Object.keys(dataByUser)) {
-              const usersData = dataByUser[cxUserId].map(dbu => dbu.typedData);
+            for (const id of Object.keys(dataByUser)) {
+              const usersData = dataByUser[id].map(dbu => dbu.typedData);
+              const userId = dataByUser[id].map(dbu => dbu.userId)[0];
               // for each user, group together data by type
               const usersDataByType = groupBy(usersData, ud => ud.type);
               const data: MetriportData[] = [];
@@ -100,7 +101,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
                 const dataOfType: TypedData<MetriportData>[] = usersDataByType[type];
                 data.push(...dataOfType.map(d => d.data));
                 users.push({
-                  userId: cxUserId,
+                  userId,
                   [type]: data,
                 });
               }
@@ -123,21 +124,21 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
           await processOneCustomer(cxId, settings, payloads);
           reportDevicesUsage(
             cxId,
-            dataAndUserList.map(du => du.cxUserId)
+            dataAndUserList.map(du => du.userId)
           );
         } catch (err) {
           const msg = getErrorMessage(err);
           log(`Failed to process data of customer ${cxId}: ${msg}`);
           capture.error(err, {
-            extra: { context: `webhook.processData.customer` },
+            extra: { context: `webhook.processData.customer`, err },
           });
         }
       })
     );
   } catch (err) {
-    log(`Error on processData: `, err);
+    log(`Error on processData: ${err}`);
     capture.error(err, {
-      extra: { context: `webhook.processData.global` },
+      extra: { context: `webhook.processData.global`, err },
     });
   }
 };

@@ -1,0 +1,122 @@
+config:
+  target: "{{ $processEnvironment.HAPI_URL }}"
+  http:
+    timeout: 120
+  plugins:
+    # https://www.artillery.io/docs/guides/plugins/plugin-publish-metrics
+    publish-metrics:
+      - type: cloudwatch
+        region: "{{ $processEnvironment.REGION }}"
+    expect: {}
+  phases:
+    - duration: 1
+      arrivalCount: 1
+      name: Functional Test
+  variables:
+    tenantId: "{{ $processEnvironment.HAPI_TENANT_ID }}"
+  processor: "./batch.js"
+
+scenarios:
+  - name: "FHIR Batch HAPI Functional"
+    beforeScenario: makeBodyFunctional
+    flow:
+      - log: "Posting batch {{ requestFile }}"
+      - post:
+          name: "Post Batch"
+          url: "/fhir/{{tenantId}}/"
+          json: "{{ requestBody }}"
+          expect:
+            - statusCode:
+              - 200
+              - 201
+      - post:
+          name: "RePost Batch"
+          url: "/fhir/{{tenantId}}/"
+          json: "{{ requestBody }}"
+          afterResponse: "checkOperationOutcomes"
+          expect:
+            - statusCode:
+              - 200
+      # - log: "IDs {{ ids }}"
+      - get:
+          name: "Check it created Condition"
+          url: "/fhir/{{tenantId}}/Condition/{{ ids.condition }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Observation"
+          url: "/fhir/{{tenantId}}/Observation/{{ ids.observation }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Procedure"
+          url: "/fhir/{{tenantId}}/Procedure/{{ ids.procedure }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created DiagnosticReport"
+          url: "/fhir/{{tenantId}}/DiagnosticReport/{{ ids.diagnosticReport }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Patient"
+          url: "/fhir/{{tenantId}}/Patient/{{ ids.patient }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Practitioner"
+          url: "/fhir/{{tenantId}}/Practitioner/{{ ids.practitioner }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Device"
+          url: "/fhir/{{tenantId}}/Device/{{ ids.device }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created MedicationStatement"
+          url: "/fhir/{{tenantId}}/MedicationStatement/{{ ids.medicationStatement }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created Medication"
+          url: "/fhir/{{tenantId}}/Medication/{{ ids.medication }}"
+          expect:
+            - statusCode: 200
+      - get:
+          name: "Check it created AllergyIntolerance"
+          url: "/fhir/{{tenantId}}/AllergyIntolerance/{{ ids.allergyIntolerance }}"
+          expect:
+            - statusCode: 200
+
+      # Synthea doesn't generate these for CCDA - https://github.com/synthetichealth/synthea/issues/226#issuecomment-340492546
+      # - get:
+      #     name: "Check it created Claim"
+      #     url: "/fhir/{{tenantId}}/Claim/{{ ids.claim }}"
+      #     headers:
+      #       Authorization: "Bearer {{ token }}"
+      #     expect:
+      #       - statusCode: 200
+      # - get:
+      #     name: "Check it created ExplanationOfBenefit"
+      #     url: "/fhir/{{tenantId}}/ExplanationOfBenefit/{{ ids.explanationOfBenefit }}"
+      #     headers:
+      #       Authorization: "Bearer {{ token }}"
+      #     expect:
+      #       - statusCode: 200
+
+      # We don't convert those to FHIR yet
+      # - get:
+      #     name: "Check it created Encounter"
+      #     url: "/fhir/{{tenantId}}/Encounter/{{ ids.encounter }}"
+      #     headers:
+      #       Authorization: "Bearer {{ token }}"
+      #     expect:
+      #       - statusCode: 200
+      # - get:
+      #     name: "Check it created Immunization"
+      #     url: "/fhir/{{tenantId}}/Immunization/{{ ids.immunization }}"
+      #     headers:
+      #       Authorization: "Bearer {{ token }}"
+      #     expect:
+      #       - statusCode: 200

@@ -1,6 +1,6 @@
 ---
 title: "Get Connected Providers"
-description: "Returns the specified user's connected providers"
+description: "Returns the specified user's connected providers."
 api: "GET /user/:userId/connected-providers"
 ---
 
@@ -9,18 +9,6 @@ api: "GET /user/:userId/connected-providers"
 <ResponseField name="connectedProviders" type="array" required>
   The user's connected providers
 </ResponseField>
-
-<ResponseExample>
-
-```javascript Metriport SDK
-import { MetriportDevicesApi } from "@metriport/api";
-
-const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
-
-const connectedProviders = await metriportClient.getConnectedProviders("metriportUserId");
-```
-
-</ResponseExample>
 
 ```json
 {
@@ -37,3 +25,15 @@ const connectedProviders = await metriportClient.getConnectedProviders("metripor
   ]
 }
 ```
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportDevicesApi } from "@metriport/api";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+
+const connectedProviders = await metriportClient.getConnectedProviders("metriportUserId");
+```
+
+</ResponseExample>

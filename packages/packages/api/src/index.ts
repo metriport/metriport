@@ -4,9 +4,12 @@ export { Activity } from "./devices/models/activity";
 export { Biometrics } from "./devices/models/biometrics";
 export { Body } from "./devices/models/body";
 export { ProviderSource } from "./devices/models/common/provider-source";
+export { Food } from "./devices/models/common/food";
 export { Nutrition } from "./devices/models/nutrition";
 export { Sleep } from "./devices/models/sleep";
 export { User } from "./devices/models/user";
+export { ConnectedUserInfo } from "./devices/models/common/connected-user-info";
+export { SourceType } from "./devices/models/common/source-type";
 // Medical API
 export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Address, addressSchema } from "./medical/models/common/address";
@@ -39,7 +42,7 @@ export {
   facilityListSchema,
   facilitySchema,
 } from "./medical/models/facility";
-export { Link, MedicalDataSource, PatientLinks } from "./medical/models/link";
+export { Link, MedicalDataSource, PatientLinks, LinkStatus } from "./medical/models/link";
 export {
   Organization,
   OrganizationCreate,

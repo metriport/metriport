@@ -1,35 +1,37 @@
-{{#if (eq code 'planned')}}
-	"planned"
-{{else if (eq code 'arrived')}}
-	"arrived"
-{{else if (eq code 'triaged')}}
-	"triaged"
-{{else if (eq code 'accepted')}}
-	"triaged"
-{{else if (eq code 'active')}}
-	"in-progress"
-{{else if (eq code 'active')}}
-	"in-progress"
-{{else if (eq code 'onleave')}}
-	"onleave"
-{{else if (eq code 'suspended')}}
-	"onleave"
-{{else if (eq code 'normal')}}
-	"finished"
-{{else if (eq code 'complete')}}
-	"finished"
-{{else if (eq code 'finished')}}
-	"finished"
-{{else if (eq code 'cancelled')}}
-	"cancelled"
-{{else if (eq code 'abandoned')}}
-	"cancelled"
-{{else if (eq code 'error')}}
-	"entered-in-error"
-{{else if (eq code 'entered-in-error')}}
-	"entered-in-error"
-{{else if (eq code 'unknown')}}
-	"unknown"
-{{else}}
-    "unknown"
-{{/if}}
+{{#with (toLower code) as |normalizedCode|}}
+	{{#if (eq normalizedCode 'planned')}}
+		"planned"
+	{{else if (eq normalizedCode 'arrived')}}
+		"arrived"
+	{{else if (eq normalizedCode 'triaged')}}
+		"triaged"
+	{{else if (eq normalizedCode 'accepted')}}
+		"triaged"
+	{{else if (eq normalizedCode 'active')}}
+		"in-progress"
+	{{else if (eq normalizedCode 'onleave')}}
+		"onleave"
+	{{else if (eq normalizedCode 'suspended')}}
+		"onleave"
+	{{else if (eq normalizedCode 'normal')}}
+		"finished"
+	{{else if (eq normalizedCode 'complete')}}
+		"finished"
+	{{else if (eq normalizedCode 'completed')}}
+		"finished"
+	{{else if (eq normalizedCode 'finished')}}
+		"finished"
+	{{else if (eq normalizedCode 'cancelled')}}
+		"cancelled"
+	{{else if (eq normalizedCode 'abandoned')}}
+		"cancelled"
+	{{else if (eq normalizedCode 'error')}}
+		"entered-in-error"
+	{{else if (eq normalizedCode 'entered-in-error')}}
+		"entered-in-error"
+	{{else if (eq normalizedCode 'unknown')}}
+		"unknown"
+	{{else}}
+		"unknown"
+	{{/if}}
+{{/with}}

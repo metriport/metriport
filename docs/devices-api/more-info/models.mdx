@@ -45,6 +45,7 @@ export interface Body extends MetriportData {
   muscle_mass_kg?: number;
   lean_mass_kg?: number;
   max_possible_heart_rate_bpm?: number;
+  weight_samples_kg?: Sample[];
 }
 ```
 
@@ -57,6 +58,7 @@ export interface Nutrition extends MetriportData {
     micros?: Micros;
     aminos?: Aminos;
   };
+  foods?: Food[];
 }
 ```
 
@@ -137,6 +139,22 @@ export interface Aminos {
 }
 ```
 
+### Food
+
+```typescript
+export interface Food {
+  name?: string;
+  brand?: string;
+  amount?: number;
+  unit?: string;
+  nutrition_facts?: {
+    macros?: Macros;
+    micros?: Micros;
+    aminos?: Aminos;
+  };
+}
+```
+
 ## Sleep
 
 ```typescript
@@ -176,6 +194,8 @@ export interface SleepBiometrics {
 
 ## User
 
+### User
+
 ```typescript
 export interface User extends MetriportData {
   age?: number;
@@ -188,6 +208,16 @@ export interface User extends MetriportData {
   region?: string; // can be state, province, etc.
   sex?: Sex;
 }
+```
+
+### Connected User Info
+
+```typescript
+export type ConnectedUserInfo = {
+  metriportUserId: string;
+  appUserId: string;
+  connectedProviders?: string[];
+};
 ```
 
 ## Common
@@ -339,8 +369,21 @@ export interface LatLon {
 ```typescript
 export interface Metadata {
   date: string;
+  hour?: string;
   source: ProviderSource;
+  data_source?: SourceInfo;
   error?: string;
+}
+```
+
+### Source Info
+
+```typescript
+export interface SourceInfo {
+  source_type?: SourceType;
+  id?: string;
+  name?: string;
+  type?: string;
 }
 ```
 
@@ -384,6 +427,16 @@ export interface Respiration {
 export interface Sample {
   time: string;
   value: number;
+  data_source?: SourceInfo;
+}
+```
+
+### Source Type
+
+```typescript
+export enum SourceType {
+  manual = "MANUAL_ENTRY",
+  device = "DEVICE",
 }
 ```
 

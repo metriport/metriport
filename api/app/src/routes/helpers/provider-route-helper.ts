@@ -46,7 +46,7 @@ export async function getProviderDataForType<T>(
     } else {
       console.error(result.reason);
       capture.error(result.reason, {
-        extra: { context: `${providers[i]}.${type}` },
+        extra: { context: `getProviderDataForType`, additional: `${providers[i]}.${type}` },
       });
       data.push({
         metadata: {

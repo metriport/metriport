@@ -17,6 +17,7 @@ const buildResponse = (status, body) => ({
 const defaultResponse = () => buildResponse(200);
 
 exports.handler = async req => {
+  console.log("withings request", req);
   const withingsIPAddresses = await Promise.all([
     lookup("ipblock-notify.withings.net"),
     lookup("ipblock-front.withings.net"),
@@ -52,9 +53,11 @@ const lookup = async address => {
 };
 
 async function forwardCallToServer(req) {
-  console.log(`Verified! Calling server...`);
+  const convertParams = new URLSearchParams(req.body);
 
-  const resp = await api.post(apiServerURL, req.body, { headers: req.headers });
+  console.log(`Verified! Calling ${apiServerURL} - body: ${convertParams}`);
+
+  const resp = await api.post(apiServerURL, convertParams, { headers: req.headers });
 
   console.log(`Server response - status: ${resp.status}`);
   console.log(`Server response - body: ${resp.data}`);

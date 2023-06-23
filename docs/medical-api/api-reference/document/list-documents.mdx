@@ -25,28 +25,26 @@ query, see [Start Document Query endpoint](/medical-api/api-reference/document/s
   The ID of the Facility where the patient is receiving care.
 </ParamField>
 
+<ParamField query="dateFrom" type="string" optional>
+  The start date (inclusive) for which to filter returned document references - formatted
+  `YYYY-MM-DD` as per ISO 8601. If not provided, no start date filter will be applied.
+</ParamField>
+
+<ParamField query="dateTo" type="string" optional>
+  The end date (inclusive) for which to filter returned document references - formatted `YYYY-MM-DD`
+  as per ISO 8601. If not provided, no end date filter will be applied.
+</ParamField>
+
 ## Response
 
 An array of objects describing the Documents that can be retrieved for the Patient.
 
-<ResponseField name="queryStatus" type="string" required>
-  The status of querying document references across HIEs, either `processing` or `completed`.
-</ResponseField>
-<ResponseField name="queryProgress" type="DocumentQueryProgress">
-  <Expandable title="DocumentQueryProgress properties">
-    <ResponseField name="completed" type="number">
-      The number of documents that have been queried.
-    </ResponseField>
-    <ResponseField name="total" type="number">
-      The total number of documents to be queried.
-    </ResponseField>
-  </Expandable>
-</ResponseField>
 <ResponseField name="documents" type="DocumentReference[]" required>
   <Expandable title="DocumentReference properties">
     <Snippet file="document-reference-response.mdx" />
   </Expandable>
 </ResponseField>
+<Snippet file="document-progress.mdx" />
 
 <ResponseExample>
 
@@ -65,11 +63,6 @@ const { documents, queryStatus } = await metriportClient.listDocuments(
 
 ```json
 {
-  "queryStatus": "processing",
-  "queryProgress": {
-    "completed": 10,
-    "total": 100
-  },
   "documents": [
     {
       "id": "1.2.543.1.34.1.34.134",
@@ -91,6 +84,18 @@ const { documents, queryStatus } = await metriportClient.listDocuments(
         "text": "Diagnoses"
       }
     }
-  ]
+  ],
+  "download": {
+    "status": "completed",
+    "total": 100,
+    "successful": 95,
+    "errors": 5
+  },
+  "convert": {
+    "status": "processing",
+    "total": 20,
+    "successful": 15,
+    "errors": 1
+  }
 }
 ```

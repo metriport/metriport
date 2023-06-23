@@ -4,10 +4,31 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
-import { isProd } from "./util";
+import { getConfig } from "./shared/config";
+import { vCPU } from "./shared/fargate";
+import { MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { isProd } from "./shared/util";
+
+export function settings() {
+  const config = getConfig();
+  const prod = isProd(config);
+  // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
+  // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
+  const cpuAmount = prod ? 4 : 2;
+  return {
+    cpuAmount,
+    cpu: cpuAmount * vCPU,
+    memoryLimitMiB: prod ? 8192 : 4096,
+    taskCountMin: prod ? 2 : 1,
+    taskCountMax: prod ? 30 : 10,
+    // How long this service can run for
+    maxExecutionTimeout: MAXIMUM_LAMBDA_TIMEOUT,
+  };
+}
 
 interface FhirConverterServiceProps extends StackProps {
   config: EnvConfig;
@@ -19,7 +40,9 @@ export function createFHIRConverterService(
   props: FhirConverterServiceProps,
   vpc: ec2.IVpc,
   alarmAction: SnsAction | undefined
-): string {
+): { service: FargateService; address: string } {
+  const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
+
   // Create a new Amazon Elastic Container Service (ECS) cluster
   const cluster = new ecs.Cluster(stack, "FHIRConverterCluster", { vpc, containerInsights: true });
 
@@ -34,9 +57,9 @@ export function createFHIRConverterService(
     "FHIRConverterFargateService",
     {
       cluster: cluster,
-      cpu: isProd(props.config) ? 4096 : 1024,
-      memoryLimitMiB: isProd(props.config) ? 8192 : 2048,
-      desiredCount: isProd(props.config) ? 2 : 1,
+      cpu,
+      memoryLimitMiB,
+      desiredCount: taskCountMin,
       taskImageOptions: {
         image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
         containerPort: 8080,
@@ -49,6 +72,7 @@ export function createFHIRConverterService(
       },
       healthCheckGracePeriod: Duration.seconds(60),
       publicLoadBalancer: false,
+      idleTimeout: maxExecutionTimeout,
     }
   );
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
@@ -98,8 +122,8 @@ export function createFHIRConverterService(
   });
 
   const scaling = fargateService.service.autoScaleTaskCount({
-    minCapacity: isProd(props.config) ? 2 : 1,
-    maxCapacity: isProd(props.config) ? 10 : 2,
+    minCapacity: taskCountMin,
+    maxCapacity: taskCountMax,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
     targetUtilizationPercent: 70,
@@ -112,5 +136,5 @@ export function createFHIRConverterService(
     scaleOutCooldown: Duration.seconds(30),
   });
 
-  return serverAddress;
+  return { service: fargateService.service, address: serverAddress };
 }

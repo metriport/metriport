@@ -6,18 +6,25 @@ import {
   populateFhirServer,
   PopulateFhirServerResponse,
 } from "../command/medical/admin-populate-fhir";
-import { reprocessDocuments } from "../command/medical/document/document-redownload";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
+import { deletePatient } from "../command/medical/patient/delete-patient";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
-import { encodeExternalId } from "../shared/external";
-import { capture } from "../shared/notifications";
-import { stringToBoolean } from "../shared/types";
-import { stringListSchema } from "./schemas/shared";
+import docsRoutes, { conversionStatus } from "./medical/internal-docs";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
+import {
+  asyncHandler,
+  getCxIdFromQueryOrFail,
+  getCxIdOrFail,
+  getETag,
+  getFrom,
+  getFromParamsOrFail,
+  getFromQueryOrFail,
+} from "./util";
 
 const router = Router();
+
+router.use("/docs", docsRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/init
@@ -91,13 +98,14 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const allCustomers = getFrom("query").optional("allCustomers", req) === "true";
     const createIfNotExists = getFrom("query").optional("createIfNotExists", req) === "true";
+    const triggerDocQuery = getFrom("query").optional("triggerDocQuery", req) === "true";
 
     if (cxId && allCustomers) {
       throw new BadRequestError("Either cxId or allCustomers must be provided, not both");
     }
 
     if (cxId) {
-      const result = await populateFhirServer({ cxId, createIfNotExists });
+      const result = await populateFhirServer({ cxId, createIfNotExists, triggerDocQuery });
       return res.json({ [cxId]: result });
     }
 
@@ -108,7 +116,11 @@ router.post(
     const allOrgs = await OrganizationModel.findAll();
     const result: Record<string, PopulateFhirServerResponse> = {};
     for (const org of allOrgs) {
-      const orgRes = await populateFhirServer({ cxId: org.cxId, createIfNotExists });
+      const orgRes = await populateFhirServer({
+        cxId: org.cxId,
+        createIfNotExists,
+        triggerDocQuery,
+      });
       result[org.cxId] = orgRes;
     }
     return res.json(result);
@@ -116,63 +128,61 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/docs/reprocess
+ * DELETE /patient/:id
  *
- * Use the document reference we have on FHIR server to:
- * - re-download the Binary and update it on S3 (if override = true);
- * - re-convert it to FHIR (when applicable);
- * - update the FHIR server with the results.
+ * Deletes a patient from all storages.
  *
- * Assumes document references it gets from the FHIR server were inserted with their IDs
- * encoded. See usages of `getDocumentPrimaryId()` on `document-query.ts`.
- *
- * Asychronous operation, returns 200 immediately.
- *
- * @param req.query.cxId - The customer/account's ID.
- * @param req.query.documentIds - Optional comma-separated list of document IDs to
- *     re-download; if not set all documents of the customer will be re-downloaded.
- * @param req.query.override - Optional, defines whether we should re-download the
- *     documents from CommonWell, defaults to false.
- * @return 200
+ * @param req.query.facilityId The facility providing NPI for the patient delete
+ * @return 204 No Content
  */
-router.post(
-  "/docs/reprocess",
+router.delete(
+  "/:id",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const documentIdsRaw = getFrom("query").optional("documentIds", req);
-    const documentIds = documentIdsRaw
-      ? stringListSchema.parse(documentIdsRaw.split(",").map(id => id.trim()))
-      : [];
-    const override = stringToBoolean(getFrom("query").optional("override", req));
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
 
-    reprocessDocuments({ cxId, documentIds, override }).catch(err => {
-      console.log(`Error re-processing documents for cxId ${cxId}: `, err);
-      capture.error(err);
-    });
-    return res.json({ processing: true });
+    const patientDeleteCmd = {
+      ...getETag(req),
+      id,
+      cxId,
+      facilityId,
+    };
+    await deletePatient(patientDeleteCmd);
+
+    return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );
 
-/** ---------------------------------------------------------------------------
- * POST /internal/docs/encode-ids
- *
- * Encode the document IDs using the same logic used to send docs to the FHIR server.
- *
- * @param req.query.documentIds - The comma-separated list of document IDs to re-download.
- * @return 200
+/**
+ * @deprecated - TODO #798 remove this when you see it, left here only for HA during deployment
  */
 router.post(
-  "/docs/encode-ids",
+  "/doc-conversion-status",
   asyncHandler(async (req: Request, res: Response) => {
-    const documentIdsRaw = getFrom("query").optional("documentIds", req);
-    const documentIds = documentIdsRaw
-      ? stringListSchema.parse(documentIdsRaw.split(",").map(id => id.trim()))
-      : [];
-    const result: Record<string, string> = {};
-    documentIds.forEach(id => {
-      result[id] = encodeExternalId(id);
-    });
-    return res.json(result);
+    return conversionStatus(req, res);
+  })
+);
+
+/**
+ * Delete a patient regardless of the environment
+ */
+router.delete(
+  "/patient/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromParamsOrFail("id", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+
+    const patientDeleteCmd = {
+      ...getETag(req),
+      id,
+      cxId,
+      facilityId,
+    };
+    await deletePatient(patientDeleteCmd, { allEnvs: true });
+
+    return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );
 

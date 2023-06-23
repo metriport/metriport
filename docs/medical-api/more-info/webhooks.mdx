@@ -1,6 +1,6 @@
 ---
 title: "Webhooks"
-description: "Receive patient document data as soon as it becomes available after initiating a document query."
+description: "Receive status updates as soon as data becomes available after initiating a document query."
 ---
 
 ## Overview
@@ -8,12 +8,17 @@ description: "Receive patient document data as soon as it becomes available afte
 When using the Medical API, Metriport will send Webhook messages containing [patient document data](#patient-data-message) to your app, as soon
 as the data becomes available after initiating a [document query](/medical-api/api-reference/document/start-document-query).
 
+You can expect to receive updates in the following scenarios:
+
+1. When queried documents have completed downloading (`type` for a patient in the message will be `document-download`, and at this point you'll be able to [download the raw files](/medical-api/api-reference/document/get-document));
+1. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has completed (`type` for a patient in the message will be `document-conversion`, and at this point you'll be able to [query for FHIR resrouces](/medical-api/api-reference/fhir/get-patient-consolidated)).
+
 To enable this integration approach with Metriport, and for some prerequesite reading to understand
 how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 
 ### Patient data message
 
-The format follows:
+Example payload:
 
 ```json
 {
@@ -24,6 +29,8 @@ The format follows:
   "patients": [
     {
       "patientId": "<patient-id-1>",
+      "type": "document-conversion",
+      "status": "completed",
       "documents": [
         {
           "id": "1.2.543.1.34.1.34.134",
@@ -70,24 +77,56 @@ The format follows:
     },
     {
       "patientId": "<patient-id-2>",
+      "type": "document-conversion",
+      "status": "completed",
       ...
     }
   ]
 }
 ```
 
-<ResponseField name="Details">
-  <Expandable title="details">
+The format follows:
 
-    - `messageId`: this request ID from Metriport, useful for debugging purposes only;
-    - `when`: the timestamp when this message was originally sent, formatted as [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601)
+<ResponseField name="meta" type="string[]" required>
+  Metadata about the message.
+  <Expandable title="meta properties">
+
+    <ResponseField name="messageId" type="string" required>
+      The ID for this message from Metriport, useful for debugging purposes only;
+    </ResponseField>
+
+    <ResponseField name="when" type="string" required>
+      The timestamp when this message was originally sent, formatted as [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601)
       (example: `2022-12-24T00:46:05.413Z`)
-    - `patients`: array of patients, where each item represents that patients's document query result
-    - for each patient:
-      - `patientId`: the patient ID
-      - `documents`: array of document references; this follows the same format as the `DocumentReference` model in the response from the [List Documents endpoint](/medical-api/api-reference/document/list-documents)
+    </ResponseField>
 
+  </Expandable>
+</ResponseField>
 
-    </Expandable>
+<ResponseField name="patients" type="PatientDocQueryUpdate[]" required>
+  Array of Document query status updates - where each item corresponds to a specific patient.
+  
+  <Expandable title="PatientDocQueryUpdate properties">
 
+    <ResponseField name="patiendId" type="string" required>
+      The Patient ID.
+    </ResponseField>
+
+    <ResponseField name="type" type="string" required>
+      Specifies what step in the Document query flow this message is for - can be one of
+      `document-download` | `document-conversion`.
+    </ResponseField>
+
+    <ResponseField name="status" type="string" required>
+      The outcome of the step corresponding to `type` - can be one of `completed` | `failed`.
+    </ResponseField>
+
+    <ResponseField name="documents" type="DocumentReference[]">
+      An array of objects describing the Documents that can be retrieved for the Patient - will only be present for `document-download` messages.
+      <Expandable title="DocumentReference properties">
+        <Snippet file="document-reference-response.mdx" />
+      </Expandable>
+    </ResponseField>
+
+  </Expandable>
 </ResponseField>

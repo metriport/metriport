@@ -1,8 +1,10 @@
-import { z, ZodString } from "zod";
 import dayjs from "dayjs";
+import { z, ZodString } from "zod";
 
 export const BASE_ADDRESS = "https://api.metriport.com";
 export const BASE_ADDRESS_SANDBOX = "https://api.sandbox.metriport.com";
+export const API_KEY_HEADER = "x-api-key";
+export const DEFAULT_AXIOS_TIMEOUT_MILLIS = 20_000;
 
 export const emptyStringToUndefined = (v: string | undefined | null) =>
   v == null || v.length < 1 ? undefined : v;

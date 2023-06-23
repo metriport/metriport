@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { processAsyncError } from "../../errors";
 import WebhookError from "../../errors/webhook";
 import { Settings, WEBHOOK_STATUS_BAD_RESPONSE, WEBHOOK_STATUS_OK } from "../../models/settings";
+import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { sendTestPayload } from "../webhook/webhook";
 import { getSettingsOrFail } from "./getSettings";
@@ -89,7 +90,16 @@ const testWebhook = async ({ id, webhookUrl, webhookKey }: TestWebhookCommand): 
         webhookStatusDetail: err.cause.message,
       });
     } else {
-      log(`Unexpected error testing webhook`, err);
+      log(`Unexpected error testing webhook: ${err}`);
+      capture.error(err, {
+        extra: {
+          context: "testWebhook",
+          id,
+          webhookUrl,
+          webhookKey,
+          err,
+        },
+      });
     }
   }
 };

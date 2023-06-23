@@ -127,14 +127,6 @@
           ]
         },
         {
-          "group": "Link",
-          "pages": [
-            "medical-api/api-reference/link/get-links",
-            "medical-api/api-reference/link/create-link",
-            "medical-api/api-reference/link/remove-link"
-          ]
-        },
-        {
           "group": "Document",
           "pages": [
             "medical-api/api-reference/document/start-document-query",
@@ -143,10 +135,18 @@
           ]
         },
         {
-          "group": "Fhir",
+          "group": "FHIR",
           "pages": [
             "medical-api/api-reference/fhir/get-patient-consolidated",
-            "medical-api/api-reference/fhir/create-patient-consolidated"
+            "medical-api/api-reference/fhir/add-patient-data"
+          ]
+        },
+        {
+          "group": "Link",
+          "pages": [
+            "medical-api/api-reference/link/get-links",
+            "medical-api/api-reference/link/create-link",
+            "medical-api/api-reference/link/remove-link"
           ]
         }
       ]
@@ -154,6 +154,7 @@
     {
       "group": "FHIR",
       "pages": [
+        "medical-api/fhir/overview",
         {
           "group": "Data Types",
           "pages": [
@@ -349,6 +350,12 @@
             "medical-api/fhir/resources/verificationresult",
             "medical-api/fhir/resources/visionprescription"
           ]
+        },
+        {
+          "group": "Extensions",
+          "pages": [
+            "medical-api/fhir/extensions/doc-id"
+          ]
         }
       ]
     },
@@ -380,8 +387,9 @@
               "pages": [
                 "devices-api/api-reference/user/create-user",
                 "devices-api/api-reference/user/create-connect-token",
+                "devices-api/api-reference/user/get-connected-providers",
                 "devices-api/api-reference/user/revoke-provider-access",
-                "devices-api/api-reference/user/get-connected-providers"
+                "devices-api/api-reference/user/delete-user"
               ]
             }
           ]
@@ -394,7 +402,8 @@
             "devices-api/api-reference/get-body-data",
             "devices-api/api-reference/get-nutrition-data",
             "devices-api/api-reference/get-sleep-data",
-            "devices-api/api-reference/get-user-data"
+            "devices-api/api-reference/get-user-data",
+            "devices-api/api-reference/get-connected-users"
           ]
         }
       ]

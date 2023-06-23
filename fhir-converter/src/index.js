@@ -11,5 +11,6 @@ var port = process.env.PORT || 8080;
 
 var server = app.listen(port, function () {
   var host = server.address().address;
-  console.log("FHIR Engine listening at http://%s:%s", host, port);
+  console.log(`NODE_OPTIONS=${process.env.NODE_OPTIONS}`);
+  console.log("FHIR Converter listening at http://%s:%s", host, port);
 });

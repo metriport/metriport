@@ -22,7 +22,7 @@
     "@types/prettier": "2.7.1",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
-    "aws-cdk": "2.49.0",
+    "aws-cdk": "2.80.0",
     "esbuild": "^0.15.12",
     "eslint": "^8.32.0",
     "eslint-config-prettier": "^8.6.0",
@@ -33,8 +33,10 @@
     "typescript": "~4.8.4"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.49.0",
-    "constructs": "^10.1.144",
+    "@aws-cdk/asset-awscli-v1": "^2.2.192",
+    "@aws-cdk/aws-events-targets": "^1.203.0",
+    "aws-cdk-lib": "^2.79.1",
+    "constructs": "^10.2.52",
     "source-map-support": "^0.5.21"
   }
 }

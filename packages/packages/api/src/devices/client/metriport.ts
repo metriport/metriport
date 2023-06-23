@@ -1,5 +1,10 @@
 import axios, { AxiosInstance } from "axios";
-import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
+import {
+  API_KEY_HEADER,
+  BASE_ADDRESS,
+  BASE_ADDRESS_SANDBOX,
+  DEFAULT_AXIOS_TIMEOUT_MILLIS,
+} from "../../shared";
 import { Activity } from "../models/activity";
 import { Biometrics } from "../models/biometrics";
 import { Body } from "../models/body";
@@ -11,10 +16,13 @@ import { GetConnectTokenResponse } from "./models/get-connect-token-response";
 import { GetMetriportUserIDResponse } from "./models/get-metriport-user-id-response";
 import { SettingsResponse } from "./models/settings-response";
 import { WebhookStatusResponse } from "./models/webhook-status-response";
+import { GetConnectedUsersResponse } from "./models/get-connected-users-response";
+import { ConnectedUserInfo } from "../models/common/connected-user-info";
 import { dateIsValid } from "./util/date-util";
 
 export type Options = {
   sandbox?: boolean;
+  timeout?: number;
 };
 
 export class MetriportDevicesApi {
@@ -24,16 +32,17 @@ export class MetriportDevicesApi {
    * Creates a new instance of the Metriport Devices API client.
    *
    * @param apiKey - Your Metriport API key.
-   * @param options - Structure with `sandbox` property indicating whether to connect to the
-   *           sandbox. If a string is passed, it is assumed to be the base URL (deprecated).
+   * @param options - Optional parameters
+   * @param options.sandbox - Indicates whether to connect to the sandbox, default false.
+   * @param options.timeout - Connection timeout in milliseconds, default 20 seconds.
    */
-  constructor(apiKey: string, options: string | Options = { sandbox: false }) {
-    const baseURL =
-      typeof options === "string" ? options : options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS;
-
+  constructor(apiKey: string, options: Options = {}) {
+    const { sandbox, timeout } = options;
+    const baseURL = sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS;
     this.api = axios.create({
+      timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
-      headers: { "x-api-key": apiKey },
+      headers: { [API_KEY_HEADER]: apiKey },
     });
   }
 
@@ -66,6 +75,16 @@ export class MetriportDevicesApi {
   }
 
   /**
+   * Returns all your users and their connected providers.
+   *
+   * @returns List of connected users, containing their ids and providers.
+   */
+  async getConnectedUsers(): Promise<{ connectedUsers: ConnectedUserInfo[] }> {
+    const resp = await this.api.get<GetConnectedUsersResponse>("/user");
+    return resp.data;
+  }
+
+  /**
    * For the given user ID, get a token to be used for a Metriport Connect session.
    *
    * @param {string} userId - The user ID of the user that will be using the Connect widget.
@@ -79,16 +98,26 @@ export class MetriportDevicesApi {
   }
 
   /**
-   * For the given user ID, revoke the user's access to the specified provider.
+   * For the given user ID, revokes the user's access to the specified provider.
    *
    * @param {string}          userId    - The user ID of the user for which to revoke access.
    * @param {ProviderSource}  provider  - The data provider to revoke access to.
    * @returns void.
    */
   async revokeUserAccessToProvider(userId: string, provider: ProviderSource): Promise<void> {
-    await this.api.delete("/user/revoke", {
-      params: { userId: userId, provider: provider.toString() },
+    await this.api.delete(`/user/${userId}/revoke`, {
+      params: { provider: provider.toString() },
     });
+  }
+
+  /**
+   * For the given user ID, revokes access tokens for all providers and deletes the user.
+   *
+   * @param {string} userId    - The user ID of the user to be deleted.
+   * @returns void.
+   */
+  async deleteUser(userId: string): Promise<void> {
+    await this.api.delete(`/user/${userId}`);
   }
 
   /**

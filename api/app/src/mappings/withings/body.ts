@@ -1,10 +1,9 @@
-import { Body } from "@metriport/api";
+import { Body, SourceType } from "@metriport/api";
 import { Sample } from "@metriport/api/lib/devices/models/common/sample";
-
 import { Util } from "../../shared/util";
 import convert from "convert-units";
-
 import { PROVIDER_WITHINGS } from "../../shared/constants";
+import { WithingsUserDevices } from "./models/user";
 import {
   WithingsMeasurements,
   WithingsMeasurementGrp,
@@ -12,11 +11,18 @@ import {
 } from "./models/measurements";
 import dayjs from "dayjs";
 
+type SampleRemoveDataSource = Omit<Sample, "data_source">;
+type SampleWithDataSourceId = SampleRemoveDataSource & { dataSourceId?: string };
+
 export type ResultsMeasurements = {
-  [key: number]: Sample[];
+  [key: number]: SampleWithDataSourceId[];
 };
 
-export const mapToBody = (date: string, withingsMeasurements: WithingsMeasurements): Body => {
+export const mapToBody = (
+  date: string,
+  withingsMeasurements: WithingsMeasurements,
+  devices?: WithingsUserDevices
+): Body => {
   const metadata = {
     date: date,
     source: PROVIDER_WITHINGS,
@@ -34,6 +40,32 @@ export const mapToBody = (date: string, withingsMeasurements: WithingsMeasuremen
     const withingsWeight = results[WithingsMeasType.weight_kg];
     if (withingsWeight) {
       body.weight_kg = Util.getAvgOfSamplesArr(withingsWeight, 2);
+      body.weight_samples_kg = withingsWeight.map(weight => {
+        const defaultWeight = {
+          time: dayjs(weight.time).toISOString(),
+          value: Number(weight.value.toFixed(2)),
+          data_source: {},
+        };
+
+        if (weight.dataSourceId && devices && devices.length) {
+          const device = devices.find(device => device.deviceid === weight.dataSourceId);
+
+          return {
+            ...defaultWeight,
+            ...(device && {
+              data_source: {
+                source_type: SourceType.device,
+                name: device.model,
+                type: device.type,
+                id: device.deviceid,
+              },
+            }),
+          };
+        }
+
+        defaultWeight["data_source"] = { source_type: SourceType.manual };
+        return defaultWeight;
+      });
     }
 
     const withingsHeight = results[WithingsMeasType.height_m];
@@ -72,7 +104,11 @@ export const getMeasurementResults = (
 
       measures.forEach(item => {
         const trueValue = item.value * 10 ** item.unit;
-        const sample = { time: time, value: trueValue };
+        const sample = {
+          time: time,
+          value: trueValue,
+          ...(curr.deviceid && { dataSourceId: curr.deviceid }),
+        };
 
         if (acc[item.type]) {
           acc[item.type] = [...acc[item.type], sample];

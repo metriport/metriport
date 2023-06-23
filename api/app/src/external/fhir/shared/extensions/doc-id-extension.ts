@@ -4,9 +4,7 @@ import { BASE_EXTENSION_URL } from "./base-extension";
 // TODO #712: create this extension
 const DOC_ID_EXTENSION_URL = `${BASE_EXTENSION_URL}/doc-id-extension.json`;
 
-export type DocIdExtension = Required<Pick<Extension, "url">> & {
-  valueString: string;
-};
+export type DocIdExtension = Required<Pick<Extension, "url" | "valueString">>;
 
 export function buildDocIdFHIRExtension(docId: string): DocIdExtension {
   return {

@@ -3,11 +3,13 @@ import { contentType, extension } from "mime-types";
 import { Patient } from "../../../models/medical/patient";
 import { makePatientOID } from "../../../shared/oid";
 
+export const sandboxSleepTime = 5000;
+
 export type CWDocumentWithMetriportData = Document & {
   metriport: {
     fileName: string;
     location: string;
-    fileSize: number;
+    fileSize: number | undefined;
   };
 };
 

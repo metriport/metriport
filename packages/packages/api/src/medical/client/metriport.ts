@@ -1,11 +1,16 @@
-import axios, { AxiosInstance, AxiosStatic } from "axios";
-import { BASE_ADDRESS, BASE_ADDRESS_SANDBOX } from "../../shared";
+import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
+import {
+  API_KEY_HEADER,
+  BASE_ADDRESS,
+  BASE_ADDRESS_SANDBOX,
+  DEFAULT_AXIOS_TIMEOUT_MILLIS,
+} from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
   DocumentList,
   documentListSchema,
-  documentQuerySchema,
   DocumentQuery,
+  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
@@ -28,6 +33,7 @@ const DOCUMENT_URL = `/document`;
 
 export type Options = {
   axios?: AxiosStatic; // Set axios if it fails to load
+  timeout?: number;
   additionalHeaders?: Record<string, string>;
 } & (
   | {
@@ -51,23 +57,29 @@ export class MetriportMedicalApi {
    * Creates a new instance of the Metriport Medical API client.
    *
    * @param apiKey Your Metriport API key.
+   * @param options - Optional parameters
+   * @param options.additionalHeaders - HTTP headers to be used in all requests.
+   * @param options.axios - Axios instance, default, useful when the dependency is not being imported
+   *          properly by NPM.
+   * @param options.sandbox - Indicates whether to connect to the sandbox, default false.
+   * @param options.timeout - Connection timeout in milliseconds, default 20 seconds.
    */
-  constructor(apiKey: string, options: Options = { sandbox: false }) {
-    const headers = { "x-api-key": apiKey, ...options.additionalHeaders };
+  constructor(apiKey: string, options: Options = {}) {
+    const headers = { [API_KEY_HEADER]: apiKey, ...options.additionalHeaders };
+    const { sandbox, timeout } = options;
 
     const baseURL =
-      (options.baseAddress || (options.sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
+      (options.baseAddress || (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
+    const axiosConfig: CreateAxiosDefaults = {
+      timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
+      baseURL,
+      headers,
+    };
 
     if (axios) {
-      this.api = axios.create({
-        baseURL,
-        headers,
-      });
+      this.api = axios.create(axiosConfig);
     } else if (options.axios) {
-      this.api = options.axios.create({
-        baseURL,
-        headers,
-      });
+      this.api = options.axios.create(axiosConfig);
     } else {
       throw new Error(`Failed to initialize Axios`);
     }
@@ -344,14 +356,19 @@ export class MetriportMedicalApi {
   /**
    * Returns a URL that can be used to download the document.
    *
-   * @param fileName The file name of the document in s3.
-   * @return presigned url that expires in 20 seconds
+   * @param req.query.fileName The file name of the document in s3.
+   * @param req.query.conversionType The doc type to convert to. Valid values are "html" and "pdf".
+   * @return presigned url
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async getDocumentUrl(fileName: string): Promise<{ url: string }> {
+  async getDocumentUrl(
+    fileName: string,
+    conversionType?: "html" | "pdf"
+  ): Promise<{ url: string }> {
     const resp = await this.api.get(`${DOCUMENT_URL}/downloadUrl`, {
       params: {
         fileName,
+        conversionType,
       },
     });
 

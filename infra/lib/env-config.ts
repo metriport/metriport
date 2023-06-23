@@ -19,10 +19,14 @@ export type EnvConfig = {
   authSubdomain: string; // Authentication subdomain
   dbName: string;
   dbUsername: string;
+  loadBalancerDnsName?: string;
   usageReportUrl?: string;
   fhirServerUrl?: string;
+  fhirServerQueueUrl?: string;
   systemRootOID: string;
   medicalDocumentsBucketName?: string;
+  cdaToVisualizationLambdaName?: string;
+  fhirConverterBucketName?: string;
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
   };
@@ -63,21 +67,38 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
   sentryDSN?: string; // API's Sentry DSN
+  lambdasSentryDSN?: string;
   slack?: {
     SLACK_ALERT_URL?: string;
     SLACK_NOTIFICATION_URL?: string;
     workspaceId: string;
     alertsChannelId: string;
   };
+  sidechainFHIRConverter?: {
+    bucketName: string;
+    url: string;
+    urlBlacklist: string; // comma-separated list of URLs to be replaced, case sensitive
+    wordsToRemove: string; // comma-separated list of words to be removed, case insensitive
+    secretNames: {
+      SIDECHAIN_FHIR_CONVERTER_KEYS: string;
+    };
+  };
+  docQueryChecker: {
+    // "Minutes Hours Day-of-month Month Day-of-week Year"
+    // See more here: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+    scheduleExpressions: string | string[];
+  } | null;
 } & (
   | {
       environmentType: EnvType.staging | EnvType.production;
       connectWidget: ConnectWidgetConfig;
       connectWidgetUrl?: never;
+      sandboxSeedDataBucketName?: never;
     }
   | {
       environmentType: EnvType.sandbox;
       connectWidget?: never;
       connectWidgetUrl: string;
+      sandboxSeedDataBucketName: string;
     }
 );

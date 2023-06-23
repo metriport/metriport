@@ -32,8 +32,9 @@ mountRoutes(app);
 module.exports = app;
 
 // route used for health checks
-app.get("/", (_req: Request, res: Response) => {
-  res.status(200).send("OK");
+app.get("/", (req: Request, res: Response) => {
+  if (req.accepts("application/json")) return res.json({ status: "OK" });
+  return res.status(200).send("OK");
 });
 
 // The Sentry error handler must be before any other error middleware and after all controllers

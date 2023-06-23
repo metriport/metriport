@@ -28,7 +28,8 @@ import { FitbitTempSkin, fitbitTempSkinResp } from "../mappings/fitbit/models/te
 import { FitbitFood, fitbitFoodResp } from "../mappings/fitbit/models/food";
 import { FitbitWater, fitbitWaterResp } from "../mappings/fitbit/models/water";
 import { fitbitSleepResp } from "../mappings/fitbit/models/sleep";
-import { fitbitUserResp } from "../mappings/fitbit/models/user";
+import { fitbitUserResp, FitbitUser } from "../mappings/fitbit/models/user";
+import { FitbitWeight, weightSchema } from "../mappings/fitbit/models/weight";
 export class Fitbit extends Provider implements OAuth2 {
   static URL = "https://api.fitbit.com";
   static AUTHORIZATION_URL = "https://www.fitbit.com";
@@ -217,16 +218,57 @@ export class Fitbit extends Provider implements OAuth2 {
     return mapToBiometrics(date, breathing, cardio, hr, hrv, spo, tempCore, tempSkin);
   }
 
-  override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
-
-    return this.oauth.fetchProviderData<Body>(
+  async fetchUserProfile(
+    accessToken: string,
+    extraHeaders?: { [k: string]: string }
+  ): Promise<FitbitUser> {
+    return this.oauth.fetchProviderData<FitbitUser>(
       `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
       accessToken,
       async resp => {
-        return mapToBody(fitbitUserResp.parse(resp.data), date);
-      }
+        return fitbitUserResp.parse(resp.data);
+      },
+      undefined,
+      extraHeaders
     );
+  }
+
+  async fetchWeights(
+    accessToken: string,
+    date: string,
+    extraHeaders?: { [k: string]: string }
+  ): Promise<FitbitWeight> {
+    return this.oauth.fetchProviderData<FitbitWeight>(
+      `${Fitbit.URL}/${Fitbit.API_PATH}/body/log/weight/date/${date}.json`,
+      accessToken,
+      async resp => {
+        return weightSchema.parse(resp.data.weight);
+      },
+      undefined,
+      extraHeaders
+    );
+  }
+
+  override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+
+    const extraHeaders = {
+      "Accept-Language": "en_GB", // For higher precision in weight readings, we are retrieving data in stones and converting it to kg
+    };
+
+    const [resUser, resWeight] = await Promise.allSettled([
+      this.fetchUserProfile(accessToken, extraHeaders),
+      this.fetchWeights(accessToken, date, extraHeaders),
+    ]);
+
+    const user = resUser.status === "fulfilled" ? resUser.value : undefined;
+    const weight = resWeight.status === "fulfilled" ? resWeight.value : undefined;
+
+    if (!user && !weight) {
+      throw new Error("All Requests failed");
+    }
+
+    return mapToBody(date, user, weight);
   }
 
   async fetchFoodData(accessToken: string, date: string): Promise<FitbitFood> {

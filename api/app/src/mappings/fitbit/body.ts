@@ -1,10 +1,19 @@
-import { Body } from "@metriport/api";
+import { Body, SourceType } from "@metriport/api";
 import convert from "convert-units";
-
+import dayjs from "dayjs";
 import { PROVIDER_FITBIT } from "../../shared/constants";
+import { US_LOCALE } from "./constants";
 import { FitbitUser } from "./models/user";
+import { FitbitWeight } from "./models/weight";
 
-export const mapToBody = (fitbitUser: FitbitUser, date: string): Body => {
+const STONES_TO_LB = 14;
+const DECIMAL_PLACES = 2;
+
+export const mapToBody = (
+  date: string,
+  fitbitUser?: FitbitUser,
+  fitbitWeight?: FitbitWeight
+): Body => {
   const metadata = {
     date: date,
     source: PROVIDER_FITBIT,
@@ -14,13 +23,47 @@ export const mapToBody = (fitbitUser: FitbitUser, date: string): Body => {
     metadata: metadata,
   };
 
-  if (fitbitUser.user.height && fitbitUser.user.heightUnit === "en_US") {
-    body.height_cm = convert(fitbitUser.user.height).from("in").to("cm");
+  if (fitbitUser) {
+    if (fitbitUser.user.height) {
+      if (fitbitUser.user.heightUnit === US_LOCALE) {
+        body.height_cm = parseFloat(fitbitUser.user.height.toFixed(DECIMAL_PLACES));
+      } else {
+        body.height_cm = parseFloat(
+          convert(fitbitUser.user.height).from("in").to("cm").toFixed(DECIMAL_PLACES)
+        );
+      }
+    }
+
+    if (fitbitUser.user.weight) {
+      body.weight_kg = convertStonesToKg(fitbitUser.user.weight);
+    }
   }
 
-  if (fitbitUser.user.weight && fitbitUser.user.weightUnit === "en_US") {
-    body.weight_kg = convert(fitbitUser.user.weight).from("lb").to("kg");
+  if (fitbitWeight && fitbitWeight.length > 0) {
+    body.weight_samples_kg = fitbitWeight.map(weight => {
+      const dateTime = date + "T" + weight.time;
+      return {
+        time: dayjs(dateTime).toISOString(),
+        value: convertStonesToKg(weight.weight),
+        data_source: {
+          name: weight.source,
+          source_type: checkSource(weight.source),
+        },
+      };
+    });
   }
 
   return body;
 };
+
+function checkSource(weight: string) {
+  return weight === "API" ? SourceType.manual : SourceType.device;
+}
+
+function convertStonesToKg(weight_stones: number): number {
+  let weight_kg = convert(weight_stones * STONES_TO_LB)
+    .from("lb")
+    .to("kg");
+  weight_kg = parseFloat(weight_kg.toFixed(DECIMAL_PLACES));
+  return weight_kg;
+}

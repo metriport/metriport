@@ -10,7 +10,7 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { updateWebhookRequestStatus } from "../webhook/webhook-request";
+import { updateWebhookRequestStatus } from "./webhook-request";
 
 const axios = Axios.create();
 

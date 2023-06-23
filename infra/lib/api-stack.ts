@@ -20,10 +20,16 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
+import { createDocQueryChecker } from "./api-stack/doc-query-checker";
+import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
+import * as fhirServerConnector from "./api-stack/fhir-server-connector";
+import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { EnvConfig } from "./env-config";
-import { getSecrets } from "./secrets";
-import { addErrorAlarmToLambdaFunc, isProd, isSandbox, mbToBytes } from "./util";
 import { createFHIRConverterService } from "./fhir-converter-service";
+import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import { getSecrets } from "./shared/secrets";
+import { provideAccessToQueue } from "./shared/sqs";
+import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -158,9 +164,9 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // FHIR Converter Service
     //-------------------------------------------
-    let fhirConverterServiceAddress = "";
+    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
     if (!isSandbox(props.config)) {
-      fhirConverterServiceAddress = createFHIRConverterService(
+      fhirConverter = createFHIRConverterService(
         this,
         props,
         this.vpc,
@@ -169,7 +175,47 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
-    // ECR + ECS + Fargate f or Backend Servers
+    // FHIR CONNECTORS, initalize
+    //-------------------------------------------
+    const {
+      queue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      bucket: fhirConverterBucket,
+    } = fhirConverterConnector.createQueueAndBucket({
+      stack: this,
+      vpc: this.vpc,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    // sidechain FHIR converter queue
+    const {
+      queue: sidechainFHIRConverterQueue,
+      dlq: sidechainFHIRConverterDLQ,
+      bucket: sidechainFHIRConverterBucket,
+    } = sidechainFHIRConverterConnector.createQueueAndBucket({
+      stack: this,
+      vpc: this.vpc,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
+      ? new s3.Bucket(this, "APISandboxSeedDataBucket", {
+          bucketName: props.config.sandboxSeedDataBucketName,
+          publicReadAccess: false,
+          encryption: s3.BucketEncryption.S3_MANAGED,
+        })
+      : undefined;
+
+    const fhirServerQueue = fhirServerConnector.createConnector({
+      envType: props.config.environmentType,
+      stack: this,
+      vpc: this.vpc,
+      fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    //-------------------------------------------
+    // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
     const {
       cluster,
@@ -185,7 +231,11 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       slackNotification?.alarmAction,
       dnsZones,
-      `http://${fhirConverterServiceAddress}`
+      props.config.fhirServerUrl,
+      fhirServerQueue?.queueUrl,
+      fhirConverterQueue.queueUrl,
+      fhirConverter ? `http://${fhirConverter.address}` : undefined,
+      sidechainFHIRConverterQueue?.queueUrl
     );
 
     // Access grant for Aurora DB
@@ -213,15 +263,86 @@ export class APIStack extends Stack {
     // S3 bucket for Medical Documents
     //-------------------------------------------
 
+    const cdaToVisualization = this.setupCdaToVisualization({
+      fargateService: apiService,
+      vpc: this.vpc,
+      bucketName: props.config.medicalDocumentsBucketName,
+      lambdaName: props.config.cdaToVisualizationLambdaName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+    });
+
     if (props.config.medicalDocumentsBucketName) {
       const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
         bucketName: props.config.medicalDocumentsBucketName,
         publicReadAccess: false,
         encryption: s3.BucketEncryption.S3_MANAGED,
       });
+
+      //-------------------------------------------
+      // FHIR CONNECTORS - Finish setting it up
+      //-------------------------------------------
+      provideAccessToQueue({
+        accessType: "send",
+        queue: fhirConverterQueue,
+        resource: apiService.service.taskDefinition.taskRole,
+      });
+      fhirServerQueue &&
+        provideAccessToQueue({
+          accessType: "send",
+          queue: fhirServerQueue,
+          resource: apiService.service.taskDefinition.taskRole,
+        });
+      const fhirConverterLambda = fhirServerQueue?.queueUrl
+        ? fhirConverterConnector.createLambda({
+            envType: props.config.environmentType,
+            stack: this,
+            vpc: this.vpc,
+            sourceQueue: fhirConverterQueue,
+            destinationQueue: fhirServerQueue,
+            dlq: fhirConverterDLQ,
+            fhirConverterBucket,
+            conversionResultQueueUrl: fhirServerQueue.queueUrl,
+            alarmSnsAction: slackNotification?.alarmAction,
+          })
+        : undefined;
+
+      // sidechain FHIR converter
+      provideAccessToQueue({
+        accessType: "send",
+        queue: sidechainFHIRConverterQueue,
+        resource: apiService.service.taskDefinition.taskRole,
+      });
+      const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
+        ? sidechainFHIRConverterConnector.createLambda({
+            envType: props.config.environmentType,
+            stack: this,
+            vpc: this.vpc,
+            sourceQueue: sidechainFHIRConverterQueue,
+            destinationQueue: fhirServerQueue,
+            dlq: sidechainFHIRConverterDLQ,
+            fhirConverterBucket: sidechainFHIRConverterBucket,
+            conversionResultQueueUrl: fhirServerQueue.queueUrl,
+            alarmSnsAction: slackNotification?.alarmAction,
+          })
+        : undefined;
+
       // Access grant for medical documents bucket
+      sandboxSeedDataBucket &&
+        sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+      medicalDocumentsBucket.grantReadWrite(cdaToVisualization);
+      fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+      sidechainFHIRConverterLambda &&
+        medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
     }
+
+    createDocQueryChecker({
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
 
     //-------------------------------------------
     // API Gateway
@@ -276,6 +397,8 @@ export class APIStack extends Stack {
       },
       apiKeyRequired: true,
     });
+
+    this.setupTestLambda();
 
     // token auth for connect sessions
     const tokenAuth = this.setupTokenAuthLambda(dynamoDBTokenTable);
@@ -398,6 +521,16 @@ export class APIStack extends Stack {
     });
   }
 
+  private setupTestLambda() {
+    return createLambda({
+      stack: this,
+      name: "Tester",
+      vpc: this.vpc,
+      subnets: this.vpc.privateSubnets,
+      entry: "../api/lambdas/tester/index.js",
+    });
+  }
+
   private setupGarminWebhookAuth(ownProps: {
     baseResource: apig.Resource;
     vpc: ec2.IVpc;
@@ -460,6 +593,52 @@ export class APIStack extends Stack {
 
     const withingsResource = baseResource.addResource("withings");
     withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
+  }
+
+  private setupCdaToVisualization(ownProps: {
+    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+    vpc: ec2.IVpc;
+    bucketName: string | undefined;
+    lambdaName: string | undefined;
+    envType: string;
+    sentryDsn: string | undefined;
+  }) {
+    const { fargateService, vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
+
+    const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
+      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+      code: lambda.Code.fromAsset("../api/lambdas/layers/chromium"),
+      description: "Adds chromium to the lambdas",
+    });
+
+    const cdaToVisualizationLambda = new lambda_node.NodejsFunction(
+      this,
+      "CdaToVisualizationLambda",
+      {
+        functionName: lambdaName,
+        runtime: lambda.Runtime.NODEJS_16_X,
+        entry: "../api/lambdas/cda-to-visualization/index.js",
+        environment: {
+          ENV_TYPE: envType,
+          ...(bucketName && {
+            MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+          }),
+          ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        },
+        layers: [chromiumLayer],
+        bundling: {
+          minify: false,
+          externalModules: ["aws-sdk", "@sparticuz/chromium"],
+        },
+        memorySize: 512,
+        timeout: Duration.minutes(1),
+        vpc,
+      }
+    );
+
+    cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+
+    return cdaToVisualizationLambda;
   }
 
   private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {
@@ -664,7 +843,7 @@ export class APIStack extends Stack {
 
     const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
     const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
-      threshold: 5000, // IOPs per second
+      threshold: 10000, // IOPs per second
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });

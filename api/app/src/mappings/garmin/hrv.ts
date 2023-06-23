@@ -27,25 +27,29 @@ export const mapToBiometricsFromHRV = (items: GarminHRVList): UserData<Biometric
 };
 
 export const garminHRVToBody = (gBody: GarminHRV): Biometrics | undefined => {
+  // if we don't know when this HRV is for, don't try to parse it
+  if (!gBody.calendarDate) return undefined;
+  // make sure we have at least some usable data
+  if (!gBody.lastNightAvg && !gBody.hrvValues) return undefined;
   const bio: Biometrics = {
     metadata: {
       date: gBody.calendarDate,
       source: PROVIDER_GARMIN,
     },
   };
-  if (gBody.lastNightAvg != null || gBody.hrvValues != null) {
-    const samples_millis = getHRVSamples(gBody.hrvValues, gBody.startTimeInSeconds);
-    bio.hrv = {
-      // Choosing RMSSD bc docs hint at it on 7.10 (health snapshot) and this page:
-      // https://www.garmin.com/en-US/garmin-technology/running-science/physiological-measurements/hrv-status/
-      rmssd: {
-        avg_millis: gBody.lastNightAvg,
-        ...(samples_millis ? { samples_millis } : undefined),
-      },
-    };
-    return bio;
-  }
-  return undefined;
+  const samples_millis =
+    gBody.hrvValues && gBody.startTimeInSeconds
+      ? getHRVSamples(gBody.hrvValues, gBody.startTimeInSeconds)
+      : undefined;
+  bio.hrv = {
+    // Choosing RMSSD bc docs hint at it on 7.10 (health snapshot) and this page:
+    // https://www.garmin.com/en-US/garmin-technology/running-science/physiological-measurements/hrv-status/
+    rmssd: {
+      avg_millis: gBody.lastNightAvg ? gBody.lastNightAvg : undefined,
+      ...(samples_millis ? { samples_millis } : undefined),
+    },
+  };
+  return bio;
 };
 
 export const getHRVSamples = (
@@ -63,11 +67,11 @@ export const getHRVSamples = (
 };
 
 export const garminHRVSchema = z.object({
-  calendarDate: garminTypes.date,
-  startTimeInSeconds: garminTypes.startTime,
+  calendarDate: garminTypes.date.nullish(),
+  startTimeInSeconds: garminTypes.startTime.nullish(),
   // startTimeOffsetInSeconds: -21600, // we always use UTC
   // durationInSeconds: garminTypes.duration.nullable().optional(), // not being used
-  lastNightAvg: garminTypes.hrvAverage,
+  lastNightAvg: garminTypes.hrvAverage.nullish(),
   // lastNight5MinHigh: 93, // not being used
   hrvValues: z.record(garminUnits.timeKey, garminTypes.hrv).nullable().optional(),
 });
