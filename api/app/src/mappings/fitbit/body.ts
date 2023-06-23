@@ -41,7 +41,6 @@ export const mapToBody = (
 
   if (fitbitWeight && fitbitWeight.length > 0) {
     body.weight_samples_kg = fitbitWeight.map(weight => {
-      console.log("SAMPLES KG NAME", weight.source);
       const dateTime = date + "T" + weight.time;
       return {
         time: dayjs(dateTime).toISOString(),
