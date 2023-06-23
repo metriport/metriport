@@ -1,0 +1,55 @@
+---
+title: "Get Document Query Status"
+description: "Returns the document query status for the specified patient."
+api: "GET /medical/v1/document/query"
+---
+
+Returns the document query status for the specified patient. Can be used in to check the progress
+when the final status of the document query is taking longer than expected.
+
+See more on [Start Document Query](/medical-api/api-reference/document/start-document-query).
+
+<Tip>
+  To get updates about the document query progress, including download and conversion status,
+  check out our [webhooks guide](/medical-api/more-info/webhooks).
+</Tip>
+
+## Query Params
+
+<ParamField query="patientId" type="string" required>
+  The ID of the Patient for which to return the status of document querying across HIEs.
+</ParamField>
+
+## Response
+
+<Snippet file="document-progress.mdx" />
+
+```json
+{
+  "download": {
+    "status": "completed",
+    "total": 100,
+    "successful": 95,
+    "errors": 5
+  },
+  "convert": {
+    "status": "processing",
+    "total": 20,
+    "successful": 15,
+    "errors": 1
+  }
+}
+````
+
+<ResponseExample>
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const status = await api.getDocumentQueryStatus(
+  "2.16.840.1.113883.3.666.5.2004.4.2005"
+);
+
+````
+</ResponseExample>

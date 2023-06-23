@@ -63,8 +63,6 @@ describe("Integration Document routes", () => {
         expect(res.status).toBe(200);
         expect(res.data).toBeTruthy();
         expect(res.data).toEqual({
-          queryStatus: expectedStatus,
-          queryProgress: expectedProgress,
           documents: [],
         });
       } catch (error) {
