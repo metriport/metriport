@@ -83,6 +83,11 @@ export type EnvConfig = {
       SIDECHAIN_FHIR_CONVERTER_KEYS: string;
     };
   };
+  docQueryChecker: {
+    // "Minutes Hours Day-of-month Month Day-of-week Year"
+    // See more here: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+    scheduleExpressions: string | string[];
+  } | null;
 } & (
   | {
       environmentType: EnvType.staging | EnvType.production;

@@ -3,7 +3,6 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Metric } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { ISubnet, IVpc } from "aws-cdk-lib/aws-ec2";
-import { Rule, Schedule } from "aws-cdk-lib/aws-events";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -17,11 +16,6 @@ import { getConfig, METRICS_NAMESPACE } from "./config";
 export const DEFAULT_LAMBDA_TIMEOUT = Duration.seconds(30);
 export const MAXIMUM_LAMBDA_TIMEOUT = Duration.minutes(15);
 const pathToLambdas = "../api/lambdas";
-
-export const buildEventRule = (scope: Construct, id: string, scheduleExpression: string): Rule =>
-  new Rule(scope, id, {
-    schedule: Schedule.expression("cron(" + scheduleExpression + ")"),
-  });
 
 export const buildPolicy = (
   actionToAllow: string,
@@ -143,59 +137,6 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
   props.destinationQueue.grantSendMessages(retryLambda);
   return retryLambda;
 }
-
-// TODO validate this works
-// export type ScheduledLambdaProps = Omit<LambdaProps, "entry"> & {
-//   scheduleExpression: string | string[];
-// } & (
-//     | {
-//         entry: string;
-//       }
-//     | {
-//         entry?: never;
-//         url: string;
-//       }
-//   );
-
-// /**
-//  * Creates a lambda that is triggered by a schedule.
-//  *
-//  * @param props.scheduleExpression: "Minutes Hours Day-of-month Month Day-of-week Year", see more
-//  *    here: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
-//  * @param props.url The url to call when the lambda is triggered -
-//  */
-// export function createScheduledLambda(props: ScheduledLambdaProps): Lambda {
-//   const lambdaFn = createLambda({
-//     ...props,
-//     ...(props.entry != null
-//       ? {
-//           entry: props.entry,
-//         }
-//       : {
-//           entry: `${pathToLambdas}/scheduled/index.js`,
-//           envVars: {
-//             ...props.envVars,
-//             ...(props.url ? { URL: props.url } : {}),
-//           },
-//         }),
-//   });
-
-//   if (typeof props.scheduleExpression === "string") {
-//     const eventRule: Rule = buildEventRule(
-//       props.stack,
-//       `${props.name}Rule`,
-//       props.scheduleExpression
-//     );
-//     eventRule.addTarget(new LambdaFunction(lambdaFn));
-//   } else {
-//     props.scheduleExpression.forEach((schedule, i) => {
-//       const eventRule: Rule = buildEventRule(props.stack, `${props.name}Rule_${i}`, schedule);
-//       eventRule.addTarget(new LambdaFunction(lambdaFn));
-//     });
-//   }
-
-//   return lambdaFn;
-// };
 
 export function addErrorAlarmToLambdaFunc(
   construct: Construct,

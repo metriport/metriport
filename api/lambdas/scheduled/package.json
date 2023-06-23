@@ -1,0 +1,16 @@
+{
+  "name": "scheduled",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No test specified\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@sentry/serverless": "^7.46.0",
+    "axios": "^1.4.0"
+  }
+}
