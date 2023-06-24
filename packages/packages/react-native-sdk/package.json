@@ -68,6 +68,5 @@
   },
   "dependencies": {
     "react-native-webview": "^11.26.1"
-  },
-  "gitHead": "8f867432188b03c93f8d9bc86ce090fbcd8db5e2"
+  }
 }
