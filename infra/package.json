@@ -34,8 +34,9 @@
   },
   "dependencies": {
     "@aws-cdk/asset-awscli-v1": "^2.2.192",
-    "aws-cdk-lib": "2.79.1",
-    "constructs": "^10.1.144",
+    "@aws-cdk/aws-events-targets": "^1.203.0",
+    "aws-cdk-lib": "^2.79.1",
+    "constructs": "^10.2.52",
     "source-map-support": "^0.5.21"
   }
 }

@@ -7,10 +7,10 @@ import {
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
-  DocumentList,
   documentListSchema,
   DocumentQuery,
   documentQuerySchema,
+  DocumentReference,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
@@ -322,17 +322,17 @@ export class MetriportMedicalApi {
    *
    * @param patientId Patient ID for which to retrieve document metadata.
    * @param facilityId The facility providing the NPI to support this operation.
-   * @return The metadata of available documents.
+   * @return The list of available document references.
    */
-  async listDocuments(patientId: string, facilityId: string): Promise<DocumentList> {
+  async listDocuments(patientId: string, facilityId: string): Promise<DocumentReference[]> {
     const resp = await this.api.get(`${DOCUMENT_URL}`, {
       params: {
         patientId,
         facilityId,
       },
     });
-    if (!resp.data) [];
-    return documentListSchema.parse(resp.data);
+    if (!resp.data) return [];
+    return documentListSchema.parse(resp.data).documents;
   }
 
   /**
@@ -348,6 +348,20 @@ export class MetriportMedicalApi {
         patientId,
         facilityId,
       },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return documentQuerySchema.parse(resp.data);
+  }
+
+  /**
+   * Returns the document query status for the specified patient.
+   *
+   * @param patientId Patient ID for which to retrieve document query status.
+   * @return The document query progress & status indicating whether its being executed or not.
+   */
+  async getDocumentQueryStatus(patientId: string): Promise<DocumentQuery> {
+    const resp = await this.api.get(`${DOCUMENT_URL}/query`, {
+      params: { patientId },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return documentQuerySchema.parse(resp.data);

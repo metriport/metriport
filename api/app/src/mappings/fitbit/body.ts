@@ -56,14 +56,17 @@ export const mapToBody = (
   return body;
 };
 
-function checkSource(weight: string) {
-  return weight === "API" ? SourceType.manual : SourceType.device;
+function checkSource(weightSrc: string) {
+  const weightSrcLower = weightSrc.toLowerCase();
+  return weightSrcLower === "api" || weightSrcLower === "web"
+    ? SourceType.manual
+    : SourceType.device;
 }
 
-function convertStonesToKg(weight_stones: number): number {
-  let weight_kg = convert(weight_stones * STONES_TO_LB)
+function convertStonesToKg(weightStones: number): number {
+  let weightKg = convert(weightStones * STONES_TO_LB)
     .from("lb")
     .to("kg");
-  weight_kg = parseFloat(weight_kg.toFixed(DECIMAL_PLACES));
-  return weight_kg;
+  weightKg = parseFloat(weightKg.toFixed(DECIMAL_PLACES));
+  return weightKg;
 }

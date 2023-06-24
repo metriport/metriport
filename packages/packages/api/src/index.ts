@@ -26,8 +26,6 @@ export {
 export {
   DocumentList,
   documentListSchema,
-  DocumentQueryProgress,
-  documentQueryProgress,
   DocumentQuery,
   documentQuerySchema,
   DocumentQueryStatus,

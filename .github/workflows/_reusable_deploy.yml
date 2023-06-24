@@ -80,9 +80,15 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: "./"
       # lambdas are not on the npm workspaces, so need to 'install' individually
+      - name: Cda-to-visualization lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/cda-to-visualization/"
       - name: Garmin lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/garmin/"
+      - name: Scheduled lambda install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "api/lambdas/scheduled/"
       - name: FHIRConverter lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/sqs-to-converter/"
@@ -98,9 +104,6 @@ jobs:
       - name: Token-auth lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/token-auth/"
-      - name: Cda-to-visualization lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/cda-to-visualization/"
       - name: Withings lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/withings/"

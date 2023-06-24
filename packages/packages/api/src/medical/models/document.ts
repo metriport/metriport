@@ -29,13 +29,6 @@ export type DocumentReference = z.infer<typeof documentReferenceSchema>;
 export const documentQueryStatusSchema = z.enum(["processing", "completed", "failed"]);
 export type DocumentQueryStatus = z.infer<typeof documentQueryStatusSchema>;
 
-export const documentQueryProgress = z.object({
-  total: z.number(),
-  completed: z.number(),
-});
-
-export type DocumentQueryProgress = z.infer<typeof documentQueryProgress>;
-
 export const progressSchema = z.object({
   status: documentQueryStatusSchema,
   total: z.number().optional(),
@@ -44,23 +37,13 @@ export const progressSchema = z.object({
 });
 
 export const documentQuerySchema = z.object({
-  /**
-   * @deprecated
-   */
-  queryStatus: documentQueryStatusSchema.optional(),
-  /**
-   * @deprecated
-   */
-  queryProgress: documentQueryProgress.optional(),
   download: progressSchema.optional(),
   convert: progressSchema.optional(),
 });
 
 export type DocumentQuery = z.infer<typeof documentQuerySchema>;
 
-export const documentListSchema = z
-  .object({
-    documents: z.array(documentReferenceSchema),
-  })
-  .merge(documentQuerySchema);
+export const documentListSchema = z.object({
+  documents: z.array(documentReferenceSchema),
+});
 export type DocumentList = z.infer<typeof documentListSchema>;

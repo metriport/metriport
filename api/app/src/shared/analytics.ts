@@ -34,6 +34,7 @@ export const analytics = (params: EventMessageV1) => {
 
 export enum EventTypes {
   query = "query",
+  webhook = "webhook",
   error = "error",
 }
 

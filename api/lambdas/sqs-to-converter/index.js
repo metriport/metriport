@@ -62,7 +62,7 @@ const fhirConverter = axios.create({
   },
 });
 const ossApi = axios.create();
-const docProgressURL = `${apiURL}/internal/doc-conversion-status`;
+const docProgressURL = `${apiURL}/internal/docs/conversion-status`;
 
 function isSidechainConnector() {
   return sidechainFHIRConverterUrl ? true : false;
