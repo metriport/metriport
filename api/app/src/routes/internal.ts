@@ -11,6 +11,7 @@ import { deletePatient } from "../command/medical/patient/delete-patient";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
 import docsRoutes, { conversionStatus } from "./medical/internal-docs";
+import linkRoutes from "./medical/internal-link";
 import { getUUIDFrom } from "./schemas/uuid";
 import {
   asyncHandler,
@@ -25,6 +26,7 @@ import {
 const router = Router();
 
 router.use("/docs", docsRoutes);
+router.use("/patient", linkRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/init

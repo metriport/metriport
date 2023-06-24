@@ -11,7 +11,7 @@ import { linkCreateSchema } from "./schemas/link";
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * POST /patient/:patientId/link/:source
+ * POST /internal/patient/:patientId/link/:source
  *
  * Creates link to the specified entity.
  *
@@ -38,7 +38,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * DELETE /patient/:patientId/link/:source
+ * DELETE /internal/patient/:patientId/link/:source
  *
  * Removes the specified HIE link from the specified patient.
  *
@@ -64,7 +64,7 @@ router.delete(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /patient/:patientId/link
+ * GET /internal/patient/:patientId/link
  *
  * Builds and returns the current state of a patient's links across HIEs.
  *

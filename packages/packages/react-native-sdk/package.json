@@ -1,6 +1,6 @@
 {
   "name": "@metriport/react-native-sdk",
-  "version": "0.2.10-alpha.1",
+  "version": "0.2.19",
   "description": "A library to integrate with Metriport on React Native - including Apple Health integrations.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -68,5 +68,6 @@
   },
   "dependencies": {
     "react-native-webview": "^11.26.1"
-  }
+  },
+  "gitHead": "8f867432188b03c93f8d9bc86ce090fbcd8db5e2"
 }

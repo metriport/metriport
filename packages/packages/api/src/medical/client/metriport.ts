@@ -13,7 +13,6 @@ import {
   DocumentReference,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
-import { MedicalDataSource, PatientLinks, patientLinksSchema } from "../models/link";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   Patient,
@@ -28,7 +27,6 @@ const BASE_PATH = "/medical/v1";
 const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
 const PATIENT_URL = `/patient`;
-const LINK_URL = `/link`;
 const DOCUMENT_URL = `/document`;
 
 export type Options = {
@@ -254,67 +252,6 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) [];
     return patientListSchema.parse(resp.data).patients;
-  }
-
-  /**
-   * Returns the current state of a patient's links across HIEs.
-   *
-   * @param patientId The ID of the patient for which to retrieve links.
-   * @param facilityId The facility providing the NPI to support this operation.
-   * @returns The patient's current and potential links.
-   */
-  async listLinks(patientId: string, facilityId: string): Promise<PatientLinks> {
-    const resp = await this.api.get(`${PATIENT_URL}/${patientId}${LINK_URL}`, {
-      params: { facilityId },
-    });
-    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return patientLinksSchema.parse(resp.data);
-  }
-  /**
-   * @deprecated Use listLinks() instead.
-   */
-  async getLinks(patientId: string, facilityId: string): Promise<PatientLinks> {
-    return this.listLinks(patientId, facilityId);
-  }
-
-  /**
-   * Creates link between a patient at Metriport and an entity (person/patient) on an
-   * HIE (medical data source).
-   *
-   * @param patientId The ID of the patient at Metriport.
-   * @param facilityId The facility providing the NPI to support this operation.
-   * @param entityId The ID of the entity to link to the patient.
-   * @param linkSource The HIE containing the entity to be linked with.
-   */
-  async createLink(
-    patientId: string,
-    facilityId: string,
-    entityId: string,
-    linkSource: MedicalDataSource
-  ): Promise<void> {
-    await this.api.post(
-      `${PATIENT_URL}/${patientId}${LINK_URL}/${linkSource}`,
-      { entityId },
-      { params: { facilityId } }
-    );
-  }
-
-  /**
-   * Removes a link between a patient at Metriport and an entity (person/patient) on
-   * an HIE (medical data source).
-   *
-   * @param patientId The ID of the patient at Metriport.
-   * @param facilityId The facility providing the NPI to support this operation.
-   * @param linkSource The HIE to remove the link from.
-   */
-  async removeLink(
-    patientId: string,
-    facilityId: string,
-    linkSource: MedicalDataSource
-  ): Promise<void> {
-    await this.api.delete(`${PATIENT_URL}/${patientId}${LINK_URL}/${linkSource}`, {
-      params: { facilityId },
-    });
   }
 
   /**
