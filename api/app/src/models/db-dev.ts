@@ -1,5 +1,7 @@
 import * as AWS from "aws-sdk";
 import { docTableNames } from "./db";
+import { getEnvVarOrFail } from "../shared/config";
+import { allowMapiAccess } from "../command/medical/mapi-access";
 
 //Checks if the table exists in the db
 const tableExists = async (tableName: string, ddb: AWS.DynamoDB) => {
@@ -79,3 +81,8 @@ export const initDDBDev = async (): Promise<AWS.DynamoDB.DocumentClient> => {
   await createTokenTable(ddb);
   return doc;
 };
+
+export async function initLocalCxAccount(): Promise<void> {
+  const id = getEnvVarOrFail("LOCAL_ACCOUNT_CXID");
+  await allowMapiAccess(id);
+}

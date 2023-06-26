@@ -249,6 +249,7 @@ First, create a local environment file to define your developer keys, and local 
 
 ```shell
 $ touch api/app/.env
+$ echo "LOCAL_ACCOUNT_CXID=<YOUR-TESTING-ACCOUNT-ID>" >> api/app/.env
 $ echo "API_URL=http://localhost:8080" >> api/app/.env
 $ echo "CONNECT_WIDGET_URL=http://localhost:3001/" >> api/app/.env
 $ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" >> api/app/.env

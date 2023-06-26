@@ -26,7 +26,7 @@
     "@aws-sdk/client-cloudwatch": "^3.338.0",
     "@medplum/core": "^2.0.18",
     "@medplum/fhirtypes": "^2.0.18",
-    "@metriport/api": "^4.1.10",
+    "@metriport/api": "^5.0.0",
     "@metriport/commonwell-sdk": "^4.3.2",
     "@sentry/node": "^7.45.0",
     "@sentry/tracing": "^7.45.0",

@@ -130,14 +130,6 @@
             "medical-api/api-reference/fhir/get-patient-consolidated",
             "medical-api/api-reference/fhir/add-patient-data"
           ]
-        },
-        {
-          "group": "Link",
-          "pages": [
-            "medical-api/api-reference/link/get-links",
-            "medical-api/api-reference/link/create-link",
-            "medical-api/api-reference/link/remove-link"
-          ]
         }
       ]
     },

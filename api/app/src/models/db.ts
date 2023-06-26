@@ -3,7 +3,7 @@ import { Sequelize } from "sequelize";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
-import { initDDBDev } from "./db-dev";
+import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { CustomerSequenceModel } from "./medical/customer-sequence";
 import { FacilityModel } from "./medical/facility";
 import { MAPIAccess } from "./medical/mapi-access";
@@ -83,6 +83,7 @@ const initDB = async (): Promise<void> => {
       });
     } else {
       doc = await initDDBDev();
+      await initLocalCxAccount();
     }
     // set db object for external references
     db = { sequelize, doc };
