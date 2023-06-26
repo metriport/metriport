@@ -1,25 +1,21 @@
-const puppeteer = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
-const AWS = require("aws-sdk");
-const SaxonJS = require("saxon-js");
-const fs = require("fs");
-const styleSheetText = require("./stylesheet.js");
-const Sentry = require("@sentry/serverless");
+import Sentry from "@sentry/serverless";
+import chromium from "@sparticuz/chromium";
+import AWS from "aws-sdk";
+import fs from "fs";
+import puppeteer from "puppeteer-core";
+import SaxonJS from "saxon-js";
 import * as uuid from "uuid";
-
-function getEnv(name) {
-  return process.env[name];
-}
-const getEnvOrFail = name => {
-  const value = process.env[name];
-  if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
-  return value;
-};
+import { getEnv, getEnvOrFail } from "./shared/env";
+import { sleep } from "./shared/sleep";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const styleSheetText = require("./cda-to-visualization/stylesheet.js");
 
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
+
+const SIGNED_URL_DURATION_SECONDS = 60;
 
 // Keep this as early on the file as possible
 Sentry.init({
@@ -34,40 +30,50 @@ const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
 
-export const handler = Sentry.AWSLambda.wrapHandler(async req => {
-  const { fileName, conversionType } = req;
+export const handler = Sentry.AWSLambda.wrapHandler(
+  async (req: { fileName: string; conversionType: string }) => {
+    const { fileName, conversionType } = req;
 
-  const document = await downloadDocumentFromS3({ fileName });
+    const document = await downloadDocumentFromS3({ fileName });
 
-  if (conversionType === "html") {
-    const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document });
-    console.log("html", url);
-    return url;
+    if (document && conversionType === "html") {
+      const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document });
+      console.log("html", url);
+      return url;
+    }
+
+    if (document && conversionType === "pdf") {
+      const url = await convertStoreAndReturnPdfDocUrl({ fileName, document });
+      console.log("pdf", url);
+      return url;
+    }
+
+    return;
   }
+);
 
-  if (conversionType === "pdf") {
-    const url = await convertStoreAndReturnPdfDocUrl({ fileName, document });
-    console.log("pdf", url);
-    return url;
-  }
-
-  return;
-});
-
-const downloadDocumentFromS3 = async ({ fileName }) => {
+const downloadDocumentFromS3 = async ({
+  fileName,
+}: {
+  fileName: string;
+}): Promise<string | undefined> => {
   const file = await s3client
     .getObject({
       Bucket: bucketName,
       Key: fileName,
     })
     .promise();
-
   const data = file.Body?.toString("utf-8");
-
   return data;
 };
 
-const convertStoreAndReturnHtmlDocUrl = async ({ fileName, document }) => {
+const convertStoreAndReturnHtmlDocUrl = async ({
+  fileName,
+  document,
+}: {
+  fileName: string;
+  document: string;
+}) => {
   const convertDoc = await convertToHtml(document);
 
   const newFileName = fileName.concat(".html");
@@ -86,7 +92,13 @@ const convertStoreAndReturnHtmlDocUrl = async ({ fileName, document }) => {
   return urlHtml;
 };
 
-const convertStoreAndReturnPdfDocUrl = async ({ fileName, document }) => {
+const convertStoreAndReturnPdfDocUrl = async ({
+  fileName,
+  document,
+}: {
+  fileName: string;
+  document: string;
+}) => {
   const convertDoc = await convertToHtml(document);
   const tmpFileName = uuid.v4();
 
@@ -112,12 +124,12 @@ const convertStoreAndReturnPdfDocUrl = async ({ fileName, document }) => {
     });
 
     // Defines page
-    let page = await browser.newPage();
+    const page = await browser.newPage();
 
     await page.setContent(convertDoc);
 
     // Wait 2.5 seconds
-    await delay(2500);
+    await sleep(2_500);
 
     // Generate PDF from page in puppeteer
     await page.pdf({
@@ -160,7 +172,7 @@ const convertStoreAndReturnPdfDocUrl = async ({ fileName, document }) => {
   return urlPdf;
 };
 
-const convertToHtml = async document => {
+const convertToHtml = async (document: string): Promise<string> => {
   try {
     const cda10 = await SaxonJS.getResource(
       {
@@ -195,30 +207,19 @@ const convertToHtml = async document => {
 
     return result.principalResult;
   } catch (error) {
-    console.log(`Error while converting to html: `, err);
-    Sentry.captureException(err, {
-      extra: { context: lambdaName },
+    console.log(`Error while converting to html: `, error);
+    Sentry.captureException(error, {
+      extra: { context: lambdaName, error },
     });
+    throw error;
   }
 };
 
-const getSignedUrl = async ({ fileName }) => {
-  const seconds = 60;
-
+const getSignedUrl = async ({ fileName }: { fileName: string }) => {
   const url = s3client.getSignedUrl("getObject", {
     Bucket: bucketName,
     Key: fileName,
-    Expires: seconds,
+    Expires: SIGNED_URL_DURATION_SECONDS,
   });
-
   return url;
 };
-
-// Define "delay" function
-function delay(timeout) {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve(true);
-    }, timeout);
-  });
-}

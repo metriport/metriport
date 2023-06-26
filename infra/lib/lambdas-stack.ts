@@ -1,14 +1,25 @@
 import { Stack, StackProps } from "aws-cdk-lib";
+import * as apig from "aws-cdk-lib/aws-apigateway";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import { Code, ILayerVersion, LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
+import { Code, ILayerVersion, LayerVersion } from "aws-cdk-lib/aws-lambda";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "./env-config";
-import { createLambda } from "./shared/lambda";
+import { createCdaToVisualizationLambda } from "./lambdas/cda-to-visualization";
+import { createGarminLambda } from "./lambdas/garmin";
+import { createTesterLambda } from "./lambdas/tester";
 
 interface LambdasStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
+  apiService: FargateService;
+  apiServiceDnsAddress: string;
+  medicalDocumentsBucket: s3.Bucket | undefined;
+  apiGatewayWebhookResource: apig.Resource;
+  dynamoDBTokenTable: dynamodb.Table;
 }
 
 export class LambdasStack extends Stack {
@@ -24,6 +35,10 @@ export class LambdasStack extends Stack {
 
     this.setupTester(props);
 
+    this.setupCdaToVisualization(props);
+
+    this.setupGarmin(props);
+
     // TODO 715 add remaining lambdas
   }
 
@@ -34,19 +49,39 @@ export class LambdasStack extends Stack {
   }
 
   private setupTester(props: LambdasStackProps): lambda.Function {
-    const { environmentType, lambdasSentryDSN } = props.config;
-    return createLambda({
+    return createTesterLambda({
       stack: this,
-      name: "Tester",
+      config: props.config,
       vpc: props.vpc,
-      subnets: props.vpc.privateSubnets,
-      entry: "tester",
-      layers: [this.lambdaDependencies],
-      runtime: Runtime.NODEJS_18_X,
-      envVars: {
-        ENV_TYPE: environmentType,
-        ...(lambdasSentryDSN ? { SENTRY_DSN: lambdasSentryDSN } : {}),
-      },
+      sharedNodeModules: this.lambdaDependencies,
+    });
+  }
+
+  private setupCdaToVisualization(props: LambdasStackProps): lambda.Function | undefined {
+    const medicalDocumentsBucket = props.medicalDocumentsBucket;
+    if (medicalDocumentsBucket) {
+      return createCdaToVisualizationLambda({
+        stack: this,
+        config: props.config,
+        sharedNodeModules: this.lambdaDependencies,
+        vpc: props.vpc,
+        caller: props.apiService.taskDefinition.taskRole,
+        medicalDocumentsBucket,
+      });
+    }
+    return undefined;
+  }
+
+  private setupGarmin(props: LambdasStackProps): lambda.Function | undefined {
+    return createGarminLambda({
+      stack: this,
+      config: props.config,
+      sharedNodeModules: this.lambdaDependencies,
+      vpc: props.vpc,
+      apiService: props.apiService,
+      apiServiceDnsAddress: props.apiServiceDnsAddress,
+      apiGatewayBaseResource: props.apiGatewayWebhookResource,
+      dynamoDBTokenTable: props.dynamoDBTokenTable,
     });
   }
 }

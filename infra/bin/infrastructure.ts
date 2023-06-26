@@ -48,7 +48,16 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 4. Deploy the Lambdas stack.
   //---------------------------------------------------------------------------------
-  new LambdasStack(apiStack, "LambdasStack", { env, config, vpc: apiStack.vpc });
+  new LambdasStack(apiStack, "LambdasStack", {
+    env,
+    config,
+    vpc: apiStack.vpc,
+    apiService: apiStack.apiService,
+    apiServiceDnsAddress: apiStack.apiServiceDnsAddress,
+    medicalDocumentsBucket: apiStack.medicalDocumentsBucket,
+    apiGatewayWebhookResource: apiStack.apiGatewayWebhookResource,
+    dynamoDBTokenTable: apiStack.dynamoDBTokenTable,
+  });
 
   //---------------------------------------------------------------------------------
   // Execute the updates on AWS

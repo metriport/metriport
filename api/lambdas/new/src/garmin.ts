@@ -1,15 +1,7 @@
-const { DynamoDB } = require("aws-sdk");
-import axios from "axios";
 import * as Sentry from "@sentry/serverless";
-
-export function getEnv(name) {
-  return process.env[name];
-}
-export function getEnvOrFail(name) {
-  const value = getEnv(name);
-  if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
-  return value;
-}
+import { DynamoDB } from "aws-sdk";
+import axios from "axios";
+import { getEnv, getEnvOrFail } from "./shared/env";
 
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
@@ -28,7 +20,8 @@ Sentry.init({
 const attribName = "userAccessToken";
 const api = axios.create();
 
-const getUAT = (obj, propName) => {
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getUAT = (obj: any, propName: string) => {
   if (!obj) return undefined;
   const value = obj[propName];
   if (!value) return undefined;
@@ -36,20 +29,24 @@ const getUAT = (obj, propName) => {
   if (value[attribName]) return value[attribName];
   return undefined;
 };
-const getUATAsArray = (obj) => {
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getUATAsArray = (obj: any) => {
   if (!obj) return undefined;
   if (obj.length > 0 && obj[0][attribName]) return obj[0][attribName];
   return undefined;
 };
 
-const buildResponse = (status, body) => ({
+const buildResponse = (status: number, body?: unknown) => ({
   statusCode: status,
   body,
 });
 
 const defaultResponse = () => buildResponse(200);
 
-export const handler = Sentry.AWSLambda.wrapHandler(async req => {
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Request = { body?: any; headers: Record<string, string> };
+
+export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
   console.log(`Verifying at least one UserAuthToken on body...`);
 
   if (!req.body) {
@@ -110,7 +107,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async req => {
   return defaultResponse();
 });
 
-async function forwardCallToServer(req) {
+async function forwardCallToServer(req: Request) {
   console.log(`Verified! Calling server...`);
 
   const resp = await api.post(apiServerURL, req.body, { headers: req.headers });

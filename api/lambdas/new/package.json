@@ -3,10 +3,10 @@
   "version": "2.0.0",
   "description": "",
   "scripts": {
-    "clean": "rimraf dist && rimraf node_modules",
+    "clean": "rimraf dist && rimraf node_modules && rimraf ../layers/shared",
     "build": "tsc -p tsconfig.build.json",
     "build:cloud": "tsc -p tsconfig.cloud.json",
-    "predeploy": "npm install && npm run build && mkdir -p ../layers/shared/nodejs && cp -r node_modules ../layers/shared/nodejs/ && cd ../layers/shared && zip -r shared-layer.zip ./nodejs && cd -",
+    "prepdeploy": "npm run clean && npm ci --ignore-scripts --no-fund && npm run lint && npm run build:cloud && mkdir -p ../layers/shared/nodejs && cp -r node_modules ../layers/shared/nodejs/ && cd ../layers/shared && zip -r shared-layer.zip ./nodejs && cd -",
     "lint": "eslint . --ext .ts"
   },
   "engines": {
@@ -17,8 +17,12 @@
   "license": "ISC",
   "dependencies": {
     "@sentry/serverless": "^7.46.0",
+    "@sparticuz/chromium": "106.0.2",
     "aws-sdk": "^2.1248.0",
-    "axios": "^1.4.0"
+    "axios": "^1.4.0",
+    "puppeteer-core": "18.0.5",
+    "saxon-js": "^2.5.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "eslint": "^8.43.0",

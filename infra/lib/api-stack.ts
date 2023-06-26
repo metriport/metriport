@@ -7,6 +7,7 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType } from "aws-cdk-lib/aws-ec2";
+import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as rds from "aws-cdk-lib/aws-rds";
@@ -35,6 +36,11 @@ interface APIStackProps extends StackProps {
 
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
+  public readonly apiService: FargateService;
+  public readonly apiServiceDnsAddress: string;
+  public readonly medicalDocumentsBucket: s3.Bucket | undefined;
+  public readonly apiGatewayWebhookResource: apig.Resource;
+  public readonly dynamoDBTokenTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -138,14 +144,14 @@ export class APIStack extends Stack {
 
     // global table for auth token management
     const dynamoConstructName = "APIUserTokens";
-    const dynamoDBTokenTable = new dynamodb.Table(this, dynamoConstructName, {
+    this.dynamoDBTokenTable = new dynamodb.Table(this, dynamoConstructName, {
       partitionKey: { name: "token", type: dynamodb.AttributeType.STRING },
       replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
       replicationTimeout: Duration.hours(3),
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecovery: true,
     });
-    dynamoDBTokenTable.addGlobalSecondaryIndex({
+    this.dynamoDBTokenTable.addGlobalSecondaryIndex({
       indexName: "oauthUserAccessToken_idx",
       partitionKey: {
         name: "oauthUserAccessToken",
@@ -154,7 +160,7 @@ export class APIStack extends Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
     this.addDynamoPerformanceAlarms(
-      dynamoDBTokenTable,
+      this.dynamoDBTokenTable,
       dynamoConstructName,
       slackNotification?.alarmAction
     );
@@ -228,7 +234,7 @@ export class APIStack extends Stack {
       secrets,
       this.vpc,
       dbCredsSecret,
-      dynamoDBTokenTable,
+      this.dynamoDBTokenTable,
       slackNotification?.alarmAction,
       dnsZones,
       props.config.fhirServerUrl,
@@ -240,6 +246,8 @@ export class APIStack extends Stack {
       // sidechainFHIRConverterQueue?.queueUrl
       undefined
     );
+    this.apiService = apiService.service;
+    this.apiServiceDnsAddress = apiService.loadBalancer.loadBalancerDnsName;
 
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);
@@ -266,17 +274,8 @@ export class APIStack extends Stack {
     // S3 bucket for Medical Documents
     //-------------------------------------------
 
-    // const cdaToVisualization = this.setupCdaToVisualization({
-    //   fargateService: apiService,
-    //   vpc: this.vpc,
-    //   bucketName: props.config.medicalDocumentsBucketName,
-    //   lambdaName: props.config.cdaToVisualizationLambdaName,
-    //   envType: props.config.environmentType,
-    //   sentryDsn: props.config.lambdasSentryDSN,
-    // });
-
     if (props.config.medicalDocumentsBucketName) {
-      const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
+      this.medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
         bucketName: props.config.medicalDocumentsBucketName,
         publicReadAccess: false,
         encryption: s3.BucketEncryption.S3_MANAGED,
@@ -333,11 +332,10 @@ export class APIStack extends Stack {
       // Access grant for medical documents bucket
       sandboxSeedDataBucket &&
         sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      // medicalDocumentsBucket.grantReadWrite(cdaToVisualization);
-      // fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+      this.medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+      // fhirConverterLambda && this.medicalDocumentsBucket.grantRead(fhirConverterLambda);
       // sidechainFHIRConverterLambda &&
-      //   medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
+      //   this.medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
     }
 
     // createDocQueryChecker({
@@ -403,7 +401,7 @@ export class APIStack extends Stack {
 
     // token auth for connect sessions
     const tokenAuth = this.setupTokenAuthLambda({
-      dynamoDBTokenTable,
+      dynamoDBTokenTable: this.dynamoDBTokenTable,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
     });
@@ -418,15 +416,7 @@ export class APIStack extends Stack {
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
-
-    // this.setupGarminWebhookAuth({
-    //   baseResource: webhookResource,
-    //   vpc: this.vpc,
-    //   fargateService: apiService,
-    //   dynamoDBTokenTable,
-    //   envType: props.config.environmentType,
-    //   sentryDsn: props.config.lambdasSentryDSN,
-    // });
+    this.apiGatewayWebhookResource = webhookResource;
 
     // this.setupWithingsWebhookAuth({
     //   baseResource: webhookResource,
@@ -621,52 +611,6 @@ export class APIStack extends Stack {
 
   //   const withingsResource = baseResource.addResource("withings");
   //   withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
-  // }
-
-  // private setupCdaToVisualization(ownProps: {
-  //   fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
-  //   vpc: ec2.IVpc;
-  //   bucketName: string | undefined;
-  //   lambdaName: string | undefined;
-  //   envType: string;
-  //   sentryDsn: string | undefined;
-  // }) {
-  //   const { fargateService, vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
-
-  //   const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
-  //     compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-  //     code: lambda.Code.fromAsset("../api/lambdas/layers/chromium"),
-  //     description: "Adds chromium to the lambdas",
-  //   });
-
-  //   const cdaToVisualizationLambda = new lambda_node.NodejsFunction(
-  //     this,
-  //     "CdaToVisualizationLambda",
-  //     {
-  //       functionName: lambdaName,
-  //       runtime: lambda.Runtime.NODEJS_16_X,
-  //       entry: "../api/lambdas/cda-to-visualization/index.js",
-  //       environment: {
-  //         ENV_TYPE: envType,
-  //         ...(bucketName && {
-  //           MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
-  //         }),
-  //         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-  //       },
-  //       layers: [chromiumLayer],
-  //       bundling: {
-  //         minify: false,
-  //         externalModules: ["aws-sdk", "@sparticuz/chromium"],
-  //       },
-  //       memorySize: 512,
-  //       timeout: Duration.minutes(1),
-  //       vpc,
-  //     }
-  //   );
-
-  //   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-
-  //   return cdaToVisualizationLambda;
   // }
 
   private setupTokenAuthLambda(params: {

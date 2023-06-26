@@ -19,6 +19,7 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
+      lambdas: ${{ steps.changes.outputs.lambdas }}
       widget: ${{ steps.changes.outputs.widget }}
     steps:
       - name: Login to Docker Hub
@@ -32,10 +33,14 @@ jobs:
         uses: dorny/paths-filter@4067d885736b84de7c414f582ac45897079b0a78 # v2
         id: changes
         with:
-          base: 'master'
+          base: "master"
           filters: |
             api:
-              - "api/**"
+              - "api/app"
+              - "infra/**"
+              - "package*.json"
+            lambdas:
+              - "api/lambdas"
               - "infra/**"
               - "package*.json"
             widget:
@@ -106,11 +111,51 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
+  lambdas-build:
+    if: needs.files-changed.outputs.lambdas == 'true'
+    needs: files-changed
+    uses: ./.github/workflows/_reusable_build.yml
+    with:
+      path: "api/lambdas/new"
+      build_env: "production"
+      install-from-parent: false
+    secrets: inherit
+  lambdas-deploy:
+    uses: ./.github/workflows/_reusable_deploy.yml
+    needs: lambdas-build
+    with:
+      deploy_env: "production"
+      cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}/LambdasStack
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.API_REGION_PRODUCTION }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  lambdas-sandbox-deploy:
+    uses: ./.github/workflows/_reusable_deploy.yml
+    needs: lambdas-deploy
+    with:
+      deploy_env: "sandbox"
+      cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}/LambdasStack
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.API_REGION_SANDBOX }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_SANDBOX }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
   release:
     uses: ./.github/workflows/_reusable_release.yml
-    needs: [widget-deploy, api-sandbox-deploy]
+    needs: [widget-deploy, api-sandbox-deploy, lambdas-sandbox-deploy]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api-sandbox-deploy.result == 'success') }}
+    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api-sandbox-deploy.result == 'success' || needs.lambdas-sandbox-deploy.result == 'success') }}
     secrets: inherit

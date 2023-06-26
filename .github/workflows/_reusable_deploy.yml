@@ -80,12 +80,6 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: "./"
       # lambdas are not on the npm workspaces, so need to 'install' individually
-      - name: Cda-to-visualization lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/cda-to-visualization/"
-      - name: Garmin lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/garmin/"
       - name: Scheduled lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/scheduled/"
@@ -107,12 +101,18 @@ jobs:
       - name: Withings lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/withings/"
+      - name: New lambdas install dependencies
+        run: npm run prepdeploy
+        working-directory: "api/lambdas/new/"
 
       # BUILD
       # api
       - name: API build/compile
         run: npm run build:cloud
         working-directory: "api/app"
+      - name: Lambdas build/compile
+        run: npm run build:cloud
+        working-directory: "api/lambdas/new"
       # TODO move to an external file so both this and deploy can use this logic
       - name: Widget build/compile
         if: ${{ inputs.build_env == 'production' }}

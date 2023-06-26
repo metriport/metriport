@@ -19,6 +19,7 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
+      lambdas: ${{ steps.changes.outputs.lambdas }}
       widget: ${{ steps.changes.outputs.widget }}
     steps:
       - name: Login to Docker Hub
@@ -34,7 +35,11 @@ jobs:
         with:
           filters: |
             api:
-              - "api/**"
+              - "api/app"
+              - "infra/**"
+              - "package*.json"
+            lambdas:
+              - "api/lambdas"
               - "infra/**"
               - "package*.json"
             widget:
@@ -90,11 +95,35 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
+  lambdas-build:
+    if: needs.files-changed.outputs.lambdas == 'true'
+    needs: files-changed
+    uses: ./.github/workflows/_reusable_build.yml
+    with:
+      path: "api/lambdas/new"
+      install-from-parent: false
+    secrets: inherit
+  lambdas-deploy:
+    uses: ./.github/workflows/_reusable_deploy.yml
+    needs: lambdas-build
+    with:
+      deploy_env: "staging"
+      cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}/LambdasStack
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.API_REGION_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
   release:
     uses: ./.github/workflows/_reusable_release.yml
-    needs: [widget-deploy, api-deploy]
+    needs: [widget-deploy, api-deploy, lambdas-deploy]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api-deploy.result == 'success') }}
+    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api-deploy.result == 'success' || needs.lambdas-deploy.result == 'success') }}
     secrets: inherit
