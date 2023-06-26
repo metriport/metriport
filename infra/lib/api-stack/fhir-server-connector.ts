@@ -92,7 +92,8 @@ export function createConnector({
     name: connectorName,
     vpc,
     subnets: vpc.privateSubnets,
-    entry: "../api/lambdas/sqs-to-fhir/index.js",
+    entry: "index.js",
+    basePath: "../api/lambdas/sqs-to-fhir",
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,

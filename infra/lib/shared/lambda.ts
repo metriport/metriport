@@ -6,7 +6,7 @@ import { ISubnet, IVpc } from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
+import { Code, Function as Lambda, ILayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import { FilterPattern } from "aws-cdk-lib/aws-logs";
 import { Queue } from "aws-cdk-lib/aws-sqs";
@@ -31,6 +31,7 @@ export interface LambdaProps extends StackProps {
   readonly stack: Construct;
   readonly name: string;
   readonly entry: string;
+  readonly basePath?: string;
   readonly vpc: IVpc;
   readonly subnets?: ISubnet[];
   readonly role?: iam.Role;
@@ -42,17 +43,17 @@ export interface LambdaProps extends StackProps {
   readonly maxEventAge?: Duration;
   readonly alarmSnsAction?: SnsAction;
   readonly runtime?: Runtime;
+  readonly layers?: ILayerVersion[];
 }
 
 export function createLambda(props: LambdaProps): Lambda {
-  const lambda = new lambda_node.NodejsFunction(props.stack, props.name, {
+  const lambda = new Lambda(props.stack, props.name, {
     functionName: props.name + "Lambda",
     runtime: props.runtime ?? Runtime.NODEJS_16_X,
     // TODO move our lambdas to use layers, quicker to deploy and execute them
-    entry: props.entry,
-    // code: Code.fromAsset('lambda'),
-    // handler: (fileName ?? name) + '.handler',
-    // layers: props.dependencies,
+    code: Code.fromAsset(`${pathToLambdas}/new/dist`),
+    handler: props.entry + ".handler",
+    ...(props.layers ? { layers: props.layers } : {}),
     vpc: props.vpc,
     vpcSubnets: props.subnets ? { subnets: props.subnets } : undefined,
     /**
@@ -124,7 +125,8 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
   const retryLambda = createLambda({
     ...props,
     name: retryLambdaName,
-    entry: props.entry ?? `${pathToLambdas}/sqs-to-sqs/index.js`,
+    entry: `index.js`,
+    basePath: props.entry ?? `${pathToLambdas}/sqs-to-sqs`,
     envVars: {
       ...props.envVars,
       ENV_TYPE: config.environmentType,

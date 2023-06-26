@@ -10,6 +10,7 @@ export type ScheduledLambdaProps = Omit<LambdaProps, "entry"> & {
 } & (
     | {
         entry: string;
+        basePath: string;
       }
     | {
         entry?: never;
@@ -30,9 +31,11 @@ export function createScheduledLambda(props: ScheduledLambdaProps): Lambda {
     ...(props.entry != null
       ? {
           entry: props.entry,
+          basePath: props.basePath,
         }
       : {
-          entry: `${pathToLambdas}/scheduled/index.js`,
+          entry: `index.js`,
+          basePath: `${pathToLambdas}/scheduled`,
           envVars: {
             ...props.envVars,
             ...(props.url ? { URL: props.url } : {}),

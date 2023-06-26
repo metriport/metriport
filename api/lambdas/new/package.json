@@ -1,0 +1,28 @@
+{
+  "name": "lambdas",
+  "version": "2.0.0",
+  "description": "",
+  "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
+    "build": "tsc -p tsconfig.build.json",
+    "build:cloud": "tsc -p tsconfig.cloud.json",
+    "predeploy": "npm install && npm run build && mkdir -p ../layers/shared/nodejs && cp -r node_modules ../layers/shared/nodejs/ && cd ../layers/shared && zip -r shared-layer.zip ./nodejs && cd -",
+    "lint": "eslint . --ext .ts"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@sentry/serverless": "^7.46.0",
+    "aws-sdk": "^2.1248.0",
+    "axios": "^1.4.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.43.0",
+    "eslint-config-prettier": "^8.8.0",
+    "rimraf": "^5.0.1"
+  }
+}

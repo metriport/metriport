@@ -1,14 +1,6 @@
 import * as Sentry from "@sentry/serverless";
 import axios from "axios";
-
-export function getEnv(name) {
-  return process.env[name];
-}
-export function getEnvOrFail(name) {
-  const value = getEnv(name);
-  if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
-  return value;
-}
+import { getEnv, getEnvOrFail } from "./shared/env";
 
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");

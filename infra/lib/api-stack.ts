@@ -23,7 +23,7 @@ import { createAPIService } from "./api-service";
 // import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
-import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc } from "./shared/lambda";
 import { getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
@@ -34,7 +34,7 @@ interface APIStackProps extends StackProps {
 }
 
 export class APIStack extends Stack {
-  readonly vpc: ec2.IVpc;
+  public readonly vpc: ec2.IVpc;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -401,8 +401,6 @@ export class APIStack extends Stack {
       apiKeyRequired: true,
     });
 
-    this.setupTestLambda(props.config.environmentType, props.config.lambdasSentryDSN);
-
     // token auth for connect sessions
     const tokenAuth = this.setupTokenAuthLambda({
       dynamoDBTokenTable,
@@ -532,19 +530,19 @@ export class APIStack extends Stack {
     });
   }
 
-  private setupTestLambda(envType: string, sentryDsn: string | undefined) {
-    return createLambda({
-      stack: this,
-      name: "Tester",
-      vpc: this.vpc,
-      subnets: this.vpc.privateSubnets,
-      entry: "../api/lambdas/tester/index.js",
-      envVars: {
-        ENV_TYPE: envType,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-    });
-  }
+  // private setupTestLambda(envType: string, sentryDsn: string | undefined) {
+  //   return createLambda({
+  //     stack: this,
+  //     name: "Tester",
+  //     vpc: this.vpc,
+  //     subnets: this.vpc.privateSubnets,
+  //     entry: "../api/lambdas/tester/index.js",
+  //     envVars: {
+  //       ENV_TYPE: envType,
+  //       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+  //     },
+  //   });
+  // }
 
   // private setupGarminWebhookAuth(ownProps: {
   //   baseResource: apig.Resource;

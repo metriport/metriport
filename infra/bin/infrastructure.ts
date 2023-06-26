@@ -4,6 +4,7 @@ import "source-map-support/register";
 import { APIStack } from "../lib/api-stack";
 import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 import { EnvConfig } from "../lib/env-config";
+import { LambdasStack } from "../lib/lambdas-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar } from "../lib/shared/util";
@@ -32,7 +33,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 2. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  new APIStack(app, config.stackName, { env, config, version });
+  const apiStack = new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 3. Deploy the Connect widget stack.
@@ -43,6 +44,11 @@ async function deploy(config: EnvConfig) {
       config,
     });
   }
+
+  //---------------------------------------------------------------------------------
+  // 4. Deploy the Lambdas stack.
+  //---------------------------------------------------------------------------------
+  new LambdasStack(apiStack, "LambdasStack", { env, config, vpc: apiStack.vpc });
 
   //---------------------------------------------------------------------------------
   // Execute the updates on AWS

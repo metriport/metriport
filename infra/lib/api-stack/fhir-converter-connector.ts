@@ -117,7 +117,8 @@ export function createLambda({
     name: connectorName,
     vpc,
     subnets: vpc.privateSubnets,
-    entry: "../api/lambdas/sqs-to-converter/index.js",
+    entry: "index.js",
+    basePath: "../api/lambdas/sqs-to-converter",
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,
