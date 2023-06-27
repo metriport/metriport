@@ -7,7 +7,59 @@ api: "POST /medical/v1/patient/{id}/consolidated"
 Add net new clinical data for a patient using a [FHIR Bundle](https://www.hl7.org/fhir/R4/bundle.html). This data will be shared back
 with the HIEs to meet data contribution requirements.
 
-<Warning>
-  This endpoint is under active development - and only used in our private beta. We will update this
-  with a public spec as soon as it's finalized.
-</Warning>
+<ParamField path="id" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Body
+
+<ParamField body="entry" type="array" required>
+  The entry needs to be an array of [FHIR resources](/medical-api/fhir/resources).
+</ParamField>
+
+## Response
+
+Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-response" with the entry being the outcome of the request.
+
+```json
+{
+  "resourceType": "Bundle",
+  "id": "b2c28be3-8aae-4b3c-b0ff-ca5d0f0b0d1e",
+  "type": "transaction-response",
+  "link": [
+    {
+      "relation": "self",
+      "url": "http://fhir.metriport.com/oauth/fhir/1234abcd-123a-1a2b-a3b2-bd9cd75a0717/21fa432e-723b-4a1d-a3b2-bd9cd75a0717"
+    }
+  ],
+  "entry": [
+    {
+      "response": {
+        "status": "200 OK",
+        "location": "DiagnosticReport/1234abcd-1234-abcd-b0fe-899bb455f0f0/_history/2",
+        "etag": "2",
+        "lastModified": "2023-05-25T00:28:06.321+00:00",
+        "outcome": {
+          "resourceType": "OperationOutcome",
+          "issue": [
+            {
+              "severity": "information",
+              "code": "informational",
+              "details": {
+                "coding": [
+                  {
+                    "system": "https://hapifhir.io/fhir/CodeSystem/hapi-fhir-storage-response-code",
+                    "code": "SUCCESSFUL_UPDATE",
+                    "display": "Update succeeded."
+                  }
+                ]
+              },
+              "diagnostics": "Successfully updated resource \"DiagnosticReport/1234abcd-1234-abcd-b0fe-899bb455f0f0/_history/2\"."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+```

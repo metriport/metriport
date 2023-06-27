@@ -12,9 +12,7 @@ export async function createConsolidatedPatientData({
   patientId: string;
   fhirBundle: Bundle<Resource>;
 }): Promise<Bundle<Resource> | undefined> {
-  const { log } = Util.out(
-    `[createConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}]`
-  );
+  const { log } = Util.out(`createConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}`);
 
   try {
     const fhir = makeFhirApi(cxId);
@@ -31,7 +29,14 @@ export async function createConsolidatedPatientData({
     return bundleResource;
   } catch (error) {
     log(`Error converting and executing fhir bundle resources: `, error);
-    capture.error(error, { extra: { context: `createConsolidatedPatientData`, error } });
+    capture.error(error, {
+      extra: {
+        context: `createConsolidatedPatientData`,
+        patientId,
+        error,
+      },
+    });
+    throw error;
   }
 }
 
@@ -55,6 +60,7 @@ const convertCollectionBundleToTransactionBundle = ({
     }
 
     if (
+      resource.resourceType === "AsyncJob" ||
       resource.resourceType === "AccessPolicy" ||
       resource.resourceType === "Binary" ||
       resource.resourceType === "Bot" ||

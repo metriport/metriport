@@ -233,7 +233,7 @@ router.get(
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient to associate resources to.
  * @param req.body The FHIR Bundle to create resources.
- * @return Bundle with operation outcome.
+ * @return FHIR Bundle with operation outcome.
  */
 router.post(
   "/:id/consolidated",
