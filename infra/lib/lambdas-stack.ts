@@ -1,5 +1,4 @@
 import { Stack, StackProps } from "aws-cdk-lib";
-import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
@@ -7,6 +6,8 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Code, ILayerVersion, LayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
+import { ApiGateway } from "./api-stack";
+import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import { EnvConfig } from "./env-config";
 import { createCdaToVisualizationLambda } from "./lambdas/cda-to-visualization";
 import { createGarminLambda } from "./lambdas/garmin";
@@ -18,7 +19,7 @@ interface LambdasStackProps extends StackProps {
   apiService: FargateService;
   apiServiceDnsAddress: string;
   medicalDocumentsBucket: s3.Bucket | undefined;
-  apiGatewayWebhookResource: apig.Resource;
+  apiGateway: ApiGateway;
   dynamoDBTokenTable: dynamodb.Table;
 }
 
@@ -38,6 +39,8 @@ export class LambdasStack extends Stack {
     this.setupCdaToVisualization(props);
 
     this.setupGarmin(props);
+
+    this.setupScheduled(props);
 
     // TODO 715 add remaining lambdas
   }
@@ -65,7 +68,6 @@ export class LambdasStack extends Stack {
         config: props.config,
         sharedNodeModules: this.lambdaDependencies,
         vpc: props.vpc,
-        caller: props.apiService.taskDefinition.taskRole,
         medicalDocumentsBucket,
       });
     }
@@ -78,10 +80,18 @@ export class LambdasStack extends Stack {
       config: props.config,
       sharedNodeModules: this.lambdaDependencies,
       vpc: props.vpc,
-      apiService: props.apiService,
       apiServiceDnsAddress: props.apiServiceDnsAddress,
-      apiGatewayBaseResource: props.apiGatewayWebhookResource,
+      apiGateway: props.apiGateway,
       dynamoDBTokenTable: props.dynamoDBTokenTable,
+    });
+  }
+
+  private setupScheduled(props: LambdasStackProps): lambda.Function | undefined {
+    return createDocQueryChecker({
+      stack: this,
+      sharedNodeModules: this.lambdaDependencies,
+      apiAddress: props.apiServiceDnsAddress,
+      vpc: props.vpc,
     });
   }
 }

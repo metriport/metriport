@@ -3,8 +3,6 @@ import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { createLambda, LambdaProps } from "./lambda";
 
-const pathToLambdas = "../api/lambdas";
-
 export type ScheduledLambdaProps = Omit<LambdaProps, "entry"> & {
   scheduleExpression: string | string[];
 } & (
@@ -34,8 +32,7 @@ export function createScheduledLambda(props: ScheduledLambdaProps): Lambda {
           basePath: props.basePath,
         }
       : {
-          entry: `index.js`,
-          basePath: `${pathToLambdas}/scheduled`,
+          entry: `scheduled`,
           envVars: {
             ...props.envVars,
             ...(props.url ? { URL: props.url } : {}),

@@ -80,9 +80,6 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: "./"
       # lambdas are not on the npm workspaces, so need to 'install' individually
-      - name: Scheduled lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/scheduled/"
       - name: FHIRConverter lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/sqs-to-converter/"
@@ -92,9 +89,6 @@ jobs:
       - name: Retry SQS lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/sqs-to-sqs/"
-      - name: Tester lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/tester/"
       - name: Token-auth lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/token-auth/"

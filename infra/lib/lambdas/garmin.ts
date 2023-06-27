@@ -1,9 +1,10 @@
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import { Resource } from "aws-cdk-lib/aws-apigateway";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
+import { ApiGateway } from "../api-stack";
 import { EnvConfig } from "../env-config";
 import { addErrorAlarmToLambdaFunc, createLambda } from "../shared/lambda";
 
@@ -12,22 +13,14 @@ export type GarminLambdaProps = {
   config: EnvConfig;
   sharedNodeModules: lambda.ILayerVersion;
   vpc: ec2.IVpc;
-  apiGatewayBaseResource: apig.Resource;
-  apiService: ecs.FargateService;
+  apiGateway: ApiGateway;
   apiServiceDnsAddress: string;
   dynamoDBTokenTable: dynamodb.Table;
 };
 
 export function createGarminLambda(props: GarminLambdaProps): lambda.Function {
-  const {
-    stack,
-    vpc,
-    sharedNodeModules,
-    apiService,
-    apiServiceDnsAddress,
-    dynamoDBTokenTable,
-    apiGatewayBaseResource,
-  } = props;
+  const { stack, vpc, sharedNodeModules, apiServiceDnsAddress, dynamoDBTokenTable, apiGateway } =
+    props;
   const { environmentType, lambdasSentryDSN } = props.config;
 
   const garminLambda = createLambda({
@@ -51,10 +44,22 @@ export function createGarminLambda(props: GarminLambdaProps): lambda.Function {
   garminLambda.role && dynamoDBTokenTable.grantReadData(garminLambda.role);
 
   // Grant lambda access to the api server
-  apiService.connections.allowFrom(garminLambda, ec2.Port.allTcp());
+  // TODO 715 remove this if really not needed (commented out b/c it creates a circular dependency)
+  // apiService.connections.allowFrom(garminLambda, ec2.Port.allTcp());
 
   // setup $base/garmin path with token auth
-  const garminResource = apiGatewayBaseResource.addResource("garmin");
+  const apiGW = apig.RestApi.fromRestApiAttributes(stack, "ApiGWForGarmin", {
+    restApiId: apiGateway.apiId,
+    rootResourceId: apiGateway.apiRootResourceId,
+  });
+
+  const webhookResource = Resource.fromResourceAttributes(stack, "WebhookResourceForGarmin", {
+    restApi: apiGW,
+    resourceId: apiGateway.apiWebhookResourceId,
+    path: apiGateway.apiWebhookPath,
+  });
+  if (!webhookResource) throw Error("Webhook resource not found on Garmin");
+  const garminResource = webhookResource.addResource("garmin");
   garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
 
   return garminLambda;

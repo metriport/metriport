@@ -21,7 +21,7 @@ import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
-// import { createDocQueryChecker } from "./api-stack/doc-query-checker";
+import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
 import { addErrorAlarmToLambdaFunc } from "./shared/lambda";
@@ -34,12 +34,19 @@ interface APIStackProps extends StackProps {
   version: string | undefined;
 }
 
+export type ApiGateway = {
+  apiId: string;
+  apiRootResourceId: string;
+  apiWebhookResourceId: string;
+  apiWebhookPath: string;
+};
+
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
   public readonly apiService: FargateService;
   public readonly apiServiceDnsAddress: string;
   public readonly medicalDocumentsBucket: s3.Bucket | undefined;
-  public readonly apiGatewayWebhookResource: apig.Resource;
+  public readonly apiGateway: ApiGateway;
   public readonly dynamoDBTokenTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
@@ -338,13 +345,6 @@ export class APIStack extends Stack {
       //   this.medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
     }
 
-    // createDocQueryChecker({
-    //   stack: this,
-    //   vpc: this.vpc,
-    //   apiAddress: apiLoadBalancerAddress,
-    //   alarmSnsAction: slackNotification?.alarmAction,
-    // });
-
     //-------------------------------------------
     // API Gateway
     //-------------------------------------------
@@ -416,7 +416,13 @@ export class APIStack extends Stack {
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
-    this.apiGatewayWebhookResource = webhookResource;
+
+    this.apiGateway = {
+      apiId: api.restApiId,
+      apiRootResourceId: api.restApiRootResourceId,
+      apiWebhookResourceId: webhookResource.resourceId,
+      apiWebhookPath: webhookResource.path,
+    };
 
     // this.setupWithingsWebhookAuth({
     //   baseResource: webhookResource,

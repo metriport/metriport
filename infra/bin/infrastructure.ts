@@ -55,7 +55,7 @@ async function deploy(config: EnvConfig) {
     apiService: apiStack.apiService,
     apiServiceDnsAddress: apiStack.apiServiceDnsAddress,
     medicalDocumentsBucket: apiStack.medicalDocumentsBucket,
-    apiGatewayWebhookResource: apiStack.apiGatewayWebhookResource,
+    apiGateway: apiStack.apiGateway,
     dynamoDBTokenTable: apiStack.dynamoDBTokenTable,
   });
 
