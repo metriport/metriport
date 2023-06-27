@@ -130,6 +130,7 @@
           "group": "Document",
           "pages": [
             "medical-api/api-reference/document/start-document-query",
+            "medical-api/api-reference/document/get-document-query",
             "medical-api/api-reference/document/list-documents",
             "medical-api/api-reference/document/get-document"
           ]
@@ -139,14 +140,6 @@
           "pages": [
             "medical-api/api-reference/fhir/get-patient-consolidated",
             "medical-api/api-reference/fhir/add-patient-data"
-          ]
-        },
-        {
-          "group": "Link",
-          "pages": [
-            "medical-api/api-reference/link/get-links",
-            "medical-api/api-reference/link/create-link",
-            "medical-api/api-reference/link/remove-link"
           ]
         }
       ]
