@@ -35,7 +35,7 @@ export function getApiToken(searchParams: URLSearchParams): string {
 
 export async function handleToken(token: string): Promise<void> {
   if (isDemoToken(token)) {
-    // tell the user the widget is in demo mode && disable connect buttons
+    // disable connect buttons
     throw new DemoTokenError();
   }
   const tokenValid = await isTokenValid();
