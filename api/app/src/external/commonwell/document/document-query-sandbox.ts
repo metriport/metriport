@@ -17,6 +17,20 @@ import { updateDocQuery } from "../../../command/medical/document/document-query
 import { isConvertible } from "../../fhir-converter/converter";
 import { sandboxSleepTime } from "./shared";
 
+const randomDates = [
+  "2023-06-15",
+  "2023-06-10",
+  "2023-06-12",
+  "2023-06-20",
+  "2023-03-22",
+  "2022-12-03",
+  "2018-09-29",
+  "2022-07-21",
+  "2019-04-10",
+  "2023-05-03",
+  "2020-02-19",
+];
+
 export async function sandboxGetDocRefsAndUpsert({
   organization,
   patient,
@@ -75,6 +89,8 @@ export async function sandboxGetDocRefsAndUpsert({
         type: "Patient",
         reference: `Patient/${patient.id}`,
       };
+
+      entry.docRef = addSandboxFields(entry.docRef);
       entry.docRef.contained = contained;
       await upsertDocumentToFHIRServer(patient.cxId, entry.docRef);
     } catch (err) {
@@ -115,4 +131,64 @@ export async function sandboxGetDocRefsAndUpsert({
   );
 
   return result;
+}
+
+function addSandboxFields(docRef: DocumentReference): DocumentReference {
+  if (docRef.content) {
+    const fileExt = docRef.content[0]?.attachment?.contentType?.split("/")[1]?.trim();
+    const randomIndex = Math.floor(Math.random() * randomDates.length);
+    // Add a random date to the sandbox document
+    if (docRef.content[0]?.attachment) {
+      docRef.content[0].attachment.creation = randomDates[randomIndex];
+    }
+
+    if (randomIndex < 3) {
+      docRef.status = "current";
+    } else {
+      docRef.status = "superseded";
+    }
+
+    if (fileExt === "xml") {
+      docRef.description = "C-CDA R2.1 Patient Record";
+      docRef.type = {
+        coding: [
+          {
+            system: "http://loinc.org/",
+            code: "34133-9",
+            display: "Summarization of episode note",
+          },
+        ],
+      };
+    } else if (fileExt === "pdf") {
+      (docRef.description = "Physical Examination"),
+        (docRef.type = {
+          coding: [
+            {
+              display: "Encounter",
+            },
+          ],
+        });
+    } else if (fileExt === "tif") {
+      (docRef.description = "Pathology Report"),
+        (docRef.type = {
+          coding: [
+            {
+              display: "Pathology Report",
+            },
+          ],
+        });
+    } else {
+      (docRef.description = "Clinical Photograph or X-ray"),
+        (docRef.type = {
+          coding: [
+            {
+              display: "Photograph",
+            },
+          ],
+        });
+      docRef.status = "current";
+    }
+  }
+
+  return docRef;
 }
