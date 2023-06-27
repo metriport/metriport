@@ -16,7 +16,7 @@ describe("createConsolidateData", () => {
   const cxId = uuidv4();
   const patientId = uuidv4();
 
-  it("appends POST transaction and patient", async () => {
+  it("appends POST transaction and patient when converting fhir bundle", async () => {
     fhir_readResource.mockReturnValueOnce(patient);
 
     fhir_executeBatch.mockReturnValueOnce(transactionRespBundle);
@@ -51,12 +51,56 @@ describe("createConsolidateData", () => {
       entry: [postDiagnosticReport],
     };
 
+    const validResp = {
+      resourceType: "Bundle",
+      id: "b2c28be3-8aae-4b3c-b0ff-ca5d0f0b0d1e",
+      type: "transaction-response",
+      link: [
+        {
+          relation: "self",
+          url: "https://localhost:8888/oauth/fhir/21fa432e-723b-4a1d-a3b2-bd9cd75a0717/21fa432e-723b-4a1d-a3b2-bd9cd75a0717",
+        },
+      ],
+      entry: [
+        {
+          response: {
+            status: "200 OK",
+            location: "DiagnosticReport/3f697895-18c2-4da5-b0fe-899bb455f0f0/_history/2",
+            etag: "2",
+            lastModified: "2023-05-25T00:28:06.321+00:00",
+            outcome: {
+              resourceType: "OperationOutcome",
+              issue: [
+                {
+                  severity: "information",
+                  code: "informational",
+                  details: {
+                    coding: [
+                      {
+                        system:
+                          "https://hapifhir.io/fhir/CodeSystem/hapi-fhir-storage-response-code",
+                        code: "SUCCESSFUL_UPDATE",
+                        display: "Update succeeded.",
+                      },
+                    ],
+                  },
+                  diagnostics:
+                    'Successfully updated resource "DiagnosticReport/3f697895-18c2-4da5-b0fe-899bb455f0f0/_history/2".',
+                },
+              ],
+            },
+          },
+        },
+      ],
+    };
+
     expect(resp).toBeTruthy();
+    expect(resp).toEqual(validResp);
     expect(fhir_executeBatch).toHaveBeenCalledTimes(1);
     expect(fhir_executeBatch).toHaveBeenCalledWith(convertedFhirBundle);
   });
 
-  it("appends PUT transaction and patient", async () => {
+  it("appends PUT transaction and patient when converting fhir bundle", async () => {
     fhir_readResource.mockReturnValueOnce(patient);
 
     fhir_executeBatch.mockReturnValueOnce(transactionRespBundle);
@@ -100,7 +144,51 @@ describe("createConsolidateData", () => {
       entry: [putDiagnosticReport],
     };
 
+    const validResp = {
+      resourceType: "Bundle",
+      id: "b2c28be3-8aae-4b3c-b0ff-ca5d0f0b0d1e",
+      type: "transaction-response",
+      link: [
+        {
+          relation: "self",
+          url: "https://localhost:8888/oauth/fhir/21fa432e-723b-4a1d-a3b2-bd9cd75a0717/21fa432e-723b-4a1d-a3b2-bd9cd75a0717",
+        },
+      ],
+      entry: [
+        {
+          response: {
+            status: "200 OK",
+            location: "DiagnosticReport/3f697895-18c2-4da5-b0fe-899bb455f0f0/_history/2",
+            etag: "2",
+            lastModified: "2023-05-25T00:28:06.321+00:00",
+            outcome: {
+              resourceType: "OperationOutcome",
+              issue: [
+                {
+                  severity: "information",
+                  code: "informational",
+                  details: {
+                    coding: [
+                      {
+                        system:
+                          "https://hapifhir.io/fhir/CodeSystem/hapi-fhir-storage-response-code",
+                        code: "SUCCESSFUL_UPDATE",
+                        display: "Update succeeded.",
+                      },
+                    ],
+                  },
+                  diagnostics:
+                    'Successfully updated resource "DiagnosticReport/3f697895-18c2-4da5-b0fe-899bb455f0f0/_history/2".',
+                },
+              ],
+            },
+          },
+        },
+      ],
+    };
+
     expect(resp).toBeTruthy();
+    expect(resp).toEqual(validResp);
     expect(fhir_executeBatch).toHaveBeenCalledTimes(1);
     expect(fhir_executeBatch).toHaveBeenCalledWith(convertedFhirBundle);
   });
