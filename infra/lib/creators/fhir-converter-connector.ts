@@ -5,9 +5,10 @@ import { IGrantable } from "aws-cdk-lib/aws-iam";
 import { Function as Lambda, ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { DeadLetterQueue, Queue } from "aws-cdk-lib/aws-sqs";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
+import { FHIRConnector } from "../fhir-connector-stack";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
@@ -48,11 +49,7 @@ export function createQueueAndBucket({
 }: {
   stack: Construct;
   alarmSnsAction?: SnsAction;
-}): {
-  queue: Queue;
-  dlq: DeadLetterQueue;
-  bucket: s3.Bucket;
-} {
+}): FHIRConnector {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
   const queue = defaultCreateQueue({
@@ -75,7 +72,7 @@ export function createQueueAndBucket({
     encryption: s3.BucketEncryption.S3_MANAGED,
   });
 
-  return { queue, dlq, bucket: fhirConverterBucket };
+  return { queue, dlq: dlq.queue, bucket: fhirConverterBucket };
 }
 
 export function createLambda({
@@ -96,13 +93,13 @@ export function createLambda({
   stack: Construct;
   sharedNodeModules: ILayerVersion;
   vpc: IVpc;
-  sourceQueue: Queue;
-  destinationQueue: Queue;
-  dlq: DeadLetterQueue;
-  fhirConverterBucket: s3.Bucket;
+  sourceQueue: IQueue;
+  destinationQueue: IQueue;
+  dlq: IQueue;
+  fhirConverterBucket: s3.IBucket;
   apiTaskRole: IGrantable;
   apiServiceDnsAddress: string;
-  medicalDocumentsBucket: s3.Bucket | undefined;
+  medicalDocumentsBucket: s3.IBucket | undefined;
   alarmSnsAction?: SnsAction;
 }): Lambda {
   const config = getConfig();
@@ -133,7 +130,7 @@ export function createLambda({
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: apiServiceDnsAddress,
       QUEUE_URL: sourceQueue.queueUrl,
-      DLQ_URL: dlq.queue.queueUrl,
+      DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_QUEUE_URL: destinationQueue.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
@@ -152,7 +149,7 @@ export function createLambda({
     })
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: sourceQueue, resource: apiTaskRole });
 

@@ -42,7 +42,7 @@ jobs:
     uses: ./.github/workflows/_reusable_deploy.yml
     with:
       deploy_env: "staging"
-      cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}/LambdasStack
+      cdk_stack: LambdasStack
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

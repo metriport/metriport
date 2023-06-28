@@ -3,17 +3,17 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { FargateService, FargateTaskDefinition } from "aws-cdk-lib/aws-ecs";
-import { IRole } from "aws-cdk-lib/aws-iam";
+import { IRole, Role } from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Code, ILayerVersion, LayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { Queue } from "aws-cdk-lib/aws-sqs";
+import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { ApiGateway } from "./api-stack";
-import * as fhirConverterConnector from "./creators/fhir-converter-connector";
-import * as sidechainFHIRConverterConnector from "./creators/sidechain-fhir-converter-connector";
+import { createLambda as createFHIRConverterLambda } from "./creators/fhir-converter-connector";
+import { createLambda as createSidechainFHIRConverterLambda } from "./creators/sidechain-fhir-converter-connector";
 import { EnvConfig } from "./env-config";
-import { FHIRConnector } from "./fhir-connector-stack";
+import { FHIRConnectorARNs, FHIRConnectorStack } from "./fhir-connector-stack";
 import { createCdaToVisualizationLambda } from "./lambdas/cda-to-visualization";
 import { createDocQueryChecker } from "./lambdas/doc-query-checker";
 import { createGarminLambda } from "./lambdas/garmin";
@@ -25,13 +25,14 @@ interface LambdasStackProps extends StackProps {
   apiService: FargateService;
   apiServiceDnsAddress: string;
   apiTaskDefArn: string;
-  medicalDocumentsBucket: s3.Bucket | undefined;
+  apiTaskRoleArn: string;
+  medicalDocumentsBucket: s3.IBucket | undefined;
   apiGateway: ApiGateway;
   dynamoDBTokenTable: dynamodb.Table;
-  fhirConnector: FHIRConnector;
-  sidechainFHIRConnector: FHIRConnector;
-  fhirServerQueue: Queue | undefined;
-  alarmAction: SnsAction | undefined;
+  fhirConnector: FHIRConnectorARNs;
+  sidechainFHIRConnector: FHIRConnectorARNs;
+  fhirServerQueue: sqs.IQueue | undefined;
+  alarmAction?: SnsAction | undefined;
 }
 
 type APITaskRole = {
@@ -72,10 +73,14 @@ export class LambdasStack extends Stack {
   }
 
   private getApiTaskRole(props: LambdasStackProps): IRole {
-    const taskDef = FargateTaskDefinition.fromFargateTaskDefinitionArn(
+    const taskRole = Role.fromRoleArn(this, "apiTaskRoleForCDALambda", props.apiTaskRoleArn);
+    const taskDef = FargateTaskDefinition.fromFargateTaskDefinitionAttributes(
       this,
       "apiTaskDefForCDALambda",
-      props.apiTaskDefArn
+      {
+        taskDefinitionArn: props.apiTaskDefArn,
+        taskRole,
+      }
     );
     if (!taskDef) throw new Error("API task definition not found");
     return taskDef.taskRole;
@@ -129,17 +134,21 @@ export class LambdasStack extends Stack {
   }
 
   private setupFHIRConverter(props: LambdasStackProps & APITaskRole): lambda.Function | undefined {
-    const { fhirServerQueue } = props;
+    const { fhirServerQueue, fhirConnector } = props;
     if (!fhirServerQueue) return undefined;
-    return fhirConverterConnector.createLambda({
+    const { queue, dlq, bucket } = FHIRConnectorStack.fromARNs(this, {
+      ...fhirConnector,
+      id: "fhirConnector",
+    });
+    return createFHIRConverterLambda({
       stack: this,
       sharedNodeModules: this.lambdaDependencies,
       envType: props.config.environmentType,
       vpc: props.vpc,
-      sourceQueue: props.fhirConnector.queue,
+      sourceQueue: queue,
+      dlq: dlq,
+      fhirConverterBucket: bucket,
       destinationQueue: fhirServerQueue,
-      dlq: props.fhirConnector.dlq,
-      fhirConverterBucket: props.fhirConnector.bucket,
       apiTaskRole: props.apiTaskRole,
       apiServiceDnsAddress: props.apiServiceDnsAddress,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
@@ -149,17 +158,21 @@ export class LambdasStack extends Stack {
   private setupSidechainFHIRConverter(
     props: LambdasStackProps & APITaskRole
   ): lambda.Function | undefined {
-    const { fhirServerQueue } = props;
+    const { fhirServerQueue, sidechainFHIRConnector } = props;
     if (!fhirServerQueue) return undefined;
-    return sidechainFHIRConverterConnector.createLambda({
+    const { queue, dlq, bucket } = FHIRConnectorStack.fromARNs(this, {
+      ...sidechainFHIRConnector,
+      id: "sidechainFHIRConnector",
+    });
+    return createSidechainFHIRConverterLambda({
       stack: this,
       sharedNodeModules: this.lambdaDependencies,
       envType: props.config.environmentType,
       vpc: props.vpc,
-      sourceQueue: props.sidechainFHIRConnector.queue,
+      sourceQueue: queue,
+      dlq: dlq,
+      fhirConverterBucket: bucket,
       destinationQueue: fhirServerQueue,
-      dlq: props.sidechainFHIRConnector.dlq,
-      fhirConverterBucket: props.sidechainFHIRConnector.bucket,
       apiTaskRole: props.apiTaskRole,
       apiServiceDnsAddress: props.apiServiceDnsAddress,
       medicalDocumentsBucket: props.medicalDocumentsBucket,

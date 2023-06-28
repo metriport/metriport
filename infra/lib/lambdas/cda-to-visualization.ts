@@ -13,7 +13,7 @@ export type CdaToVisualizationLambdaProps = {
   sharedNodeModules: lambda.ILayerVersion;
   vpc: ec2.IVpc;
   apiTaskRole: IGrantable;
-  medicalDocumentsBucket: s3.Bucket;
+  medicalDocumentsBucket: s3.IBucket;
 };
 
 export function createCdaToVisualizationLambda(

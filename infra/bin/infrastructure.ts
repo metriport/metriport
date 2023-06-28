@@ -39,7 +39,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // Creates the basic infra for interacting with FHIR converters and server.
   //---------------------------------------------------------------------------------
-  const fhirConnectorsStack = new FHIRConnectorStack(app, "QueuesStack", {
+  const fhirConnectorsStack = new FHIRConnectorStack(app, "FHIRConnectorStack", {
     env,
     config,
     alarmAction: baseStack.alarmAction,
@@ -53,8 +53,8 @@ async function deploy(config: EnvConfig) {
     config,
     version,
     alarmAction: baseStack.alarmAction,
-    fhirConnector: fhirConnectorsStack.fhirConnector,
-    sidechainFHIRConnector: fhirConnectorsStack.sidechainFHIRConnector,
+    fhirConnector: FHIRConnectorStack.toARNs(fhirConnectorsStack.fhirConnector),
+    sidechainFHIRConnector: FHIRConnectorStack.toARNs(fhirConnectorsStack.sidechainFHIRConnector),
   });
 
   //---------------------------------------------------------------------------------
@@ -80,9 +80,10 @@ async function deploy(config: EnvConfig) {
     apiGateway: apiStack.apiGateway,
     dynamoDBTokenTable: apiStack.dynamoDBTokenTable,
     alarmAction: baseStack.alarmAction,
-    fhirConnector: fhirConnectorsStack.fhirConnector,
-    sidechainFHIRConnector: fhirConnectorsStack.sidechainFHIRConnector,
+    fhirConnector: FHIRConnectorStack.toARNs(fhirConnectorsStack.fhirConnector),
+    sidechainFHIRConnector: FHIRConnectorStack.toARNs(fhirConnectorsStack.sidechainFHIRConnector),
     apiTaskDefArn: apiStack.apiService.taskDefinition.taskDefinitionArn,
+    apiTaskRoleArn: apiStack.apiService.taskDefinition.taskRole.roleArn,
     fhirServerQueue: apiStack.fhirServerQueue,
   });
 

@@ -15,12 +15,12 @@ import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import { Queue } from "aws-cdk-lib/aws-sqs";
+import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { createAPIService } from "./creators/api-service";
 import { createFHIRConverterService } from "./creators/fhir-converter-service";
 import { EnvConfig } from "./env-config";
-import { FHIRConnector } from "./fhir-connector-stack";
+import { FHIRConnectorARNs, FHIRConnectorStack } from "./fhir-connector-stack";
 import { addErrorAlarmToLambdaFunc } from "./shared/lambda";
 import { getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
@@ -29,9 +29,9 @@ import { isProd, isSandbox, mbToBytes } from "./shared/util";
 interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
-  alarmAction: SnsAction | undefined;
-  fhirConnector: FHIRConnector;
-  sidechainFHIRConnector: FHIRConnector;
+  alarmAction?: SnsAction | undefined;
+  fhirConnector: FHIRConnectorARNs;
+  sidechainFHIRConnector: FHIRConnectorARNs;
 }
 
 export type ApiGateway = {
@@ -48,7 +48,7 @@ export class APIStack extends Stack {
   public readonly medicalDocumentsBucket: s3.Bucket | undefined;
   public readonly apiGateway: ApiGateway;
   public readonly dynamoDBTokenTable: dynamodb.Table;
-  public readonly fhirServerQueue: Queue | undefined;
+  public readonly fhirServerQueue: sqs.IQueue | undefined;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -181,8 +181,6 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // FHIR CONNECTORS
     //-------------------------------------------
-    const { fhirConnector, sidechainFHIRConnector } = props;
-
     const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
       ? new s3.Bucket(this, "APISandboxSeedDataBucket", {
           bucketName: props.config.sandboxSeedDataBucketName,
@@ -191,14 +189,26 @@ export class APIStack extends Stack {
         })
       : undefined;
 
-    const fhirServerQueue: Queue | undefined = undefined;
-    // const fhirServerQueue = fhirServerConnector.createConnector({
+    const { fhirConnector, sidechainFHIRConnector } = props;
+    const { queue: fhirQueue } = FHIRConnectorStack.fromARNs(this, {
+      ...fhirConnector,
+      id: "APIFHIRConnector",
+    });
+    const { queue: sidechainFHIRQueue, bucket: sidechainFHIRBucket } = FHIRConnectorStack.fromARNs(
+      this,
+      {
+        ...sidechainFHIRConnector,
+        id: "APISidechainFHIRConnector",
+      }
+    );
+    const fhirConverterBucket = sandboxSeedDataBucket ?? sidechainFHIRBucket;
+    if (!fhirConverterBucket) throw new Error(`Missing fhirConverterBucket`);
+    // this.fhirServerQueue = fhirServerConnector.createConnector({
     //   envType: props.config.environmentType,
     //   stack: this,
     //   vpc: this.vpc,
-    //   // fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
-    //   fhirConverterBucket: sandboxSeedDataBucket,
-    //   alarmSnsAction: slackNotification?.alarmAction,
+    //   fhirConverterBucket,
+    //   alarmSnsAction: props.alarmAction,
     // });
 
     //-------------------------------------------
@@ -219,12 +229,10 @@ export class APIStack extends Stack {
       props.alarmAction,
       dnsZones,
       props.config.fhirServerUrl,
-      // fhirServerQueue?.queueUrl,
       undefined,
-      // fhirConverterQueue.queueUrl,
-      undefined,
+      fhirQueue.queueUrl,
       fhirConverter ? `http://${fhirConverter.address}` : undefined,
-      sidechainFHIRConnector.queue?.queueUrl
+      sidechainFHIRQueue.queueUrl
     );
     this.apiService = apiService.service;
     this.apiServiceDnsAddress = apiService.loadBalancer.loadBalancerDnsName;

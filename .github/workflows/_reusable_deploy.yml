@@ -80,9 +80,6 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: "./"
       # lambdas are not on the npm workspaces, so need to 'install' individually
-      - name: FHIRConverter lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/sqs-to-converter/"
       - name: SQS to FHIR lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/sqs-to-fhir/"
