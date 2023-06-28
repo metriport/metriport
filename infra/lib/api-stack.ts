@@ -17,11 +17,11 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
 // import { createDocQueryChecker } from "./api-stack/doc-query-checker";
-import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
@@ -205,14 +205,15 @@ export class APIStack extends Stack {
         })
       : undefined;
 
-    const fhirServerQueue = fhirServerConnector.createConnector({
-      envType: props.config.environmentType,
-      stack: this,
-      vpc: this.vpc,
-      // fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
-      fhirConverterBucket: sandboxSeedDataBucket,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
+    const fhirServerQueue: Queue | undefined = undefined;
+    // const fhirServerQueue = fhirServerConnector.createConnector({
+    //   envType: props.config.environmentType,
+    //   stack: this,
+    //   vpc: this.vpc,
+    //   // fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
+    //   fhirConverterBucket: sandboxSeedDataBucket,
+    //   alarmSnsAction: slackNotification?.alarmAction,
+    // });
 
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
@@ -232,7 +233,8 @@ export class APIStack extends Stack {
       slackNotification?.alarmAction,
       dnsZones,
       props.config.fhirServerUrl,
-      fhirServerQueue?.queueUrl,
+      // fhirServerQueue?.queueUrl,
+      undefined,
       // fhirConverterQueue.queueUrl,
       undefined,
       fhirConverter ? `http://${fhirConverter.address}` : undefined,
