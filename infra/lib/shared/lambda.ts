@@ -9,7 +9,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Code, Function as Lambda, ILayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import { FilterPattern } from "aws-cdk-lib/aws-logs";
-import { Queue } from "aws-cdk-lib/aws-sqs";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { getConfig, METRICS_NAMESPACE } from "./config";
 
@@ -110,8 +110,9 @@ export function createLambda(props: LambdaProps): Lambda {
 
 export interface RetryLambdaProps extends Omit<LambdaProps, "entry"> {
   entry?: string;
-  sourceQueue: Queue;
-  destinationQueue: Queue;
+  sourceQueue: IQueue;
+  destinationQueue: IQueue;
+  sharedNodeModules: ILayerVersion;
 }
 
 /**
@@ -125,8 +126,8 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
   const retryLambda = createLambda({
     ...props,
     name: retryLambdaName,
-    entry: `index.js`,
-    basePath: props.entry ?? `${pathToLambdas}/sqs-to-sqs`,
+    entry: "sqs-to-sqs",
+    layers: [props.sharedNodeModules],
     envVars: {
       ...props.envVars,
       ENV_TYPE: config.environmentType,

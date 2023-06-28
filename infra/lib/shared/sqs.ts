@@ -6,7 +6,7 @@ import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IGrantable } from "aws-cdk-lib/aws-iam";
 import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs/lib/construct";
-import { createRetryLambda, DEFAULT_LAMBDA_TIMEOUT } from "./lambda";
+import { DEFAULT_LAMBDA_TIMEOUT } from "./lambda";
 
 /**
  * ...set the source queue's visibility timeout to at least six times the timeout that
@@ -39,7 +39,7 @@ export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
  * @param props.fifo - whether to create a FIFO queue or not, default false
  * @returns
  */
-export function createQueue(props: QueueProps): Queue {
+export function createQueue(props: QueueProps): { queue: Queue; createRetryLambda: boolean } {
   const dlq =
     props.createDLQ === false
       ? undefined
@@ -55,15 +55,10 @@ export function createQueue(props: QueueProps): Queue {
   props.consumer && queue.grantConsumeMessages(props.consumer);
   props.consumer && dlq && dlq.grantSendMessages(props.consumer);
 
-  const retryLambda = props.createRetryLambda != null ? props.createRetryLambda : true;
-  if (dlq && retryLambda) {
-    createRetryLambda({
-      ...props,
-      sourceQueue: dlq,
-      destinationQueue: queue,
-    });
-  }
-  return queue;
+  const retryLambda =
+    dlq != null && (props.createRetryLambda != null ? props.createRetryLambda : true);
+
+  return { queue, createRetryLambda: retryLambda };
 }
 
 type AbstractQueueProps = {

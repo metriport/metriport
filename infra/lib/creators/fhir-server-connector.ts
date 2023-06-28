@@ -10,7 +10,10 @@ import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { FHIRConnector } from "../fhir-connector-stack";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
-import { createLambda as defaultCreateLambda } from "../shared/lambda";
+import {
+  createLambda as defaultCreateLambda,
+  createRetryLambda as defaultCreateRetryLambda,
+} from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { isProd } from "../shared/util";
 
@@ -52,7 +55,7 @@ export function createQueueAndBucket({
   sandboxSeedDataBucketName: string | undefined;
 }): FHIRConnector {
   const { connectorName, maxReceiveCount, visibilityTimeout } = settings();
-  const queue = defaultCreateQueue({
+  const { queue, createRetryLambda } = defaultCreateQueue({
     stack,
     name: connectorName,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
@@ -76,7 +79,7 @@ export function createQueueAndBucket({
 
   const bucket = sandboxSeedDataBucket ?? fhirConverterBucket;
 
-  return { queue, dlq: dlq.queue, bucket };
+  return { queue, dlq: dlq.queue, bucket, createRetryLambda };
 }
 
 export function createLambda({
@@ -86,6 +89,7 @@ export function createLambda({
   vpc,
   queue,
   dlq,
+  createRetryLambda,
   fhirConverterBucket,
   alarmSnsAction,
 }: {
@@ -95,6 +99,7 @@ export function createLambda({
   vpc: IVpc;
   queue: IQueue;
   dlq: IQueue;
+  createRetryLambda?: boolean;
   fhirConverterBucket: s3.IBucket;
   alarmSnsAction?: SnsAction;
 }): Lambda | undefined {
@@ -141,6 +146,16 @@ export function createLambda({
     timeout: lambdaTimeout,
     alarmSnsAction,
   });
+
+  if (createRetryLambda) {
+    defaultCreateRetryLambda({
+      stack,
+      name: connectorName,
+      sharedNodeModules,
+      sourceQueue: dlq,
+      destinationQueue: queue,
+    });
+  }
 
   fhirConverterBucket && fhirConverterBucket.grantRead(sqsToFhirLambda);
 

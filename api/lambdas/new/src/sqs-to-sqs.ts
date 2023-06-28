@@ -1,38 +1,25 @@
 import * as Sentry from "@sentry/serverless";
+import { SQSEvent } from "aws-lambda";
 import * as AWS from "aws-sdk";
+import { MessageAttributeValue, MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
+import { capture } from "./shared/capture";
+import { getEnv, getEnvOrFail } from "./shared/env";
 
 const numberOfMessagesPerRetry = 1; // up to 10
-
-export function getEnv(name) {
-  return process.env[name];
-}
-export function getEnvOrFail(name) {
-  const value = getEnv(name);
-  if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
-  return value;
-}
 
 // Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
-const envType = getEnvOrFail("ENV_TYPE");
-const sentryDsn = getEnv("SENTRY_DSN");
 const sourceQueue = getEnvOrFail("SOURCE_QUEUE");
 const destinationQueue = getEnvOrFail("DESTINATION_QUEUE");
 
 // Keep this as early on the file as possible
-Sentry.init({
-  dsn: sentryDsn,
-  enabled: sentryDsn != null,
-  environment: envType,
-  // TODO #499 Review this based on the load on our app and Sentry's quotas
-  tracesSampleRate: 1.0,
-});
+capture.init();
 
 const sqs = new AWS.SQS({ region });
 
-export const handler = Sentry.AWSLambda.wrapHandler(async event => {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   // Set it up
   console.log(
     `Running w/ numberOfMessagesPerRetry = ${numberOfMessagesPerRetry}, ` +
@@ -72,7 +59,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
       const sendParams = {
         MessageBody: message.Body,
         QueueUrl: destinationQueue,
-        MessageAttributes: attributesToSend(message.MessageAttributes),
+        ...(message.MessageAttributes
+          ? {
+              MessageAttributes: attributesToSend(message.MessageAttributes),
+            }
+          : {}),
       };
       console.log(`Sending message w/ params: ${JSON.stringify(sendParams)}...`);
       const sendResult = await sqs.sendMessage(sendParams).promise();
@@ -88,14 +79,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
     }
   } catch (err) {
     console.log(`Error retrying message: `, err);
-    Sentry.captureException(err, {
+    capture.error(err, {
       extra: { event, context: lambdaName },
     });
     throw err;
   }
 });
 
-function attributesToSend(inboundMessageAttribs) {
+function attributesToSend(inboundMessageAttribs: MessageBodyAttributeMap) {
   let res = {};
   for (const [key, value] of Object.entries(inboundMessageAttribs)) {
     res = {
@@ -106,7 +97,7 @@ function attributesToSend(inboundMessageAttribs) {
   return res;
 }
 
-function singleAttributeToSend(name, value) {
+function singleAttributeToSend(name: string, value: MessageAttributeValue) {
   return {
     [name]: {
       DataType: value.DataType,

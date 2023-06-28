@@ -1,27 +1,24 @@
 import { Stack, StackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Bucket, IBucket } from "aws-cdk-lib/aws-s3";
-import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import * as fhirConverterConnector from "./creators/fhir-converter-connector";
 import * as fhirServerConnector from "./creators/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./creators/sidechain-fhir-converter-connector";
 import { EnvConfig } from "./env-config";
+import { QueueGroup, QueueGroupARNs } from "./lambdas-types";
 
 interface FHIRConnectorStackProps extends StackProps {
   config: EnvConfig;
   alarmAction?: SnsAction | undefined;
 }
 
-export type FHIRConnector = {
-  queue: IQueue;
-  dlq: IQueue;
+export type FHIRConnector = QueueGroup & {
   bucket: IBucket;
 };
 
-export type FHIRConnectorARNs = {
-  queueArn: string;
-  dlqArn: string;
+export type FHIRConnectorARNs = QueueGroupARNs & {
   bucketArn: string;
 };
 
@@ -69,6 +66,7 @@ export class FHIRConnectorStack extends Stack {
       queueArn: connector.queue.queueArn,
       dlqArn: connector.dlq.queueArn,
       bucketArn: connector.bucket.bucketArn,
+      createRetryLambda: connector.createRetryLambda,
     };
   }
   static fromARNs(stack: Construct, connector: FHIRConnectorARNs & { id: string }): FHIRConnector {

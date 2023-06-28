@@ -10,7 +10,11 @@ import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { FHIRConnector } from "../fhir-connector-stack";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
-import { createLambda as defaultCreateLambda, MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import {
+  createLambda as defaultCreateLambda,
+  createRetryLambda as defaultCreateRetryLambda,
+  MAXIMUM_LAMBDA_TIMEOUT,
+} from "../shared/lambda";
 import { buildSecrets, Secrets } from "../shared/secrets";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 
@@ -47,7 +51,7 @@ export function createQueueAndBucket({
 }): FHIRConnector {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
-  const queue = defaultCreateQueue({
+  const { queue, createRetryLambda } = defaultCreateQueue({
     stack,
     name: connectorName + "Queue",
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
@@ -73,7 +77,7 @@ export function createQueueAndBucket({
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
-  return { queue, dlq: dlq.queue, bucket: fhirConverterBucket };
+  return { queue, dlq: dlq.queue, bucket: fhirConverterBucket, createRetryLambda };
 }
 
 export function createLambda({
@@ -84,6 +88,7 @@ export function createLambda({
   sourceQueue,
   destinationQueue,
   dlq,
+  createRetryLambda,
   fhirConverterBucket,
   apiTaskRole,
   apiServiceDnsAddress,
@@ -97,6 +102,7 @@ export function createLambda({
   sourceQueue: IQueue;
   destinationQueue: IQueue;
   dlq: IQueue;
+  createRetryLambda?: boolean;
   fhirConverterBucket: s3.IBucket;
   apiTaskRole: IGrantable;
   apiServiceDnsAddress: string;
@@ -150,6 +156,16 @@ export function createLambda({
     alarmSnsAction,
     runtime: Runtime.NODEJS_18_X,
   });
+
+  if (createRetryLambda) {
+    defaultCreateRetryLambda({
+      stack,
+      name: connectorName,
+      sharedNodeModules,
+      sourceQueue: dlq,
+      destinationQueue: destinationQueue,
+    });
+  }
 
   // grant lambda read access to all configured secrets
   const secrets: Secrets = {};

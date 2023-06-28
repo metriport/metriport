@@ -156,6 +156,7 @@ export class LambdasStack extends Stack {
       vpc: props.vpc,
       sourceQueue: fhirConverterQueue,
       dlq: fhirConverterDLQ,
+      createRetryLambda: fhirConverterConnectorARNs.createRetryLambda,
       fhirConverterBucket: fhirConverterBucket,
       destinationQueue: fhirServerQueue,
       apiTaskRole: props.apiTaskRole,
@@ -188,6 +189,7 @@ export class LambdasStack extends Stack {
       vpc: props.vpc,
       sourceQueue: fhirConverterQueue,
       dlq: fhirConverterDLQ,
+      createRetryLambda: sidechainFHIRConverterConnectorARNs.createRetryLambda,
       fhirConverterBucket: fhirConverterBucket,
       destinationQueue: fhirServerQueue,
       apiTaskRole: props.apiTaskRole,
@@ -212,6 +214,7 @@ export class LambdasStack extends Stack {
       vpc: props.vpc,
       queue,
       dlq,
+      createRetryLambda: fhirServerConnectorARNs.createRetryLambda,
       fhirConverterBucket: bucket,
       alarmSnsAction: props.alarmAction,
     });
