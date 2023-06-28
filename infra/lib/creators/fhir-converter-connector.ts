@@ -66,11 +66,17 @@ export function createQueueAndBucket({
   const dlq = queue.deadLetterQueue;
   if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
 
-  const fhirConverterBucket = new s3.Bucket(stack, `${connectorName}Bucket`, {
-    bucketName: config.fhirConverterBucketName,
-    publicReadAccess: false,
-    encryption: s3.BucketEncryption.S3_MANAGED,
-  });
+  const bucketName = config.fhirConverterBucketName;
+  const existingBucket = bucketName
+    ? s3.Bucket.fromBucketName(stack, `${connectorName}Bucket`, bucketName)
+    : undefined;
+  const fhirConverterBucket =
+    existingBucket ??
+    new s3.Bucket(stack, `${connectorName}Bucket`, {
+      bucketName: config.fhirConverterBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
 
   return { queue, dlq: dlq.queue, bucket: fhirConverterBucket };
 }

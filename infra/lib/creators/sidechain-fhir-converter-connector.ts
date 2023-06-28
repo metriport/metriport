@@ -64,11 +64,14 @@ export function createQueueAndBucket({
   const bucketName = config.sidechainFHIRConverter?.bucketName;
   if (!bucketName) throw Error(`Missing config! Path: config.sidechainFHIRConverter.bucketName`);
 
-  const fhirConverterBucket = new s3.Bucket(stack, `${connectorName}Bucket`, {
-    bucketName: bucketName,
-    publicReadAccess: false,
-    encryption: s3.BucketEncryption.S3_MANAGED,
-  });
+  const existingBucket = s3.Bucket.fromBucketName(stack, `${connectorName}Bucket`, bucketName);
+  const fhirConverterBucket =
+    existingBucket ??
+    new s3.Bucket(stack, `${connectorName}Bucket`, {
+      bucketName: bucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
 
   return { queue, dlq: dlq.queue, bucket: fhirConverterBucket };
 }
