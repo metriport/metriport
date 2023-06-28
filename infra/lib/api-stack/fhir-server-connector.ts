@@ -47,7 +47,7 @@ export function createConnector({
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
-  fhirConverterBucket: s3.Bucket;
+  fhirConverterBucket?: s3.Bucket;
   alarmSnsAction?: SnsAction;
 }): Queue | undefined {
   const config = getConfig();
@@ -113,7 +113,7 @@ export function createConnector({
     alarmSnsAction,
   });
 
-  fhirConverterBucket.grantRead(sqsToFhirLambda);
+  fhirConverterBucket && fhirConverterBucket.grantRead(sqsToFhirLambda);
   sqsToFhirLambda.addEventSource(
     new SqsEventSource(queue, {
       batchSize: lambdaBatchSize,

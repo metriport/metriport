@@ -20,10 +20,8 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
-import { createDocQueryChecker } from "./api-stack/doc-query-checker";
-import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
+// import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
-import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { EnvConfig } from "./env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
@@ -178,26 +176,26 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // FHIR CONNECTORS, initalize
     //-------------------------------------------
-    const {
-      queue: fhirConverterQueue,
-      dlq: fhirConverterDLQ,
-      bucket: fhirConverterBucket,
-    } = fhirConverterConnector.createQueueAndBucket({
-      stack: this,
-      vpc: this.vpc,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
+    // const {
+    //   queue: fhirConverterQueue,
+    //   dlq: fhirConverterDLQ,
+    //   bucket: fhirConverterBucket,
+    // } = fhirConverterConnector.createQueueAndBucket({
+    //   stack: this,
+    //   vpc: this.vpc,
+    //   alarmSnsAction: slackNotification?.alarmAction,
+    // });
 
-    // sidechain FHIR converter queue
-    const {
-      queue: sidechainFHIRConverterQueue,
-      dlq: sidechainFHIRConverterDLQ,
-      bucket: sidechainFHIRConverterBucket,
-    } = sidechainFHIRConverterConnector.createQueueAndBucket({
-      stack: this,
-      vpc: this.vpc,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
+    // // sidechain FHIR converter queue
+    // const {
+    //   queue: sidechainFHIRConverterQueue,
+    //   dlq: sidechainFHIRConverterDLQ,
+    //   bucket: sidechainFHIRConverterBucket,
+    // } = sidechainFHIRConverterConnector.createQueueAndBucket({
+    //   stack: this,
+    //   vpc: this.vpc,
+    //   alarmSnsAction: slackNotification?.alarmAction,
+    // });
 
     const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
       ? new s3.Bucket(this, "APISandboxSeedDataBucket", {
@@ -211,7 +209,8 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       stack: this,
       vpc: this.vpc,
-      fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
+      // fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
+      fhirConverterBucket: sandboxSeedDataBucket,
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
@@ -234,9 +233,11 @@ export class APIStack extends Stack {
       dnsZones,
       props.config.fhirServerUrl,
       fhirServerQueue?.queueUrl,
-      fhirConverterQueue.queueUrl,
+      // fhirConverterQueue.queueUrl,
+      undefined,
       fhirConverter ? `http://${fhirConverter.address}` : undefined,
-      sidechainFHIRConverterQueue?.queueUrl
+      // sidechainFHIRConverterQueue?.queueUrl
+      undefined
     );
 
     // Access grant for Aurora DB
@@ -264,14 +265,14 @@ export class APIStack extends Stack {
     // S3 bucket for Medical Documents
     //-------------------------------------------
 
-    const cdaToVisualization = this.setupCdaToVisualization({
-      fargateService: apiService,
-      vpc: this.vpc,
-      bucketName: props.config.medicalDocumentsBucketName,
-      lambdaName: props.config.cdaToVisualizationLambdaName,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-    });
+    // const cdaToVisualization = this.setupCdaToVisualization({
+    //   fargateService: apiService,
+    //   vpc: this.vpc,
+    //   bucketName: props.config.medicalDocumentsBucketName,
+    //   lambdaName: props.config.cdaToVisualizationLambdaName,
+    //   envType: props.config.environmentType,
+    //   sentryDsn: props.config.lambdasSentryDSN,
+    // });
 
     if (props.config.medicalDocumentsBucketName) {
       const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
@@ -283,67 +284,67 @@ export class APIStack extends Stack {
       //-------------------------------------------
       // FHIR CONNECTORS - Finish setting it up
       //-------------------------------------------
-      provideAccessToQueue({
-        accessType: "send",
-        queue: fhirConverterQueue,
-        resource: apiService.service.taskDefinition.taskRole,
-      });
+      // provideAccessToQueue({
+      //   accessType: "send",
+      //   queue: fhirConverterQueue,
+      //   resource: apiService.service.taskDefinition.taskRole,
+      // });
       fhirServerQueue &&
         provideAccessToQueue({
           accessType: "send",
           queue: fhirServerQueue,
           resource: apiService.service.taskDefinition.taskRole,
         });
-      const fhirConverterLambda = fhirServerQueue?.queueUrl
-        ? fhirConverterConnector.createLambda({
-            envType: props.config.environmentType,
-            stack: this,
-            vpc: this.vpc,
-            sourceQueue: fhirConverterQueue,
-            destinationQueue: fhirServerQueue,
-            dlq: fhirConverterDLQ,
-            fhirConverterBucket,
-            conversionResultQueueUrl: fhirServerQueue.queueUrl,
-            alarmSnsAction: slackNotification?.alarmAction,
-          })
-        : undefined;
+      // const fhirConverterLambda = fhirServerQueue?.queueUrl
+      //   ? fhirConverterConnector.createLambda({
+      //       envType: props.config.environmentType,
+      //       stack: this,
+      //       vpc: this.vpc,
+      //       sourceQueue: fhirConverterQueue,
+      //       destinationQueue: fhirServerQueue,
+      //       dlq: fhirConverterDLQ,
+      //       fhirConverterBucket,
+      //       conversionResultQueueUrl: fhirServerQueue.queueUrl,
+      //       alarmSnsAction: slackNotification?.alarmAction,
+      //     })
+      //   : undefined;
 
       // sidechain FHIR converter
-      provideAccessToQueue({
-        accessType: "send",
-        queue: sidechainFHIRConverterQueue,
-        resource: apiService.service.taskDefinition.taskRole,
-      });
-      const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
-        ? sidechainFHIRConverterConnector.createLambda({
-            envType: props.config.environmentType,
-            stack: this,
-            vpc: this.vpc,
-            sourceQueue: sidechainFHIRConverterQueue,
-            destinationQueue: fhirServerQueue,
-            dlq: sidechainFHIRConverterDLQ,
-            fhirConverterBucket: sidechainFHIRConverterBucket,
-            conversionResultQueueUrl: fhirServerQueue.queueUrl,
-            alarmSnsAction: slackNotification?.alarmAction,
-          })
-        : undefined;
+      // provideAccessToQueue({
+      //   accessType: "send",
+      //   queue: sidechainFHIRConverterQueue,
+      //   resource: apiService.service.taskDefinition.taskRole,
+      // });
+      // const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
+      //   ? sidechainFHIRConverterConnector.createLambda({
+      //       envType: props.config.environmentType,
+      //       stack: this,
+      //       vpc: this.vpc,
+      //       sourceQueue: sidechainFHIRConverterQueue,
+      //       destinationQueue: fhirServerQueue,
+      //       dlq: sidechainFHIRConverterDLQ,
+      //       fhirConverterBucket: sidechainFHIRConverterBucket,
+      //       conversionResultQueueUrl: fhirServerQueue.queueUrl,
+      //       alarmSnsAction: slackNotification?.alarmAction,
+      //     })
+      //   : undefined;
 
       // Access grant for medical documents bucket
       sandboxSeedDataBucket &&
         sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      medicalDocumentsBucket.grantReadWrite(cdaToVisualization);
-      fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
-      sidechainFHIRConverterLambda &&
-        medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
+      // medicalDocumentsBucket.grantReadWrite(cdaToVisualization);
+      // fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+      // sidechainFHIRConverterLambda &&
+      //   medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
     }
 
-    createDocQueryChecker({
-      stack: this,
-      vpc: this.vpc,
-      apiAddress: apiLoadBalancerAddress,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
+    // createDocQueryChecker({
+    //   stack: this,
+    //   vpc: this.vpc,
+    //   apiAddress: apiLoadBalancerAddress,
+    //   alarmSnsAction: slackNotification?.alarmAction,
+    // });
 
     //-------------------------------------------
     // API Gateway
@@ -419,14 +420,14 @@ export class APIStack extends Stack {
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
 
-    this.setupGarminWebhookAuth({
-      baseResource: webhookResource,
-      vpc: this.vpc,
-      fargateService: apiService,
-      dynamoDBTokenTable,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-    });
+    // this.setupGarminWebhookAuth({
+    //   baseResource: webhookResource,
+    //   vpc: this.vpc,
+    //   fargateService: apiService,
+    //   dynamoDBTokenTable,
+    //   envType: props.config.environmentType,
+    //   sentryDsn: props.config.lambdasSentryDSN,
+    // });
 
     this.setupWithingsWebhookAuth({
       baseResource: webhookResource,
@@ -544,46 +545,46 @@ export class APIStack extends Stack {
     });
   }
 
-  private setupGarminWebhookAuth(ownProps: {
-    baseResource: apig.Resource;
-    vpc: ec2.IVpc;
-    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
-    dynamoDBTokenTable: dynamodb.Table;
-    envType: string;
-    sentryDsn: string | undefined;
-  }) {
-    const {
-      baseResource,
-      vpc,
-      fargateService: server,
-      dynamoDBTokenTable,
-      envType,
-      sentryDsn,
-    } = ownProps;
+  // private setupGarminWebhookAuth(ownProps: {
+  //   baseResource: apig.Resource;
+  //   vpc: ec2.IVpc;
+  //   fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+  //   dynamoDBTokenTable: dynamodb.Table;
+  //   envType: string;
+  //   sentryDsn: string | undefined;
+  // }) {
+  //   const {
+  //     baseResource,
+  //     vpc,
+  //     fargateService: server,
+  //     dynamoDBTokenTable,
+  //     envType,
+  //     sentryDsn,
+  //   } = ownProps;
 
-    const garminLambda = new lambda_node.NodejsFunction(this, "GarminLambda", {
-      runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "../api/lambdas/garmin/index.js",
-      environment: {
-        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/garmin`,
-        ENV_TYPE: envType,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      vpc,
-    });
-    addErrorAlarmToLambdaFunc(this, garminLambda, "GarminAuthFunctionAlarm");
+  //   const garminLambda = new lambda_node.NodejsFunction(this, "GarminLambda", {
+  //     runtime: lambda.Runtime.NODEJS_16_X,
+  //     entry: "../api/lambdas/garmin/index.js",
+  //     environment: {
+  //       TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+  //       API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/garmin`,
+  //       ENV_TYPE: envType,
+  //       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+  //     },
+  //     vpc,
+  //   });
+  //   addErrorAlarmToLambdaFunc(this, garminLambda, "GarminAuthFunctionAlarm");
 
-    // Grant lambda access to the DynamoDB token table
-    garminLambda.role && dynamoDBTokenTable.grantReadData(garminLambda.role);
+  //   // Grant lambda access to the DynamoDB token table
+  //   garminLambda.role && dynamoDBTokenTable.grantReadData(garminLambda.role);
 
-    // Grant lambda access to the api server
-    server.service.connections.allowFrom(garminLambda, Port.allTcp());
+  //   // Grant lambda access to the api server
+  //   server.service.connections.allowFrom(garminLambda, Port.allTcp());
 
-    // setup $base/garmin path with token auth
-    const garminResource = baseResource.addResource("garmin");
-    garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
-  }
+  //   // setup $base/garmin path with token auth
+  //   const garminResource = baseResource.addResource("garmin");
+  //   garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
+  // }
 
   private setupWithingsWebhookAuth(ownProps: {
     baseResource: apig.Resource;
@@ -623,51 +624,51 @@ export class APIStack extends Stack {
     withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
   }
 
-  private setupCdaToVisualization(ownProps: {
-    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
-    vpc: ec2.IVpc;
-    bucketName: string | undefined;
-    lambdaName: string | undefined;
-    envType: string;
-    sentryDsn: string | undefined;
-  }) {
-    const { fargateService, vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
+  // private setupCdaToVisualization(ownProps: {
+  //   fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+  //   vpc: ec2.IVpc;
+  //   bucketName: string | undefined;
+  //   lambdaName: string | undefined;
+  //   envType: string;
+  //   sentryDsn: string | undefined;
+  // }) {
+  //   const { fargateService, vpc, bucketName, lambdaName, sentryDsn, envType } = ownProps;
 
-    const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
-      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      code: lambda.Code.fromAsset("../api/lambdas/layers/chromium"),
-      description: "Adds chromium to the lambdas",
-    });
+  //   const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
+  //     compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+  //     code: lambda.Code.fromAsset("../api/lambdas/layers/chromium"),
+  //     description: "Adds chromium to the lambdas",
+  //   });
 
-    const cdaToVisualizationLambda = new lambda_node.NodejsFunction(
-      this,
-      "CdaToVisualizationLambda",
-      {
-        functionName: lambdaName,
-        runtime: lambda.Runtime.NODEJS_16_X,
-        entry: "../api/lambdas/cda-to-visualization/index.js",
-        environment: {
-          ENV_TYPE: envType,
-          ...(bucketName && {
-            MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
-          }),
-          ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        },
-        layers: [chromiumLayer],
-        bundling: {
-          minify: false,
-          externalModules: ["aws-sdk", "@sparticuz/chromium"],
-        },
-        memorySize: 512,
-        timeout: Duration.minutes(1),
-        vpc,
-      }
-    );
+  //   const cdaToVisualizationLambda = new lambda_node.NodejsFunction(
+  //     this,
+  //     "CdaToVisualizationLambda",
+  //     {
+  //       functionName: lambdaName,
+  //       runtime: lambda.Runtime.NODEJS_16_X,
+  //       entry: "../api/lambdas/cda-to-visualization/index.js",
+  //       environment: {
+  //         ENV_TYPE: envType,
+  //         ...(bucketName && {
+  //           MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+  //         }),
+  //         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+  //       },
+  //       layers: [chromiumLayer],
+  //       bundling: {
+  //         minify: false,
+  //         externalModules: ["aws-sdk", "@sparticuz/chromium"],
+  //       },
+  //       memorySize: 512,
+  //       timeout: Duration.minutes(1),
+  //       vpc,
+  //     }
+  //   );
 
-    cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  //   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
-    return cdaToVisualizationLambda;
-  }
+  //   return cdaToVisualizationLambda;
+  // }
 
   private setupTokenAuthLambda(params: {
     dynamoDBTokenTable: dynamodb.Table;
