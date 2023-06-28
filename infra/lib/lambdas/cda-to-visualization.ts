@@ -1,6 +1,6 @@
 import { Duration } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-// import { IGrantable } from "aws-cdk-lib/aws-iam";
+import { IGrantable } from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
@@ -12,19 +12,14 @@ export type CdaToVisualizationLambdaProps = {
   config: EnvConfig;
   sharedNodeModules: lambda.ILayerVersion;
   vpc: ec2.IVpc;
-  // caller: IGrantable;
+  apiTaskRole: IGrantable;
   medicalDocumentsBucket: s3.Bucket;
 };
 
 export function createCdaToVisualizationLambda(
   props: CdaToVisualizationLambdaProps
 ): lambda.Function {
-  const {
-    stack,
-    sharedNodeModules,
-    // caller,
-    medicalDocumentsBucket,
-  } = props;
+  const { stack, sharedNodeModules, apiTaskRole, medicalDocumentsBucket } = props;
   const {
     environmentType,
     lambdasSentryDSN,
@@ -56,9 +51,9 @@ export function createCdaToVisualizationLambda(
       }),
     },
   });
-
-  // TODO 715 remove if really not needed (commented out b/c it creates a circular dependency)
-  // cdaToVisualizationLambda.grantInvoke(caller);
+  // Allow the API to call this lambda
+  cdaToVisualizationLambda.grantInvoke(apiTaskRole);
+  // Allow this lambda to read/write to the medical documents bucket
   medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
 
   return cdaToVisualizationLambda;

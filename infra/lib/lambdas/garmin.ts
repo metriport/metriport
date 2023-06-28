@@ -43,10 +43,6 @@ export function createGarminLambda(props: GarminLambdaProps): lambda.Function {
   // Grant lambda access to the DynamoDB token table
   garminLambda.role && dynamoDBTokenTable.grantReadData(garminLambda.role);
 
-  // Grant lambda access to the api server
-  // TODO 715 remove this if really not needed (commented out b/c it creates a circular dependency)
-  // apiService.connections.allowFrom(garminLambda, ec2.Port.allTcp());
-
   // setup $base/garmin path with token auth
   const apiGW = apig.RestApi.fromRestApiAttributes(stack, "ApiGWForGarmin", {
     restApiId: apiGateway.apiId,

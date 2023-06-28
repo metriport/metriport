@@ -2,8 +2,10 @@
 import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { APIStack } from "../lib/api-stack";
+import { BaseStack } from "../lib/base-stack";
 import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 import { EnvConfig } from "../lib/env-config";
+import { FHIRConnectorStack } from "../lib/fhir-connector-stack";
 import { LambdasStack } from "../lib/lambdas-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
@@ -25,18 +27,38 @@ async function deploy(config: EnvConfig) {
   const version = getEnvVar("METRIPORT_VERSION");
 
   //---------------------------------------------------------------------------------
-  // 1. Deploy the secrets stack to initialize all secrets.
-  //    Do this first, and then manually set the values in the AWS Secrets Manager.
+  // Basic, shared infrastructure.
+  //---------------------------------------------------------------------------------
+  const baseStack = new BaseStack(app, "BaseStack", { env, config });
+
+  //---------------------------------------------------------------------------------
+  // Deploy the secrets stack to initialize all secrets.
   //---------------------------------------------------------------------------------
   new SecretsStack(app, config.secretsStackName, { env, config });
 
   //---------------------------------------------------------------------------------
-  // 2. Deploy the API stack once all secrets are defined.
+  // Creates the basic infra for interacting with FHIR converters and server.
   //---------------------------------------------------------------------------------
-  const apiStack = new APIStack(app, config.stackName, { env, config, version });
+  const fhirConnectorsStack = new FHIRConnectorStack(app, "QueuesStack", {
+    env,
+    config,
+    alarmAction: baseStack.alarmAction,
+  });
 
   //---------------------------------------------------------------------------------
-  // 3. Deploy the Connect widget stack.
+  // Main stack defining some core infrastructure.
+  //---------------------------------------------------------------------------------
+  const apiStack = new APIStack(app, config.stackName, {
+    env,
+    config,
+    version,
+    alarmAction: baseStack.alarmAction,
+    fhirConnector: fhirConnectorsStack.fhirConnector,
+    sidechainFHIRConnector: fhirConnectorsStack.sidechainFHIRConnector,
+  });
+
+  //---------------------------------------------------------------------------------
+  // Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
   if (config.connectWidget) {
     new ConnectWidgetStack(app, config.connectWidget.stackName, {
@@ -46,9 +68,9 @@ async function deploy(config: EnvConfig) {
   }
 
   //---------------------------------------------------------------------------------
-  // 4. Deploy the Lambdas stack.
+  // Lambdas are deployed last, because they depend on other stacks.
   //---------------------------------------------------------------------------------
-  new LambdasStack(apiStack, "LambdasStack", {
+  new LambdasStack(app, "LambdasStack", {
     env,
     config,
     vpc: apiStack.vpc,
@@ -57,6 +79,11 @@ async function deploy(config: EnvConfig) {
     medicalDocumentsBucket: apiStack.medicalDocumentsBucket,
     apiGateway: apiStack.apiGateway,
     dynamoDBTokenTable: apiStack.dynamoDBTokenTable,
+    alarmAction: baseStack.alarmAction,
+    fhirConnector: fhirConnectorsStack.fhirConnector,
+    sidechainFHIRConnector: fhirConnectorsStack.sidechainFHIRConnector,
+    apiTaskDefArn: apiStack.apiService.taskDefinition.taskDefinitionArn,
+    fhirServerQueue: apiStack.fhirServerQueue,
   });
 
   //---------------------------------------------------------------------------------

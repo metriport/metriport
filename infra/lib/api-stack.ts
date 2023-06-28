@@ -15,15 +15,12 @@ import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import * as sns from "aws-cdk-lib/aws-sns";
-import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { AlarmSlackBot } from "./alarm-slack-chatbot";
-import { createAPIService } from "./api-service";
-import * as fhirServerConnector from "./api-stack/fhir-server-connector";
+import { createAPIService } from "./creators/api-service";
+import { createFHIRConverterService } from "./creators/fhir-converter-service";
 import { EnvConfig } from "./env-config";
-import { createFHIRConverterService } from "./fhir-converter-service";
+import { FHIRConnector } from "./fhir-connector-stack";
 import { addErrorAlarmToLambdaFunc } from "./shared/lambda";
 import { getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
@@ -32,6 +29,9 @@ import { isProd, isSandbox, mbToBytes } from "./shared/util";
 interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
+  alarmAction: SnsAction | undefined;
+  fhirConnector: FHIRConnector;
+  sidechainFHIRConnector: FHIRConnector;
 }
 
 export type ApiGateway = {
@@ -48,6 +48,7 @@ export class APIStack extends Stack {
   public readonly medicalDocumentsBucket: s3.Bucket | undefined;
   public readonly apiGateway: ApiGateway;
   public readonly dynamoDBTokenTable: dynamodb.Table;
+  public readonly fhirServerQueue: Queue | undefined;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -56,9 +57,6 @@ export class APIStack extends Stack {
     // Secrets
     //-------------------------------------------
     const secrets = getSecrets(this, props.config);
-
-    props.config.slack = undefined;
-    const slackNotification = setupSlackNotifSnsTopic(this, props.config);
 
     //-------------------------------------------
     // VPC + NAT Gateway
@@ -97,7 +95,7 @@ export class APIStack extends Stack {
       this,
       certificateRequestorLambda,
       "APICertificateCertificateRequestorFunctionAlarm",
-      slackNotification?.alarmAction
+      props.alarmAction
     );
 
     //-------------------------------------------
@@ -143,7 +141,7 @@ export class APIStack extends Stack {
         }
       },
     });
-    this.addDBClusterPerformanceAlarms(dbCluster, dbClusterName, slackNotification?.alarmAction);
+    this.addDBClusterPerformanceAlarms(dbCluster, dbClusterName, props.alarmAction);
 
     //----------------------------------------------------------
     // DynamoDB
@@ -169,7 +167,7 @@ export class APIStack extends Stack {
     this.addDynamoPerformanceAlarms(
       this.dynamoDBTokenTable,
       dynamoConstructName,
-      slackNotification?.alarmAction
+      props.alarmAction
     );
 
     //-------------------------------------------
@@ -177,37 +175,13 @@ export class APIStack extends Stack {
     //-------------------------------------------
     let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
     if (!isSandbox(props.config)) {
-      fhirConverter = createFHIRConverterService(
-        this,
-        props,
-        this.vpc,
-        slackNotification?.alarmAction
-      );
+      fhirConverter = createFHIRConverterService(this, props, this.vpc, props.alarmAction);
     }
 
     //-------------------------------------------
-    // FHIR CONNECTORS, initalize
+    // FHIR CONNECTORS
     //-------------------------------------------
-    // const {
-    //   queue: fhirConverterQueue,
-    //   dlq: fhirConverterDLQ,
-    //   bucket: fhirConverterBucket,
-    // } = fhirConverterConnector.createQueueAndBucket({
-    //   stack: this,
-    //   vpc: this.vpc,
-    //   alarmSnsAction: slackNotification?.alarmAction,
-    // });
-
-    // // sidechain FHIR converter queue
-    // const {
-    //   queue: sidechainFHIRConverterQueue,
-    //   dlq: sidechainFHIRConverterDLQ,
-    //   bucket: sidechainFHIRConverterBucket,
-    // } = sidechainFHIRConverterConnector.createQueueAndBucket({
-    //   stack: this,
-    //   vpc: this.vpc,
-    //   alarmSnsAction: slackNotification?.alarmAction,
-    // });
+    const { fhirConnector, sidechainFHIRConnector } = props;
 
     const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
       ? new s3.Bucket(this, "APISandboxSeedDataBucket", {
@@ -242,7 +216,7 @@ export class APIStack extends Stack {
       this.vpc,
       dbCredsSecret,
       this.dynamoDBTokenTable,
-      slackNotification?.alarmAction,
+      props.alarmAction,
       dnsZones,
       props.config.fhirServerUrl,
       // fhirServerQueue?.queueUrl,
@@ -250,8 +224,7 @@ export class APIStack extends Stack {
       // fhirConverterQueue.queueUrl,
       undefined,
       fhirConverter ? `http://${fhirConverter.address}` : undefined,
-      // sidechainFHIRConverterQueue?.queueUrl
-      undefined
+      sidechainFHIRConnector.queue?.queueUrl
     );
     this.apiService = apiService.service;
     this.apiServiceDnsAddress = apiService.loadBalancer.loadBalancerDnsName;
@@ -291,58 +264,17 @@ export class APIStack extends Stack {
       //-------------------------------------------
       // FHIR CONNECTORS - Finish setting it up
       //-------------------------------------------
-      // provideAccessToQueue({
-      //   accessType: "send",
-      //   queue: fhirConverterQueue,
-      //   resource: apiService.service.taskDefinition.taskRole,
-      // });
-      fhirServerQueue &&
+      this.fhirServerQueue &&
         provideAccessToQueue({
           accessType: "send",
-          queue: fhirServerQueue,
+          queue: this.fhirServerQueue,
           resource: apiService.service.taskDefinition.taskRole,
         });
-      // const fhirConverterLambda = fhirServerQueue?.queueUrl
-      //   ? fhirConverterConnector.createLambda({
-      //       envType: props.config.environmentType,
-      //       stack: this,
-      //       vpc: this.vpc,
-      //       sourceQueue: fhirConverterQueue,
-      //       destinationQueue: fhirServerQueue,
-      //       dlq: fhirConverterDLQ,
-      //       fhirConverterBucket,
-      //       conversionResultQueueUrl: fhirServerQueue.queueUrl,
-      //       alarmSnsAction: slackNotification?.alarmAction,
-      //     })
-      //   : undefined;
-
-      // sidechain FHIR converter
-      // provideAccessToQueue({
-      //   accessType: "send",
-      //   queue: sidechainFHIRConverterQueue,
-      //   resource: apiService.service.taskDefinition.taskRole,
-      // });
-      // const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
-      //   ? sidechainFHIRConverterConnector.createLambda({
-      //       envType: props.config.environmentType,
-      //       stack: this,
-      //       vpc: this.vpc,
-      //       sourceQueue: sidechainFHIRConverterQueue,
-      //       destinationQueue: fhirServerQueue,
-      //       dlq: sidechainFHIRConverterDLQ,
-      //       fhirConverterBucket: sidechainFHIRConverterBucket,
-      //       conversionResultQueueUrl: fhirServerQueue.queueUrl,
-      //       alarmSnsAction: slackNotification?.alarmAction,
-      //     })
-      //   : undefined;
 
       // Access grant for medical documents bucket
       sandboxSeedDataBucket &&
         sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       this.medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      // fhirConverterLambda && this.medicalDocumentsBucket.grantRead(fhirConverterLambda);
-      // sidechainFHIRConverterLambda &&
-      //   this.medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
     }
 
     //-------------------------------------------
@@ -871,23 +803,4 @@ export class APIStack extends Stack {
   private isProd(props: APIStackProps): boolean {
     return isProd(props.config);
   }
-}
-
-function setupSlackNotifSnsTopic(
-  stack: Stack,
-  config: EnvConfig
-): { snsTopic: ITopic; alarmAction: SnsAction } | undefined {
-  if (!config.slack) return undefined;
-
-  const slackNotifSnsTopic = new sns.Topic(stack, "SlackSnsTopic", {
-    displayName: "Slack SNS Topic",
-  });
-  AlarmSlackBot.addSlackChannelConfig(stack, {
-    configName: `slack-chatbot-configuration-` + config.environmentType,
-    workspaceId: config.slack.workspaceId,
-    channelId: config.slack.alertsChannelId,
-    topics: [slackNotifSnsTopic],
-  });
-  const alarmAction = new SnsAction(slackNotifSnsTopic);
-  return { snsTopic: slackNotifSnsTopic, alarmAction };
 }

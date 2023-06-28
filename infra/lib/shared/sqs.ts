@@ -23,7 +23,7 @@ const DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER = 6;
 
 export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
   dlq?: never;
-  vpc: IVpc;
+  vpc?: IVpc;
   producer?: IGrantable;
   consumer?: IGrantable;
   createDLQ?: boolean;

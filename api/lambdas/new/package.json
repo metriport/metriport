@@ -16,12 +16,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-lambda-powertools/parameters": "^1.8.0-beta",
+    "@aws-sdk/client-secrets-manager": "^3.348.0",
     "@sentry/serverless": "^7.46.0",
     "@sparticuz/chromium": "106.0.2",
     "aws-sdk": "^2.1248.0",
     "axios": "^1.4.0",
     "puppeteer-core": "18.0.5",
     "saxon-js": "^2.5.0",
+    "nanoid": "^4.0.2",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

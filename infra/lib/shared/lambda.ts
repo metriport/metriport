@@ -32,7 +32,7 @@ export interface LambdaProps extends StackProps {
   readonly name: string;
   readonly entry: string;
   readonly basePath?: string;
-  readonly vpc: IVpc;
+  readonly vpc?: IVpc;
   readonly subnets?: ISubnet[];
   readonly role?: iam.Role;
   readonly envVars?: { [key: string]: string };

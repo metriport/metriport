@@ -1,26 +1,32 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
+import { IGrantable } from "aws-cdk-lib/aws-iam";
+import { Function as Lambda, ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { DeadLetterQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
-import { MAXIMUM_LAMBDA_TIMEOUT, createLambda as defaultCreateLambda } from "../shared/lambda";
+import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
-import { Secrets, buildSecrets } from "../shared/secrets";
+import { settings as settingsFhirConverter } from "./fhir-converter-service";
 
 function settings() {
-  const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
+  const {
+    cpuAmount: fhirConverterCPUAmount,
+    taskCountMin: fhirConverterTaskCounMin,
+    maxExecutionTimeout,
+  } = settingsFhirConverter();
+  const lambdaTimeout = maxExecutionTimeout.minus(Duration.seconds(5));
   return {
-    connectorName: "SidechainFHIRConverter",
+    connectorName: "FHIRConverter",
     lambdaMemory: 512,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-    maxConcurrency: 5,
+    maxConcurrency: fhirConverterCPUAmount * fhirConverterTaskCounMin,
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
     // How long will it take before Axios returns a timeout error - should be less than the lambda timeout
@@ -38,11 +44,9 @@ function settings() {
 
 export function createQueueAndBucket({
   stack,
-  vpc,
   alarmSnsAction,
 }: {
   stack: Construct;
-  vpc: IVpc;
   alarmSnsAction?: SnsAction;
 }): {
   queue: Queue;
@@ -54,7 +58,6 @@ export function createQueueAndBucket({
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
-    vpc,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
@@ -66,11 +69,8 @@ export function createQueueAndBucket({
   const dlq = queue.deadLetterQueue;
   if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
 
-  const bucketName = config.sidechainFHIRConverter?.bucketName;
-  if (!bucketName) throw Error(`Missing config! Path: config.sidechainFHIRConverter.bucketName`);
-
   const fhirConverterBucket = new s3.Bucket(stack, `${connectorName}Bucket`, {
-    bucketName: bucketName,
+    bucketName: config.fhirConverterBucketName,
     publicReadAccess: false,
     encryption: s3.BucketEncryption.S3_MANAGED,
   });
@@ -81,22 +81,28 @@ export function createQueueAndBucket({
 export function createLambda({
   envType,
   stack,
+  sharedNodeModules,
   vpc,
   sourceQueue,
   destinationQueue,
   dlq,
   fhirConverterBucket,
-  conversionResultQueueUrl,
+  apiTaskRole,
+  apiServiceDnsAddress,
+  medicalDocumentsBucket,
   alarmSnsAction,
 }: {
   envType: EnvType;
   stack: Construct;
+  sharedNodeModules: ILayerVersion;
   vpc: IVpc;
   sourceQueue: Queue;
   destinationQueue: Queue;
   dlq: DeadLetterQueue;
   fhirConverterBucket: s3.Bucket;
-  conversionResultQueueUrl: string;
+  apiTaskRole: IGrantable;
+  apiServiceDnsAddress: string;
+  medicalDocumentsBucket: s3.Bucket | undefined;
   alarmSnsAction?: SnsAction;
 }): Lambda {
   const config = getConfig();
@@ -110,20 +116,13 @@ export function createLambda({
     maxTimeoutRetries,
     delayWhenRetrying,
   } = settings();
-
-  if (!config.sidechainFHIRConverter)
-    throw Error(`Missing config! Path: config.sidechainFHIRConverter`);
-  const sidechainFHIRConverterUrl = config.sidechainFHIRConverter.url;
-  const sidechainUrlBlacklist = config.sidechainFHIRConverter.urlBlacklist;
-  const sidechainWordsToRemove = config.sidechainFHIRConverter.wordsToRemove;
-
   const conversionLambda = defaultCreateLambda({
     stack,
     name: connectorName,
     vpc,
     subnets: vpc.privateSubnets,
-    entry: "index.js",
-    basePath: "../api/lambdas/sqs-to-converter",
+    entry: "sqs-to-converter",
+    layers: [sharedNodeModules],
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,
@@ -132,27 +131,15 @@ export function createLambda({
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      ...(config.loadBalancerDnsName ? { API_URL: config.loadBalancerDnsName } : {}),
+      API_URL: apiServiceDnsAddress,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
-      CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,
+      CONVERSION_RESULT_QUEUE_URL: destinationQueue.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
-      SIDECHAIN_FHIR_CONVERTER_URL: sidechainFHIRConverterUrl,
-      SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST: sidechainUrlBlacklist,
-      SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE: sidechainWordsToRemove,
-      ...config.sidechainFHIRConverter.secretNames,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
-    runtime: Runtime.NODEJS_18_X,
   });
-
-  // grant lambda read access to all configured secrets
-  const secrets: Secrets = {};
-  buildSecrets(secrets, stack, config.sidechainFHIRConverter.secretNames);
-  for (const secret of Object.values(secrets)) {
-    secret.grantRead(conversionLambda);
-  }
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
 
@@ -167,6 +154,9 @@ export function createLambda({
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "send", queue: sourceQueue, resource: apiTaskRole });
+
+  medicalDocumentsBucket && medicalDocumentsBucket.grantRead(conversionLambda);
 
   return conversionLambda;
 }

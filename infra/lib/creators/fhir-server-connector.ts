@@ -1,35 +1,31 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { DeadLetterQueue, Queue } from "aws-cdk-lib/aws-sqs";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { settings as settingsFhirConverter } from "../fhir-converter-service";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
+import { isProd } from "../shared/util";
 
 function settings() {
-  const {
-    cpuAmount: fhirConverterCPUAmount,
-    taskCountMin: fhirConverterTaskCounMin,
-    maxExecutionTimeout,
-  } = settingsFhirConverter();
-  const lambdaTimeout = maxExecutionTimeout.minus(Duration.seconds(5));
+  const config = getConfig();
+  const prod = isProd(config);
+  // How long can the lambda run for, max is 900 seconds (15 minutes)
+  // It SHOULD be slightly less than the ALB timeout of the FHIR server
+  const lambdaTimeout = Duration.minutes(10); // https://github.com/metriport/metriport-internal/issues/740
   return {
-    connectorName: "FHIRConverter",
+    connectorName: "FHIRServer",
     lambdaMemory: 512,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-    maxConcurrency: fhirConverterCPUAmount * fhirConverterTaskCounMin,
+    maxConcurrency: prod ? 4 : 2,
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
-    // How long will it take before Axios returns a timeout error - should be less than the lambda timeout
-    axiosTimeout: lambdaTimeout.minus(Duration.seconds(5)), // give the lambda some time to deal with the timeout
     // Number of times we want to retry a message, this includes throttles!
     maxReceiveCount: 5,
     // Number of times we want to retry a message that timed out when trying to be processed
@@ -41,21 +37,41 @@ function settings() {
   };
 }
 
-export function createQueueAndBucket({
+export function createConnector({
+  envType,
   stack,
   vpc,
+  fhirConverterBucket,
   alarmSnsAction,
 }: {
+  envType: EnvType;
   stack: Construct;
   vpc: IVpc;
+  fhirConverterBucket: s3.IBucket;
   alarmSnsAction?: SnsAction;
-}): {
-  queue: Queue;
-  dlq: DeadLetterQueue;
-  bucket: s3.Bucket;
-} {
+}): Queue | undefined {
   const config = getConfig();
-  const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
+  const fhirServerUrl = config.fhirServerUrl;
+  const apiURL = config.loadBalancerDnsName;
+  if (!fhirServerUrl) {
+    console.log("No FHIR Server URL provided, skipping connector creation");
+    return undefined;
+  }
+  if (!apiURL) {
+    console.log("No API URL provided, skipping connector creation");
+    return undefined;
+  }
+  const {
+    connectorName,
+    lambdaMemory,
+    lambdaTimeout,
+    lambdaBatchSize,
+    maxConcurrency,
+    maxReceiveCount,
+    visibilityTimeout,
+    maxTimeoutRetries,
+    delayWhenRetrying,
+  } = settings();
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
@@ -71,85 +87,44 @@ export function createQueueAndBucket({
   const dlq = queue.deadLetterQueue;
   if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
 
-  const fhirConverterBucket = new s3.Bucket(stack, `${connectorName}Bucket`, {
-    bucketName: config.fhirConverterBucketName,
-    publicReadAccess: false,
-    encryption: s3.BucketEncryption.S3_MANAGED,
-  });
-
-  return { queue, dlq, bucket: fhirConverterBucket };
-}
-
-export function createLambda({
-  envType,
-  stack,
-  vpc,
-  sourceQueue,
-  destinationQueue,
-  dlq,
-  fhirConverterBucket,
-  conversionResultQueueUrl,
-  alarmSnsAction,
-}: {
-  envType: EnvType;
-  stack: Construct;
-  vpc: IVpc;
-  sourceQueue: Queue;
-  destinationQueue: Queue;
-  dlq: DeadLetterQueue;
-  fhirConverterBucket: s3.Bucket;
-  conversionResultQueueUrl: string;
-  alarmSnsAction?: SnsAction;
-}): Lambda {
-  const config = getConfig();
-  const {
-    connectorName,
-    lambdaMemory,
-    lambdaTimeout,
-    lambdaBatchSize,
-    maxConcurrency,
-    axiosTimeout,
-    maxTimeoutRetries,
-    delayWhenRetrying,
-  } = settings();
-  const conversionLambda = defaultCreateLambda({
+  const sqsToFhirLambda = defaultCreateLambda({
     stack,
     name: connectorName,
     vpc,
     subnets: vpc.privateSubnets,
     entry: "index.js",
-    basePath: "../api/lambdas/sqs-to-converter",
+    basePath: "../api/lambdas/sqs-to-fhir",
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,
       ENV_TYPE: envType,
-      AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      ...(config.loadBalancerDnsName ? { API_URL: config.loadBalancerDnsName } : {}),
-      QUEUE_URL: sourceQueue.queueUrl,
+      QUEUE_URL: queue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
-      CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,
-      CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
+      ...(fhirServerUrl && {
+        FHIR_SERVER_URL: config.fhirServerUrl,
+      }),
+      ...(apiURL && {
+        API_URL: config.loadBalancerDnsName,
+      }),
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
   });
 
-  fhirConverterBucket.grantReadWrite(conversionLambda);
-
-  conversionLambda.addEventSource(
-    new SqsEventSource(sourceQueue, {
+  fhirConverterBucket && fhirConverterBucket.grantRead(sqsToFhirLambda);
+  sqsToFhirLambda.addEventSource(
+    new SqsEventSource(queue, {
       batchSize: lambdaBatchSize,
       // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
       reportBatchItemFailures: true,
       maxConcurrency,
     })
   );
-  provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "both", queue, resource: sqsToFhirLambda });
+  provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: sqsToFhirLambda });
 
-  return conversionLambda;
+  return queue;
 }
