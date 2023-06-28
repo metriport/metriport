@@ -47,6 +47,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     const secrets = getSecrets(this, props.config);
 
+    props.config.slack = undefined;
     const slackNotification = setupSlackNotifSnsTopic(this, props.config);
 
     //-------------------------------------------
