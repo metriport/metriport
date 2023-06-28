@@ -119,7 +119,8 @@ export function createLambda({
     maxTimeoutRetries,
     delayWhenRetrying,
   } = settings();
-  const conversionLambda = defaultCreateLambda({
+
+  const converterLambda = defaultCreateLambda({
     stack,
     name: connectorName,
     vpc,
@@ -144,9 +145,10 @@ export function createLambda({
     alarmSnsAction,
   });
 
-  fhirConverterBucket.grantReadWrite(conversionLambda);
+  medicalDocumentsBucket && medicalDocumentsBucket.grantRead(converterLambda);
+  fhirConverterBucket.grantReadWrite(converterLambda);
 
-  conversionLambda.addEventSource(
+  converterLambda.addEventSource(
     new SqsEventSource(sourceQueue, {
       batchSize: lambdaBatchSize,
       // Partial batch response: https://docs.aws.amazon.com/prescriptive-guidance/latest/lambda-event-filtering-partial-batch-responses-for-sqs/welcome.html
@@ -154,12 +156,10 @@ export function createLambda({
       maxConcurrency,
     })
   );
-  provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: converterLambda });
+  provideAccessToQueue({ accessType: "send", queue: dlq, resource: converterLambda });
+  provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: converterLambda });
   provideAccessToQueue({ accessType: "send", queue: sourceQueue, resource: apiTaskRole });
 
-  medicalDocumentsBucket && medicalDocumentsBucket.grantRead(conversionLambda);
-
-  return conversionLambda;
+  return converterLambda;
 }

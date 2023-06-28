@@ -7,10 +7,10 @@ import { IRole, Role } from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Code, ILayerVersion, LayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { ApiGateway } from "./api-stack";
 import { createLambda as createFHIRConverterLambda } from "./creators/fhir-converter-connector";
+import { createLambda as createFHIRServerLambda } from "./creators/fhir-server-connector";
 import { createLambda as createSidechainFHIRConverterLambda } from "./creators/sidechain-fhir-converter-connector";
 import { EnvConfig } from "./env-config";
 import { FHIRConnectorARNs, FHIRConnectorStack } from "./fhir-connector-stack";
@@ -29,9 +29,9 @@ interface LambdasStackProps extends StackProps {
   medicalDocumentsBucket: s3.IBucket | undefined;
   apiGateway: ApiGateway;
   dynamoDBTokenTable: dynamodb.Table;
-  fhirConnector: FHIRConnectorARNs;
-  sidechainFHIRConnector: FHIRConnectorARNs;
-  fhirServerQueue: sqs.IQueue | undefined;
+  fhirConverterConnectorARNs: FHIRConnectorARNs;
+  sidechainFHIRConverterConnectorARNs: FHIRConnectorARNs;
+  fhirServerConnectorARNs: FHIRConnectorARNs;
   alarmAction?: SnsAction | undefined;
 }
 
@@ -62,6 +62,8 @@ export class LambdasStack extends Stack {
 
     this.setupFHIRConverter({ ...props, apiTaskRole });
     this.setupSidechainFHIRConverter({ ...props, apiTaskRole });
+
+    this.setupFHIRServerLambda({ ...props, apiTaskRole });
 
     // TODO 715 add remaining lambdas
   }
@@ -134,20 +136,27 @@ export class LambdasStack extends Stack {
   }
 
   private setupFHIRConverter(props: LambdasStackProps & APITaskRole): lambda.Function | undefined {
-    const { fhirServerQueue, fhirConnector } = props;
-    if (!fhirServerQueue) return undefined;
-    const { queue, dlq, bucket } = FHIRConnectorStack.fromARNs(this, {
-      ...fhirConnector,
-      id: "fhirConnector",
+    const { fhirServerConnectorARNs, fhirConverterConnectorARNs } = props;
+    const { queue: fhirServerQueue } = FHIRConnectorStack.fromARNs(this, {
+      ...fhirServerConnectorARNs,
+      id: "fhirServerConnectorForConverter",
+    });
+    const {
+      queue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      bucket: fhirConverterBucket,
+    } = FHIRConnectorStack.fromARNs(this, {
+      ...fhirConverterConnectorARNs,
+      id: "fhirConverterConnector",
     });
     return createFHIRConverterLambda({
       stack: this,
       sharedNodeModules: this.lambdaDependencies,
       envType: props.config.environmentType,
       vpc: props.vpc,
-      sourceQueue: queue,
-      dlq: dlq,
-      fhirConverterBucket: bucket,
+      sourceQueue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      fhirConverterBucket: fhirConverterBucket,
       destinationQueue: fhirServerQueue,
       apiTaskRole: props.apiTaskRole,
       apiServiceDnsAddress: props.apiServiceDnsAddress,
@@ -155,27 +164,55 @@ export class LambdasStack extends Stack {
       alarmSnsAction: props.alarmAction,
     });
   }
+
   private setupSidechainFHIRConverter(
     props: LambdasStackProps & APITaskRole
   ): lambda.Function | undefined {
-    const { fhirServerQueue, sidechainFHIRConnector } = props;
-    if (!fhirServerQueue) return undefined;
-    const { queue, dlq, bucket } = FHIRConnectorStack.fromARNs(this, {
-      ...sidechainFHIRConnector,
-      id: "sidechainFHIRConnector",
+    const { fhirServerConnectorARNs, sidechainFHIRConverterConnectorARNs } = props;
+    const { queue: fhirServerQueue } = FHIRConnectorStack.fromARNs(this, {
+      ...fhirServerConnectorARNs,
+      id: "fhirServerConnectorForSidechain",
+    });
+    const {
+      queue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      bucket: fhirConverterBucket,
+    } = FHIRConnectorStack.fromARNs(this, {
+      ...sidechainFHIRConverterConnectorARNs,
+      id: "sidechainFHIRConverterConnector",
     });
     return createSidechainFHIRConverterLambda({
       stack: this,
       sharedNodeModules: this.lambdaDependencies,
       envType: props.config.environmentType,
       vpc: props.vpc,
-      sourceQueue: queue,
-      dlq: dlq,
-      fhirConverterBucket: bucket,
+      sourceQueue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      fhirConverterBucket: fhirConverterBucket,
       destinationQueue: fhirServerQueue,
       apiTaskRole: props.apiTaskRole,
       apiServiceDnsAddress: props.apiServiceDnsAddress,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
+      alarmSnsAction: props.alarmAction,
+    });
+  }
+
+  private setupFHIRServerLambda(
+    props: LambdasStackProps & APITaskRole
+  ): lambda.Function | undefined {
+    const { fhirServerConnectorARNs } = props;
+    const { queue, dlq, bucket } = FHIRConnectorStack.fromARNs(this, {
+      ...fhirServerConnectorARNs,
+      id: "fhirServerConnector",
+    });
+    return createFHIRServerLambda({
+      stack: this,
+      sharedNodeModules: this.lambdaDependencies,
+      envType: props.config.environmentType,
+      vpc: props.vpc,
+      queue,
+      dlq,
+      fhirConverterBucket: bucket,
       alarmSnsAction: props.alarmAction,
     });
   }

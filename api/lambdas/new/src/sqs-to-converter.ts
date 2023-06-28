@@ -1,15 +1,15 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
-import * as AWS from "aws-sdk";
 import axios from "axios";
-import * as stream from "stream";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnv, getEnvOrFail } from "./shared/env";
 import { isBadGateway, isTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
+import { apiClient } from "./shared/oss-api";
+import { S3Utils } from "./shared/s3";
 import { sleep } from "./shared/sleep";
 import { SQSUtils } from "./shared/sqs";
 
@@ -33,17 +33,17 @@ const sidechainWordsToRemove = getEnv("SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE"
 const sidechainFHIRConverterKeysSecretName = isSidechainConnector()
   ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS")
   : undefined;
+
 const baseReplaceUrl = "https://public.metriport.com";
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const MAX_SIDECHAIN_ATTEMPTS = 5;
 const SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS = 500;
-const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
 // Keep this as early on the file as possible
 capture.init();
 
 const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
-const s3Client = new AWS.S3({ signatureVersion: "v4", region });
+const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 const fhirConverter = axios.create({
   // Only response timeout, no option for connection timeout: https://github.com/axios/axios/issues/4835
@@ -53,8 +53,7 @@ const fhirConverter = axios.create({
     clarifyTimeoutError: true,
   },
 });
-const ossApi = axios.create();
-const docProgressURL = `${apiURL}/internal/docs/conversion-status`;
+const ossApi = apiClient(apiURL);
 
 function isSidechainConnector() {
   return sidechainFHIRConverterUrl ? true : false;
@@ -318,12 +317,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       try {
         log(`Body: ${message.body}`);
         const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
-        const metrics: Metrics = { cxId, patientId };
+        const metrics: Metrics = {};
 
         await cloudWatchUtils.reportMemoryUsage();
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
-        const payloadRaw = await downloadFileContents(s3BucketName, s3FileName);
+        const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
         metrics.download = {
           duration: Date.now() - downloadStart,
           timestamp: new Date(),
@@ -414,7 +413,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           await sqsUtils.sendToDLQ(message);
 
           if (isSidechainConnector()) {
-            await notifyApi({ cxId, patientId, status: "failed", jobId }, log);
+            await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
           }
         }
       }
@@ -481,31 +480,6 @@ function addMissingRequests(fhirBundle: FHIRBundle) {
   });
 }
 
-async function notifyApi(params: Record<string, string | number | undefined>, log: Log) {
-  if (params.cxId && params.patientId) {
-    let attempt = 0;
-    while (attempt++ < MAX_API_NOTIFICATION_ATTEMPTS) {
-      try {
-        log(`(${attempt}) Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
-        await ossApi.post(docProgressURL, null, { params });
-        return;
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        const msg = "Error notifying API, trying again";
-        const extra = { url: docProgressURL, statusCode: error.response?.status, attempt, error };
-        log(msg, extra);
-        capture.message(msg, { extra, level: "info" });
-      }
-    }
-    throw new Error(`Too many errors from API`);
-  }
-}
-
-async function downloadFileContents(s3BucketName: string, s3FileName: string) {
-  const stream = s3Client.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
-  return streamToString(stream);
-}
-
 async function sendConversionResult(
   cxId: string,
   patientId: string,
@@ -517,7 +491,7 @@ async function sendConversionResult(
 ) {
   const fileName = `${sourceFileName}.json`;
   log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
-  await s3Client
+  await s3Utils.s3
     .upload({
       Bucket: conversionResultBucketName,
       Key: fileName,
@@ -547,13 +521,4 @@ async function sendConversionResult(
   } else {
     log(`Skipping sending result info to queue`);
   }
-}
-
-async function streamToString(stream: stream.Readable) {
-  const chunks: Buffer[] = [];
-  return new Promise((resolve, reject) => {
-    stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
-    stream.on("error", err => reject(err));
-    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-  });
 }

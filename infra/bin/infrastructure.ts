@@ -44,6 +44,15 @@ async function deploy(config: EnvConfig) {
     config,
     alarmAction: baseStack.alarmAction,
   });
+  const fhirConverterConnectorARNs = FHIRConnectorStack.toARNs(
+    fhirConnectorsStack.fhirConverterConnector
+  );
+  const sidechainFHIRConverterConnectorARNs = FHIRConnectorStack.toARNs(
+    fhirConnectorsStack.sidechainFHIRConverterConnector
+  );
+  const fhirServerConnectorARNs = FHIRConnectorStack.toARNs(
+    fhirConnectorsStack.fhirServerConnector
+  );
 
   //---------------------------------------------------------------------------------
   // Main stack defining some core infrastructure.
@@ -53,8 +62,9 @@ async function deploy(config: EnvConfig) {
     config,
     version,
     alarmAction: baseStack.alarmAction,
-    fhirConnector: FHIRConnectorStack.toARNs(fhirConnectorsStack.fhirConnector),
-    sidechainFHIRConnector: FHIRConnectorStack.toARNs(fhirConnectorsStack.sidechainFHIRConnector),
+    fhirConverterConnectorARNs,
+    sidechainFHIRConverterConnectorARNs,
+    fhirServerConnectorARNs,
   });
 
   //---------------------------------------------------------------------------------
@@ -80,11 +90,11 @@ async function deploy(config: EnvConfig) {
     apiGateway: apiStack.apiGateway,
     dynamoDBTokenTable: apiStack.dynamoDBTokenTable,
     alarmAction: baseStack.alarmAction,
-    fhirConnector: FHIRConnectorStack.toARNs(fhirConnectorsStack.fhirConnector),
-    sidechainFHIRConnector: FHIRConnectorStack.toARNs(fhirConnectorsStack.sidechainFHIRConnector),
+    fhirConverterConnectorARNs,
+    sidechainFHIRConverterConnectorARNs,
+    fhirServerConnectorARNs,
     apiTaskDefArn: apiStack.apiService.taskDefinition.taskDefinitionArn,
     apiTaskRoleArn: apiStack.apiService.taskDefinition.taskRole.roleArn,
-    fhirServerQueue: apiStack.fhirServerQueue,
   });
 
   //---------------------------------------------------------------------------------

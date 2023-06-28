@@ -1,19 +1,11 @@
-import * as AWS from "aws-sdk";
 import CloudWatch, { MetricData, MetricDatum } from "aws-sdk/clients/cloudwatch";
 import { capture } from "./capture";
 import { kbToMb, kbToMbString } from "./units";
 
-export type DurationMetric = { duration: number; timestamp: Date };
+export type DurationMetric = { duration: number; count?: undefined; timestamp: Date };
+export type CountMetric = { duration?: undefined; count: number; timestamp: Date };
 
-export type Metrics = {
-  cxId: string;
-  patientId: string;
-  download?: DurationMetric;
-  conversion?: DurationMetric;
-  postProcess?: DurationMetric;
-  upload?: DurationMetric;
-  notify?: DurationMetric;
-};
+export type Metrics = Record<string, DurationMetric | CountMetric>;
 
 export class CloudWatchUtils {
   public readonly _cloudWatch: CloudWatch;
@@ -23,7 +15,7 @@ export class CloudWatchUtils {
     readonly lambdaName: string,
     readonly metricsNamespace?: string
   ) {
-    this._cloudWatch = new AWS.CloudWatch({ apiVersion: "2010-08-01", region });
+    this._cloudWatch = new CloudWatch({ apiVersion: "2010-08-01", region });
   }
 
   get cloudWatch(): CloudWatch {
@@ -33,19 +25,29 @@ export class CloudWatchUtils {
   async reportMetrics(metrics: Metrics, metricsNamespace?: string) {
     const namespaceToUse = metricsNamespace ?? this.metricsNamespace;
     if (!namespaceToUse) throw new Error(`Missing metricsNamespace`);
-    const { download, conversion, postProcess } = metrics;
-    const metric = (name: string, values: DurationMetric): MetricDatum => ({
+    const durationMetric = (name: string, values: DurationMetric): MetricDatum => ({
       MetricName: name,
       Value: values.duration,
       Unit: "Milliseconds",
       Timestamp: values.timestamp,
       Dimensions: [{ Name: "Service", Value: this.lambdaName }],
     });
+    const countMetric = (name: string, values: CountMetric) => ({
+      MetricName: name,
+      Value: values.count,
+      Unit: "Count",
+      Timestamp: values.timestamp,
+      Dimensions: [{ Name: "Service", Value: this.lambdaName }],
+    });
     try {
       const metricData: MetricData = [];
-      download && metric("Download", download);
-      conversion && metric("Conversion", conversion);
-      postProcess && metric("PostProcess", postProcess);
+      for (const [key, value] of Object.entries(metrics)) {
+        if (value.duration) {
+          metricData.push(durationMetric(key, value));
+        } else if (value.count) {
+          metricData.push(countMetric(key, value));
+        }
+      }
       await this._cloudWatch
         .putMetricData({ MetricData: metricData, Namespace: namespaceToUse })
         .promise();

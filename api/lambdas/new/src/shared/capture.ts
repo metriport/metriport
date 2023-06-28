@@ -8,6 +8,13 @@ const sentryDsn = getEnv("SENTRY_DSN");
 
 export const capture = {
   // TODO #499 Review 'tracesSampleRate' based on the load on our app and Sentry's quotas
+  /**
+   * Initializes Sentry.
+   * Requires the ENV_TYPE env var to be set or it breaks.
+   * If the SENTRY_DSN env var is not set, Sentry is disabled.
+   *
+   * @param tracesSampleRate Sample rate to determine trace sampling.
+   */
   init: (tracesSampleRate = 1.0): void => {
     Sentry.init({
       dsn: sentryDsn,

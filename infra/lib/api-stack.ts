@@ -15,7 +15,6 @@ import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { createAPIService } from "./creators/api-service";
 import { createFHIRConverterService } from "./creators/fhir-converter-service";
@@ -30,8 +29,9 @@ interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
   alarmAction?: SnsAction | undefined;
-  fhirConnector: FHIRConnectorARNs;
-  sidechainFHIRConnector: FHIRConnectorARNs;
+  fhirConverterConnectorARNs: FHIRConnectorARNs;
+  sidechainFHIRConverterConnectorARNs: FHIRConnectorARNs;
+  fhirServerConnectorARNs: FHIRConnectorARNs;
 }
 
 export type ApiGateway = {
@@ -48,7 +48,6 @@ export class APIStack extends Stack {
   public readonly medicalDocumentsBucket: s3.Bucket | undefined;
   public readonly apiGateway: ApiGateway;
   public readonly dynamoDBTokenTable: dynamodb.Table;
-  public readonly fhirServerQueue: sqs.IQueue | undefined;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -181,35 +180,23 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // FHIR CONNECTORS
     //-------------------------------------------
-    const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
-      ? new s3.Bucket(this, "APISandboxSeedDataBucket", {
-          bucketName: props.config.sandboxSeedDataBucketName,
-          publicReadAccess: false,
-          encryption: s3.BucketEncryption.S3_MANAGED,
-        })
-      : undefined;
-
-    const { fhirConnector, sidechainFHIRConnector } = props;
-    const { queue: fhirQueue } = FHIRConnectorStack.fromARNs(this, {
-      ...fhirConnector,
-      id: "APIFHIRConnector",
+    const {
+      fhirConverterConnectorARNs,
+      sidechainFHIRConverterConnectorARNs,
+      fhirServerConnectorARNs,
+    } = props;
+    const { queue: fhirConverterQueue } = FHIRConnectorStack.fromARNs(this, {
+      ...fhirConverterConnectorARNs,
+      id: "FHIRConverterConnectorForAPI",
     });
-    const { queue: sidechainFHIRQueue, bucket: sidechainFHIRBucket } = FHIRConnectorStack.fromARNs(
-      this,
-      {
-        ...sidechainFHIRConnector,
-        id: "APISidechainFHIRConnector",
-      }
-    );
-    const fhirConverterBucket = sandboxSeedDataBucket ?? sidechainFHIRBucket;
-    if (!fhirConverterBucket) throw new Error(`Missing fhirConverterBucket`);
-    // this.fhirServerQueue = fhirServerConnector.createConnector({
-    //   envType: props.config.environmentType,
-    //   stack: this,
-    //   vpc: this.vpc,
-    //   fhirConverterBucket,
-    //   alarmSnsAction: props.alarmAction,
-    // });
+    const { queue: sidechainFHIRConverterQueue } = FHIRConnectorStack.fromARNs(this, {
+      ...sidechainFHIRConverterConnectorARNs,
+      id: "SidechainFHIRConverterConnectorForAPI",
+    });
+    const { queue: fhirServerQueue, bucket: fhirServerBucket } = FHIRConnectorStack.fromARNs(this, {
+      ...fhirServerConnectorARNs,
+      id: "FHIRServerConnectorForAPI",
+    });
 
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
@@ -229,10 +216,10 @@ export class APIStack extends Stack {
       props.alarmAction,
       dnsZones,
       props.config.fhirServerUrl,
-      undefined,
-      fhirQueue.queueUrl,
+      fhirServerQueue.queueUrl,
+      fhirConverterQueue.queueUrl,
       fhirConverter ? `http://${fhirConverter.address}` : undefined,
-      sidechainFHIRQueue.queueUrl
+      sidechainFHIRConverterQueue.queueUrl
     );
     this.apiService = apiService.service;
     this.apiServiceDnsAddress = apiService.loadBalancer.loadBalancerDnsName;
@@ -269,20 +256,21 @@ export class APIStack extends Stack {
         encryption: s3.BucketEncryption.S3_MANAGED,
       });
 
-      //-------------------------------------------
-      // FHIR CONNECTORS - Finish setting it up
-      //-------------------------------------------
-      this.fhirServerQueue &&
-        provideAccessToQueue({
-          accessType: "send",
-          queue: this.fhirServerQueue,
-          resource: apiService.service.taskDefinition.taskRole,
-        });
-
-      // Access grant for medical documents bucket
-      sandboxSeedDataBucket &&
-        sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+      // Grant access for medical documents bucket
       this.medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+    }
+
+    //-------------------------------------------
+    // FHIR CONNECTORS - Finish setting it up
+    //-------------------------------------------
+    if (isSandbox(props.config)) {
+      provideAccessToQueue({
+        accessType: "send",
+        queue: fhirServerQueue,
+        resource: apiService.service.taskDefinition.taskRole,
+      });
+      // Grant access to the sandbox seed data bucket
+      fhirServerBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     }
 
     //-------------------------------------------

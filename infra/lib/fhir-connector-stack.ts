@@ -4,6 +4,7 @@ import { Bucket, IBucket } from "aws-cdk-lib/aws-s3";
 import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import * as fhirConverterConnector from "./creators/fhir-converter-connector";
+import * as fhirServerConnector from "./creators/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./creators/sidechain-fhir-converter-connector";
 import { EnvConfig } from "./env-config";
 
@@ -25,8 +26,9 @@ export type FHIRConnectorARNs = {
 };
 
 export class FHIRConnectorStack extends Stack {
-  private _fhirConnector: FHIRConnector;
-  private _sidechainFHIRConnector: FHIRConnector;
+  private _fhirConverterConnector: FHIRConnector;
+  private _sidechainFHIRConverterConnector: FHIRConnector;
+  private _fhirServerConnector: FHIRConnector;
 
   constructor(scope: Construct, id: string, props: FHIRConnectorStackProps) {
     super(scope, id, {
@@ -34,22 +36,32 @@ export class FHIRConnectorStack extends Stack {
       stackName: id,
     });
 
-    this._fhirConnector = fhirConverterConnector.createQueueAndBucket({
+    this._fhirConverterConnector = fhirConverterConnector.createQueueAndBucket({
       stack: this,
       alarmSnsAction: props.alarmAction,
     });
 
-    this._sidechainFHIRConnector = sidechainFHIRConverterConnector.createQueueAndBucket({
+    this._sidechainFHIRConverterConnector = sidechainFHIRConverterConnector.createQueueAndBucket({
       stack: this,
       alarmSnsAction: props.alarmAction,
     });
+
+    this._fhirServerConnector = fhirServerConnector.createQueueAndBucket({
+      stack: this,
+      alarmSnsAction: props.alarmAction,
+      fhirConverterBucket: this._sidechainFHIRConverterConnector.bucket,
+      sandboxSeedDataBucketName: props.config.sandboxSeedDataBucketName,
+    });
   }
 
-  get fhirConnector(): FHIRConnector {
-    return this._fhirConnector;
+  get fhirConverterConnector(): FHIRConnector {
+    return this._fhirConverterConnector;
   }
-  get sidechainFHIRConnector(): FHIRConnector {
-    return this._sidechainFHIRConnector;
+  get sidechainFHIRConverterConnector(): FHIRConnector {
+    return this._sidechainFHIRConverterConnector;
+  }
+  get fhirServerConnector(): FHIRConnector {
+    return this._fhirServerConnector;
   }
 
   static toARNs(connector: FHIRConnector): FHIRConnectorARNs {
