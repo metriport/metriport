@@ -26,23 +26,7 @@ jobs:
     uses: ./.github/workflows/_reusable_deploy.yml
     with:
       deploy_env: "staging"
-      cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.API_REGION_STAGING }} # renamed
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }} # renamed
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  lambdas-deploy:
-    needs: api-deploy
-    uses: ./.github/workflows/_reusable_deploy.yml
-    with:
-      deploy_env: "staging"
-      cdk_stack: LambdasStack
+      cdk_stack: "${{ vars.API_STACK_NAME_STAGING }} LambdasStack"
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

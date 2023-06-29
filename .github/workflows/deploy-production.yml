@@ -36,16 +36,16 @@ jobs:
           base: "master"
           filters: |
             api:
-              - "api/app"
-              - "infra/**"
+              - "api/app/"
+              - "infra/"
               - "package*.json"
             lambdas:
-              - "api/lambdas"
-              - "infra/**"
+              - "api/lambdas/"
+              - "infra/"
               - "package*.json"
             widget:
-              - "connect-widget/**"
-              - "infra/**"
+              - "connect-widget/"
+              - "infra/"
               - "package*.json"
 
   widget-build:
@@ -66,8 +66,8 @@ jobs:
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.WIDGET_REGION_PRODUCTION }} # renamed
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }} # renamed
+      AWS_REGION: ${{ secrets.WIDGET_REGION_PRODUCTION }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -78,54 +78,23 @@ jobs:
     needs: files-changed
     uses: ./.github/workflows/_reusable_build.yml
     with:
-      path: "api/app" # there's no "build" for lambdas, so one job for both works
+      path: "api/app"
     secrets: inherit
-  api-deploy:
-    uses: ./.github/workflows/_reusable_deploy.yml
-    needs: api-build
-    with:
-      deploy_env: "production"
-      cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.API_REGION_PRODUCTION }} # renamed
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }} # renamed
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  api-sandbox-deploy:
-    uses: ./.github/workflows/_reusable_deploy.yml
-    needs: api-deploy
-    with:
-      deploy_env: "sandbox"
-      cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.API_REGION_SANDBOX }} # renamed
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_SANDBOX }} # renamed
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
   lambdas-build:
     if: needs.files-changed.outputs.lambdas == 'true'
     needs: files-changed
     uses: ./.github/workflows/_reusable_build.yml
     with:
       path: "api/lambdas"
-      build_env: "production"
       install-from-parent: false
     secrets: inherit
-  lambdas-deploy:
+  api-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
-    needs: lambdas-build
+    needs: [api-build, lambdas-build]
+    if: ${{ !failure() && (needs.api-build.result == 'success' || needs.lambdas-build.result == 'success') }}
     with:
       deploy_env: "production"
-      cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}/LambdasStack
+      cdk_stack: "${{ vars.API_STACK_NAME_PRODUCTION }} LambdasStack"
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -135,12 +104,12 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  lambdas-sandbox-deploy:
+  api-sandbox-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
-    needs: lambdas-deploy
+    needs: api-deploy
     with:
       deploy_env: "sandbox"
-      cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}/LambdasStack
+      cdk_stack: "${{ vars.API_STACK_NAME_SANDBOX }} LambdasStack"
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -153,9 +122,9 @@ jobs:
 
   release:
     uses: ./.github/workflows/_reusable_release.yml
-    needs: [widget-deploy, api-sandbox-deploy, lambdas-sandbox-deploy]
+    needs: [widget-deploy, api-sandbox-deploy]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api-sandbox-deploy.result == 'success' || needs.lambdas-sandbox-deploy.result == 'success') }}
+    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api-sandbox-deploy.result == 'success' }}
     secrets: inherit

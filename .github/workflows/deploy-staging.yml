@@ -35,16 +35,16 @@ jobs:
         with:
           filters: |
             api:
-              - "api/app"
-              - "infra/**"
+              - "api/app/"
+              - "infra/"
               - "package*.json"
             lambdas:
-              - "api/lambdas"
-              - "infra/**"
+              - "api/lambdas/"
+              - "infra/"
               - "package*.json"
             widget:
-              - "connect-widget/**"
-              - "infra/**"
+              - "connect-widget/"
+              - "infra/"
               - "package*.json"
 
   widget-build:
@@ -65,8 +65,8 @@ jobs:
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }} # renamed
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }} # renamed
+      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -77,24 +77,8 @@ jobs:
     needs: files-changed
     uses: ./.github/workflows/_reusable_build.yml
     with:
-      path: "api/app" # there's no "build" for lambdas, so one job for both works
+      path: "api/app"
     secrets: inherit
-  api-deploy:
-    uses: ./.github/workflows/_reusable_deploy.yml
-    needs: api-build
-    with:
-      deploy_env: "staging"
-      cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.API_REGION_STAGING }} # renamed
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }} # renamed
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
   lambdas-build:
     if: needs.files-changed.outputs.lambdas == 'true'
     needs: files-changed
@@ -103,12 +87,13 @@ jobs:
       path: "api/lambdas"
       install-from-parent: false
     secrets: inherit
-  lambdas-deploy:
+  api-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
-    needs: lambdas-build
+    needs: [api-build, lambdas-build]
+    if: ${{ !failure() && (needs.api-build.result == 'success' || needs.lambdas-build.result == 'success') }}
     with:
       deploy_env: "staging"
-      cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}/LambdasStack
+      cdk_stack: "${{ vars.API_STACK_NAME_STAGING }} LambdasStack"
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -121,9 +106,9 @@ jobs:
 
   release:
     uses: ./.github/workflows/_reusable_release.yml
-    needs: [widget-deploy, api-deploy, lambdas-deploy]
+    needs: [widget-deploy, api-deploy]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api-deploy.result == 'success' || needs.lambdas-deploy.result == 'success') }}
+    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api-deploy.result == 'success' }}
     secrets: inherit
