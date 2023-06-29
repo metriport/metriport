@@ -51,7 +51,7 @@ export function createLambda(props: LambdaProps): Lambda {
     functionName: props.name + "Lambda",
     runtime: props.runtime ?? Runtime.NODEJS_16_X,
     // TODO move our lambdas to use layers, quicker to deploy and execute them
-    code: Code.fromAsset(`${pathToLambdas}/new/dist`),
+    code: Code.fromAsset(`${pathToLambdas}/dist`),
     handler: props.entry + ".handler",
     ...(props.layers ? { layers: props.layers } : {}),
     vpc: props.vpc,

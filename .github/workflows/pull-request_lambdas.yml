@@ -11,6 +11,6 @@ jobs:
   check-pr:
     uses: ./.github/workflows/_reusable_build.yml
     with:
-      path: "api/lambdas/new"
+      path: "api/lambdas"
       install-from-parent: false
     secrets: inherit

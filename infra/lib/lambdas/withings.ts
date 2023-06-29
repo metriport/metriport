@@ -41,16 +41,16 @@ export function createWithingsLambda(props: WithingsLambdaProps): lambda.Functio
     },
   });
 
-  const apiGW = apig.RestApi.fromRestApiAttributes(stack, "ApiGWForGarmin", {
+  const apiGW = apig.RestApi.fromRestApiAttributes(stack, "ApiGWForWithings", {
     restApiId: apiGateway.apiId,
     rootResourceId: apiGateway.apiRootResourceId,
   });
-  const webhookResource = Resource.fromResourceAttributes(stack, "WebhookResourceForGarmin", {
+  const webhookResource = Resource.fromResourceAttributes(stack, "WebhookResourceForWithings", {
     restApi: apiGW,
     resourceId: apiGateway.apiWebhookResourceId,
     path: apiGateway.apiWebhookPath,
   });
-  if (!webhookResource) throw Error("Webhook resource not found on Garmin");
+  if (!webhookResource) throw Error("Webhook resource not found on Withings");
   const withingsResource = webhookResource.addResource("withings");
   withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
 
