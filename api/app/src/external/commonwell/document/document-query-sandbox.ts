@@ -15,7 +15,7 @@ import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { isConvertible } from "../../fhir-converter/converter";
-import { sandboxSleepTime } from "./shared";
+import { sandboxSleepTime, getFileExtension } from "./shared";
 
 const randomDates = [
   "2023-06-15",
@@ -135,7 +135,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
 function addSandboxFields(docRef: DocumentReference): DocumentReference {
   if (docRef.content) {
-    const fileExt = docRef.content[0]?.attachment?.contentType?.split("/")[1]?.trim();
+    const fileExt = getFileExtension(docRef.content[0]?.attachment?.contentType);
     const randomIndex = Math.floor(Math.random() * randomDates.length);
     // Add a random date to the sandbox document
     if (docRef.content[0]?.attachment) {
@@ -168,7 +168,7 @@ function addSandboxFields(docRef: DocumentReference): DocumentReference {
             },
           ],
         });
-    } else if (fileExt === "tif") {
+    } else if (fileExt === "tif" || fileExt === "tiff") {
       (docRef.description = "Pathology Report"),
         (docRef.type = {
           coding: [

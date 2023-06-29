@@ -261,7 +261,7 @@ export const kylaDocRefs: DataEntry[] = [
           attachment: {
             title: "kyla14.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
@@ -280,7 +280,7 @@ export const kylaDocRefs: DataEntry[] = [
           attachment: {
             title: "kyla15.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
