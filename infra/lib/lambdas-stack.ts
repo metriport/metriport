@@ -18,6 +18,7 @@ import { createCdaToVisualizationLambda } from "./lambdas/cda-to-visualization";
 import { createDocQueryChecker } from "./lambdas/doc-query-checker";
 import { createGarminLambda } from "./lambdas/garmin";
 import { createTesterLambda } from "./lambdas/tester";
+import { createWithingsLambda } from "./lambdas/withings";
 
 interface LambdasStackProps extends StackProps {
   config: EnvConfig;
@@ -62,7 +63,7 @@ export class LambdasStack extends Stack {
 
     this.setupFHIRServerLambda({ ...props, apiTaskRole });
 
-    // TODO 715 add remaining lambdas
+    this.setupWithings(props);
   }
 
   private getApiTaskRole(props: LambdasStackProps): IRole {
@@ -208,6 +209,17 @@ export class LambdasStack extends Stack {
       createRetryLambda: fhirServerConnectorARNs.createRetryLambda,
       fhirConverterBucket: bucket,
       alarmSnsAction: props.alarmAction,
+    });
+  }
+
+  private setupWithings(props: LambdasStackProps): lambda.Function | undefined {
+    return createWithingsLambda({
+      stack: this,
+      config: props.config,
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      apiServiceDnsAddress: props.apiServiceDnsAddress,
+      apiGateway: props.apiGateway,
     });
   }
 }

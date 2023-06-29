@@ -6,7 +6,7 @@
     "clean": "rimraf dist && rimraf node_modules && rimraf ../layers/shared",
     "build": "tsc -p tsconfig.build.json",
     "build:cloud": "tsc -p tsconfig.cloud.json",
-    "prepdeploy": "npm run clean && npm ci --ignore-scripts --no-fund && npm run lint && npm run build:cloud && mkdir -p ../layers/shared/nodejs && cp -r node_modules ../layers/shared/nodejs/ && cd ../layers/shared && zip -r shared-layer.zip ./nodejs && cd -",
+    "prepdeploy": "npm run clean && npm ci --omit=dev --ignore-scripts --no-fund && mkdir -p ../layers/shared/nodejs && cp -r node_modules ../layers/shared/nodejs/ && cd ../layers/shared && zip -r shared-layer.zip ./nodejs && cd -",
     "lint": "eslint . --ext .ts",
     "test": "echo 'no test yet'"
   },
@@ -22,7 +22,6 @@
     "@medplum/core": "^2.0.24",
     "@medplum/fhirtypes": "^2.0.24",
     "@sentry/serverless": "^7.46.0",
-    "@sparticuz/chromium": "106.0.2",
     "aws-sdk": "^2.1248.0",
     "axios": "^1.4.0",
     "nanoid": "^4.0.2",
@@ -32,6 +31,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@sparticuz/chromium": "106.0.2",
     "@tsconfig/node18": "^1.0.1",
     "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.48.2",

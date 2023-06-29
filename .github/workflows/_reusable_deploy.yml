@@ -79,12 +79,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
         working-directory: "./"
-      # lambdas are not on the npm workspaces, so need to 'install' individually
-      - name: Withings lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/withings/"
-      - name: New lambdas install dependencies
+      - name: New lambdas build shared layer
         run: npm run prepdeploy
+        working-directory: "api/lambdas/new/"
+      - name: New lambdas install dependencies
+        run: npm ci --ignore-scripts
         working-directory: "api/lambdas/new/"
 
       # BUILD
@@ -92,10 +91,9 @@ jobs:
       - name: API build/compile
         run: npm run build:cloud
         working-directory: "api/app"
-      # Already done on "install dependencies", "prepdeploy" has to build in order to get lambdas layers ready
-      # - name: Lambdas build/compile
-      #   run: npm run build:cloud
-      #   working-directory: "api/lambdas/new"
+      - name: Lambdas build/compile
+        run: npm run build:cloud
+        working-directory: "api/lambdas/new"
       # TODO move to an external file so both this and deploy can use this logic
       - name: Widget build/compile
         if: ${{ inputs.build_env == 'production' }}

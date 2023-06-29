@@ -10,7 +10,6 @@ import { InstanceType } from "aws-cdk-lib/aws-ec2";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { ILayerVersion } from "aws-cdk-lib/aws-lambda";
-import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -355,14 +354,6 @@ export class APIStack extends Stack {
       apiWebhookPath: webhookResource.path,
     };
 
-    // this.setupWithingsWebhookAuth({
-    //   baseResource: webhookResource,
-    //   vpc: this.vpc,
-    //   fargateService: apiService,
-    //   envType: props.config.environmentType,
-    //   sentryDsn: props.config.lambdasSentryDSN,
-    // });
-
     // add webhook path for apple health clients
     const appleHealthResource = webhookResource.addResource("apple");
     const integrationApple = new apig.Integration({
@@ -456,99 +447,6 @@ export class APIStack extends Stack {
       value: userPoolClientSecret.userPoolId,
     });
   }
-
-  // private setupTestLambda(envType: string, sentryDsn: string | undefined) {
-  //   return createLambda({
-  //     stack: this,
-  //     name: "Tester",
-  //     vpc: this.vpc,
-  //     subnets: this.vpc.privateSubnets,
-  //     entry: "../api/lambdas/tester/index.js",
-  //     envVars: {
-  //       ENV_TYPE: envType,
-  //       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-  //     },
-  //   });
-  // }
-
-  // private setupGarminWebhookAuth(ownProps: {
-  //   baseResource: apig.Resource;
-  //   vpc: ec2.IVpc;
-  //   fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
-  //   dynamoDBTokenTable: dynamodb.Table;
-  //   envType: string;
-  //   sentryDsn: string | undefined;
-  // }) {
-  //   const {
-  //     baseResource,
-  //     vpc,
-  //     fargateService: server,
-  //     dynamoDBTokenTable,
-  //     envType,
-  //     sentryDsn,
-  //   } = ownProps;
-
-  //   const garminLambda = new lambda_node.NodejsFunction(this, "GarminLambda", {
-  //     runtime: lambda.Runtime.NODEJS_16_X,
-  //     entry: "../api/lambdas/garmin/index.js",
-  //     environment: {
-  //       TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-  //       API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/garmin`,
-  //       ENV_TYPE: envType,
-  //       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-  //     },
-  //     vpc,
-  //   });
-  //   addErrorAlarmToLambdaFunc(this, garminLambda, "GarminAuthFunctionAlarm");
-
-  //   // Grant lambda access to the DynamoDB token table
-  //   garminLambda.role && dynamoDBTokenTable.grantReadData(garminLambda.role);
-
-  //   // Grant lambda access to the api server
-  //   server.service.connections.allowFrom(garminLambda, Port.allTcp());
-
-  //   // setup $base/garmin path with token auth
-  //   const garminResource = baseResource.addResource("garmin");
-  //   garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
-  // }
-
-  // private setupWithingsWebhookAuth(ownProps: {
-  //   baseResource: apig.Resource;
-  //   vpc: ec2.IVpc;
-  //   fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
-  //   envType: string;
-  //   sentryDsn: string | undefined;
-  // }) {
-  //   const { baseResource, vpc, fargateService: server, envType, sentryDsn } = ownProps;
-  //   const digLayer = new lambda.LayerVersion(this, "dig-layer", {
-  //     compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-  //     code: lambda.Code.fromAsset("../api/lambdas/layers/dig-layer"),
-  //     description: "Adds dig to the lambdas",
-  //   });
-
-  //   const withingsLambda = new lambda_node.NodejsFunction(this, "WithingsLambda", {
-  //     runtime: lambda.Runtime.NODEJS_16_X,
-  //     entry: "../api/lambdas/withings/index.js",
-  //     environment: {
-  //       API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
-  //       ENV_TYPE: envType,
-  //       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-  //     },
-  //     vpc,
-  //     layers: [digLayer],
-  //     bundling: {
-  //       minify: false,
-  //       externalModules: ["aws-sdk", "dig"],
-  //     },
-  //   });
-  //   addErrorAlarmToLambdaFunc(this, withingsLambda, "WithingsAuthFunctionAlarm");
-
-  //   // Grant lambda access to the api server
-  //   server.service.connections.allowFrom(withingsLambda, Port.allTcp());
-
-  //   const withingsResource = baseResource.addResource("withings");
-  //   withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
-  // }
 
   private setupTokenAuthLambda(params: {
     lambdaLayers: ILayerVersion[];
