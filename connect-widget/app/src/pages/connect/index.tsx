@@ -11,6 +11,7 @@ import AgreementFooter from "./components/agreement-footer";
 import ConnectProviders from "./components/connect-providers";
 import ErrorDialog from "./components/error-dialog";
 import { Box } from "@chakra-ui/react";
+import { DemoTokenError } from "../../shared/token-errors";
 
 type DisplayError = {
   message: string;
@@ -34,8 +35,10 @@ const ConnectPage = () => {
         setAgreementState(setAgreement);
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
-        setError(err);
-        capture.error(err, { extra: { context: `connect.setup` } });
+        if (err.message !== DemoTokenError.DEFAULT_MSG) {
+          setError(err);
+          capture.error(err, { extra: { context: `connect.setup` } });
+        }
       }
       setIsLoading(false);
     }
