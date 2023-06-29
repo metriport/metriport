@@ -80,9 +80,6 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: "./"
       # lambdas are not on the npm workspaces, so need to 'install' individually
-      - name: Token-auth lambda install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/token-auth/"
       - name: Withings lambda install dependencies
         run: npm ci --ignore-scripts
         working-directory: "api/lambdas/withings/"
@@ -95,9 +92,10 @@ jobs:
       - name: API build/compile
         run: npm run build:cloud
         working-directory: "api/app"
-      - name: Lambdas build/compile
-        run: npm run build:cloud
-        working-directory: "api/lambdas/new"
+      # Already done on "install dependencies", "prepdeploy" has to build in order to get lambdas layers ready
+      # - name: Lambdas build/compile
+      #   run: npm run build:cloud
+      #   working-directory: "api/lambdas/new"
       # TODO move to an external file so both this and deploy can use this logic
       - name: Widget build/compile
         if: ${{ inputs.build_env == 'production' }}

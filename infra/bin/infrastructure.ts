@@ -61,10 +61,11 @@ async function deploy(config: EnvConfig) {
     env,
     config,
     version,
-    alarmAction: baseStack.alarmAction,
+    lambdaLayers: baseStack.lambdaLayers,
     fhirConverterConnectorARNs,
     sidechainFHIRConverterConnectorARNs,
     fhirServerConnectorARNs,
+    alarmAction: baseStack.alarmAction,
   });
 
   //---------------------------------------------------------------------------------
@@ -84,6 +85,7 @@ async function deploy(config: EnvConfig) {
     env,
     config,
     vpc: apiStack.vpc,
+    lambdaLayers: baseStack.lambdaLayers,
     apiService: apiStack.apiService,
     apiServiceDnsAddress: apiStack.apiServiceDnsAddress,
     medicalDocumentsBucket: apiStack.medicalDocumentsBucket,

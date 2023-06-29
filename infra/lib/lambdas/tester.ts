@@ -7,12 +7,12 @@ import { createLambda } from "../shared/lambda";
 export type TesterLambdaProps = {
   stack: Construct;
   config: EnvConfig;
-  sharedNodeModules: lambda.ILayerVersion;
+  lambdaLayers: lambda.ILayerVersion[];
   vpc: ec2.IVpc;
 };
 
 export function createTesterLambda(props: TesterLambdaProps): lambda.Function {
-  const { stack, sharedNodeModules } = props;
+  const { stack, lambdaLayers } = props;
   const { environmentType, lambdasSentryDSN } = props.config;
   return createLambda({
     stack,
@@ -20,7 +20,7 @@ export function createTesterLambda(props: TesterLambdaProps): lambda.Function {
     vpc: props.vpc,
     subnets: props.vpc.privateSubnets,
     entry: "tester",
-    layers: [sharedNodeModules],
+    layers: lambdaLayers,
     runtime: lambda.Runtime.NODEJS_18_X,
     envVars: {
       ENV_TYPE: environmentType,

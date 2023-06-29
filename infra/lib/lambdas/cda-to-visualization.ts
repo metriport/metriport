@@ -10,7 +10,7 @@ import { createLambda } from "../shared/lambda";
 export type CdaToVisualizationLambdaProps = {
   stack: Construct;
   config: EnvConfig;
-  sharedNodeModules: lambda.ILayerVersion;
+  lambdaLayers: lambda.ILayerVersion[];
   vpc: ec2.IVpc;
   apiTaskRole: IGrantable;
   medicalDocumentsBucket: s3.IBucket;
@@ -19,7 +19,7 @@ export type CdaToVisualizationLambdaProps = {
 export function createCdaToVisualizationLambda(
   props: CdaToVisualizationLambdaProps
 ): lambda.Function {
-  const { stack, sharedNodeModules, apiTaskRole, medicalDocumentsBucket } = props;
+  const { stack, lambdaLayers, apiTaskRole, medicalDocumentsBucket } = props;
   const {
     environmentType,
     lambdasSentryDSN,
@@ -39,7 +39,7 @@ export function createCdaToVisualizationLambda(
     vpc: props.vpc,
     subnets: props.vpc.privateSubnets,
     entry: "cda-to-visualization",
-    layers: [sharedNodeModules, chromiumLayer],
+    layers: [...lambdaLayers, chromiumLayer],
     runtime: lambda.Runtime.NODEJS_16_X,
     memory: 512,
     timeout: Duration.minutes(1),

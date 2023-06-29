@@ -5,7 +5,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { FargateService, FargateTaskDefinition } from "aws-cdk-lib/aws-ecs";
 import { IRole, Role } from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import { Code, ILayerVersion, LayerVersion } from "aws-cdk-lib/aws-lambda";
+import { ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { ApiGateway } from "./api-stack";
@@ -22,6 +22,7 @@ import { createTesterLambda } from "./lambdas/tester";
 interface LambdasStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
+  lambdaLayers: ILayerVersion[];
   apiService: FargateService;
   apiServiceDnsAddress: string;
   apiTaskDefArn: string;
@@ -40,15 +41,11 @@ type APITaskRole = {
 };
 
 export class LambdasStack extends Stack {
-  private lambdaDependencies!: ILayerVersion;
-
   constructor(scope: Construct, id: string, props: LambdasStackProps) {
     super(scope, id, {
       ...props,
       stackName: id,
     });
-
-    this.setupDependencies();
 
     this.setupTester(props);
 
@@ -66,12 +63,6 @@ export class LambdasStack extends Stack {
     this.setupFHIRServerLambda({ ...props, apiTaskRole });
 
     // TODO 715 add remaining lambdas
-  }
-
-  private setupDependencies(): void {
-    this.lambdaDependencies = new LayerVersion(this, "lambdaNodeModules", {
-      code: Code.fromAsset("../api/lambdas/layers/shared/shared-layer.zip"),
-    });
   }
 
   private getApiTaskRole(props: LambdasStackProps): IRole {
@@ -93,7 +84,7 @@ export class LambdasStack extends Stack {
       stack: this,
       config: props.config,
       vpc: props.vpc,
-      sharedNodeModules: this.lambdaDependencies,
+      lambdaLayers: props.lambdaLayers,
     });
   }
 
@@ -105,7 +96,7 @@ export class LambdasStack extends Stack {
       return createCdaToVisualizationLambda({
         stack: this,
         config: props.config,
-        sharedNodeModules: this.lambdaDependencies,
+        lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
         apiTaskRole: props.apiTaskRole,
         medicalDocumentsBucket,
@@ -118,7 +109,7 @@ export class LambdasStack extends Stack {
     return createGarminLambda({
       stack: this,
       config: props.config,
-      sharedNodeModules: this.lambdaDependencies,
+      lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
       apiServiceDnsAddress: props.apiServiceDnsAddress,
       apiGateway: props.apiGateway,
@@ -129,7 +120,7 @@ export class LambdasStack extends Stack {
   private setupScheduled(props: LambdasStackProps): lambda.Function | undefined {
     return createDocQueryChecker({
       stack: this,
-      sharedNodeModules: this.lambdaDependencies,
+      lambdaLayers: props.lambdaLayers,
       apiAddress: props.apiServiceDnsAddress,
       vpc: props.vpc,
     });
@@ -151,7 +142,7 @@ export class LambdasStack extends Stack {
     });
     return createFHIRConverterLambda({
       stack: this,
-      sharedNodeModules: this.lambdaDependencies,
+      lambdaLayers: props.lambdaLayers,
       envType: props.config.environmentType,
       vpc: props.vpc,
       sourceQueue: fhirConverterQueue,
@@ -184,7 +175,7 @@ export class LambdasStack extends Stack {
     });
     return createSidechainFHIRConverterLambda({
       stack: this,
-      sharedNodeModules: this.lambdaDependencies,
+      lambdaLayers: props.lambdaLayers,
       envType: props.config.environmentType,
       vpc: props.vpc,
       sourceQueue: fhirConverterQueue,
@@ -209,7 +200,7 @@ export class LambdasStack extends Stack {
     });
     return createFHIRServerLambda({
       stack: this,
-      sharedNodeModules: this.lambdaDependencies,
+      lambdaLayers: props.lambdaLayers,
       envType: props.config.environmentType,
       vpc: props.vpc,
       queue,

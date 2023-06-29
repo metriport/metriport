@@ -11,7 +11,7 @@ import { addErrorAlarmToLambdaFunc, createLambda } from "../shared/lambda";
 export type GarminLambdaProps = {
   stack: Construct;
   config: EnvConfig;
-  sharedNodeModules: lambda.ILayerVersion;
+  lambdaLayers: lambda.ILayerVersion[];
   vpc: ec2.IVpc;
   apiGateway: ApiGateway;
   apiServiceDnsAddress: string;
@@ -19,8 +19,7 @@ export type GarminLambdaProps = {
 };
 
 export function createGarminLambda(props: GarminLambdaProps): lambda.Function {
-  const { stack, vpc, sharedNodeModules, apiServiceDnsAddress, dynamoDBTokenTable, apiGateway } =
-    props;
+  const { stack, vpc, lambdaLayers, apiServiceDnsAddress, dynamoDBTokenTable, apiGateway } = props;
   const { environmentType, lambdasSentryDSN } = props.config;
 
   const garminLambda = createLambda({
@@ -29,7 +28,7 @@ export function createGarminLambda(props: GarminLambdaProps): lambda.Function {
     vpc: vpc,
     subnets: vpc.privateSubnets,
     entry: "garmin",
-    layers: [sharedNodeModules],
+    layers: lambdaLayers,
     runtime: lambda.Runtime.NODEJS_18_X,
     envVars: {
       TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,

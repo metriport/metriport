@@ -85,7 +85,7 @@ export function createQueueAndBucket({
 export function createLambda({
   envType,
   stack,
-  sharedNodeModules,
+  lambdaLayers,
   vpc,
   queue,
   dlq,
@@ -95,7 +95,7 @@ export function createLambda({
 }: {
   envType: EnvType;
   stack: Construct;
-  sharedNodeModules: ILayerVersion;
+  lambdaLayers: ILayerVersion[];
   vpc: IVpc;
   queue: IQueue;
   dlq: IQueue;
@@ -130,7 +130,7 @@ export function createLambda({
     vpc,
     subnets: vpc.privateSubnets,
     entry: "sqs-to-fhir",
-    layers: [sharedNodeModules],
+    layers: lambdaLayers,
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,
@@ -151,7 +151,7 @@ export function createLambda({
     defaultCreateRetryLambda({
       stack,
       name: connectorName,
-      sharedNodeModules,
+      lambdaLayers,
       sourceQueue: dlq,
       destinationQueue: queue,
     });

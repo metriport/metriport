@@ -9,6 +9,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType } from "aws-cdk-lib/aws-ec2";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import { ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
@@ -20,7 +21,7 @@ import { createAPIService } from "./creators/api-service";
 import { createFHIRConverterService } from "./creators/fhir-converter-service";
 import { EnvConfig } from "./env-config";
 import { FHIRConnectorARNs, FHIRConnectorStack } from "./fhir-connector-stack";
-import { addErrorAlarmToLambdaFunc } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
@@ -28,10 +29,11 @@ import { isProd, isSandbox, mbToBytes } from "./shared/util";
 interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
-  alarmAction?: SnsAction | undefined;
+  lambdaLayers: ILayerVersion[];
   fhirConverterConnectorARNs: FHIRConnectorARNs;
   sidechainFHIRConverterConnectorARNs: FHIRConnectorARNs;
   fhirServerConnectorARNs: FHIRConnectorARNs;
+  alarmAction?: SnsAction | undefined;
 }
 
 export type ApiGateway = {
@@ -329,6 +331,7 @@ export class APIStack extends Stack {
 
     // token auth for connect sessions
     const tokenAuth = this.setupTokenAuthLambda({
+      lambdaLayers: props.lambdaLayers,
       dynamoDBTokenTable: this.dynamoDBTokenTable,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
@@ -548,21 +551,24 @@ export class APIStack extends Stack {
   // }
 
   private setupTokenAuthLambda(params: {
+    lambdaLayers: ILayerVersion[];
     dynamoDBTokenTable: dynamodb.Table;
     envType: string;
     sentryDsn: string | undefined;
   }): apig.RequestAuthorizer {
-    const { dynamoDBTokenTable, envType, sentryDsn } = params;
-    const tokenAuthLambda = new lambda_node.NodejsFunction(this, "APITokenAuthLambda", {
+    const { dynamoDBTokenTable, envType, sentryDsn, lambdaLayers } = params;
+    const tokenAuthLambda = createLambda({
+      stack: this,
+      name: "APITokenAuthLambda",
       runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "../api/lambdas/token-auth/index.js",
-      environment: {
+      entry: "token-auth",
+      layers: lambdaLayers,
+      envVars: {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
         ENV_TYPE: envType,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
-    addErrorAlarmToLambdaFunc(this, tokenAuthLambda, "TokenAuthFunctionAlarm");
 
     const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
       handler: tokenAuthLambda,

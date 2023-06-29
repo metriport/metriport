@@ -112,7 +112,7 @@ export interface RetryLambdaProps extends Omit<LambdaProps, "entry"> {
   entry?: string;
   sourceQueue: IQueue;
   destinationQueue: IQueue;
-  sharedNodeModules: ILayerVersion;
+  lambdaLayers: ILayerVersion[];
 }
 
 /**
@@ -127,7 +127,7 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
     ...props,
     name: retryLambdaName,
     entry: "sqs-to-sqs",
-    layers: [props.sharedNodeModules],
+    layers: props.lambdaLayers,
     envVars: {
       ...props.envVars,
       ENV_TYPE: config.environmentType,

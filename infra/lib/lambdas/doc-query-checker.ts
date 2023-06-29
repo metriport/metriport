@@ -9,7 +9,7 @@ import { createScheduledLambda } from "../shared/lambda-scheduled";
 
 export type DocQueryCheckerProps = {
   stack: Construct;
-  sharedNodeModules: ILayerVersion;
+  lambdaLayers: ILayerVersion[];
   vpc: IVpc;
   apiAddress: string;
   alarmSnsAction?: SnsAction;
@@ -39,7 +39,7 @@ export function createDocQueryChecker(props: DocQueryCheckerProps): Lambda | und
     stack,
     vpc,
     runtime,
-    sharedNodeModules,
+    lambdaLayers,
     alarmSnsAction,
     name,
     lambdaMemory,
@@ -58,7 +58,7 @@ export function createDocQueryChecker(props: DocQueryCheckerProps): Lambda | und
     runtime,
     memory: lambdaMemory,
     timeout: lambdaTimeout,
-    layers: [sharedNodeModules],
+    layers: lambdaLayers,
     alarmSnsAction,
     envVars: {
       TIMEOUT_MILLIS: String(httpTimeout.toMilliseconds()),
