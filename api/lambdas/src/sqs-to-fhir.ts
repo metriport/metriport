@@ -13,6 +13,9 @@ import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
 import { SQSUtils } from "./shared/sqs";
 
+// Keep this as early on the file as possible
+capture.init();
+
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
@@ -29,9 +32,6 @@ const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const maxRetries = 10;
 const isSandbox = envType === "sandbox";
-
-// Keep this as early on the file as possible
-capture.init();
 
 const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
 const s3Utils = new S3Utils(region);
@@ -233,7 +233,7 @@ function parseBody(body: unknown): EventBody {
 
 function replaceIds(payload: string) {
   const fhirBundle = JSON.parse(payload);
-  const stringsToReplace = [];
+  const stringsToReplace: { old: string; new: string }[] = [];
   for (const bundleEntry of fhirBundle.entry) {
     // validate resource id
     const idToUse = bundleEntry.resource.id;

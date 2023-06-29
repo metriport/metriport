@@ -5,6 +5,9 @@ import { MessageAttributeValue, MessageBodyAttributeMap } from "aws-sdk/clients/
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 
+// Keep this as early on the file as possible
+capture.init();
+
 const numberOfMessagesPerRetry = 1; // up to 10
 
 // Automatically set by AWS
@@ -13,9 +16,6 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const sourceQueue = getEnvOrFail("SOURCE_QUEUE");
 const destinationQueue = getEnvOrFail("DESTINATION_QUEUE");
-
-// Keep this as early on the file as possible
-capture.init();
 
 const sqs = new AWS.SQS({ region });
 

@@ -13,6 +13,9 @@ import { S3Utils } from "./shared/s3";
 import { sleep } from "./shared/sleep";
 import { SQSUtils } from "./shared/sqs";
 
+// Keep this as early on the file as possible
+capture.init();
+
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
@@ -38,9 +41,6 @@ const baseReplaceUrl = "https://public.metriport.com";
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const MAX_SIDECHAIN_ATTEMPTS = 5;
 const SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS = 500;
-
-// Keep this as early on the file as possible
-capture.init();
 
 const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
 const s3Utils = new S3Utils(region);
@@ -86,7 +86,7 @@ function postProcessSidechainFHIRBundle(
 ): FHIRBundle {
   fhirBundle.type = "batch";
 
-  const stringsToReplace = [];
+  const stringsToReplace: { old: string; new: string }[] = [];
   let curIndex = 0;
   let patientIndex = -1;
   let operationOutcomeIndex = -1;

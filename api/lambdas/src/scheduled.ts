@@ -5,14 +5,14 @@ import * as URL from "url";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 
+// Keep this as early on the file as possible
+capture.init();
+
 // Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const url = getEnvOrFail("URL");
 const timeoutMillis = Number(getEnvOrFail("TIMEOUT_MILLIS"));
-
-// Keep this as early on the file as possible
-capture.init();
 
 /**
  * Lambda that just triggers an endpoint, it doesn't wait for the response.

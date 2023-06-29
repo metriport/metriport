@@ -5,12 +5,12 @@ import { exec } from "child_process";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 
+// Keep this as early on the file as possible
+capture.init();
+
 const apiServerURL = getEnvOrFail("API_URL");
 
 const api = axios.create();
-
-// Keep this as early on the file as possible
-capture.init();
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const buildResponse = (status: number, body?: any) => ({

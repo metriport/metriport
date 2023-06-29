@@ -5,26 +5,21 @@ import fs from "fs";
 import puppeteer from "puppeteer-core";
 import SaxonJS from "saxon-js";
 import * as uuid from "uuid";
+import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 import { sleep } from "./shared/sleep";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const styleSheetText = require("./cda-to-visualization/stylesheet.js");
 
+// Keep this as early on the file as possible
+capture.init();
+
+// Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
+// Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const envType = getEnvOrFail("ENV_TYPE");
-const sentryDsn = getEnv("SENTRY_DSN");
 
 const SIGNED_URL_DURATION_SECONDS = 60;
-
-// Keep this as early on the file as possible
-Sentry.init({
-  dsn: sentryDsn,
-  enabled: sentryDsn != null,
-  environment: envType,
-  // TODO #499 Review this based on the load on our app and Sentry's quotas
-  tracesSampleRate: 1.0,
-});
 
 const s3client = new AWS.S3({
   signatureVersion: "v4",
@@ -112,7 +107,7 @@ const convertStoreAndReturnPdfDocUrl = async ({
   const pdfFilepath = `/tmp/${tmpPDFFileName}`;
 
   // Define
-  let browser = null;
+  let browser: puppeteer.Browser | null = null;
 
   try {
     // Defines browser
@@ -155,8 +150,8 @@ const convertStoreAndReturnPdfDocUrl = async ({
       .promise();
   } catch (error) {
     console.log(`Error while converting to pdf: `, error);
-    Sentry.captureException(error, {
-      extra: { context: lambdaName },
+    capture.error(error, {
+      extra: { context: "convertStoreAndReturnPdfDocUrl", lambdaName, error },
     });
   } finally {
     // Close the puppeteer browser
@@ -208,8 +203,8 @@ const convertToHtml = async (document: string): Promise<string> => {
     return result.principalResult;
   } catch (error) {
     console.log(`Error while converting to html: `, error);
-    Sentry.captureException(error, {
-      extra: { context: lambdaName, error },
+    capture.error(error, {
+      extra: { context: "convertToHtml", lambdaName, error },
     });
     throw error;
   }

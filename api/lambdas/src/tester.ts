@@ -1,18 +1,9 @@
 import * as Sentry from "@sentry/serverless";
 import axios from "axios";
-import { getEnv, getEnvOrFail } from "./shared/env";
-
-const envType = getEnvOrFail("ENV_TYPE");
-const sentryDsn = getEnv("SENTRY_DSN");
+import { capture } from "./shared/capture";
 
 // Keep this as early on the file as possible
-Sentry.init({
-  dsn: sentryDsn,
-  enabled: sentryDsn != null,
-  environment: envType,
-  // TODO #499 Review this based on the load on our app and Sentry's quotas
-  tracesSampleRate: 1.0,
-});
+capture.init();
 
 const api = axios.create({ timeout: 10_000 });
 // OSS API
