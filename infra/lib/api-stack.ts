@@ -6,8 +6,7 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
-import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { InstanceType } from "aws-cdk-lib/aws-ec2";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import * as rds from "aws-cdk-lib/aws-rds";
@@ -431,13 +430,13 @@ export class APIStack extends Stack {
     //   sentryDsn: props.config.lambdasSentryDSN,
     // });
 
-    this.setupWithingsWebhookAuth({
-      baseResource: webhookResource,
-      vpc: this.vpc,
-      fargateService: apiService,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-    });
+    // this.setupWithingsWebhookAuth({
+    //   baseResource: webhookResource,
+    //   vpc: this.vpc,
+    //   fargateService: apiService,
+    //   envType: props.config.environmentType,
+    //   sentryDsn: props.config.lambdasSentryDSN,
+    // });
 
     // add webhook path for apple health clients
     const appleHealthResource = webhookResource.addResource("apple");
@@ -588,43 +587,43 @@ export class APIStack extends Stack {
   //   garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
   // }
 
-  private setupWithingsWebhookAuth(ownProps: {
-    baseResource: apig.Resource;
-    vpc: ec2.IVpc;
-    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
-    envType: string;
-    sentryDsn: string | undefined;
-  }) {
-    const { baseResource, vpc, fargateService: server, envType, sentryDsn } = ownProps;
-    const digLayer = new lambda.LayerVersion(this, "dig-layer", {
-      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      code: lambda.Code.fromAsset("../api/lambdas/layers/dig-layer"),
-      description: "Adds dig to the lambdas",
-    });
+  // private setupWithingsWebhookAuth(ownProps: {
+  //   baseResource: apig.Resource;
+  //   vpc: ec2.IVpc;
+  //   fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+  //   envType: string;
+  //   sentryDsn: string | undefined;
+  // }) {
+  //   const { baseResource, vpc, fargateService: server, envType, sentryDsn } = ownProps;
+  //   const digLayer = new lambda.LayerVersion(this, "dig-layer", {
+  //     compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
+  //     code: lambda.Code.fromAsset("../api/lambdas/layers/dig-layer"),
+  //     description: "Adds dig to the lambdas",
+  //   });
 
-    const withingsLambda = new lambda_node.NodejsFunction(this, "WithingsLambda", {
-      runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "../api/lambdas/withings/index.js",
-      environment: {
-        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
-        ENV_TYPE: envType,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      vpc,
-      layers: [digLayer],
-      bundling: {
-        minify: false,
-        externalModules: ["aws-sdk", "dig"],
-      },
-    });
-    addErrorAlarmToLambdaFunc(this, withingsLambda, "WithingsAuthFunctionAlarm");
+  //   const withingsLambda = new lambda_node.NodejsFunction(this, "WithingsLambda", {
+  //     runtime: lambda.Runtime.NODEJS_16_X,
+  //     entry: "../api/lambdas/withings/index.js",
+  //     environment: {
+  //       API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
+  //       ENV_TYPE: envType,
+  //       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+  //     },
+  //     vpc,
+  //     layers: [digLayer],
+  //     bundling: {
+  //       minify: false,
+  //       externalModules: ["aws-sdk", "dig"],
+  //     },
+  //   });
+  //   addErrorAlarmToLambdaFunc(this, withingsLambda, "WithingsAuthFunctionAlarm");
 
-    // Grant lambda access to the api server
-    server.service.connections.allowFrom(withingsLambda, Port.allTcp());
+  //   // Grant lambda access to the api server
+  //   server.service.connections.allowFrom(withingsLambda, Port.allTcp());
 
-    const withingsResource = baseResource.addResource("withings");
-    withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
-  }
+  //   const withingsResource = baseResource.addResource("withings");
+  //   withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
+  // }
 
   // private setupCdaToVisualization(ownProps: {
   //   fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
