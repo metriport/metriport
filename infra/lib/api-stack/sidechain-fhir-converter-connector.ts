@@ -8,9 +8,9 @@ import { DeadLetterQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
-import { MAXIMUM_LAMBDA_TIMEOUT, createLambda as defaultCreateLambda } from "../shared/lambda";
+import { createLambda as defaultCreateLambda, MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { buildSecrets, Secrets } from "../shared/secrets";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
-import { Secrets, buildSecrets } from "../shared/secrets";
 
 function settings() {
   const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
@@ -47,7 +47,7 @@ export function createQueueAndBucket({
 }): {
   queue: Queue;
   dlq: DeadLetterQueue;
-  bucket: s3.Bucket;
+  bucket: s3.IBucket;
 } {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
@@ -69,11 +69,14 @@ export function createQueueAndBucket({
   const bucketName = config.sidechainFHIRConverter?.bucketName;
   if (!bucketName) throw Error(`Missing config! Path: config.sidechainFHIRConverter.bucketName`);
 
-  const fhirConverterBucket = new s3.Bucket(stack, `${connectorName}Bucket`, {
-    bucketName: bucketName,
-    publicReadAccess: false,
-    encryption: s3.BucketEncryption.S3_MANAGED,
-  });
+  const existingBucket = s3.Bucket.fromBucketName(stack, `${connectorName}Bucket`, bucketName);
+  const fhirConverterBucket =
+    existingBucket ??
+    new s3.Bucket(stack, `${connectorName}Bucket`, {
+      bucketName: bucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
 
   return { queue, dlq, bucket: fhirConverterBucket };
 }
@@ -95,7 +98,7 @@ export function createLambda({
   sourceQueue: Queue;
   destinationQueue: Queue;
   dlq: DeadLetterQueue;
-  fhirConverterBucket: s3.Bucket;
+  fhirConverterBucket: s3.IBucket;
   conversionResultQueueUrl: string;
   alarmSnsAction?: SnsAction;
 }): Lambda {

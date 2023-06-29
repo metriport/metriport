@@ -47,7 +47,7 @@ export function createConnector({
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
-  fhirConverterBucket: s3.Bucket;
+  fhirConverterBucket: s3.IBucket;
   alarmSnsAction?: SnsAction;
 }): Queue | undefined {
   const config = getConfig();

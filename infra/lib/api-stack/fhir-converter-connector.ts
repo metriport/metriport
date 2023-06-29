@@ -52,7 +52,7 @@ export function createQueueAndBucket({
 }): {
   queue: Queue;
   dlq: DeadLetterQueue;
-  bucket: s3.Bucket;
+  bucket: s3.IBucket;
 } {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
@@ -71,11 +71,16 @@ export function createQueueAndBucket({
   const dlq = queue.deadLetterQueue;
   if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
 
-  const fhirConverterBucket = new s3.Bucket(stack, `${connectorName}Bucket`, {
-    bucketName: config.fhirConverterBucketName,
-    publicReadAccess: false,
-    encryption: s3.BucketEncryption.S3_MANAGED,
-  });
+  const existingBucket = config.fhirConverterBucketName
+    ? s3.Bucket.fromBucketName(stack, `${connectorName}Bucket`, config.fhirConverterBucketName)
+    : undefined;
+  const fhirConverterBucket =
+    existingBucket ??
+    new s3.Bucket(stack, `${connectorName}Bucket`, {
+      bucketName: config.fhirConverterBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
 
   return { queue, dlq, bucket: fhirConverterBucket };
 }
@@ -97,7 +102,7 @@ export function createLambda({
   sourceQueue: Queue;
   destinationQueue: Queue;
   dlq: DeadLetterQueue;
-  fhirConverterBucket: s3.Bucket;
+  fhirConverterBucket: s3.IBucket;
   conversionResultQueueUrl: string;
   alarmSnsAction?: SnsAction;
 }): Lambda {
