@@ -37,8 +37,8 @@ const ConnectPage = () => {
       } catch (err: any) {
         if (err.message !== DemoTokenError.DEFAULT_MSG) {
           setError(err);
+          capture.error(err, { extra: { context: `connect.setup` } });
         }
-        capture.error(err, { extra: { context: `connect.setup` } });
       }
       setIsLoading(false);
     }
