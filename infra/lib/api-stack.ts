@@ -198,8 +198,16 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
+    const existingSandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
+      ? s3.Bucket.fromBucketName(
+          this,
+          "APISandboxSeedDataBucket",
+          props.config.sandboxSeedDataBucketName
+        )
+      : undefined;
     const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
-      ? new s3.Bucket(this, "APISandboxSeedDataBucket", {
+      ? existingSandboxSeedDataBucket ??
+        new s3.Bucket(this, "APISandboxSeedDataBucket", {
           bucketName: props.config.sandboxSeedDataBucketName,
           publicReadAccess: false,
           encryption: s3.BucketEncryption.S3_MANAGED,
