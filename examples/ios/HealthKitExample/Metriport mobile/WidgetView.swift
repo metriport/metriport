@@ -5,10 +5,10 @@ import Foundation
 struct WidgetView: View {
     // Controller to manage and manipulate webview state
     @ObservedObject var webviewController = WebviewController()
-    
+
     // Initialize the Metriport healthkit package
-    var healthStore = MetriportHealthStoreManager(clientApiKey: "eXV6N0FISEVTMGJ3azhKTVg2bFZBOmY1NjUwYWE0LWRkZWQtNDIwZi05YjM2LWVlMmRiZmNjZTNlYQ");
-    
+    var healthStore = MetriportHealthStoreManager(clientApiKey: "", sandbox: false, apiUrl: "");
+
     var body: some View {
         VStack {
             Image(systemName: "globe")
@@ -21,11 +21,9 @@ struct WidgetView: View {
             }
             .sheet(isPresented: $webviewController.showWebView) {
                 // Custom widget to access all of the providers
-                MetriportWidget(url: "\(webviewController.webUrl)/?token=\(webviewController.token)&colorMode=dark", healthStore: healthStore)
+                MetriportWidget(healthStore: healthStore, token: webviewController.token, sandbox: false, url: "")
             }
         }
         .padding()
     }
 }
-
-

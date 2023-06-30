@@ -1,4 +1,5 @@
 #import "AppDelegate.h"
+#import "MetriportConfiguration.h"
 
 #import <React/RCTBundleURLProvider.h>
 
@@ -6,6 +7,8 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+  [MetriportConfiguration checkBackgroundUpdates];
+
   self.moduleName = @"MetriportReactNative";
   return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }
