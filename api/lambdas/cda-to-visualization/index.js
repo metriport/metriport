@@ -34,7 +34,7 @@ const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
 
-exports.handler = Sentry.AWSLambda.wrapHandler(async req => {
+export const handler = Sentry.AWSLambda.wrapHandler(async req => {
   const { fileName, conversionType } = req;
 
   const document = await downloadDocumentFromS3({ fileName });

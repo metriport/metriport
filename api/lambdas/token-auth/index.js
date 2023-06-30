@@ -1,27 +1,44 @@
+import * as Sentry from "@sentry/serverless";
 const { DynamoDB } = require("aws-sdk");
+
+export function getEnv(name) {
+  return process.env[name];
+}
+export function getEnvOrFail(name) {
+  const value = getEnv(name);
+  if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
+  return value;
+}
+
+const envType = getEnvOrFail("ENV_TYPE");
+const sentryDsn = getEnv("SENTRY_DSN");
+
+// Keep this as early on the file as possible
+Sentry.init({
+  dsn: sentryDsn,
+  enabled: sentryDsn != null,
+  environment: envType,
+  // TODO #499 Review this based on the load on our app and Sentry's quotas
+  tracesSampleRate: 1.0,
+});
 
 function curSecSinceEpoch() {
   const now = new Date();
-  const utcMilllisecondsSinceEpoch =
-    now.getTime() + now.getTimezoneOffset() * 60 * 1000;
+  const utcMilllisecondsSinceEpoch = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
   return Math.round(utcMilllisecondsSinceEpoch / 1000);
 }
 
 // validates the token in the request
-exports.handler = async (event) => {
+export const handler = Sentry.AWSLambda.wrapHandler(async event => {
   // ensure token exists, and isn't expired
   var token = "";
-  
+
   console.log(event);
-  if (event.headers && event.headers['api-token']) {
-    token = event.headers['api-token'];
+  if (event.headers && event.headers["api-token"]) {
+    token = event.headers["api-token"];
   }
-  
-  if (
-    !token &&
-    event.queryStringParameters &&
-    event.queryStringParameters.state
-  ) {
+
+  if (!token && event.queryStringParameters && event.queryStringParameters.state) {
     // check to see if the token was passed in the OAuth state param
     token = event.queryStringParameters.state;
   }
@@ -50,6 +67,7 @@ exports.handler = async (event) => {
         };
       }
     } catch (error) {
+      // Don't we want to throw an error here?
       console.error(error);
     }
   }
@@ -70,4 +88,4 @@ exports.handler = async (event) => {
     policyDocument,
     context,
   };
-};
+});

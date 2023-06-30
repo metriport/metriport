@@ -1,16 +1,32 @@
 const { DynamoDB } = require("aws-sdk");
 import axios from "axios";
+import * as Sentry from "@sentry/serverless";
 
-const getEnvOrFail = (name) => {
-  const value = process.env[name];
-  if (!value || value.trim().length < 1)
-    throw new Error(`Missing env var ${name}`);
+export function getEnv(name) {
+  return process.env[name];
+}
+export function getEnvOrFail(name) {
+  const value = getEnv(name);
+  if (!value || value.trim().length < 1) throw new Error(`Missing env var ${name}`);
   return value;
-};
-const api = axios.create();
+}
+
+const envType = getEnvOrFail("ENV_TYPE");
+const sentryDsn = getEnv("SENTRY_DSN");
 const apiServerURL = getEnvOrFail("API_URL");
 const tableName = getEnvOrFail("TOKEN_TABLE_NAME");
+
+// Keep this as early on the file as possible
+Sentry.init({
+  dsn: sentryDsn,
+  enabled: sentryDsn != null,
+  environment: envType,
+  // TODO #499 Review this based on the load on our app and Sentry's quotas
+  tracesSampleRate: 1.0,
+});
+
 const attribName = "userAccessToken";
+const api = axios.create();
 
 const getUAT = (obj, propName) => {
   if (!obj) return undefined;
@@ -33,7 +49,7 @@ const buildResponse = (status, body) => ({
 
 const defaultResponse = () => buildResponse(200);
 
-exports.handler = async (req) => {
+export const handler = Sentry.AWSLambda.wrapHandler(async req => {
   console.log(`Verifying at least one UserAuthToken on body...`);
 
   if (!req.body) {
@@ -92,7 +108,7 @@ exports.handler = async (req) => {
 
   console.log("Resquest has no UAT - will not be forwarded to the API");
   return defaultResponse();
-};
+});
 
 async function forwardCallToServer(req) {
   console.log(`Verified! Calling server...`);

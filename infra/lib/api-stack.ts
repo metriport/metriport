@@ -406,10 +406,14 @@ export class APIStack extends Stack {
       apiKeyRequired: true,
     });
 
-    this.setupTestLambda();
+    this.setupTestLambda(props.config.environmentType, props.config.lambdasSentryDSN);
 
     // token auth for connect sessions
-    const tokenAuth = this.setupTokenAuthLambda(dynamoDBTokenTable);
+    const tokenAuth = this.setupTokenAuthLambda({
+      dynamoDBTokenTable,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+    });
 
     // setup /token path with token auth
     this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiLoadBalancerAddress);
@@ -427,12 +431,16 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       fargateService: apiService,
       dynamoDBTokenTable,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
     });
 
     this.setupWithingsWebhookAuth({
       baseResource: webhookResource,
       vpc: this.vpc,
       fargateService: apiService,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
     });
 
     // add webhook path for apple health clients
@@ -529,13 +537,17 @@ export class APIStack extends Stack {
     });
   }
 
-  private setupTestLambda() {
+  private setupTestLambda(envType: string, sentryDsn: string | undefined) {
     return createLambda({
       stack: this,
       name: "Tester",
       vpc: this.vpc,
       subnets: this.vpc.privateSubnets,
       entry: "../api/lambdas/tester/index.js",
+      envVars: {
+        ENV_TYPE: envType,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
     });
   }
 
@@ -544,8 +556,17 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     dynamoDBTokenTable: dynamodb.Table;
+    envType: string;
+    sentryDsn: string | undefined;
   }) {
-    const { baseResource, vpc, fargateService: server, dynamoDBTokenTable } = ownProps;
+    const {
+      baseResource,
+      vpc,
+      fargateService: server,
+      dynamoDBTokenTable,
+      envType,
+      sentryDsn,
+    } = ownProps;
 
     const garminLambda = new lambda_node.NodejsFunction(this, "GarminLambda", {
       runtime: lambda.Runtime.NODEJS_16_X,
@@ -553,6 +574,8 @@ export class APIStack extends Stack {
       environment: {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/garmin`,
+        ENV_TYPE: envType,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
     });
@@ -573,8 +596,10 @@ export class APIStack extends Stack {
     baseResource: apig.Resource;
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+    envType: string;
+    sentryDsn: string | undefined;
   }) {
-    const { baseResource, vpc, fargateService: server } = ownProps;
+    const { baseResource, vpc, fargateService: server, envType, sentryDsn } = ownProps;
     const digLayer = new lambda.LayerVersion(this, "dig-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
       code: lambda.Code.fromAsset("../api/lambdas/layers/dig-layer"),
@@ -586,6 +611,8 @@ export class APIStack extends Stack {
       entry: "../api/lambdas/withings/index.js",
       environment: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
+        ENV_TYPE: envType,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
       layers: [digLayer],
@@ -649,12 +676,19 @@ export class APIStack extends Stack {
     return cdaToVisualizationLambda;
   }
 
-  private setupTokenAuthLambda(dynamoDBTokenTable: dynamodb.Table): apig.RequestAuthorizer {
+  private setupTokenAuthLambda(params: {
+    dynamoDBTokenTable: dynamodb.Table;
+    envType: string;
+    sentryDsn: string | undefined;
+  }): apig.RequestAuthorizer {
+    const { dynamoDBTokenTable, envType, sentryDsn } = params;
     const tokenAuthLambda = new lambda_node.NodejsFunction(this, "APITokenAuthLambda", {
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "../api/lambdas/token-auth/index.js",
       environment: {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+        ENV_TYPE: envType,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
     addErrorAlarmToLambdaFunc(this, tokenAuthLambda, "TokenAuthFunctionAlarm");
