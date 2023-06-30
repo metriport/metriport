@@ -1,14 +1,44 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import { deletePatient } from "../../command/medical/patient/delete-patient";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
 import cwCommands from "../../external/commonwell";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQueryOrFail } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { getUUIDFrom } from "../schemas/uuid";
+import { asyncHandler, getETag, getFromParamsOrFail, getFromQueryOrFail } from "../util";
+import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
 
 const router = Router();
+
+/** ---------------------------------------------------------------------------
+ * DELETE /internal/patient/:id
+ *
+ * Deletes a patient from all storages.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.query.facilityId The facility providing NPI for the patient delete
+ * @return 204 No Content
+ */
+router.delete(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+
+    const patientDeleteCmd = {
+      ...getETag(req),
+      id,
+      cxId,
+      facilityId,
+    };
+    await deletePatient(patientDeleteCmd, { allEnvs: true });
+
+    return res.sendStatus(status.NO_CONTENT);
+  })
+);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/:patientId/link/:source
@@ -17,13 +47,14 @@ const router = Router();
  *
  * @param req.params.patientId Patient ID to link to a person.
  * @param req.params.source HIE from where the link is made to.
+ * @param req.query.cxId The customer ID.
  * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
  * @returns 201 upon success.
  */
 router.post(
   "/:patientId/link/:source",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFromParamsOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
     const linkSource = getFromParamsOrFail("source", req);
@@ -44,13 +75,14 @@ router.post(
  *
  * @param req.params.patientId Patient ID to remove link from.
  * @param req.params.linkSource HIE to remove the link from.
+ * @param req.query.cxId The customer ID.
  * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
  * @returns 204 upon successful link delete.
  */
 router.delete(
   "/:patientId/link/:source",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFromParamsOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
     const linkSource = req.params.source;
@@ -69,13 +101,14 @@ router.delete(
  * Builds and returns the current state of a patient's links across HIEs.
  *
  * @param req.params.patientId Patient ID for which to retrieve links.
+ * @param req.query.cxId The customer ID.
  * @param req.query.facilityId The ID of the facility to provide the NPI to get links for patient.
  * @returns The patient's current and potential links.
  */
 router.get(
   "/:patientId/link",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFromParamsOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
 
