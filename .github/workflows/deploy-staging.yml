@@ -19,6 +19,7 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
+      lambdas: ${{ steps.changes.outputs.lambdas }}
       widget: ${{ steps.changes.outputs.widget }}
     steps:
       - name: Login to Docker Hub
@@ -34,12 +35,16 @@ jobs:
         with:
           filters: |
             api:
-              - "api/**"
-              - "infra/**"
+              - "api/app"
+              - "infra/"
               - "package*.json"
-            widget:
-              - "connect-widget/**"
-              - "infra/**"
+            lambdas:
+              - "api/lambdas/"
+              - "infra/"
+              - "package*.json"
+            dash:
+              - "dash/"
+              - "infra/"
               - "package*.json"
 
   widget-build:
@@ -60,8 +65,8 @@ jobs:
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }} # renamed
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }} # renamed
+      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -74,17 +79,26 @@ jobs:
     with:
       path: "api/app" # there's no "build" for lambdas, so one job for both works
     secrets: inherit
+  lambdas-build:
+    if: needs.files-changed.outputs.lambdas == 'true'
+    needs: files-changed
+    uses: ./.github/workflows/_reusable_build.yml
+    with:
+      path: "api/lambdas"
+      install-from-parent: false
+    secrets: inherit
   api-deploy:
     uses: ./.github/workflows/_reusable_deploy.yml
-    needs: api-build
+    needs: [api-build, lambdas-build]
+    if: ${{ !failure() && (needs.api-build.result == 'success' || needs.lambdas-build.result == 'success') }}
     with:
       deploy_env: "staging"
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.API_REGION_STAGING }} # renamed
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }} # renamed
+      AWS_REGION: ${{ secrets.API_REGION_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}

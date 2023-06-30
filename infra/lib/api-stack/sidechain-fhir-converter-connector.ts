@@ -1,16 +1,17 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
+import { ILayerVersion, Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { DeadLetterQueue, Queue } from "aws-cdk-lib/aws-sqs";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { getConfig, METRICS_NAMESPACE } from "../shared/config";
-import { createLambda as defaultCreateLambda, MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
-import { buildSecrets, Secrets } from "../shared/secrets";
+import { METRICS_NAMESPACE, getConfig } from "../shared/config";
+import { MAXIMUM_LAMBDA_TIMEOUT, createLambda as defaultCreateLambda } from "../shared/lambda";
+import { Secrets, buildSecrets } from "../shared/secrets";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
+import { FHIRConnector } from "./fhir-converter-connector";
 
 function settings() {
   const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
@@ -38,23 +39,19 @@ function settings() {
 
 export function createQueueAndBucket({
   stack,
-  vpc,
+  lambdaLayers,
   alarmSnsAction,
 }: {
   stack: Construct;
-  vpc: IVpc;
+  lambdaLayers: ILayerVersion[];
   alarmSnsAction?: SnsAction;
-}): {
-  queue: Queue;
-  dlq: DeadLetterQueue;
-  bucket: s3.IBucket;
-} {
+}): FHIRConnector {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
-    vpc,
+    lambdaLayers,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
@@ -78,28 +75,30 @@ export function createQueueAndBucket({
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
-  return { queue, dlq, bucket: fhirConverterBucket };
+  return { queue, dlq: dlq.queue, bucket: fhirConverterBucket };
 }
 
 export function createLambda({
   envType,
   stack,
+  lambdaLayers,
   vpc,
   sourceQueue,
   destinationQueue,
   dlq,
   fhirConverterBucket,
-  conversionResultQueueUrl,
+  apiServiceDnsAddress,
   alarmSnsAction,
 }: {
   envType: EnvType;
   stack: Construct;
+  lambdaLayers: ILayerVersion[];
   vpc: IVpc;
-  sourceQueue: Queue;
-  destinationQueue: Queue;
-  dlq: DeadLetterQueue;
+  sourceQueue: IQueue;
+  destinationQueue: IQueue;
+  dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
-  conversionResultQueueUrl: string;
+  apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
 }): Lambda {
   const config = getConfig();
@@ -125,7 +124,8 @@ export function createLambda({
     name: connectorName,
     vpc,
     subnets: vpc.privateSubnets,
-    entry: "../api/lambdas/sqs-to-converter/index.js",
+    entry: "sqs-to-converter",
+    layers: lambdaLayers,
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,
@@ -134,10 +134,10 @@ export function createLambda({
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      ...(config.loadBalancerDnsName ? { API_URL: config.loadBalancerDnsName } : {}),
+      API_URL: apiServiceDnsAddress,
       QUEUE_URL: sourceQueue.queueUrl,
-      DLQ_URL: dlq.queue.queueUrl,
-      CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,
+      DLQ_URL: dlq.queueUrl,
+      CONVERSION_RESULT_QUEUE_URL: destinationQueue.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
       SIDECHAIN_FHIR_CONVERTER_URL: sidechainFHIRConverterUrl,
       SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST: sidechainUrlBlacklist,
@@ -167,7 +167,7 @@ export function createLambda({
     })
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: conversionLambda });
 
   return conversionLambda;

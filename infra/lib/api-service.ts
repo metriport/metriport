@@ -7,6 +7,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
@@ -34,7 +35,8 @@ export function createAPIService(
   fhirServerQueueUrl: string | undefined,
   fhirConverterQueueUrl: string | undefined,
   fhirConverterServiceUrl: string | undefined,
-  sidechainFHIRConverterQueueUrl: string | undefined
+  sidechainFHIRConverterQueueUrl: string | undefined,
+  cdaToVisualizationLambda: ILambda
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -93,9 +95,7 @@ export function createAPIService(
           ...(props.config.sandboxSeedDataBucketName && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
-          ...(props.config.cdaToVisualizationLambdaName && {
-            CONVERT_DOC_LAMBDA_NAME: props.config.cdaToVisualizationLambdaName,
-          }),
+          CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           ...(fhirServerUrl && {
             FHIR_SERVER_URL: fhirServerUrl,
           }),
@@ -132,6 +132,8 @@ export function createAPIService(
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+
+  cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // CloudWatch Alarms and Notifications
 
