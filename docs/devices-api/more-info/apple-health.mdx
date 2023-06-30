@@ -61,6 +61,12 @@ https://github.com/metriport/metriport-ios-sdk
   version in our GitHub repo](https://github.com/metriport/metriport-ios-sdk/releases).
 </Info>
 
+<Warning>
+  To get background delivery working on IOS you should make sure you call
+  `MetriportClient.checkBackgroundUpdates()` in your app delegate’s
+  `application(_:didFinishLaunchingWithOptions:)` method.
+</Warning>
+
 ## Usage
 
 To use our SDK go to the root of your project and add:
