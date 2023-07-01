@@ -30,9 +30,9 @@ const ConnectPage = () => {
   useEffect(() => {
     async function setupConnectPage() {
       try {
-        await setupApi(searchParams);
         storeColorMode(colorMode);
         setAgreementState(setAgreement);
+        await setupApi(searchParams);
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         if (err.message !== DemoTokenError.DEFAULT_MSG) {
