@@ -61,7 +61,7 @@ async function isTokenValid() {
 }
 
 // get the session token in query params, and set in the API headers
-export async function setupApi(searchParams: URLSearchParams) {
+export async function setupApi(searchParams: URLSearchParams): Promise<void> {
   api.defaults.baseURL = buildBaseURL(searchParams);
   const apiToken = getApiToken(searchParams);
   if (isLocalEnv()) {

@@ -36,7 +36,6 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
     components: {
       Button: {
         baseStyle: {
-          color: "white",
           backgroundColor: decidePrimaryColor,
           _hover: {
             backgroundColor: `${customColor ? customColor : Constants.HOVER_COLOR} !important`,
@@ -51,6 +50,9 @@ const WidgetContainer = ({ children }: WidgetContainerProps) => {
             _hover: {
               backgroundColor: decideHollowColor,
             },
+          },
+          solid: {
+            color: "white",
           },
         },
       },
