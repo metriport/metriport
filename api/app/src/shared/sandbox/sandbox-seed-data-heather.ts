@@ -261,7 +261,7 @@ export const heatherDocRefs: DataEntry[] = [
           attachment: {
             title: "heather14.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
@@ -280,7 +280,7 @@ export const heatherDocRefs: DataEntry[] = [
           attachment: {
             title: "heather15.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],

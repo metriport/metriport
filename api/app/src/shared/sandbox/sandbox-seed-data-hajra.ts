@@ -261,7 +261,7 @@ export const hajraDocRefs: DataEntry[] = [
           attachment: {
             title: "hajra14.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],

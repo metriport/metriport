@@ -261,7 +261,7 @@ export const wandaDocRefs: DataEntry[] = [
           attachment: {
             title: "wanda14.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
@@ -280,7 +280,7 @@ export const wandaDocRefs: DataEntry[] = [
           attachment: {
             title: "wanda15.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],

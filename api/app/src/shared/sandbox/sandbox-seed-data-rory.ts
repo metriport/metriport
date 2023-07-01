@@ -261,7 +261,7 @@ export const roryDocRefs: DataEntry[] = [
           attachment: {
             title: "rory14.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
@@ -280,7 +280,7 @@ export const roryDocRefs: DataEntry[] = [
           attachment: {
             title: "rory15.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
