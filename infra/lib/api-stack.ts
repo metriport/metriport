@@ -709,7 +709,7 @@ export class APIStack extends Stack {
   ): apig.RequestAuthorizer {
     const tokenAuthLambda = createLambda({
       stack: this,
-      name: "APITokenAuth",
+      name: "TokenAuth",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "token-auth",
       layers: lambdaLayers,

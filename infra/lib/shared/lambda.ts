@@ -51,7 +51,7 @@ export interface LambdaProps extends StackProps {
 export function createLambda(props: LambdaProps): Lambda {
   const lambda = new Lambda(props.stack, props.name, {
     functionName: props.name + "Lambda",
-    runtime: props.runtime ?? Runtime.NODEJS_16_X,
+    runtime: props.runtime ?? Runtime.NODEJS_18_X,
     // TODO move our lambdas to use layers, quicker to deploy and execute them
     code: Code.fromAsset(`${pathToLambdas}/dist`),
     handler: props.entry + ".handler",
