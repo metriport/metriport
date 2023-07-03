@@ -129,7 +129,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           payload = JSON.parse(placeholderUpdated);
           log(`Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(payload)}`);
         } else {
-          payload = JSON.parse(payloadRaw).fhirResource;
+          payload = JSON.parse(payloadRaw);
         }
 
         await cloudWatchUtils.reportMemoryUsage();
@@ -150,7 +150,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           const errors = getErrorsFromReponse(response);
           if (errors.length <= 0) break;
           retry = count < maxRetries;
-          log(`Got ${errors.length} from FHIR, ${retry ? "" : "NOT "}trying again...`);
+          log(`Got ${errors.length} errors from FHIR, ${retry ? "" : "NOT "}trying again...`);
         }
         metrics.errorCount = {
           count,
