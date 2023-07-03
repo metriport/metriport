@@ -7,12 +7,12 @@ import { PatientUpdateCmd } from "./update-patient";
 
 export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd>(patient: T): T {
   const result = cloneDeep(patient);
-  result.personalIdentifiers = result.personalIdentifiers.filter(id => id.value.trim().length > 0);
+  result.personalIdentifiers = result.personalIdentifiers?.filter(id => id.value.trim().length > 0);
   return result;
 }
 
 export function validate<T extends PatientCreateCmd | PatientUpdateCmd>(patient: T): boolean {
-  patient.personalIdentifiers.forEach(pid => pid.period && validatePeriod(pid.period));
+  patient.personalIdentifiers?.forEach(pid => pid.period && validatePeriod(pid.period));
   return true;
 }
 

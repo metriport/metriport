@@ -15,7 +15,9 @@ export const toFHIR = (patient: Patient): FHIRPatient => {
   return {
     resourceType: ResourceType.Patient,
     id: patient.id,
-    identifier: convertDriversLicenseToIdentifier(patient.data.personalIdentifiers),
+    identifier: patient.data.personalIdentifiers
+      ? convertDriversLicenseToIdentifier(patient.data.personalIdentifiers)
+      : undefined,
     name: [
       {
         family: patient.data.lastName,

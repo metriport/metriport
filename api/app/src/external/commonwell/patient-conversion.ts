@@ -82,8 +82,8 @@ export function patientToCommonwell({
   };
 }
 
-function getStrongIdentifiers(data: PatientData): Identifier[] {
-  return data.personalIdentifiers.map(id => ({
+function getStrongIdentifiers(data: PatientData): Identifier[] | undefined {
+  return data.personalIdentifiers?.map(id => ({
     use: "usual",
     key: id.value,
     system:

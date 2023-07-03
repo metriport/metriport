@@ -75,7 +75,7 @@ function personToPatient(person: { id: string } & Person): PatientOnLinkDTO {
     lastName: personName && personName.family?.length ? joinName(personName.family) : "",
     dob: person.details?.birthDate ? person.details.birthDate : "",
     genderAtBirth: genderToDTO(person),
-    personalIdentifiers: [],
+    personalIdentifiers: undefined,
     address: [
       {
         addressLine1: address && address.line ? address.line[0] : "",
