@@ -26,7 +26,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: APIGatewayProxyE
   console.log("withings request", req);
 
   const body = req.body;
-  if (!body) throw new Error("Request has no body");
+  if (!body) {
+    console.log(`No body found in request, returning default response`);
+    return defaultResponse();
+  }
 
   const withingsIPAddresses: string[][] = await Promise.all([
     lookup("ipblock-notify.withings.net"),

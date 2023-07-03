@@ -593,7 +593,7 @@ export class APIStack extends Stack {
 
     const garminLambda = createLambda({
       stack: this,
-      name: "GarminLambda",
+      name: "Garmin",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "garmin",
       layers: lambdaLayers,
@@ -643,7 +643,7 @@ export class APIStack extends Stack {
 
     const withingsLambda = createLambda({
       stack: this,
-      name: "WithingsLambda",
+      name: "Withings",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "withings",
       layers: [...lambdaLayers, digLayer],
@@ -680,7 +680,7 @@ export class APIStack extends Stack {
 
     const cdaToVisualizationLambda = createLambda({
       stack: this,
-      name: "CdaToVisualizationLambda",
+      name: "CdaToVisualization",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "cda-to-visualization",
       envVars: {
@@ -709,7 +709,7 @@ export class APIStack extends Stack {
   ): apig.RequestAuthorizer {
     const tokenAuthLambda = createLambda({
       stack: this,
-      name: "APITokenAuthLambda",
+      name: "APITokenAuth",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "token-auth",
       layers: lambdaLayers,
