@@ -45,7 +45,7 @@ export const fitbitActivityLogResp = z.array(
     heartRateZones: z
       .array(
         z.object({
-          caloriesOut: z.number(),
+          caloriesOut: z.number().nullish(),
           max: z.number(),
           min: z.number(),
           minutes: z.number(),
