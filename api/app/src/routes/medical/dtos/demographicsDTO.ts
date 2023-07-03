@@ -10,7 +10,7 @@ export type DemographicsDTO = {
   lastName: string;
   dob: string;
   genderAtBirth: GenderDTO;
-  personalIdentifiers: PersonalIdentifierDTO[];
+  personalIdentifiers?: PersonalIdentifierDTO[];
   address: AddressDTO[];
   contact?: ContactDTO[] | null;
 };

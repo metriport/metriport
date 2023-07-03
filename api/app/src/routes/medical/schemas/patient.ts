@@ -64,7 +64,7 @@ export const patientCreateSchema = z.object({
   lastName: defaultNameString,
   dob: defaultDateString,
   genderAtBirth: z.enum(genderAtBirthTypes),
-  personalIdentifiers: z.array(personalIdentifierSchema),
+  personalIdentifiers: z.array(personalIdentifierSchema).nullish(),
   address: z.array(addressSchema).or(addressSchema),
   contact: z.array(contactSchema).optional().or(contactSchema.optional()),
 });

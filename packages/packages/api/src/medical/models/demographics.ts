@@ -56,7 +56,7 @@ export const demographicsSchema = z.object({
   lastName: defaultNameString,
   dob: defaultDateString,
   genderAtBirth: genderAtBirthSchema,
-  personalIdentifiers: z.array(personalIdentifierSchema).optional(),
+  personalIdentifiers: z.array(personalIdentifierSchema).nullish(),
   address: z.array(addressSchema).or(addressSchema),
   contact: z.array(contactSchema).optional().or(contactSchema.optional()),
 });

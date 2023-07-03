@@ -55,7 +55,7 @@ export type PatientData = {
   lastName: string;
   dob: string;
   genderAtBirth: GenderAtBirth;
-  personalIdentifiers: PersonalIdentifier[];
+  personalIdentifiers?: PersonalIdentifier[];
   address: Address[];
   contact?: Contact[];
   documentQueryProgress?: DocumentQueryProgress;
