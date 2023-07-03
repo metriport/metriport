@@ -1,31 +1,12 @@
-# set base image
+# This is the main production Dockerfile.
+# It depends on metriport-api.tar.gz which is created by deploy-api.sh
+# This is a production ready image.
+# It does not include any development dependencies.
 # note: remove --platform flag when building on intel systems
 FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:18
-
-# phase 1 - compile ts to js
-# set the working directory in the container
+ENV NODE_ENV production
 WORKDIR /usr/src/app
-
-# copy the dependencies file to the working directory
-COPY package*.json ./
-COPY tsconfig*.json ./
-
-# install dependencies
-RUN npm install
-
-# copy app source to the working directory, and compile
-COPY src ./src
-RUN npm run build
-
-# phase 2 - build prod app
-FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:18
-WORKDIR /usr/src/app
-COPY package.json ./
-RUN npm install --only=production
-COPY --from=0 /usr/src/app/dist .
-
-# https://docs.docker.com/engine/reference/builder/#expose
+ADD ./metriport-api.tar.gz ./
+RUN npm ci --ignore-scripts --omit=dev
 EXPOSE 8080
-
-# command to run on container start
-CMD [ "node", "app.js" ]
+ENTRYPOINT [ "node", "api/app/dist/app.js" ]
