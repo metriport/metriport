@@ -43,8 +43,8 @@ jobs:
               - "api/lambdas/**"
               - "infra/**"
               - "package*.json"
-            dash:
-              - "dash/**"
+            widget:
+              - "connect-widget/**"
               - "infra/**"
               - "package*.json"
 
