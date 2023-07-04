@@ -1,10 +1,9 @@
-import { Request, Response } from "express";
-import Router from "express-promise-router";
+import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { accountInit } from "../command/account-init";
 import {
-  populateFhirServer,
   PopulateFhirServerResponse,
+  populateFhirServer,
 } from "../command/medical/admin-populate-fhir";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { deletePatient } from "../command/medical/patient/delete-patient";

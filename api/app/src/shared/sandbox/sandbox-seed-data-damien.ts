@@ -204,7 +204,7 @@ export const damienDocRefs: DataEntry[] = [
           attachment: {
             title: "damien11.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
@@ -223,7 +223,7 @@ export const damienDocRefs: DataEntry[] = [
           attachment: {
             title: "damien12.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
@@ -242,7 +242,7 @@ export const damienDocRefs: DataEntry[] = [
           attachment: {
             title: "damien13.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],

@@ -261,7 +261,7 @@ export const andreasDocRefs: DataEntry[] = [
           attachment: {
             title: "andreas14.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
@@ -280,7 +280,7 @@ export const andreasDocRefs: DataEntry[] = [
           attachment: {
             title: "andreas15.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],

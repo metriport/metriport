@@ -261,7 +261,7 @@ export const ollieDocRefs: DataEntry[] = [
           attachment: {
             title: "ollie14.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],
@@ -280,7 +280,7 @@ export const ollieDocRefs: DataEntry[] = [
           attachment: {
             title: "ollie15.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],

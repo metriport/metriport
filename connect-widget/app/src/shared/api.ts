@@ -35,7 +35,7 @@ export function getApiToken(searchParams: URLSearchParams): string {
 
 export async function handleToken(token: string): Promise<void> {
   if (isDemoToken(token)) {
-    // tell the user the widget is in demo mode && disable connect buttons
+    // disable connect buttons
     throw new DemoTokenError();
   }
   const tokenValid = await isTokenValid();
@@ -61,7 +61,7 @@ async function isTokenValid() {
 }
 
 // get the session token in query params, and set in the API headers
-export async function setupApi(searchParams: URLSearchParams) {
+export async function setupApi(searchParams: URLSearchParams): Promise<void> {
   api.defaults.baseURL = buildBaseURL(searchParams);
   const apiToken = getApiToken(searchParams);
   if (isLocalEnv()) {

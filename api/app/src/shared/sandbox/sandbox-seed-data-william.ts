@@ -242,7 +242,7 @@ export const williamDocRefs: DataEntry[] = [
           attachment: {
             title: "william13.tif",
             url: "http://api.metriport.com",
-            contentType: "image/tif",
+            contentType: "image/tiff",
           },
         },
       ],

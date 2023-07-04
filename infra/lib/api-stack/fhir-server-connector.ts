@@ -1,6 +1,7 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
+import { ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Queue } from "aws-cdk-lib/aws-sqs";
@@ -42,21 +43,23 @@ export function createConnector({
   stack,
   vpc,
   fhirConverterBucket,
+  lambdaLayers,
   alarmSnsAction,
 }: {
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
-  fhirConverterBucket: s3.Bucket;
+  fhirConverterBucket: s3.IBucket;
+  lambdaLayers: ILayerVersion[];
   alarmSnsAction?: SnsAction;
 }): Queue | undefined {
   const config = getConfig();
   const fhirServerUrl = config.fhirServerUrl;
-  const apiURL = config.loadBalancerDnsName;
   if (!fhirServerUrl) {
     console.log("No FHIR Server URL provided, skipping connector creation");
     return undefined;
   }
+  const apiURL = config.loadBalancerDnsName;
   if (!apiURL) {
     console.log("No API URL provided, skipping connector creation");
     return undefined;
@@ -75,12 +78,12 @@ export function createConnector({
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
-    vpc,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
     visibilityTimeout,
     maxReceiveCount,
+    lambdaLayers,
     alarmSnsAction,
   });
 
@@ -92,7 +95,8 @@ export function createConnector({
     name: connectorName,
     vpc,
     subnets: vpc.privateSubnets,
-    entry: "../api/lambdas/sqs-to-fhir/index.js",
+    entry: "sqs-to-fhir",
+    layers: lambdaLayers,
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,

@@ -29,7 +29,7 @@ function getSuffix(id: string | undefined): string {
   return id.replace("urn:uuid:", "");
 }
 
-function getFileExtension(value: string | undefined): string {
+export function getFileExtension(value: string | undefined): string {
   if (!value || !contentType(value)) return "";
   const fileExtension = extension(value);
   return fileExtension ? `.${fileExtension}` : "";

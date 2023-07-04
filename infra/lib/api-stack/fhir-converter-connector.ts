@@ -1,16 +1,22 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { ILayerVersion, Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { DeadLetterQueue, Queue } from "aws-cdk-lib/aws-sqs";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { settings as settingsFhirConverter } from "../fhir-converter-service";
-import { getConfig, METRICS_NAMESPACE } from "../shared/config";
+import { METRICS_NAMESPACE, getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
+
+export type FHIRConnector = {
+  queue: IQueue;
+  dlq: IQueue;
+  bucket: s3.IBucket;
+};
 
 function settings() {
   const {
@@ -43,44 +49,48 @@ function settings() {
 
 export function createQueueAndBucket({
   stack,
-  vpc,
+  lambdaLayers,
   alarmSnsAction,
 }: {
   stack: Construct;
-  vpc: IVpc;
+  lambdaLayers: ILayerVersion[];
   alarmSnsAction?: SnsAction;
-}): {
-  queue: Queue;
-  dlq: DeadLetterQueue;
-  bucket: s3.Bucket;
-} {
+}): FHIRConnector {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
-    vpc,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
     visibilityTimeout,
     maxReceiveCount,
+    createRetryLambda: true,
+    lambdaLayers,
     alarmSnsAction,
   });
 
   const dlq = queue.deadLetterQueue;
   if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
 
-  const fhirConverterBucket = new s3.Bucket(stack, `${connectorName}Bucket`, {
-    bucketName: config.fhirConverterBucketName,
-    publicReadAccess: false,
-    encryption: s3.BucketEncryption.S3_MANAGED,
-  });
+  const bucketName = config.fhirConverterBucketName;
+  const existingBucket = bucketName
+    ? s3.Bucket.fromBucketName(stack, `${connectorName}Bucket`, bucketName)
+    : undefined;
+  const fhirConverterBucket =
+    existingBucket ??
+    new s3.Bucket(stack, `${connectorName}Bucket`, {
+      bucketName: config.fhirConverterBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
 
-  return { queue, dlq, bucket: fhirConverterBucket };
+  return { queue, dlq: dlq.queue, bucket: fhirConverterBucket };
 }
 
 export function createLambda({
+  lambdaLayers,
   envType,
   stack,
   vpc,
@@ -88,16 +98,19 @@ export function createLambda({
   destinationQueue,
   dlq,
   fhirConverterBucket,
+  apiServiceDnsAddress,
   conversionResultQueueUrl,
   alarmSnsAction,
 }: {
+  lambdaLayers: ILayerVersion[];
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
-  sourceQueue: Queue;
-  destinationQueue: Queue;
-  dlq: DeadLetterQueue;
-  fhirConverterBucket: s3.Bucket;
+  sourceQueue: IQueue;
+  destinationQueue: IQueue;
+  dlq: IQueue;
+  fhirConverterBucket: s3.IBucket;
+  apiServiceDnsAddress: string;
   conversionResultQueueUrl: string;
   alarmSnsAction?: SnsAction;
 }): Lambda {
@@ -117,7 +130,8 @@ export function createLambda({
     name: connectorName,
     vpc,
     subnets: vpc.privateSubnets,
-    entry: "../api/lambdas/sqs-to-converter/index.js",
+    entry: "sqs-to-converter",
+    layers: lambdaLayers,
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,
@@ -126,9 +140,9 @@ export function createLambda({
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      ...(config.loadBalancerDnsName ? { API_URL: config.loadBalancerDnsName } : {}),
+      API_URL: apiServiceDnsAddress,
       QUEUE_URL: sourceQueue.queueUrl,
-      DLQ_URL: dlq.queue.queueUrl,
+      DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
@@ -147,7 +161,7 @@ export function createLambda({
     })
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: conversionLambda });
 
   return conversionLambda;

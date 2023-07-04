@@ -71,9 +71,22 @@ const ErrorDialog = ({ show, title, message, link, onClose: closed }: ErrorDialo
           <AlertDialogBody>{actualMsg}</AlertDialogBody>
           <AlertDialogFooter>
             {actualLink && (
-              <a href={actualLink} target="_blank" onClick={close}>
-                <u>Documentation</u>
-              </a>
+              <Button
+                as="a"
+                href={actualLink}
+                target="_blank"
+                onClick={close}
+                ml={3}
+                css={{
+                  background: "#B8B8B8 !important",
+                  "&:hover": {
+                    backgroundColor: `#CCC !important`,
+                    opacity: "0.8 !important",
+                  },
+                }}
+              >
+                Documentation
+              </Button>
             )}
             <Button ref={closeButtonRef} onClick={close} ml={3}>
               OK
