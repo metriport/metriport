@@ -56,7 +56,7 @@ jobs:
       build_env: "staging"
     secrets: inherit
   widget-deploy:
-    uses: ./.github/workflows/_reusable_deploy.yml
+    uses: ./.github/workflows/_reusable_deploy_cdk.yml
     needs: widget-build
     with:
       build_env: "staging"
@@ -88,7 +88,7 @@ jobs:
       install-from-parent: false
     secrets: inherit
   api-deploy:
-    uses: ./.github/workflows/_reusable_deploy.yml
+    uses: ./.github/workflows/_reusable_deploy_cdk.yml
     needs: [api-build, lambdas-build]
     if: ${{ !failure() && (needs.api-build.result == 'success' || needs.lambdas-build.result == 'success') }}
     with:

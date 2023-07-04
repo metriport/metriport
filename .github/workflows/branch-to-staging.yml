@@ -7,7 +7,7 @@ on:
 
 jobs:
   widget-deploy:
-    uses: ./.github/workflows/_reusable_deploy.yml
+    uses: ./.github/workflows/_reusable_deploy_cdk.yml
     with:
       build_env: "staging"
       deploy_env: "staging"
@@ -23,7 +23,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   api-deploy:
-    uses: ./.github/workflows/_reusable_deploy.yml
+    uses: ./.github/workflows/_reusable_deploy_cdk.yml
     with:
       deploy_env: "staging"
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
