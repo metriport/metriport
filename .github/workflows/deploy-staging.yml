@@ -35,16 +35,16 @@ jobs:
         with:
           filters: |
             api:
-              - "api/app"
-              - "infra/"
+              - "api/app/**"
+              - "infra/**"
               - "package*.json"
             lambdas:
-              - "api/lambdas/"
-              - "infra/"
+              - "api/lambdas/**"
+              - "infra/**"
               - "package*.json"
             dash:
-              - "dash/"
-              - "infra/"
+              - "dash/**"
+              - "infra/**"
               - "package*.json"
 
   widget-build:
