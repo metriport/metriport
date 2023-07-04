@@ -13,7 +13,7 @@ export type DocumentReferenceDTO = {
   indexed: string | undefined; // ISO-8601
   mimeType: string | undefined;
   size: number | undefined; // bytes
-  type: CodeableConceptDTO | undefined;
+  type: CodeableConceptDTO;
 };
 
 export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceDTO[] {
