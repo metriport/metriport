@@ -120,6 +120,10 @@ jobs:
           aws configure set default.region "${{ inputs.AWS_REGION }}"
         working-directory: "./"
 
+      - name: Setup Docker
+        run: docker buildx create --use
+        working-directory: "./"
+
       - name: Deploy
         run: |
           ./scripts/${{ inputs.script_name }}

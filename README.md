@@ -503,23 +503,32 @@ $ ./scripts/deploy-infra.sh -e "production" -s "<config.secretsStackName>"
 
 2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
 
-3. Then, to deploy the back-end execute the following commands:
+3. Then, to provision the infrastructure needed by the API/back-end execute the following command:
 
 ```shell
 $ ./scripts/deploy-infra.sh -e "production" -s "<config.stackName>"
+```
+
+This will create the infrastructure to run the API, including the ECR repository where the API will be deployed at. Take note of that to populate the environment variable `ECR_REPO_URI`.
+
+4. To deploy the API on ECR and restart the ECS service to make use of it:
+
+```shell
+$ aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <ECR_REGISTRY_URL> # once every few hours
 $ AWS_REGION=xxx ECR_REPO_URI=xxx ECS_CLUSTER=xxx ECS_SERVICE=xxx ./scripts/deploy-api.sh"
 ```
 
 where:
 
-- AWS_REGION: The AWS region where the API should be deployed at
+- ECR_REGISTRY_URL: The URL of the ECR registry in the format `<aws_account_id>.dkr.ecr.<region>.amazonaws.com`.
 - ECR_REPO_URI: The URI of the ECR repository to push the Docker image to (created on the previous step)
+- AWS_REGION: The AWS region where the API should be deployed at
 - ECS_CLUSTER: The ARN of the ECS cluster containing the service to be restarted upon deployment
 - ECS_SERVICE: The ARN of the ECS service to be restarted upon deployment
 
 After deployment, the API will be available at the configured subdomain + domain.
 
-4. Finally, to self-host the Connect widget, run the following:
+5. Finally, to self-host the Connect widget, run the following:
 
 ```shell
 $ ./scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
