@@ -6,12 +6,12 @@ import { ISubnet, IVpc } from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
+import { Code, ILayerVersion, Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import { FilterPattern } from "aws-cdk-lib/aws-logs";
-import { Queue } from "aws-cdk-lib/aws-sqs";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { getConfig, METRICS_NAMESPACE } from "./config";
+import { METRICS_NAMESPACE, getConfig } from "./config";
 
 export const DEFAULT_LAMBDA_TIMEOUT = Duration.seconds(30);
 export const MAXIMUM_LAMBDA_TIMEOUT = Duration.minutes(15);
@@ -30,8 +30,11 @@ export const buildPolicy = (
 export interface LambdaProps extends StackProps {
   readonly stack: Construct;
   readonly name: string;
+  /**
+   * Name of the lambda file without the extension. The file must be a TS file and in the `lambdas/src` folder.
+   */
   readonly entry: string;
-  readonly vpc: IVpc;
+  readonly vpc?: IVpc;
   readonly subnets?: ISubnet[];
   readonly role?: iam.Role;
   readonly envVars?: { [key: string]: string };
@@ -42,17 +45,17 @@ export interface LambdaProps extends StackProps {
   readonly maxEventAge?: Duration;
   readonly alarmSnsAction?: SnsAction;
   readonly runtime?: Runtime;
+  readonly layers: ILayerVersion[];
 }
 
 export function createLambda(props: LambdaProps): Lambda {
-  const lambda = new lambda_node.NodejsFunction(props.stack, props.name, {
+  const lambda = new Lambda(props.stack, props.name, {
     functionName: props.name + "Lambda",
-    runtime: props.runtime ?? Runtime.NODEJS_16_X,
+    runtime: props.runtime ?? Runtime.NODEJS_18_X,
     // TODO move our lambdas to use layers, quicker to deploy and execute them
-    entry: props.entry,
-    // code: Code.fromAsset('lambda'),
-    // handler: (fileName ?? name) + '.handler',
-    // layers: props.dependencies,
+    code: Code.fromAsset(`${pathToLambdas}/dist`),
+    handler: props.entry + ".handler",
+    ...(props.layers && props.layers.length > 0 ? { layers: props.layers } : {}),
     vpc: props.vpc,
     vpcSubnets: props.subnets ? { subnets: props.subnets } : undefined,
     /**
@@ -109,8 +112,8 @@ export function createLambda(props: LambdaProps): Lambda {
 
 export interface RetryLambdaProps extends Omit<LambdaProps, "entry"> {
   entry?: string;
-  sourceQueue: Queue;
-  destinationQueue: Queue;
+  sourceQueue: IQueue;
+  destinationQueue: IQueue;
 }
 
 /**
@@ -124,7 +127,8 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
   const retryLambda = createLambda({
     ...props,
     name: retryLambdaName,
-    entry: props.entry ?? `${pathToLambdas}/sqs-to-sqs/index.js`,
+    entry: "sqs-to-sqs",
+    layers: props.layers,
     envVars: {
       ...props.envVars,
       ENV_TYPE: config.environmentType,
