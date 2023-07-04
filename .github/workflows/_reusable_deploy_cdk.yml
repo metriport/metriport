@@ -1,4 +1,4 @@
-name: Reusable Deploy script
+name: Reusable Deploy based on CDK
 
 on:
   workflow_call:
@@ -16,6 +16,11 @@ on:
         required: true
         type: string
         description: "the name of the CDK stack we're deploying"
+      add_sentry_release:
+        description: "the name of the CDK stack we're deploying"
+        required: false
+        type: string
+        default: "false"
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -87,10 +92,6 @@ jobs:
         working-directory: "api/lambdas/"
 
       # BUILD
-      # api
-      - name: API build/compile
-        run: npm run build:cloud
-        working-directory: "api/app"
       - name: Lambdas build/compile
         run: npm run build:cloud
         working-directory: "api/lambdas"
@@ -112,15 +113,15 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
         # TODO: #156 disabled bc its not working, waiting Sentry support
         # https://metriport.slack.com/archives/C04FZ9859FZ/p1680112432771159?thread_ts=1680110062.829999&cid=C04FZ9859FZ
-        # if: env.SENTRY_AUTH_TOKEN != null && env.SENTRY_ORG != null
+        # if: env.SENTRY_AUTH_TOKEN != null && env.SENTRY_ORG != null && inputs.add_sentry_release == 'true'
         if: false
         with:
           environment: ${{ inputs.deploy_env }}
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: api/app/dist connect-widget/app/build
-          projects: api-oss connect-widget
+          sourcemaps: connect-widget/app/build
+          projects: connect-widget
 
       # CDK DIFF
       - name: Diff CDK stack

@@ -1,0 +1,131 @@
+name: Reusable Deploy based on scripts
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        required: true
+        type: string
+        description: "sub-directory where this workflow should execute lint and build "
+      build_env:
+        description: "the environment we're building to, either 'staging' or 'production' - only apps that have special build scripts need to set this"
+        type: string
+        required: false
+        default: "production"
+      deploy_env:
+        required: true
+        type: string
+        description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
+      script_name:
+        required: true
+        type: string
+        description: "the name of the script under the scripts/ folder to run"
+      ECR_REPO_URI:
+        required: true
+        type: string
+        description: "The URI of the ECR repository to push the Docker image to"
+      ECS_CLUSTER:
+        required: true
+        type: string
+        description: "The ARN of the ECS cluster containing the service to be restarted upon deployment"
+      ECS_SERVICE:
+        required: true
+        type: string
+        description: "The ARN of the ECS service to be restarted upon deployment"
+      AWS_REGION:
+        required: true
+        type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      SENTRY_AUTH_TOKEN:
+        required: false
+      SENTRY_ORG:
+        required: false
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
+jobs:
+  deploy:
+    # prevents 2+ devs/workflows trying to deploy to AWS at the same time
+    # https://serverlessfirst.com/emails/how-to-prevent-concurrent-deployments-of-serverless-stacks-in-github-actions/
+    # TODO Consider the solution here: https://github.com/tj-actions/aws-cdk/blob/main/action.yml
+    concurrency:
+      group: ${{ format('{0}-{1}-{2}', github.job, inputs.script_name, inputs.deploy_env) }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.deploy_env }}
+    steps:
+      - name: Log Environment
+        run: |
+          env
+          echo "ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}"
+          echo "ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}"
+          echo "ECS_SERVICE: ${{ inputs.ECS_SERVICE }}"
+          echo "AWS_REGION: ${{ inputs.AWS_REGION }}"
+        shell: bash
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18.14"
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Log Git Ref
+        run: |
+          echo "Git ref: $(git rev-parse HEAD)"
+        shell: bash
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        working-directory: "./"
+
+      - name: Build/compile
+        if: ${{ inputs.build_env == 'production' }}
+        run: npm run build
+        working-directory: ${{ inputs.path }}
+      - name: Build/compile STAGING
+        if: ${{ inputs.build_env == 'staging' }}
+        run: npm run build:staging
+        working-directory: ${{ inputs.path }}
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        # TODO: #156 disabled bc its not working, waiting Sentry support
+        # https://metriport.slack.com/archives/C04FZ9859FZ/p1680112432771159?thread_ts=1680110062.829999&cid=C04FZ9859FZ
+        # if: env.SENTRY_AUTH_TOKEN != null && env.SENTRY_ORG != null
+        if: false
+        with:
+          environment: ${{ inputs.deploy_env }}
+          version: ${{ github.sha }}
+          ignore_missing: true
+          ignore_empty: true
+          sourcemaps: api/app/dist
+          projects: api-oss
+
+      - name: Setup AWS CLI
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          aws configure set default.region "${{ inputs.AWS_REGION }}"
+        working-directory: "./"
+
+      - name: Deploy
+        run: |
+          ./scripts/${{ inputs.script_name }}
+        working-directory: "./"
+        env:
+          ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}
+          ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ inputs.ECS_SERVICE }}
+          AWS_REGION: ${{ inputs.AWS_REGION }}

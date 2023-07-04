@@ -22,6 +22,7 @@ To deploy locally:
    ```
 1. Compile TS into JS
    ```shell
+   $ npm i
    $ npm run build
    ```
 1. Follow the deployment process of the monorepo (`/infra`)

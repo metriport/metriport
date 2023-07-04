@@ -1,4 +1,4 @@
-import { Duration, StackProps } from "aws-cdk-lib";
+import { CfnOutput, Duration, StackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Metric } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
@@ -49,6 +49,10 @@ export function createAPIService(
   // Create an ECR repo where we'll deploy our Docker images to, and where ECS will pull from
   const ecrRepo = new Repository(stack, "APIRepo", {
     repositoryName: "metriport/api",
+  });
+  new CfnOutput(stack, "APIECRRepoURI", {
+    description: "API ECR repository URI",
+    value: ecrRepo.repositoryUri,
   });
 
   const connectWidgetUrlEnvVar =

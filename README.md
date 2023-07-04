@@ -498,29 +498,37 @@ Now you can make requests to endpoints that require the an API Key by setting th
 1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager and create other infra pre-requisites. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
-$ ./deploy.sh -e "production" -s "<config.secretsStackName>"
+$ ./scripts/deploy-infra.sh -e "production" -s "<config.secretsStackName>"
 ```
 
 2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
 
-3. Then, to deploy the back-end execute the following command:
+3. Then, to deploy the back-end execute the following commands:
 
 ```shell
-$ ./deploy.sh -e "production" -s "<config.stackName>"
+$ ./scripts/deploy-infra.sh -e "production" -s "<config.stackName>"
+$ AWS_REGION=xxx ECR_REPO_URI=xxx ECS_CLUSTER=xxx ECS_SERVICE=xxx ./scripts/deploy-api.sh"
 ```
+
+where:
+
+- AWS_REGION: The AWS region where the API should be deployed at
+- ECR_REPO_URI: The URI of the ECR repository to push the Docker image to (created on the previous step)
+- ECS_CLUSTER: The ARN of the ECS cluster containing the service to be restarted upon deployment
+- ECS_SERVICE: The ARN of the ECS service to be restarted upon deployment
 
 After deployment, the API will be available at the configured subdomain + domain.
 
 4. Finally, to self-host the Connect widget, run the following:
 
 ```shell
-$ ./deploy.sh -e "production" -s "<config.connectWidget.stackName>"
+$ ./scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
 ```
 
 Note: if you need help with the `deploy.sh` script at any time, you can run:
 
 ```shell
-$ ./deploy.sh -h
+$ ./scripts/deploy-infra.sh -h
 ```
 
 ### **Initialization**
