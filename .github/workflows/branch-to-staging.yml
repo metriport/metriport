@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # manually executed by a user
 
 jobs:
-  widget-deploy:
+  widget:
     uses: ./.github/workflows/_reusable_deploy_cdk.yml
     with:
       build_env: "staging"
@@ -22,10 +22,10 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  api-deploy:
+  api:
     uses: ./.github/workflows/_reusable_deploy_script.yml
-    needs: [infra-and-lambdas-deploy]
-    if: ${{ !failure() && needs.infra-and-lambdas-deploy.result == 'success' }}
+    needs: [infra-and-lambdas]
+    if: ${{ !failure() && needs.infra-and-lambdas.result == 'success' }}
     with:
       deploy_env: "staging"
       path: "api/app"
@@ -42,7 +42,7 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  infra-and-lambdas-deploy:
+  infra-and-lambdas:
     uses: ./.github/workflows/_reusable_deploy_cdk.yml
     with:
       deploy_env: "staging"

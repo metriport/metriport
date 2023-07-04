@@ -69,17 +69,10 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  api-build:
+  api:
+    uses: ./.github/workflows/_reusable_deploy_script.yml
     if: needs.files-changed.outputs.api == 'true'
     needs: files-changed
-    uses: ./.github/workflows/_reusable_build.yml
-    with:
-      path: "api/app" # there's no "build" for lambdas, so one job for both works
-    secrets: inherit
-  api-deploy:
-    uses: ./.github/workflows/_reusable_deploy_script.yml
-    needs: [api-build]
-    if: ${{ !failure() && needs.api-build.result == 'success' }}
     with:
       deploy_env: "staging"
       path: "api/app"
@@ -95,7 +88,7 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
+  
   infra-build:
     if: needs.files-changed.outputs.infra-and-lambdas == 'true'
     needs: files-changed
@@ -130,9 +123,9 @@ jobs:
 
   release:
     uses: ./.github/workflows/_reusable_release.yml
-    needs: [widget-deploy, api-deploy, infra-and-lambdas-deploy]
+    needs: [widget-deploy, api, infra-and-lambdas-deploy]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api-deploy.result == 'success' || needs.infra-and-lambdas-deploy.result == 'success') }}
+    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api.result == 'success' || needs.infra-and-lambdas-deploy.result == 'success') }}
     secrets: inherit
