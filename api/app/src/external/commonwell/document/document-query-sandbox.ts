@@ -13,9 +13,9 @@ import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { updateDocQuery } from "../../../command/medical/document/document-query";
 import { isConvertible } from "../../fhir-converter/converter";
 import { sandboxSleepTime, getFileExtension } from "./shared";
+import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 
 const randomDates = [
   "2023-06-15",
@@ -58,6 +58,23 @@ export async function sandboxGetDocRefsAndUpsert({
       };
     })
     .filter(isConvertible).length;
+
+  // set initial download/convert totals
+  await appendDocQueryProgress({
+    patient: { id: patient.id, cxId: patient.cxId },
+    downloadProgress: {
+      total: entries.length,
+      status: "processing",
+    },
+    ...(convertibleDocCount > 0
+      ? {
+          convertProgress: {
+            status: "processing",
+            total: convertibleDocCount,
+          },
+        }
+      : undefined),
+  });
 
   for (const [index, entry] of entries.entries()) {
     let prevDocId;
@@ -104,20 +121,16 @@ export async function sandboxGetDocRefsAndUpsert({
     }
   }
 
-  await updateDocQuery({
+  // update download progress to completed, convert progress will be updated async
+  // by the FHIR converter
+  await appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
       total: entries.length,
       status: "completed",
+      successful: entries.length,
     },
-    ...(convertibleDocCount > 0
-      ? {
-          convertProgress: {
-            status: "processing",
-            total: convertibleDocCount,
-          },
-        }
-      : undefined),
+    convertProgress: undefined,
   });
 
   const result = entries.map(d => d.docRef);
