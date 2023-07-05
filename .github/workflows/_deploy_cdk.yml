@@ -99,6 +99,14 @@ jobs:
         run: npm run build:cloud
         working-directory: "api/lambdas"
 
+      # TESTS
+      - name: Infra test
+        run: npm run test
+        working-directory: "infra"
+      - name: Lambdas test
+        run: npm run test
+        working-directory: "api/lambdas"
+
       # SENTRY
       - name: Create Sentry release
         uses: getsentry/action-release@v1

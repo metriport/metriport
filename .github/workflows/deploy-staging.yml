@@ -8,7 +8,6 @@ on:
       - "connect-widget/**"
       - "api/**"
       - "infra/**"
-      - "package*.json"
   workflow_dispatch: # manually executed by a user
 
 jobs:
@@ -77,49 +76,34 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   
-  infra-build:
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
-    needs: files-changed
-    uses: ./.github/workflows/_build.yml
-    with:
-      path: "infra"
-    secrets: inherit
-  lambdas-build:
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
-    needs: files-changed
-    uses: ./.github/workflows/_build.yml
-    with:
-      path: "api/lambdas"
-      install-from-parent: false
-    secrets: inherit
   infra-api-lambdas:
     uses: ./.github/workflows/_deploy_cdk.yml
-    needs: [infra-build, lambdas-build]
-    if: ${{ !failure() && (needs.infra-build.result == 'success' || needs.lambdas-build.result == 'success') }}
+    if: needs.files-changed.outputs.infra-lambdas == 'true'
+    needs: files-changed
     with:
       deploy_env: "staging"
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
     secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.API_REGION_STAGING }}
       INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   infra-widget:
     uses: ./.github/workflows/_deploy_cdk.yml
-    needs: [infra-build]
-    if: ${{ !failure() && needs.infra-build.result == 'success' }}
+    if: needs.files-changed.outputs.infra-lambdas == 'true'
+    needs: files-changed
     with:
       deploy_env: "staging"
       cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
     secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
       INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
