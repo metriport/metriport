@@ -200,7 +200,7 @@ export async function internalGetDocuments({
     if (d.content.size === 0) {
       log(`Document is of size 0, this may result in a 404 error - doc id ${d.id}`);
       capture.message("Document is of size 0", {
-        extra: { document: JSON.stringify(d, null, 2) },
+        extra: { document: d },
       });
     }
 
