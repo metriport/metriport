@@ -1,4 +1,4 @@
-name: Reusable Deploy for Connect Widget
+name: Reusable Deploy workflow for Connect Widget
 
 on:
   workflow_call:
@@ -14,7 +14,7 @@ on:
         required: false
         default: "production"
       deploy_env:
-        description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
+        description: "the environment we're deploying to, either 'staging' or 'production'"
         required: true
         type: string
       script_name:

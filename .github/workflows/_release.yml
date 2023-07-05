@@ -1,4 +1,4 @@
-name: Reusable Release script
+name: Reusable Release workflow
 
 on:
   workflow_call: # called by other workflows

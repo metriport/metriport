@@ -1,4 +1,4 @@
-name: Reusable Deploy for API
+name: Reusable Deploy workflow for API
 
 on:
   workflow_call:

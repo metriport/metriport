@@ -1,4 +1,3 @@
-# TODO we should also check lambda PRs, but currently we could only 'npm ci' it.
 name: PR Check - API
 
 on:

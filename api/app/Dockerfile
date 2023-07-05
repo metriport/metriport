@@ -3,7 +3,7 @@
 # This is a production ready image.
 # It does not include any development dependencies.
 # note: remove --platform flag when building on intel systems
-FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:18
+FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:18-alpine
 ENV NODE_ENV production
 WORKDIR /usr/src/app
 ADD ./metriport-api.tar.gz ./

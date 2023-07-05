@@ -1,4 +1,4 @@
-name: Reusable Deploy based on scripts
+name: Reusable Restart API
 
 on:
   workflow_call:

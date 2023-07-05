@@ -43,6 +43,7 @@ tar \
   api/app/dist
 
 pushd api/app/
+
 # Build and push Docker images
 docker buildx build \
   --platform linux/amd64,linux/arm64,linux/arm/v7 \

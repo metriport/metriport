@@ -1,4 +1,4 @@
-name: Reusable Deploy based on CDK
+name: Reusable Deploy workflow based on CDK
 
 on:
   workflow_call:
