@@ -54,11 +54,7 @@ const lookup = async (address: string): Promise<string[]> => {
     exec(`dig +short TXT ${address}`, (error: any, stdout: string, stderr: any) => {
       if (error || stderr) {
         reject(
-          `DNS lookup failed. error: ${JSON.stringify(error, null, 2)}, stderr: ${JSON.stringify(
-            stderr,
-            null,
-            2
-          )}`
+          `DNS lookup failed. error: ${JSON.stringify(error)}, stderr: ${JSON.stringify(stderr)}`
         );
       }
       resolve(stdout.split(" ").map((s: string) => s.replace(/[^0-9.]/g, "")));
