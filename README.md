@@ -539,6 +539,15 @@ After deployment, the API will be available at the configured subdomain + domain
 $ ./scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
 ```
 
+This will create the infrastructure to run the Connect Widget, including the S3 Bucket to host the files and the CloudFront distribution. Take note of that to populate
+the environment variables `S3_BUCKET` and `CF_DISTRIB_ID`.
+
+6. And the following, to deploy the Connect Widget's files on S3 and invalidate the cache on CloudFront:
+
+```shell
+$ S3_BUCKET=xxx CF_DISTRIB_ID=xxx ./scripts/deploy-widget.sh
+```
+
 Note: if you need help with the `deploy.sh` script at any time, you can run:
 
 ```shell

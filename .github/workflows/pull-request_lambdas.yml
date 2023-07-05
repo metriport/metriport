@@ -9,7 +9,7 @@ on:
 
 jobs:
   check-pr:
-    uses: ./.github/workflows/_reusable_build.yml
+    uses: ./.github/workflows/_build.yml
     with:
       path: "api/lambdas"
       install-from-parent: false

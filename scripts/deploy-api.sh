@@ -42,8 +42,7 @@ tar \
   api/app/package.json \
   api/app/dist
 
-cd api/app/
-
+pushd api/app/
 # Build and push Docker images
 docker buildx build \
   --platform linux/amd64,linux/arm64,linux/arm/v7 \
@@ -52,11 +51,7 @@ docker buildx build \
   --push \
   .
 
-# Update the fargate service
-aws ecs update-service \
-  --region "$AWS_REGION" \
-  --cluster "$ECS_CLUSTER" \
-  --service "$ECS_SERVICE" \
-  --force-new-deployment
+popd
 
-cd ../../
+# Build and push Docker images
+source ./scripts/restart-api.sh

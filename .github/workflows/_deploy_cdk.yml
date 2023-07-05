@@ -92,18 +92,12 @@ jobs:
         working-directory: "api/lambdas/"
 
       # BUILD
+      - name: Infra build/compile
+        run: npm run build:cloud
+        working-directory: "infra"
       - name: Lambdas build/compile
         run: npm run build:cloud
         working-directory: "api/lambdas"
-      # TODO move to an external file so both this and deploy can use this logic
-      - name: Widget build/compile
-        if: ${{ inputs.build_env == 'production' }}
-        run: npm run build
-        working-directory: "connect-widget/app"
-      - name: Widget build/compile STAGING
-        if: ${{ inputs.build_env == 'staging' }}
-        run: npm run build:staging
-        working-directory: "connect-widget/app"
 
       # SENTRY
       - name: Create Sentry release
@@ -120,8 +114,8 @@ jobs:
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: connect-widget/app/build
-          projects: connect-widget
+          sourcemaps: api/lambdas/dist
+          projects: lambdas-oss
 
       # CDK DIFF
       - name: Diff CDK stack

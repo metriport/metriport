@@ -19,7 +19,7 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
-      infra-and-lambdas: ${{ steps.changes.outputs.infra-and-lambdas }}
+      infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
       widget: ${{ steps.changes.outputs.widget }}
     steps:
       - name: Login to Docker Hub
@@ -36,47 +36,35 @@ jobs:
           filters: |
             api:
               - "api/app/**"
-            infra-and-lambdas:
+            infra-lambdas:
               - "infra/**"
               - "api/lambdas/**"
             widget:
-              - "infra/**"
               - "connect-widget/**"
 
-  widget-build:
+  widget:
     if: needs.files-changed.outputs.widget == 'true'
     needs: files-changed
-    uses: ./.github/workflows/_reusable_build.yml
-    with:
-      path: "connect-widget/app"
-      build_env: "staging"
-    secrets: inherit
-  widget-deploy:
-    uses: ./.github/workflows/_reusable_deploy_cdk.yml
-    needs: widget-build
+    uses: ./.github/workflows/_deploy_widget.yml
     with:
       build_env: "staging"
       deploy_env: "staging"
-      cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
-      add_sentry_release: "true"
+      S3_BUCKET: ${{ vars.S3_BUCKET_STAGING }}
+      CF_DISTRIB_ID: ${{ vars.CF_DISTRIB_ID_STAGING }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   api:
-    uses: ./.github/workflows/_reusable_deploy_script.yml
     if: needs.files-changed.outputs.api == 'true'
     needs: files-changed
+    uses: ./.github/workflows/_deploy_api.yml
     with:
       deploy_env: "staging"
-      path: "api/app"
-      script_name: "deploy-api.sh"
       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER_STAGING }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE_STAGING }}
@@ -90,22 +78,22 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   
   infra-build:
-    if: needs.files-changed.outputs.infra-and-lambdas == 'true'
+    if: needs.files-changed.outputs.infra-lambdas == 'true'
     needs: files-changed
-    uses: ./.github/workflows/_reusable_build.yml
+    uses: ./.github/workflows/_build.yml
     with:
       path: "infra"
     secrets: inherit
   lambdas-build:
-    if: needs.files-changed.outputs.infra-and-lambdas == 'true'
+    if: needs.files-changed.outputs.infra-lambdas == 'true'
     needs: files-changed
-    uses: ./.github/workflows/_reusable_build.yml
+    uses: ./.github/workflows/_build.yml
     with:
       path: "api/lambdas"
       install-from-parent: false
     secrets: inherit
-  infra-and-lambdas-deploy:
-    uses: ./.github/workflows/_reusable_deploy_cdk.yml
+  infra-api-lambdas:
+    uses: ./.github/workflows/_deploy_cdk.yml
     needs: [infra-build, lambdas-build]
     if: ${{ !failure() && (needs.infra-build.result == 'success' || needs.lambdas-build.result == 'success') }}
     with:
@@ -120,12 +108,28 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  infra-widget:
+    uses: ./.github/workflows/_deploy_cdk.yml
+    needs: [infra-build]
+    if: ${{ !failure() && needs.infra-build.result == 'success' }}
+    with:
+      deploy_env: "staging"
+      cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
+      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   release:
-    uses: ./.github/workflows/_reusable_release.yml
-    needs: [widget-deploy, api, infra-and-lambdas-deploy]
+    uses: ./.github/workflows/_release.yml
+    needs: [widget, api, infra-api-lambdas, infra-widget]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget-deploy.result == 'success' || needs.api.result == 'success' || needs.infra-and-lambdas-deploy.result == 'success') }}
+    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
     secrets: inherit

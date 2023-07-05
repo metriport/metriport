@@ -1,37 +1,34 @@
-name: Reusable Deploy based on scripts
+name: Reusable Deploy for API
 
 on:
   workflow_call:
     inputs:
       path:
-        required: true
-        type: string
         description: "sub-directory where this workflow should execute lint and build "
-      build_env:
-        description: "the environment we're building to, either 'staging' or 'production' - only apps that have special build scripts need to set this"
-        type: string
         required: false
-        default: "production"
+        type: string
+        default: "api/app"
       deploy_env:
-        required: true
-        type: string
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
+        required: true
+        type: string
       script_name:
-        required: true
-        type: string
         description: "the name of the script under the scripts/ folder to run"
+        required: false
+        type: string
+        default: "deploy-api.sh"
       ECR_REPO_URI:
-        required: true
-        type: string
         description: "The URI of the ECR repository to push the Docker image to"
+        required: true
+        type: string
       ECS_CLUSTER:
-        required: true
-        type: string
         description: "The ARN of the ECS cluster containing the service to be restarted upon deployment"
-      ECS_SERVICE:
         required: true
         type: string
+      ECS_SERVICE:
         description: "The ARN of the ECS service to be restarted upon deployment"
+        required: true
+        type: string
       AWS_REGION:
         required: true
         type: string
@@ -87,14 +84,8 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: "./"
 
-      # move to an external file so both this and deploy can use this logic
       - name: Build/compile
-        if: ${{ inputs.build_env == 'production' }}
         run: npm run build:cloud
-        working-directory: ${{ inputs.path }}
-      - name: Build/compile STAGING
-        if: ${{ inputs.build_env == 'staging' }}
-        run: npm run build:staging
         working-directory: ${{ inputs.path }}
 
       - name: Run Tests

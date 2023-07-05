@@ -7,25 +7,22 @@ on:
 
 jobs:
   widget:
-    uses: ./.github/workflows/_reusable_deploy_cdk.yml
+    uses: ./.github/workflows/_deploy_widget.yml
     with:
       build_env: "staging"
       deploy_env: "staging"
-      cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
+      S3_BUCKET: ${{ vars.S3_BUCKET_STAGING }}
+      CF_DISTRIB_ID: ${{ vars.CF_DISTRIB_ID_STAGING }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   api:
-    uses: ./.github/workflows/_reusable_deploy_script.yml
-    needs: [infra-and-lambdas]
-    if: ${{ !failure() && needs.infra-and-lambdas.result == 'success' }}
+    uses: ./.github/workflows/_deploy_api.yml
     with:
       deploy_env: "staging"
       path: "api/app"
@@ -43,7 +40,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   infra-and-lambdas:
-    uses: ./.github/workflows/_reusable_deploy_cdk.yml
+    uses: ./.github/workflows/_deploy_cdk.yml
     with:
       deploy_env: "staging"
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
