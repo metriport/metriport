@@ -4,5 +4,6 @@
     "sourceMap": true,
     "inlineSources": true,
     "sourceRoot": "/"
-  }
+  },
+  "exclude": ["**/*.test.*", "**/*.spec.*", "**/__mocks__/**/*", "**/__tests__/**/*"]
 }

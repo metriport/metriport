@@ -25,8 +25,6 @@ jobs:
     uses: ./.github/workflows/_deploy_api.yml
     with:
       deploy_env: "staging"
-      path: "api/app"
-      script_name: "deploy-api.sh"
       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER_STAGING }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE_STAGING }}
