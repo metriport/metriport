@@ -134,7 +134,7 @@ export function mapDataToActivity(data: AppleHealth, hourly: boolean) {
     const index = dateToIndex[date];
 
     const payload: ActivityLog = {
-      metadata: createMetadata(date, hourly),
+      metadata: createMetadata(date, hourly, workoutItem.sourceName, workoutItem.sourceId),
       name: activityTypeMapping[workoutItem.type],
       start_time: workoutItem.startTime,
       end_time: workoutItem.endTime,
