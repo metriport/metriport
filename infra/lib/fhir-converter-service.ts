@@ -48,7 +48,7 @@ export function createFHIRConverterService(
 
   // Create a Docker image and upload it to the Amazon Elastic Container Registry (ECR)
   const dockerImage = new ecr_assets.DockerImageAsset(stack, "FHIRConverterImage", {
-    directory: "../fhir-converter",
+    directory: "../packages/fhir-converter",
   });
 
   // Run some servers on fargate containers
