@@ -83,9 +83,9 @@ jobs:
     with:
       deploy_env: "staging"
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
     secrets:
-      AWS_REGION: ${{ secrets.API_REGION_STAGING }}
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -99,9 +99,9 @@ jobs:
     with:
       deploy_env: "staging"
       cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
+      AWS_REGION: ${{ vars.WIDGET_REGION_STAGING }}
+      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
     secrets:
-      AWS_REGION: ${{ secrets.WIDGET_REGION_STAGING }}
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_STAGING }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}

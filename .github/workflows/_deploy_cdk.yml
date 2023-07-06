@@ -21,14 +21,16 @@ on:
         required: false
         type: string
         default: "false"
+      AWS_REGION:
+        required: true
+        type: string
+      INFRA_CONFIG:
+        required: true
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
       AWS_SECRET_ACCESS_KEY:
-        required: true
-      AWS_REGION:
-        required: true
-      INFRA_CONFIG:
         required: true
       SENTRY_AUTH_TOKEN:
         required: false
@@ -76,7 +78,7 @@ jobs:
       - name: Infra set config file
         run: |
           echo "Env ${{ inputs.deploy_env }}"
-          echo "${{ secrets.INFRA_CONFIG }}" | base64 -d > ${{ inputs.deploy_env }}.ts
+          echo "${{ inputs.INFRA_CONFIG }}" | base64 -d > ${{ inputs.deploy_env }}.ts
           ls -la
         working-directory: "infra/config"
 
@@ -136,7 +138,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
 
       # DEPLOY
       - name: Deploy CDK stack
@@ -149,5 +151,5 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           METRIPORT_VERSION: ${{ github.sha }}

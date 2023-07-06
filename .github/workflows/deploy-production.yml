@@ -101,9 +101,9 @@ jobs:
     with:
       deploy_env: "production"
       cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}
+      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
+      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
     secrets:
-      AWS_REGION: ${{ secrets.API_REGION_PRODUCTION }}
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -117,9 +117,9 @@ jobs:
     with:
       deploy_env: "sandbox"
       cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
+      AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
+      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_SANDBOX  }}
     secrets:
-      AWS_REGION: ${{ secrets.API_REGION_SANDBOX  }}
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_SANDBOX  }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -133,9 +133,9 @@ jobs:
     with:
       deploy_env: "production"
       cdk_stack: ${{ vars.WIDGET_STACK_NAME_PRODUCTION }}
+      AWS_REGION: ${{ vars.WIDGET_REGION_PRODUCTION }}
+      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
     secrets:
-      AWS_REGION: ${{ secrets.WIDGET_REGION_PRODUCTION }}
-      INFRA_CONFIG: ${{ secrets.INFRA_CONFIG_PRODUCTION }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
