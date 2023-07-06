@@ -37,7 +37,7 @@ jobs:
               - "api/app/**"
             infra-lambdas:
               - "infra/**"
-              - "api/lambdas/**"
+              - "packages/lambdas/**"
             widget:
               - "connect-widget/**"
 

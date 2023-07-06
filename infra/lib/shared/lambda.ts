@@ -15,7 +15,7 @@ import { METRICS_NAMESPACE, getConfig } from "./config";
 
 export const DEFAULT_LAMBDA_TIMEOUT = Duration.seconds(30);
 export const MAXIMUM_LAMBDA_TIMEOUT = Duration.minutes(15);
-const pathToLambdas = "../api/lambdas";
+const pathToLambdas = "../packages/lambdas";
 
 export const buildPolicy = (
   actionToAllow: string,

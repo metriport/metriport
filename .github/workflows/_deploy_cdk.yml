@@ -88,10 +88,10 @@ jobs:
         working-directory: "./"
       - name: Lambdas build shared layer
         run: npm run prep-deploy
-        working-directory: "api/lambdas/"
+        working-directory: "packages/lambdas/"
       - name: Lambdas install dependencies
         run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/"
+        working-directory: "packages/lambdas/"
 
       # BUILD
       - name: Infra build/compile
@@ -99,7 +99,7 @@ jobs:
         working-directory: "infra"
       - name: Lambdas build/compile
         run: npm run build:cloud
-        working-directory: "api/lambdas"
+        working-directory: "packages/lambdas"
 
       # TESTS
       - name: Infra test
@@ -107,7 +107,7 @@ jobs:
         working-directory: "infra"
       - name: Lambdas test
         run: npm run test
-        working-directory: "api/lambdas"
+        working-directory: "packages/lambdas"
 
       # SENTRY
       - name: Create Sentry release
@@ -124,7 +124,7 @@ jobs:
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: api/lambdas/dist
+          sourcemaps: packages/lambdas/dist
           projects: lambdas-oss
 
       # CDK DIFF
