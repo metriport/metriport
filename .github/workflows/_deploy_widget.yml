@@ -119,7 +119,7 @@ jobs:
 
       - name: Deploy
         run: |
-          ./scripts/${{ inputs.script_name }}
+          ./packages/scripts/${{ inputs.script_name }}
         working-directory: "./"
         env:
           S3_BUCKET: ${{ inputs.S3_BUCKET }}

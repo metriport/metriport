@@ -504,7 +504,7 @@ Now you can make requests to endpoints that require the an API Key by setting th
    pre-requisites. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
-$ ./scripts/deploy-infra.sh -e "production" -s "<config.secretsStackName>"
+$ ./packages/scripts/deploy-infra.sh -e "production" -s "<config.secretsStackName>"
 ```
 
 2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
@@ -512,7 +512,7 @@ $ ./scripts/deploy-infra.sh -e "production" -s "<config.secretsStackName>"
 3. Then, to provision the infrastructure needed by the API/back-end execute the following command:
 
 ```shell
-$ ./scripts/deploy-infra.sh -e "production" -s "<config.stackName>"
+$ ./packages/scripts/deploy-infra.sh -e "production" -s "<config.stackName>"
 ```
 
 This will create the infrastructure to run the API, including the ECR repository where the API will be deployed at. Take note of that to populate
@@ -521,7 +521,7 @@ the environment variable `ECR_REPO_URI`.
 4. To deploy the API on ECR and restart the ECS service to make use of it:
 
 ```shell
-$ AWS_REGION=xxx ECR_REPO_URI=xxx ECS_CLUSTER=xxx ECS_SERVICE=xxx ./scripts/deploy-api.sh"
+$ AWS_REGION=xxx ECR_REPO_URI=xxx ECS_CLUSTER=xxx ECS_SERVICE=xxx ./packages/scripts/deploy-api.sh"
 ```
 
 where:
@@ -536,7 +536,7 @@ After deployment, the API will be available at the configured subdomain + domain
 5. Finally, to self-host the Connect widget, run the following:
 
 ```shell
-$ ./scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
+$ ./packages/scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
 ```
 
 This will create the infrastructure to run the Connect Widget, including the S3 Bucket to host the files and the CloudFront distribution. Take note of that to populate
@@ -545,13 +545,13 @@ the environment variables `S3_BUCKET` and `CF_DISTRIB_ID`.
 6. And the following, to deploy the Connect Widget's files on S3 and invalidate the cache on CloudFront:
 
 ```shell
-$ S3_BUCKET=xxx CF_DISTRIB_ID=xxx ./scripts/deploy-widget.sh
+$ S3_BUCKET=xxx CF_DISTRIB_ID=xxx ./packages/scripts/deploy-widget.sh
 ```
 
 Note: if you need help with the `deploy.sh` script at any time, you can run:
 
 ```shell
-$ ./scripts/deploy-infra.sh -h
+$ ./packages/scripts/deploy-infra.sh -h
 ```
 
 ### **Initialization**
