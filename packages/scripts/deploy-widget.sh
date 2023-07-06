@@ -9,7 +9,7 @@ if [[ -z "${CF_DISTRIB_ID}" ]]; then
   exit 1
 fi
 
-pushd connect-widget/app
+pushd packages/connect-widget
 
 # First deploy hashed files that are cached forever
 # It is important to deploy these files first,

@@ -36,13 +36,13 @@ tar \
   --exclude='**/*.spec*' \
   --exclude='**/*.test*' \
   --exclude='**/metriport-api.tar.gz' \
-  -czf api/app/metriport-api.tar.gz \
+  -czf packages/api/metriport-api.tar.gz \
   package.json \
   package-lock.json \
-  api/app/package.json \
-  api/app/dist
+  packages/api/package.json \
+  packages/api/dist
 
-pushd api/app/
+pushd packages/api
 
 # Build and push Docker images
 docker buildx build \
@@ -55,4 +55,4 @@ docker buildx build \
 popd
 
 # Build and push Docker images
-source ./scripts/restart-api.sh
+source ./packages/scripts/restart-api.sh
