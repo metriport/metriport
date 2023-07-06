@@ -150,8 +150,8 @@ export enum SleepType {
 export const appleSleepType = z.enum(Object.values(SleepType) as [string, ...string[]]);
 
 export const appleSleepItem = z.object({
-  sourceName: z.string(),
-  sourceId: z.string(),
+  sourceName: z.string().nullish(),
+  sourceId: z.string().nullish(),
   date: z.string(),
   value: z.number(),
   endDate: z.string(),
@@ -161,8 +161,8 @@ export const appleSleepItem = z.object({
 export type AppleHealthSleepItem = z.infer<typeof appleSleepItem>;
 
 export const appleWorkoutItem = z.object({
-  sourceName: z.string(),
-  sourceId: z.string(),
+  sourceName: z.string().nullish(),
+  sourceId: z.string().nullish(),
   startTime: z.string(),
   endTime: z.string(),
   distance: z.number().optional().nullable(),
