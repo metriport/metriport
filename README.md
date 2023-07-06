@@ -133,9 +133,9 @@ Checkout our packages in [`/pkgs`](/pkgs) to help you turbocharge your developme
 
 Our npm packages are available in [`/packages`](/packages):
 
-- [Metriport API](/packages/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
-- [CommonWell JWT Maker](/packages/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
-- [CommonWell SDK](/packages/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+- [Metriport API](/packages/api-sdk/): contains the Metriport data models, and a convenient API client wrapper.
+- [CommonWell JWT Maker](/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
+- [CommonWell SDK](/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
 
 #### **iOS**
 

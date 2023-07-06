@@ -1,7 +1,7 @@
 {
-  "name": "@metriport/commonwell-sdk",
-  "version": "4.3.14",
-  "description": "SDK to simplify CommonWell API integration - by Metriport Inc.",
+  "name": "@metriport/commonwell-cert-runner",
+  "version": "1.4.21",
+  "description": "Tool to run through Edge System CommonWell certification test cases - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
@@ -20,35 +20,45 @@
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
-    "directory": "packages/packages/commonwell-sdk"
+    "directory": "packages/commonwell-cert-runner"
   },
   "scripts": {
     "tsc": "tsc",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
+    "install-local": "sudo npm i -g",
+    "start": "ts-node src/index.ts --env-file .env",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "echo \"No test specified yet\""
   },
+  "bin": {
+    "cw-cert-runner": "lib/index.js"
+  },
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
+    "@metriport/commonwell-sdk": "^4.3.14",
     "axios": "^1.3.5",
-    "http-status": "^1.6.2",
-    "jsonwebtoken": "^9.0.0",
-    "zod": "^3.20.2"
+    "commander": "^9.5.0",
+    "dayjs": "^1.11.7",
+    "dotenv": "^16.0.3",
+    "lodash": "^4.17.21",
+    "nanoid": "^3.3.4",
+    "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.0",
+    "@types/lodash": "^4.14.194",
     "@types/node": "^18.11.18",
-    "@typescript-eslint/eslint-plugin": "^5.48.2",
-    "@typescript-eslint/parser": "^5.48.2",
+    "@typescript-eslint/eslint-plugin": "^5.49.0",
+    "@typescript-eslint/parser": "^5.49.0",
     "eslint": "^8.32.0",
     "eslint-config-prettier": "^8.6.0",
-    "prettier": "^2.8.3",
+    "nodemon": "^2.0.20",
+    "ts-node": "^10.9.1",
     "typescript": "^4.9.5"
   }
 }

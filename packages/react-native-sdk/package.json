@@ -36,7 +36,7 @@
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
-    "directory": "packages/packages/react-native-sdk"
+    "directory": "packages/react-native-sdk"
   },
   "scripts": {
     "tsc": "tsc",
