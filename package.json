@@ -22,7 +22,7 @@
   },
   "workspaces": {
     "packages": [
-      "api/app",
+      "packages/api",
       "connect-widget/app",
       "infra"
     ]
