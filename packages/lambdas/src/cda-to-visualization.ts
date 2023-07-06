@@ -173,7 +173,7 @@ const convertToHtml = async (document: string): Promise<string> => {
     const cda10 = await SaxonJS.getResource(
       {
         location:
-          "https://raw.githubusercontent.com/metriport/metriport/master/static/cda_l10n.xml",
+          "https://raw.githubusercontent.com/metriport/metriport/master/packages/lambdas/static/cda_l10n.xml",
         type: "xml",
       },
       "async"
@@ -182,7 +182,7 @@ const convertToHtml = async (document: string): Promise<string> => {
     const narrative = await SaxonJS.getResource(
       {
         location:
-          "https://raw.githubusercontent.com/metriport/metriport/master/static/cda_narrativeblock.xml",
+          "https://raw.githubusercontent.com/metriport/metriport/master/packages/lambdas/static/cda_narrativeblock.xml",
         type: "xml",
       },
       "async"
