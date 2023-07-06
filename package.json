@@ -23,8 +23,8 @@
   "workspaces": {
     "packages": [
       "packages/api",
-      "connect-widget/app",
-      "infra"
+      "packages/connect-widget",
+      "packages/infra"
     ]
   },
   "lint-staged": {

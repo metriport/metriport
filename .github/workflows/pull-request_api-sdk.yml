@@ -1,9 +1,9 @@
-name: PR Check - API
+name: PR Check - API SDK
 
 on:
   pull_request:
     paths:
-      - "packages/api/**"
+      - "packages/api-sdk/**"
   merge_group:
   workflow_dispatch:
 
@@ -11,5 +11,5 @@ jobs:
   check-pr:
     uses: ./.github/workflows/_build.yml
     with:
-      path: "packages/api"
+      path: "packages/api-sdk"
     secrets: inherit

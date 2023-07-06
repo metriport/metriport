@@ -7,7 +7,7 @@ on:
         description: "sub-directory where this workflow should execute lint and build "
         required: false
         type: string
-        default: "api/app"
+        default: "packages/api"
       deploy_env:
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
         required: true
@@ -106,7 +106,7 @@ jobs:
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: api/app/dist
+          sourcemaps: packages/api/dist
           projects: api-oss
 
       - name: Setup AWS CLI
