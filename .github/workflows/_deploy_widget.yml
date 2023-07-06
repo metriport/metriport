@@ -7,7 +7,7 @@ on:
         description: "sub-directory where this workflow should execute lint and build "
         required: false
         type: string
-        default: "connect-widget/app"
+        default: "packages/connect-widget"
       build_env:
         description: "the environment we're building to, either 'staging' or 'production' - only apps that have special build scripts need to set this"
         type: string
@@ -108,7 +108,7 @@ jobs:
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: connect-widget/app/build
+          sourcemaps: packages/connect-widget/build
           projects: connect-widget
 
       - name: Setup AWS CLI

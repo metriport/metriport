@@ -80,7 +80,7 @@ jobs:
           echo "Env ${{ inputs.deploy_env }}"
           echo "${{ inputs.INFRA_CONFIG }}" | base64 -d > ${{ inputs.deploy_env }}.ts
           ls -la
-        working-directory: "infra/config"
+        working-directory: "packages/infra/config"
 
       # INSTALL DEPENDENCIES
       - name: Install dependencies
@@ -96,7 +96,7 @@ jobs:
       # BUILD
       - name: Infra build/compile
         run: npm run build:cloud
-        working-directory: "infra"
+        working-directory: "packages/infra"
       - name: Lambdas build/compile
         run: npm run build:cloud
         working-directory: "packages/lambdas"
@@ -104,7 +104,7 @@ jobs:
       # TESTS
       - name: Infra test
         run: npm run test
-        working-directory: "infra"
+        working-directory: "packages/infra"
       - name: Lambdas test
         run: npm run test
         working-directory: "packages/lambdas"
