@@ -1,4 +1,3 @@
-# TODO we should also check lambda PRs, but currently we could only 'npm ci' it.
 name: PR Check - API
 
 on:
@@ -10,7 +9,7 @@ on:
 
 jobs:
   check-pr:
-    uses: ./.github/workflows/_reusable_build.yml
+    uses: ./.github/workflows/_build.yml
     with:
       path: "api/app"
     secrets: inherit

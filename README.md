@@ -472,7 +472,8 @@ $ npm run test:e2e
 
 ### **API Key Setup**
 
-Most endpoints require an API Gateway [API Key](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-usage-plans.html). You can do it manually on AWS console or programaticaly through AWS CLI or SDK.
+Most endpoints require an API Gateway [API Key](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-usage-plans.html).
+You can do it manually on AWS console or programaticaly through AWS CLI or SDK.
 
 To do it manually:
 
@@ -489,38 +490,68 @@ Now you can make requests to endpoints that require the an API Key by setting th
 
 ### **Environment Setup**
 
-1. You'll need to create and configure a deployment config file: `/infra/config/production.ts`. You can see `example.ts` in the same directory for a sample of what the end result should look like. Optionally, you can setup config files for `staging` and `sandbox` deployments, based on your environment needs. Then, proceed with the deployment steps below.
+1. Install [AWS CLI](https://aws.amazon.com/cli/) and authenticate with it.
 
-2. Configure the Connect Widget environment variables to the subdomain and domain you'll be hosting the API at in the config file: `connect-widget/app/.env.production`.
+2. You'll need to create and configure a deployment config file: `/infra/config/production.ts`. You can see `example.ts` in the same directory
+   for a sample of what the end result should look like. Optionally, you can setup config files for `staging` and `sandbox` deployments, based on
+   your environment needs. Then, proceed with the deployment steps below.
+
+3. Configure the Connect Widget environment variables to the subdomain and domain you'll be hosting the API at in the config file: `connect-widget/app/.env.production`.
 
 ### **Deployment Steps**
 
-1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager and create other infra pre-requisites. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
+1. First, deploy the secrets stack. This will setup the secret keys required to run the server using AWS Secrets Manager and create other infra
+   pre-requisites. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
-$ ./deploy.sh -e "production" -s "<config.secretsStackName>"
+$ ./scripts/deploy-infra.sh -e "production" -s "<config.secretsStackName>"
 ```
 
 2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
 
-3. Then, to deploy the back-end execute the following command:
+3. Then, to provision the infrastructure needed by the API/back-end execute the following command:
 
 ```shell
-$ ./deploy.sh -e "production" -s "<config.stackName>"
+$ ./scripts/deploy-infra.sh -e "production" -s "<config.stackName>"
 ```
+
+This will create the infrastructure to run the API, including the ECR repository where the API will be deployed at. Take note of that to populate
+the environment variable `ECR_REPO_URI`.
+
+4. To deploy the API on ECR and restart the ECS service to make use of it:
+
+```shell
+$ AWS_REGION=xxx ECR_REPO_URI=xxx ECS_CLUSTER=xxx ECS_SERVICE=xxx ./scripts/deploy-api.sh"
+```
+
+where:
+
+- ECR_REPO_URI: The URI of the ECR repository to push the Docker image to (created on the previous step)
+- AWS_REGION: The AWS region where the API should be deployed at
+- ECS_CLUSTER: The ARN of the ECS cluster containing the service to be restarted upon deployment
+- ECS_SERVICE: The ARN of the ECS service to be restarted upon deployment
 
 After deployment, the API will be available at the configured subdomain + domain.
 
-4. Finally, to self-host the Connect widget, run the following:
+5. Finally, to self-host the Connect widget, run the following:
 
 ```shell
-$ ./deploy.sh -e "production" -s "<config.connectWidget.stackName>"
+$ ./scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
+```
+
+This will create the infrastructure to run the Connect Widget, including the S3 Bucket to host the files and the CloudFront distribution. Take note of that to populate
+the environment variables `S3_BUCKET` and `CF_DISTRIB_ID`.
+
+6. And the following, to deploy the Connect Widget's files on S3 and invalidate the cache on CloudFront:
+
+```shell
+$ S3_BUCKET=xxx CF_DISTRIB_ID=xxx ./scripts/deploy-widget.sh
 ```
 
 Note: if you need help with the `deploy.sh` script at any time, you can run:
 
 ```shell
-$ ./deploy.sh -h
+$ ./scripts/deploy-infra.sh -h
 ```
 
 ### **Initialization**

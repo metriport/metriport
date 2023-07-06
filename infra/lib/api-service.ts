@@ -1,10 +1,10 @@
-import { Duration, StackProps } from "aws-cdk-lib";
+import { CfnOutput, Duration, StackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Metric } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
+import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
@@ -46,9 +46,13 @@ export function createAPIService(
   // Create a new Amazon Elastic Container Service (ECS) cluster
   const cluster = new ecs.Cluster(stack, "APICluster", { vpc, containerInsights: true });
 
-  // Create a Docker image and upload it to the Amazon Elastic Container Registry (ECR)
-  const dockerImage = new ecr_assets.DockerImageAsset(stack, "APIImage", {
-    directory: "../api/app",
+  // Create an ECR repo where we'll deploy our Docker images to, and where ECS will pull from
+  const ecrRepo = new Repository(stack, "APIRepo", {
+    repositoryName: "metriport/api",
+  });
+  new CfnOutput(stack, "APIECRRepoURI", {
+    description: "API ECR repository URI",
+    value: ecrRepo.repositoryUri,
   });
 
   const connectWidgetUrlEnvVar =
@@ -67,7 +71,7 @@ export function createAPIService(
       cpu: isProd(props.config) ? 2048 : 1024,
       desiredCount: isProd(props.config) ? 2 : 1,
       taskImageOptions: {
-        image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
+        image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
         containerPort: 8080,
         containerName: "API-Server",
         secrets: {

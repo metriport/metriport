@@ -1,4 +1,4 @@
-name: Reusable Deploy script
+name: Reusable Deploy workflow based on CDK
 
 on:
   workflow_call:
@@ -16,14 +16,21 @@ on:
         required: true
         type: string
         description: "the name of the CDK stack we're deploying"
+      add_sentry_release:
+        description: "the name of the CDK stack we're deploying"
+        required: false
+        type: string
+        default: "false"
+      AWS_REGION:
+        required: true
+        type: string
+      INFRA_CONFIG:
+        required: true
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
       AWS_SECRET_ACCESS_KEY:
-        required: true
-      AWS_REGION:
-        required: true
-      INFRA_CONFIG:
         required: true
       SENTRY_AUTH_TOKEN:
         required: false
@@ -71,7 +78,7 @@ jobs:
       - name: Infra set config file
         run: |
           echo "Env ${{ inputs.deploy_env }}"
-          echo "${{ secrets.INFRA_CONFIG }}" | base64 -d > ${{ inputs.deploy_env }}.ts
+          echo "${{ inputs.INFRA_CONFIG }}" | base64 -d > ${{ inputs.deploy_env }}.ts
           ls -la
         working-directory: "infra/config"
 
@@ -87,22 +94,20 @@ jobs:
         working-directory: "api/lambdas/"
 
       # BUILD
-      # api
-      - name: API build/compile
+      - name: Infra build/compile
         run: npm run build:cloud
-        working-directory: "api/app"
+        working-directory: "infra"
       - name: Lambdas build/compile
         run: npm run build:cloud
         working-directory: "api/lambdas"
-      # TODO move to an external file so both this and deploy can use this logic
-      - name: Widget build/compile
-        if: ${{ inputs.build_env == 'production' }}
-        run: npm run build
-        working-directory: "connect-widget/app"
-      - name: Widget build/compile STAGING
-        if: ${{ inputs.build_env == 'staging' }}
-        run: npm run build:staging
-        working-directory: "connect-widget/app"
+
+      # TESTS
+      - name: Infra test
+        run: npm run test
+        working-directory: "infra"
+      - name: Lambdas test
+        run: npm run test
+        working-directory: "api/lambdas"
 
       # SENTRY
       - name: Create Sentry release
@@ -112,15 +117,15 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
         # TODO: #156 disabled bc its not working, waiting Sentry support
         # https://metriport.slack.com/archives/C04FZ9859FZ/p1680112432771159?thread_ts=1680110062.829999&cid=C04FZ9859FZ
-        # if: env.SENTRY_AUTH_TOKEN != null && env.SENTRY_ORG != null
+        # if: env.SENTRY_AUTH_TOKEN != null && env.SENTRY_ORG != null && inputs.add_sentry_release == 'true'
         if: false
         with:
           environment: ${{ inputs.deploy_env }}
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: api/app/dist connect-widget/app/build
-          projects: api-oss connect-widget
+          sourcemaps: api/lambdas/dist
+          projects: lambdas-oss
 
       # CDK DIFF
       - name: Diff CDK stack
@@ -133,7 +138,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
 
       # DEPLOY
       - name: Deploy CDK stack
@@ -146,5 +151,5 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           METRIPORT_VERSION: ${{ github.sha }}

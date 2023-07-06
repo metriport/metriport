@@ -1,4 +1,4 @@
-name: Reusable Build script
+name: Reusable Build workflow
 
 on:
   workflow_call:
@@ -24,7 +24,7 @@ on:
         required: true
 
 jobs:
-  lint-and-build:
+  lint-build-test:
     runs-on: ubuntu-latest
     steps:
       - name: Log Environment
@@ -74,41 +74,6 @@ jobs:
       - name: Build/compile STAGING
         if: ${{ inputs.build_env == 'staging' }}
         run: npm run build:staging
-        working-directory: ${{ inputs.path }}
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Log Environment
-        run: |
-          env
-        shell: bash
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Setup NodeJS
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18.14"
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Log Git Ref
-        run: |
-          echo "Git ref: $(git rev-parse HEAD)"
-        shell: bash
-      - name: Install on parent
-        if: ${{ inputs.install-from-parent == true }}
-        run: |
-          pwd
-          npm ci --ignore-scripts
-        working-directory: "./" # from root bc package-lock.json is there
-      - name: Install
-        if: ${{ inputs.install-from-parent == false }}
-        run: |
-          pwd
-          npm ci --ignore-scripts
         working-directory: ${{ inputs.path }}
       - name: Run Tests
         run: npm run test

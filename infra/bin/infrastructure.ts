@@ -40,7 +40,7 @@ async function deploy(config: EnvConfig) {
   if (config.connectWidget) {
     new ConnectWidgetStack(app, config.connectWidget.stackName, {
       env: { ...env, region: config.connectWidget.region },
-      config,
+      config: { ...config, connectWidget: config.connectWidget },
     });
   }
 
