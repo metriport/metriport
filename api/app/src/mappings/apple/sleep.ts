@@ -10,7 +10,7 @@ export function mapDataToSleep(data: AppleHealth, hourly: boolean) {
     const date = dayjs(appleItem.date).format();
 
     const sleepPayload: Sleep = {
-      metadata: createMetadata(date, hourly),
+      metadata: createMetadata(date, hourly, appleItem.sourceName, appleItem.sourceId),
       start_time: appleItem.date,
       end_time: appleItem.endDate,
     };

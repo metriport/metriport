@@ -45,11 +45,24 @@ export function mapData(data: AppleHealth, hourly: boolean): AppleWebhookPayload
   return payload;
 }
 
-export const createMetadata = (date: string, hourly: boolean): Metadata => {
+export const createMetadata = (
+  date: string,
+  hourly: boolean,
+  sourceName?: string,
+  sourceId?: string
+): Metadata => {
   return {
     date: dayjs(date).format(ISO_DATE),
     ...(hourly ? { hour: dayjs(date).format("HH:mm") } : undefined),
     source: PROVIDER_APPLE,
+    ...(sourceName || sourceId
+      ? {
+          data_source: {
+            ...(sourceName ? { name: sourceName } : undefined),
+            ...(sourceId ? { id: sourceId } : undefined),
+          },
+        }
+      : undefined),
   };
 };
 
@@ -137,6 +150,8 @@ export enum SleepType {
 export const appleSleepType = z.enum(Object.values(SleepType) as [string, ...string[]]);
 
 export const appleSleepItem = z.object({
+  sourceName: z.string(),
+  sourceId: z.string(),
   date: z.string(),
   value: z.number(),
   endDate: z.string(),
@@ -146,6 +161,8 @@ export const appleSleepItem = z.object({
 export type AppleHealthSleepItem = z.infer<typeof appleSleepItem>;
 
 export const appleWorkoutItem = z.object({
+  sourceName: z.string(),
+  sourceId: z.string(),
   startTime: z.string(),
   endTime: z.string(),
   distance: z.number().optional().nullable(),
