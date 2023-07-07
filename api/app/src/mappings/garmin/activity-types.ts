@@ -1,6 +1,23 @@
 import { capitalize } from "lodash";
-import z from "zod";
+import { z } from "zod";
 
+function containsStringIndex(map: Record<ActivityType, string>, index: string): boolean {
+  return Object.prototype.hasOwnProperty.call(map, index);
+}
+
+export function activityTypeReadable(activityType: string) {
+  // will the activity type mapping if it exists, and otherwise for example will change strings from:
+  //    - "SWIM_TO_BIKE_TRANSITION_V2" to "Swim To Bike Transition"
+  //    - "CROSS_COUNTRY_SKIING_WS" to "Cross Country Skiing"
+  const stringToUse = containsStringIndex(activityTypeMapping, activityType)
+    ? activityTypeMapping[activityType as ActivityType]
+    : activityType.replace(/_|V\d+|WS/g, " ");
+  capitalize(stringToUse);
+}
+
+// see https://github.com/metriport/metriport-internal/issues/865 for context...
+// these enums are current as of the Garmin API @ 1.0.3, and are out-of-date at the time of writing
+// this @ 1.0.5 - keeping for backwards compatibility
 export const activityTypeSchema = z.enum([
   "RUNNING",
   "INDOOR_RUNNING",
@@ -207,6 +224,3 @@ export const activityTypeMapping: Record<ActivityType, string> = {
   SNOW_SHOE_WS: "SNOWSHOEING",
   SNOWMOBILING_WS: "SNOWMOBILING",
 };
-
-export const activityTypeReadable = (theType: ActivityType) =>
-  capitalize(activityTypeMapping[theType]);
