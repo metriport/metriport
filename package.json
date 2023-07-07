@@ -59,8 +59,5 @@
     "lerna": "^7.1.1",
     "lint-staged": "^13.1.0",
     "typescript": "^4.9.4"
-  },
-  "dependencies": {
-    "@changesets/cli": "^2.26.2"
   }
 }
