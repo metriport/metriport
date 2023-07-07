@@ -9,7 +9,7 @@ import { garminMetaSchema, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 import { toISODate, toISODateTime } from "../../shared/date";
 import { Util } from "../../shared/util";
-import { activityTypeReadable, activityTypeSchema } from "./activity-types";
+import { activityTypeReadable } from "./activity-types";
 
 const log = Util.log("[Garmin.activity]");
 
@@ -123,7 +123,7 @@ export const garminActivitySummarySchema = z.object({
   durationInSeconds: z.number().nullable().optional(),
   startTimeInSeconds: z.number(),
   // startTimeOffsetInSeconds: -21600, // always return UTC
-  activityType: activityTypeSchema,
+  activityType: z.string(),
   averageBikeCadenceInRoundsPerMinute: z.number().nullable().optional(),
   averageHeartRateInBeatsPerMinute: z.number().nullable().optional(),
   averageRunCadenceInStepsPerMinute: z.number().nullable().optional(),
