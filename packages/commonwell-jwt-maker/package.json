@@ -5,15 +5,11 @@
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
-  "main": "lib/index.js",
-  "typings": "lib/index.d.ts",
-  "directories": {
-    "lib": "lib",
-    "test": "__tests__"
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "bin": {
+    "cw-jwt-maker": "dist/index.js"
   },
-  "files": [
-    "lib"
-  ],
   "publishConfig": {
     "access": "public"
   },
@@ -23,6 +19,7 @@
     "directory": "packages/commonwell-jwt-maker"
   },
   "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
     "tsc": "tsc",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
@@ -33,14 +30,11 @@
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "echo \"No test specified yet\""
   },
-  "bin": {
-    "cw-jwt-maker": "lib/index.js"
-  },
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "file:../commonwell-sdk",
+    "@metriport/commonwell-sdk": "^4.3.14",
     "commander": "^9.5.0"
   },
   "devDependencies": {

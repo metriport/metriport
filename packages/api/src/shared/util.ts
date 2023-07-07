@@ -1,4 +1,4 @@
-import { Sample } from "@metriport/api/lib/devices/models/common/sample";
+import { Sample } from "@metriport/api/dist/devices/models/common/sample";
 import convert from "convert-units";
 import crypto from "crypto";
 import { mean } from "lodash";

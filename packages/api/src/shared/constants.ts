@@ -1,4 +1,4 @@
-import { ProviderSource } from "@metriport/api/lib/devices/models/common/provider-source";
+import { ProviderSource } from "@metriport/api/dist/devices/models/common/provider-source";
 import { z } from "zod";
 import { Apple } from "../providers/apple";
 import { Cronometer } from "../providers/cronometer";

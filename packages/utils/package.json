@@ -5,6 +5,7 @@
   "main": "mock-webhook.js",
   "private": true,
   "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
     "mock-webhook": "ts-node src/mock-webhook.ts",
     "fhir-uploader": "ts-node src/fhir-uploader.ts",
     "build": "tsc -p .",

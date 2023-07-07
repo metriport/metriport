@@ -19,8 +19,8 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedIndexedAccess": true,
     // END - From @tsconfig/strictest
-    "outDir": "./lib"
+    "outDir": "./dist"
   },
   "include": ["./src"],
-  "exclude": ["./lib"]
+  "exclude": ["./dist"]
 }

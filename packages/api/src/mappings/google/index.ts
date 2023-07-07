@@ -1,4 +1,4 @@
-import { Sample } from "@metriport/api/lib/devices/models/common/sample";
+import { Sample } from "@metriport/api/dist/devices/models/common/sample";
 import dayjs from "dayjs";
 import convert from "convert-units";
 
