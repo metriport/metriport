@@ -1,128 +1,17 @@
 import { capitalize } from "lodash";
-import { z } from "zod";
-
-function containsStringIndex(map: Record<ActivityType, string>, index: string): boolean {
-  return Object.prototype.hasOwnProperty.call(map, index);
-}
 
 export function activityTypeReadable(activityType: string): string {
   // will the activity type mapping if it exists, and otherwise for example will change strings from:
   //    - "SWIM_TO_BIKE_TRANSITION_V2" to "Swim To Bike Transition"
   //    - "CROSS_COUNTRY_SKIING_WS" to "Cross Country Skiing"
-  const stringToUse = containsStringIndex(activityTypeMapping, activityType)
-    ? activityTypeMapping[activityType as ActivityType]
-    : activityType.replace(/_|V\d+|WS/g, " ");
+  const stringToUse = activityTypeMapping[activityType] ?? activityType.replace(/_|V\d+|WS/g, " ");
   return capitalize(stringToUse).trim();
 }
 
 // see https://github.com/metriport/metriport-internal/issues/865 for context...
 // these enums are current as of the Garmin API @ 1.0.3, and are out-of-date at the time of writing
 // this @ 1.0.5 - keeping for backwards compatibility
-export const activityTypeSchema = z.enum([
-  "RUNNING",
-  "INDOOR_RUNNING",
-  "OBSTACLE_RUN",
-  "STREET_RUNNING",
-  "TRACK_RUNNING",
-  "TRAIL_RUNNING",
-  "TREADMILL_RUNNING",
-  "ULTRA_RUN",
-  "VIRTUAL_RUN",
-  "CYCLING",
-  "BMX",
-  "CYCLOCROSS",
-  "DOWNHILL_BIKING",
-  "E_BIKE_FITNESS",
-  "E_BIKE_MOUNTAIN",
-  "GRAVEL_CYCLING",
-  "INDOOR_CYCLING",
-  "MOUNTAIN_BIKING",
-  "RECUMBENT_CYCLING",
-  "ROAD_BIKING",
-  "TRACK_CYCLING",
-  "VIRTUAL_RIDE",
-  "FITNESS_EQUIPMENT",
-  "BOULDERING",
-  "ELLIPTICAL",
-  "INDOOR_CARDIO",
-  "HIIT",
-  "INDOOR_CLIMBING",
-  "INDOOR_ROWING",
-  "PILATES",
-  "STAIR_CLIMBING",
-  "STRENGTH_TRAINING",
-  "YOGA29",
-  "HIKING",
-  "SWIMMING",
-  "LAP_SWIMMING",
-  "OPEN_WATER_SWIMMING",
-  "WALKING",
-  "CASUAL_WALKING",
-  "SPEED_WALKING",
-  "TRANSITION_V2",
-  "BIKE_TO_RUN_TRANSITION_V2",
-  "RUN_TO_BIKE_TRANSITION_V2",
-  "SWIM_TO_BIKE_TRANSITION_V2",
-  "MOTORCYCLING_V2",
-  "ATV_V2",
-  "MOTOCROSS_V2",
-  "OTHER",
-  "ASSISTANCE",
-  "AUTO_RACING",
-  "BOATING_V2",
-  "BREATHWORK",
-  "DISC_GOLF",
-  "DRIVING_GENERAL",
-  "E_SPORT",
-  "FLOOR_CLIMBING",
-  "FLYING",
-  "GOLF",
-  "HANG_GLIDING",
-  "HORSEBACK_RIDING",
-  "HUNTING_FISHING",
-  "HUNTING_V2",
-  "FISHING_V2",
-  "INLINE_SKATING",
-  "KAYAKING_V2",
-  "KITEBOARDING_V2",
-  "MOUNTAINEERIN",
-  "OFFSHORE_GRINDING_V2",
-  "ONSHORE_GRINDING_V2",
-  "PADDLING_V230",
-  "RC_DRONE",
-  "ROCK_CLIMBING",
-  "ROWING_V2",
-  "SAILING_V2",
-  "SKY_DIVING",
-  "STAND_UP_PADDLEBOARDING",
-  "STOP_WATCH",
-  "SURFING_V2",
-  "TENNIS",
-  "RAFTING",
-  "WAKEBOARDING",
-  "WHITEWATER_RAFTING_KAYAKING",
-  "WINDSURFING_V2",
-  "WINGSUIT_FLYING",
-  "DIVING",
-  "APNEA_DIVING",
-  "APNEA_HUNTING",
-  "CCR_DIVING",
-  "GAUGE_DIVING",
-  "MULTI_GAS_DIVING",
-  "SINGLE_GAS_DIVING",
-  "WINTER_SPORTS",
-  "BACKCOUNTRY_SNOWBOARDING",
-  "BACKCOUNTRY_SKIING",
-  "CROSS_COUNTRY_SKIING_WS",
-  "RESORT_SKIING_SNOWBOARDING_WS",
-  "SKATE_SKIING_WS",
-  "SKATING_WS",
-  "SNOW_SHOE_WS",
-  "SNOWMOBILING_WS",
-]);
-export type ActivityType = z.infer<typeof activityTypeSchema>;
-
-export const activityTypeMapping: Record<ActivityType, string> = {
+export const activityTypeMapping: Record<string, string> = {
   RUNNING: "RUNNING",
   INDOOR_RUNNING: "INDOOR RUNNING",
   OBSTACLE_RUN: "OBSTACLE RUNNING",
