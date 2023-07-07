@@ -6,7 +6,7 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { StrongId } from "@metriport/commonwell-sdk/lib/models/identifier";
+import { StrongId } from "@metriport/commonwell-sdk/dist/models/identifier";
 import { MedicalDataSource } from "..";
 import { Patient, PatientExternalData } from "../../models/medical/patient";
 import { capture } from "../../shared/notifications";

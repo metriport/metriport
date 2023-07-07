@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "bin": {},
   "scripts": {
+    "preinstall": "npm i -g rimraf",
     "prepare": "husky install",
+    "clean": "npm run clean --workspaces --if-present && rimraf node_modules",
     "prep-lambdas": "cd packages/lambdas && npm run prep-deploy && npm ci --ignore-scripts --no-fund && npm run lint && npm run build && npm run test && cd ../..",
     "prep-deploy": "npm ci --no-fund && npm run lint && npm run build && npm run test && npm run prep-lambdas",
     "prep-deploy-staging": "npm ci --no-fund && npm run lint && npm run build:staging && npm run test && npm run prep-lambdas",
@@ -21,15 +23,15 @@
     "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
   },
   "workspaces": [
-    "packages/api",
-    "packages/api-sdk",
+    "packages/commonwell-sdk",
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
-    "packages/commonwell-sdk",
-    "packages/connect-widget",
-    "packages/infra",
+    "packages/utils",
     "packages/react-native-sdk",
-    "packages/utils"
+    "packages/api-sdk",
+    "packages/api",
+    "packages/connect-widget",
+    "packages/infra"
   ],
   "lint-staged": {
     "*.{ts,tsx}": [

@@ -6,6 +6,7 @@
     "infrastructure": "bin/infrastructure.js"
   },
   "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
     "build": "tsc",
     "build:cloud": "npm run build",
     "watch": "tsc -w",

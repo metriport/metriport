@@ -39,6 +39,7 @@
     "directory": "packages/react-native-sdk"
   },
   "scripts": {
+    "clean": "rimraf lib && rimraf node_modules",
     "tsc": "tsc",
     "build": "tsc -p .",
     "build:cloud": "npm run build",

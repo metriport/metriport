@@ -1,6 +1,6 @@
 import { Activity } from "@metriport/api";
-import { ActivityLog } from "@metriport/api/lib/devices/models/common/activity-log";
-import { Metadata } from "@metriport/api/lib/devices/models/common/metadata";
+import { ActivityLog } from "@metriport/api/dist/devices/models/common/activity-log";
+import { Metadata } from "@metriport/api/dist/devices/models/common/metadata";
 import dayjs from "dayjs";
 
 import { PROVIDER_WITHINGS } from "../../shared/constants";

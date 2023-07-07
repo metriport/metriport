@@ -1,6 +1,6 @@
 {
-  "name": "widget",
-  "version": "0.1.0",
+  "name": "connect-widget",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` react-scripts start",

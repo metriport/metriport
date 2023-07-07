@@ -1,7 +1,7 @@
 import { Activity } from "@metriport/api";
 import { PROVIDER_WHOOP } from "../../shared/constants";
 import { WhoopWorkout } from "./models/workout";
-import { ActivityLog } from "@metriport/api/lib/devices/models/common/activity-log";
+import { ActivityLog } from "@metriport/api/dist/devices/models/common/activity-log";
 import { Util } from "../../shared/util";
 
 export const mapToActivity = (whoopWorkouts: WhoopWorkout[], date: string): Activity => {

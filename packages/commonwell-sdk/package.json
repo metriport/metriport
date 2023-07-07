@@ -5,15 +5,8 @@
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
-  "main": "lib/index.js",
-  "typings": "lib/index.d.ts",
-  "directories": {
-    "lib": "lib",
-    "test": "__tests__"
-  },
-  "files": [
-    "lib"
-  ],
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "publishConfig": {
     "access": "public"
   },
@@ -23,6 +16,7 @@
     "directory": "packages/commonwell-sdk"
   },
   "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
     "tsc": "tsc",
     "build": "tsc -p .",
     "build:cloud": "npm run build",

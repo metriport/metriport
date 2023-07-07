@@ -18,10 +18,10 @@
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
     // END - From @tsconfig/strictest
-    "outDir": "./lib",
+    "outDir": "./dist",
     // #340 Leaving this off bc not that impactful considering the impact of this package
     "noPropertyAccessFromIndexSignature": false
   },
   "include": ["./src"],
-  "exclude": ["./lib"]
+  "exclude": ["./dist"]
 }

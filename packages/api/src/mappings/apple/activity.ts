@@ -1,5 +1,5 @@
 import { Activity } from "@metriport/api";
-import { ActivityLog } from "@metriport/api/lib/devices/models/common/activity-log";
+import { ActivityLog } from "@metriport/api/dist/devices/models/common/activity-log";
 import dayjs from "dayjs";
 
 import { AppleHealth, createMetadata } from ".";

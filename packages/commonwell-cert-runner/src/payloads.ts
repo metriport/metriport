@@ -6,8 +6,8 @@ import {
   Patient,
   Identifier,
 } from "@metriport/commonwell-sdk";
-import { CertificatePurpose } from "@metriport/commonwell-sdk/lib/models/certificates";
-import { Demographics } from "@metriport/commonwell-sdk/lib/models/demographics";
+import { CertificatePurpose } from "@metriport/commonwell-sdk/dist/models/certificates";
+import { Demographics } from "@metriport/commonwell-sdk/dist/models/demographics";
 import { X509Certificate } from "crypto";
 import * as nanoid from "nanoid";
 import dayjs from "dayjs";

@@ -1,4 +1,4 @@
-import { Metadata } from "@metriport/api/lib/devices/models/common/metadata";
+import { Metadata } from "@metriport/api/dist/devices/models/common/metadata";
 import { Request } from "express";
 
 import { getConnectedUserOrFail } from "../../command/connected-user/get-connected-user";

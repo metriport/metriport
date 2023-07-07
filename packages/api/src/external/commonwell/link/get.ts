@@ -1,5 +1,5 @@
 import { CommonWellAPI, LOLA, Person, RequestMetadata } from "@metriport/commonwell-sdk";
-import { PatientLinkResp } from "@metriport/commonwell-sdk/lib/models/patient";
+import { PatientLinkResp } from "@metriport/commonwell-sdk/dist/models/patient";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "../../../models/medical/patient";

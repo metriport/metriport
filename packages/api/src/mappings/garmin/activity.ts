@@ -1,8 +1,8 @@
 import { Activity } from "@metriport/api";
-import { ActivityLog } from "@metriport/api/lib/devices/models/common/activity-log";
-import { ActivityMovement } from "@metriport/api/lib/devices/models/common/activity-movement";
-import { EnergyExpenditure } from "@metriport/api/lib/devices/models/common/energy-expenditure";
-import { HeartRate } from "@metriport/api/lib/devices/models/common/heart-rate";
+import { ActivityLog } from "@metriport/api/dist/devices/models/common/activity-log";
+import { ActivityMovement } from "@metriport/api/dist/devices/models/common/activity-movement";
+import { EnergyExpenditure } from "@metriport/api/dist/devices/models/common/energy-expenditure";
+import { HeartRate } from "@metriport/api/dist/devices/models/common/heart-rate";
 import { groupBy, partition } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, User, UserData } from ".";
