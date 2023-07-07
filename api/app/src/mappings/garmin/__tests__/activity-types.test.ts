@@ -13,6 +13,10 @@ describe("garmin activity types", () => {
     expect(activityTypeReadable("HEADBANGING_AT_CONCERT_V4")).toEqual("Headbanging at concert");
   });
 
+  test("unknown one-word activity type containing V2", async () => {
+    expect(activityTypeReadable("SAILING_V2")).toEqual("Sailing");
+  });
+
   test("unknown activity type containing WS", async () => {
     expect(activityTypeReadable("CALISTHENICS_WS")).toEqual("Calisthenics");
   });
