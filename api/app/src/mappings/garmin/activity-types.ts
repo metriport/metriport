@@ -12,7 +12,7 @@ export function activityTypeReadable(activityType: string): string {
   const stringToUse = containsStringIndex(activityTypeMapping, activityType)
     ? activityTypeMapping[activityType as ActivityType]
     : activityType.replace(/_|V\d+|WS/g, " ");
-  return capitalize(stringToUse);
+  return capitalize(stringToUse).trim();
 }
 
 // see https://github.com/metriport/metriport-internal/issues/865 for context...
