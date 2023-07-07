@@ -3,6 +3,7 @@
   "version": "2.1.1",
   "description": "FHIR converter",
   "main": "src/index.js",
+  "private": true,
   "engines": {
     "node": ">=14.0 <15.0"
   },

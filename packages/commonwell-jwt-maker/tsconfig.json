@@ -1,6 +1,23 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "@tsconfig/recommended/tsconfig.json",
   "compilerOptions": {
+    "target": "es2020",
+    "sourceMap": true,
+    "declaration": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "types": ["react", "jest"],
+    // START - From @tsconfig/strictest
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "checkJs": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    // END - From @tsconfig/strictest
     "outDir": "./lib",
     // #340 Leaving this off bc not that impactful considering the impact of this package
     "noPropertyAccessFromIndexSignature": false

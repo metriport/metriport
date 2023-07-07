@@ -1,6 +1,22 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "@tsconfig/recommended/tsconfig.json",
   "compilerOptions": {
+    "target": "es2020",
+    "sourceMap": true,
+    "declaration": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "types": ["react", "jest"],
+    // START - From @tsconfig/strictest
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "checkJs": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    // END - From @tsconfig/strictest
     "outDir": "./lib",
     // #340 Leaving this off bc there was too many fixes to be done - it should be on, though
     "noUncheckedIndexedAccess": false,

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
+  "private": true,
   "scripts": {
     "dev": "ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9229 --files src/app.ts",
     "start": "ts-node dist/app.js",
@@ -26,8 +27,8 @@
     "@aws-sdk/client-cloudwatch": "^3.338.0",
     "@medplum/core": "^2.0.18",
     "@medplum/fhirtypes": "^2.0.18",
-    "@metriport/api": "^5.0.2-alpha.0",
-    "@metriport/commonwell-sdk": "^4.3.14",
+    "@metriport/api": "file:../api-sdk",
+    "@metriport/commonwell-sdk": "file:../commonwell-sdk",
     "@sentry/node": "^7.45.0",
     "@sentry/tracing": "^7.45.0",
     "aws-sdk": "^2.1243.0",
