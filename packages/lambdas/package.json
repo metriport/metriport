@@ -2,6 +2,7 @@
   "name": "lambdas",
   "version": "2.0.0",
   "description": "",
+  "private": true,
   "scripts": {
     "preinstall": "npm i -g rimraf",
     "clean": "rimraf dist && rimraf node_modules && rimraf ../layers/shared",
