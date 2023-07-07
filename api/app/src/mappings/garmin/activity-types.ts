@@ -5,14 +5,14 @@ function containsStringIndex(map: Record<ActivityType, string>, index: string): 
   return Object.prototype.hasOwnProperty.call(map, index);
 }
 
-export function activityTypeReadable(activityType: string) {
+export function activityTypeReadable(activityType: string): string {
   // will the activity type mapping if it exists, and otherwise for example will change strings from:
   //    - "SWIM_TO_BIKE_TRANSITION_V2" to "Swim To Bike Transition"
   //    - "CROSS_COUNTRY_SKIING_WS" to "Cross Country Skiing"
   const stringToUse = containsStringIndex(activityTypeMapping, activityType)
     ? activityTypeMapping[activityType as ActivityType]
     : activityType.replace(/_|V\d+|WS/g, " ");
-  capitalize(stringToUse);
+  return capitalize(stringToUse);
 }
 
 // see https://github.com/metriport/metriport-internal/issues/865 for context...
