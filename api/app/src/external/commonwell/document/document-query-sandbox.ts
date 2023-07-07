@@ -161,7 +161,7 @@ function addSandboxFields(docRef: DocumentReference): DocumentReference {
       docRef.status = "superseded";
     }
 
-    if (fileExt === "xml") {
+    if (fileExt === ".xml") {
       docRef.description = "C-CDA R2.1 Patient Record";
       docRef.type = {
         coding: [
@@ -172,7 +172,7 @@ function addSandboxFields(docRef: DocumentReference): DocumentReference {
           },
         ],
       };
-    } else if (fileExt === "pdf") {
+    } else if (fileExt === ".pdf") {
       (docRef.description = "Physical Examination"),
         (docRef.type = {
           coding: [
@@ -181,7 +181,7 @@ function addSandboxFields(docRef: DocumentReference): DocumentReference {
             },
           ],
         });
-    } else if (fileExt === "tif" || fileExt === "tiff") {
+    } else if (fileExt === ".tif" || fileExt === ".tiff") {
       (docRef.description = "Pathology Report"),
         (docRef.type = {
           coding: [
