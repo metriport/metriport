@@ -1,4 +1,4 @@
-import { Nutrition, Food } from "@metriport/api";
+import { Nutrition, Food } from "@metriport/api-sdk";
 import { PROVIDER_FITBIT } from "../../shared/constants";
 import { FitbitFood } from "./models/food";
 import { FitbitWater } from "./models/water";

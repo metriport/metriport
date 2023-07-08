@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { Activity, Body, Biometrics, Nutrition, Sleep } from "@metriport/api";
-import { Metadata } from "@metriport/api/dist/devices/models/common/metadata";
+import { Activity, Body, Biometrics, Nutrition, Sleep } from "@metriport/api-sdk";
+import { Metadata } from "@metriport/api-sdk/devices/models/common/metadata";
 import dayjs from "dayjs";
 
 import { ISO_DATE } from "../../shared/date";

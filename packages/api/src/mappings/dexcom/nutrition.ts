@@ -1,4 +1,4 @@
-import { Nutrition } from "@metriport/api";
+import { Nutrition } from "@metriport/api-sdk";
 import { sum } from "lodash";
 
 import { DexcomEvents } from "./models/events";

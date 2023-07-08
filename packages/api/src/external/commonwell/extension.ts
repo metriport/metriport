@@ -1,5 +1,5 @@
 import { DocumentReference, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
-import { MedicalDataSource } from "@metriport/api";
+import { MedicalDataSource } from "@metriport/api-sdk";
 import { dataSourceExtensionDefaults } from "../fhir/shared/extensions/extension";
 import { MetriportDataSourceExtension } from "../fhir/shared/extensions/metriport";
 

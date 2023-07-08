@@ -1,4 +1,4 @@
-import { Activity, Biometrics, Body, Sleep } from "@metriport/api";
+import { Activity, Biometrics, Body, Sleep } from "@metriport/api-sdk";
 import axios from "axios";
 import dayjs from "dayjs";
 import crypto from "crypto";

@@ -1,4 +1,4 @@
-import { Body } from "@metriport/api";
+import { Body } from "@metriport/api-sdk";
 import convert from "convert-units";
 
 import { PROVIDER_GOOGLE } from "../../shared/constants";

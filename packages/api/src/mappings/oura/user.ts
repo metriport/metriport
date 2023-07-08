@@ -1,4 +1,4 @@
-import { User as MetriportUser } from "@metriport/api";
+import { User as MetriportUser } from "@metriport/api-sdk";
 import { z } from "zod";
 import { PROVIDER_OURA } from "../../shared/constants";
 

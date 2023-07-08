@@ -1,4 +1,4 @@
-import { Nutrition } from "@metriport/api";
+import { Nutrition } from "@metriport/api-sdk";
 import Axios from "axios";
 import { cronometerDiarySummaryResp } from "../mappings/cronometer/models/diary-summary";
 import { mapToNutrition } from "../mappings/cronometer/nutrition";

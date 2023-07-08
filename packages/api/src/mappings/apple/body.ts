@@ -1,4 +1,4 @@
-import { Body } from "@metriport/api";
+import { Body } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthItem, createMetadata } from ".";

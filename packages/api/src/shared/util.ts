@@ -1,11 +1,11 @@
-import { Sample } from "@metriport/api/dist/devices/models/common/sample";
+import { Sample } from "@metriport/api-sdk/devices/models/common/sample";
 import convert from "convert-units";
 import crypto from "crypto";
 import { mean } from "lodash";
 import { Stream } from "stream";
 import { debug } from "./log";
 
-interface MinMaxItem {
+export interface MinMaxItem {
   min_item: number;
   max_item: number;
 }

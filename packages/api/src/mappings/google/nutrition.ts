@@ -1,4 +1,4 @@
-import { Nutrition } from "@metriport/api";
+import { Nutrition } from "@metriport/api-sdk";
 import convert from "convert-units";
 import { sum } from "lodash";
 

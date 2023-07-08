@@ -1,4 +1,4 @@
-import { Body, SourceType } from "@metriport/api";
+import { Body, SourceType } from "@metriport/api-sdk";
 import convert from "convert-units";
 import dayjs from "dayjs";
 import { PROVIDER_FITBIT } from "../../shared/constants";

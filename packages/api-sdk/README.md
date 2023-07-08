@@ -9,7 +9,7 @@ Check out the documentation at https://docs.metriport.com
 ### Installation
 
 ```
-npm install --save @metriport/api
+npm install --save @metriport/api-sdk
 ```
 
 ### Setup
@@ -19,7 +19,7 @@ npm install --save @metriport/api
 To use the Medical API, create a new instance of the `MetriportMedicalApi` class:
 
 ```ts
-import { MetriportMedicalApi } from "@metriport/api";
+import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 ```
@@ -35,7 +35,7 @@ new MetriportMedicalApi("YOUR_API_KEY", { sandbox: true });
 To use the Devices API, create a new instance of the `MetriportDevicesApi` class:
 
 ```ts
-import { MetriportDevicesApi } from "@metriport/api";
+import { MetriportDevicesApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 ```

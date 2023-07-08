@@ -1,4 +1,4 @@
-import { Biometrics as MetriportBiometrics } from "@metriport/api";
+import { Biometrics as MetriportBiometrics } from "@metriport/api-sdk";
 import { mean } from "lodash";
 import { z } from "zod";
 

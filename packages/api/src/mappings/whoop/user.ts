@@ -1,4 +1,4 @@
-import { User } from "@metriport/api";
+import { User } from "@metriport/api-sdk";
 import { PROVIDER_WHOOP } from "../../shared/constants";
 import { WhoopUser } from "./models/user";
 

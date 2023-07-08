@@ -1,4 +1,4 @@
-import { MetriportData } from "@metriport/api/dist/devices/models/metriport-data";
+import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { processData } from "../../command/webhook/garmin";

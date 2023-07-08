@@ -82,14 +82,14 @@ The Metriport client is a SDK (library) that's installed on an application codeb
 In the root of your server project, run the following terminal command to install the SDK:
 
 ```bash
-npm install --save @metriport/api
+npm install --save @metriport/api-sdk
 ```
 
 From here, all you need to do is to initialize a Metriport client instance using your API
 key, and you're good to start making requests to the Metriport API from your server:
 
 ```typescript
-import { MetriportDevicesApi } from "@metriport/api";
+import { MetriportDevicesApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY", options);
 ```

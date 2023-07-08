@@ -1,4 +1,4 @@
-import { Sleep } from "@metriport/api";
+import { Sleep } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 
 import { PROVIDER_GOOGLE } from "../../shared/constants";

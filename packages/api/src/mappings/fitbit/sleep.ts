@@ -1,4 +1,4 @@
-import { Sleep } from "@metriport/api";
+import { Sleep } from "@metriport/api-sdk";
 import convert from "convert-units";
 
 import { PROVIDER_FITBIT } from "../../shared/constants";

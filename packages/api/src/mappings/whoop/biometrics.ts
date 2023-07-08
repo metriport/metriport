@@ -1,4 +1,4 @@
-import { Biometrics } from "@metriport/api";
+import { Biometrics } from "@metriport/api-sdk";
 import { PROVIDER_WHOOP } from "../../shared/constants";
 import { WhoopRecovery } from "./models/recovery";
 import { WhoopCycle } from "./models/cycle";

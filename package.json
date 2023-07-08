@@ -1,6 +1,6 @@
 {
-  "name": "metriport-deploy",
-  "version": "0.1.0",
+  "name": "metriport",
+  "version": "1.0.0",
   "bin": {},
   "scripts": {
     "preinstall": "npm i -g rimraf",
@@ -45,6 +45,9 @@
     "commitizen": {
       "path": "@commitlint/cz-commitlint"
     }
+  },
+  "dependencies": {
+    "typescript": "^4.9.4"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",

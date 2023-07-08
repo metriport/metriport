@@ -1,4 +1,4 @@
-import { Biometrics, Nutrition } from "@metriport/api";
+import { Biometrics, Nutrition } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import Axios from "axios";
 import { Token } from "simple-oauth2";

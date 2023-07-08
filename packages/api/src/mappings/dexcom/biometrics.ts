@@ -1,4 +1,4 @@
-import { Biometrics } from "@metriport/api";
+import { Biometrics } from "@metriport/api-sdk";
 
 import { DexcomEvgs } from "./models/evgs";
 import { PROVIDER_DEXCOM } from "../../shared/constants";

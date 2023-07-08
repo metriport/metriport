@@ -1,4 +1,4 @@
-import { Biometrics } from "@metriport/api";
+import { Biometrics } from "@metriport/api-sdk";
 import { groupBy } from "lodash";
 import { z } from "zod";
 import { DataType, garminMetaSchema, garminTypes, User, UserData } from ".";

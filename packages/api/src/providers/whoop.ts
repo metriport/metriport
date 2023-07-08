@@ -5,7 +5,7 @@ import { Config } from "../shared/config";
 import { ConnectedUser } from "../models/connected-user";
 import { mapToBody } from "../mappings/whoop/body";
 import { whoopBodyResp } from "../mappings/whoop/models/body";
-import { Activity, Biometrics, Body, Sleep, User } from "@metriport/api";
+import { Activity, Biometrics, Body, Sleep, User } from "@metriport/api-sdk";
 import { whoopUserResp } from "../mappings/whoop/models/user";
 import { mapToUser } from "../mappings/whoop/user";
 import { whoopSleepResp } from "../mappings/whoop/models/sleep";

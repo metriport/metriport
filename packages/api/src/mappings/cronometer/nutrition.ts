@@ -1,4 +1,4 @@
-import { Nutrition, Food } from "@metriport/api";
+import { Nutrition, Food } from "@metriport/api-sdk";
 import { PROVIDER_CRONOMETER } from "../../shared/constants";
 import { CronometerDiarySummary } from "./models/diary-summary";
 
