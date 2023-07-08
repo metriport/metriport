@@ -1,4 +1,4 @@
-import { Body } from "@metriport/api";
+import { Body } from "@metriport/api-sdk";
 import { PROVIDER_WHOOP } from "../../shared/constants";
 import { WhoopBody } from "./models/body";
 import convert from "convert-units";

@@ -1,4 +1,4 @@
-import { Biometrics } from "@metriport/api";
+import { Biometrics } from "@metriport/api-sdk";
 
 import { PROVIDER_FITBIT } from "../../shared/constants";
 import { Util } from "../../shared/util";

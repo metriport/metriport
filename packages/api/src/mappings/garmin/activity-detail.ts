@@ -1,4 +1,4 @@
-import { Activity } from "@metriport/api";
+import { Activity } from "@metriport/api-sdk";
 import { groupBy, partition } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, User, UserData } from ".";

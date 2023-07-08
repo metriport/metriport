@@ -1,4 +1,4 @@
-import { Sleep as MetriportSleep } from "@metriport/api";
+import { Sleep as MetriportSleep } from "@metriport/api-sdk";
 import { z } from "zod";
 import dayjs from "dayjs";
 import { PROVIDER_OURA } from "../../shared/constants";

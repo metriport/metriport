@@ -1,4 +1,4 @@
-import { User } from "@metriport/api";
+import { User } from "@metriport/api-sdk";
 
 import { PROVIDER_FITBIT } from "../../shared/constants";
 import { FitbitUser } from "./models/user";

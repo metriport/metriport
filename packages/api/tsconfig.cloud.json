@@ -2,8 +2,7 @@
   "extends": "./tsconfig",
   "compilerOptions": {
     "sourceMap": true,
-    "inlineSources": true,
-    "sourceRoot": "/"
+    "inlineSources": true
   },
   "exclude": ["**/*.test.*", "**/*.spec.*", "**/__mocks__/**/*", "**/__tests__/**/*"]
 }

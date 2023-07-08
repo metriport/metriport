@@ -1,4 +1,4 @@
-import { Sleep } from "@metriport/api";
+import { Sleep } from "@metriport/api-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";

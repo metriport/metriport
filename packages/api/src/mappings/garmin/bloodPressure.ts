@@ -1,6 +1,6 @@
-import { Biometrics } from "@metriport/api";
-import { BloodPressure } from "@metriport/api/dist/devices/models/common/blood-pressure";
-import { HeartRate } from "@metriport/api/dist/devices/models/common/heart-rate";
+import { Biometrics } from "@metriport/api-sdk";
+import { BloodPressure } from "@metriport/api-sdk/devices/models/common/blood-pressure";
+import { HeartRate } from "@metriport/api-sdk/devices/models/common/heart-rate";
 import { groupBy } from "lodash";
 import { DeepNonNullable, DeepRequired } from "ts-essentials";
 import { z } from "zod";

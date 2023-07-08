@@ -34,7 +34,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "^4.3.14",
+    "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "commander": "^9.5.0"
   },
   "devDependencies": {

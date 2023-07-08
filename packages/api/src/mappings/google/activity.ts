@@ -1,4 +1,4 @@
-import { Activity } from "@metriport/api";
+import { Activity } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import { sum } from "lodash";
 import convert from "convert-units";

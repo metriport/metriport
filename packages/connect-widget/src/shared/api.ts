@@ -3,7 +3,7 @@ import { URLSearchParams } from "url";
 import Constants from "./constants";
 import { NoTokenError, DemoTokenError, InvalidTokenError } from "./token-errors";
 import { getEnvVarOrFail, isLocalEnv, isSandbox, isDemoToken } from "./util";
-import { ProviderSource } from "@metriport/api";
+import { ProviderSource } from "@metriport/api-sdk";
 
 function buildBaseURL(searchParams: URLSearchParams): string {
   if (isLocalEnv()) {

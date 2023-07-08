@@ -1,4 +1,4 @@
-import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api";
+import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api-sdk";
 
 import { PROVIDER_FITBIT } from "../shared/constants";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";

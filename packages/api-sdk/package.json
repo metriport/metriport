@@ -1,14 +1,32 @@
 {
-  "name": "@metriport/api",
+  "name": "@metriport/api-sdk",
   "version": "5.0.2",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
   "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
+  "types": "dist/index.d.ts",
   "publishConfig": {
     "access": "public"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./devices/*": "./dist/devices/*.js",
+    "./medical/*": "./dist/medical/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "/": [
+        "dist/index.d.ts"
+      ],
+      "devices/*": [
+        "dist/devices/*"
+      ],
+      "medical/*": [
+        "dist/medical/*"
+      ]
+    }
   },
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
@@ -30,7 +48,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "^4.3.14",
+    "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "axios": "^1.3.4",
     "dayjs": "^1.11.7",
     "zod": "^3.20.2"

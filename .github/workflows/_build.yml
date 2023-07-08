@@ -55,13 +55,13 @@ jobs:
         if: ${{ inputs.install-from-parent == true }}
         run: |
           pwd
-          npm ci --ignore-scripts
+          npm ci --ignore-scripts --no-fund
         working-directory: "./" # from root bc package-lock.json is there
       - name: Install
         if: ${{ inputs.install-from-parent == false }}
         run: |
           pwd
-          npm ci --ignore-scripts
+          npm ci --ignore-scripts --no-fund
         working-directory: ${{ inputs.path }}
       - name: Run Linter
         run: npm run lint

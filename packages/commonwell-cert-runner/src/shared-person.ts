@@ -5,7 +5,7 @@ import {
   getPersonIdFromSearchByPatientDemo,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { getPatientStrongIds } from "@metriport/commonwell-sdk/dist/common/util";
+import { getPatientStrongIds } from "@metriport/commonwell-sdk/common/util";
 import { makeDocPerson, makePatient } from "./payloads";
 import { firstElementOrFail, getEnvOrFail } from "./util";
 

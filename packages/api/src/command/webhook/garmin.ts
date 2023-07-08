@@ -1,4 +1,4 @@
-import { MetriportData } from "@metriport/api/dist/devices/models/metriport-data";
+import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import { chunk, groupBy } from "lodash";
 import { getErrorMessage } from "../../errors";
 import { TypedData, UserData } from "../../mappings/garmin";

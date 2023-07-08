@@ -1,4 +1,4 @@
-import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api";
+import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api-sdk";
 
 import NotImplementedError from "../errors/not-implemented";
 import { ConnectedUser } from "../models/connected-user";

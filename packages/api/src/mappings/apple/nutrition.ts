@@ -1,4 +1,4 @@
-import { Nutrition } from "@metriport/api";
+import { Nutrition } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 
 import { AppleHealth, AppleHealthItem, createMetadata } from ".";

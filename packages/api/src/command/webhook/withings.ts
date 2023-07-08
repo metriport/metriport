@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { ProviderSource } from "@metriport/api";
+import { ProviderSource } from "@metriport/api-sdk";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { Constants } from "../../shared/constants";

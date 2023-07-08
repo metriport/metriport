@@ -1,5 +1,5 @@
-import { Biometrics } from "@metriport/api";
-import { Sample } from "@metriport/api/dist/devices/models/common/sample";
+import { Biometrics } from "@metriport/api-sdk";
+import { Sample } from "@metriport/api-sdk/devices/models/common/sample";
 import dayjs from "dayjs";
 import { groupBy } from "lodash";
 import { z } from "zod";

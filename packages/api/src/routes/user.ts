@@ -1,4 +1,4 @@
-import { User, ConnectedUserInfo } from "@metriport/api";
+import { User, ConnectedUserInfo } from "@metriport/api-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";

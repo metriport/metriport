@@ -11,7 +11,7 @@
     <br />
     <a href="https://docs.metriport.com/" target="_blank">Docs</a>
     ·
-    <a href="https://www.npmjs.com/package/@metriport/api" target="_blank">NPM</a>
+    <a href="https://www.npmjs.com/package/@metriport/api-sdk" target="_blank">NPM</a>
     ·
     <a href="https://dash.metriport.com" target="_blank">Developer Dashboard</a>
     ·
@@ -89,7 +89,7 @@ Check out the links below to get started with Metriport in minutes!
 
 ### **[Developer Dashboard](https://dash.metriport.com/) 💻**
 
-### **[npm package](https://www.npmjs.com/package/@metriport/api)**
+### **[npm package](https://www.npmjs.com/package/@metriport/api-sdk)**
 
 ## **Repo Rundown**
 

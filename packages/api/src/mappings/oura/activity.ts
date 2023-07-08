@@ -1,4 +1,7 @@
-import { Activity as MetriportActivity, Biometrics as MetriportBiometrics } from "@metriport/api";
+import {
+  Activity as MetriportActivity,
+  Biometrics as MetriportBiometrics,
+} from "@metriport/api-sdk";
 import { z } from "zod";
 
 import { PROVIDER_OURA } from "../../shared/constants";

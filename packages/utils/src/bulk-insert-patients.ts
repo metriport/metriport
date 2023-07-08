@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api";
+import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
 import csv from "csv-parser";
 import fs from "fs";
 

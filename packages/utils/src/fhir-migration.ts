@@ -4,7 +4,7 @@ dotenv.config();
 import { Sequelize } from "sequelize";
 import { MedplumClient } from "@medplum/core";
 import { Organization as FHIROrganization, Patient as FHIRPatient } from "@medplum/fhirtypes";
-import { PersonalIdentifier } from "@metriport/api";
+import { PersonalIdentifier } from "@metriport/api-sdk";
 
 /**
  * Migrate existing orgs and patients to FHIR

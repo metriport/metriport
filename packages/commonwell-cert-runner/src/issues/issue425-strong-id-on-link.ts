@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { CommonWell, getId, getIdTrailingSlash, RequestMetadata } from "@metriport/commonwell-sdk";
-import { StrongId } from "@metriport/commonwell-sdk/dist/models/identifier";
+import { StrongId } from "@metriport/commonwell-sdk/models/identifier";
 
 import { makePatient, personStrongId } from "../payloads";
 

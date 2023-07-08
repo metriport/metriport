@@ -1,4 +1,4 @@
-import { progressSchema } from "@metriport/api/dist/medical/models/document";
+import { progressSchema } from "@metriport/api-sdk/medical/models/document";
 import { z } from "zod";
 
 export const documentQueryProgressSchema = z.object({

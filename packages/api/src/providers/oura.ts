@@ -1,4 +1,4 @@
-import { Activity, Biometrics, Body, Sleep, User } from "@metriport/api";
+import { Activity, Biometrics, Body, Sleep, User } from "@metriport/api-sdk";
 
 import {
   mapToActivity,

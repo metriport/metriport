@@ -1,4 +1,4 @@
-import { Sleep } from "@metriport/api";
+import { Sleep } from "@metriport/api-sdk";
 import { PROVIDER_WHOOP } from "../../shared/constants";
 import convert from "convert-units";
 import { WhoopSleep } from "./models/sleep";
