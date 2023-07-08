@@ -6,26 +6,17 @@ import {
   populateFhirServer,
 } from "../command/medical/admin-populate-fhir";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
-import { deletePatient } from "../command/medical/patient/delete-patient";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
-import docsRoutes, { conversionStatus } from "./medical/internal-docs";
-import linkRoutes from "./medical/internal-link";
+import docsRoutes from "./medical/internal-docs";
+import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
-import {
-  asyncHandler,
-  getCxIdFromQueryOrFail,
-  getCxIdOrFail,
-  getETag,
-  getFrom,
-  getFromParamsOrFail,
-  getFromQueryOrFail,
-} from "./util";
+import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
 
 const router = Router();
 
 router.use("/docs", docsRoutes);
-router.use("/patient", linkRoutes);
+router.use("/patient", patientRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/init
@@ -125,65 +116,6 @@ router.post(
       result[org.cxId] = orgRes;
     }
     return res.json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * DELETE /patient/:id
- *
- * Deletes a patient from all storages.
- *
- * @param req.query.facilityId The facility providing NPI for the patient delete
- * @return 204 No Content
- */
-router.delete(
-  "/:id",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const id = getFromParamsOrFail("id", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
-
-    const patientDeleteCmd = {
-      ...getETag(req),
-      id,
-      cxId,
-      facilityId,
-    };
-    await deletePatient(patientDeleteCmd);
-
-    return res.sendStatus(httpStatus.NO_CONTENT);
-  })
-);
-
-/**
- * @deprecated - TODO #798 remove this when you see it, left here only for HA during deployment
- */
-router.post(
-  "/doc-conversion-status",
-  asyncHandler(async (req: Request, res: Response) => {
-    return conversionStatus(req, res);
-  })
-);
-
-/**
- * Delete a patient regardless of the environment
- */
-router.delete(
-  "/patient/:id",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const id = getFromParamsOrFail("id", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
-
-    const patientDeleteCmd = {
-      ...getETag(req),
-      id,
-      cxId,
-      facilityId,
-    };
-    await deletePatient(patientDeleteCmd, { allEnvs: true });
-
-    return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );
 

@@ -1,0 +1,18 @@
+name: Restart API - PRODUCTION
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    uses: ./.github/workflows/_restart_api.yml
+    with:
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_PRODUCTION }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_PRODUCTION }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE_PRODUCTION }}
+      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

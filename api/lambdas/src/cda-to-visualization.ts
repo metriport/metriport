@@ -28,6 +28,7 @@ const s3client = new AWS.S3({
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: { fileName: string; conversionType: string }) => {
     const { fileName, conversionType } = req;
+    console.log(`Running with conversionType: ${conversionType}, fileName: ${fileName}`);
 
     const document = await downloadDocumentFromS3({ fileName });
 

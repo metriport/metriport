@@ -22,7 +22,7 @@ routes.post(
     const payload = JSON.parse(req.body.data);
 
     // TEMP LOGS FOR DEBUGGING
-    console.log(metriportUserId, JSON.stringify(payload, null, 2));
+    console.log(metriportUserId, JSON.stringify(payload));
 
     const key = Object.keys(payload)[0];
 
