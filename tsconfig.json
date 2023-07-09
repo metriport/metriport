@@ -1,4 +1,9 @@
 {
+  "compilerOptions": {
+    "types": ["reflect-metadata", "jest"],
+    "typeRoots": ["./types", "./node_modules/@types"]
+  },
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"],
   "files": [],
   "references": [
     {
@@ -27,6 +32,6 @@
     },
     {
       "path": "./packages/utils/tsconfig.ref.json"
-    },
-  ],
+    }
+  ]
 }

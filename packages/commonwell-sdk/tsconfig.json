@@ -6,7 +6,6 @@
     "declaration": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "types": ["react", "jest"],
     // START - From @tsconfig/strictest
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,

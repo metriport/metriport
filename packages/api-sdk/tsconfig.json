@@ -7,7 +7,6 @@
     "declarationMap": true, // enables importers to jump to source
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "types": ["react", "jest"],
     // START - From @tsconfig/strictest
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,

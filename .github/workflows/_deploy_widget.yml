@@ -84,11 +84,11 @@ jobs:
       - name: Build/compile
         if: ${{ inputs.build_env == 'production' }}
         run: npm run build:cloud
-        working-directory: ${{ inputs.path }}
+        working-directory: "./"
       - name: Build/compile STAGING
         if: ${{ inputs.build_env == 'staging' }}
         run: npm run build:staging
-        working-directory: ${{ inputs.path }}
+        working-directory: "./"
 
       - name: Run Tests
         run: npm run test

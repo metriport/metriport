@@ -38,7 +38,7 @@
     "@chakra-ui/react": "^2.4.1",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
-    "@metriport/api-sdk": "file:packages/api-sdk",
+    "@metriport/api-sdk": "*",
     "@sentry/react": "^7.45.0",
     "@sentry/tracing": "^7.45.0",
     "@testing-library/jest-dom": "^5.16.5",

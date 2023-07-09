@@ -85,8 +85,9 @@ jobs:
         working-directory: "./"
 
       - name: Build/compile
+        # build from root because of dependencies
         run: npm run build:cloud
-        working-directory: ${{ inputs.path }}
+        working-directory: "./"
 
       - name: Run Tests
         run: npm run test

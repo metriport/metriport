@@ -58,6 +58,7 @@
     "zod": "^3.20.2"
   },
   "devDependencies": {
+    "@tsconfig/recommended": "^1.0.2",
     "@types/jsonwebtoken": "^9.0.0",
     "@types/node": "^18.11.18",
     "@typescript-eslint/eslint-plugin": "^5.48.2",

@@ -12,5 +12,5 @@ jobs:
     uses: ./.github/workflows/_build.yml
     with:
       path: "packages/lambdas"
-      install-from-parent: false
+      treat-as-package: false
     secrets: inherit

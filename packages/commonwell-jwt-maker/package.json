@@ -34,10 +34,11 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
+    "@metriport/commonwell-sdk": "*",
     "commander": "^9.5.0"
   },
   "devDependencies": {
+    "@tsconfig/recommended": "^1.0.2",
     "@types/node": "^18.11.18",
     "@typescript-eslint/eslint-plugin": "^5.49.0",
     "@typescript-eslint/parser": "^5.49.0",
