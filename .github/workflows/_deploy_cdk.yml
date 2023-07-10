@@ -132,7 +132,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "diff"
-          cdk_version: "2.79.1"
+          cdk_version: "2.87.0"
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -145,7 +145,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "deploy --verbose --require-approval never"
-          cdk_version: "2.79.1"
+          cdk_version: "2.87.0"
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
