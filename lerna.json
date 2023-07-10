@@ -4,7 +4,7 @@
   "npmClient": "npm",
   "command": {
     "version": {
-      "message": "chore(release): publish %s \n\nRef: #000",
+      "message": "chore(release): publish %v \n\nRef: #000",
       "conventional-commits": true
     }
   }

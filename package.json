@@ -5,7 +5,7 @@
   "scripts": {
     "preinstall": "npm i -g rimraf",
     "prepare": "husky install",
-    "clean": "npm run clean --workspaces --if-present && rimraf node_modules",
+    "clean": "npm run clean --workspaces --if-present && echo 'rimraf node_modules' && rimraf node_modules",
     "prep-lambdas": "cd packages/lambdas && npm run prep-deploy && npm ci --ignore-scripts --no-fund && npm run lint && npm run build && npm run test && cd ../..",
     "prep-deploy": "npm ci --no-fund && npm run lint && npm run build && npm run test && npm run prep-lambdas",
     "prep-deploy-staging": "npm ci --no-fund && npm run lint && npm run build:staging && npm run test && npm run prep-lambdas",
@@ -53,17 +53,17 @@
     "@commitlint/cli": "^17.4.2",
     "@commitlint/config-conventional": "^17.4.2",
     "@commitlint/cz-commitlint": "^17.4.2",
-    "@types/jest": "^29.5.2",
+    "@semantic-release/git": "^10.0.1",
+    "@tsconfig/recommended": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
     "commitizen": "^4.3.0",
     "eslint": "^8.32.0",
     "eslint-config-prettier": "^8.6.0",
     "husky": "^8.0.3",
-    "jest": "^29.6.1",
     "lerna": "^7.1.1",
     "lint-staged": "^13.1.0",
-    "ts-jest": "^29.1.1",
+    "semantic-release": "^20.0.2",
     "typescript": "^4.9.4"
   }
 }
