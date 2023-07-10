@@ -1,20 +1,24 @@
 #!/bin/bash
+
+# Run from the root of the repository.
+
 ############################################################
 # Help                                                     #
 ############################################################
 Help()
 {
    # Display Help
-   echo "Script used to deploy the Metriport API."
+   echo "Script used to provision/update the Metriport infrastructure."
+   echo "Run from the root of the repository."
    echo
-   echo "Syntax: deploy.sh [h|e|s|d]"
+   echo "Syntax: ./packages/scripts/deploy-infra.sh [h|e|s|d]"
    echo "options:"
    echo "h     Print this Help."
    echo "e     The environment to which to deploy to. Must be one of production|sandbox|staging"
    echo "s     The name of the CDK stack you want to deploy."
-   echo "d     Indicates to issue a 'diff' command instead of deploy."
+   echo "d     Indicates to issue a CDK 'diff' command instead of 'deploy'."
    echo
-   echo "Example: deploy.sh -e \"production\" -s \"APIInfrastructureStack\""
+   echo "Example: deploy-infra.sh -e \"production\" -s \"APIInfrastructureStack\""
    echo
 }
 
@@ -34,10 +38,10 @@ Deploy()
    else
       npm run prep-deploy
    fi
-   cd ./infra
+   pushd packages/infra
    cdk bootstrap -c env=$env
    cdk $cmd -c env=$env $stack
-   cd ../
+   popd
    echo "Done!"
 }
 

@@ -548,7 +548,7 @@ the environment variables `S3_BUCKET` and `CF_DISTRIB_ID`.
 $ S3_BUCKET=xxx CF_DISTRIB_ID=xxx ./packages/scripts/deploy-widget.sh
 ```
 
-Note: if you need help with the `deploy.sh` script at any time, you can run:
+Note: if you need help with the `deploy-infra.sh` script at any time, you can run:
 
 ```shell
 $ ./packages/scripts/deploy-infra.sh -h
