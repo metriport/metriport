@@ -15,7 +15,7 @@ export interface User {
   userAccessToken: string;
 }
 
-export type DataType = "activity" | "sleep" | "body" | "biometrics";
+export type DataType = "activity" | "sleep" | "body" | "biometrics" | "nutrition";
 
 export interface TypedData<T extends MetriportData> {
   type: DataType;

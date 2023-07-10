@@ -30,6 +30,9 @@ import { FitbitWater, fitbitWaterResp } from "../mappings/fitbit/models/water";
 import { fitbitSleepResp } from "../mappings/fitbit/models/sleep";
 import { fitbitUserResp, FitbitUser } from "../mappings/fitbit/models/user";
 import { FitbitWeight, weightSchema } from "../mappings/fitbit/models/weight";
+import axios from "axios";
+import { capture } from "../shared/notifications";
+
 export class Fitbit extends Provider implements OAuth2 {
   static URL = "https://api.fitbit.com";
   static AUTHORIZATION_URL = "https://www.fitbit.com";
@@ -331,5 +334,72 @@ export class Fitbit extends Provider implements OAuth2 {
         return mapToUser(fitbitUserResp.parse(resp.data), date);
       }
     );
+  }
+
+  async postAuth(token: string, userId?: string) {
+    console.log("Post auth started");
+    const accessToken = JSON.parse(token).access_token;
+
+    const scopes = JSON.parse(token).scope;
+
+    const subscriptionId = userId;
+
+    if (this.allRequiredScopesIncluded(scopes)) {
+      const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/apiSubscriptions/${subscriptionId}.json`;
+      this.createSubscription(subscriptionUrl, accessToken);
+      console.log("All scopes included. User subscribed to all Fitbit WH collectionTypes.");
+    } else {
+      if (scopes.includes("activity")) {
+        const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/activities/apiSubscriptions/${subscriptionId}activities.json`;
+        await this.createSubscription(subscriptionUrl, accessToken);
+      }
+      if (scopes.includes("nutrition")) {
+        const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/foods/apiSubscriptions/${subscriptionId}foods.json`;
+        await this.createSubscription(subscriptionUrl, accessToken);
+      }
+      if (scopes.includes("weight")) {
+        const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/body/apiSubscriptions/${subscriptionId}body.json`;
+        await this.createSubscription(subscriptionUrl, accessToken);
+      }
+      if (scopes.includes("sleep")) {
+        const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/sleep/apiSubscriptions/${subscriptionId}sleep.json`;
+        await this.createSubscription(subscriptionUrl, accessToken);
+      }
+    }
+
+    // TODO: userRevokedAccess. Revoking the token makes it so the webhook do not trigger anything on our end. So, perhaps, this isn't necessary at all.
+    // const userRevokedAccessUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/userRevokedAccess/apiSubscriptions/${subscriptionId}sleep.json`;
+    // await this.createSubscription(userRevokedAccessUrl, accessToken);
+  }
+
+  // Checks if all of the required scopes were authorized by the user
+  allRequiredScopesIncluded(scopes: string): boolean {
+    const allRequiredScopes = "activity, nutrition, profile, settings, sleep, weight";
+
+    for (const scope of allRequiredScopes.split(",")) {
+      if (!scopes.includes(scope)) return false;
+    }
+    return true;
+  }
+
+  // Creates a subscription for all or one specific collectionType
+  async createSubscription(url: string, accessToken: string): Promise<void> {
+    try {
+      const resp = await axios.post(url, null, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Length": 0,
+        },
+      });
+      console.log("Fitbit WH subscription created successfully.", resp.data);
+    } catch (error) {
+      console.log("Fitbit post auth failed.");
+      capture.error(error, {
+        extra: { context: `fitbit.postAuth`, url },
+      });
+
+      throw new Error(`WH subscription failed Fitbit. Cause: ${error}`);
+    }
   }
 }
