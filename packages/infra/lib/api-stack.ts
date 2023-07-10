@@ -562,7 +562,7 @@ export class APIStack extends Stack {
       layers: lambdaLayers,
       vpc: this.vpc,
       subnets: this.vpc.privateSubnets,
-      entry: "../packages/lambdas/tester/index.js",
+      entry: "../lambdas/tester/index.js",
       envVars: {
         ENV_TYPE: envType,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -637,7 +637,7 @@ export class APIStack extends Stack {
     } = ownProps;
     const digLayer = new lambda.LayerVersion(this, "dig-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      code: lambda.Code.fromAsset("../packages/lambdas/layers/dig-layer"),
+      code: lambda.Code.fromAsset("../lambdas/layers/dig-layer"),
       description: "Adds dig to the lambdas",
     });
 
@@ -674,7 +674,7 @@ export class APIStack extends Stack {
 
     const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      code: lambda.Code.fromAsset("../packages/lambdas/layers/chromium"),
+      code: lambda.Code.fromAsset("../lambdas/layers/chromium"),
       description: "Adds chromium to the lambda",
     });
 
@@ -980,7 +980,7 @@ function setupSlackNotifSnsTopic(
 function setupLambdasLayers(stack: Stack): lambda.ILayerVersion[] {
   return [
     new lambda.LayerVersion(stack, "lambdaNodeModules", {
-      code: lambda.Code.fromAsset("../packages/lambdas/layers/shared/shared-layer.zip"),
+      code: lambda.Code.fromAsset("../lambdas/layers/shared/shared-layer.zip"),
     }),
   ];
 }
