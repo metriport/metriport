@@ -1,5 +1,4 @@
 import * as Sentry from "@sentry/serverless";
-import { Request } from "express";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { createHmac } from "crypto";
 import axios from "axios";
@@ -20,6 +19,9 @@ const buildResponse = (status: number, body?: unknown) => ({
 
 const defaultResponse = () => buildResponse(200);
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Request = { body?: any; headers: Record<string, string | undefined> };
+
 export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
   console.log(`Verifying at least one UserAuthToken on body...`);
 
@@ -37,7 +39,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
     return forwardCallToServer(req);
   }
 
-  console.log("Fitbit webhooks authentication failed.");
+  capture.message("Fitbit webhooks authentication fail", {
+    extra: { context: "webhook.fitbit.webhook-authentication" },
+  });
   return buildResponse(404);
 });
 
