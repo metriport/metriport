@@ -9,4 +9,4 @@ WORKDIR /usr/src/app
 ADD ./metriport-api.tar.gz ./
 RUN npm ci --ignore-scripts --omit=dev --no-fund
 EXPOSE 8080
-ENTRYPOINT [ "node", "api/app/dist/app.js" ]
+ENTRYPOINT [ "node", "packages/api/dist/app.js" ]

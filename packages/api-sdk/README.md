@@ -1,4 +1,4 @@
-# Metriport API Package
+# Metriport API SDK Package
 
 A package to get started using [Metriport](https://metriport.com/) - universal and open-source API for healthcare data.
 
