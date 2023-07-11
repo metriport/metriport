@@ -3,7 +3,7 @@ import { Doc } from "..";
 export const janeDocs: Doc[] = [
   {
     index: 2,
-    description: "Jane Smith 2 test",
+    description: "Jane Smith 2",
     fileName: "jane2.xml",
   },
   {

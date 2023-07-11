@@ -1,38 +1,38 @@
-import { PatientCreate } from "@metriport/api";
+import { PatientCreate } from "@metriport/api-sdk";
 
 export const patients: PatientCreate[] = [
-  {
-    firstName: "Jane",
-    lastName: "Smith",
-    dob: "1996-02-10",
-    genderAtBirth: "F",
-    personalIdentifiers: [],
-    address: [
-      {
-        addressLine1: "123 Arsenal St",
-        city: "Phoenix",
-        state: "AZ",
-        zip: "85300",
-        country: "USA",
-      },
-    ],
-  },
   // {
-  //   firstName: "Ollie",
-  //   lastName: "Brown",
-  //   dob: "1946-03-18",
-  //   genderAtBirth: "M",
+  //   firstName: "Jane",
+  //   lastName: "Smith",
+  //   dob: "1996-02-10",
+  //   genderAtBirth: "F",
   //   personalIdentifiers: [],
   //   address: [
   //     {
-  //       addressLine1: "201 Armada St",
-  //       city: "Harrisburg",
-  //       state: "PA",
-  //       zip: "15300",
+  //       addressLine1: "123 Arsenal St",
+  //       city: "Phoenix",
+  //       state: "AZ",
+  //       zip: "85300",
   //       country: "USA",
   //     },
   //   ],
   // },
+  {
+    firstName: "Ollie",
+    lastName: "Brown",
+    dob: "1946-03-18",
+    genderAtBirth: "M",
+    personalIdentifiers: [],
+    address: [
+      {
+        addressLine1: "201 Armada St",
+        city: "Harrisburg",
+        state: "PA",
+        zip: "15300",
+        country: "USA",
+      },
+    ],
+  },
   // {
   //   firstName: "Andreas",
   //   lastName: "Sims",
