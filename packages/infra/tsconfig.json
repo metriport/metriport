@@ -13,7 +13,10 @@
     "noUncheckedIndexedAccess": true,
     // END - From @tsconfig/strictest
 
-    "noEmit": true
+    "sourceMap": true /* Create source map files for emitted JavaScript files. */,
+    "rootDir": "./" /* Specify the root folder within your source files. */,
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */,
+    "preserveSymlinks": true
   },
   "include": ["bin", "lib", "config"],
   "exclude": [
