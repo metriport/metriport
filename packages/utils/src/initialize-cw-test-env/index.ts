@@ -7,6 +7,7 @@ import axios from "axios";
 // import * as fs from "fs";
 // import { janeDocs } from "./jane";
 import { ollieDocs } from "./ollie";
+import { andreasDocs } from "./andreas";
 
 export type Doc = {
   index: number;
@@ -38,9 +39,9 @@ async function main() {
     // const createdPatient = await metriportAPI.createPatient(patient, facilityId);
     // console.log(`Created patient ${JSON.stringify(createdPatient, null, 2)}`);
 
-    if (patient.firstName === "Ollie") {
-      ollieDocs.forEach(async (doc: Doc) => {
-        await addDocumentRefAndBinaryToFHIRServer("2.16.840.1.113883.3.9621.5.109.2.105", doc);
+    if (patient.firstName === "Andreas") {
+      andreasDocs.forEach(async (doc: Doc) => {
+        await addDocumentRefAndBinaryToFHIRServer("2.16.840.1.113883.3.9621.5.109.2.106", doc);
       });
     }
   }
@@ -124,7 +125,7 @@ async function addDocumentRefAndBinaryToFHIRServer(
         {
             "attachment": {
                 "contentType": "application/xml",
-                "url": "${docUrl}${doc.fileName}"
+                "url": "${docUrl}?fileName=${doc.fileName}"
             }
         }
     ],
