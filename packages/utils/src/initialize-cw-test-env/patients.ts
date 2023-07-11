@@ -33,22 +33,22 @@ export const patients: PatientCreate[] = [
       },
     ],
   },
-  // {
-  //   firstName: "Andreas",
-  //   lastName: "Sims",
-  //   dob: "1952-01-01",
-  //   genderAtBirth: "M",
-  //   personalIdentifiers: [],
-  //   address: [
-  //     {
-  //       addressLine1: "4430 York St",
-  //       city: "Jefferson City",
-  //       state: "MO",
-  //       zip: "64000",
-  //       country: "USA",
-  //     },
-  //   ],
-  // },
+  {
+    firstName: "Andreas",
+    lastName: "Sims",
+    dob: "1952-01-01",
+    genderAtBirth: "M",
+    personalIdentifiers: [],
+    address: [
+      {
+        addressLine1: "4430 York St",
+        city: "Jefferson City",
+        state: "MO",
+        zip: "64000",
+        country: "USA",
+      },
+    ],
+  },
   // {
   //   firstName: "Kyla",
   //   lastName: "Fields",
