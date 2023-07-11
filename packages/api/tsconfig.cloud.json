@@ -3,6 +3,5 @@
   "compilerOptions": {
     "sourceMap": true,
     "inlineSources": true
-  },
-  "exclude": ["**/*.test.*", "**/*.spec.*", "**/__mocks__/**/*", "**/__tests__/**/*"]
+  }
 }

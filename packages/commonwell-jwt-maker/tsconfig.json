@@ -22,5 +22,12 @@
     "noPropertyAccessFromIndexSignature": false
   },
   "include": ["./src"],
-  "exclude": ["./dist"]
+  "exclude": [
+    "dist",
+    "node_modules",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__mocks__/",
+    "**/__tests__/"
+  ]
 }

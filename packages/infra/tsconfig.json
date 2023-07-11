@@ -18,5 +18,13 @@
     "outDir": "./dist" /* Specify an output folder for all emitted files. */
   },
   "include": ["./bin", "./lib"],
-  "exclude": ["cdk.out", "dist/**/*"]
+  "exclude": [
+    "cdk.out",
+    "dist",
+    "node_modules",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__mocks__/",
+    "**/__tests__/"
+  ]
 }

@@ -10,5 +10,13 @@
     "checkJs": true,
     // END
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "build",
+    "node_modules",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__mocks__/",
+    "**/__tests__/"
+  ]
 }

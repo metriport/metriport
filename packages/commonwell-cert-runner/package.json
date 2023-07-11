@@ -13,6 +13,13 @@
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist",
+    "data",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",

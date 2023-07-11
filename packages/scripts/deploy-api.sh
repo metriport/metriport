@@ -29,20 +29,30 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 
 GITHUB_SHA=$(git rev-parse --short HEAD)
 
+API_FOLDER=packages/api
+TARBALL_NAME=metriport-api.tar.gz
+API_TARBALL=$API_FOLDER/$TARBALL_NAME
+
+rm -rf ${API_TARBALL}
+
 # Build server tarball
 tar \
   --exclude='**/*.ts' \
   --exclude='**/__tests__' \
   --exclude='**/*.spec*' \
   --exclude='**/*.test*' \
-  --exclude='**/metriport-api.tar.gz' \
-  -czf packages/api/metriport-api.tar.gz \
+  --exclude="**/${TARBALL_NAME}" \
+  -czf ${API_TARBALL} \
   package.json \
   package-lock.json \
-  packages/api/package.json \
-  packages/api/dist
+  packages/api-sdk/package.json \
+  packages/api-sdk/dist \
+  packages/commonwell-sdk/package.json \
+  packages/commonwell-sdk/dist \
+  ${API_FOLDER}/package.json \
+  ${API_FOLDER}/dist
 
-pushd packages/api
+pushd ${API_FOLDER}
 
 # Build and push Docker images
 docker buildx build \

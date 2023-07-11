@@ -35,5 +35,14 @@
     "skipLibCheck": true,
     "strict": true
   },
-  "include": ["./src"]
+  "include": ["./src"],
+  "exclude": [
+    "lib",
+    "node_modules",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__mocks__/",
+    "**/__tests__/"
+  ]
+
 }
