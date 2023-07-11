@@ -7,14 +7,7 @@ import dayjs from "dayjs";
 import { ConnectedUser } from "../../models/connected-user";
 import { Constants } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
-
-export enum FitbitCollectionTypes {
-  activities = "activities",
-  body = "body",
-  foods = "foods",
-  sleep = "sleep",
-  userRevokedAccess = "userRevokedAccess",
-}
+import { FitbitCollectionTypes } from "../../mappings/fitbit/constants";
 
 export type FitbitWebhookNotification = {
   collectionType: FitbitCollectionTypes;
@@ -24,14 +17,13 @@ export type FitbitWebhookNotification = {
   subscriptionId: string;
 };
 
-export const processData = async (data: Array<FitbitWebhookNotification>) => {
+export const processData = async (data: FitbitWebhookNotification[]) => {
   console.log("Starting to process the webhook");
 
-  for (const upd of data) {
-    const { collectionType, date } = upd;
-    const fitbitUserId = upd.ownerId;
-    console.log("Collection type", collectionType, "for user", fitbitUserId, "on date", date);
+  for (const update of data) {
+    const { collectionType, date, ownerId: fitbitUserId } = update;
 
+    let userCxId;
     try {
       const connectedUser = await getConnectedUserByTokenOrFail(
         ProviderSource.fitbit,
@@ -39,6 +31,7 @@ export const processData = async (data: Array<FitbitWebhookNotification>) => {
       );
 
       const cxId = connectedUser.cxId;
+      userCxId = cxId ? cxId : undefined;
 
       const fitbitData = await mapData(collectionType, connectedUser, date);
 
@@ -52,7 +45,7 @@ export const processData = async (data: Array<FitbitWebhookNotification>) => {
     } catch (error) {
       console.log("Fitbit webhook processing failed.", error);
       capture.error(error, {
-        extra: { data, context: `webhook.fitbit.processData` },
+        extra: { update, context: `webhook.fitbit.processData`, fitbitUserId, userCxId },
       });
     }
   }
@@ -78,6 +71,11 @@ export const mapData = async (
   } else if (collectionType === FitbitCollectionTypes.sleep) {
     const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format("YYYY-MM-DD"));
     payload.sleep = [sleep];
+  } else {
+    capture.error(`Unrecognized collection type: ${collectionType}`, {
+      extra: { context: "fitbit.webhook.mapData" },
+    });
+    throw new Error(`Unrecognized collection type: ${collectionType} in Fitbit webhooks mapData`);
   }
 
   return payload;

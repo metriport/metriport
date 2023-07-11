@@ -32,6 +32,7 @@ import { fitbitUserResp, FitbitUser } from "../mappings/fitbit/models/user";
 import { FitbitWeight, weightSchema } from "../mappings/fitbit/models/weight";
 import axios from "axios";
 import { capture } from "../shared/notifications";
+import { FitbitScopes, fullSubscriptionRequiredScopes } from "../mappings/fitbit/constants";
 
 export class Fitbit extends Provider implements OAuth2 {
   static URL = "https://api.fitbit.com";
@@ -337,10 +338,16 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   async postAuth(token: string, userId?: string) {
-    console.log("Post auth started");
     const accessToken = JSON.parse(token).access_token;
 
     const scopes = JSON.parse(token).scope;
+
+    const subscriptionTypes: Record<FitbitScopes, string> = {
+      [FitbitScopes.activity]: "activities",
+      [FitbitScopes.nutrition]: "foods",
+      [FitbitScopes.weight]: "body",
+      [FitbitScopes.sleep]: "sleep",
+    };
 
     const subscriptionId = userId;
 
@@ -349,35 +356,25 @@ export class Fitbit extends Provider implements OAuth2 {
       this.createSubscription(subscriptionUrl, accessToken);
       console.log("All scopes included. User subscribed to all Fitbit WH collectionTypes.");
     } else {
-      if (scopes.includes("activity")) {
-        const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/activities/apiSubscriptions/${subscriptionId}activities.json`;
-        await this.createSubscription(subscriptionUrl, accessToken);
-      }
-      if (scopes.includes("nutrition")) {
-        const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/foods/apiSubscriptions/${subscriptionId}foods.json`;
-        await this.createSubscription(subscriptionUrl, accessToken);
-      }
-      if (scopes.includes("weight")) {
-        const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/body/apiSubscriptions/${subscriptionId}body.json`;
-        await this.createSubscription(subscriptionUrl, accessToken);
-      }
-      if (scopes.includes("sleep")) {
-        const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/sleep/apiSubscriptions/${subscriptionId}sleep.json`;
-        await this.createSubscription(subscriptionUrl, accessToken);
+      for (const scope of Object.keys(subscriptionTypes)) {
+        if (scopes.includes(scope)) {
+          const subscriptionType = subscriptionTypes[scope as FitbitScopes];
+          const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}${subscriptionType}.json`;
+          await this.createSubscription(subscriptionUrl, accessToken);
+        }
       }
     }
 
     // TODO: userRevokedAccess. Revoking the token makes it so the webhook do not trigger anything on our end. So, perhaps, this isn't necessary at all.
+    // https://github.com/metriport/metriport/issues/652
     // const userRevokedAccessUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/userRevokedAccess/apiSubscriptions/${subscriptionId}sleep.json`;
     // await this.createSubscription(userRevokedAccessUrl, accessToken);
   }
 
   // Checks if all of the required scopes were authorized by the user
-  allRequiredScopesIncluded(scopes: string): boolean {
-    const allRequiredScopes = "activity, nutrition, profile, settings, sleep, weight";
-
-    for (const scope of allRequiredScopes.split(",")) {
-      if (!scopes.includes(scope)) return false;
+  allRequiredScopesIncluded(userScopes: string): boolean {
+    for (const fitbitScope of fullSubscriptionRequiredScopes) {
+      if (!userScopes.includes(fitbitScope)) return false;
     }
     return true;
   }
@@ -394,12 +391,12 @@ export class Fitbit extends Provider implements OAuth2 {
       });
       console.log("Fitbit WH subscription created successfully.", resp.data);
     } catch (error) {
-      console.log("Fitbit post auth failed.");
+      console.log("createSubscription for Fitbit failed.");
       capture.error(error, {
-        extra: { context: `fitbit.postAuth`, url },
+        extra: { context: `fitbit.createSubscription`, url },
       });
 
-      throw new Error(`WH subscription failed Fitbit. Cause: ${error}`);
+      throw new Error(`WH subscription failed Fitbit`, { cause: error });
     }
   }
 }

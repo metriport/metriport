@@ -697,15 +697,13 @@ export class APIStack extends Stack {
     const fitbitLambda = createLambda({
       stack: this,
       name: "Fitbit",
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fitbit",
       layers: lambdaLayers,
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/fitbit`,
         ENV_TYPE: envType,
-        ...{
-          FITBIT_CLIENT_SECRET: fitbitClientSecret,
-        },
+        FITBIT_CLIENT_SECRET: fitbitClientSecret,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
