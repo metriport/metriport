@@ -8,6 +8,7 @@ import { ConnectedUser } from "../../models/connected-user";
 import { Constants } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
 import { FitbitCollectionTypes } from "../../mappings/fitbit/constants";
+import MetriportError from "../../errors/metriport-error";
 
 export type FitbitWebhookNotification = {
   collectionType: FitbitCollectionTypes;
@@ -23,15 +24,14 @@ export const processData = async (data: FitbitWebhookNotification[]) => {
   for (const update of data) {
     const { collectionType, date, ownerId: fitbitUserId } = update;
 
-    let userCxId;
+    let cxId: string | undefined;
     try {
       const connectedUser = await getConnectedUserByTokenOrFail(
         ProviderSource.fitbit,
         fitbitUserId
       );
 
-      const cxId = connectedUser.cxId;
-      userCxId = cxId ? cxId : undefined;
+      cxId = connectedUser.cxId;
 
       const fitbitData = await mapData(collectionType, connectedUser, date);
 
@@ -45,7 +45,7 @@ export const processData = async (data: FitbitWebhookNotification[]) => {
     } catch (error) {
       console.log("Fitbit webhook processing failed.", error);
       capture.error(error, {
-        extra: { update, context: `webhook.fitbit.processData`, fitbitUserId, userCxId },
+        extra: { update, context: `webhook.fitbit.processData`, fitbitUserId, cxId },
       });
     }
   }
@@ -72,10 +72,12 @@ export const mapData = async (
     const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format("YYYY-MM-DD"));
     payload.sleep = [sleep];
   } else {
-    capture.error(`Unrecognized collection type: ${collectionType}`, {
-      extra: { context: "fitbit.webhook.mapData" },
+    capture.message(`Unrecognized Fitbit collection type.`, {
+      extra: { context: "fitbit.webhook.mapData", collectionType, connectedUser },
     });
-    throw new Error(`Unrecognized collection type: ${collectionType} in Fitbit webhooks mapData`);
+    throw new MetriportError(`Unrecognized collection type in Fitbit webhooks mapData`, {
+      additionalInfo: collectionType,
+    });
   }
 
   return payload;

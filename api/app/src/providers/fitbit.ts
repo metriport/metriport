@@ -33,6 +33,7 @@ import { FitbitWeight, weightSchema } from "../mappings/fitbit/models/weight";
 import axios from "axios";
 import { capture } from "../shared/notifications";
 import { FitbitScopes, fullSubscriptionRequiredScopes } from "../mappings/fitbit/constants";
+import { intersection } from "lodash";
 
 export class Fitbit extends Provider implements OAuth2 {
   static URL = "https://api.fitbit.com";
@@ -356,9 +357,8 @@ export class Fitbit extends Provider implements OAuth2 {
       this.createSubscription(subscriptionUrl, accessToken);
       console.log("All scopes included. User subscribed to all Fitbit WH collectionTypes.");
     } else {
-      for (const scope of Object.keys(subscriptionTypes)) {
-        if (scopes.includes(scope)) {
-          const subscriptionType = subscriptionTypes[scope as FitbitScopes];
+      for (const [key, subscriptionType] of Object.entries(subscriptionTypes)) {
+        if (scopes.includes(key)) {
           const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}${subscriptionType}.json`;
           await this.createSubscription(subscriptionUrl, accessToken);
         }
@@ -373,9 +373,11 @@ export class Fitbit extends Provider implements OAuth2 {
 
   // Checks if all of the required scopes were authorized by the user
   allRequiredScopesIncluded(userScopes: string): boolean {
-    for (const fitbitScope of fullSubscriptionRequiredScopes) {
-      if (!userScopes.includes(fitbitScope)) return false;
-    }
+    if (
+      intersection(userScopes, fullSubscriptionRequiredScopes).length !==
+      fullSubscriptionRequiredScopes.length
+    )
+      return false;
     return true;
   }
 

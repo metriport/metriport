@@ -258,6 +258,7 @@ $ echo "DEXCOM_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
 $ echo "DEXCOM_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
 $ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
 $ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
+$ echo "FITBIT_SUBSCRIBER_VERIFICATION_CODE=<YOUR-VERIFICATION-CODE>" >> api/app/.env #
 $ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" >> api/app/.env
 $ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" >> api/app/.env
 $ echo "GOOGLE_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
