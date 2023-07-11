@@ -1,6 +1,6 @@
 import { Node } from "constructs";
 import "source-map-support/register";
-import { EnvConfig } from "../env-config";
+import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 
 export const METRICS_NAMESPACE = "Metriport";

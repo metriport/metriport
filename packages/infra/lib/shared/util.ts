@@ -1,4 +1,4 @@
-import { EnvConfig } from "../env-config";
+import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 
 export function isStaging(config: EnvConfig): boolean {

@@ -1,4 +1,4 @@
-import { EnvConfig } from "../lib/env-config";
+import { EnvConfig } from "./env-config";
 import { EnvType } from "../lib/env-type";
 
 export const config: EnvConfig = {

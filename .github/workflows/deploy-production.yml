@@ -104,6 +104,7 @@ jobs:
       AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
     secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -120,6 +121,7 @@ jobs:
       AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_SANDBOX  }}
     secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -136,6 +138,7 @@ jobs:
       AWS_REGION: ${{ vars.WIDGET_REGION_PRODUCTION }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
     secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}

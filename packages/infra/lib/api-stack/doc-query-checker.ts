@@ -3,7 +3,7 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { ILayerVersion, Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
-import { EnvConfig } from "../env-config";
+import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
 

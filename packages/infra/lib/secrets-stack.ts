@@ -1,7 +1,7 @@
 import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
-import { EnvConfig } from "./env-config";
+import { EnvConfig } from "../config/env-config";
 
 interface SecretStackProps extends StackProps {
   config: EnvConfig;
