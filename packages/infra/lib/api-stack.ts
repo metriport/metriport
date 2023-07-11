@@ -433,11 +433,13 @@ export class APIStack extends Stack {
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiLoadBalancerAddress);
 
+    const contributionResource = api.root.addResource("doc-contribution");
+
     // setup cw doc contribution
     this.setupCWDocContribution(
+      contributionResource,
       lambdaLayers,
       slackNotification?.alarmAction,
-      api,
       oauthAuth,
       oauthScopes
     );
@@ -710,22 +712,22 @@ export class APIStack extends Stack {
   }
 
   private setupCWDocContribution(
+    baseResource: apig.Resource,
     lambdaLayers: lambda.ILayerVersion[],
     alarmAction: SnsAction | undefined,
-    api: apig.RestApi,
     authorizer: apig.IAuthorizer,
     oauthScopes: cognito.OAuthScope[]
   ): apig.Resource {
     const cwLambda = createLambda({
       stack: this,
       name: "CommonWellDocContribution",
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_18_X,
       entry: "cw-doc-contribution",
       layers: lambdaLayers,
       alarmSnsAction: alarmAction,
     });
 
-    const cwResource = api.root.addResource("cw");
+    const cwResource = baseResource.addResource("commonwell");
     cwResource.addMethod("GET", new apig.LambdaIntegration(cwLambda), {
       authorizer: authorizer,
       authorizationScopes: oauthScopes.map(s => s.scopeName),
