@@ -7,7 +7,7 @@ on:
         description: "sub-directory where this workflow should execute lint and build "
         required: false
         type: string
-        default: "api/app"
+        default: "packages/api"
       deploy_env:
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
         required: true
@@ -85,8 +85,9 @@ jobs:
         working-directory: "./"
 
       - name: Build/compile
+        # build from root because of dependencies
         run: npm run build:cloud
-        working-directory: ${{ inputs.path }}
+        working-directory: "./"
 
       - name: Run Tests
         run: npm run test
@@ -106,7 +107,7 @@ jobs:
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: api/app/dist
+          sourcemaps: packages/api/dist
           projects: api-oss
 
       - name: Setup AWS CLI
@@ -122,7 +123,7 @@ jobs:
 
       - name: Deploy
         run: |
-          ./scripts/${{ inputs.script_name }}
+          ./packages/scripts/${{ inputs.script_name }}
         working-directory: "./"
         env:
           ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}

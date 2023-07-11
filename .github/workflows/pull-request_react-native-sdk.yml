@@ -1,0 +1,15 @@
+name: PR Check - react-native-sdk
+
+on:
+  pull_request:
+    paths:
+      - "packages/react-native-sdk/**"
+  merge_group:
+  workflow_dispatch:
+
+jobs:
+  check-pr:
+    uses: ./.github/workflows/_build.yml
+    with:
+      path: "packages/react-native-sdk"
+    secrets: inherit

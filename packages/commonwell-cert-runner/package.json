@@ -1,0 +1,66 @@
+{
+  "name": "@metriport/commonwell-cert-runner",
+  "version": "1.5.1-alpha.2",
+  "description": "Tool to run through Edge System CommonWell certification test cases - by Metriport Inc.",
+  "author": "Metriport Inc. <contact@metriport.com>",
+  "homepage": "https://metriport.com/",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "bin": {
+    "cw-cert-runner": "dist/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "data",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "repository": {
+    "url": "https://github.com/metriport/metriport.git",
+    "type": "git",
+    "directory": "packages/commonwell-cert-runner"
+  },
+  "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
+    "tsc": "tsc",
+    "build": "tsc -p .",
+    "build:cloud": "npm run build",
+    "install-local": "sudo npm i -g",
+    "start": "ts-node src/index.ts --env-file .env",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "echo \"No test specified yet\""
+  },
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  },
+  "dependencies": {
+    "@metriport/commonwell-sdk": "^4.4.1-alpha.2",
+    "axios": "^1.3.5",
+    "commander": "^9.5.0",
+    "dayjs": "^1.11.7",
+    "dotenv": "^16.0.3",
+    "lodash": "^4.17.21",
+    "nanoid": "^3.3.4",
+    "unique-names-generator": "^4.7.1"
+  },
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.2",
+    "@types/lodash": "^4.14.194",
+    "@types/node": "^18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.49.0",
+    "@typescript-eslint/parser": "^5.49.0",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.6.0",
+    "nodemon": "^2.0.20",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5"
+  }
+}

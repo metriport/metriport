@@ -80,7 +80,7 @@ jobs:
           echo "Env ${{ inputs.deploy_env }}"
           echo "${{ inputs.INFRA_CONFIG }}" | base64 -d > ${{ inputs.deploy_env }}.ts
           ls -la
-        working-directory: "infra/config"
+        working-directory: "packages/infra/config"
 
       # INSTALL DEPENDENCIES
       - name: Install dependencies
@@ -88,26 +88,26 @@ jobs:
         working-directory: "./"
       - name: Lambdas build shared layer
         run: npm run prep-deploy
-        working-directory: "api/lambdas/"
+        working-directory: "packages/lambdas/"
       - name: Lambdas install dependencies
         run: npm ci --ignore-scripts
-        working-directory: "api/lambdas/"
+        working-directory: "packages/lambdas/"
 
       # BUILD
       - name: Infra build/compile
         run: npm run build:cloud
-        working-directory: "infra"
+        working-directory: "packages/infra"
       - name: Lambdas build/compile
         run: npm run build:cloud
-        working-directory: "api/lambdas"
+        working-directory: "packages/lambdas"
 
       # TESTS
       - name: Infra test
         run: npm run test
-        working-directory: "infra"
+        working-directory: "packages/infra"
       - name: Lambdas test
         run: npm run test
-        working-directory: "api/lambdas"
+        working-directory: "packages/lambdas"
 
       # SENTRY
       - name: Create Sentry release
@@ -124,7 +124,7 @@ jobs:
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: api/lambdas/dist
+          sourcemaps: packages/lambdas/dist
           projects: lambdas-oss
 
       # CDK DIFF
@@ -132,7 +132,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "diff"
-          cdk_version: "2.79.1"
+          cdk_version: "2.87.0"
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -145,7 +145,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "deploy --verbose --require-approval never"
-          cdk_version: "2.79.1"
+          cdk_version: "2.87.0"
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:

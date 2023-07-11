@@ -5,9 +5,9 @@ on:
     branches:
       - master
     paths:
-      - "connect-widget/**"
-      - "api/**"
-      - "infra/**"
+      - "packages/connect-widget/**"
+      - "packages/api/**"
+      - "packages/infra/**"
   workflow_dispatch: # manually executed by a user
 
 jobs:
@@ -35,12 +35,12 @@ jobs:
           base: 'master'
           filters: |
             api:
-              - "api/app/**"
+              - "packages/api/**"
             infra-lambdas:
-              - "infra/**"
-              - "api/lambdas/**"
+              - "packages/infra/**"
+              - "packages/lambdas/**"
             widget:
-              - "connect-widget/**"
+              - "packages/connect-widget/**"
 
   widget:
     if: needs.files-changed.outputs.widget == 'true'

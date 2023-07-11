@@ -58,7 +58,7 @@ jobs:
 
       - name: Restart
         run: |
-          ./scripts/${{ inputs.script_name }}
+          ./packages/scripts/${{ inputs.script_name }}
         working-directory: "./"
         env:
           ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}

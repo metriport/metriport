@@ -1,0 +1,15 @@
+name: PR Check - commonwell-sdk
+
+on:
+  pull_request:
+    paths:
+      - "packages/commonwell-sdk/**"
+  merge_group:
+  workflow_dispatch:
+
+jobs:
+  check-pr:
+    uses: ./.github/workflows/_build.yml
+    with:
+      path: "packages/commonwell-sdk"
+    secrets: inherit

@@ -1,0 +1,30 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "compilerOptions": {
+    // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
+    // START - From @tsconfig/strictest
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "checkJs": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    // END - From @tsconfig/strictest
+
+    "sourceMap": true /* Create source map files for emitted JavaScript files. */,
+    "rootDir": "./" /* Specify the root folder within your source files. */,
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */
+  },
+  "include": ["./bin", "./lib"],
+  "exclude": [
+    "cdk.out",
+    "dist",
+    "node_modules",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__mocks__/",
+    "**/__tests__/"
+  ]
+}

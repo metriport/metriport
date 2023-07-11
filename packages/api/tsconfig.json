@@ -1,0 +1,37 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "compilerOptions": {
+    "types": ["reflect-metadata", "node", "jest"],
+    "typeRoots": ["./src/@types", "../../node_modules/@types"],
+
+    // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
+    // START - From @tsconfig/strictest
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "checkJs": true,
+    // #340 - Left this ones out bc it was causing too many changes
+    // "exactOptionalPropertyTypes": true,
+    // "noImplicitReturns": true,
+    // "noPropertyAccessFromIndexSignature": true,
+    // "noUncheckedIndexedAccess": true,
+    // "verbatimModuleSyntax": true,
+    // #340 - Left this one out bc it required adding _ as prefix for unused params in addition to ts-eslint's no-unused-vars
+    // "noUnusedParameters": true,
+    // END - From @tsconfig/strictest
+
+    "sourceMap": false /* Create source map files for emitted JavaScript files. */,
+    "rootDir": "./src" /* Specify the root folder within your source files. */,
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */
+  },
+  "include": ["./src/**/*"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__mocks__/",
+    "**/__tests__/"
+  ]
+}
