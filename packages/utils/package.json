@@ -24,7 +24,6 @@
     "@medplum/core": "^2.0.14",
     "@medplum/fhirtypes": "^2.0.14",
     "@metriport/api-sdk": "*",
-    "@metriport/api": "^5.0.1",
     "aws-sdk": "2.1243",
     "axios": "^1.3.2",
     "commander": "^10.0.0",

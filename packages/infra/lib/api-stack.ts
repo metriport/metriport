@@ -444,7 +444,8 @@ export class APIStack extends Stack {
       lambdaLayers,
       slackNotification?.alarmAction,
       oauthAuth,
-      oauthScopes
+      oauthScopes,
+      props.config.environmentType
     );
 
     // WEBHOOKS
@@ -807,7 +808,8 @@ export class APIStack extends Stack {
     lambdaLayers: lambda.ILayerVersion[],
     alarmAction: SnsAction | undefined,
     authorizer: apig.IAuthorizer,
-    oauthScopes: cognito.OAuthScope[]
+    oauthScopes: cognito.OAuthScope[],
+    envType: string
   ): apig.Resource {
     const cwLambda = createLambda({
       stack: this,
@@ -816,6 +818,9 @@ export class APIStack extends Stack {
       entry: "cw-doc-contribution",
       layers: lambdaLayers,
       alarmSnsAction: alarmAction,
+      envVars: {
+        ENV_TYPE: envType,
+      },
     });
 
     const cwResource = baseResource.addResource("commonwell");
