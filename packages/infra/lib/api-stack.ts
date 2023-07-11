@@ -433,6 +433,15 @@ export class APIStack extends Stack {
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiLoadBalancerAddress);
 
+    // setup cw doc contribution
+    this.setupCWDocContribution(
+      lambdaLayers,
+      slackNotification?.alarmAction,
+      api,
+      oauthAuth,
+      oauthScopes
+    );
+
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
 
@@ -698,6 +707,31 @@ export class APIStack extends Stack {
     });
 
     return cdaToVisualizationLambda;
+  }
+
+  private setupCWDocContribution(
+    lambdaLayers: lambda.ILayerVersion[],
+    alarmAction: SnsAction | undefined,
+    api: apig.RestApi,
+    authorizer: apig.IAuthorizer,
+    oauthScopes: cognito.OAuthScope[]
+  ): apig.Resource {
+    const cwLambda = createLambda({
+      stack: this,
+      name: "CommonWellDocContribution",
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "cw-doc-contribution",
+      layers: lambdaLayers,
+      alarmSnsAction: alarmAction,
+    });
+
+    const cwResource = api.root.addResource("cw");
+    cwResource.addMethod("GET", new apig.LambdaIntegration(cwLambda), {
+      authorizer: authorizer,
+      authorizationScopes: oauthScopes.map(s => s.scopeName),
+    });
+
+    return cwResource;
   }
 
   private setupTokenAuthLambda(
