@@ -37,6 +37,28 @@ You will also need to add this inside of your `AppDelegate` file:
 }
 ```
 
+If you are using `Swift` for your `AppDelegate` file you will need to set it up as follows:
+
+```swift
+import Foundation
+import UIKit
+import MetriportSDK <--- add this line
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+var window: UIWindow?
+var bridge: RCTBridge!
+
+  func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    let jsCodeLocation: URL
+
+    MetriportClient.checkBackgroundUpdates() <---- add this line
+
+    // your code
+  }
+}
+```
+
 ## Usage
 
 To use our SDK go to the root of your project and add:
