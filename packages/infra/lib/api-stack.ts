@@ -228,7 +228,9 @@ export class APIStack extends Stack {
     const cdaToVisualizationLambda = this.setupCdaToVisualization({
       lambdaLayers,
       vpc: this.vpc,
-      bucketName: props.config.medicalDocumentsBucketName,
+      bucketName: isSandbox(props.config)
+        ? props.config.sandboxSeedDataBucketName
+        : props.config.medicalDocumentsBucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
@@ -347,6 +349,7 @@ export class APIStack extends Stack {
         sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+      sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
       fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
       sidechainFHIRConverterLambda &&
         medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
