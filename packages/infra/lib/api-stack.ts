@@ -24,7 +24,7 @@ import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
-import { EnvConfig } from "./env-config";
+import { EnvConfig } from "../config/env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { getSecrets } from "./shared/secrets";
@@ -228,7 +228,9 @@ export class APIStack extends Stack {
     const cdaToVisualizationLambda = this.setupCdaToVisualization({
       lambdaLayers,
       vpc: this.vpc,
-      bucketName: props.config.medicalDocumentsBucketName,
+      bucketName: isSandbox(props.config)
+        ? props.config.sandboxSeedDataBucketName
+        : props.config.medicalDocumentsBucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
@@ -347,6 +349,7 @@ export class APIStack extends Stack {
         sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
       medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+      sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
       fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
       sidechainFHIRConverterLambda &&
         medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);

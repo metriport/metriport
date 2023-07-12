@@ -3,7 +3,7 @@ import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { APIStack } from "../lib/api-stack";
 import { ConnectWidgetStack } from "../lib/connect-widget-stack";
-import { EnvConfig } from "../lib/env-config";
+import { EnvConfig } from "../config/env-config";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar } from "../lib/shared/util";

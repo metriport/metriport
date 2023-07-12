@@ -40,6 +40,8 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
+      SERVICE_PAT:
+        required: true
 
 jobs:
   deploy:
@@ -64,52 +66,56 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "18.14"
-      # TODO we should reuse the checked out code from the previous step
-      # doing this here might introduce minutes between `build` and `deploy`, which
-      # gives opportunity for problems (someone merges between `build` and `deploy`)
+
+      # checkout the actual repo
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          path: metriport
+      # checkout the internal repo to get configs
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: metriport/metriport-internal
+          ref: ${{ inputs.deploy_env == 'production' && 'master' || 'develop' }}
+          token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
+          path: metriport-internal
+          sparse-checkout: |
+            config-oss/api-infra
+
       - name: Log Git Ref
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
         shell: bash
 
-      # SET CONFIG FILES
-      - name: Infra set config file
-        run: |
-          echo "Env ${{ inputs.deploy_env }}"
-          echo "${{ inputs.INFRA_CONFIG }}" | base64 -d > ${{ inputs.deploy_env }}.ts
-          ls -la
-        working-directory: "packages/infra/config"
-
       # INSTALL DEPENDENCIES
       - name: Install dependencies
         run: npm ci --ignore-scripts
-        working-directory: "./"
+        working-directory: "metriport/"
       - name: Lambdas build shared layer
         run: npm run prep-deploy
-        working-directory: "packages/lambdas/"
+        working-directory: "metriport/packages/lambdas/"
       - name: Lambdas install dependencies
         run: npm ci --ignore-scripts
-        working-directory: "packages/lambdas/"
+        working-directory: "metriport/packages/lambdas/"
 
       # BUILD
       - name: Infra build/compile
         run: npm run build:cloud
-        working-directory: "packages/infra"
+        working-directory: "metriport/packages/infra"
       - name: Lambdas build/compile
         run: npm run build:cloud
-        working-directory: "packages/lambdas"
+        working-directory: "metriport/packages/lambdas"
 
       # TESTS
       - name: Infra test
         run: npm run test
-        working-directory: "packages/infra"
+        working-directory: "metriport/packages/infra"
       - name: Lambdas test
         run: npm run test
-        working-directory: "packages/lambdas"
-
-      # SENTRY
+        working-directory: "metriport/packages/lambdas"
+        
+        # SENTRY
       - name: Create Sentry release
         uses: getsentry/action-release@v1
         env:
@@ -124,7 +130,7 @@ jobs:
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: packages/lambdas/dist
+          sourcemaps: metriport/packages/lambdas/dist
           projects: lambdas-oss
 
       # CDK DIFF
@@ -136,6 +142,7 @@ jobs:
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
+          INPUT_PATH: "metriport/packages/infra"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
@@ -149,6 +156,7 @@ jobs:
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
+          INPUT_PATH: "metriport/packages/infra"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}

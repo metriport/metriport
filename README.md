@@ -176,10 +176,12 @@ To setup this repository for local development, issue this command on the root f
 
 ```shell
 $ npm install # only needs to be run once
+$ npm run build # packages depend on each other, so its best to build/compile them all
 ```
 
 Useful commands:
 
+- `npm run test`: it executes the `test` script on all workspaces;
 - `npm run typecheck`: it will run `typecheck` on all workspaces, which checks for typescript compilation/syntax issues;
 - `npm run lint-fix`: it will run `lint-fix` on all workspaces, which checks for linting issues and automatically fixes the issues it can;
 - `npm run prettier-fix`: it will run `prettier-fix` on all workspaces, which checks for formatting issues and automatically fixes the issues it can;

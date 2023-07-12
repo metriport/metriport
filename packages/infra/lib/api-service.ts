@@ -12,7 +12,7 @@ import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
-import { EnvConfig } from "./env-config";
+import { EnvConfig } from "../config/env-config";
 import { DnsZones } from "./shared/dns";
 import { Secrets } from "./shared/secrets";
 import { isProd } from "./shared/util";
