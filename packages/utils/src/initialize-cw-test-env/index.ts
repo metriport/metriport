@@ -4,13 +4,9 @@ dotenv.config();
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { patients } from "./patients";
 import axios from "axios";
-import * as fs from "fs";
-import { janeDocs } from "./jane";
-import { ollieDocs } from "./ollie";
-import { andreasDocs } from "./andreas";
+import * as AWS from "aws-sdk";
 
 export type Doc = {
-  index: number;
   description: string;
   fileName: string;
 };
@@ -29,20 +25,35 @@ const orgName = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_ORGANIZATION_NAME");
 
 const docUrl = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_URL");
 const stagingApiUrl = getEnvVarOrFail("METRIPORT_API_URL");
+const bucketName = getEnvVarOrFail("S3_BUCKET_NAME");
+const seedBucketName = getEnvVarOrFail("S3_SEED_BUCKET_NAME");
+const region = getEnvVarOrFail("REGION");
+
+const s3 = new AWS.S3({ signatureVersion: "v4", region });
 
 async function main() {
   const metriportAPI = new MetriportMedicalApi(stagingTestAccountAPIKey, {
     baseAddress: stagingApiUrl,
   });
 
-  for (const patient of patients) {
-    // const createdPatient = await metriportAPI.createPatient(patient, facilityId);
-    // console.log(`Created patient ${JSON.stringify(createdPatient, null, 2)}`);
+  const facilityPatients = await metriportAPI.listPatients(facilityId);
 
-    if (patient.firstName === "Andreas") {
-      andreasDocs.forEach(async (doc: Doc) => {
-        await addDocumentRefAndBinaryToFHIRServer("2.16.840.1.113883.3.9621.5.109.2.106", doc);
-      });
+  for (const patient of patients) {
+    let currentPatient = facilityPatients.find(p => p.firstName === patient.patient.firstName);
+
+    if (!currentPatient) {
+      currentPatient = await metriportAPI.createPatient(patient.patient, facilityId);
+      console.log(`Created patient ${JSON.stringify(currentPatient, null, 2)}`);
+    }
+
+    let index = 0;
+
+    if (currentPatient) {
+      for (const doc of patient.docs) {
+        await addDocumentRefAndBinaryToFHIRServer(currentPatient?.id ?? "", doc, index);
+
+        index += 1;
+      }
     }
   }
 }
@@ -60,8 +71,9 @@ function getEnvVarOrFail(varName: string): string {
 
 async function addDocumentRefAndBinaryToFHIRServer(
   patientId: string,
-  doc: Doc
-): Promise<{ docRefId: string; binaryId: string }> {
+  doc: Doc,
+  docIndex: number
+): Promise<void> {
   const fhirApi = axios.create({
     timeout: AXIOS_TIMEOUT_MILLIS,
     baseURL: `${stagingApiUrl}/fhir/R4`,
@@ -70,80 +82,91 @@ async function addDocumentRefAndBinaryToFHIRServer(
     },
   });
 
-  const binaryId = `${orgId}.${doc.index}`;
-  const docRefId = `${orgId}.${doc.index}`;
+  const obj = await s3.getObject({ Bucket: seedBucketName, Key: doc.fileName }).promise();
 
-  console.log(docRefId);
+  const uploaded = await s3
+    .upload({
+      Bucket: bucketName,
+      Key: doc.fileName,
+      Body: obj.Body,
+      ContentType: obj.ContentType,
+    })
+    .promise();
+
+  console.log(`Uploaded, file info: ${JSON.stringify(uploaded)}`);
+
+  const index = patientId.lastIndexOf(".");
+  const patientNumber = patientId.substring(index + 1);
+
+  const docRefId = `${orgId}.${patientNumber}.${docIndex}`;
 
   const data = `{
-    "resourceType": "DocumentReference",
-    "id": "${docRefId}",
-    "contained": [
-        {
-            "resourceType": "Organization",
-            "id": "${orgId}",
-            "name": "${orgName}"
-        },
-        {
-            "resourceType": "Patient",
-            "id": "${patientId}"
-        }
-    ],
-    "masterIdentifier": {
-        "system": "urn:ietf:rfc:3986",
-        "value": "${docRefId}"
-    },
-    "identifier": [
-        {
-            "use": "official",
-            "system": "urn:ietf:rfc:3986",
-            "value": "${docRefId}"
-        }
-    ],
-    "status": "current",
-    "type": {
-      "coding": [
+      "resourceType": "DocumentReference",
+      "id": "${docRefId}",
+      "contained": [
           {
-              "system": "http://loinc.org/",
-              "code": "75622-1",
-              "display":  "${doc.description}"
+              "resourceType": "Organization",
+              "id": "${orgId}",
+              "name": "${orgName}"
+          },
+          {
+              "resourceType": "Patient",
+              "id": "${patientId}"
           }
-      ]
-    },
-    "subject": {
-        "reference": "Patient/${patientId}",
-        "type": "Patient"
-    },
-    "author": [
-        {
-            "reference": "#${orgId}",
-            "type": "Organization"
-        }
-    ],
-    "description": "${doc.description}",
-    "content": [
-        {
-            "attachment": {
-                "contentType": "application/xml",
-                "url": "${docUrl}?fileName=${doc.fileName}"
-            }
-        }
-    ],
-    "context": {
-      "period": {
-          "start": "2022-10-05T22:00:00.000Z",
-          "end": "2022-10-05T23:00:00.000Z"
+      ],
+      "masterIdentifier": {
+          "system": "urn:ietf:rfc:3986",
+          "value": "${docRefId}"
       },
-      "sourcePatientInfo": {
-          "reference": "#${patientId}",
+      "identifier": [
+          {
+              "use": "official",
+              "system": "urn:ietf:rfc:3986",
+              "value": "${docRefId}"
+          }
+      ],
+      "status": "current",
+      "type": {
+        "coding": [
+            {
+                "system": "http://loinc.org/",
+                "code": "75622-1",
+                "display":  "${doc.description}"
+            }
+        ]
+      },
+      "subject": {
+          "reference": "Patient/${patientId}",
           "type": "Patient"
-      }
-  }
-}`;
+      },
+      "author": [
+          {
+              "reference": "#${orgId}",
+              "type": "Organization"
+          }
+      ],
+      "description": "${doc.description}",
+      "content": [
+          {
+              "attachment": {
+                  "contentType": "${obj.ContentType}",
+                  "url": "${docUrl}?fileName=${doc.fileName}"
+              }
+          }
+      ],
+      "context": {
+        "period": {
+            "start": "2022-10-05T22:00:00.000Z",
+            "end": "2022-10-05T23:00:00.000Z"
+        },
+        "sourcePatientInfo": {
+            "reference": "#${patientId}",
+            "type": "Patient"
+        }
+    }
+  }`;
 
   await fhirApi.put(`/DocumentReference/${docRefId}`, JSON.parse(data));
-
-  return { docRefId, binaryId };
 }
 
 main();
