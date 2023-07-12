@@ -1,4 +1,4 @@
-import { EnvType } from "./env-type";
+import { EnvType } from "../lib/env-type";
 
 export type ConnectWidgetConfig = {
   stackName: string;

@@ -8,7 +8,7 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import { ConnectWidgetConfig, EnvConfig } from "./env-config";
+import { ConnectWidgetConfig, EnvConfig } from "../config/env-config";
 import { addErrorAlarmToLambdaFunc } from "./shared/lambda";
 
 interface ConnectWidgetStackProps extends StackProps {

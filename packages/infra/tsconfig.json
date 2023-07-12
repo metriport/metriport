@@ -15,9 +15,10 @@
 
     "sourceMap": true /* Create source map files for emitted JavaScript files. */,
     "rootDir": "./" /* Specify the root folder within your source files. */,
-    "outDir": "./dist" /* Specify an output folder for all emitted files. */
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */,
+    "preserveSymlinks": true
   },
-  "include": ["./bin", "./lib"],
+  "include": ["bin", "lib", "config"],
   "exclude": [
     "cdk.out",
     "dist",
