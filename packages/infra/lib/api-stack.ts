@@ -442,7 +442,8 @@ export class APIStack extends Stack {
       slackNotification?.alarmAction,
       oauthAuth,
       oauthScopes,
-      props.config.environmentType
+      props.config.environmentType,
+      props.config.medicalDocumentsBucketName
     );
 
     // WEBHOOKS
@@ -718,7 +719,8 @@ export class APIStack extends Stack {
     alarmAction: SnsAction | undefined,
     authorizer: apig.IAuthorizer,
     oauthScopes: cognito.OAuthScope[],
-    envType: string
+    envType: string,
+    bucketName: string | undefined
   ): apig.Resource {
     const cwLambda = createLambda({
       stack: this,
@@ -729,6 +731,9 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
       envVars: {
         ENV_TYPE: envType,
+        ...(bucketName && {
+          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+        }),
       },
     });
 
