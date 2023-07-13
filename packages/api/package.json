@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.0.4-alpha.1",
+  "version": "1.0.4-alpha.2",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -29,7 +29,7 @@
     "@medplum/core": "^2.0.18",
     "@medplum/fhirtypes": "^2.0.18",
     "@metriport/api-sdk": "*",
-    "@metriport/commonwell-sdk": "*",
+    "@metriport/commonwell-sdk": "^4.4.2-alpha.0",
     "@sentry/node": "^7.45.0",
     "@sentry/tracing": "^7.45.0",
     "aws-sdk": "^2.1243.0",
