@@ -42,8 +42,10 @@
   "scripts": {
     "clean": "rimraf lib && rimraf node_modules",
     "tsc": "tsc",
+    "watch": "tsc --watch",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
+    "lint": "echo 'missing lint config'",
     "test": "echo \"No test specified yet\""
   },
   "bugs": {

@@ -27,6 +27,7 @@
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
     "tsc": "tsc",
+    "watch": "tsc --watch",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
     "local": "sudo npm i -g && cw-jwt-maker",

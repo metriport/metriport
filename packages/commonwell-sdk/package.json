@@ -46,6 +46,7 @@
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
     "tsc": "tsc",
+    "watch": "tsc --watch",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",

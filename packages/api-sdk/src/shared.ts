@@ -20,6 +20,6 @@ export const ISO_DATE = "YYYY-MM-DD";
 export const defaultString = z.string().trim();
 export const defaultOptionalString = optionalString(defaultString);
 export const defaultDateString = defaultString.refine(v => dayjs(v, ISO_DATE, true).isValid(), {
-  message: `Date must be a valid ISO 8601 date formatted ${ISO_DATE}. Example: 2023-15-03`,
+  message: `Date must be a valid ISO 8601 date formatted ${ISO_DATE}. Example: 2023-03-15`,
 });
 export const defaultNameString = defaultString.min(1);
