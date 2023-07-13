@@ -283,6 +283,84 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // S3 bucket for Medical Documents
+    //-------------------------------------------
+
+    const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
+      bucketName: props.config.medicalDocumentsBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
+
+    //-------------------------------------------
+    // FHIR CONNECTORS - Finish setting it up
+    //-------------------------------------------
+    provideAccessToQueue({
+      accessType: "send",
+      queue: fhirConverterQueue,
+      resource: apiService.service.taskDefinition.taskRole,
+    });
+    fhirServerQueue &&
+      provideAccessToQueue({
+        accessType: "send",
+        queue: fhirServerQueue,
+        resource: apiService.service.taskDefinition.taskRole,
+      });
+    const fhirConverterLambda = fhirServerQueue?.queueUrl
+      ? fhirConverterConnector.createLambda({
+          envType: props.config.environmentType,
+          stack: this,
+          lambdaLayers,
+          vpc: this.vpc,
+          sourceQueue: fhirConverterQueue,
+          destinationQueue: fhirServerQueue,
+          dlq: fhirConverterDLQ,
+          fhirConverterBucket,
+          conversionResultQueueUrl: fhirServerQueue.queueUrl,
+          apiServiceDnsAddress: apiLoadBalancerAddress,
+          alarmSnsAction: slackNotification?.alarmAction,
+        })
+      : undefined;
+
+    // sidechain FHIR converter
+    provideAccessToQueue({
+      accessType: "send",
+      queue: sidechainFHIRConverterQueue,
+      resource: apiService.service.taskDefinition.taskRole,
+    });
+    const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
+      ? sidechainFHIRConverterConnector.createLambda({
+          envType: props.config.environmentType,
+          stack: this,
+          lambdaLayers,
+          vpc: this.vpc,
+          sourceQueue: sidechainFHIRConverterQueue,
+          destinationQueue: fhirServerQueue,
+          dlq: sidechainFHIRConverterDLQ,
+          fhirConverterBucket: sidechainFHIRConverterBucket,
+          apiServiceDnsAddress: apiLoadBalancerAddress,
+          alarmSnsAction: slackNotification?.alarmAction,
+        })
+      : undefined;
+
+    // Access grant for medical documents bucket
+    sandboxSeedDataBucket &&
+      sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+    medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+    medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+    sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
+    fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+    sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
+
+    createDocQueryChecker({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    //-------------------------------------------
     // API Gateway
     //-------------------------------------------
 
@@ -368,6 +446,8 @@ export class APIStack extends Stack {
       bucketName: props.config.medicalDocumentsBucketName,
     });
 
+    medicalDocumentsBucket.grantReadWrite(cwDocContributionLambda);
+
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
 
@@ -431,88 +511,6 @@ export class APIStack extends Stack {
         limit: this.isProd(props) ? 10000 : 500,
         period: apig.Period.DAY,
       },
-    });
-
-    //-------------------------------------------
-    // S3 bucket for Medical Documents
-    //-------------------------------------------
-
-    if (props.config.medicalDocumentsBucketName) {
-      const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
-        bucketName: props.config.medicalDocumentsBucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-      });
-
-      //-------------------------------------------
-      // FHIR CONNECTORS - Finish setting it up
-      //-------------------------------------------
-      provideAccessToQueue({
-        accessType: "send",
-        queue: fhirConverterQueue,
-        resource: apiService.service.taskDefinition.taskRole,
-      });
-      fhirServerQueue &&
-        provideAccessToQueue({
-          accessType: "send",
-          queue: fhirServerQueue,
-          resource: apiService.service.taskDefinition.taskRole,
-        });
-      const fhirConverterLambda = fhirServerQueue?.queueUrl
-        ? fhirConverterConnector.createLambda({
-            envType: props.config.environmentType,
-            stack: this,
-            lambdaLayers,
-            vpc: this.vpc,
-            sourceQueue: fhirConverterQueue,
-            destinationQueue: fhirServerQueue,
-            dlq: fhirConverterDLQ,
-            fhirConverterBucket,
-            conversionResultQueueUrl: fhirServerQueue.queueUrl,
-            apiServiceDnsAddress: apiLoadBalancerAddress,
-            alarmSnsAction: slackNotification?.alarmAction,
-          })
-        : undefined;
-
-      // sidechain FHIR converter
-      provideAccessToQueue({
-        accessType: "send",
-        queue: sidechainFHIRConverterQueue,
-        resource: apiService.service.taskDefinition.taskRole,
-      });
-      const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
-        ? sidechainFHIRConverterConnector.createLambda({
-            envType: props.config.environmentType,
-            stack: this,
-            lambdaLayers,
-            vpc: this.vpc,
-            sourceQueue: sidechainFHIRConverterQueue,
-            destinationQueue: fhirServerQueue,
-            dlq: sidechainFHIRConverterDLQ,
-            fhirConverterBucket: sidechainFHIRConverterBucket,
-            apiServiceDnsAddress: apiLoadBalancerAddress,
-            alarmSnsAction: slackNotification?.alarmAction,
-          })
-        : undefined;
-
-      // Access grant for medical documents bucket
-      sandboxSeedDataBucket &&
-        sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
-      medicalDocumentsBucket.grantReadWrite(cwDocContributionLambda);
-      sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
-      fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
-      sidechainFHIRConverterLambda &&
-        medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
-    }
-
-    createDocQueryChecker({
-      lambdaLayers,
-      stack: this,
-      vpc: this.vpc,
-      apiAddress: apiLoadBalancerAddress,
-      alarmSnsAction: slackNotification?.alarmAction,
     });
 
     //-------------------------------------------
