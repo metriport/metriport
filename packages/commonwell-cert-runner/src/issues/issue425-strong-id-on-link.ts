@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { CommonWell, getId, getIdTrailingSlash, RequestMetadata } from "@metriport/commonwell-sdk";
-import { StrongId } from "@metriport/commonwell-sdk/models/identifier";
+import {
+  CommonWell,
+  getId,
+  getIdTrailingSlash,
+  RequestMetadata,
+  StrongId,
+} from "@metriport/commonwell-sdk";
 
 import { makePatient, personStrongId } from "../payloads";
 

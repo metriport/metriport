@@ -1,4 +1,4 @@
-import { validateNPI } from "@metriport/commonwell-sdk/common/validate-npi";
+import { validateNPI } from "@metriport/commonwell-sdk";
 import { z } from "zod";
 import { AddressStrictSchema } from "./address";
 import { optionalString } from "./shared";
