@@ -35,11 +35,14 @@ jobs:
           filters: |
             api:
               - "packages/api/**"
+              - "package*.json"
             infra-lambdas:
               - "packages/infra/**"
               - "packages/lambdas/**"
+              - "package*.json"
             widget:
               - "packages/connect-widget/**"
+              - "package*.json"
 
   widget:
     if: needs.files-changed.outputs.widget == 'true'
