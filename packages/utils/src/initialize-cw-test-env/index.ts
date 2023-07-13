@@ -5,6 +5,7 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { patients } from "./patients";
 import axios from "axios";
 import * as AWS from "aws-sdk";
+import { getEnvVarOrFail } from "../shared/env";
 
 export type Doc = {
   description: string;
@@ -56,17 +57,6 @@ async function main() {
       }
     }
   }
-}
-
-function getEnvVar(varName: string): string | undefined {
-  return process.env[varName];
-}
-function getEnvVarOrFail(varName: string): string {
-  const value = getEnvVar(varName);
-  if (!value || value.trim().length < 1) {
-    throw new Error(`Missing ${varName} env var`);
-  }
-  return value;
 }
 
 async function addDocumentToS3AndToFHIRServer(
