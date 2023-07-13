@@ -21,177 +21,177 @@ type Patients = {
 };
 
 export const patients: Patients[] = [
-  // {
-  //   patient: {
-  //     firstName: "Jane",
-  //     lastName: "Smith",
-  //     dob: "1996-02-10",
-  //     genderAtBirth: "F",
-  //     personalIdentifiers: [],
-  //     address: [
-  //       {
-  //         addressLine1: "123 Arsenal St",
-  //         city: "Phoenix",
-  //         state: "AZ",
-  //         zip: "85300",
-  //         country: "USA",
-  //       },
-  //     ],
-  //   },
-  //   docs: janeDocs,
-  // },
-  // {
-  //   patient: {
-  //     firstName: "Ollie",
-  //     lastName: "Brown",
-  //     dob: "1946-03-18",
-  //     genderAtBirth: "M",
-  //     personalIdentifiers: [],
-  //     address: [
-  //       {
-  //         addressLine1: "201 Armada St",
-  //         city: "Harrisburg",
-  //         state: "PA",
-  //         zip: "15300",
-  //         country: "USA",
-  //       },
-  //     ],
-  //   },
-  //   docs: ollieDocs,
-  // },
-  // {
-  //   patient: {
-  //     firstName: "Andreas",
-  //     lastName: "Sims",
-  //     dob: "1952-01-01",
-  //     genderAtBirth: "M",
-  //     personalIdentifiers: [],
-  //     address: [
-  //       {
-  //         addressLine1: "4430 York St",
-  //         city: "Jefferson City",
-  //         state: "MO",
-  //         zip: "64000",
-  //         country: "USA",
-  //       },
-  //     ],
-  //   },
-  //   docs: andreasDocs,
-  // },
-  // {
-  //   patient: {
-  //     firstName: "Kyla",
-  //     lastName: "Fields",
-  //     dob: "1927-05-23",
-  //     genderAtBirth: "F",
-  //     personalIdentifiers: [],
-  //     address: [
-  //       {
-  //         addressLine1: "332 16th St",
-  //         city: "Portland",
-  //         state: "ME",
-  //         zip: "04000",
-  //         country: "USA",
-  //       },
-  //     ],
-  //   },
-  //   docs: kylaDocs,
-  // },
-  // {
-  //   patient: {
-  //     firstName: "Hajra",
-  //     lastName: "Powers",
-  //     dob: "2001-04-04",
-  //     genderAtBirth: "F",
-  //     personalIdentifiers: [],
-  //     address: [
-  //       {
-  //         addressLine1: "1984 Juniper Way",
-  //         city: "Sacramento",
-  //         state: "CA",
-  //         zip: "95300",
-  //         country: "USA",
-  //       },
-  //     ],
-  //   },
-  //   docs: hajraDocs,
-  // },
-  // {
-  //   patient: {
-  //     firstName: "Rory",
-  //     lastName: "Mills",
-  //     dob: "1959-09-09",
-  //     genderAtBirth: "M",
-  //     personalIdentifiers: [],
-  //     address: [
-  //       {
-  //         addressLine1: "891 E. Galvin Court",
-  //         city: "Ames",
-  //         state: "IA",
-  //         zip: "51500",
-  //         country: "USA",
-  //       },
-  //     ],
-  //   },
-  //   docs: roryDocs,
-  // },
-  // {
-  //   patient: {
-  //     firstName: "Lexi",
-  //     lastName: "Stevenson",
-  //     dob: "1928-03-26",
-  //     genderAtBirth: "F",
-  //     personalIdentifiers: [],
-  //     address: [
-  //       {
-  //         addressLine1: "85 Hillside Street",
-  //         city: "Springfield",
-  //         state: "IL",
-  //         zip: "62600",
-  //         country: "USA",
-  //       },
-  //     ],
-  //   },
-  //   docs: lexiDocs,
-  // },
-  // {
-  //   patient: {
-  //     firstName: "Aamina",
-  //     lastName: "Alexander",
-  //     dob: "1954-10-01",
-  //     genderAtBirth: "F",
-  //     personalIdentifiers: [],
-  //     address: [
-  //       {
-  //         addressLine1: "796 Thorne Lane",
-  //         city: "Austin",
-  //         state: "TX",
-  //         zip: "75400",
-  //         country: "USA",
-  //       },
-  //     ],
-  //   },
-  //   docs: aaminaDocs,
-  // },
-  // {
-  //   patient: {
-  //     firstName: "Gavin",
-  //     lastName: "Blackwell",
-  //     dob: "1948-05-10",
-  //     genderAtBirth: "M",
-  //     personalIdentifiers: [],
-  //     address: [
-  //       {
-  //         addressLine1: "7028 Stillwater Street",
-  //         city: "Tallahassee",
-  //         state: "FL",
-  //         zip: "34600",
-  //         country: "USA",
-  //       },
-  //     ],
-  //   },
-  //   docs: gavinDocs,
-  // },
+  {
+    patient: {
+      firstName: "Jane",
+      lastName: "Smith",
+      dob: "1996-02-10",
+      genderAtBirth: "F",
+      personalIdentifiers: [],
+      address: [
+        {
+          addressLine1: "123 Arsenal St",
+          city: "Phoenix",
+          state: "AZ",
+          zip: "85300",
+          country: "USA",
+        },
+      ],
+    },
+    docs: janeDocs,
+  },
+  {
+    patient: {
+      firstName: "Ollie",
+      lastName: "Brown",
+      dob: "1946-03-18",
+      genderAtBirth: "M",
+      personalIdentifiers: [],
+      address: [
+        {
+          addressLine1: "201 Armada St",
+          city: "Harrisburg",
+          state: "PA",
+          zip: "15300",
+          country: "USA",
+        },
+      ],
+    },
+    docs: ollieDocs,
+  },
+  {
+    patient: {
+      firstName: "Andreas",
+      lastName: "Sims",
+      dob: "1952-01-01",
+      genderAtBirth: "M",
+      personalIdentifiers: [],
+      address: [
+        {
+          addressLine1: "4430 York St",
+          city: "Jefferson City",
+          state: "MO",
+          zip: "64000",
+          country: "USA",
+        },
+      ],
+    },
+    docs: andreasDocs,
+  },
+  {
+    patient: {
+      firstName: "Kyla",
+      lastName: "Fields",
+      dob: "1927-05-23",
+      genderAtBirth: "F",
+      personalIdentifiers: [],
+      address: [
+        {
+          addressLine1: "332 16th St",
+          city: "Portland",
+          state: "ME",
+          zip: "04000",
+          country: "USA",
+        },
+      ],
+    },
+    docs: kylaDocs,
+  },
+  {
+    patient: {
+      firstName: "Hajra",
+      lastName: "Powers",
+      dob: "2001-04-04",
+      genderAtBirth: "F",
+      personalIdentifiers: [],
+      address: [
+        {
+          addressLine1: "1984 Juniper Way",
+          city: "Sacramento",
+          state: "CA",
+          zip: "95300",
+          country: "USA",
+        },
+      ],
+    },
+    docs: hajraDocs,
+  },
+  {
+    patient: {
+      firstName: "Rory",
+      lastName: "Mills",
+      dob: "1959-09-09",
+      genderAtBirth: "M",
+      personalIdentifiers: [],
+      address: [
+        {
+          addressLine1: "891 E. Galvin Court",
+          city: "Ames",
+          state: "IA",
+          zip: "51500",
+          country: "USA",
+        },
+      ],
+    },
+    docs: roryDocs,
+  },
+  {
+    patient: {
+      firstName: "Lexi",
+      lastName: "Stevenson",
+      dob: "1928-03-26",
+      genderAtBirth: "F",
+      personalIdentifiers: [],
+      address: [
+        {
+          addressLine1: "85 Hillside Street",
+          city: "Springfield",
+          state: "IL",
+          zip: "62600",
+          country: "USA",
+        },
+      ],
+    },
+    docs: lexiDocs,
+  },
+  {
+    patient: {
+      firstName: "Aamina",
+      lastName: "Alexander",
+      dob: "1954-10-01",
+      genderAtBirth: "F",
+      personalIdentifiers: [],
+      address: [
+        {
+          addressLine1: "796 Thorne Lane",
+          city: "Austin",
+          state: "TX",
+          zip: "75400",
+          country: "USA",
+        },
+      ],
+    },
+    docs: aaminaDocs,
+  },
+  {
+    patient: {
+      firstName: "Gavin",
+      lastName: "Blackwell",
+      dob: "1948-05-10",
+      genderAtBirth: "M",
+      personalIdentifiers: [],
+      address: [
+        {
+          addressLine1: "7028 Stillwater Street",
+          city: "Tallahassee",
+          state: "FL",
+          zip: "34600",
+          country: "USA",
+        },
+      ],
+    },
+    docs: gavinDocs,
+  },
   {
     patient: {
       firstName: "William",

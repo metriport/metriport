@@ -50,7 +50,7 @@ async function main() {
 
     if (currentPatient) {
       for (const doc of patient.docs) {
-        await addDocumentRefToFHIRServer(currentPatient?.id ?? "", doc, index);
+        await addDocumentToS3AndToFHIRServer(currentPatient?.id ?? "", doc, index);
 
         index += 1;
       }
@@ -69,7 +69,7 @@ function getEnvVarOrFail(varName: string): string {
   return value;
 }
 
-async function addDocumentRefToFHIRServer(
+async function addDocumentToS3AndToFHIRServer(
   patientId: string,
   doc: Doc,
   docIndex: number
@@ -170,7 +170,3 @@ async function addDocumentRefToFHIRServer(
 }
 
 main();
-
-// CREATE MULTIPLE PATIENTS UNDER FACILITY
-// ADD THE BINARY DOCUMENTS TO THE FHIR SERVER
-// ADD THE BINARY DOCUMENT REFERENCES TO THE FHIR SERVER
