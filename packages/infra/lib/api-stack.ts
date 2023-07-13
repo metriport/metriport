@@ -358,15 +358,15 @@ export class APIStack extends Stack {
     const contributionResource = api.root.addResource("doc-contribution");
 
     // setup cw doc contribution
-    const cwDocContributionLambda = this.setupCWDocContribution(
-      contributionResource,
+    const cwDocContributionLambda = this.setupCWDocContribution({
+      baseResource: contributionResource,
       lambdaLayers,
-      slackNotification?.alarmAction,
-      oauthAuth,
-      oauthScopes,
-      props.config.environmentType,
-      props.config.medicalDocumentsBucketName
-    );
+      alarmAction: slackNotification?.alarmAction,
+      authorizer: oauthAuth,
+      oauthScopes: oauthScopes,
+      envType: props.config.environmentType,
+      bucketName: props.config.medicalDocumentsBucketName,
+    });
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
@@ -805,15 +805,25 @@ export class APIStack extends Stack {
     return cdaToVisualizationLambda;
   }
 
-  private setupCWDocContribution(
-    baseResource: apig.Resource,
-    lambdaLayers: lambda.ILayerVersion[],
-    alarmAction: SnsAction | undefined,
-    authorizer: apig.IAuthorizer,
-    oauthScopes: cognito.OAuthScope[],
-    envType: string,
-    bucketName: string | undefined
-  ): Lambda {
+  private setupCWDocContribution(ownProps: {
+    baseResource: apig.Resource;
+    lambdaLayers: lambda.ILayerVersion[];
+    alarmAction: SnsAction | undefined;
+    authorizer: apig.IAuthorizer;
+    oauthScopes: cognito.OAuthScope[];
+    envType: string;
+    bucketName: string | undefined;
+  }): Lambda {
+    const {
+      baseResource,
+      lambdaLayers,
+      alarmAction,
+      authorizer,
+      oauthScopes,
+      envType,
+      bucketName,
+    } = ownProps;
+
     const cwLambda = createLambda({
       stack: this,
       name: "CommonWellDocContribution",

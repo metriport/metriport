@@ -34,5 +34,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
       return response;
     }
+
+    return {
+      statusCode: 400,
+      body: "Missing fileName query parameter",
+    };
   }
 );
