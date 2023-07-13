@@ -30,6 +30,11 @@ import { FitbitWater, fitbitWaterResp } from "../mappings/fitbit/models/water";
 import { fitbitSleepResp } from "../mappings/fitbit/models/sleep";
 import { fitbitUserResp, FitbitUser } from "../mappings/fitbit/models/user";
 import { FitbitWeight, weightSchema } from "../mappings/fitbit/models/weight";
+import axios from "axios";
+import { capture } from "../shared/notifications";
+import { FitbitScopes, fullSubscriptionRequiredScopes } from "../mappings/fitbit/constants";
+import { intersection } from "lodash";
+
 export class Fitbit extends Provider implements OAuth2 {
   static URL = "https://api.fitbit.com";
   static AUTHORIZATION_URL = "https://www.fitbit.com";
@@ -331,5 +336,69 @@ export class Fitbit extends Provider implements OAuth2 {
         return mapToUser(fitbitUserResp.parse(resp.data), date);
       }
     );
+  }
+
+  async postAuth(token: string, userId?: string) {
+    const accessToken = JSON.parse(token).access_token;
+
+    const scopes = JSON.parse(token).scope;
+
+    const subscriptionTypes: Record<FitbitScopes, string> = {
+      [FitbitScopes.activity]: "activities",
+      [FitbitScopes.nutrition]: "foods",
+      [FitbitScopes.weight]: "body",
+      [FitbitScopes.sleep]: "sleep",
+    };
+
+    const subscriptionId = userId;
+
+    if (this.allRequiredScopesIncluded(scopes)) {
+      const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/apiSubscriptions/${subscriptionId}.json`;
+      this.createSubscription(subscriptionUrl, accessToken);
+      console.log("All scopes included. User subscribed to all Fitbit WH collectionTypes.");
+    } else {
+      for (const [key, subscriptionType] of Object.entries(subscriptionTypes)) {
+        if (scopes.includes(key)) {
+          const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}${subscriptionType}.json`;
+          await this.createSubscription(subscriptionUrl, accessToken);
+        }
+      }
+    }
+
+    // TODO: userRevokedAccess. Revoking the token makes it so the webhook do not trigger anything on our end. So, perhaps, this isn't necessary at all.
+    // https://github.com/metriport/metriport/issues/652
+    // const userRevokedAccessUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/userRevokedAccess/apiSubscriptions/${subscriptionId}sleep.json`;
+    // await this.createSubscription(userRevokedAccessUrl, accessToken);
+  }
+
+  // Checks if all of the required scopes were authorized by the user
+  allRequiredScopesIncluded(userScopes: string): boolean {
+    if (
+      intersection(userScopes, fullSubscriptionRequiredScopes).length !==
+      fullSubscriptionRequiredScopes.length
+    )
+      return false;
+    return true;
+  }
+
+  // Creates a subscription for all or one specific collectionType
+  async createSubscription(url: string, accessToken: string): Promise<void> {
+    try {
+      const resp = await axios.post(url, null, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Length": 0,
+        },
+      });
+      console.log("Fitbit WH subscription created successfully.", resp.data);
+    } catch (error) {
+      console.log("createSubscription for Fitbit failed.");
+      capture.error(error, {
+        extra: { context: `fitbit.createSubscription`, url },
+      });
+
+      throw new Error(`WH subscription failed Fitbit`, { cause: error });
+    }
   }
 }

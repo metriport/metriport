@@ -1,7 +1,8 @@
 import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import { chunk, groupBy } from "lodash";
 import { getErrorMessage } from "../../errors";
-import { TypedData, UserData } from "../../mappings/garmin";
+import { UserData } from "../../mappings/garmin";
+import { TypedData } from "../../command/webhook/webhook";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUsers } from "../connected-user/get-connected-user";

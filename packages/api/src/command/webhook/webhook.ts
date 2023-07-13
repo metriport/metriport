@@ -1,9 +1,9 @@
+// import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import Axios from "axios";
 import dayjs from "dayjs";
 import { nanoid } from "nanoid";
 import WebhookError from "../../errors/webhook";
-import { DataType } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { capture } from "../../shared/notifications";
@@ -20,6 +20,13 @@ const log = Util.log(`Webhook`);
 type WebhookPingPayload = {
   ping: string;
 };
+
+export type DataType = "activity" | "sleep" | "body" | "biometrics" | "nutrition";
+
+export interface TypedData<T extends MetriportData> {
+  type: DataType;
+  data: T;
+}
 
 // DAPI
 export type WebhookUserDataPayload = {
