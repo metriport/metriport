@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "types": ["reflect-metadata", "jest"],
+    "typeRoots": ["./types", "./node_modules/@types"]
+  },
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"],
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/api/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/api-sdk/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/commonwell-cert-runner/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/commonwell-jwt-maker/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/commonwell-sdk/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/connect-widget/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/infra/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/react-native-sdk/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/utils/tsconfig.ref.json"
+    }
+  ]
+}

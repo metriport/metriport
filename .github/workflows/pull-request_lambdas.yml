@@ -3,7 +3,7 @@ name: PR Check - Lambdas
 on:
   pull_request:
     paths:
-      - "api/lambdas/**"
+      - "packages/lambdas/**"
   merge_group:
   workflow_dispatch:
 
@@ -11,6 +11,6 @@ jobs:
   check-pr:
     uses: ./.github/workflows/_build.yml
     with:
-      path: "api/lambdas"
-      install-from-parent: false
+      path: "packages/lambdas"
+      treat-as-package: false
     secrets: inherit

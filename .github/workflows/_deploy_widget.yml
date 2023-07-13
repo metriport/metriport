@@ -7,7 +7,7 @@ on:
         description: "sub-directory where this workflow should execute lint and build "
         required: false
         type: string
-        default: "connect-widget/app"
+        default: "packages/connect-widget"
       build_env:
         description: "the environment we're building to, either 'staging' or 'production' - only apps that have special build scripts need to set this"
         type: string
@@ -84,11 +84,11 @@ jobs:
       - name: Build/compile
         if: ${{ inputs.build_env == 'production' }}
         run: npm run build:cloud
-        working-directory: ${{ inputs.path }}
+        working-directory: "./"
       - name: Build/compile STAGING
         if: ${{ inputs.build_env == 'staging' }}
         run: npm run build:staging
-        working-directory: ${{ inputs.path }}
+        working-directory: "./"
 
       - name: Run Tests
         run: npm run test
@@ -108,7 +108,7 @@ jobs:
           version: ${{ github.sha }}
           ignore_missing: true
           ignore_empty: true
-          sourcemaps: connect-widget/app/build
+          sourcemaps: packages/connect-widget/build
           projects: connect-widget
 
       - name: Setup AWS CLI
@@ -119,7 +119,7 @@ jobs:
 
       - name: Deploy
         run: |
-          ./scripts/${{ inputs.script_name }}
+          ./packages/scripts/${{ inputs.script_name }}
         working-directory: "./"
         env:
           S3_BUCKET: ${{ inputs.S3_BUCKET }}

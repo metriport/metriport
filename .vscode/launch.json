@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "command": "node ./api/app/app.js",
+            "command": "ts-node ./packages/api/src/app.ts",
             "name": "Run Api App",
             "request": "launch",
             "type": "node-terminal"
@@ -14,9 +14,9 @@
           "port": 9229,
           "address": "0.0.0.0",
           "sourceMapPathOverrides": {
-            "/usr/src/app/*": "${workspaceRoot}/api/app/*"
+            "/usr/src/app/*": "${workspaceRoot}/packages/api/*"
           },
-          "localRoot": "${workspaceFolder}/api/app",
+          "localRoot": "${workspaceFolder}/packages/api",
           "remoteRoot": "/usr/src/app"
         },
         {
@@ -24,7 +24,7 @@
           "type": "chrome",
           "request": "launch",
           "url": "http://localhost:3001",
-          "webRoot": "${workspaceFolder}/connect-widget/app/"
+          "webRoot": "${workspaceFolder}/packages/connect-widget/"
         }
     ]
 }

@@ -3,7 +3,7 @@ name: PR Check - Infra
 on:
   pull_request:
     paths:
-      - "infra/**"
+      - "packages/infra/**"
   merge_group:
   workflow_dispatch:
 
@@ -11,5 +11,5 @@ jobs:
   check-pr:
     uses: ./.github/workflows/_build.yml
     with:
-      path: "infra"
+      path: "packages/infra"
     secrets: inherit

@@ -11,7 +11,7 @@
     <br />
     <a href="https://docs.metriport.com/" target="_blank">Docs</a>
     ·
-    <a href="https://www.npmjs.com/package/@metriport/api" target="_blank">NPM</a>
+    <a href="https://www.npmjs.com/package/@metriport/api-sdk" target="_blank">NPM</a>
     ·
     <a href="https://dash.metriport.com" target="_blank">Developer Dashboard</a>
     ·
@@ -89,7 +89,7 @@ Check out the links below to get started with Metriport in minutes!
 
 ### **[Developer Dashboard](https://dash.metriport.com/) 💻**
 
-### **[npm package](https://www.npmjs.com/package/@metriport/api)**
+### **[npm package](https://www.npmjs.com/package/@metriport/api-sdk)**
 
 ## **Repo Rundown**
 
@@ -133,9 +133,9 @@ Checkout our packages in [`/pkgs`](/pkgs) to help you turbocharge your developme
 
 Our npm packages are available in [`/packages`](/packages):
 
-- [Metriport API](/packages/packages/api/): contains the Metriport data models, and a convenient API client wrapper.
-- [CommonWell JWT Maker](/packages/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
-- [CommonWell SDK](/packages/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
+- [Metriport API](/packages/api-sdk/): contains the Metriport data models, and a convenient API client wrapper.
+- [CommonWell JWT Maker](/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
+- [CommonWell SDK](/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
 
 #### **iOS**
 
@@ -176,10 +176,12 @@ To setup this repository for local development, issue this command on the root f
 
 ```shell
 $ npm install # only needs to be run once
+$ npm run build # packages depend on each other, so its best to build/compile them all
 ```
 
 Useful commands:
 
+- `npm run test`: it executes the `test` script on all workspaces;
 - `npm run typecheck`: it will run `typecheck` on all workspaces, which checks for typescript compilation/syntax issues;
 - `npm run lint-fix`: it will run `lint-fix` on all workspaces, which checks for linting issues and automatically fixes the issues it can;
 - `npm run prettier-fix`: it will run `prettier-fix` on all workspaces, which checks for formatting issues and automatically fixes the issues it can;
@@ -248,27 +250,27 @@ Commitizen will retry the last commit message you prepared previously. More abou
 First, create a local environment file to define your developer keys, and local dev URLs:
 
 ```shell
-$ touch api/app/.env
-$ echo "LOCAL_ACCOUNT_CXID=<YOUR-TESTING-ACCOUNT-ID>" >> api/app/.env
-$ echo "API_URL=http://localhost:8080" >> api/app/.env
-$ echo "CONNECT_WIDGET_URL=http://localhost:3001/" >> api/app/.env
-$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" >> api/app/.env
-$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
-$ echo "DEXCOM_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
-$ echo "DEXCOM_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
-$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
-$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
-$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" >> api/app/.env
-$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" >> api/app/.env
-$ echo "GOOGLE_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
-$ echo "GOOGLE_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
-$ echo "OURA_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
-$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
-$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> api/app/.env
-$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> api/app/.env
-$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
-$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
-$ echo "FHIR_SERVER_URL=<FHIR-SERVER-URL>" >> api/app/.env # optional
+$ touch packages/api/.env
+$ echo "LOCAL_ACCOUNT_CXID=<YOUR-TESTING-ACCOUNT-ID>" >> packages/api/.env
+$ echo "API_URL=http://localhost:8080" >> packages/api/.env
+$ echo "CONNECT_WIDGET_URL=http://localhost:3001/" >> packages/api/.env
+$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" >> packages/api/.env
+$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
+$ echo "DEXCOM_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
+$ echo "DEXCOM_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
+$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
+$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
+$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" >> packages/api/.env
+$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" >> packages/api/.env
+$ echo "GOOGLE_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
+$ echo "GOOGLE_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
+$ echo "OURA_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
+$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
+$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
+$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> packages/api/.env
+$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> packages/api/.env
+$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
+$ echo "FHIR_SERVER_URL=<FHIR-SERVER-URL>" >> packages/api/.env # optional
 ```
 
 Additionally, define your System Root [OID](https://en.wikipedia.org/wiki/Object_identifier). This will be the base identifier to represent your system in any medical data you create - such as organizations, facilities, patients, and etc.
@@ -278,26 +280,26 @@ Your OID must be registered and assigned by HL7. You can do this [here](http://w
 By default, OIDs in Metriport are managed according to the [recommended standards outlined by HL7](http://www.hl7.org/documentcenter/private/standards/v3/V3_OIDS_R1_INFORM_2011NOV.pdf).
 
 ```shell
-$ echo "SYSTEM_ROOT_OID=<YOUR-OID>" >> api/app/.env
+$ echo "SYSTEM_ROOT_OID=<YOUR-OID>" >> packages/api/.env
 ```
 
 These envs are specific to Commonwell and are necessary in sending requests to their platform.
 
 ```shell
-$ echo "CW_TECHNICAL_CONTACT_NAME=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_TECHNICAL_CONTACT_TITLE=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_TECHNICAL_CONTACT_EMAIL=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_TECHNICAL_CONTACT_PHONE=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_GATEWAY_ENDPOINT=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_ID=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_MEMBER_NAME=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_MEMBER_OID=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_ORG_MANAGEMENT_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_ORG_MANAGEMENT_CERTIFICATE=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_MEMBER_PRIVATE_KEY=<YOUR-SECRET>" >> api/app/.env
-$ echo "CW_MEMBER_CERTIFICATE=<YOUR-SECRET>" >> api/app/.env
+$ echo "CW_TECHNICAL_CONTACT_NAME=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_TECHNICAL_CONTACT_TITLE=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_TECHNICAL_CONTACT_EMAIL=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_TECHNICAL_CONTACT_PHONE=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_GATEWAY_ENDPOINT=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_ID=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_MEMBER_NAME=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_MEMBER_OID=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_ORG_MANAGEMENT_PRIVATE_KEY=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_ORG_MANAGEMENT_CERTIFICATE=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_MEMBER_PRIVATE_KEY=<YOUR-SECRET>" >> packages/api/.env
+$ echo "CW_MEMBER_CERTIFICATE=<YOUR-SECRET>" >> packages/api/.env
 ```
 
 #### **Optional analytics reporting**
@@ -307,7 +309,7 @@ The API server reports analytics to [PostHog](https://posthog.com/). This is opt
 If you want to set it up, add this to the `.env` file:
 
 ```shell
-$ echo "POST_HOG_API_KEY=<YOUR-API-KEY>" >> api/app/.env
+$ echo "POST_HOG_API_KEY=<YOUR-API-KEY>" >> packages/api/.env
 ```
 
 #### **Optional usage report**
@@ -326,7 +328,7 @@ A reachable service that accepts a `POST` request to the informed URL with the p
 If you want to set it up, add this to the `.env` file:
 
 ```shell
-$ echo "USAGE_URL=<YOUR-URL>" > api/app/.env
+$ echo "USAGE_URL=<YOUR-URL>" > packages/api/.env
 ```
 
 #### **Finalizing setting up the API Server**
@@ -334,7 +336,7 @@ $ echo "USAGE_URL=<YOUR-URL>" > api/app/.env
 Then to run the full back-end stack, use docker-compose to lauch a Postgres container, local instance of DynamoDB, and the Node server itself:
 
 ```shell
-$ cd api/app
+$ cd packages/api
 $ npm run start-docker-compose
 ```
 
@@ -354,7 +356,7 @@ Another option is to have the dependency services running with docker compose an
 to run and restart); this has the benefit of Docker Desktop managing the services and you likely only need to start the dependencies once.
 
 ```shell
-$ cd api/app
+$ cd packages/api
 $ npm run start-dependencies # might be able run it once
 $ npm run dev
 ```
@@ -380,7 +382,7 @@ Run the CLI with:
 
 ```shell
 $ npm i -g ts-node # only needs to be run once
-$ cd api/app
+$ cd packages/api
 $ ts-node src/sequelize/cli
 ```
 
@@ -402,7 +404,7 @@ Umzug's CLI is still in development at the time of this writing, so that's how o
 
 To create new migrations:
 
-1. Duplicate a migration file on `./api/app/src/sequelize/migrations`
+1. Duplicate a migration file on `./packages/api/src/sequelize/migrations`
 2. Rename the new file so the timestamp is close to the current time - it must be unique, migrations are executed in sorting order
 3. Edit the migration file to perform the changes you want
    - `up` add changes to the DB (takes it to the new version)
@@ -417,7 +419,7 @@ $ npm install -g dynamodb-admin # only needs to be run once
 $ npm run ddb-admin # admin console will be available at http://localhost:8001/
 ```
 
-To kill and clean-up the back-end, hit `CTRL + C` a few times, and run the following from the `api/app` directory:
+To kill and clean-up the back-end, hit `CTRL + C` a few times, and run the following from the `packages/api` directory:
 
 ```shell
 $ docker-compose -f docker-compose.dev.yml down
@@ -430,7 +432,7 @@ To debug the backend, you can attach a debugger to the running Docker container 
 To run the Connect Widget:
 
 ```shell
-$ cd connect-widget/app
+$ cd packages/connect-widget
 $ npm run start # available on port 3001 by default
 ```
 
@@ -444,12 +446,12 @@ To debug the Connect Widget, you can run a Chrome window by launching the `Run C
 
 ### Utils
 
-The `./utils` folder contains utilities that help with the development of this and other opensource Metriport projects:
+The `./packages/utils` folder contains utilities that help with the development of this and other opensource Metriport projects:
 
-- [mock-webhook](https://github.com/metriport/metriport/blob/develop/utils/src/mock-webhook.ts): implements the Metriport webhook protocol, can be used by applications integrating with Metriport API as a reference to the behavior expected from these applications when using the webhook feature.
-- [fhir-uploader](https://github.com/metriport/metriport/blob/develop/utils/src/fhir-uploader.ts): useful to insert synthetic/mock data from [Synthea](https://github.com/synthetichealth/synthea) into [FHIR](https://www.hl7.org/fhir) servers (see https://github.com/metriport/hapi-fhir-jpaserver).
+- [mock-webhook](https://github.com/metriport/metriport/blob/develop/packages/utils/src/mock-webhook.ts): implements the Metriport webhook protocol, can be used by applications integrating with Metriport API as a reference to the behavior expected from these applications when using the webhook feature.
+- [fhir-uploader](https://github.com/metriport/metriport/blob/develop/packages/utils/src/fhir-uploader.ts): useful to insert synthetic/mock data from [Synthea](https://github.com/synthetichealth/synthea) into [FHIR](https://www.hl7.org/fhir) servers (see https://github.com/metriport/hapi-fhir-jpaserver).
 
-Check the scripts on the folder's [package.json](https://github.com/metriport/metriport/blob/develop/utils/package.json) to see how to run these.
+Check the scripts on the folder's [package.json](https://github.com/metriport/metriport/blob/develop/packages/utils/package.json) to see how to run these.
 
 ---
 
@@ -496,7 +498,7 @@ Now you can make requests to endpoints that require the an API Key by setting th
    for a sample of what the end result should look like. Optionally, you can setup config files for `staging` and `sandbox` deployments, based on
    your environment needs. Then, proceed with the deployment steps below.
 
-3. Configure the Connect Widget environment variables to the subdomain and domain you'll be hosting the API at in the config file: `connect-widget/app/.env.production`.
+3. Configure the Connect Widget environment variables to the subdomain and domain you'll be hosting the API at in the config file: `packages/connect-widget/.env.production`.
 
 ### **Deployment Steps**
 
@@ -504,7 +506,7 @@ Now you can make requests to endpoints that require the an API Key by setting th
    pre-requisites. To deploy it, run the following commands (with `<config.stackName>` replaced with what you've set in your config file):
 
 ```shell
-$ ./scripts/deploy-infra.sh -e "production" -s "<config.secretsStackName>"
+$ ./packages/scripts/deploy-infra.sh -e "production" -s "<config.secretsStackName>"
 ```
 
 2. After the previous steps are done, define all of the required keys in the AWS console by navigating to the Secrets Manager.
@@ -512,7 +514,7 @@ $ ./scripts/deploy-infra.sh -e "production" -s "<config.secretsStackName>"
 3. Then, to provision the infrastructure needed by the API/back-end execute the following command:
 
 ```shell
-$ ./scripts/deploy-infra.sh -e "production" -s "<config.stackName>"
+$ ./packages/scripts/deploy-infra.sh -e "production" -s "<config.stackName>"
 ```
 
 This will create the infrastructure to run the API, including the ECR repository where the API will be deployed at. Take note of that to populate
@@ -521,7 +523,7 @@ the environment variable `ECR_REPO_URI`.
 4. To deploy the API on ECR and restart the ECS service to make use of it:
 
 ```shell
-$ AWS_REGION=xxx ECR_REPO_URI=xxx ECS_CLUSTER=xxx ECS_SERVICE=xxx ./scripts/deploy-api.sh"
+$ AWS_REGION=xxx ECR_REPO_URI=xxx ECS_CLUSTER=xxx ECS_SERVICE=xxx ./packages/scripts/deploy-api.sh"
 ```
 
 where:
@@ -536,7 +538,7 @@ After deployment, the API will be available at the configured subdomain + domain
 5. Finally, to self-host the Connect widget, run the following:
 
 ```shell
-$ ./scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
+$ ./packages/scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
 ```
 
 This will create the infrastructure to run the Connect Widget, including the S3 Bucket to host the files and the CloudFront distribution. Take note of that to populate
@@ -545,13 +547,13 @@ the environment variables `S3_BUCKET` and `CF_DISTRIB_ID`.
 6. And the following, to deploy the Connect Widget's files on S3 and invalidate the cache on CloudFront:
 
 ```shell
-$ S3_BUCKET=xxx CF_DISTRIB_ID=xxx ./scripts/deploy-widget.sh
+$ S3_BUCKET=xxx CF_DISTRIB_ID=xxx ./packages/scripts/deploy-widget.sh
 ```
 
-Note: if you need help with the `deploy.sh` script at any time, you can run:
+Note: if you need help with the `deploy-infra.sh` script at any time, you can run:
 
 ```shell
-$ ./scripts/deploy-infra.sh -h
+$ ./packages/scripts/deploy-infra.sh -h
 ```
 
 ### **Initialization**

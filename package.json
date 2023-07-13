@@ -1,16 +1,18 @@
 {
-  "name": "metriport-deploy",
-  "version": "0.1.0",
+  "name": "metriport",
+  "version": "1.0.0",
   "bin": {},
   "scripts": {
+    "preinstall": "npm i -g rimraf",
     "prepare": "husky install",
-    "prep-lambdas": "cd api/lambdas && npm run prep-deploy && npm ci --ignore-scripts --no-fund && npm run lint && npm run build && npm run test && cd ../..",
+    "clean": "npm run clean --workspaces --if-present && echo 'rimraf node_modules' && rimraf node_modules",
+    "prep-lambdas": "cd packages/lambdas && npm run prep-deploy && npm ci --ignore-scripts --no-fund && npm run lint && npm run build && npm run test && cd ../..",
     "prep-deploy": "npm ci --no-fund && npm run lint && npm run build && npm run test && npm run prep-lambdas",
     "prep-deploy-staging": "npm ci --no-fund && npm run lint && npm run build:staging && npm run test && npm run prep-lambdas",
     "package": "npm run prep-deploy",
     "build": "npm run build --workspaces",
     "build:cloud": "npm run build:cloud --workspaces",
-    "build:staging": "npm run build:cloud -w api && npm run build:staging -w connect-widget && npm run build:cloud -w infra",
+    "build:staging": "ENV_TYPE='staging' npm run build:cloud --workspaces",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "lint-fix": "npm run lint-fix --workspaces --if-present",
@@ -20,13 +22,17 @@
     "commit": "cz",
     "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
   },
-  "workspaces": {
-    "packages": [
-      "api/app",
-      "connect-widget/app",
-      "infra"
-    ]
-  },
+  "workspaces": [
+    "packages/commonwell-sdk",
+    "packages/commonwell-cert-runner",
+    "packages/commonwell-jwt-maker",
+    "packages/react-native-sdk",
+    "packages/api-sdk",
+    "packages/api",
+    "packages/connect-widget",
+    "packages/infra",
+    "packages/utils"
+  ],
   "lint-staged": {
     "*.{ts,tsx}": [
       "eslint --max-warnings=0"
@@ -40,17 +46,22 @@
       "path": "@commitlint/cz-commitlint"
     }
   },
+  "dependencies": {
+    "typescript": "^4.9.4"
+  },
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",
     "@commitlint/config-conventional": "^17.4.2",
     "@commitlint/cz-commitlint": "^17.4.2",
     "@semantic-release/git": "^10.0.1",
+    "@tsconfig/recommended": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
     "commitizen": "^4.3.0",
     "eslint": "^8.32.0",
     "eslint-config-prettier": "^8.6.0",
     "husky": "^8.0.3",
+    "lerna": "^7.1.1",
     "lint-staged": "^13.1.0",
     "semantic-release": "^20.0.2",
     "typescript": "^4.9.4"

@@ -1,0 +1,25 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["./src/@types", "./node_modules/@types"],
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "allowJs": true,
+    "checkJs": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "sourceMap": true /* Create source map files for emitted JavaScript files. */,
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */
+  },
+  "include": ["./src/**/*"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__mocks__/",
+    "**/__tests__/",
+    "layers",
+    "static"
+  ]
+}
