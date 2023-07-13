@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import * as httpStatus from "http-status";
+import httpStatus from "http-status";
 import { Agent } from "https";
 import * as stream from "stream";
 import { CommonWellAPI } from "..";

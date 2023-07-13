@@ -7,24 +7,27 @@ export {
   getDemographics,
   getId,
   getIdTrailingSlash,
+  getPatientStrongIds,
   getPersonIdFromSearchByPatientDemo,
 } from "./common/util";
+export { validateNPI } from "./common/validate-npi";
 export { Address, AddressUseCodes } from "./models/address";
 export { CertificateParam, CertificatePurpose, CertificateResp } from "./models/certificates";
 export { Contact, ContactSystemCodes, ContactUseCodes } from "./models/contact";
 export { Demographics, GenderCodes } from "./models/demographics";
 export * from "./models/document";
+export { documentReferenceResourceType, operationOutcomeResourceType } from "./models/document";
 export { EnrollmentSummary } from "./models/enrollment-summary";
 export { HumanName, NameUseCodes } from "./models/human-name";
 export { Identifier, StrongId } from "./models/identifier";
 export {
+  LOLA,
+  NetworkLink,
+  PatientLinkProxy,
   isLOLA1,
   isLOLA2,
   isLOLA3,
   isLOLA4,
-  LOLA,
-  NetworkLink,
-  PatientLinkProxy,
 } from "./models/link";
 export { Organization, OrganizationList } from "./models/organization";
 export {
@@ -35,4 +38,3 @@ export {
 } from "./models/patient";
 export { PatientLink, PatientLinkSearchResp, Person, PersonSearchResp } from "./models/person";
 export { PurposeOfUse } from "./models/purpose-of-use";
-export { documentReferenceResourceType, operationOutcomeResourceType } from "./models/document";

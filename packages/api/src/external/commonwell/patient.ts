@@ -1,12 +1,12 @@
 import {
   CommonWellAPI,
-  getIdTrailingSlash,
-  LOLA,
   Patient as CommonwellPatient,
+  LOLA,
   Person,
   RequestMetadata,
+  StrongId,
+  getIdTrailingSlash,
 } from "@metriport/commonwell-sdk";
-import { StrongId } from "@metriport/commonwell-sdk/models/identifier";
 import { MedicalDataSource } from "..";
 import { Patient, PatientExternalData } from "../../models/medical/patient";
 import { capture } from "../../shared/notifications";
@@ -18,10 +18,10 @@ import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { setCommonwellId } from "./patient-external-data";
 import {
+  PatientDataCommonwell,
   findOrCreatePerson,
   getMatchingStrongIds,
   getPatientData,
-  PatientDataCommonwell,
 } from "./patient-shared";
 
 const createContext = "cw.patient.create";

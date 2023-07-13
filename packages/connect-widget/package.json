@@ -4,15 +4,15 @@
   "private": true,
   "scripts": {
     "clean": "rimraf build && rimraf node_modules",
-    "start": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` react-scripts start",
-    "build": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` react-scripts build",
-    "build:cloud": "if [ \"$ENV_TYPE\" == \"staging\" ]; then REACT_APP_GIT_SHA=`git rev-parse --short HEAD` env-cmd -f .env.staging react-scripts build; else npm run build; fi",
+    "start": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` craco start",
+    "build": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` craco build",
+    "build:cloud": "if [ \"$ENV_TYPE\" == \"staging\" ]; then REACT_APP_GIT_SHA=`git rev-parse --short HEAD` env-cmd -f .env.staging craco build; else npm run build; fi",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint src/**/*.ts src/**/*.tsx",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.{ts,tsx}' --write",
-    "test": "react-scripts test --watchAll=false --passWithNoTests",
-    "eject": "react-scripts eject"
+    "test": "craco test --watchAll=false --passWithNoTests",
+    "eject": "craco eject"
   },
   "eslintConfig": {
     "extends": [
@@ -59,6 +59,7 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
+    "@craco/craco": "^7.1.0",
     "@tsconfig/create-react-app": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
