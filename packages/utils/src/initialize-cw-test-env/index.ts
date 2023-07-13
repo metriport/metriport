@@ -50,7 +50,7 @@ async function main() {
 
     if (currentPatient) {
       for (const doc of patient.docs) {
-        await addDocumentRefAndBinaryToFHIRServer(currentPatient?.id ?? "", doc, index);
+        await addDocumentRefToFHIRServer(currentPatient?.id ?? "", doc, index);
 
         index += 1;
       }
@@ -69,7 +69,7 @@ function getEnvVarOrFail(varName: string): string {
   return value;
 }
 
-async function addDocumentRefAndBinaryToFHIRServer(
+async function addDocumentRefToFHIRServer(
   patientId: string,
   doc: Doc,
   docIndex: number
