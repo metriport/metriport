@@ -1,14 +1,13 @@
 import { ProviderSource } from "@metriport/api";
-import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
-import { getSettingsOrFail } from "../settings/getSettings";
-import { createWebhookRequest } from "./webhook-request";
-import { processRequest, WebhookUserDataPayload, reportDevicesUsage } from "./webhook";
 import dayjs from "dayjs";
+import { chunk, groupBy, union } from "lodash";
+import MetriportError from "../../errors/metriport-error";
+import { FitbitCollectionTypes } from "../../mappings/fitbit/constants";
 import { ConnectedUser } from "../../models/connected-user";
 import { Constants } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
-import { FitbitCollectionTypes } from "../../mappings/fitbit/constants";
-import MetriportError from "../../errors/metriport-error";
+import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
+import { DataType, WebhookUserDataPayload } from "./webhook";
 
 export type FitbitWebhookNotification = {
   collectionType: FitbitCollectionTypes;
@@ -18,38 +17,307 @@ export type FitbitWebhookNotification = {
   subscriptionId: string;
 };
 
+interface Entry {
+  cxId: string;
+  userId: string;
+  typedData: WebhookUserDataPayload;
+}
+
 export const processData = async (data: FitbitWebhookNotification[]) => {
   console.log("Starting to process the webhook");
 
-  for (const update of data) {
-    const { collectionType, date, ownerId: fitbitUserId } = update;
-
-    let cxId: string | undefined;
-    try {
+  const connectedUsersAndData = await Promise.all(
+    data.map(async d => {
+      const { collectionType, date, ownerId: fitbitUserId } = d;
       const connectedUser = await getConnectedUserByTokenOrFail(
         ProviderSource.fitbit,
         fitbitUserId
       );
+      const userFitbitData = await mapData(collectionType, connectedUser, date);
+      return { cxId: connectedUser.cxId, userId: connectedUser.id, typedData: userFitbitData };
+    })
+  );
 
-      cxId = connectedUser.cxId;
+  console.log("USERS AND DATA", connectedUsersAndData);
 
-      const fitbitData = await mapData(collectionType, connectedUser, date);
+  const reducedData: Entry[] = [];
 
-      const payload = { users: [{ userId: connectedUser.id, ...fitbitData }] };
+  connectedUsersAndData.forEach(entry => {
+    console.log("ENTRYLOG", entry);
+    const existingUserIndex = reducedData.findIndex(
+      item => item.cxId === entry.cxId && item.userId === entry.userId
+    );
 
-      const settings = await getSettingsOrFail({ id: cxId });
-      const webhookRequest = await createWebhookRequest({ cxId, payload });
-      await processRequest(webhookRequest, settings);
+    if (existingUserIndex >= 0) {
+      const entryKeys = Object.keys(entry.typedData) as DataType[];
 
-      reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
-    } catch (error) {
-      console.log("Fitbit webhook processing failed.", error);
-      capture.error(error, {
-        extra: { update, context: `webhook.fitbit.processData`, fitbitUserId, cxId },
-      });
+      reducedData[existingUserIndex] = {
+        ...reducedData[existingUserIndex],
+        typedData: {
+          ...reducedData[existingUserIndex].typedData,
+          ...(entryKeys.includes("activity")
+            ? {
+                activity: union(
+                  reducedData[existingUserIndex].typedData.activity,
+                  entry.typedData.activity
+                ),
+              }
+            : undefined),
+          ...(entryKeys.includes("nutrition")
+            ? {
+                nutrition: union(
+                  reducedData[existingUserIndex].typedData.nutrition,
+                  entry.typedData.nutrition
+                ),
+              }
+            : undefined),
+          ...(entryKeys.includes("body")
+            ? { body: union(reducedData[existingUserIndex].typedData.body, entry.typedData.body) }
+            : undefined),
+          ...(entryKeys.includes("sleep")
+            ? {
+                sleep: union(reducedData[existingUserIndex].typedData.sleep, entry.typedData.sleep),
+              }
+            : undefined),
+        },
+      };
+    } else {
+      reducedData.push(entry);
     }
-  }
+  });
+
+  console.log("REDUCED DATA", JSON.stringify(reducedData, null, 2));
+
+  // Group all the data records for the same cxId
+  const dataByCustomer = groupBy(reducedData, v => v.cxId);
+  console.log("DATA BY CUSTOMER", dataByCustomer);
+
+  await Promise.allSettled(
+    Object.keys(dataByCustomer).map(async cxId => {
+      console.log("CXID", cxId);
+      try {
+        // flat list of each data record and its respective user
+        const dataAndUserList = dataByCustomer[cxId].map(v => ({
+          userId: v.userId,
+          typedData: v.typedData,
+        }));
+
+        console.log("DATA AND USER", dataAndUserList);
+        // split the list in chunks
+        const chunks = chunk(dataAndUserList, 10);
+
+        console.log("CHUNKS IS", JSON.stringify(chunks, null, 2));
+
+        // let payloads: WebhookDataPayloadWithoutMessageId[] = [];
+
+        chunks.forEach(piece => {
+          console.log("CHUNK PIECE", piece);
+          // const { userId, typedData } = piece;
+        });
+
+        // const payloads = chunks.map(c => {
+        //   const users: WebhookUserPayload[] = [];
+
+        //   const payload: WebhookDataPayloadWithoutMessageId = { users };
+        //   return payload;
+        // });
+
+        // console.log("FINALLY, PAYLOADS", JSON.stringify(payloads, null, 2));
+
+        // now that we have a all the chunks for one customer, process them
+        // const settings = await getSettingsOrFail({ id: cxId });
+
+        // analytics({
+        //   distinctId: cxId,
+        //   event: EventTypes.query,
+        //   properties: {
+        //     method: "POST",
+        //     url: "/webhook/garmin",
+        //     apiType: ApiTypes.devices,
+        //   },
+        // });
+        // await processOneCustomer(cxId, settings, payloads);
+        // reportDevicesUsage(
+        //   cxId,
+        //   dataAndUserList.map(du => du.userId)
+        // );
+      } catch (err) {
+        console.log("ERROR IS", err);
+      }
+    })
+  );
+
+  // const { activity, sleep, body, nutrition } = reducedData[existingIndex].typedData;
+  //     const td = entry.typedData;
+  //     if (activity) td.activity ? td.activity.push(...activity) : (td.activity = activity);
+  //     if (sleep) td.sleep ? td.sleep.push(...sleep) : (td.sleep = sleep);
+  //     if (body) td.body ? td.body.push(...body) : (td.body = body);
+  //     if (nutrition) td.nutrition ? td.nutrition.push(...nutrition) : (td.nutrition = nutrition);
 };
+
+// [
+//   {
+//     cxId: '89298638-b38c-4f18-a51e-7c82d113e1bb',
+//     userId: 'c55e5f8c-4f3f-4723-83e4-df2ab8f732f7',
+//     typedData: { body: [Array] }
+//   },
+//   {
+//     cxId: '89298638-b38c-4f18-a51e-7c82d113e1bb',
+//     userId: 'c55e5f8c-4f3f-4723-83e4-df2ab8f732f7',
+//     typedData: { body: [Array] }
+//   },
+//   {
+//     cxId: '89298638-b38c-4f18-a51e-7c82d113e1bb',
+//     userId: 'c55e5f8c-4f3f-4723-83e4-df2ab8f732f7',
+//     typedData: { body: [Array] }
+//   },
+//   {
+//     cxId: '89298638-b38c-4f18-a51e-7c82d113e1bb',
+//     userId: 'c55e5f8c-4f3f-4723-83e4-df2ab8f732f7',
+//     typedData: { nutrition: [Array] }
+//   },
+//   {
+//     cxId: '89298638-b38c-4f18-a51e-7c82d113e1bb',
+//     userId: '5abab776-fd9c-4dfe-92fc-1246301ee5ab',
+//     typedData: { sleep: [Array] }
+//   }
+// ]
+
+// const dataWithListOfCxIdAndUserId = await Promise.all(
+//   data.map(async d => {
+//     const connectedUsers = await getConnectedUserByTokenOrFail(ProviderSource.fitbit, d.ownerId);
+
+//     const cxIdAndUserIdList = connectedUsers.map(t => ({
+//       cxId: t.cxId,
+//       userId: t.id,
+//     }));
+//     return {typedData: d.typedData, cx}
+//   })
+// )
+
+//   const cxGroupedData: { [cxId: string]: UserData[] } = {};
+
+//   for (const update of data) {
+//     const { collectionType, date, ownerId: fitbitUserId } = update;
+//     let cxId: string | undefined;
+//     const connectedUser = await getConnectedUserByTokenOrFail(ProviderSource.fitbit, fitbitUserId);
+
+//     cxId = connectedUser.cxId;
+
+//     const fitbitData = await mapData(collectionType, connectedUser, date);
+//     console.log("FITBIT DATA UPDATE:", fitbitData);
+
+//     if (!cxGroupedData[cxId]) cxGroupedData[cxId] = [];
+
+//     let userFound = false;
+
+//     cxGroupedData[cxId].forEach(user => {
+//       if (user.userId === connectedUser.id) {
+//         userFound = true;
+//         if (fitbitData.activity)
+//           user.typedData.activity
+//             ? user.typedData.activity.push(...fitbitData.activity)
+//             : (user.typedData.activity = fitbitData.activity);
+//         if (fitbitData.sleep)
+//           user.typedData.sleep
+//             ? user.typedData.sleep.push(...fitbitData.sleep)
+//             : (user.typedData.sleep = fitbitData.sleep);
+//         if (fitbitData.body)
+//           user.typedData.body
+//             ? user.typedData.body.push(...fitbitData.body)
+//             : (user.typedData.body = fitbitData.body);
+//         if (fitbitData.nutrition)
+//           user.typedData.nutrition
+//             ? user.typedData.nutrition.push(...fitbitData.nutrition)
+//             : (user.typedData.nutrition = fitbitData.nutrition);
+//       }
+//     });
+
+//     if (!userFound) {
+//       cxGroupedData[cxId].push({ userId: connectedUser.id, typedData: fitbitData });
+//     }
+//   }
+
+//   console.log("GROUPED DATA", cxGroupedData);
+
+//   for (const [cxId, payload] of Object.entries(cxGroupedData)) {
+//     const settings = await getSettingsOrFail({ id: cxId });
+//     console.log("PAYLOAD IS", payload);
+
+//     const webhookRequest = await createWebhookRequest({
+//       cxId,
+//       payload: payload.map(p => p.typedData),
+//     });
+//     await processRequest(webhookRequest, settings);
+//     reportDevicesUsage(
+//       cxId,
+//       payload.map(du => du.userId)
+//     );
+//   }
+// };
+
+// export const processData = async (data: FitbitWebhookNotification[]) => {
+//   console.log("Starting to process the webhook");
+//   const cxGroupedData: { [cxId: string]: UserData[] } = {};
+
+//   for (const update of data) {
+//     const { collectionType, date, ownerId: fitbitUserId } = update;
+//     let cxId: string | undefined;
+//     const connectedUser = await getConnectedUserByTokenOrFail(ProviderSource.fitbit, fitbitUserId);
+
+//     cxId = connectedUser.cxId;
+
+//     const fitbitData = await mapData(collectionType, connectedUser, date);
+//     console.log("FITBIT DATA UPDATE:", fitbitData);
+
+//     if (!cxGroupedData[cxId]) cxGroupedData[cxId] = [];
+
+//     let userFound = false;
+
+//     cxGroupedData[cxId].forEach(user => {
+//       if (user.userId === connectedUser.id) {
+//         userFound = true;
+//         if (fitbitData.activity)
+//           user.typedData.activity
+//             ? user.typedData.activity.push(...fitbitData.activity)
+//             : (user.typedData.activity = fitbitData.activity);
+//         if (fitbitData.sleep)
+//           user.typedData.sleep
+//             ? user.typedData.sleep.push(...fitbitData.sleep)
+//             : (user.typedData.sleep = fitbitData.sleep);
+//         if (fitbitData.body)
+//           user.typedData.body
+//             ? user.typedData.body.push(...fitbitData.body)
+//             : (user.typedData.body = fitbitData.body);
+//         if (fitbitData.nutrition)
+//           user.typedData.nutrition
+//             ? user.typedData.nutrition.push(...fitbitData.nutrition)
+//             : (user.typedData.nutrition = fitbitData.nutrition);
+//       }
+//     });
+
+//     if (!userFound) {
+//       cxGroupedData[cxId].push({ userId: connectedUser.id, typedData: fitbitData });
+//     }
+//   }
+
+//   console.log("GROUPED DATA", cxGroupedData);
+
+//   for (const [cxId, payload] of Object.entries(cxGroupedData)) {
+//     const settings = await getSettingsOrFail({ id: cxId });
+//     console.log("PAYLOAD IS", payload);
+
+//     const webhookRequest = await createWebhookRequest({
+//       cxId,
+//       payload: payload.map(p => p.typedData),
+//     });
+//     await processRequest(webhookRequest, settings);
+//     reportDevicesUsage(
+//       cxId,
+//       payload.map(du => du.userId)
+//     );
+//   }
+// };
 
 export const mapData = async (
   collectionType: string,
