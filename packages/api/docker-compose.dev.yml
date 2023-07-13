@@ -1,5 +1,7 @@
 version: "3.8"
 
+name: app
+
 networks:
   metriportNetwork:
     name: metriportNetwork
@@ -11,8 +13,8 @@ services:
   # use the Dockerfile in the directory to configure it
   app:
     build:
-      context: ./
-      dockerfile: Dockerfile.dev
+      context: ../../
+      dockerfile: packages/api/Dockerfile.dev
     deploy:
       restart_policy:
         condition: on-failure
