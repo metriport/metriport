@@ -374,7 +374,7 @@ export class Fitbit extends Provider implements OAuth2 {
   // Checks if all of the required scopes were authorized by the user
   allRequiredScopesIncluded(userScopes: string): boolean {
     if (
-      intersection(userScopes, fullSubscriptionRequiredScopes).length !==
+      intersection(userScopes.split(" "), fullSubscriptionRequiredScopes).length !==
       fullSubscriptionRequiredScopes.length
     )
       return false;
