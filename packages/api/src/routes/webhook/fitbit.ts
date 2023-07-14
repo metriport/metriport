@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { asyncHandler } from "../util";
 import { processData } from "../../command/webhook/fitbit";
-import { getEnvVar } from "../../shared/config";
+import { Config } from "../../shared/config";
+import { asyncHandler } from "../util";
 
 const routes = Router();
 
@@ -21,7 +21,7 @@ routes.get(
         "Verifying the subscriber. Make sure to use the verification code provided in the dev.fitbit dashboard!"
       );
 
-      if (req.query.verify === getEnvVar("FITBIT_SUBSCRIBER_VERIFICATION_CODE")) {
+      if (req.query.verify === Config.getFitbitVerificationCode()) {
         console.log("Received correct verification code.");
         return res.sendStatus(status.NO_CONTENT);
       } else {

@@ -111,6 +111,9 @@ export class Config {
   static getFitbitClientSecret(): string {
     return getEnvVarOrFail("FITBIT_CLIENT_SECRET");
   }
+  static getFitbitVerificationCode(): string {
+    return getEnvVarOrFail("FITBIT_SUBSCRIBER_VERIFICATION_CODE");
+  }
 
   static getGoogleClientId(): string {
     return getEnvVarOrFail("GOOGLE_CLIENT_ID");

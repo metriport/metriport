@@ -718,6 +718,7 @@ export class APIStack extends Stack {
 
     const fitbitResource = baseResource.addResource("fitbit");
     fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitLambda));
+    fitbitResource.addMethod("GET", new apig.LambdaIntegration(fitbitLambda));
   }
 
   private setupCdaToVisualization(ownProps: {
