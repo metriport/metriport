@@ -1,39 +1,38 @@
 import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api-sdk";
 
-import { PROVIDER_FITBIT } from "../shared/constants";
-import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
-import Provider, { ConsumerHealthDataType } from "./provider";
-import { Config } from "../shared/config";
-import { ConnectedUser } from "../models/connected-user";
+import axios from "axios";
 import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";
 import { mapToBody } from "../mappings/fitbit/body";
-import { mapToNutrition } from "../mappings/fitbit/nutrition";
-import { mapToSleep } from "../mappings/fitbit/sleep";
-import { mapToUser } from "../mappings/fitbit/user";
+import { FitbitScopes } from "../mappings/fitbit/constants";
 import { fitbitActivityLogResp } from "../mappings/fitbit/models/activity-log";
 import {
   FitbitBreathingRate,
   fitbitBreathingRateResp,
 } from "../mappings/fitbit/models/breathing-rate";
 import { FitbitCardioScore, fitbitCardioScoreResp } from "../mappings/fitbit/models/cardio-score";
+import { FitbitFood, fitbitFoodResp } from "../mappings/fitbit/models/food";
 import { FitbitHeartRate, fitbitHeartRateResp } from "../mappings/fitbit/models/heart-rate";
 import {
   FitbitHeartVariability,
   fitbitHeartVariabilityResp,
 } from "../mappings/fitbit/models/heart-variability";
+import { fitbitSleepResp } from "../mappings/fitbit/models/sleep";
 import { FitbitSpo2, fitbitSpo2Resp } from "../mappings/fitbit/models/spo2";
 import { FitbitTempCore, fitbitTempCoreResp } from "../mappings/fitbit/models/temperature-core";
 import { FitbitTempSkin, fitbitTempSkinResp } from "../mappings/fitbit/models/temperature-skin";
-import { FitbitFood, fitbitFoodResp } from "../mappings/fitbit/models/food";
+import { FitbitUser, fitbitUserResp } from "../mappings/fitbit/models/user";
 import { FitbitWater, fitbitWaterResp } from "../mappings/fitbit/models/water";
-import { fitbitSleepResp } from "../mappings/fitbit/models/sleep";
-import { fitbitUserResp, FitbitUser } from "../mappings/fitbit/models/user";
 import { FitbitWeight, weightSchema } from "../mappings/fitbit/models/weight";
-import axios from "axios";
+import { mapToNutrition } from "../mappings/fitbit/nutrition";
+import { mapToSleep } from "../mappings/fitbit/sleep";
+import { mapToUser } from "../mappings/fitbit/user";
+import { ConnectedUser } from "../models/connected-user";
+import { Config } from "../shared/config";
+import { PROVIDER_FITBIT } from "../shared/constants";
 import { capture } from "../shared/notifications";
-import { FitbitScopes, fullSubscriptionRequiredScopes } from "../mappings/fitbit/constants";
-import { intersection } from "lodash";
+import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
+import Provider, { ConsumerHealthDataType } from "./provider";
 
 export class Fitbit extends Provider implements OAuth2 {
   static URL = "https://api.fitbit.com";
@@ -352,34 +351,41 @@ export class Fitbit extends Provider implements OAuth2 {
 
     const subscriptionId = userId;
 
-    if (this.allRequiredScopesIncluded(scopes)) {
-      const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/apiSubscriptions/${subscriptionId}.json`;
-      this.createSubscription(subscriptionUrl, accessToken);
-      console.log("All scopes included. User subscribed to all Fitbit WH collectionTypes.");
-    } else {
-      for (const [key, subscriptionType] of Object.entries(subscriptionTypes)) {
+    // TODO: Part of the TODO just below. This code could be used to subscribe to all collectionTypes, including "userRevokedAccess"
+    // if (this.allRequiredScopesIncluded(scopes)) {
+    //   const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/apiSubscriptions/${subscriptionId}.json`;
+    //   this.createSubscription(subscriptionUrl, accessToken);
+    //   console.log("All scopes included. User subscribed to all Fitbit WH collectionTypes.");
+    // } else {
+    await Promise.all(
+      Object.entries(subscriptionTypes).map(async ([key, subscriptionType]) => {
         if (scopes.includes(key)) {
-          const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}${subscriptionType}.json`;
-          await this.createSubscription(subscriptionUrl, accessToken);
+          const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}-${subscriptionType}.json`;
+          this.createSubscription(subscriptionUrl, accessToken);
         }
-      }
-    }
+      })
+    );
+
+    // if (scopes.split(" ").length > 0) {
+    //   const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/userRevokedAccess/apiSubscriptions/${subscriptionId}-userRevokedAccess.json`;
+    //   this.createSubscription(subscriptionUrl, accessToken);
+    // }
+
+    // }
 
     // TODO: userRevokedAccess. Revoking the token makes it so the webhook do not trigger anything on our end. So, perhaps, this isn't necessary at all.
     // https://github.com/metriport/metriport/issues/652
-    // const userRevokedAccessUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/userRevokedAccess/apiSubscriptions/${subscriptionId}sleep.json`;
+    // const userRevokedAccessUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/userRevokedAccess/apiSubscriptions/${subscriptionId}-userRevokedAccess.json`;
     // await this.createSubscription(userRevokedAccessUrl, accessToken);
   }
 
   // Checks if all of the required scopes were authorized by the user
-  allRequiredScopesIncluded(userScopes: string): boolean {
-    if (
-      intersection(userScopes.split(" "), fullSubscriptionRequiredScopes).length !==
-      fullSubscriptionRequiredScopes.length
-    )
-      return false;
-    return true;
-  }
+  // allRequiredScopesIncluded(userScopes: string): boolean {
+  //   return (
+  //     intersection(userScopes.split(" "), fullSubscriptionRequiredScopes).length ==
+  //     fullSubscriptionRequiredScopes.length
+  //   );
+  // }
 
   // Creates a subscription for all or one specific collectionType
   async createSubscription(url: string, accessToken: string): Promise<void> {

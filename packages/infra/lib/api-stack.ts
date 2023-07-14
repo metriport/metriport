@@ -716,9 +716,8 @@ export class APIStack extends Stack {
     // Grant lambda access to the api server
     server.service.connections.allowFrom(fitbitLambda, Port.allTcp());
 
-    // setup $base/fitbit path with token auth
     const fitbitResource = baseResource.addResource("fitbit");
-    fitbitResource.addMethod("ANY", new apig.LambdaIntegration(fitbitLambda));
+    fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitLambda));
   }
 
   private setupCdaToVisualization(ownProps: {

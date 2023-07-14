@@ -21,22 +21,19 @@ const buildResponse = (status: number, body?: unknown) => ({
 
 const defaultResponse = () => buildResponse(status.NO_CONTENT);
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-// type Request = { body?: any; headers: Record<string, string | undefined> };
-
 export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
   console.log(`Verifying at least one UserAuthToken on body...`);
-
-  if (!req.body) {
-    console.log("Resquest has no body - will not be forwarded to the API");
-    return defaultResponse();
-  }
 
   const fitbitClientSecretName = getEnvOrFail("FITBIT_CLIENT_SECRET");
 
   const secret: string = (await getSecret(fitbitClientSecretName)) as string;
   if (!secret) {
     throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
+  }
+
+  if (!req.body) {
+    console.log("Resquest has no body - will not be forwarded to the API");
+    return defaultResponse();
   }
 
   if (verifyRequest(req, secret)) {

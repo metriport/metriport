@@ -28,6 +28,13 @@ export interface TypedData<T extends MetriportData> {
   data: T;
 }
 
+export type WebhookDataPayload = {
+  meta: WebhookMetadataPayload;
+  users: WebhookUserPayload[];
+};
+export type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
+export type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
+
 // DAPI
 export type WebhookUserDataPayload = {
   [k in DataType]?: MetriportData[];

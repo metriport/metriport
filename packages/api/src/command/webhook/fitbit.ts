@@ -13,7 +13,7 @@ import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes } from "../usage/report-usage";
 import {
   DataType,
-  WebhookMetadataPayload,
+  WebhookDataPayloadWithoutMessageId,
   WebhookUserDataPayload,
   processRequest,
   reportDevicesUsage,
@@ -33,13 +33,6 @@ interface Entry {
   userId: string;
   typedData: WebhookUserDataPayload;
 }
-
-type WebhookDataPayload = {
-  meta: WebhookMetadataPayload;
-  users: WebhookUserPayload[];
-};
-type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
-type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
 
 const log = Util.log(`Fitbit Webhook`);
 
@@ -128,7 +121,7 @@ export const processData = async (data: FitbitWebhookNotification[]) => {
           event: EventTypes.query,
           properties: {
             method: "POST",
-            url: "/webhook/garmin",
+            url: "/webhook/fitbit",
             apiType: ApiTypes.devices,
           },
         });
