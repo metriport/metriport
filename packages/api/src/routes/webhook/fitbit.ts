@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
+import status from "http-status";
 import { asyncHandler } from "../util";
 import { processData } from "../../command/webhook/fitbit";
 import { getEnvVar } from "../../shared/config";
@@ -22,13 +23,13 @@ routes.get(
 
       if (req.query.verify === getEnvVar("FITBIT_SUBSCRIBER_VERIFICATION_CODE")) {
         console.log("Received correct verification code.");
-        return res.sendStatus(204);
+        return res.sendStatus(status.NO_CONTENT);
       } else {
         console.log("Incorrect verification code detected!");
-        return res.sendStatus(404);
+        return res.sendStatus(status.NOT_FOUND);
       }
     } else {
-      return res.sendStatus(200);
+      return res.sendStatus(status.OK);
     }
   })
 );
@@ -43,7 +44,7 @@ routes.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     processData(req.body);
-    return res.sendStatus(200);
+    return res.sendStatus(status.OK);
   })
 );
 
