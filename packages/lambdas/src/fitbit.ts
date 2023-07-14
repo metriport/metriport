@@ -34,7 +34,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
 
   const fitbitClientSecretName = getEnvOrFail("FITBIT_CLIENT_SECRET");
 
-  const secret: string = await getSecret(fitbitClientSecretName);
+  const secret: string = (await getSecret(fitbitClientSecretName)) as string;
   if (!secret) {
     throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
   }
