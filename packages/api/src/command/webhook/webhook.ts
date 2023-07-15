@@ -10,7 +10,10 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { updateWebhookRequestStatus } from "./webhook-request";
+import { createWebhookRequest, updateWebhookRequestStatus } from "./webhook-request";
+import { getSettingsOrFail } from "../settings/getSettings";
+import { getConnectedUserOrFail } from "../connected-user/get-connected-user";
+import { getUserToken } from "../cx-user/get-user-token";
 
 const axios = Axios.create();
 
@@ -176,4 +179,38 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
   const res = await sendPayload(payload, url, key, 2_000);
   if (res.pong && res.pong === ping) return true;
   return false;
+};
+
+/**
+ * Sends an update to the CX about their user subscribing to a provider
+ *
+ * @param token
+ * @param cxId
+ * @param userId
+ */
+export const sendUpdatedUserProviderList = async (
+  token: string,
+  cxId?: string | undefined,
+  userId?: string | undefined
+): Promise<void> => {
+  try {
+    if (!cxId || !userId) {
+      const useToken = await getUserToken({ token: token });
+      cxId = useToken.cxId;
+      userId = useToken.userId;
+    }
+
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+    const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : null;
+
+    const settings = await getSettingsOrFail({ id: cxId });
+    const payload = { userId, connectedProviders: providers };
+    const webhookRequest = await createWebhookRequest({ cxId, payload });
+    await processRequest(webhookRequest, settings);
+  } catch (err) {
+    console.log("Error on updating the list of providers for a user");
+    capture.error("Failed to send wh for an updated user provider list", {
+      extra: { context: `webhook.sendUpdatedUserProviderList` },
+    });
+  }
 };

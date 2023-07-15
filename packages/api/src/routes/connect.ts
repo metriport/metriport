@@ -5,14 +5,15 @@ import z from "zod";
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { getUserToken } from "../command/cx-user/get-user-token";
+import { sendUpdatedUserProviderList } from "../command/webhook/webhook";
 import BadRequestError from "../errors/bad-request";
 import UnauthorizedError from "../errors/unauthorized";
 import { Config } from "../shared/config";
 import {
   Constants,
+  PROVIDER_APPLE,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
-  PROVIDER_APPLE,
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
 import { processOAuth1 } from "./middlewares/oauth1";
@@ -108,6 +109,7 @@ router.get(
         const cxId = getCxIdFromHeaders(req);
         const userId = getUserIdFrom("headers", req).optional();
         await processOAuth2(provider, state, authCode, cxId, userId);
+        await sendUpdatedUserProviderList(state, cxId, userId);
         return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
       }
 
@@ -116,6 +118,7 @@ router.get(
       if (providerOAuth1.success) {
         const provider = providerOAuth1.data;
         await processOAuth1(provider, state, oauth_token, oauth_verifier);
+        await sendUpdatedUserProviderList(state);
         return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
       }
     } catch (err) {
@@ -211,6 +214,7 @@ router.get(
       },
     });
 
+    await sendUpdatedUserProviderList(token, cxId, userId);
     return res.status(status.OK).send(connectedUser.id);
   })
 );
