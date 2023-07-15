@@ -1,11 +1,19 @@
+# This should be run from the context of the root of the monorepo
 FROM node:18
 WORKDIR /usr/src/app
 COPY package*.json ./
 COPY tsconfig.json ./
-COPY .env ./
-COPY src ./src
+ADD packages ./packages
+COPY packages/api/.env ./packages/api/
 RUN ls -a
-RUN npm install
+# install external dependencies from the package-lock file
+RUN npm ci --ignore-scripts --no-fund
+# build local dependencies
+RUN npm run build -w packages/commonwell-sdk
+RUN npm run build -w packages/api-sdk
+# build/run the api
+WORKDIR /usr/src/app/packages/api
+RUN ls -a
 EXPOSE 8080
 EXPOSE 9229
 CMD ["npm","run","dev"]

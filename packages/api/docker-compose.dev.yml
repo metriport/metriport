@@ -1,5 +1,7 @@
 version: "3.8"
 
+name: app
+
 networks:
   metriportNetwork:
     name: metriportNetwork
@@ -11,8 +13,8 @@ services:
   # use the Dockerfile in the directory to configure it
   app:
     build:
-      context: ./
-      dockerfile: Dockerfile.dev
+      context: ../../
+      dockerfile: packages/api/Dockerfile.dev
     deploy:
       restart_policy:
         condition: on-failure
@@ -36,7 +38,9 @@ services:
       - "8080:8080"
       - "9229:9229"
     volumes:
-      - ./src:/usr/src/app/src
+      - ./src:/usr/src/app/packages/api/src
+      - ../api-sdk/dist:/usr/src/app/packages/api-sdk/dist
+      - ../commonwell-sdk/dist:/usr/src/app/packages/commonwell-sdk/dist
     extra_hosts:
       - "host.docker.internal:host-gateway"
   # Config for dynamoDB table for auth token management

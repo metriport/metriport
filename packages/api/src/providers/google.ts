@@ -144,7 +144,17 @@ export class Google extends Provider implements OAuth2 {
     ]);
 
     const sessions = resSessions.status === "fulfilled" ? resSessions.value : undefined;
+    if (resSessions.status === "rejected") {
+      capture.error("Google activity sessions promise was rejected", {
+        extra: { context: `google.fetch.sessions`, reason: resSessions.reason },
+      });
+    }
     const data = resData.status === "fulfilled" ? resData.value : undefined;
+    if (resData.status === "rejected") {
+      capture.error("Google activity data promise was rejected", {
+        extra: { context: `google.fetch.data`, reason: resData.reason },
+      });
+    }
 
     if (!sessions && !data) {
       throw new Error("All Requests failed");

@@ -4,7 +4,6 @@ import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { Patient, PatientData, PatientModel } from "../../../models/medical/patient";
-import { safeLogId } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
@@ -130,7 +129,7 @@ export const getPatient = async ({
 
 export const getPatientOrFail = async (params: GetPatient): Promise<PatientModel> => {
   const patient = await getPatient(params);
-  if (!patient) throw new NotFoundError(`Could not find patient ${safeLogId(params.id)}`);
+  if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
   return patient;
 };
 

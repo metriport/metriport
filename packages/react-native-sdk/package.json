@@ -1,6 +1,6 @@
 {
   "name": "@metriport/react-native-sdk",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A library to integrate with Metriport on React Native - including Apple Health integrations.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -42,8 +42,10 @@
   "scripts": {
     "clean": "rimraf lib && rimraf node_modules",
     "tsc": "tsc",
+    "watch": "tsc --watch",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
+    "lint": "echo 'missing lint config'",
     "test": "echo \"No test specified yet\""
   },
   "bugs": {

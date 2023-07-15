@@ -2,10 +2,10 @@ import {
   CommonWell,
   getId,
   getIdTrailingSlash,
+  getPatientStrongIds,
   getPersonIdFromSearchByPatientDemo,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { getPatientStrongIds } from "@metriport/commonwell-sdk/common/util";
 import { makeDocPerson, makePatient } from "./payloads";
 import { firstElementOrFail, getEnvOrFail } from "./util";
 

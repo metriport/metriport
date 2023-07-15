@@ -4,6 +4,7 @@
     "target": "es2020",
     "sourceMap": true,
     "declaration": true,
+    "declarationMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     // START - From @tsconfig/strictest
