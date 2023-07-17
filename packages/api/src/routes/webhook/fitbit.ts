@@ -28,9 +28,11 @@ routes.get(
         console.log("Incorrect verification code detected!");
         return res.sendStatus(status.NOT_FOUND);
       }
-    } else {
-      return res.sendStatus(status.OK);
     }
+
+    return res
+      .sendStatus(status.NOT_FOUND)
+      .json({ error: "Subscriber verification code not provided." });
   })
 );
 

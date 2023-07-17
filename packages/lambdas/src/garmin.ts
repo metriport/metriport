@@ -43,7 +43,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
   console.log(`Verifying at least one UserAuthToken on body...`);
 
   if (!req.body) {
-    console.log("Resquest has no body - will not be forwarded to the API");
+    console.log("Request has no body - will not be forwarded to the API");
     return defaultResponse();
   }
 
@@ -96,7 +96,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
     }
   }
 
-  console.log("Resquest has no UAT - will not be forwarded to the API");
+  console.log("Request has no UAT - will not be forwarded to the API");
   return defaultResponse();
 });
 

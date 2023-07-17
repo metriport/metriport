@@ -351,7 +351,7 @@ export class Fitbit extends Provider implements OAuth2 {
 
     const subscriptionId = userId;
 
-    // TODO: Part of the TODO just below. This code could be used to subscribe to all collectionTypes, including "userRevokedAccess"
+    // TODO #652: Part of the TODO just below. This code could be used to subscribe to all collectionTypes, including "userRevokedAccess"
     // if (this.allRequiredScopesIncluded(scopes)) {
     //   const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/apiSubscriptions/${subscriptionId}.json`;
     //   this.createSubscription(subscriptionUrl, accessToken);
@@ -373,7 +373,7 @@ export class Fitbit extends Provider implements OAuth2 {
 
     // }
 
-    // TODO: userRevokedAccess. Revoking the token makes it so the webhook do not trigger anything on our end. So, perhaps, this isn't necessary at all.
+    // TODO #652: userRevokedAccess. Revoking the token makes it so the webhook do not trigger anything on our end. So, perhaps, this isn't necessary at all.
     // https://github.com/metriport/metriport/issues/652
     // const userRevokedAccessUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/userRevokedAccess/apiSubscriptions/${subscriptionId}-userRevokedAccess.json`;
     // await this.createSubscription(userRevokedAccessUrl, accessToken);

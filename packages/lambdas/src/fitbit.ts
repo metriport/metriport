@@ -31,7 +31,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
   }
 
   if (!req.body) {
-    console.log("Resquest has no body - will not be forwarded to the API");
+    console.log("Request has no body - will not be forwarded to the API");
     return defaultResponse();
   }
 

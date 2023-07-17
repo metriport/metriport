@@ -36,7 +36,7 @@ interface Entry {
 
 const log = Util.log(`Fitbit Webhook`);
 
-export const processData = async (data: FitbitWebhookNotification[]) => {
+export const processData = async (data: FitbitWebhookNotification[]): Promise<void> => {
   console.log("Starting to process the webhook");
 
   const connectedUsersAndData = await Promise.all(
