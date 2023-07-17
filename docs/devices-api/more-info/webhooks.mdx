@@ -17,6 +17,21 @@ how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
   page](/devices-api/more-info/our-integrations).
 </Info>
 
+## User provider subscription
+
+The format follows:
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>"
+  },
+  "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
+  "connectedProviders": ["fitbit", "withings", "cronometer"]
+}
+```
+
 ## User data message
 
 The format follows:
