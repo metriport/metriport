@@ -29,7 +29,7 @@ export interface OAuth1 {
     userAccessToken: string;
     userAccessTokenSecret: string;
   }>;
-  deregister(userAccessTokens: string[]): Promise<void>;
+  deregister(userAccessTokens: string[], cxId?: string): Promise<void>;
 }
 
 export class OAuth1DefaultImpl implements OAuth1 {
@@ -161,7 +161,7 @@ export class OAuth1DefaultImpl implements OAuth1 {
     return { oauth_token, oauth_token_secret };
   }
 
-  async deregister(userAccessTokens: string[]): Promise<void> {
+  async deregister(userAccessTokens: string[], cxId?: string): Promise<void> {
     for (const oauthUserAccessToken of userAccessTokens) {
       const userTokenList = await getUserTokenByUAT({ oauthUserAccessToken });
       for (const userToken of userTokenList) {
@@ -172,12 +172,13 @@ export class OAuth1DefaultImpl implements OAuth1 {
         updatedUserToken.oauthUserAccessSecret = undefined;
         await saveUserToken(updatedUserToken);
         // Postgres (app standard)
-        await updateProviderData({
-          id: userToken.userId,
-          cxId: userToken.cxId,
-          provider: this.providerName,
-          providerItem: undefined,
-        });
+        if (!cxId || cxId === userToken.cxId)
+          await updateProviderData({
+            id: userToken.userId,
+            cxId: userToken.cxId,
+            provider: this.providerName,
+            providerItem: undefined,
+          });
       }
     }
   }
