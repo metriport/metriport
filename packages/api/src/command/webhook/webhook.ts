@@ -195,12 +195,12 @@ export const sendUpdatedUserProviderList = async (
       cxId = useToken.cxId;
       userId = useToken.userId;
     }
-
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : null;
 
+    const payload = { users: [{ userId, connectedProviders: providers }] };
     const settings = await getSettingsOrFail({ id: cxId });
-    const payload = { userId, connectedProviders: providers };
+
     const webhookRequest = await createWebhookRequest({ cxId, payload });
     await processRequest(webhookRequest, settings);
   } catch (err) {

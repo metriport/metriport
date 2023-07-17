@@ -5,8 +5,7 @@ description: "Receive user health data as soon as it becomes available."
 
 ## Overview
 
-When using the Devices API, Metriport will send Webhook messages containing [user data](#user-data-message) to your app
-from [our supported Providers](/devices-api/more-info/our-integrations), as soon as the data becomes available.
+When using the Devices API, Metriport will send Webhook messages containing new [provider subscriptions](#user-provider-subscription) for each user, as well as [user data](#user-data-message) to your app from [our supported Providers](/devices-api/more-info/our-integrations), as soon as the data becomes available.
 
 To enable this integration approach with Metriport, and for some prerequesite reading to understand
 how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
@@ -19,7 +18,7 @@ how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 
 ## User provider subscription
 
-The format follows:
+New provider connection data follows this format:
 
 ```json
 {
@@ -27,14 +26,18 @@ The format follows:
     "messageId": "<message-id>",
     "when": "<date-time-in-utc>"
   },
-  "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
-  "connectedProviders": ["fitbit", "withings", "cronometer"]
+  "users": [
+    {
+      "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
+      "connectedProviders": ["fitbit", "garmin", "cronometer"]
+    }
+  ]
 }
 ```
 
 ## User data message
 
-The format follows:
+New health data follows this format:
 
 ```json
 {
