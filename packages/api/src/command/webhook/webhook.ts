@@ -183,10 +183,6 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
 
 /**
  * Sends an update to the CX about their user subscribing to a provider
- *
- * @param token
- * @param cxId
- * @param userId
  */
 export const sendUpdatedUserProviderList = async (
   token: string,
