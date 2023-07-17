@@ -466,6 +466,8 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       fargateService: apiService,
       fitbitClientSecret: props.config.providerSecretNames.FITBIT_CLIENT_SECRET,
+      fitbitSubscriberVerificationCode:
+        props.config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
@@ -682,6 +684,7 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     fitbitClientSecret: string;
+    fitbitSubscriberVerificationCode: string;
     envType: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
@@ -692,6 +695,7 @@ export class APIStack extends Stack {
       vpc,
       fargateService: server,
       fitbitClientSecret,
+      fitbitSubscriberVerificationCode,
       envType,
       sentryDsn,
       alarmAction,
@@ -713,12 +717,28 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
+    const fitbitSubscriberVerificationLambda = createLambda({
+      stack: this,
+      name: "FitbitSubscriberVerification",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "fitbit-subscriber-verification",
+      layers: lambdaLayers,
+      envVars: {
+        ENV_TYPE: envType,
+        FITBIT_CLIENT_SECRET: fitbitClientSecret,
+        FITBIT_SUBSCRIBER_VERIFICATION_CODE: fitbitSubscriberVerificationCode,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
     // Grant lambda access to the api server
     server.service.connections.allowFrom(fitbitLambda, Port.allTcp());
 
     const fitbitResource = baseResource.addResource("fitbit");
     fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitLambda));
-    fitbitResource.addMethod("GET", new apig.LambdaIntegration(fitbitLambda));
+    fitbitResource.addMethod("GET", new apig.LambdaIntegration(fitbitSubscriberVerificationLambda));
   }
 
   private setupCdaToVisualization(ownProps: {
