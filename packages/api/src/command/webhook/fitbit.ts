@@ -1,6 +1,6 @@
 import { ProviderSource } from "@metriport/api-sdk";
 import dayjs from "dayjs";
-import { groupBy, union } from "lodash";
+import { Dictionary, groupBy, union } from "lodash";
 import MetriportError from "../../errors/metriport-error";
 import { FitbitCollectionTypes } from "../../mappings/fitbit/constants";
 import { ConnectedUser } from "../../models/connected-user";
@@ -99,6 +99,42 @@ export const processData = async (data: FitbitWebhookNotification[]): Promise<vo
 
   const dataByCustomer = groupBy(reducedData, v => v.cxId);
 
+  await createAndSendCustomerPayloads(dataByCustomer);
+};
+
+export const mapData = async (
+  collectionType: Omit<FitbitCollectionTypes, "userRevokedAccess">,
+  connectedUser: ConnectedUser,
+  startdate: string
+): Promise<WebhookUserDataPayload> => {
+  const payload: WebhookUserDataPayload = {};
+  const provider = Constants.PROVIDER_MAP[ProviderSource.fitbit];
+
+  if (collectionType === FitbitCollectionTypes.activities) {
+    const activity = await provider.getActivityData(connectedUser, startdate);
+    payload.activity = [activity];
+  } else if (collectionType === FitbitCollectionTypes.body) {
+    const body = await provider.getBodyData(connectedUser, startdate);
+    payload.body = [body];
+  } else if (collectionType === FitbitCollectionTypes.foods) {
+    const nutrition = await provider.getNutritionData(connectedUser, startdate);
+    payload.nutrition = [nutrition];
+  } else if (collectionType === FitbitCollectionTypes.sleep) {
+    const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format("YYYY-MM-DD"));
+    payload.sleep = [sleep];
+  } else {
+    capture.message(`Unrecognized Fitbit collection type.`, {
+      extra: { context: "fitbit.webhook.mapData", collectionType, connectedUser },
+    });
+    throw new MetriportError(`Unrecognized collection type in Fitbit webhooks mapData`, {
+      additionalInfo: collectionType,
+    });
+  }
+
+  return payload;
+};
+
+async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>) {
   await Promise.allSettled(
     Object.keys(dataByCustomer).map(async cxId => {
       try {
@@ -141,36 +177,4 @@ export const processData = async (data: FitbitWebhookNotification[]): Promise<vo
       }
     })
   );
-};
-
-export const mapData = async (
-  collectionType: string,
-  connectedUser: ConnectedUser,
-  startdate: string
-): Promise<WebhookUserDataPayload> => {
-  const payload: WebhookUserDataPayload = {};
-  const provider = Constants.PROVIDER_MAP[ProviderSource.fitbit];
-
-  if (collectionType === FitbitCollectionTypes.activities) {
-    const activity = await provider.getActivityData(connectedUser, startdate);
-    payload.activity = [activity];
-  } else if (collectionType === FitbitCollectionTypes.body) {
-    const body = await provider.getBodyData(connectedUser, startdate);
-    payload.body = [body];
-  } else if (collectionType === FitbitCollectionTypes.foods) {
-    const nutrition = await provider.getNutritionData(connectedUser, startdate);
-    payload.nutrition = [nutrition];
-  } else if (collectionType === FitbitCollectionTypes.sleep) {
-    const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format("YYYY-MM-DD"));
-    payload.sleep = [sleep];
-  } else {
-    capture.message(`Unrecognized Fitbit collection type.`, {
-      extra: { context: "fitbit.webhook.mapData", collectionType, connectedUser },
-    });
-    throw new MetriportError(`Unrecognized collection type in Fitbit webhooks mapData`, {
-      additionalInfo: collectionType,
-    });
-  }
-
-  return payload;
-};
+}

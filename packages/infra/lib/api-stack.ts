@@ -460,7 +460,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
-    this.setupFitbitWebhookAuth({
+    this.setupFitbitWebhook({
       lambdaLayers,
       baseResource: webhookResource,
       vpc: this.vpc,
@@ -678,7 +678,7 @@ export class APIStack extends Stack {
     withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
   }
 
-  private setupFitbitWebhookAuth(ownProps: {
+  private setupFitbitWebhook(ownProps: {
     lambdaLayers: lambda.ILayerVersion[];
     baseResource: apig.Resource;
     vpc: ec2.IVpc;

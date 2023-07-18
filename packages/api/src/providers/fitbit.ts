@@ -4,7 +4,7 @@ import axios from "axios";
 import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";
 import { mapToBody } from "../mappings/fitbit/body";
-import { FitbitScopes } from "../mappings/fitbit/constants";
+import { FitbitCollectionTypes, FitbitScopes } from "../mappings/fitbit/constants";
 import { fitbitActivityLogResp } from "../mappings/fitbit/models/activity-log";
 import {
   FitbitBreathingRate,
@@ -342,7 +342,10 @@ export class Fitbit extends Provider implements OAuth2 {
 
     const scopes = JSON.parse(token).scope;
 
-    const subscriptionTypes: Record<FitbitScopes, string> = {
+    const subscriptionTypes: Record<
+      FitbitScopes,
+      Omit<FitbitCollectionTypes, "userRevokedAccess">
+    > = {
       [FitbitScopes.activity]: "activities",
       [FitbitScopes.nutrition]: "foods",
       [FitbitScopes.weight]: "body",
