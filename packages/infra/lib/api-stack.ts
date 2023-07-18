@@ -725,7 +725,6 @@ export class APIStack extends Stack {
       layers: lambdaLayers,
       envVars: {
         ENV_TYPE: envType,
-        FITBIT_CLIENT_SECRET: fitbitClientSecret,
         FITBIT_SUBSCRIBER_VERIFICATION_CODE: fitbitSubscriberVerificationCode,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },

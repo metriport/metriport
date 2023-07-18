@@ -8,7 +8,6 @@ import { getEnvOrFail } from "./shared/env";
 // Keep this as early on the file as possible
 capture.init();
 
-const fitbitClientSecretName = getEnvOrFail("FITBIT_CLIENT_SECRET");
 const fitbitSubscriberVerificationCode = getEnvOrFail("FITBIT_SUBSCRIBER_VERIFICATION_CODE");
 
 const buildResponse = (status: number, body?: unknown) => ({
@@ -17,13 +16,6 @@ const buildResponse = (status: number, body?: unknown) => ({
 });
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
-  console.log(`Verifying at least one UserAuthToken on body...`);
-
-  const secret: string = (await getSecret(fitbitClientSecretName)) as string;
-  if (!secret) {
-    throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
-  }
-
   const verificationCode: string = (await getSecret(fitbitSubscriberVerificationCode)) as string;
   if (!verificationCode) {
     throw new Error(`Config error - FITBIT_SUBSCRIBER_VERIFICATION_CODE doesn't exist`);

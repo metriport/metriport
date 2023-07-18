@@ -23,8 +23,6 @@ const buildResponse = (status: number, body?: unknown) => ({
 const defaultResponse = () => buildResponse(status.NO_CONTENT);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
-  console.log(`Verifying at least one UserAuthToken on body...`);
-
   const secret: string = (await getSecret(fitbitClientSecretName)) as string;
   if (!secret) {
     throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
@@ -48,10 +46,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
 async function forwardCallToServer(req: Request) {
   console.log(`Verified! Calling server...`);
 
-  const resp =
-    req.method === "POST"
-      ? await api.post(apiServerURL, req.body, { headers: req.headers })
-      : await api.get(apiServerURL, { headers: req.headers });
+  const resp = await api.post(apiServerURL, req.body, { headers: req.headers });
 
   console.log(`Server response - status: ${resp.status}`);
   console.log(`Server response - body: ${resp.data}`);

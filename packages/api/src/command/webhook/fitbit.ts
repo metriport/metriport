@@ -1,11 +1,12 @@
 import { ProviderSource } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import { Dictionary, groupBy, union } from "lodash";
-import MetriportError from "../../errors/metriport-error";
+import { FitbitWebhook } from "../../mappings/fitbit";
 import { FitbitCollectionTypes } from "../../mappings/fitbit/constants";
 import { ConnectedUser } from "../../models/connected-user";
 import { EventTypes, analytics } from "../../shared/analytics";
 import { Constants } from "../../shared/constants";
+import { ISO_DATE } from "../../shared/date";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
@@ -20,14 +21,6 @@ import {
 } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
-export type FitbitWebhookNotification = {
-  collectionType: FitbitCollectionTypes;
-  date: string;
-  ownerId: string;
-  ownerType: string;
-  subscriptionId: string;
-};
-
 interface Entry {
   cxId: string;
   userId: string;
@@ -36,7 +29,7 @@ interface Entry {
 
 const log = Util.log(`Fitbit Webhook`);
 
-export const processData = async (data: FitbitWebhookNotification[]): Promise<void> => {
+export const processData = async (data: FitbitWebhook): Promise<void> => {
   console.log("Starting to process the webhook");
 
   const connectedUsersAndData = await Promise.all(
@@ -103,7 +96,7 @@ export const processData = async (data: FitbitWebhookNotification[]): Promise<vo
 };
 
 export const mapData = async (
-  collectionType: Omit<FitbitCollectionTypes, "userRevokedAccess">,
+  collectionType: FitbitCollectionTypes,
   connectedUser: ConnectedUser,
   startdate: string
 ): Promise<WebhookUserDataPayload> => {
@@ -120,14 +113,13 @@ export const mapData = async (
     const nutrition = await provider.getNutritionData(connectedUser, startdate);
     payload.nutrition = [nutrition];
   } else if (collectionType === FitbitCollectionTypes.sleep) {
-    const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format("YYYY-MM-DD"));
+    const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format(ISO_DATE));
     payload.sleep = [sleep];
+  } else if (collectionType === FitbitCollectionTypes.userRevokedAccess) {
+    // do nothing until issue #652 is resolved
   } else {
     capture.message(`Unrecognized Fitbit collection type.`, {
       extra: { context: "fitbit.webhook.mapData", collectionType, connectedUser },
-    });
-    throw new MetriportError(`Unrecognized collection type in Fitbit webhooks mapData`, {
-      additionalInfo: collectionType,
     });
   }
 
