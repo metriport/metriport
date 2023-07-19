@@ -5,7 +5,7 @@ description: "Receive user health data as soon as it becomes available."
 
 ## Overview
 
-When using the Devices API, Metriport will send Webhook messages containing [new provider connections](#user-provider-connection-message) for each user, as well as [user data](#user-health-data-message) to your app from [our supported Providers](/devices-api/more-info/our-integrations), as soon as the data becomes available.
+When using the Devices API, Metriport will send Webhook messages containing [new provider connections](#provider-connected-message) for each user, as well as [user data](#user-health-data-message) to your app from [our supported Providers](/devices-api/more-info/our-integrations), as soon as the data becomes available.
 
 To enable this integration approach with Metriport, and for some prerequesite reading to understand
 how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
@@ -16,7 +16,7 @@ how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
   page](/devices-api/more-info/our-integrations).
 </Info>
 
-## User provider connection message
+## Provider connected message
 
 Example payload:
 
@@ -39,24 +39,8 @@ Example payload:
 
 The format follows:
 
-<ResponseField name="meta" type="string[]" required>
-  Metadata about the message.
-  <Expandable title="meta properties">
-
-    <ResponseField name="messageId" type="string" required>
-      The ID for this message from Metriport, useful for debugging purposes only;
-    </ResponseField>
-
-    <ResponseField name="when" type="string" required>
-      The timestamp when this message was originally sent, formatted as [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601)
-      (example: `2022-12-24T00:46:05.413Z`)
-    </ResponseField>
-
-    <ResponseField name="type" type="string" required>
-      The type of the webhook message.
-    </ResponseField>
-
-  </Expandable>
+<ResponseField name="meta" required>
+  Metadata about the message. Format is described [here](/home/api-info/webhooks#meta-data).
 </ResponseField>
 
 <ResponseField name="users" required>
@@ -164,24 +148,8 @@ Example payload:
 
 The format follows:
 
-<ResponseField name="meta" type="string[]" required>
-  Metadata about the message.
-  <Expandable title="meta properties">
-
-    <ResponseField name="messageId" type="string" required>
-      The ID for this message from Metriport, useful for debugging purposes only;
-    </ResponseField>
-
-    <ResponseField name="when" type="string" required>
-      The timestamp when this message was originally sent, formatted as [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601)
-      (example: `2022-12-24T00:46:05.413Z`)
-    </ResponseField>
-
-    <ResponseField name="type" type="string" required>
-      The type of the webhook message.
-    </ResponseField>
-
-  </Expandable>
+<ResponseField name="meta" required>
+  Metadata about the message. Format is described [here](/home/api-info/webhooks#meta-data).
 </ResponseField>
 
 <ResponseField name="users" required>
