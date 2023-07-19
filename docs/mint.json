@@ -5,7 +5,10 @@
     "dark": "/logo/dark.png"
   },
   "api": {
-    "baseUrl": ["https://api.metriport.com", "https://api.sandbox.metriport.com"],
+    "baseUrl": [
+      "https://api.metriport.com",
+      "https://api.sandbox.metriport.com"
+    ],
     "auth": {
       "method": "key",
       "name": "x-api-key"
@@ -56,15 +59,23 @@
   "navigation": [
     {
       "group": "Home",
-      "pages": ["home/welcome"]
+      "pages": [
+        "home/welcome"
+      ]
     },
     {
       "group": "API Info",
-      "pages": ["home/api-info/api-keys", "home/api-info/webhooks", "home/api-info/error-responses"]
+      "pages": [
+        "home/api-info/api-keys",
+        "home/api-info/webhooks",
+        "home/api-info/error-responses"
+      ]
     },
     {
       "group": "Getting Started",
-      "pages": ["medical-api/getting-started/quickstart"]
+      "pages": [
+        "medical-api/getting-started/quickstart"
+      ]
     },
     {
       "group": "API Reference",
@@ -335,7 +346,9 @@
         },
         {
           "group": "Extensions",
-          "pages": ["medical-api/fhir/extensions/doc-id"]
+          "pages": [
+            "medical-api/fhir/extensions/doc-id"
+          ]
         }
       ]
     },
@@ -396,6 +409,7 @@
         "devices-api/more-info/apple-health",
         "devices-api/more-info/react-native",
         "devices-api/more-info/cordova",
+        "devices-api/more-info/flutter",
         "devices-api/more-info/models"
       ]
     }
