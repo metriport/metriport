@@ -20,7 +20,7 @@ export const processAppleData = async (
     const payload = { users: [{ userId: metriportUserId, ...data }] };
     const webhookRequest = await createWebhookRequest({ cxId, payload });
 
-    await processRequest(webhookRequest, settings);
+    await processRequest(webhookRequest, settings, undefined, "health-data");
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (err) {
     log(`Error on processAppleData: ${err}`);

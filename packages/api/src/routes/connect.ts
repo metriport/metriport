@@ -110,7 +110,7 @@ router.get(
         const cxId = getCxIdFromHeaders(req);
         const userId = getUserIdFrom("headers", req).optional();
         await processOAuth2(provider, state, authCode, cxId, userId);
-        await sendUpdatedUserProviderList(state, cxId, userId);
+        await sendUpdatedUserProviderList(state, provider, cxId, userId);
         return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
       }
 
@@ -119,7 +119,7 @@ router.get(
       if (providerOAuth1.success) {
         const provider = providerOAuth1.data;
         await processOAuth1(provider, state, oauth_token, oauth_verifier);
-        await sendUpdatedUserProviderList(state);
+        await sendUpdatedUserProviderList(state, provider);
         return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
       }
     } catch (err) {
@@ -215,7 +215,7 @@ router.get(
       },
     });
 
-    await sendUpdatedUserProviderList(token, cxId, userId);
+    await sendUpdatedUserProviderList(token, PROVIDER_APPLE, cxId, userId);
     return res.status(status.OK).send(connectedUser.id);
   })
 );

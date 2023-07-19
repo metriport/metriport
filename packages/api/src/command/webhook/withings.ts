@@ -44,7 +44,7 @@ export const processData = async (data: WithingsWebhook) => {
     const withingsData = await mapData(categoryNum, connectedUser, startdate);
     const payload = { users: [{ userId: connectedUser.id, ...withingsData }] };
     const webhookRequest = await createWebhookRequest({ cxId, payload });
-    await processRequest(webhookRequest, settings);
+    await processRequest(webhookRequest, settings, undefined, "health-data");
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (error) {
     capture.error(error, {

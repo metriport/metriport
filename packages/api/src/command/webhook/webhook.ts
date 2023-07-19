@@ -19,6 +19,9 @@ const axios = Axios.create();
 
 const log = Util.log(`Webhook`);
 
+const webhookMessageTypes = ["health-data", "provider-connected"] as const;
+type WebhookMessageTypes = (typeof webhookMessageTypes)[number];
+
 // General
 type WebhookPingPayload = {
   ping: string;
@@ -38,7 +41,8 @@ export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
 export const processRequest = async (
   webhookRequest: WebhookRequest,
   settings: Settings,
-  apiType: ApiTypes = ApiTypes.devices
+  apiType: ApiTypes = ApiTypes.devices,
+  messageType?: WebhookMessageTypes
 ): Promise<boolean> => {
   const payload = webhookRequest.payload;
 
@@ -73,6 +77,7 @@ export const processRequest = async (
         meta: {
           messageId: webhookRequest.id,
           when: dayjs(webhookRequest.createdAt).toISOString(),
+          type: messageType ? apiType + `.` + messageType : apiType,
         },
         ...(payload as any), //eslint-disable-line @typescript-eslint/no-explicit-any
       },
@@ -186,6 +191,7 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
  */
 export const sendUpdatedUserProviderList = async (
   token: string,
+  provider: string,
   cxId?: string | undefined,
   userId?: string | undefined
 ): Promise<void> => {
@@ -198,11 +204,14 @@ export const sendUpdatedUserProviderList = async (
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : null;
 
-    const payload = { users: [{ userId, connectedProviders: providers }] };
+    console.log("NEW PROVIDER", provider);
+    const payload = { users: [{ userId, provider, connectedProviders: providers }] };
+    console.log("PAYLOAD", payload);
+    cxId = "cdb678ab-07e3-42c5-93f5-5541cf1f15a8";
     const settings = await getSettingsOrFail({ id: cxId });
 
     const webhookRequest = await createWebhookRequest({ cxId, payload });
-    await processRequest(webhookRequest, settings);
+    await processRequest(webhookRequest, settings, undefined, "provider-connected");
   } catch (err) {
     console.log("Error on updating the list of providers for a user");
     capture.error("Failed to send wh for an updated user provider list", {

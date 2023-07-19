@@ -152,7 +152,7 @@ const processOneCustomer = async (
     // create a representation of this request and store on the DB
     const webhookRequest = await createWebhookRequest({ cxId, payload });
     // send it to the customer and update the request status
-    const success = await processRequest(webhookRequest, settings);
+    const success = await processRequest(webhookRequest, settings, undefined, "health-data");
     // give it some time to prevent flooding the customer
     if (success) await Util.sleep(Math.random() * 200);
   }

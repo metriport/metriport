@@ -24,11 +24,13 @@ Example payload:
 {
   "meta": {
     "messageId": "<message-id>",
-    "when": "<date-time-in-utc>"
+    "when": "<date-time-in-utc>",
+    "type": "devices.provider-connected"
   },
   "users": [
     {
       "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
+      "provider": "garmin",
       "connectedProviders": ["fitbit", "garmin", "cronometer"]
     }
   ]
@@ -50,6 +52,10 @@ The format follows:
       (example: `2022-12-24T00:46:05.413Z`)
     </ResponseField>
 
+    <ResponseField name="type" type="string" required>
+      The type of the webhook message.
+    </ResponseField>
+
   </Expandable>
 </ResponseField>
 
@@ -60,6 +66,10 @@ The format follows:
 
     <ResponseField name="userId" type="string" required>
       The user ID as defined by your application when it called [`/create-user`](/user/create-user)
+    </ResponseField>
+
+    <ResponseField name="provider" type="string" required>
+      A string representing the newly-connected provider for the user.
     </ResponseField>
 
     <ResponseField name="connectedProviders" type="string[]" required>
@@ -77,7 +87,8 @@ Example payload:
 {
   "meta": {
     "messageId": "<message-id>",
-    "when": "<date-time-in-utc>"
+    "when": "<date-time-in-utc>",
+    "type": "devices.health-data"
   },
   "users": [
     {
@@ -164,6 +175,10 @@ The format follows:
     <ResponseField name="when" type="string" required>
       The timestamp when this message was originally sent, formatted as [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601)
       (example: `2022-12-24T00:46:05.413Z`)
+    </ResponseField>
+
+    <ResponseField name="type" type="string" required>
+      The type of the webhook message.
     </ResponseField>
 
   </Expandable>
