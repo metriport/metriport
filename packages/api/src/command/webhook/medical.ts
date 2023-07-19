@@ -3,7 +3,7 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { processRequest, WebhookMetadataPayload } from "./webhook";
+import { WebhookMetadataPayload, processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
 const log = Util.log(`Medical Webhook`);
@@ -44,9 +44,9 @@ export const processPatientDocumentRequest = async (
     const payload: WebhookPatientDataPayloadWithoutMessageId = {
       patients: [{ patientId, documents, type, status }],
     };
-    const webhookRequest = await createWebhookRequest({ cxId, payload });
+    const webhookRequest = await createWebhookRequest({ cxId, type, payload });
     // send it to the customer and update the request status
-    await processRequest(webhookRequest, settings, apiType);
+    await processRequest(webhookRequest, settings);
 
     reportUsageCmd({ cxId, entityId: patientId, apiType });
   } catch (err) {

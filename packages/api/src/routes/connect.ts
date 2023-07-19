@@ -5,7 +5,7 @@ import z from "zod";
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { getUserToken } from "../command/cx-user/get-user-token";
-import { sendUpdatedUserProviderList } from "../command/webhook/webhook";
+import { sendProviderConnected } from "../command/webhook/webhook";
 import BadRequestError from "../errors/bad-request";
 import UnauthorizedError from "../errors/unauthorized";
 import { Config } from "../shared/config";
@@ -32,7 +32,7 @@ const router = Router();
  * @param     {string}  token     The connect widget's session token.
  * @returns   {string}  The connect error redirect URL.
  */
-export const buildConnectErrorRedirectURL = (success: boolean, token: string): string => {
+export const buildRedirectURL = (success: boolean, token: string): string => {
   const redirectPath = success ? "success" : "error";
   const sandboxFlag = Config.isSandbox() ? "&sandbox=true" : "";
   return `${Config.getConnectWidgetUrl()}${redirectPath}?token=${token}${sandboxFlag}`;
@@ -100,7 +100,12 @@ const providerRequest = z.object({
 router.get(
   "/:provider",
   asyncHandler(async (req: Request, res: Response) => {
-    const { state, code: authCode, oauth_token, oauth_verifier } = providerRequest.parse(req.query);
+    const {
+      state: connectToken,
+      code: authCode,
+      oauth_token,
+      oauth_verifier,
+    } = providerRequest.parse(req.query);
 
     try {
       // OAUTH 2
@@ -109,23 +114,28 @@ router.get(
         const provider = providerOAuth2.data;
         const cxId = getCxIdFromHeaders(req);
         const userId = getUserIdFrom("headers", req).optional();
-        await processOAuth2(provider, state, authCode, cxId, userId);
-        await sendUpdatedUserProviderList(state, provider, cxId, userId);
-        return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
+        const connectedUser = await processOAuth2(provider, connectToken, authCode, cxId, userId);
+        sendProviderConnected(connectedUser, provider);
+        return res.redirect(`${buildRedirectURL(true, connectToken)}`);
       }
 
       // OAUTH 1
       const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(req.params.provider);
       if (providerOAuth1.success) {
         const provider = providerOAuth1.data;
-        await processOAuth1(provider, state, oauth_token, oauth_verifier);
-        await sendUpdatedUserProviderList(state, provider);
-        return res.redirect(`${buildConnectErrorRedirectURL(true, state)}`);
+        const connectedUser = await processOAuth1(
+          provider,
+          connectToken,
+          oauth_token,
+          oauth_verifier
+        );
+        sendProviderConnected(connectedUser, provider);
+        return res.redirect(`${buildRedirectURL(true, connectToken)}`);
       }
     } catch (err) {
       console.log(`Error on /connect/${req.params.provider}`, err);
       capture.error(err, { extra: { context: `connect.${req.params.provider}` } });
-      return res.redirect(buildConnectErrorRedirectURL(false, state));
+      return res.redirect(buildRedirectURL(false, connectToken));
     }
   })
 );
@@ -215,7 +225,7 @@ router.get(
       },
     });
 
-    await sendUpdatedUserProviderList(token, PROVIDER_APPLE, cxId, userId);
+    sendProviderConnected(connectedUser, PROVIDER_APPLE);
     return res.status(status.OK).send(connectedUser.id);
   })
 );

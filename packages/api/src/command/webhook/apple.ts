@@ -1,10 +1,11 @@
 import { AppleWebhookPayload } from "../../mappings/apple";
 import { capture } from "../../shared/notifications";
+import { Util } from "../../shared/util";
 import { getConnectedUserOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { reportDevicesUsage, processRequest } from "./webhook";
+import { reportDevicesUsage } from "./devices";
+import { processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
-import { Util } from "../../shared/util";
 
 const log = Util.log(`Apple Webhook`);
 
@@ -18,9 +19,13 @@ export const processAppleData = async (
 
     const settings = await getSettingsOrFail({ id: connectedUser.cxId });
     const payload = { users: [{ userId: metriportUserId, ...data }] };
-    const webhookRequest = await createWebhookRequest({ cxId, payload });
+    const webhookRequest = await createWebhookRequest({
+      cxId,
+      type: "devices.health-data",
+      payload,
+    });
 
-    await processRequest(webhookRequest, settings, undefined, "health-data");
+    await processRequest(webhookRequest, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (err) {
     log(`Error on processAppleData: ${err}`);

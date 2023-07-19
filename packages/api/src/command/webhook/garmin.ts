@@ -2,20 +2,16 @@ import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data"
 import { chunk, groupBy } from "lodash";
 import { getErrorMessage } from "../../errors";
 import { TypedData, UserData } from "../../mappings/garmin";
+import { Settings } from "../../models/settings";
+import { EventTypes, analytics } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes } from "../usage/report-usage";
-import { analytics, EventTypes } from "../../shared/analytics";
-import {
-  reportDevicesUsage,
-  WebhookMetadataPayload,
-  WebhookUserDataPayload,
-  processRequest,
-} from "./webhook";
-import { Settings } from "../../models/settings";
+import { reportDevicesUsage } from "./devices";
+import { WebhookMetadataPayload, WebhookUserDataPayload, processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
 const log = Util.log(`Garmin Webhook`);
@@ -150,9 +146,13 @@ const processOneCustomer = async (
 ): Promise<boolean> => {
   for (const payload of payloads) {
     // create a representation of this request and store on the DB
-    const webhookRequest = await createWebhookRequest({ cxId, payload });
+    const webhookRequest = await createWebhookRequest({
+      cxId,
+      type: "devices.health-data",
+      payload,
+    });
     // send it to the customer and update the request status
-    const success = await processRequest(webhookRequest, settings, undefined, "health-data");
+    const success = await processRequest(webhookRequest, settings);
     // give it some time to prevent flooding the customer
     if (success) await Util.sleep(Math.random() * 200);
   }

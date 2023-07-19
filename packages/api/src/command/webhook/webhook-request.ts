@@ -1,8 +1,14 @@
 import { v4 as uuidv4 } from "uuid";
 import NotFoundError from "../../errors/not-found";
 import { WebhookRequest, WebhookRequestStatus } from "../../models/webhook-request";
+import { DAPIWebhookType } from "./devices";
+import { MAPIWebhookType } from "./medical";
 
-export type CreateWebhookRequestCommand = { cxId: string; payload: unknown };
+export type CreateWebhookRequestCommand = {
+  cxId: string;
+  type: DAPIWebhookType | MAPIWebhookType;
+  payload: unknown;
+};
 
 export const createWebhookRequest = async (
   create: CreateWebhookRequestCommand

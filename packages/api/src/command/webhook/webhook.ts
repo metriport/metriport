@@ -1,48 +1,39 @@
 import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import Axios from "axios";
 import dayjs from "dayjs";
+import stringify from "json-stringify-safe";
 import { nanoid } from "nanoid";
 import WebhookError from "../../errors/webhook";
 import { DataType } from "../../mappings/garmin";
+import { ConnectedUser } from "../../models/connected-user";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { updateWebhookStatus } from "../settings/updateSettings";
-import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { createWebhookRequest, updateWebhookRequestStatus } from "./webhook-request";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { getConnectedUserOrFail } from "../connected-user/get-connected-user";
-import { getUserToken } from "../cx-user/get-user-token";
+import { updateWebhookStatus } from "../settings/updateSettings";
+import { isDAPIWebhookRequest } from "./devices";
+import { createWebhookRequest, updateWebhookRequestStatus } from "./webhook-request";
 
 const axios = Axios.create();
 
 const log = Util.log(`Webhook`);
-
-const webhookMessageTypes = ["health-data", "provider-connected"] as const;
-type WebhookMessageTypes = (typeof webhookMessageTypes)[number];
 
 // General
 type WebhookPingPayload = {
   ping: string;
 };
 
+// TODO move to DAPI specific file: devices.ts
 // DAPI
 export type WebhookUserDataPayload = {
   [k in DataType]?: MetriportData[];
 };
 export type WebhookMetadataPayload = { messageId: string; when: string };
 
-export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
-  const apiType = ApiTypes.devices;
-  cxUserIds.forEach(cxUserId => reportUsageCmd({ cxId, entityId: cxUserId, apiType }));
-};
-
 export const processRequest = async (
   webhookRequest: WebhookRequest,
-  settings: Settings,
-  apiType: ApiTypes = ApiTypes.devices,
-  messageType?: WebhookMessageTypes
+  settings: Settings
 ): Promise<boolean> => {
   const payload = webhookRequest.payload;
 
@@ -58,7 +49,7 @@ export const processRequest = async (
     // if this is for MAPI:
     //    silently ignore this since this is just a notification for ease-of-use
     //    and won't result in data loss
-    if (apiType === ApiTypes.devices) {
+    if (isDAPIWebhookRequest(webhookRequest)) {
       await updateWebhookRequestStatus({
         id: webhookRequest.id,
         status: "failure",
@@ -77,7 +68,7 @@ export const processRequest = async (
         meta: {
           messageId: webhookRequest.id,
           when: dayjs(webhookRequest.createdAt).toISOString(),
-          type: messageType ? apiType + `.` + messageType : apiType,
+          type: webhookRequest.type,
         },
         ...(payload as any), //eslint-disable-line @typescript-eslint/no-explicit-any
       },
@@ -186,36 +177,39 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
   return false;
 };
 
+// TODO move this to a separate file, this file should be as independent from MAPI/DAPI as possible.
 /**
- * Sends an update to the CX about their user subscribing to a provider
+ * Sends an update to the CX about their user subscribing to a provider.
+ *
+ * Executed asynchronhously, so it should treat errors w/o expecting it to be done upstream.
  */
-export const sendUpdatedUserProviderList = async (
-  token: string,
-  provider: string,
-  cxId?: string | undefined,
-  userId?: string | undefined
+export const sendProviderConnected = async (
+  connectedUser: ConnectedUser,
+  provider: string
 ): Promise<void> => {
+  let webhookRequest;
   try {
-    if (!cxId || !userId) {
-      const useToken = await getUserToken({ token: token });
-      cxId = useToken.cxId;
-      userId = useToken.userId;
-    }
-    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+    const { id: userId, cxId } = connectedUser;
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : null;
 
-    console.log("NEW PROVIDER", provider);
     const payload = { users: [{ userId, provider, connectedProviders: providers }] };
-    console.log("PAYLOAD", payload);
-    cxId = "cdb678ab-07e3-42c5-93f5-5541cf1f15a8";
     const settings = await getSettingsOrFail({ id: cxId });
 
-    const webhookRequest = await createWebhookRequest({ cxId, payload });
-    await processRequest(webhookRequest, settings, undefined, "provider-connected");
-  } catch (err) {
-    console.log("Error on updating the list of providers for a user");
-    capture.error("Failed to send wh for an updated user provider list", {
-      extra: { context: `webhook.sendUpdatedUserProviderList` },
+    webhookRequest = await createWebhookRequest({
+      cxId,
+      type: "devices.provider-connected",
+      payload,
+    });
+    await processRequest(webhookRequest, settings);
+  } catch (error) {
+    console.log(
+      `Failed to send provider connected WH - provider: ${provider}, ` +
+        `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequest)}` +
+        `error: ${error}`
+    );
+    capture.error(error, {
+      extra: { connectedUser, provider, context: `webhook.sendProviderConnected`, error },
+      level: "error",
     });
   }
 };
