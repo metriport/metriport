@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { z } from "zod";
 import { ISO_DATE } from "../../shared/date";
+import { TypedData } from "../../command/webhook/webhook";
 
 dayjs.extend(customParseFormat);
 
@@ -13,13 +14,6 @@ export type GarminMeta = z.infer<typeof garminMetaSchema>;
 
 export interface User {
   userAccessToken: string;
-}
-
-export type DataType = "activity" | "sleep" | "body" | "biometrics";
-
-export interface TypedData<T extends MetriportData> {
-  type: DataType;
-  data: T;
 }
 
 export interface UserData<T extends MetriportData> {

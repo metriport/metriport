@@ -46,6 +46,7 @@ export type EnvConfig = {
     DEXCOM_CLIENT_SECRET: string;
     FITBIT_CLIENT_ID: string;
     FITBIT_CLIENT_SECRET: string;
+    FITBIT_SUBSCRIBER_VERIFICATION_CODE: string;
     GARMIN_CONSUMER_KEY: string;
     GARMIN_CONSUMER_SECRET: string;
     GOOGLE_CLIENT_ID: string;

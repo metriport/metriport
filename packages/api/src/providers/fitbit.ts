@@ -1,35 +1,42 @@
 import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api-sdk";
 
-import { PROVIDER_FITBIT } from "../shared/constants";
-import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
-import Provider, { ConsumerHealthDataType } from "./provider";
-import { Config } from "../shared/config";
-import { ConnectedUser } from "../models/connected-user";
+import axios from "axios";
 import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";
 import { mapToBody } from "../mappings/fitbit/body";
-import { mapToNutrition } from "../mappings/fitbit/nutrition";
-import { mapToSleep } from "../mappings/fitbit/sleep";
-import { mapToUser } from "../mappings/fitbit/user";
+import {
+  FitbitCollectionTypesWithoutUserRevokedAccess,
+  FitbitScopes,
+} from "../mappings/fitbit/constants";
 import { fitbitActivityLogResp } from "../mappings/fitbit/models/activity-log";
 import {
   FitbitBreathingRate,
   fitbitBreathingRateResp,
 } from "../mappings/fitbit/models/breathing-rate";
 import { FitbitCardioScore, fitbitCardioScoreResp } from "../mappings/fitbit/models/cardio-score";
+import { FitbitFood, fitbitFoodResp } from "../mappings/fitbit/models/food";
 import { FitbitHeartRate, fitbitHeartRateResp } from "../mappings/fitbit/models/heart-rate";
 import {
   FitbitHeartVariability,
   fitbitHeartVariabilityResp,
 } from "../mappings/fitbit/models/heart-variability";
+import { fitbitSleepResp } from "../mappings/fitbit/models/sleep";
 import { FitbitSpo2, fitbitSpo2Resp } from "../mappings/fitbit/models/spo2";
 import { FitbitTempCore, fitbitTempCoreResp } from "../mappings/fitbit/models/temperature-core";
 import { FitbitTempSkin, fitbitTempSkinResp } from "../mappings/fitbit/models/temperature-skin";
-import { FitbitFood, fitbitFoodResp } from "../mappings/fitbit/models/food";
+import { FitbitUser, fitbitUserResp } from "../mappings/fitbit/models/user";
 import { FitbitWater, fitbitWaterResp } from "../mappings/fitbit/models/water";
-import { fitbitSleepResp } from "../mappings/fitbit/models/sleep";
-import { fitbitUserResp, FitbitUser } from "../mappings/fitbit/models/user";
 import { FitbitWeight, weightSchema } from "../mappings/fitbit/models/weight";
+import { mapToNutrition } from "../mappings/fitbit/nutrition";
+import { mapToSleep } from "../mappings/fitbit/sleep";
+import { mapToUser } from "../mappings/fitbit/user";
+import { ConnectedUser } from "../models/connected-user";
+import { Config } from "../shared/config";
+import { PROVIDER_FITBIT } from "../shared/constants";
+import { capture } from "../shared/notifications";
+import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
+import Provider, { ConsumerHealthDataType } from "./provider";
+
 export class Fitbit extends Provider implements OAuth2 {
   static URL = "https://api.fitbit.com";
   static AUTHORIZATION_URL = "https://www.fitbit.com";
@@ -331,5 +338,52 @@ export class Fitbit extends Provider implements OAuth2 {
         return mapToUser(fitbitUserResp.parse(resp.data), date);
       }
     );
+  }
+
+  async postAuth(token: string, userId?: string) {
+    const accessToken = JSON.parse(token).access_token;
+
+    const scopes = JSON.parse(token).scope;
+
+    const subscriptionTypes: Record<FitbitScopes, FitbitCollectionTypesWithoutUserRevokedAccess> = {
+      [FitbitScopes.activity]: "activities",
+      [FitbitScopes.nutrition]: "foods",
+      [FitbitScopes.sleep]: "sleep",
+      [FitbitScopes.weight]: "body",
+    };
+
+    const subscriptionId = userId;
+
+    // TODO #652: Implement userRevokedAccess
+
+    await Promise.all(
+      Object.entries(subscriptionTypes).map(async ([key, subscriptionType]) => {
+        if (scopes.includes(key)) {
+          const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}-${subscriptionType}.json`;
+          this.createSubscription(subscriptionUrl, accessToken);
+        }
+      })
+    );
+  }
+
+  // Creates a subscription for all or one specific collectionType
+  async createSubscription(url: string, accessToken: string): Promise<void> {
+    try {
+      const resp = await axios.post(url, null, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Length": 0,
+        },
+      });
+      console.log("Fitbit WH subscription created successfully.", resp.data);
+    } catch (error) {
+      console.log("createSubscription for Fitbit failed.");
+      capture.error(error, {
+        extra: { context: `fitbit.createSubscription`, url },
+      });
+
+      throw new Error(`WH subscription failed Fitbit`, { cause: error });
+    }
   }
 }
