@@ -24,7 +24,7 @@ export const googlePoint = z.array(
     startTimeNanos: z.string(),
     endTimeNanos: z.string(),
     dataTypeName: z.string(),
-    originDataSourceId: z.string(),
+    originDataSourceId: z.string().nullish(),
     value: z.array(
       z.object({
         fpVal: z.number().optional(),

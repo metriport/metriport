@@ -1,7 +1,12 @@
 import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import { chunk, groupBy } from "lodash";
+import {
+  TypedData,
+  WebhookDataPayloadWithoutMessageId,
+  WebhookUserPayload,
+} from "../../command/webhook/webhook";
 import { getErrorMessage } from "../../errors";
-import { TypedData, UserData } from "../../mappings/garmin";
+import { UserData } from "../../mappings/garmin";
 import { Settings } from "../../models/settings";
 import { EventTypes, analytics } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
@@ -11,17 +16,10 @@ import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes } from "../usage/report-usage";
 import { reportDevicesUsage } from "./devices";
-import { WebhookMetadataPayload, WebhookUserDataPayload, processRequest } from "./webhook";
+import { processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
 const log = Util.log(`Garmin Webhook`);
-
-type WebhookDataPayload = {
-  meta: WebhookMetadataPayload;
-  users: WebhookUserPayload[];
-};
-type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
-type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
 
 /**
  * Does the bulk of processing webhook incoming data, including storing and sending

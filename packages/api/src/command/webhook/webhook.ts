@@ -3,7 +3,6 @@ import Axios from "axios";
 import dayjs from "dayjs";
 import { nanoid } from "nanoid";
 import WebhookError from "../../errors/webhook";
-import { DataType } from "../../mappings/garmin";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { capture } from "../../shared/notifications";
@@ -21,7 +20,20 @@ type WebhookPingPayload = {
   ping: string;
 };
 
-// TODO move to DAPI specific file: devices.ts
+export type DataType = "activity" | "sleep" | "body" | "biometrics" | "nutrition";
+
+export interface TypedData<T extends MetriportData> {
+  type: DataType;
+  data: T;
+}
+
+export type WebhookDataPayload = {
+  meta: WebhookMetadataPayload;
+  users: WebhookUserPayload[];
+};
+export type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
+export type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
+
 // DAPI
 export type WebhookUserDataPayload = {
   [k in DataType]?: MetriportData[];
