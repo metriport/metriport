@@ -9,11 +9,7 @@ import {
 } from "../../command/medical/document/document-query";
 import { reprocessDocuments } from "../../command/medical/document/document-redownload";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import {
-  MAPIWebhookStatus,
-  MAPIWebhookType,
-  processPatientDocumentRequest,
-} from "../../command/webhook/medical";
+import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../command/webhook/medical";
 import { convertResult } from "../../domain/medical/document-reference";
 import BadRequestError from "../../errors/bad-request";
 import { encodeExternalId } from "../../shared/external";
@@ -156,7 +152,7 @@ router.post(
       processPatientDocumentRequest(
         cxId,
         patientId,
-        MAPIWebhookType.documentConversion,
+        "medical.document-conversion",
         MAPIWebhookStatus.completed
       );
     }
