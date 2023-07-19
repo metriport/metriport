@@ -24,7 +24,8 @@ Example payload:
 {
   "meta": {
     "messageId": "<message-id>",
-    "when": "<date-time-in-utc>"
+    "when": "<date-time-in-utc>",
+    "type": "medical"
   },
   "patients": [
     {
@@ -98,6 +99,10 @@ The format follows:
     <ResponseField name="when" type="string" required>
       The timestamp when this message was originally sent, formatted as [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601)
       (example: `2022-12-24T00:46:05.413Z`)
+    </ResponseField>
+
+    <ResponseField name="type" type="string" required>
+      The type of the webhook message.
     </ResponseField>
 
   </Expandable>
