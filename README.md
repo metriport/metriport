@@ -260,7 +260,6 @@ $ echo "DEXCOM_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
 $ echo "DEXCOM_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
 $ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
 $ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
-# REMOVED A LINE HERE
 $ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" >> packages/api/.env
 $ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" >> packages/api/.env
 $ echo "GOOGLE_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
