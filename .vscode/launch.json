@@ -14,10 +14,10 @@
           "port": 9229,
           "address": "0.0.0.0",
           "sourceMapPathOverrides": {
-            "/usr/src/app/*": "${workspaceRoot}/packages/api/*"
+            "/usr/src/app/packages/api/*": "${workspaceRoot}/packages/api/*"
           },
           "localRoot": "${workspaceFolder}/packages/api",
-          "remoteRoot": "/usr/src/app"
+          "remoteRoot": "/usr/src/app/packages/api"
         },
         {
           "name": "Run Widget in Chrome",
