@@ -40,13 +40,22 @@ Example payload:
 The format follows:
 
 <ResponseField name="meta" required>
-  Metadata about the message. Format is described [here](/home/api-info/webhooks#meta-data).
+  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+
+  <Expandable title="meta type property details">
+
+    <ResponseField name="type" type="DAPIWebhookType" required>
+      The type of the Devices API webhook data message. Example: `devices.provider-connected`.
+    </ResponseField>
+
+  </Expandable>
+
 </ResponseField>
 
 <ResponseField name="users" required>
   Array of user ids and connected providers.
   
-  <Expandable title="Users properties">
+  <Expandable title="users properties">
 
     <ResponseField name="userId" type="string" required>
       The user ID as defined by your application when it called [`/create-user`](/user/create-user)
@@ -149,13 +158,22 @@ Example payload:
 The format follows:
 
 <ResponseField name="meta" required>
-  Metadata about the message. Format is described [here](/home/api-info/webhooks#meta-data).
+  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+
+  <Expandable title="meta type property details">
+
+    <ResponseField name="type" type="DAPIWebhookType" required>
+      The type of the Devices API webhook data message. Example: `devices.health-data`.
+    </ResponseField>
+
+  </Expandable>
+
 </ResponseField>
 
 <ResponseField name="users" required>
   Array of users, where each item represents all of that user's information available in this request (more data might be available in subsequent requests)
   
-  <Expandable title="Users properties">
+  <Expandable title="users properties">
 
     <ResponseField name="userId" type="string" required>
       The user ID as defined by your application when it called [`/create-user`](/user/create-user)

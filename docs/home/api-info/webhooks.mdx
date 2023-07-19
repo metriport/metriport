@@ -123,9 +123,9 @@ Example payload:
 
 The format follows:
 
-<ResponseField name="meta" type="string[]" required>
+<ResponseField name="meta" required>
   Metadata about the message.
-  <Expandable title="meta properties">
+  <Expandable title="meta type property details">
 
     <ResponseField name="messageId" type="string" required>
       The ID for this message from Metriport, useful for debugging purposes only;
@@ -137,7 +137,7 @@ The format follows:
     </ResponseField>
 
     <ResponseField name="type" type="DAPIWebhookType | MAPIWebhookType" required>
-      The type of the webhook message. Can be one of: `devices.provider-connected`, `devices.health-data`, `medical.document-download`, `medical.document-conversion`.
+      The type of the webhook message. Can be one of: `devices.<subtype>`, `medical.<subtype>`.
     </ResponseField>
 
   </Expandable>
