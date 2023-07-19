@@ -1,19 +1,16 @@
 import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import Axios from "axios";
 import dayjs from "dayjs";
-import stringify from "json-stringify-safe";
 import { nanoid } from "nanoid";
 import WebhookError from "../../errors/webhook";
 import { DataType } from "../../mappings/garmin";
-import { ConnectedUser } from "../../models/connected-user";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { getSettingsOrFail } from "../settings/getSettings";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { isDAPIWebhookRequest } from "./devices";
-import { createWebhookRequest, updateWebhookRequestStatus } from "./webhook-request";
+import { updateWebhookRequestStatus } from "./webhook-request";
 
 const axios = Axios.create();
 
@@ -175,41 +172,4 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
   const res = await sendPayload(payload, url, key, 2_000);
   if (res.pong && res.pong === ping) return true;
   return false;
-};
-
-// TODO move this to a separate file, this file should be as independent from MAPI/DAPI as possible.
-/**
- * Sends an update to the CX about their user subscribing to a provider.
- *
- * Executed asynchronhously, so it should treat errors w/o expecting it to be done upstream.
- */
-export const sendProviderConnected = async (
-  connectedUser: ConnectedUser,
-  provider: string
-): Promise<void> => {
-  let webhookRequest;
-  try {
-    const { id: userId, cxId } = connectedUser;
-    const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : null;
-
-    const payload = { users: [{ userId, provider, connectedProviders: providers }] };
-    const settings = await getSettingsOrFail({ id: cxId });
-
-    webhookRequest = await createWebhookRequest({
-      cxId,
-      type: "devices.provider-connected",
-      payload,
-    });
-    await processRequest(webhookRequest, settings);
-  } catch (error) {
-    console.log(
-      `Failed to send provider connected WH - provider: ${provider}, ` +
-        `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequest)}` +
-        `error: ${error}`
-    );
-    capture.error(error, {
-      extra: { connectedUser, provider, context: `webhook.sendProviderConnected`, error },
-      level: "error",
-    });
-  }
 };

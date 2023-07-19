@@ -5,7 +5,7 @@ import z from "zod";
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { getUserToken } from "../command/cx-user/get-user-token";
-import { sendProviderConnected } from "../command/webhook/webhook";
+import { sendProviderConnected } from "../command/webhook/devices";
 import BadRequestError from "../errors/bad-request";
 import UnauthorizedError from "../errors/unauthorized";
 import { Config } from "../shared/config";
