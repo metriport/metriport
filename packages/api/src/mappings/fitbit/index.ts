@@ -1,17 +1,9 @@
 import { z } from "zod";
-import { FitbitCollectionTypes } from "./constants";
-
-const fitbitCollectionTypeMapping: { [key in FitbitCollectionTypes]: FitbitCollectionTypes } = {
-  activities: FitbitCollectionTypes.activities,
-  body: FitbitCollectionTypes.body,
-  foods: FitbitCollectionTypes.foods,
-  sleep: FitbitCollectionTypes.sleep,
-  userRevokedAccess: FitbitCollectionTypes.userRevokedAccess,
-};
+import { fitbitCollectionTypes } from "./constants";
 
 export const fitbitWebhookNotificationSchema = z.array(
   z.object({
-    collectionType: z.nativeEnum(fitbitCollectionTypeMapping),
+    collectionType: z.enum(fitbitCollectionTypes),
     date: z.string(),
     ownerId: z.string(),
     ownerType: z.string(),

@@ -23,14 +23,14 @@ const buildResponse = (status: number, body?: unknown) => ({
 const defaultResponse = () => buildResponse(status.NO_CONTENT);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
-  const secret: string = (await getSecret(fitbitClientSecretName)) as string;
-  if (!secret) {
-    throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
-  }
-
   if (!req.body) {
     console.log("Request has no body - will not be forwarded to the API");
     return defaultResponse();
+  }
+
+  const secret: string = (await getSecret(fitbitClientSecretName)) as string;
+  if (!secret) {
+    throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
   }
 
   if (verifyRequest(req, secret)) {

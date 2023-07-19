@@ -5,7 +5,6 @@ import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";
 import { mapToBody } from "../mappings/fitbit/body";
 import {
-  FitbitCollectionTypes,
   FitbitCollectionTypesWithoutUserRevokedAccess,
   FitbitScopes,
 } from "../mappings/fitbit/constants";
@@ -347,10 +346,10 @@ export class Fitbit extends Provider implements OAuth2 {
     const scopes = JSON.parse(token).scope;
 
     const subscriptionTypes: Record<FitbitScopes, FitbitCollectionTypesWithoutUserRevokedAccess> = {
-      [FitbitScopes.activity]: FitbitCollectionTypes.activities,
-      [FitbitScopes.nutrition]: FitbitCollectionTypes.foods,
-      [FitbitScopes.sleep]: FitbitCollectionTypes.sleep,
-      [FitbitScopes.weight]: FitbitCollectionTypes.body,
+      [FitbitScopes.activity]: "activities",
+      [FitbitScopes.nutrition]: "foods",
+      [FitbitScopes.sleep]: "sleep",
+      [FitbitScopes.weight]: "body",
     };
 
     const subscriptionId = userId;

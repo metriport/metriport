@@ -103,19 +103,19 @@ export const mapData = async (
   const payload: WebhookUserDataPayload = {};
   const provider = Constants.PROVIDER_MAP[ProviderSource.fitbit];
 
-  if (collectionType === FitbitCollectionTypes.activities) {
+  if (collectionType === "activities") {
     const activity = await provider.getActivityData(connectedUser, startdate);
     payload.activity = [activity];
-  } else if (collectionType === FitbitCollectionTypes.body) {
+  } else if (collectionType === "body") {
     const body = await provider.getBodyData(connectedUser, startdate);
     payload.body = [body];
-  } else if (collectionType === FitbitCollectionTypes.foods) {
+  } else if (collectionType === "foods") {
     const nutrition = await provider.getNutritionData(connectedUser, startdate);
     payload.nutrition = [nutrition];
-  } else if (collectionType === FitbitCollectionTypes.sleep) {
+  } else if (collectionType === "sleep") {
     const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format(ISO_DATE));
     payload.sleep = [sleep];
-  } else if (collectionType === FitbitCollectionTypes.userRevokedAccess) {
+  } else if (collectionType === "userRevokedAccess") {
     // do nothing until issue #652 is resolved
   } else {
     capture.message(`Unrecognized Fitbit collection type.`, {

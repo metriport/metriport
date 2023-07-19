@@ -1,14 +1,14 @@
 export const METRIC = "METRIC";
 export const US_LOCALE = "en_US";
 
-// collectionTypes you can subscribe to for WH updates
-export enum FitbitCollectionTypes {
-  activities = "activities",
-  body = "body",
-  foods = "foods",
-  sleep = "sleep",
-  userRevokedAccess = "userRevokedAccess",
-}
+export const fitbitCollectionTypes = [
+  "activities",
+  "body",
+  "sleep",
+  "foods",
+  "userRevokedAccess",
+] as const;
+export type FitbitCollectionTypes = (typeof fitbitCollectionTypes)[number];
 
 // temporary collection until userRevokedAccess is implemented
 export type FitbitCollectionTypesWithoutUserRevokedAccess = Exclude<

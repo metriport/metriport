@@ -703,9 +703,9 @@ export class APIStack extends Stack {
 
     const fitbitLambda = createLambda({
       stack: this,
-      name: "Fitbit",
+      name: "FitbitAuth",
       runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "fitbit",
+      entry: "fitbit-auth",
       layers: lambdaLayers,
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/fitbit`,
