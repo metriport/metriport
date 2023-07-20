@@ -754,10 +754,6 @@ export class APIStack extends Stack {
       secret.grantRead(fitbitSubscriberVerificationLambda);
     }
 
-    // Grant lambdas access to the api server
-    server.service.connections.allowFrom(fitbitAuthLambda, Port.allTcp());
-    server.service.connections.allowFrom(fitbitSubscriberVerificationLambda, Port.allTcp());
-
     const fitbitResource = baseResource.addResource("fitbit");
     fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitAuthLambda));
     fitbitResource.addMethod("GET", new apig.LambdaIntegration(fitbitSubscriberVerificationLambda));
