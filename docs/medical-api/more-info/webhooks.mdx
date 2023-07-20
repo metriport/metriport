@@ -24,7 +24,8 @@ Example payload:
 {
   "meta": {
     "messageId": "<message-id>",
-    "when": "<date-time-in-utc>"
+    "when": "<date-time-in-utc>",
+    "type": "medical"
   },
   "patients": [
     {
@@ -87,20 +88,17 @@ Example payload:
 
 The format follows:
 
-<ResponseField name="meta" type="string[]" required>
-  Metadata about the message.
-  <Expandable title="meta properties">
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
 
-    <ResponseField name="messageId" type="string" required>
-      The ID for this message from Metriport, useful for debugging purposes only;
-    </ResponseField>
+  <Expandable title="meta type property details">
 
-    <ResponseField name="when" type="string" required>
-      The timestamp when this message was originally sent, formatted as [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601)
-      (example: `2022-12-24T00:46:05.413Z`)
+    <ResponseField name="type" type="string" required>
+      The type of the Medical API webhook data message. Can be one of: `medical.document-download`, `medical.document-conversion`.
     </ResponseField>
 
   </Expandable>
+
 </ResponseField>
 
 <ResponseField name="patients" type="PatientDocQueryUpdate[]" required>

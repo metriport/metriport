@@ -3,15 +3,25 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { processRequest, WebhookMetadataPayload } from "./webhook";
+import { WebhookMetadataPayload, processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
 const log = Util.log(`Medical Webhook`);
 
-export enum MAPIWebhookType {
-  documentDownload = "document-download",
-  documentConversion = "document-conversion",
-}
+export const mapiWebhookType = [
+  "medical.document-download",
+  "medical.document-conversion",
+] as const;
+export type MAPIWebhookType = (typeof mapiWebhookType)[number];
+
+// TODO remove this with #898
+export const mapiMessageType = ["document-download", "document-conversion"] as const;
+export type MAPIMessageType = (typeof mapiMessageType)[number];
+
+export const webhookTypeToMessageType: Record<MAPIWebhookType, MAPIMessageType> = {
+  ["medical.document-download"]: "document-download",
+  ["medical.document-conversion"]: "document-conversion",
+};
 
 export enum MAPIWebhookStatus {
   completed = "completed",
@@ -20,7 +30,11 @@ export enum MAPIWebhookStatus {
 
 type WebhookDocumentDataPayload = {
   documents?: DocumentReferenceDTO[];
-  type: MAPIWebhookType;
+  /**
+   * Use the main webhook type on 'metadata' instead.
+   * @deprecated
+   */
+  type: MAPIMessageType; // TODO remove this with #898
   status: MAPIWebhookStatus;
 };
 type WebhookPatientPayload = { patientId: string } & WebhookDocumentDataPayload;
@@ -33,7 +47,7 @@ type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload,
 export const processPatientDocumentRequest = async (
   cxId: string,
   patientId: string,
-  type: MAPIWebhookType,
+  whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
   documents?: DocumentReferenceDTO[]
 ): Promise<boolean> => {
@@ -42,11 +56,11 @@ export const processPatientDocumentRequest = async (
     const settings = await getSettingsOrFail({ id: cxId });
     // create a representation of this request and store on the DB
     const payload: WebhookPatientDataPayloadWithoutMessageId = {
-      patients: [{ patientId, documents, type, status }],
+      patients: [{ patientId, documents, type: webhookTypeToMessageType[whType], status }],
     };
-    const webhookRequest = await createWebhookRequest({ cxId, payload });
+    const webhookRequest = await createWebhookRequest({ cxId, type: whType, payload });
     // send it to the customer and update the request status
-    await processRequest(webhookRequest, settings, apiType);
+    await processRequest(webhookRequest, settings);
 
     reportUsageCmd({ cxId, entityId: patientId, apiType });
   } catch (err) {

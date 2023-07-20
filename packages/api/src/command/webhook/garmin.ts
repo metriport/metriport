@@ -15,7 +15,8 @@ import { getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes } from "../usage/report-usage";
-import { processRequest, reportDevicesUsage } from "./webhook";
+import { reportDevicesUsage } from "./devices";
+import { processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
 const log = Util.log(`Garmin Webhook`);
@@ -143,7 +144,11 @@ const processOneCustomer = async (
 ): Promise<boolean> => {
   for (const payload of payloads) {
     // create a representation of this request and store on the DB
-    const webhookRequest = await createWebhookRequest({ cxId, payload });
+    const webhookRequest = await createWebhookRequest({
+      cxId,
+      type: "devices.health-data",
+      payload,
+    });
     // send it to the customer and update the request status
     const success = await processRequest(webhookRequest, settings);
     // give it some time to prevent flooding the customer

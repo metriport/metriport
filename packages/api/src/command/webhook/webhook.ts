@@ -8,7 +8,7 @@ import { WebhookRequest } from "../../models/webhook-request";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
-import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
+import { isDAPIWebhookRequest } from "./devices";
 import { updateWebhookRequestStatus } from "./webhook-request";
 
 const axios = Axios.create();
@@ -40,15 +40,9 @@ export type WebhookUserDataPayload = {
 };
 export type WebhookMetadataPayload = { messageId: string; when: string };
 
-export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
-  const apiType = ApiTypes.devices;
-  cxUserIds.forEach(cxUserId => reportUsageCmd({ cxId, entityId: cxUserId, apiType }));
-};
-
 export const processRequest = async (
   webhookRequest: WebhookRequest,
-  settings: Settings,
-  apiType: ApiTypes = ApiTypes.devices
+  settings: Settings
 ): Promise<boolean> => {
   const payload = webhookRequest.payload;
 
@@ -64,7 +58,7 @@ export const processRequest = async (
     // if this is for MAPI:
     //    silently ignore this since this is just a notification for ease-of-use
     //    and won't result in data loss
-    if (apiType === ApiTypes.devices) {
+    if (isDAPIWebhookRequest(webhookRequest)) {
       await updateWebhookRequestStatus({
         id: webhookRequest.id,
         status: "failure",
@@ -83,6 +77,7 @@ export const processRequest = async (
         meta: {
           messageId: webhookRequest.id,
           when: dayjs(webhookRequest.createdAt).toISOString(),
+          type: webhookRequest.type,
         },
         ...(payload as any), //eslint-disable-line @typescript-eslint/no-explicit-any
       },

@@ -1,12 +1,13 @@
-import dayjs from "dayjs";
 import { ProviderSource } from "@metriport/api-sdk";
+import dayjs from "dayjs";
+import { ConnectedUser } from "../../models/connected-user";
+import { Constants } from "../../shared/constants";
+import { capture } from "../../shared/notifications";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { Constants } from "../../shared/constants";
-import { ConnectedUser } from "../../models/connected-user";
+import { reportDevicesUsage } from "./devices";
+import { processRequest, WebhookUserDataPayload } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
-import { processRequest, WebhookUserDataPayload, reportDevicesUsage } from "./webhook";
-import { capture } from "../../shared/notifications";
 
 export type WithingsWebhook = {
   userid: string;
@@ -43,7 +44,11 @@ export const processData = async (data: WithingsWebhook) => {
     const settings = await getSettingsOrFail({ id: cxId });
     const withingsData = await mapData(categoryNum, connectedUser, startdate);
     const payload = { users: [{ userId: connectedUser.id, ...withingsData }] };
-    const webhookRequest = await createWebhookRequest({ cxId, payload });
+    const webhookRequest = await createWebhookRequest({
+      cxId,
+      type: "devices.health-data",
+      payload,
+    });
     await processRequest(webhookRequest, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (error) {

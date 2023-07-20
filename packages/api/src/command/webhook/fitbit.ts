@@ -17,9 +17,9 @@ import {
   WebhookDataPayloadWithoutMessageId,
   WebhookUserDataPayload,
   processRequest,
-  reportDevicesUsage,
 } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
+import { reportDevicesUsage } from "./devices";
 
 interface Entry {
   cxId: string;
@@ -141,7 +141,6 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
         });
 
         const payload: WebhookDataPayloadWithoutMessageId = { users: transformedData };
-
         const settings = await getSettingsOrFail({ id: cxId });
 
         analytics({
@@ -153,7 +152,11 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
             apiType: ApiTypes.devices,
           },
         });
-        const webhookRequest = await createWebhookRequest({ cxId, payload });
+        const webhookRequest = await createWebhookRequest({
+          cxId,
+          type: "devices.health-data",
+          payload,
+        });
         // send it to the customer and update the request status
         await processRequest(webhookRequest, settings);
 
