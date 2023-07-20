@@ -1,11 +1,11 @@
 import {
   APIMode,
+  CertificatePurpose,
   CommonWell,
   CommonWellAPI,
   PurposeOfUse,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { CertificatePurpose } from "@metriport/commonwell-sdk/models/certificates";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import { Config } from "../../shared/config";

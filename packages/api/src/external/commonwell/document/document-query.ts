@@ -18,11 +18,7 @@ import {
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
-import {
-  MAPIWebhookStatus,
-  MAPIWebhookType,
-  processPatientDocumentRequest,
-} from "../../../command/webhook/medical";
+import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../../command/webhook/medical";
 import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import { Facility } from "../../../models/medical/facility";
@@ -103,7 +99,7 @@ export async function queryAndProcessDocuments({
     processPatientDocumentRequest(
       organization.cxId,
       patient.id,
-      MAPIWebhookType.documentDownload,
+      "medical.document-download",
       MAPIWebhookStatus.failed
     );
     await appendDocQueryProgress({
@@ -572,7 +568,7 @@ export async function downloadDocsAndUpsertFHIR({
   processPatientDocumentRequest(
     organization.cxId,
     patient.id,
-    MAPIWebhookType.documentDownload,
+    "medical.document-download",
     MAPIWebhookStatus.completed,
     toDTO(docsNewLocation)
   );
@@ -584,7 +580,7 @@ export async function downloadDocsAndUpsertFHIR({
     processPatientDocumentRequest(
       organization.cxId,
       patient.id,
-      MAPIWebhookType.documentConversion,
+      "medical.document-conversion",
       MAPIWebhookStatus.completed
     );
     if (conversionStatusFromAppend !== conversionStatusFromDB) {

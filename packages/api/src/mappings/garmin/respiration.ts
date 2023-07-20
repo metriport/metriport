@@ -2,7 +2,8 @@ import { Biometrics } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import { groupBy } from "lodash";
 import { z } from "zod";
-import { DataType, garminMetaSchema, garminTypes, User, UserData } from ".";
+import { garminMetaSchema, garminTypes, User, UserData } from ".";
+import { DataType } from "../../command/webhook/webhook";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 import { toISODate } from "../../shared/date";
 

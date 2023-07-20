@@ -172,10 +172,13 @@ Before getting started with the deployment or any development, ensure you have d
 
 This monorepo uses [npm workspaces](https://docs.npmjs.com/cli/v9/using-npm/workspaces) to manage the packages and execute commands globally.
 
+But not all folders under `/packages` are part of the workspace. To see the ones that are, check the
+root folder's `package.json` under the `workspaces` section.
+
 To setup this repository for local development, issue this command on the root folder:
 
 ```shell
-$ npm install # only needs to be run once
+$ npm run install-deps # only needs to be run once
 $ npm run build # packages depend on each other, so its best to build/compile them all
 ```
 

@@ -1,9 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import {
-  MAPIWebhookStatus,
-  MAPIWebhookType,
-  processPatientDocumentRequest,
-} from "../../../command/webhook/medical";
+import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
+import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
@@ -11,11 +8,9 @@ import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { encodeExternalId } from "../../../shared/external";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
-import { convertCDAToFHIR } from "../../fhir-converter/converter";
+import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { isConvertible } from "../../fhir-converter/converter";
-import { sandboxSleepTime, getFileExtension } from "./shared";
-import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
+import { getFileExtension, sandboxSleepTime } from "./shared";
 
 const randomDates = [
   "2023-06-15",
@@ -138,7 +133,7 @@ export async function sandboxGetDocRefsAndUpsert({
   processPatientDocumentRequest(
     organization.cxId,
     patient.id,
-    MAPIWebhookType.documentDownload,
+    "medical.document-download",
     MAPIWebhookStatus.completed,
     toDTO(result)
   );

@@ -55,7 +55,7 @@ jobs:
         if: ${{ inputs.treat-as-package == true }}
         run: |
           pwd
-          npm ci --ignore-scripts --no-fund
+          npm run install-deps
         working-directory: "./" # from root bc package-lock.json is there
       - name: Install on sub-folder/package
         if: ${{ inputs.treat-as-package == false }}
@@ -82,7 +82,7 @@ jobs:
           pwd
           npm run build:staging
         working-directory: "./"
-      - name: Install on sub-folder/package
+      - name: Build/compile on sub-folder/package
         if: ${{ inputs.treat-as-package == false }}
         run: |
           pwd

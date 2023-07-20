@@ -13,7 +13,3 @@ export function debug(msg: string, ...optionalParams: any[]): void {
     console.log(msg);
   }
 }
-
-export function safeLogId(id: string): string {
-  return id.length < 5_000 ? id : "";
-}

@@ -3,7 +3,8 @@ import { Sample } from "@metriport/api-sdk/devices/models/common/sample";
 import dayjs from "dayjs";
 import { groupBy } from "lodash";
 import { z } from "zod";
-import { DataType, garminMetaSchema, garminTypes, garminUnits, User, UserData } from ".";
+import { garminMetaSchema, garminTypes, garminUnits, User, UserData } from ".";
+import { DataType } from "../../command/webhook/webhook";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 
 export const mapToBiometricsFromHRV = (items: GarminHRVList): UserData<Biometrics>[] => {

@@ -57,11 +57,11 @@ to your desired URL making another request to the same endpoint.
 
 Webhook requests contain the relevant information on the body of the HTTP request.
 
-There are three types of messages you can expect to receive:
+There are several types of messages you can expect to receive:
 
 - [`ping`](#the-ping-message): validation of the webhook connection between Metriport and your app;
-- [user data](#devices-api-messages): health information grouped by user (Devices API only).
-- [patient data](#medical-api-messages): patient document information (Medical API only).
+- [Devices API messages](#devices-api-messages);
+- [Medical API messages](#medical-api-messages).
 
 In general, upon successful receiving of these messages, it's expected that your app responds with a `200` HTTP
 status code (OK).
@@ -92,8 +92,7 @@ for a simple implementation of this message.
 
 ### Devices API messages
 
-When using the Devices API, Metriport will send Webhook messages containing user data to your app from
-connected Providers, as soon as the data becomes available.
+When using the Devices API, Metriport will send Webhook messages containing [new provider connections](/devices-api/more-info/webhooks#provider-connected-message) for each user, as well as [user data](/devices-api/more-info/webhooks#user-health-data-message) to your app from [our supported Providers](/devices-api/more-info/our-integrations), as soon as the data becomes available.
 
 You can see Webhook details specific to the Devices API on [this page](/devices-api/more-info/webhooks).
 
@@ -103,6 +102,44 @@ When using the Medical API, Metriport will send Webhook messages containing stat
 as the data becomes available after initiating a document query.
 
 You can see Webhook details specific to the Medical API on [this page](/medical-api/more-info/webhooks).
+
+### Meta data
+
+Webhook updates will contain meta information.
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "devices.health-data"
+  }
+}
+```
+
+The format follows:
+
+<ResponseField name="meta" required>
+  Metadata about the message.
+  <Expandable title="meta type property details">
+
+    <ResponseField name="messageId" type="string" required>
+      The ID for this message from Metriport, useful for debugging purposes only;
+    </ResponseField>
+
+    <ResponseField name="when" type="string" required>
+      The timestamp when this message was originally sent, formatted as [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601)
+      (example: `2022-12-24T00:46:05.413Z`)
+    </ResponseField>
+
+    <ResponseField name="type" type="string" required>
+      The type of the webhook message. If coming from the Devices API, this will be formatted `devices.<subtype>`, and if coming from the Medical API it will be formatted `medical.<subtype>`.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
 
 ## Retries
 
@@ -133,3 +170,4 @@ To retry failed requests, simply click the `Retry` button, and those requests wi
   Currently, the Metriport API doesn't implement automatic retries - let us know if this is
   something you need.
 </Warning>
+```
