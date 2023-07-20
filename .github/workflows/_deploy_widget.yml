@@ -77,10 +77,10 @@ jobs:
         shell: bash
 
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm run install-deps
         working-directory: "./"
 
-      # move to an external file so both this and deploy can use this logic
+        # build from root because of dependencies
       - name: Build/compile
         if: ${{ inputs.build_env == 'production' }}
         run: npm run build:cloud

@@ -8,6 +8,7 @@
     "clean": "rimraf dist && rimraf node_modules && rimraf ../layers/shared",
     "build": "tsc -p tsconfig.build.json",
     "build:cloud": "tsc -p tsconfig.cloud.json",
+    "typecheck": "tsc --noEmit",
     "prep-deploy": "npm run clean && npm ci --omit=dev --ignore-scripts --no-fund && mkdir -p ./layers/shared/nodejs && cp -r node_modules ./layers/shared/nodejs/ && cd ./layers/shared && zip -r shared-layer.zip ./nodejs && cd ../..",
     "lint": "eslint . --ext .ts",
     "test": "echo 'no test yet'"
