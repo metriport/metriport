@@ -13,7 +13,7 @@
     "install-deps": "npm ci --ignore-scripts --no-fund && SCRIPT='ci --ignore-scripts --no-fund' npm run lambdas:no-run",
     "build": "npm run build --workspaces && SCRIPT='build' npm run lambdas",
     "build:cloud": "npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
-    "build:staging": "ENV_TYPE='staging' npm run build:cloud --workspaces && ENV_TYPE='staging' SCRIPT='build:cloud' npm run lambdas",
+    "build:staging": "ENV_TYPE='staging' npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
     "typecheck": "npm run typecheck --workspaces --if-present && SCRIPT='typecheck' npm run lambdas",
     "lint": "npm run lint --workspaces --if-present && SCRIPT='lint' npm run lambdas",
     "lint-fix": "npm run lint-fix --workspaces --if-present",
