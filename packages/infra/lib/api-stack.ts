@@ -18,16 +18,17 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
+import { EnvConfig } from "../config/env-config";
 import { AlarmSlackBot } from "./alarm-slack-chatbot";
 import { createAPIService } from "./api-service";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
-import { EnvConfig } from "../config/env-config";
 import { createFHIRConverterService } from "./fhir-converter-service";
+import { getConfig } from "./shared/config";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
-import { getSecrets } from "./shared/secrets";
+import { Secrets, buildSecrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
@@ -689,6 +690,7 @@ export class APIStack extends Stack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }) {
+    const config = getConfig();
     const {
       lambdaLayers,
       baseResource,
@@ -701,7 +703,7 @@ export class APIStack extends Stack {
       alarmAction,
     } = ownProps;
 
-    const fitbitLambda = createLambda({
+    const fitbitAuthLambda = createLambda({
       stack: this,
       name: "FitbitAuth",
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -716,6 +718,16 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    // grant fitbitAuthLambda read access to the client secret
+    const fitbitAuthSecrets: Secrets = {};
+
+    buildSecrets(fitbitAuthSecrets, this, {
+      fitbitClientSecret: config.providerSecretNames.FITBIT_CLIENT_SECRET,
+    });
+    for (const secret of Object.values(fitbitAuthSecrets)) {
+      secret.grantRead(fitbitAuthLambda);
+    }
 
     const fitbitSubscriberVerificationLambda = createLambda({
       stack: this,
@@ -732,11 +744,22 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    // Grant lambda access to the api server
-    server.service.connections.allowFrom(fitbitLambda, Port.allTcp());
+    // grant fitbitSubscriberVerificationLambda read access to the verification code
+    const fitbitVerificationSecret: Secrets = {};
+    buildSecrets(fitbitVerificationSecret, this, {
+      fitbitSubscriberVerificationCode:
+        config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE,
+    });
+    for (const secret of Object.values(fitbitVerificationSecret)) {
+      secret.grantRead(fitbitSubscriberVerificationLambda);
+    }
+
+    // Grant lambdas access to the api server
+    server.service.connections.allowFrom(fitbitAuthLambda, Port.allTcp());
+    server.service.connections.allowFrom(fitbitSubscriberVerificationLambda, Port.allTcp());
 
     const fitbitResource = baseResource.addResource("fitbit");
-    fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitLambda));
+    fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitAuthLambda));
     fitbitResource.addMethod("GET", new apig.LambdaIntegration(fitbitSubscriberVerificationLambda));
   }
 
