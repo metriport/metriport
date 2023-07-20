@@ -28,7 +28,7 @@ import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-con
 import { createFHIRConverterService } from "./fhir-converter-service";
 import { getConfig } from "./shared/config";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
-import { Secrets, buildSecrets, getSecrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
@@ -464,6 +464,7 @@ export class APIStack extends Stack {
     this.setupFitbitWebhook({
       lambdaLayers,
       baseResource: webhookResource,
+      secrets,
       vpc: this.vpc,
       fargateService: apiService,
       fitbitClientSecret: props.config.providerSecretNames.FITBIT_CLIENT_SECRET,
@@ -682,6 +683,7 @@ export class APIStack extends Stack {
   private setupFitbitWebhook(ownProps: {
     lambdaLayers: lambda.ILayerVersion[];
     baseResource: apig.Resource;
+    secrets: Secrets;
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     fitbitClientSecret: string;
@@ -694,6 +696,7 @@ export class APIStack extends Stack {
     const {
       lambdaLayers,
       baseResource,
+      secrets,
       vpc,
       fargateService: server,
       fitbitClientSecret,
@@ -719,16 +722,6 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    // grant fitbitAuthLambda read access to the client secret
-    const fitbitAuthSecrets: Secrets = {};
-
-    buildSecrets(fitbitAuthSecrets, this, {
-      fitbitClientSecret: config.providerSecretNames.FITBIT_CLIENT_SECRET,
-    });
-    for (const secret of Object.values(fitbitAuthSecrets)) {
-      secret.grantRead(fitbitAuthLambda);
-    }
-
     const fitbitSubscriberVerificationLambda = createLambda({
       stack: this,
       name: "FitbitSubscriberVerification",
@@ -744,15 +737,11 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    // grant fitbitSubscriberVerificationLambda read access to the verification code
-    const fitbitVerificationSecret: Secrets = {};
-    buildSecrets(fitbitVerificationSecret, this, {
-      fitbitSubscriberVerificationCode:
-        config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE,
-    });
-    for (const secret of Object.values(fitbitVerificationSecret)) {
-      secret.grantRead(fitbitSubscriberVerificationLambda);
-    }
+    // granting secrets read access to both lambdas
+    secrets[config.providerSecretNames.FITBIT_CLIENT_SECRET]?.grantRead(fitbitAuthLambda);
+    secrets[config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE]?.grantRead(
+      fitbitSubscriberVerificationLambda
+    );
 
     const fitbitResource = baseResource.addResource("fitbit");
     fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitAuthLambda));
