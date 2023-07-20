@@ -723,7 +723,7 @@ export class APIStack extends Stack {
     const fitbitAuthSecrets: Secrets = {};
 
     buildSecrets(fitbitAuthSecrets, this, {
-      fitbitClientSecret: config.providerSecretNames.FITBIT_CLIENT_SECRET,
+      clientSecret: config.providerSecretNames.FITBIT_CLIENT_SECRET,
     });
     for (const secret of Object.values(fitbitAuthSecrets)) {
       secret.grantRead(fitbitAuthLambda);
@@ -747,8 +747,7 @@ export class APIStack extends Stack {
     // grant fitbitSubscriberVerificationLambda read access to the verification code
     const fitbitVerificationSecret: Secrets = {};
     buildSecrets(fitbitVerificationSecret, this, {
-      fitbitSubscriberVerificationCode:
-        config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE,
+      verificationCode: config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE,
     });
     for (const secret of Object.values(fitbitVerificationSecret)) {
       secret.grantRead(fitbitSubscriberVerificationLambda);
