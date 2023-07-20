@@ -1,10 +1,15 @@
 import { Body, SourceType } from "@metriport/api-sdk";
 import convert from "convert-units";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import { PROVIDER_FITBIT } from "../../shared/constants";
 import { US_LOCALE } from "./constants";
 import { FitbitUser } from "./models/user";
 import { FitbitWeight } from "./models/weight";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const STONES_TO_LB = 14;
 const DECIMAL_PLACES = 2;
@@ -41,7 +46,10 @@ export const mapToBody = (
 
   if (fitbitWeight && fitbitWeight.length > 0) {
     body.weight_samples_kg = fitbitWeight.map(weight => {
-      const dateTime = date + "T" + weight.time;
+      let dateTime = date + "T" + weight.time;
+      dateTime = fitbitUser?.user.timezone
+        ? dayjs.tz(dateTime, fitbitUser?.user.timezone).utc().format()
+        : dateTime;
       return {
         time: dayjs(dateTime).toISOString(),
         value: convertStonesToKg(weight.weight),

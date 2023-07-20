@@ -143,7 +143,7 @@ export class Fitbit extends Provider implements OAuth2 {
 
   async fetchHeartRateData(accessToken: string, date: string): Promise<FitbitHeartRate> {
     return this.oauth.fetchProviderData<FitbitHeartRate>(
-      `${Fitbit.URL}/${Fitbit.API_PATH}/activities/heart/date/${date}/1d.json`,
+      `${Fitbit.URL}/${Fitbit.API_PATH}/activities/heart/date/${date}/1d.json?timezone=UTC`,
       accessToken,
       async resp => {
         return fitbitHeartRateResp.parse(resp.data["activities-heart"][0]);
