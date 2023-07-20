@@ -44,8 +44,8 @@ The format follows:
 
   <Expandable title="meta type property details">
 
-    <ResponseField name="type" type="DAPIWebhookType" required>
-      The type of the Devices API webhook data message. Example: `devices.provider-connected`.
+    <ResponseField name="type" type="string" required>
+      The type of the Devices API webhook data message. This will be set to `devices.provider-connected` for the provider connected message.
     </ResponseField>
 
   </Expandable>
@@ -53,7 +53,7 @@ The format follows:
 </ResponseField>
 
 <ResponseField name="users" required>
-  Array of user ids and connected providers.
+  Array of user IDs and connected providers.
   
   <Expandable title="users properties">
 
@@ -162,8 +162,8 @@ The format follows:
 
   <Expandable title="meta type property details">
 
-    <ResponseField name="type" type="DAPIWebhookType" required>
-      The type of the Devices API webhook data message. Example: `devices.health-data`.
+    <ResponseField name="type" type="string" required>
+      The type of the Devices API webhook data message. This will be set to `devices.health-data` for the user health data message.
     </ResponseField>
 
   </Expandable>
