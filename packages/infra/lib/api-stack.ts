@@ -26,7 +26,6 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createFHIRConverterService } from "./fhir-converter-service";
-import { getConfig } from "./shared/config";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
@@ -692,7 +691,6 @@ export class APIStack extends Stack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }) {
-    const config = getConfig();
     const {
       lambdaLayers,
       baseResource,
@@ -738,10 +736,17 @@ export class APIStack extends Stack {
     });
 
     // granting secrets read access to both lambdas
-    secrets[config.providerSecretNames.FITBIT_CLIENT_SECRET]?.grantRead(fitbitAuthLambda);
-    secrets[config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE]?.grantRead(
-      fitbitSubscriberVerificationLambda
-    );
+    type SecretKeys = keyof EnvConfig["providerSecretNames"];
+    const fitbitClientSecretKey: SecretKeys = "FITBIT_CLIENT_SECRET";
+    if (!secrets[fitbitClientSecretKey]) {
+      throw new Error(`${fitbitClientSecretKey} is not defined in config`);
+    }
+    const fitbitSubVerifSecretKey: SecretKeys = "FITBIT_SUBSCRIBER_VERIFICATION_CODE";
+    secrets[fitbitClientSecretKey].grantRead(fitbitAuthLambda);
+    if (!secrets[fitbitSubVerifSecretKey]) {
+      throw new Error(`${fitbitSubVerifSecretKey} is not defined in config`);
+    }
+    secrets[fitbitSubVerifSecretKey].grantRead(fitbitSubscriberVerificationLambda);
 
     const fitbitResource = baseResource.addResource("fitbit");
     fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitAuthLambda));
