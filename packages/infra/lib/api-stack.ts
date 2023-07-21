@@ -436,17 +436,15 @@ export class APIStack extends Stack {
     const contributionResource = api.root.addResource("doc-contribution");
 
     // setup cw doc contribution
-    const cwDocContributionLambda = this.setupCWDocContribution({
+    this.setupCWDocContribution({
       baseResource: contributionResource,
       lambdaLayers,
       alarmAction: slackNotification?.alarmAction,
       authorizer: oauthAuth,
       oauthScopes: oauthScopes,
       envType: props.config.environmentType,
-      bucketName: props.config.medicalDocumentsBucketName,
+      bucket: medicalDocumentsBucket,
     });
-
-    medicalDocumentsBucket.grantReadWrite(cwDocContributionLambda);
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
@@ -797,17 +795,10 @@ export class APIStack extends Stack {
     authorizer: apig.IAuthorizer;
     oauthScopes: cognito.OAuthScope[];
     envType: string;
-    bucketName: string | undefined;
+    bucket: s3.Bucket;
   }): Lambda {
-    const {
-      baseResource,
-      lambdaLayers,
-      alarmAction,
-      authorizer,
-      oauthScopes,
-      envType,
-      bucketName,
-    } = ownProps;
+    const { baseResource, lambdaLayers, alarmAction, authorizer, oauthScopes, envType, bucket } =
+      ownProps;
 
     const cwLambda = createLambda({
       stack: this,
@@ -818,8 +809,8 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
       envVars: {
         ENV_TYPE: envType,
-        ...(bucketName && {
-          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+        ...(bucket && {
+          MEDICAL_DOCUMENTS_BUCKET_NAME: bucket.bucketName,
         }),
       },
     });
@@ -829,6 +820,8 @@ export class APIStack extends Stack {
       authorizer: authorizer,
       authorizationScopes: oauthScopes.map(s => s.scopeName),
     });
+
+    bucket.grantReadWrite(cwLambda);
 
     return cwLambda;
   }

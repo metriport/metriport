@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
-import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { MetriportMedicalApi, Organization } from "@metriport/api-sdk";
 import { patients } from "./patients";
 import axios from "axios";
 import * as AWS from "aws-sdk";
@@ -21,9 +21,6 @@ const AXIOS_TIMEOUT_MILLIS = 20_000;
 const stagingTestAccountAPIKey = getEnvVarOrFail("COMMONWELL_ORG_PRIVATE_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
 
-const orgId = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_ORGANIZATION_ID");
-const orgName = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_ORGANIZATION_NAME");
-
 const docUrl = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_URL");
 const stagingApiUrl = getEnvVarOrFail("METRIPORT_API_URL");
 const bucketName = getEnvVarOrFail("S3_BUCKET_NAME");
@@ -37,6 +34,8 @@ async function main() {
     baseAddress: stagingApiUrl,
   });
 
+  const org = await metriportAPI.getOrganization();
+
   const facilityPatients = await metriportAPI.listPatients(facilityId);
 
   for (const patient of patients) {
@@ -49,9 +48,9 @@ async function main() {
 
     let index = 0;
 
-    if (currentPatient) {
+    if (currentPatient && org) {
       for (const doc of patient.docs) {
-        await addDocumentToS3AndToFHIRServer(currentPatient?.id ?? "", doc, index);
+        await addDocumentToS3AndToFHIRServer(currentPatient?.id ?? "", doc, index, org);
 
         index += 1;
       }
@@ -62,7 +61,8 @@ async function main() {
 async function addDocumentToS3AndToFHIRServer(
   patientId: string,
   doc: Doc,
-  docIndex: number
+  docIndex: number,
+  org: Organization
 ): Promise<void> {
   const fhirApi = axios.create({
     timeout: AXIOS_TIMEOUT_MILLIS,
@@ -88,7 +88,7 @@ async function addDocumentToS3AndToFHIRServer(
   const index = patientId.lastIndexOf(".");
   const patientNumber = patientId.substring(index + 1);
 
-  const docRefId = `${orgId}.${patientNumber}.${docIndex}`;
+  const docRefId = `${org.id}.${patientNumber}.${docIndex}`;
 
   const data = `{
       "resourceType": "DocumentReference",
@@ -96,8 +96,8 @@ async function addDocumentToS3AndToFHIRServer(
       "contained": [
           {
               "resourceType": "Organization",
-              "id": "${orgId}",
-              "name": "${orgName}"
+              "id": "${org.id}",
+              "name": "${org.name}"
           },
           {
               "resourceType": "Patient",
@@ -131,7 +131,7 @@ async function addDocumentToS3AndToFHIRServer(
       },
       "author": [
           {
-              "reference": "#${orgId}",
+              "reference": "#${org.id}",
               "type": "Organization"
           }
       ],
