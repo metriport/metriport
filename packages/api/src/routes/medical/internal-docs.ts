@@ -10,7 +10,7 @@ import {
 import { reprocessDocuments } from "../../command/medical/document/document-redownload";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../command/webhook/medical";
-import { convertResult } from "../../domain/medical/document-reference";
+import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { encodeExternalId } from "../../shared/external";
 import { capture } from "../../shared/notifications";

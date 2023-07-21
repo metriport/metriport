@@ -4,7 +4,7 @@ import {
   DocumentQueryProgress,
   DocumentQueryStatus,
   Progress,
-} from "../../../domain/medical/document-reference";
+} from "../../../domain/medical/document-query";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
