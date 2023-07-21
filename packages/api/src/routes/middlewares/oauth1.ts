@@ -2,14 +2,15 @@ import z from "zod";
 import { updateProviderData } from "../../command/connected-user/save-connected-user";
 import { getUserToken } from "../../command/cx-user/get-user-token";
 import UnauthorizedError from "../../errors/unauthorized";
-import { Constants, ProviderOAuth1Options, PROVIDER_GARMIN } from "../../shared/constants";
+import { ConnectedUser } from "../../models/connected-user";
+import { Constants, PROVIDER_GARMIN, ProviderOAuth1Options } from "../../shared/constants";
 
 export const processOAuth1 = async (
   provider: ProviderOAuth1Options,
   state: string,
   oauth_token: string | undefined,
   oauth_verifier: string | undefined
-): Promise<void> => {
+): Promise<ConnectedUser> => {
   const userToken = await getUserToken({ token: state });
   if (userToken.oauthRequestToken !== oauth_token) throw new UnauthorizedError();
   if (!oauth_verifier) throw new UnauthorizedError();
@@ -22,7 +23,7 @@ export const processOAuth1 = async (
   );
 
   // save the access token in the provider map
-  await updateProviderData({
+  const connectedUser = await updateProviderData({
     id: userToken.userId,
     cxId: userToken.cxId,
     provider,
@@ -31,6 +32,8 @@ export const processOAuth1 = async (
       secret: userAccessTokenSecret,
     },
   });
+
+  return connectedUser;
 };
 
 export const deregisterUsersSchema = z.array(

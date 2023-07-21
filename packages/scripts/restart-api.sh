@@ -29,3 +29,7 @@ aws ecs update-service \
   --service "$ECS_SERVICE" \
   --force-new-deployment
 
+# Wait for the service to be stable
+aws ecs wait services-stable \
+  --cluster "$ECS_CLUSTER" \
+  --service "$ECS_SERVICE"
