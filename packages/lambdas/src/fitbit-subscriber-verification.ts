@@ -1,9 +1,9 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
-import { Request } from "express";
 import status from "http-status";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
+import { APIGatewayEvent } from "aws-lambda";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -15,18 +15,18 @@ const buildResponse = (status: number, body?: unknown) => ({
   body,
 });
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEvent) => {
   const verificationCode: string = (await getSecret(fitbitSubscriberVerificationCode)) as string;
   if (!verificationCode) {
     throw new Error(`Config error - FITBIT_SUBSCRIBER_VERIFICATION_CODE doesn't exist`);
   }
 
-  if (req.query.verify) {
+  if (event.queryStringParameters?.verify) {
     console.log(
       "Verifying the subscriber. Make sure to use the verification code provided in the dev.fitbit dashboard!"
     );
 
-    if (req.query.verify === fitbitSubscriberVerificationCode) {
+    if (event.queryStringParameters.verify === verificationCode) {
       console.log("Received correct verification code.");
       return buildResponse(status.NO_CONTENT);
     } else {

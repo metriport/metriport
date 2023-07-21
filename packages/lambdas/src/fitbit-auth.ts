@@ -2,10 +2,10 @@ import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import axios from "axios";
 import { createHmac } from "crypto";
-import { Request } from "express";
 import status from "http-status";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
+import { APIGatewayEvent } from "aws-lambda";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -22,8 +22,8 @@ const buildResponse = (status: number, body?: unknown) => ({
 
 const defaultResponse = () => buildResponse(status.NO_CONTENT);
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
-  if (!req.body) {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEvent) => {
+  if (!event.body) {
     console.log("Request has no body - will not be forwarded to the API");
     return defaultResponse();
   }
@@ -33,8 +33,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
     throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
   }
 
-  if (verifyRequest(req, secret)) {
-    return forwardCallToServer(req);
+  if (verifyRequest(event, secret)) {
+    return forwardCallToServer(event);
   }
 
   capture.message("Fitbit webhooks authentication fail", {
@@ -43,10 +43,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
   return buildResponse(status.NOT_FOUND);
 });
 
-async function forwardCallToServer(req: Request) {
+async function forwardCallToServer(event: APIGatewayEvent) {
   console.log(`Verified! Calling server...`);
 
-  const resp = await api.post(apiServerURL, req.body, { headers: req.headers });
+  const resp = await api.post(apiServerURL, event.body, { headers: event.headers });
 
   console.log(`Server response - status: ${resp.status}`);
   console.log(`Server response - body: ${resp.data}`);
@@ -56,17 +56,17 @@ async function forwardCallToServer(req: Request) {
 /**
  * Checks for authenticity of the webhook notification by comparing a hashed value of the client secret to the fitbit signature provided in the request.
  *
- * @param req Request
+ * @param event APIGatewayProxyEvent
  * @param secret Secret Client key for Fitbit
  * @returns boolean
  */
-function verifyRequest(req: Request, secret: string) {
-  const bodyString = JSON.stringify(req.body);
+function verifyRequest(event: APIGatewayEvent, secret: string) {
+  const bodyString = JSON.stringify(event.body);
 
   const signingKey = secret + "&";
   const hash = createHmac("sha1", signingKey).update(bodyString).digest();
   const encodedHash = Buffer.from(hash).toString("base64");
 
-  if (encodedHash === req.headers["x-fitbit-signature"]) return true;
+  if (encodedHash === event.headers["x-fitbit-signature"]) return true;
   return false;
 }

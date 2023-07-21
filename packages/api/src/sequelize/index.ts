@@ -4,14 +4,14 @@ import { Config } from "../shared/config";
 
 let umzug: Umzug<QueryInterface> | undefined = undefined;
 
-const migrations = Config.isCloudEnv()
-  ? "sequelize/migrations/*.js"
+const migrationsPath = Config.isCloudEnv()
+  ? "packages/api/dist/sequelize/migrations/*.js"
   : "src/sequelize/migrations/*.ts";
 
 export const getUmzug = (sequelize: Sequelize): Umzug<QueryInterface> => {
   if (!umzug) {
     umzug = new Umzug({
-      migrations: { glob: migrations },
+      migrations: { glob: migrationsPath },
       context: sequelize.getQueryInterface(),
       storage: new SequelizeStorage({ sequelize }),
       logger: console,
