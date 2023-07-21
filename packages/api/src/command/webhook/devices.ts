@@ -35,8 +35,8 @@ export const sendProviderConnected = async (
   let webhookRequest;
   try {
     const { id: userId, cxId } = connectedUser;
-    const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : null;
-
+    const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
+    providers.push(provider);
     const payload = { users: [{ userId, provider, connectedProviders: providers }] };
     const settings = await getSettingsOrFail({ id: cxId });
 
