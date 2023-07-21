@@ -738,10 +738,10 @@ export class APIStack extends Stack {
     // granting secrets read access to both lambdas
     type SecretKeys = keyof EnvConfig["providerSecretNames"];
     const fitbitClientSecretKey: SecretKeys = "FITBIT_CLIENT_SECRET";
-    const fitbitSubVerifSecretKey: SecretKeys = "FITBIT_SUBSCRIBER_VERIFICATION_CODE";
     if (!secrets[fitbitClientSecretKey]) {
       throw new Error(`${fitbitClientSecretKey} is not defined in config`);
     }
+    const fitbitSubVerifSecretKey: SecretKeys = "FITBIT_SUBSCRIBER_VERIFICATION_CODE";
     secrets[fitbitClientSecretKey].grantRead(fitbitAuthLambda);
     if (!secrets[fitbitSubVerifSecretKey]) {
       throw new Error(`${fitbitSubVerifSecretKey} is not defined in config`);
