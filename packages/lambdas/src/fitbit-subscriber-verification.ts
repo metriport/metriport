@@ -26,7 +26,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
       "Verifying the subscriber. Make sure to use the verification code provided in the dev.fitbit dashboard!"
     );
 
-    if (event.queryStringParameters.verify === fitbitSubscriberVerificationCode) {
+    if (event.queryStringParameters.verify === verificationCode) {
       console.log("Received correct verification code.");
       return buildResponse(status.NO_CONTENT);
     } else {
