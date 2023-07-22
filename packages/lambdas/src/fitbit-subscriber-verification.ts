@@ -35,7 +35,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
     }
   }
 
-  capture.message("FitbitSubVerifLambda subscriber verification fail", {
+  capture.message("Fitbit subscriber verification fail", {
     extra: { context: "webhook.fitbit.fitbitSubscriberVerificationLambda" },
   });
   return buildResponse(status.NOT_FOUND);
