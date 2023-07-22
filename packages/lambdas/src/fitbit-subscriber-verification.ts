@@ -18,10 +18,7 @@ const buildResponse = (status: number, body?: unknown) => ({
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEvent) => {
   const verificationCode: string = (await getSecret(fitbitSubscriberVerificationCode)) as string;
   if (!verificationCode) {
-    capture.error("FitbitSubVerifLambda failed to fetch sub verification code.", {
-      extra: { context: "webhook.fitbit.fitbitSubscriberVerificationLambda" },
-    });
-    buildResponse(status.NOT_FOUND);
+    throw new Error(`Config error - FITBIT_SUBSCRIBER_VERIFICATION_CODE doesn't exist`);
   }
 
   if (event.queryStringParameters?.verify) {

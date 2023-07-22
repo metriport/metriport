@@ -30,13 +30,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
 
   const secret: string = (await getSecret(fitbitClientSecretName)) as string;
   if (!secret) {
-    capture.error("FitbitAuthLambda failed to fetch client secret.", {
-      extra: { context: "webhook.fitbit.fitbitAuthLambda" },
-    });
-    buildResponse(status.NOT_FOUND);
+    throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
   }
 
-  const verificationSuccessful = verifyRequest(event, secret);
+  const verificationSuccessful = verifyRequest(event, event.body, secret);
   console.log("WH Verification success", verificationSuccessful);
   if (verificationSuccessful) {
     return forwardCallToServer(event);
@@ -62,16 +59,15 @@ async function forwardCallToServer(event: APIGatewayEvent) {
  * Checks for authenticity of the webhook notification by comparing a hashed value of the client secret to the fitbit signature provided in the request.
  *
  * @param event APIGatewayProxyEvent
+ * @param body APIGatewayProxyEvent body
  * @param secret Secret Client key for Fitbit
  * @returns boolean
  */
-function verifyRequest(event: APIGatewayEvent, secret: string) {
-  if (event.body) {
-    const signingKey = secret + "&";
-    const hash = createHmac("sha1", signingKey).update(event.body).digest();
-    const encodedHash = Buffer.from(hash).toString("base64");
+function verifyRequest(event: APIGatewayEvent, body: string, secret: string) {
+  const signingKey = secret + "&";
+  const hash = createHmac("sha1", signingKey).update(body).digest();
+  const encodedHash = Buffer.from(hash).toString("base64");
 
-    if (encodedHash === event.headers["X-Fitbit-Signature"]) return true;
-  }
+  if (encodedHash === event.headers["X-Fitbit-Signature"]) return true;
   return false;
 }
