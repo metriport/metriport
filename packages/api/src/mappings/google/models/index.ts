@@ -48,11 +48,11 @@ const sessionSchema = z.object({
   description: z.string(),
   startTimeMillis: z.string(),
   endTimeMillis: z.string(),
-  modifiedTimeMillis: z.string(),
+  modifiedTimeMillis: z.string().nullish(),
   application: z.object({
-    packageName: z.string(),
-    version: z.string(),
-    detailsUrl: z.string(),
+    packageName: z.string().nullish(),
+    version: z.string().nullish(),
+    detailsUrl: z.string().nullish(),
   }),
   activityType: z.number(),
 });
