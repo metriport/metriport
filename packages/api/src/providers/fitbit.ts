@@ -271,8 +271,9 @@ export class Fitbit extends Provider implements OAuth2 {
     const user = resUser.status === "fulfilled" ? resUser.value : undefined;
     const weight = resWeight.status === "fulfilled" ? resWeight.value : undefined;
 
-    if (!user && !weight) {
-      throw new Error("All Requests failed");
+    if (!user) {
+      if (!weight) throw new Error("All Requests failed");
+      throw new Error("User Request failed");
     }
 
     return mapToBody(date, user, weight);
