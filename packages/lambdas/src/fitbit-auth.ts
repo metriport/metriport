@@ -24,7 +24,7 @@ const defaultResponse = () => buildResponse(status.NO_CONTENT);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEvent) => {
   if (!event.body) {
-    console.log("Request has no body - will not be forwarded to the API");
+    console.log("Event has no body - will not be forwarded to the API");
     return defaultResponse();
   }
 
@@ -63,10 +63,12 @@ async function forwardCallToServer(event: APIGatewayEvent) {
  * @returns boolean
  */
 function verifyRequest(event: APIGatewayEvent, secret: string) {
-  const signingKey = secret + "&";
-  const hash = createHmac("sha1", signingKey).update(event.body).digest();
-  const encodedHash = Buffer.from(hash).toString("base64");
+  if (event.body) {
+    const signingKey = secret + "&";
+    const hash = createHmac("sha1", signingKey).update(event.body).digest();
+    const encodedHash = Buffer.from(hash).toString("base64");
 
-  if (encodedHash === event.headers["X-Fitbit-Signature"]) return true;
+    if (encodedHash === event.headers["X-Fitbit-Signature"]) return true;
+  }
   return false;
 }
