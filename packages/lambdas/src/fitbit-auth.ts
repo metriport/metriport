@@ -30,7 +30,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
 
   const secret: string = (await getSecret(fitbitClientSecretName)) as string;
   if (!secret) {
-    throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
+    capture.error("FitbitAuthLambda failed to fetch client secret.", {
+      extra: { context: "webhook.fitbit.fitbitAuthLambda" },
+    });
+    buildResponse(status.NOT_FOUND);
   }
 
   const verificationSuccessful = verifyRequest(event, secret);
@@ -40,7 +43,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
   }
 
   capture.message("Fitbit webhooks authentication fail", {
-    extra: { context: "webhook.fitbit.webhook-authentication" },
+    extra: { context: "webhook.fitbit.fitbitAuthLambda" },
   });
   return buildResponse(status.NOT_FOUND);
 });
