@@ -33,7 +33,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
     throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
   }
 
-  if (verifyRequest(event, secret)) {
+  const verificationSuccessful = verifyRequest(event, secret);
+  console.log("WH Verification success", verificationSuccessful);
+  if (verificationSuccessful) {
     return forwardCallToServer(event);
   }
 
@@ -61,12 +63,10 @@ async function forwardCallToServer(event: APIGatewayEvent) {
  * @returns boolean
  */
 function verifyRequest(event: APIGatewayEvent, secret: string) {
-  const bodyString = JSON.stringify(event.body);
-
   const signingKey = secret + "&";
-  const hash = createHmac("sha1", signingKey).update(bodyString).digest();
+  const hash = createHmac("sha1", signingKey).update(event.body).digest();
   const encodedHash = Buffer.from(hash).toString("base64");
 
-  if (encodedHash === event.headers["x-fitbit-signature"]) return true;
+  if (encodedHash === event.headers["X-Fitbit-Signature"]) return true;
   return false;
 }
