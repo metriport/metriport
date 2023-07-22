@@ -24,7 +24,7 @@ const defaultResponse = () => buildResponse(status.NO_CONTENT);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEvent) => {
   if (!event.body) {
-    console.log("Request has no body - will not be forwarded to the API");
+    console.log("Event has no body - will not be forwarded to the API");
     return defaultResponse();
   }
 
@@ -33,12 +33,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
     throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
   }
 
-  if (verifyRequest(event, secret)) {
+  const verificationSuccessful = verifyRequest(event, event.body, secret);
+  console.log("WH Verification success", verificationSuccessful);
+  if (verificationSuccessful) {
     return forwardCallToServer(event);
   }
 
   capture.message("Fitbit webhooks authentication fail", {
-    extra: { context: "webhook.fitbit.webhook-authentication" },
+    extra: { context: "webhook.fitbit.fitbitAuthLambda" },
   });
   return buildResponse(status.NOT_FOUND);
 });
@@ -57,16 +59,15 @@ async function forwardCallToServer(event: APIGatewayEvent) {
  * Checks for authenticity of the webhook notification by comparing a hashed value of the client secret to the fitbit signature provided in the request.
  *
  * @param event APIGatewayProxyEvent
+ * @param body APIGatewayProxyEvent body
  * @param secret Secret Client key for Fitbit
  * @returns boolean
  */
-function verifyRequest(event: APIGatewayEvent, secret: string) {
-  const bodyString = JSON.stringify(event.body);
-
+function verifyRequest(event: APIGatewayEvent, body: string, secret: string) {
   const signingKey = secret + "&";
-  const hash = createHmac("sha1", signingKey).update(bodyString).digest();
+  const hash = createHmac("sha1", signingKey).update(body).digest();
   const encodedHash = Buffer.from(hash).toString("base64");
 
-  if (encodedHash === event.headers["x-fitbit-signature"]) return true;
+  if (encodedHash === event.headers["X-Fitbit-Signature"]) return true;
   return false;
 }
