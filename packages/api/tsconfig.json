@@ -1,7 +1,7 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "types": ["node", "jest"],
+    "types": ["reflect-metadata", "node", "jest"],
     "typeRoots": ["./src/@types", "../../node_modules/@types"],
 
     // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
