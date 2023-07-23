@@ -24,7 +24,7 @@ const router = Router();
  *
  *
  * @param req.query.cxId The customer ID.
- * @return 204 No Content
+ * @return 200 OK
  */
 router.post(
   "/update-all",
