@@ -1,7 +1,7 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "types": ["reflect-metadata", "node", "jest"],
+    "types": ["node", "jest"],
     "typeRoots": ["./src/@types", "../../node_modules/@types"],
 
     // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
@@ -11,6 +11,7 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "checkJs": true,
+    "noErrorTruncation": true, // for ts type expansion
     // #340 - Left this ones out bc it was causing too many changes
     // "exactOptionalPropertyTypes": true,
     // "noImplicitReturns": true,
