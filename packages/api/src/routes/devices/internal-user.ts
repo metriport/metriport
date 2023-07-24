@@ -47,13 +47,15 @@ router.post(
           }
         }
       }
-      const newConnectedUser = await getConnectedUserOrFail({
-        cxId: connectedUser.cxId,
-        id: connectedUser.id,
-      });
-      await sendProviderDisconnected(newConnectedUser, disconnectedProviders);
+      if (disconnectedProviders) {
+        const newConnectedUser = await getConnectedUserOrFail({
+          cxId: connectedUser.cxId,
+          id: connectedUser.id,
+        });
+        await sendProviderDisconnected(newConnectedUser, disconnectedProviders);
+      }
     }
-    return res.status(status.OK);
+    return res.sendStatus(status.OK);
   })
 );
 
