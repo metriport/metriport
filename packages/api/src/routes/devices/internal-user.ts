@@ -53,7 +53,7 @@ router.post(
       });
       await sendProviderDisconnected(newConnectedUser, disconnectedProviders);
     }
-    return res.status(status.OK).json({});
+    return res.status(status.OK);
   })
 );
 
