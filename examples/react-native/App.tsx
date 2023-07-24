@@ -6,13 +6,15 @@ import { MetriportWidget } from "@metriport/react-native-sdk";
 export default function App() {
   return (
     <MetriportWidget
-      token="CONNECT_TOKEN"
-      clientApiKey="CLIENT_API_KEY"
+      token="1G76wzcGrNTK_vdgYs9wR"
+      clientApiKey="ck9kMkJzWU5qSS1nQ0wtVzVTenFTOjIxZmE0MzJlLTcyM2ItNGExZC1hM2IyLWJkOWNkNzVhMDcxNw"
       colorMode="dark"
       customColor="green"
-      sandbox={true}
-      providers={["fitbit", "cronometer"]}
+      sandbox={false}
+      // providers={["fitbit", "cronometer"]}
       style={styles.box}
+      apiUrl="http://10.1.10.97:8080"
+      url="http://10.1.10.97:3001"
     />
   );
 }

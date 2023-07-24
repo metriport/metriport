@@ -51,5 +51,5 @@ export const MetriportWidget = (props: MetriportWidgetProps & WebViewProps) => {
     url = `${url}&providers=${providersStr}`;
   }
 
-  return <WebView source={{ uri: url }} {...props} />;
+  return <WebView userAgent="Chrome Mozilla" source={{ uri: url }} {...props} />;
 };
