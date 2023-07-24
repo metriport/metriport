@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
+import multer from "multer";
 import { accountInit } from "../command/account-init";
 import {
   PopulateFhirServerResponse,
@@ -13,10 +14,10 @@ import patientRoutes from "./medical/internal-patient";
 import userRoutes from "./devices/internal-user";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
-import { getOrganization } from "../command/medical/organization/get-organization";
-import { getPatients } from "../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../command/medical/patient/get-patient";
 
 const router = Router();
+const upload = multer();
 
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
@@ -124,24 +125,23 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/doc-query-seed
+ * POST /internal/upload-doc
  *
- * Upload test data to S3 and CW for testing doc queries.
+ * Upload doc for a patient
  *
  * @param req.query.cxId - The customer/account's ID.
- * @param req.query.facilityId - The facility ID to add data too.
- * @return 200 Indicating the seed was successful.
+ * @param req.query.patientId - The patient ID.
+ * @return 200 Indicating the file was successfully uploaded.
  */
 router.post(
-  "/doc-query-seed",
+  "/upload-doc",
+  upload.single("file"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getUUIDFrom("query", req, "facilityId").orFail();
+    const title = req.body.title;
+    const file = req.file;
 
-    const org = await getOrganization({ cxId });
-
-    const patients = await getPatients({ cxId, facilityId: facilityId });
-
+    console.log(req.body.test);
+    console.log(file);
     return res.sendStatus(httpStatus.OK);
   })
 );
