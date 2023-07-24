@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     "types": ["reflect-metadata", "jest"],
-    "typeRoots": ["./types", "./node_modules/@types"]
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "noErrorTruncation": true,
   },
   "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"],
   "files": [],
