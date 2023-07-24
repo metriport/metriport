@@ -83,12 +83,10 @@ async function addDocumentToS3AndToFHIRServer(
     })
     .promise();
 
-  console.log(`Uploaded, file info: ${JSON.stringify(uploaded)}`);
+  console.log(`File info: ${JSON.stringify(uploaded)}`);
 
-  const index = patientId.lastIndexOf(".");
-  const patientNumber = patientId.substring(index + 1);
-
-  const docRefId = `${org.id}.${patientNumber}.${docIndex}`;
+  // NEED TO FIGURE OUT SOMETHING FOR EACH PATIENT
+  const docRefId = `${org.id}.${docIndex}`;
 
   const data = `{
       "resourceType": "DocumentReference",

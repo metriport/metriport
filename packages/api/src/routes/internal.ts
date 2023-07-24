@@ -13,6 +13,8 @@ import patientRoutes from "./medical/internal-patient";
 import userRoutes from "./devices/internal-user";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
+import { getOrganization } from "../command/medical/organization/get-organization";
+import { getPatients } from "../command/medical/patient/get-patient";
 
 const router = Router();
 
@@ -118,6 +120,29 @@ router.post(
       result[org.cxId] = orgRes;
     }
     return res.json(result);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/doc-query-seed
+ *
+ * Upload test data to S3 and CW for testing doc queries.
+ *
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.facilityId - The facility ID to add data too.
+ * @return 200 Indicating the seed was successful.
+ */
+router.post(
+  "/doc-query-seed",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getUUIDFrom("query", req, "facilityId").orFail();
+
+    const org = await getOrganization({ cxId });
+
+    const patients = await getPatients({ cxId, facilityId: facilityId });
+
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
