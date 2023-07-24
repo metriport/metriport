@@ -2,7 +2,6 @@ import { Activity } from "@metriport/api-sdk";
 import convert from "convert-units";
 import dayjs from "dayjs";
 import { sum } from "lodash";
-
 import { ValueKey, getValues } from ".";
 import { PROVIDER_GOOGLE } from "../../shared/constants";
 import { Util } from "../../shared/util";
@@ -66,6 +65,21 @@ export const mapToActivity = (
               active_seconds: seconds,
             },
           };
+          activity.activity_logs = activity.activity_logs?.map(act => {
+            const matchingActivity = data.point.find(point =>
+              matchActivityTime(act.start_time, act.end_time, parseInt(point.startTimeNanos))
+            );
+            if (matchingActivity) {
+              act = {
+                ...act,
+                durations: {
+                  ...act.durations,
+                  active_seconds: calculateActiveSeconds(act.start_time, act.end_time),
+                },
+              };
+            }
+            return act;
+          });
         }
 
         if (data.dataSourceId === sourceIdCalories) {
@@ -231,4 +245,11 @@ function calculateAvgSpeed(activitySpeedTimeMap: { speed: number; totalSeconds: 
   });
 
   return formatNumber((totalDistance / totalTime) * 3600);
+}
+
+function calculateActiveSeconds(
+  startTimeNanos: string | undefined,
+  endTimeNanos: string | undefined
+): number {
+  return (nanoTimeString(endTimeNanos) - nanoTimeString(startTimeNanos)) / 1e9;
 }
