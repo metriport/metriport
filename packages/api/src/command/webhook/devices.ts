@@ -26,7 +26,7 @@ export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
 /**
  * Sends an update to the CX about their user subscribing to a provider.
  *
- * Executed asynchronhously, so it should treat errors w/o expecting it to be done upstream.
+ * Executed asynchronously, so it should treat errors w/o expecting it to be done upstream.
  */
 export const sendProviderConnected = async (
   connectedUser: ConnectedUser,
@@ -53,6 +53,43 @@ export const sendProviderConnected = async (
     );
     capture.error(error, {
       extra: { connectedUser, provider, context: `webhook.sendProviderConnected`, error },
+      level: "error",
+    });
+  }
+};
+
+/**
+ * Sends an update to the CX about their user disconnecting from a provider.
+ * This will also be fired when the user's token is no longer valid and needs to be
+ * programatically .
+ *
+ * Executed asynchronously, so it should treat errors w/o expecting it to be done upstream.
+ */
+export const sendProviderDisconnected = async (
+  connectedUser: ConnectedUser,
+  providers: string[]
+): Promise<void> => {
+  let webhookRequest;
+  try {
+    const { id: userId, cxId } = connectedUser;
+    const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
+    const payload = { users: [{ userId, providers, connectedProviders: providers }] };
+    const settings = await getSettingsOrFail({ id: cxId });
+
+    webhookRequest = await createWebhookRequest({
+      cxId,
+      type: "devices.provider-disconnected",
+      payload,
+    });
+    await processRequest(webhookRequest, settings);
+  } catch (error) {
+    console.log(
+      `Failed to send provider disconnected WH - providers: ${providers}, ` +
+        `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequest)}` +
+        `error: ${error}`
+    );
+    capture.error(error, {
+      extra: { connectedUser, providers, context: `webhook.sendProviderDiconnected`, error },
       level: "error",
     });
   }

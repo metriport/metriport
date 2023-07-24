@@ -5,7 +5,11 @@ description: "Receive user health data as soon as it becomes available."
 
 ## Overview
 
-When using the Devices API, Metriport will send Webhook messages containing [new provider connections](#provider-connected-message) for each user, as well as [user data](#user-health-data-message) to your app from [our supported Providers](/devices-api/more-info/our-integrations), as soon as the data becomes available.
+When using the Devices API, Metriport will send the following Webhook messages:
+
+- [New provider connections](#provider-connected-message) for each user.
+- [Removed provider connections](#provider-disconnected-message) for each user.
+- [User data](#user-health-data-message) to your app from [our supported Providers](/devices-api/more-info/our-integrations), as soon as the data becomes available.
 
 To enable this integration approach with Metriport, and for some prerequesite reading to understand
 how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
@@ -52,7 +56,7 @@ The format follows:
 
 </ResponseField>
 
-<ResponseField name="users" required>
+<ResponseField name="users" type="object[]" required>
   Array of user IDs and connected providers.
   
   <Expandable title="users properties">
@@ -63,6 +67,63 @@ The format follows:
 
     <ResponseField name="provider" type="string" required>
       A string representing the newly-connected provider for the user.
+    </ResponseField>
+
+    <ResponseField name="connectedProviders" type="string[]" required>
+      An array of currently connected [health data providers](/devices-api/more-info/our-integrations).
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+## Provider disconnected message
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "devices.provider-disconnected"
+  },
+  "users": [
+    {
+      "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
+      "providers": ["fitbit", "cronometer"],
+      "connectedProviders": ["garmin"]
+    }
+  ]
+}
+```
+
+The format follows:
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+
+  <Expandable title="meta type property details">
+
+    <ResponseField name="type" type="string" required>
+      The type of the Devices API webhook data message. This will be set to `devices.provider-disconnected` for this message.
+    </ResponseField>
+
+  </Expandable>
+
+</ResponseField>
+
+<ResponseField name="users" type="object[]" required>
+  An array representing each disconnected provider for each user.
+  
+  <Expandable title="users properties">
+    Each entry will contain an object with the following properties:
+
+    <ResponseField name="userId" type="string" required>
+      The user ID as defined by your application when it called [`/create-user`](/user/create-user).
+    </ResponseField>
+
+    <ResponseField name="provider" type="string[]" required>
+      An of the providers that were disconnected from the user.
     </ResponseField>
 
     <ResponseField name="connectedProviders" type="string[]" required>

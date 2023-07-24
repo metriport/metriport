@@ -47,6 +47,11 @@ export class Oura extends Provider implements OAuth2 {
     });
   }
 
+  async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    return accessToken;
+  }
+
   async getAuthUri(state: string): Promise<string> {
     return this.oauth.getAuthUri(state);
   }
@@ -60,7 +65,7 @@ export class Oura extends Provider implements OAuth2 {
   }
 
   override async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     const [resFetchDaily, resBio, resSess, resWork] = await Promise.allSettled([
       this.fetchDailyActivity(accessToken, date),
@@ -142,7 +147,7 @@ export class Oura extends Provider implements OAuth2 {
       end_datetime: end_date,
     };
 
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<Biometrics>(
       `${Oura.URL}/${Oura.API_PATH}/heartrate`,
@@ -155,7 +160,7 @@ export class Oura extends Provider implements OAuth2 {
   }
 
   override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<Body>(
       `${Oura.URL}/${Oura.API_PATH}/personal_info`,
@@ -172,7 +177,7 @@ export class Oura extends Provider implements OAuth2 {
       start_date: start_date,
       end_date: end_date,
     };
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<Sleep>(
       `${Oura.URL}/${Oura.API_PATH}/sleep`,
@@ -188,7 +193,7 @@ export class Oura extends Provider implements OAuth2 {
   }
 
   override async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<User>(
       `${Oura.URL}/${Oura.API_PATH}/personal_info`,

@@ -55,6 +55,10 @@ export const getConnectedUsers = async ({
   });
 };
 
+export const getAllConnectedUsers = async (): Promise<ConnectedUser[]> => {
+  return ConnectedUser.findAll();
+};
+
 export const getConnectedUserByTokenOrFail = async (
   provider: string,
   str: string
