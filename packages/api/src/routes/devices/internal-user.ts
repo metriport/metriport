@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { asyncHandler } from "../util";
@@ -9,6 +9,7 @@ import {
 import { Constants, providerOAuth2OptionsSchema } from "../../shared/constants";
 import { updateProviderData } from "../../command/connected-user/save-connected-user";
 import { sendProviderDisconnected } from "../../command/webhook/devices";
+import { getUUIDFrom } from "../schemas/uuid";
 
 const router = Router();
 
@@ -20,13 +21,15 @@ const router = Router();
  * longer be used - in this case, the token will be revoked locally and a
  * webhook will be sent to the CX to notify them of the disconnect.
  *
- *
+ * @param req.query.cxId - (Optional) the customer/account's ID.
  * @return 200 OK
  */
 router.post(
   "/refresh-tokens",
-  asyncHandler(async (_, res: Response) => {
-    const connectedUsers = await getAllConnectedUsers();
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").optional();
+    const connectedUsers = await getAllConnectedUsers(cxId);
+    let disconnectCount = 0;
     for (const connectedUser of connectedUsers) {
       const providers = connectedUser.providerMap ? Object.keys(connectedUser.providerMap) : [];
       const disconnectedProviders: string[] = [];
@@ -53,9 +56,10 @@ router.post(
           id: connectedUser.id,
         });
         await sendProviderDisconnected(newConnectedUser, disconnectedProviders);
+        disconnectCount++;
       }
     }
-    return res.sendStatus(status.OK);
+    return res.send(status.OK).json({ usersProcessed: connectedUsers.length, disconnectCount });
   })
 );
 

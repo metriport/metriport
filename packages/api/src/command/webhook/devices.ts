@@ -36,7 +36,7 @@ export const sendProviderConnected = async (
   try {
     const { id: userId, cxId } = connectedUser;
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
-    const payload = { users: [{ userId, provider, connectedProviders: providers }] };
+    const payload = { users: [{ userId, providers: [provider], connectedProviders: providers }] };
     const settings = await getSettingsOrFail({ id: cxId });
 
     webhookRequest = await createWebhookRequest({
@@ -67,13 +67,15 @@ export const sendProviderConnected = async (
  */
 export const sendProviderDisconnected = async (
   connectedUser: ConnectedUser,
-  providers: string[]
+  disconnectedProviders: string[]
 ): Promise<void> => {
   let webhookRequest;
   try {
     const { id: userId, cxId } = connectedUser;
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
-    const payload = { users: [{ userId, providers, connectedProviders: providers }] };
+    const payload = {
+      users: [{ userId, providers: disconnectedProviders, connectedProviders: providers }],
+    };
     const settings = await getSettingsOrFail({ id: cxId });
 
     webhookRequest = await createWebhookRequest({
@@ -84,12 +86,17 @@ export const sendProviderDisconnected = async (
     await processRequest(webhookRequest, settings);
   } catch (error) {
     console.log(
-      `Failed to send provider disconnected WH - providers: ${providers}, ` +
+      `Failed to send provider disconnected WH - providers: ${disconnectedProviders}, ` +
         `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequest)}` +
         `error: ${error}`
     );
     capture.error(error, {
-      extra: { connectedUser, providers, context: `webhook.sendProviderDiconnected`, error },
+      extra: {
+        connectedUser,
+        providers: disconnectedProviders,
+        context: `webhook.sendProviderDiconnected`,
+        error,
+      },
       level: "error",
     });
   }

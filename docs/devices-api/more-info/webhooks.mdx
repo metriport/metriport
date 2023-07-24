@@ -34,7 +34,7 @@ Example payload:
   "users": [
     {
       "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
-      "provider": "garmin",
+      "providers": ["garmin"],
       "connectedProviders": ["fitbit", "garmin", "cronometer"]
     }
   ]
@@ -65,8 +65,8 @@ The format follows:
       The user ID as defined by your application when it called [`/create-user`](/user/create-user).
     </ResponseField>
 
-    <ResponseField name="provider" type="string" required>
-      A string representing the newly-connected provider for the user.
+    <ResponseField name="providers" type="string[]" required>
+      An array of the newly-connected providers for the user.
     </ResponseField>
 
     <ResponseField name="connectedProviders" type="string[]" required>
@@ -122,8 +122,8 @@ The format follows:
       The user ID as defined by your application when it called [`/create-user`](/user/create-user).
     </ResponseField>
 
-    <ResponseField name="provider" type="string[]" required>
-      An of the providers that were disconnected from the user.
+    <ResponseField name="providers" type="string[]" required>
+      An array of the providers that were disconnected from the user.
     </ResponseField>
 
     <ResponseField name="connectedProviders" type="string[]" required>
