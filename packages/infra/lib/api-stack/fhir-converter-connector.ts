@@ -140,7 +140,7 @@ export function createLambda({
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      API_URL: apiServiceDnsAddress,
+      API_URL: `http://${apiServiceDnsAddress}`,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,
