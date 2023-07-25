@@ -2,14 +2,12 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { asyncHandler } from "../util";
-import {
-  getAllConnectedUsers,
-  getConnectedUserOrFail,
-} from "../../command/connected-user/get-connected-user";
+import { getConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
 import { Constants, providerOAuth2OptionsSchema } from "../../shared/constants";
 import { updateProviderData } from "../../command/connected-user/save-connected-user";
 import { sendProviderDisconnected } from "../../command/webhook/devices";
 import { getUUIDFrom } from "../schemas/uuid";
+import { ConnectedUser } from "../../models/connected-user";
 
 const router = Router();
 
@@ -22,12 +20,20 @@ const router = Router();
  * webhook will be sent to the CX to notify them of the disconnect.
  *
  * @param req.query.cxId - (Optional) the customer/account's ID.
- * @return 200 OK
+ * @return Count of users processed and count of users with disconnected providers.
  */
 router.post(
   "/refresh-tokens",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").optional();
+    // move this to a command if we need to use it elsewhere
+    const getAllConnectedUsers = async (cxId?: string): Promise<ConnectedUser[]> => {
+      return ConnectedUser.findAll({
+        where: {
+          ...(cxId ? { cxId } : undefined),
+        },
+      });
+    };
     const connectedUsers = await getAllConnectedUsers(cxId);
     let disconnectCount = 0;
     for (const connectedUser of connectedUsers) {
@@ -59,7 +65,10 @@ router.post(
         disconnectCount++;
       }
     }
-    return res.send(status.OK).json({ usersProcessed: connectedUsers.length, disconnectCount });
+    return res.send(status.OK).json({
+      usersProcessed: connectedUsers.length,
+      usersWithDisconnectedProviders: disconnectCount,
+    });
   })
 );
 
