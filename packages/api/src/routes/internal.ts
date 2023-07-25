@@ -13,12 +13,10 @@ import docsRoutes from "./medical/internal-docs";
 import patientRoutes from "./medical/internal-patient";
 import userRoutes from "./devices/internal-user";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
+import { asyncHandler, getCxIdFromQueryOrFail, getFrom, getFromQueryOrFail } from "./util";
 import { makeS3Client } from "../external/aws/s3";
-import { getPatientOrFail } from "../command/medical/patient/get-patient";
-import { makeFhirApi } from "../external/fhir/api/api-factory";
-import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import { Config } from "../shared/config";
+import { createAndUploadDocReference } from "../command/medical/admin-upload-doc";
 
 const router = Router();
 const upload = multer();
@@ -120,11 +118,11 @@ router.post(
     const result: Record<string, PopulateFhirServerResponse> = {};
     for (const org of allOrgs) {
       const orgRes = await populateFhirServer({
-        cxId: organization.cxId,
+        cxId: org.cxId,
         createIfNotExists,
         triggerDocQuery,
       });
-      result[organization.cxId] = orgRes;
+      result[org.cxId] = orgRes;
     }
     return res.json(result);
   })
@@ -137,118 +135,42 @@ router.post(
  *
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient ID.
+ * @param req.file - The file to be stored.
+ * @param req.body.metadata - The metadata for the file.
+
  * @return 200 Indicating the file was successfully uploaded.
  */
 router.post(
   "/upload-doc",
   upload.single("file"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").optional();
-    const patientId = getUUIDFrom("query", req, "patientId").optional();
-
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFromQueryOrFail("patientId", req);
     const file = req.file;
 
     if (!file) {
       throw new BadRequestError("File must be provided");
     }
 
-    if (!cxId) {
-      throw new BadRequestError("cxId must be provided");
-    }
-
-    if (!patientId) {
-      throw new BadRequestError("patientId must be provided");
-    }
-
-    const organization = await getOrganizationOrFail({ cxId });
-    const patient = await getPatientOrFail({ id: patientId, cxId });
-
-    console.log(patient);
-
-    const uploaded = await s3client
+    await s3client
       .upload({
         Bucket: bucketName,
-        Key: file.fieldname,
+        Key: file.originalname,
         Body: file.buffer,
         ContentType: file.mimetype,
       })
       .promise();
 
-    const fhirApi = makeFhirApi(cxId);
+    const metadata = JSON.parse(req.body.metadata);
 
-    const description = req.body.description;
+    await createAndUploadDocReference({
+      cxId,
+      patientId,
+      file,
+      metadata,
+    });
 
-    const data = `{
-        "resourceType": "DocumentReference",
-        "id": "${docRefId}",
-        "contained": [
-            {
-                "resourceType": "Organization",
-                "id": "${organization.id}",
-                "name": "${organization.name}"
-            },
-            {
-                "resourceType": "Patient",
-                "id": "${patientId}"
-            }
-        ],
-        "masterIdentifier": {
-            "system": "urn:ietf:rfc:3986",
-            "value": "${docRefId}"
-        },
-        "identifier": [
-            {
-                "use": "official",
-                "system": "urn:ietf:rfc:3986",
-                "value": "${docRefId}"
-            }
-        ],
-        "status": "current",
-        "type": {
-          "coding": [
-              {
-                  "system": "http://loinc.org/",
-                  "code": "75622-1",
-                  "display":  "${description}"
-              }
-          ]
-        },
-        "subject": {
-            "reference": "Patient/${patientId}",
-            "type": "Patient"
-        },
-        "author": [
-            {
-                "reference": "#${organization.id}",
-                "type": "Organization"
-            }
-        ],
-        "description": "${description}",
-        "content": [
-            {
-                "attachment": {
-                    "contentType": "${obj.ContentType}",
-                    "url": "${docUrl}?fileName=${doc.fileName}"
-                }
-            }
-        ],
-        "context": {
-          "period": {
-              "start": "2022-10-05T22:00:00.000Z",
-              "end": "2022-10-05T23:00:00.000Z"
-          },
-          "sourcePatientInfo": {
-              "reference": "#${patientId}",
-              "type": "Patient"
-          }
-      }
-    }`;
-
-    //   await fhirApi.put(`/DocumentReference/${docRefId}`, JSON.parse(data));
-
-    // console.log(req.body.test);
-    // console.log(uploaded);
-    return res.sendStatus(httpStatus.OK);
+    return res.send(httpStatus.OK);
   })
 );
 

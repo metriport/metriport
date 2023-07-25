@@ -216,4 +216,8 @@ export class Config {
   static getConvertDocLambdaName(): string | undefined {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
   }
+
+  static getDocContributionUrl(): string | undefined {
+    return getEnvVar("DOCUMENT_CONTRIBUTION_URL");
+  }
 }
