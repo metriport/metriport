@@ -55,6 +55,14 @@ export const getConnectedUsers = async ({
   });
 };
 
+export const getAllConnectedUsers = async (cxId?: string): Promise<ConnectedUser[]> => {
+  return ConnectedUser.findAll({
+    where: {
+      ...(cxId ? { cxId } : undefined),
+    },
+  });
+};
+
 export const getConnectedUserByTokenOrFail = async (
   provider: string,
   str: string
