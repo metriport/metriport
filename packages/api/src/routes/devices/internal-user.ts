@@ -56,7 +56,7 @@ router.post(
           }
         }
       }
-      if (disconnectedProviders) {
+      if (disconnectedProviders.length > 0) {
         const newConnectedUser = await getConnectedUserOrFail({
           cxId: connectedUser.cxId,
           id: connectedUser.id,
