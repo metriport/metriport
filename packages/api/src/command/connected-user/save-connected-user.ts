@@ -18,6 +18,7 @@ export const updateProviderData = async ({
   const newProviderMap = connectedUser.providerMap
     ? { ...connectedUser.providerMap, ...newItem }
     : { ...newItem };
+  connectedUser.providerMap = newProviderMap;
   await ConnectedUser.update({ providerMap: newProviderMap }, { where: { id, cxId } });
-  return connectedUser;
+  return getConnectedUserOrFail({ id, cxId });
 };

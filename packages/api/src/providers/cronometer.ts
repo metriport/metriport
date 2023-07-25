@@ -51,7 +51,7 @@ export class Cronometer extends Provider implements OAuth2 {
     return resp.data.access_token;
   }
 
-  private getAccessToken(connectedUser: ConnectedUser): string {
+  async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
     return getProviderTokenFromConnectedUserOrFail(connectedUser, PROVIDER_CRONOMETER);
   }
 
@@ -69,6 +69,7 @@ export class Cronometer extends Provider implements OAuth2 {
 
   override async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
     // not using fetchProviderData here on purpose due to interesting API design - this is a POST
+    const accessToken = await this.getAccessToken(connectedUser);
     const resp = await axios.post(
       `${Cronometer.URL}/${Cronometer.API_PATH}/diary_summary`,
       {
@@ -77,7 +78,7 @@ export class Cronometer extends Provider implements OAuth2 {
       },
       {
         headers: {
-          Authorization: `Bearer ${this.getAccessToken(connectedUser)}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       }
     );

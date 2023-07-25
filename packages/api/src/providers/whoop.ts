@@ -61,6 +61,11 @@ export class Whoop extends Provider implements OAuth2 {
     });
   }
 
+  async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    return accessToken;
+  }
+
   async getAuthUri(state: string): Promise<string> {
     return this.oauth.getAuthUri(state);
   }
@@ -74,7 +79,7 @@ export class Whoop extends Provider implements OAuth2 {
   }
 
   override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<Body>(
       `${Whoop.DATA_URL}/user/measurement/body`,
@@ -86,7 +91,7 @@ export class Whoop extends Provider implements OAuth2 {
   }
 
   override async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<User>(
       `${Whoop.DATA_URL}/user/profile/basic`,
@@ -99,7 +104,7 @@ export class Whoop extends Provider implements OAuth2 {
 
   override async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
     const { start_date, end_date } = getStartAndEndDateTime(date);
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<Sleep>(
       `${Whoop.DATA_URL}/activity/sleep`,
@@ -116,7 +121,7 @@ export class Whoop extends Provider implements OAuth2 {
 
   override async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
     const { start_date, end_date } = getStartAndEndDateTime(date);
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<Activity>(
       `${Whoop.DATA_URL}/activity/workout`,
@@ -162,7 +167,7 @@ export class Whoop extends Provider implements OAuth2 {
     connectedUser: ConnectedUser,
     date: string
   ): Promise<Biometrics> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     const [resCycle, resRecovery] = await Promise.allSettled([
       this.fetchCycleData(accessToken, date),

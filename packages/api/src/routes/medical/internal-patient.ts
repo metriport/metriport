@@ -9,8 +9,49 @@ import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getETag, getFromParamsOrFail, getFromQueryOrFail } from "../util";
 import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
+import { getFacilities } from "../../command/medical/facility/get-facility";
+import { getPatients } from "../../command/medical/patient/get-patient";
+import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 
 const router = Router();
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/update-all
+ *
+ * Triggers an update for all of a cx's patients without changing any
+ * demographics. The point of this is to trigger an outbound XCPD from
+ * CommonWell to Carequality so new patient links are formed.
+ *
+ *
+ * @param req.query.cxId The customer ID.
+ * @return 200 OK
+ */
+router.post(
+  "/update-all",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilities = await getFacilities({ cxId });
+    for (const facility of facilities) {
+      const patients = await getPatients({ cxId, facilityId: facility.id });
+      for (const patient of patients) {
+        const patientUpdate: PatientUpdateCmd = {
+          id: patient.id,
+          cxId: patient.cxId,
+          address: patient.data.address,
+          dob: patient.data.dob,
+          firstName: patient.data.firstName,
+          genderAtBirth: patient.data.genderAtBirth,
+          lastName: patient.data.lastName,
+          contact: patient.data.contact,
+          personalIdentifiers: patient.data.personalIdentifiers,
+        };
+        await updatePatient(patientUpdate);
+      }
+
+      return res.sendStatus(status.OK);
+    }
+  })
+);
 
 /** ---------------------------------------------------------------------------
  * DELETE /internal/patient/:id

@@ -17,6 +17,7 @@ export interface OAuth2 {
   revokeProviderAccess(connectedUser: ConnectedUser): Promise<void>;
   getTokenFromAuthCode(code: string): Promise<string>;
   postAuth?(token: string, userId?: string): Promise<void>;
+  getAccessToken(connectedUser: ConnectedUser): Promise<string>;
 }
 
 export interface UriParams {

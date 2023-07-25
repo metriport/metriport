@@ -11,6 +11,7 @@ import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
 import docsRoutes from "./medical/internal-docs";
 import patientRoutes from "./medical/internal-patient";
+import userRoutes from "./devices/internal-user";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getCxIdFromQueryOrFail, getFrom } from "./util";
 import { makeS3Client } from "../external/aws/s3";
@@ -26,6 +27,7 @@ const bucketName = Config.getMedicalDocumentsBucketName();
 
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
+router.use("/user", userRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/init

@@ -67,6 +67,11 @@ export class Google extends Provider implements OAuth2 {
     });
   }
 
+  async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    return accessToken;
+  }
+
   async getAuthUri(state: string): Promise<string> {
     return this.oauth.getAuthUri(state);
   }
@@ -86,7 +91,7 @@ export class Google extends Provider implements OAuth2 {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async fetchGoogleData(connectedUser: ConnectedUser, date: string, options: any) {
     try {
-      const access_token = await this.oauth.getAccessToken(connectedUser);
+      const access_token = await this.getAccessToken(connectedUser);
 
       const resp = await axios.post(
         `${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`,
@@ -114,7 +119,7 @@ export class Google extends Provider implements OAuth2 {
 
   async fetchGoogleSessions(connectedUser: ConnectedUser, date: string, type?: number) {
     try {
-      const access_token = await this.oauth.getAccessToken(connectedUser);
+      const access_token = await this.getAccessToken(connectedUser);
 
       const resp = await axios.get(`${Google.URL}${Google.API_PATH}/users/me/sessions`, {
         headers: {
