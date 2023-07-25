@@ -89,6 +89,11 @@ export class Fitbit extends Provider implements OAuth2 {
     });
   }
 
+  async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
+    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    return accessToken;
+  }
+
   async getAuthUri(state: string): Promise<string> {
     return this.oauth.getAuthUri(state);
   }
@@ -198,7 +203,7 @@ export class Fitbit extends Provider implements OAuth2 {
     connectedUser: ConnectedUser,
     date: string
   ): Promise<Biometrics> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     const [resBreathing, resCardio, resHr, resHrv, resSpo, resTempCore, resTempSkin] =
       await Promise.allSettled([
@@ -257,7 +262,7 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     const extraHeaders = {
       "Accept-Language": "en_GB", // For higher precision in weight readings, we are retrieving data in stones and converting it to kg
@@ -300,7 +305,7 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   override async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     const [resFood, resWater] = await Promise.allSettled([
       this.fetchFoodData(accessToken, date),
@@ -318,7 +323,7 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   override async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<Sleep>(
       `${Fitbit.URL}/${Fitbit.API_PATH}/sleep/date/${date}.json`,
@@ -330,7 +335,7 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   override async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
-    const accessToken = await this.oauth.getAccessToken(connectedUser);
+    const accessToken = await this.getAccessToken(connectedUser);
 
     return this.oauth.fetchProviderData<User>(
       `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,

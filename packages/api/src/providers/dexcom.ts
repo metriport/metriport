@@ -55,7 +55,7 @@ export class Dexcom extends Provider implements OAuth2 {
     });
   }
 
-  private async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
+  async getAccessToken(connectedUser: ConnectedUser): Promise<string> {
     const token = getProviderTokenFromConnectedUserOrFail(connectedUser, PROVIDER_DEXCOM);
 
     const refreshedToken = await this.checkRefreshToken(token, connectedUser);
