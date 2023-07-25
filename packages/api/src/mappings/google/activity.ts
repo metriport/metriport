@@ -5,7 +5,7 @@ import { sum } from "lodash";
 import { ValueKey, getValues } from ".";
 import { PROVIDER_GOOGLE } from "../../shared/constants";
 import { Util } from "../../shared/util";
-import { GoogleSessions } from "./models";
+import { GooglePoint, GoogleSessions, SingleGooglePoint } from "./models";
 import {
   GoogleActivity,
   GoogleActivityTypes,
@@ -16,6 +16,7 @@ import {
   sourceIdSteps,
 } from "./models/activity";
 import { sessionSleepType } from "./models/sleep";
+import { ActivityLog } from "@metriport/api-sdk/devices/models/common/activity-log";
 
 export const mapToActivity = (
   date: string,
@@ -65,6 +66,7 @@ export const mapToActivity = (
           };
 
           let actTotalSeconds = 0;
+
           activity.activity_logs = activity.activity_logs?.map(act => {
             data.point.find(point => {
               const foundMatch = matchActivityTime(
@@ -83,6 +85,7 @@ export const mapToActivity = (
                 active_seconds: actTotalSeconds,
               },
             };
+            actTotalSeconds = 0;
             return act;
           });
         }
@@ -94,18 +97,20 @@ export const mapToActivity = (
               active_kcal: formatNumber(sum(values)),
             },
           };
-          activity.activity_logs = activity.activity_logs?.map(act => {
-            const matchingActivity = data.point.find(point =>
-              matchActivityTime(act.start_time, act.end_time, parseInt(point.startTimeNanos))
+          activity.activity_logs?.map(act => {
+            addToActivityLogs(
+              activity,
+              data.point,
+              "fpVal",
+              (act: ActivityLog, updatedValue: number) => {
+                return {
+                  ...act,
+                  energy_expenditure: {
+                    active_kcal: formatNumber(updatedValue),
+                  },
+                };
+              }
             );
-            if (matchingActivity && matchingActivity.value[0].fpVal) {
-              act = {
-                ...act,
-                energy_expenditure: {
-                  active_kcal: formatNumber(matchingActivity.value[0].fpVal),
-                },
-              };
-            }
             return act;
           });
         }
@@ -118,19 +123,21 @@ export const mapToActivity = (
               steps_count: sum(intValues),
             },
           };
-          activity.activity_logs = activity.activity_logs?.map(act => {
-            const matchingActivity = data.point.find(point =>
-              matchActivityTime(act.start_time, act.end_time, parseInt(point.startTimeNanos))
+          activity.activity_logs?.map(act => {
+            addToActivityLogs(
+              activity,
+              data.point,
+              "intVal",
+              (act: ActivityLog, updatedValue: number) => {
+                return {
+                  ...act,
+                  movement: {
+                    ...act.movement,
+                    steps_count: updatedValue,
+                  },
+                };
+              }
             );
-            if (matchingActivity) {
-              act = {
-                ...act,
-                movement: {
-                  ...act.movement,
-                  steps_count: matchingActivity.value[0].intVal,
-                },
-              };
-            }
             return act;
           });
         }
@@ -143,19 +150,21 @@ export const mapToActivity = (
               distance_meters: sum(values),
             },
           };
-          activity.activity_logs = activity.activity_logs?.map(act => {
-            const matchingActivity = data.point.find(point =>
-              matchActivityTime(act.start_time, act.end_time, parseInt(point.startTimeNanos))
+          activity.activity_logs?.map(act => {
+            addToActivityLogs(
+              activity,
+              data.point,
+              "fpVal",
+              (act: ActivityLog, updatedValue: number) => {
+                return {
+                  ...act,
+                  movement: {
+                    ...act.movement,
+                    distance_meters: updatedValue,
+                  },
+                };
+              }
             );
-            if (matchingActivity) {
-              act = {
-                ...act,
-                movement: {
-                  ...act.movement,
-                  distance_meters: matchingActivity.value[0].fpVal,
-                },
-              };
-            }
             return act;
           });
         }
@@ -163,37 +172,37 @@ export const mapToActivity = (
         const activitySpeedTimeMap: { speed: number; totalTime: number }[] = [];
 
         if (data.dataSourceId === sourceIdSpeed) {
-          activity.activity_logs = activity.activity_logs?.map(act => {
-            const matchingActivity = data.point.find(point =>
-              matchActivityTime(act.start_time, act.end_time, parseInt(point.startTimeNanos))
-            );
-            if (matchingActivity) {
-              act = {
-                ...act,
-                movement: {
-                  ...act.movement,
-                  speed: {
-                    ...act.movement?.speed,
-                    avg_km_h: formatNumber(
-                      convert(matchingActivity.value[0].fpVal).from("m/s").to("km/h")
-                    ),
+          activity.activity_logs?.map(act => {
+            addToActivityLogs(
+              activity,
+              data.point,
+              "fpVal",
+              (act: ActivityLog, updatedValue: number) => {
+                if (act.start_time && act.end_time) {
+                  const totalSeconds = convert(
+                    nanoTimeString(act.end_time) - nanoTimeString(act.start_time)
+                  )
+                    .from("ns")
+                    .to("s");
+                  activitySpeedTimeMap.push({
+                    speed: formatNumber(convert(updatedValue).from("m/s").to("km/h")),
+                    totalTime: convert(totalSeconds).from("s").to("h"),
+                  });
+                }
+
+                return {
+                  ...act,
+                  movement: {
+                    ...act.movement,
+                    speed: {
+                      ...act.movement?.speed,
+                      avg_km_h: formatNumber(convert(updatedValue).from("m/s").to("km/h")),
+                    },
                   },
-                },
-              };
-              if (act.start_time && act.end_time) {
-                const totalSeconds = convert(
-                  nanoTimeString(act.end_time) - nanoTimeString(act.start_time)
-                )
-                  .from("ns")
-                  .to("s");
-                activitySpeedTimeMap.push({
-                  speed: formatNumber(
-                    convert(matchingActivity.value[0].fpVal).from("m/s").to("km/h")
-                  ),
-                  totalTime: convert(totalSeconds).from("s").to("h"),
-                });
+                };
               }
-            }
+            );
+
             return act;
           });
 
@@ -266,4 +275,25 @@ function calculateActiveSeconds(startTimeNanos: string, endTimeNanos: string): n
 
 function getISOString(timeMillis: string): string {
   return dayjs(Number(timeMillis)).toISOString();
+}
+
+function addToActivityLogs(
+  activity: Activity,
+  dataPoint: GooglePoint,
+  valueKey: "fpVal" | "intVal",
+  callbackFn: (act: ActivityLog, updatedValue: number) => Activity
+) {
+  activity.activity_logs = activity.activity_logs?.map(act => {
+    const matchingActivity = dataPoint.find((point: SingleGooglePoint) =>
+      matchActivityTime(act.start_time, act.end_time, parseInt(point.startTimeNanos))
+    );
+    const propValue =
+      matchingActivity && matchingActivity.value.length
+        ? matchingActivity.value[0][valueKey]
+        : undefined;
+    if (matchingActivity && propValue) {
+      act = callbackFn(act, propValue);
+    }
+    return act;
+  });
 }
