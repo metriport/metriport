@@ -61,7 +61,7 @@ router.post(
           cxId: connectedUser.cxId,
           id: connectedUser.id,
         });
-        await sendProviderDisconnected(newConnectedUser, disconnectedProviders);
+        sendProviderDisconnected(newConnectedUser, disconnectedProviders);
         disconnectCount++;
       }
     }
