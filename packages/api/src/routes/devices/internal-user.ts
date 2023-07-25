@@ -65,7 +65,7 @@ router.post(
         disconnectCount++;
       }
     }
-    return res.send(status.OK).json({
+    return res.status(status.OK).json({
       usersProcessed: connectedUsers.length,
       usersWithDisconnectedProviders: disconnectCount,
     });
