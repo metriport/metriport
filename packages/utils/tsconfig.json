@@ -1,0 +1,16 @@
+{
+  "extends": "@tsconfig/recommended/tsconfig.json",
+  "compilerOptions": {
+    // Using community best practices with 'extends'
+    "outDir": "./dist"
+  },
+  "include": ["./src"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__mocks__/",
+    "**/__tests__/"
+  ]
+}

@@ -3,23 +3,23 @@ name: PR Check - Widget
 on:
   pull_request:
     paths:
-      - "connect-widget/app/**"
+      - "packages/connect-widget/**"
   merge_group:
   workflow_dispatch:
 
 jobs:
   check-pr-production:
     if: ${{ github.event.pull_request.base.ref == 'master' }}
-    uses: ./.github/workflows/_reusable_build.yml
+    uses: ./.github/workflows/_build.yml
     with:
-      path: "connect-widget/app"
+      path: "packages/connect-widget"
       build_env: "production"
     secrets: inherit
 
   check-pr-staging:
     if: ${{ github.event.pull_request.base.ref != 'master' }}
-    uses: ./.github/workflows/_reusable_build.yml
+    uses: ./.github/workflows/_build.yml
     with:
-      path: "connect-widget/app"
+      path: "packages/connect-widget"
       build_env: "staging"
     secrets: inherit

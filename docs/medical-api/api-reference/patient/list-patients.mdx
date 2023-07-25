@@ -12,7 +12,7 @@ api: "GET /medical/v1/patient"
 
 ## Response
 
-All Patients receiving care at the specified Facility, or all Patients if no 
+All Patients receiving care at the specified Facility, or all Patients if no
 Facility is specified.
 
 <ResponseField name="patients" type="Patient[]">
@@ -24,7 +24,7 @@ Facility is specified.
 <ResponseExample>
 
 ```javascript Metriport SDK
-import { MetriportMedicalApi } from "@metriport/api";
+import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
@@ -73,7 +73,6 @@ const patients = await metriport.listPatients("2.16.840.1.113883.3.666.5.2004.4.
       "lastName": "Juarez,Diaz",
       "dob": "1949-06-09",
       "genderAtBirth": "F",
-      "personalIdentifiers": [],
       "address": [
         {
           "zip": "12345",

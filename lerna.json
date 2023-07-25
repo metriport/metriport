@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/lerna/schemas/lerna-schema.json",
+  "version": "independent",
+  "npmClient": "npm",
+  "command": {
+    "version": {
+      "message": "chore(release): publish\n\nRef: #000",
+      "conventional-commits": true
+    }
+  }
+}

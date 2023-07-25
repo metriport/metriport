@@ -1,0 +1,85 @@
+version: "3.8"
+
+name: app
+
+networks:
+  metriportNetwork:
+    name: metriportNetwork
+    driver: bridge
+
+services:
+  # These are the configurations for our Node app
+  # When Docker Compose starts this container it will automatically
+  # use the Dockerfile in the directory to configure it
+  app:
+    build:
+      context: ../../
+      dockerfile: packages/api/Dockerfile.dev
+    deploy:
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      # Our app does not work without our database
+      # so this ensures our database is loaded first
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_CREDS={"password":"admin","dbname":"db","engine":"postgres","port":5432,"host":"postgres","username":"admin"}
+      - NODE_ENV=development
+      - ENV_TYPE=development
+      - TOKEN_TABLE_NAME=token
+      - DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - FHIR_CONVERTER_SERVER_URL=http://host.docker.internal:8777
+      - MEDICAL_DOCUMENTS_BUCKET_NAME=medical-documents-local
+      - LOCAL_ACCOUNT_CXID=cdb678ab-07e3-42c5-93f5-5541cf1f15a8
+    networks:
+      - metriportNetwork
+    ports:
+      - "8080:8080"
+      - "9229:9229"
+    volumes:
+      - ./src:/usr/src/app/packages/api/src
+      - ../api-sdk/dist:/usr/src/app/packages/api-sdk/dist
+      - ../commonwell-sdk/dist:/usr/src/app/packages/commonwell-sdk/dist
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  # Config for dynamoDB table for auth token management
+  # To access admin GUI:
+  #   npm install -g dynamodb-admin
+  #   DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: dynamodb
+    hostname: dynamodb
+    restart: always
+    ports:
+      - 8000:8000
+    networks:
+      - metriportNetwork
+    command: "-jar DynamoDBLocal.jar -sharedDb"
+  # This is the configuration for our PostgreSQL database container
+  # Note the `postgres` name is important, in out Node app when we refer
+  # to  `host: "postgres"` that value is mapped on the network to the
+  # address of this container.
+  postgres:
+    image: postgres:14.4-alpine
+    restart: always
+    command: -c 'max_connections=350'
+    environment:
+      # You can set the value of environment variables
+      # in your docker-compose.yml file
+      # Our Node app will use these to connect
+      # to the database
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=db
+    ports:
+      # Standard port for PostgreSQL databases
+      - "5432:5432"
+    networks:
+      - metriportNetwork
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 2s
+      timeout: 2s
+      retries: 2

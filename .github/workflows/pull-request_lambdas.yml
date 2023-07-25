@@ -1,0 +1,16 @@
+name: PR Check - Lambdas
+
+on:
+  pull_request:
+    paths:
+      - "packages/lambdas/**"
+  merge_group:
+  workflow_dispatch:
+
+jobs:
+  check-pr:
+    uses: ./.github/workflows/_build.yml
+    with:
+      path: "packages/lambdas"
+      treat-as-package: false
+    secrets: inherit

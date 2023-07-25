@@ -409,6 +409,7 @@
         "devices-api/more-info/apple-health",
         "devices-api/more-info/react-native",
         "devices-api/more-info/cordova",
+        "devices-api/more-info/flutter",
         "devices-api/more-info/models"
       ]
     }

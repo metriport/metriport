@@ -1,0 +1,17 @@
+# preventing those to be included in the API's docker image
+./**/__tests__/
+./**/*.test.ts
+./**/*.spec.ts
+./**/node_modules
+./**/dist
+./**/build
+packages/commonwell-cert-runner
+packages/commonwell-jwt-maker
+packages/connect-widget
+packages/fhir-converter
+packages/fhir-test
+packages/infra
+packages/lambdas
+packages/react-native-sdk
+packages/scripts
+packages/utils

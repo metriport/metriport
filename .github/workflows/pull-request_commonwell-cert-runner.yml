@@ -1,0 +1,15 @@
+name: PR Check - commonwell-cert-runner
+
+on:
+  pull_request:
+    paths:
+      - "packages/commonwell-cert-runner/**"
+  merge_group:
+  workflow_dispatch:
+
+jobs:
+  check-pr:
+    uses: ./.github/workflows/_build.yml
+    with:
+      path: "packages/commonwell-cert-runner"
+    secrets: inherit
