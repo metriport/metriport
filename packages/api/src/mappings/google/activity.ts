@@ -37,13 +37,11 @@ export const mapToActivity = (
     );
 
     const activityLogs = activitySessions.map(session => {
-      const isoStringDate = dayjs(Number(session.startTimeMillis)).toISOString();
-
       return {
         metadata,
         name: GoogleActivityTypes[session.activityType],
-        start_time: isoStringDate,
-        end_time: dayjs(Number(session.endTimeMillis)).toISOString(),
+        start_time: getISOString(session.startTimeMillis),
+        end_time: getISOString(session.endTimeMillis),
       };
     });
 
@@ -65,19 +63,26 @@ export const mapToActivity = (
               active_seconds: seconds,
             },
           };
+
+          let actTotalSeconds = 0;
           activity.activity_logs = activity.activity_logs?.map(act => {
-            const matchingActivity = data.point.find(point =>
-              matchActivityTime(act.start_time, act.end_time, parseInt(point.startTimeNanos))
-            );
-            if (matchingActivity) {
-              act = {
-                ...act,
-                durations: {
-                  ...act.durations,
-                  active_seconds: calculateActiveSeconds(act.start_time, act.end_time),
-                },
-              };
-            }
+            data.point.find(point => {
+              const foundMatch = matchActivityTime(
+                act.start_time,
+                act.end_time,
+                parseInt(point.startTimeNanos)
+              );
+              if (foundMatch) {
+                actTotalSeconds += calculateActiveSeconds(point.startTimeNanos, point.endTimeNanos);
+              }
+            });
+            act = {
+              ...act,
+              durations: {
+                ...act.durations,
+                active_seconds: actTotalSeconds,
+              },
+            };
             return act;
           });
         }
@@ -155,7 +160,7 @@ export const mapToActivity = (
           });
         }
 
-        const activitySpeedTimeMap: { speed: number; totalSeconds: number }[] = [];
+        const activitySpeedTimeMap: { speed: number; totalTime: number }[] = [];
 
         if (data.dataSourceId === sourceIdSpeed) {
           activity.activity_logs = activity.activity_logs?.map(act => {
@@ -176,13 +181,16 @@ export const mapToActivity = (
                 },
               };
               if (act.start_time && act.end_time) {
-                const totalSeconds =
-                  (nanoTimeString(act.end_time) - nanoTimeString(act.start_time)) / 1e9;
+                const totalSeconds = convert(
+                  nanoTimeString(act.end_time) - nanoTimeString(act.start_time)
+                )
+                  .from("ns")
+                  .to("s");
                 activitySpeedTimeMap.push({
                   speed: formatNumber(
                     convert(matchingActivity.value[0].fpVal).from("m/s").to("km/h")
                   ),
-                  totalSeconds,
+                  totalTime: convert(totalSeconds).from("s").to("h"),
                 });
               }
             }
@@ -214,7 +222,7 @@ export const mapToActivity = (
 function nanoTimeString(startTime: string | undefined): number {
   if (startTime) {
     const dateObject = new Date(startTime);
-    const timeInNanoseconds = dateObject.getTime() * 1e6;
+    const timeInNanoseconds = convert(dateObject.getTime()).from("ms").to("ns");
     return timeInNanoseconds;
   }
   return 0;
@@ -231,25 +239,31 @@ function matchActivityTime(
   );
 }
 
+// Truncate the number to 2 decimal places
 function formatNumber(num: number): number {
   return parseInt((num * 100).toFixed(2)) / 100;
 }
 
-function calculateAvgSpeed(activitySpeedTimeMap: { speed: number; totalSeconds: number }[]) {
+function calculateAvgSpeed(activitySpeedTimeMap: { speed: number; totalTime: number }[]) {
   let totalDistance = 0;
   let totalTime = 0;
 
   activitySpeedTimeMap.forEach(d => {
-    totalDistance += (d.speed * d.totalSeconds) / 3600;
-    totalTime += d.totalSeconds;
+    totalDistance += d.speed * d.totalTime;
+    totalTime += d.totalTime;
   });
 
-  return formatNumber((totalDistance / totalTime) * 3600);
+  return formatNumber(totalDistance / totalTime);
 }
 
-function calculateActiveSeconds(
-  startTimeNanos: string | undefined,
-  endTimeNanos: string | undefined
-): number {
-  return (nanoTimeString(endTimeNanos) - nanoTimeString(startTimeNanos)) / 1e9;
+function calculateActiveSeconds(startTimeNanos: string, endTimeNanos: string): number {
+  return formatNumber(
+    convert(parseInt(endTimeNanos) - parseInt(startTimeNanos))
+      .from("ns")
+      .to("s")
+  );
+}
+
+function getISOString(timeMillis: string): string {
+  return dayjs(Number(timeMillis)).toISOString();
 }
