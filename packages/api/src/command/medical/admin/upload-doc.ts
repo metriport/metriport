@@ -6,7 +6,8 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { Config } from "../../../shared/config";
 import { createMetriportDocReferenceContent } from "../../../external/fhir/document";
 
-const docContributionUrl = Config.getDocContributionUrl();
+const apiUrl = Config.getApiUrl();
+const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
 
 /**
  * ADMIN LOGIC
