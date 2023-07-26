@@ -1,24 +1,23 @@
 import { Request, Response, Router } from "express";
-import { v4 as uuidv4 } from "uuid";
 import httpStatus from "http-status";
 import multer from "multer";
-import { accountInit } from "../command/account-init";
 import {
   PopulateFhirServerResponse,
   populateFhirServer,
 } from "../command/medical/admin/populate-fhir";
+import { createAndUploadDocReference } from "../command/medical/admin/upload-doc";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import BadRequestError from "../errors/bad-request";
+import { makeS3Client } from "../external/aws/s3";
 import { OrganizationModel } from "../models/medical/organization";
+import { Config } from "../shared/config";
+import { createS3FileName } from "../shared/external";
+import { uuidv7 } from "../shared/uuid-v7";
+import userRoutes from "./devices/internal-user";
 import docsRoutes from "./medical/internal-docs";
 import patientRoutes from "./medical/internal-patient";
-import userRoutes from "./devices/internal-user";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getCxIdFromQueryOrFail, getFrom, getFromQueryOrFail } from "./util";
-import { makeS3Client } from "../external/aws/s3";
-import { Config } from "../shared/config";
-import { createAndUploadDocReference } from "../command/medical/admin/upload-doc";
-import { createS3FileName } from "../shared/external";
+import { asyncHandler, getFrom, getFromQueryOrFail } from "./util";
 
 const router = Router();
 const upload = multer();
@@ -28,24 +27,6 @@ const bucketName = Config.getMedicalDocumentsBucketName();
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
 router.use("/user", userRoutes);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/init
- *
- * Initialize a (customer's) account. This is an idempotent operation, which
- * means it can be called multiple times without side effects.
- *
- * @param req.query.cxId - The customer/account's ID.
- * @return 200 Indicating the account has been initialized.
- */
-router.post(
-  "/init",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdFromQueryOrFail(req);
-    await accountInit(cxId);
-    return res.sendStatus(httpStatus.OK);
-  })
-);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
@@ -154,7 +135,7 @@ router.post(
       throw new BadRequestError("File must be provided");
     }
 
-    const docRefId = uuidv4();
+    const docRefId = uuidv7();
     const fileName = createS3FileName(cxId, patientId, docRefId);
 
     await s3client
