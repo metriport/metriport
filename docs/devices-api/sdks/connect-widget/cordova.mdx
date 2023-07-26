@@ -4,8 +4,8 @@ description: "A plugin to integrate with Metriport on Cordova - including Apple 
 ---
 
 <Info>
-  Before getting started, if you are deleveloping on iOS visit the [Apple Health
-  docs](/devices-api/more-info/apple-health#1-enable-healthkit) and follow the Enable HealthKit
+  If you haven't already, and you're developing on iOS, visit the [Apple Health
+  docs](/devices-api/getting-started/apple-health#1-enable-healthkit) and follow the "Enable HealthKit"
   section to configure HealthKit.
 </Info>
 
@@ -15,12 +15,14 @@ description: "A plugin to integrate with Metriport on Cordova - including Apple 
 cordova plugin add https://github.com/metriport/cordova-sdk
 ```
 
-You'll need to ensure that the MetriportSDK pod is installed as well.
+You'll need to ensure that the `MetriportSDK` pod is installed as well.
 
 ```sh
 cd platforms/ios
 pod install
 ```
+
+<Snippet file="metriport-sdk-pod-install.mdx" />
 
 ## Usage
 
@@ -56,4 +58,4 @@ Then, in your js file add:
 
 ## Apple Health
 
-For details about receiving Apple Health data via webhooks, see the guide [here.](/devices-api/more-info/apple-health#receiving-data)
+For details about receiving Apple Health data via webhooks, see the guide [here.](/devices-api/getting-started/apple-health#receiving-data)
