@@ -32,7 +32,7 @@ export function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
   // TODO convert the input from CW Document to a Metriport shape
   return async (doc: Document): Promise<SimpleFile> => {
     const extension = getFileExtension(doc.content?.mimeType);
-    const docName = doc.id + (extension ? extension : "");
+    const docName = extension ? `${doc.id}${extension}` : doc.id;
     const fileName = createS3FileName(patient.cxId, patient.id, docName);
     return { docId: doc.id, fileName, fileLocation: s3BucketName };
   };

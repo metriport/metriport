@@ -39,7 +39,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
         },
       }
     );
-    await queryInterface.addIndex(tableName, ["cx_id", "patient_id", "source", "external_id"], {
+    await queryInterface.addIndex(tableName, ["cx_id", "patient_id", "source"], {
       name: tableName + "_alternative_unique_idx",
       transaction,
     });
