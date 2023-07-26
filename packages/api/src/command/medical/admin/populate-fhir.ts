@@ -1,13 +1,13 @@
 import { chunk } from "lodash";
-import BadRequestError from "../../errors/bad-request";
-import { tenantExists } from "../../external/fhir/admin";
-import { makeFhirAdminApi, makeFhirApi } from "../../external/fhir/api/api-factory";
-import { toFHIR as orgToFHIR } from "../../external/fhir/organization";
-import { toFHIR as patientToFHIR } from "../../external/fhir/patient";
-import { Util } from "../../shared/util";
-import { queryDocumentsAcrossHIEs } from "./document/document-query";
-import { getOrganizationOrFail } from "./organization/get-organization";
-import { getPatients } from "./patient/get-patient";
+import BadRequestError from "../../../errors/bad-request";
+import { tenantExists } from "../../../external/fhir/admin";
+import { makeFhirAdminApi, makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { toFHIR as orgToFHIR } from "../../../external/fhir/organization";
+import { toFHIR as patientToFHIR } from "../../../external/fhir/patient";
+import { Util } from "../../../shared/util";
+import { queryDocumentsAcrossHIEs } from "../document/document-query";
+import { getOrganizationOrFail } from "../organization/get-organization";
+import { getPatients } from "../patient/get-patient";
 
 const PATIENT_CHUNK_SIZE = 20;
 

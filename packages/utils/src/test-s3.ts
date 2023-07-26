@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
 import * as AWS from "aws-sdk";
+import { getEnvVarOrFail } from "./shared/env";
 
 async function main() {
   const region = getEnvVarOrFail("REGION");
@@ -25,17 +26,6 @@ async function main() {
   console.log(`Uploaded, file info: ${JSON.stringify(uploaded)}`);
 
   console.log(`Done`);
-}
-
-function getEnvVar(varName: string): string | undefined {
-  return process.env[varName];
-}
-function getEnvVarOrFail(varName: string): string {
-  const value = getEnvVar(varName);
-  if (!value || value.trim().length < 1) {
-    throw new Error(`Missing ${varName} env var`);
-  }
-  return value;
 }
 
 main();
