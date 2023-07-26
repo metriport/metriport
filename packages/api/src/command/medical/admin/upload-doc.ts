@@ -45,68 +45,66 @@ export async function createAndUploadDocReference({
   });
 
   // WHEN OPENING THIS FOR CX'S NEED TO UPDATE THE CONTENT
-  const data = `{
-        "resourceType": "DocumentReference",
-        "id": "${docId}",
-        "contained": [
-            {
-                "resourceType": "Organization",
-                "id": "${organization.id}",
-                "name": "${organization.data.name}"
-            },
-            {
-                "resourceType": "Patient",
-                "id": "${patient.id}"
-            }
-        ],
-        "masterIdentifier": {
-            "system": "urn:ietf:rfc:3986",
-            "value": "${docId}"
+  const data: DocumentReference = {
+    resourceType: "DocumentReference",
+    id: docId,
+    contained: [
+      {
+        resourceType: "Organization",
+        id: organization.id,
+        name: organization.data.name,
+      },
+      {
+        resourceType: "Patient",
+        id: patient.id,
+      },
+    ],
+    masterIdentifier: {
+      system: "urn:ietf:rfc:3986",
+      value: docId,
+    },
+    identifier: [
+      {
+        use: "official",
+        system: "urn:ietf:rfc:3986",
+        value: docId,
+      },
+    ],
+    status: "current",
+    type: {
+      coding: [
+        {
+          system: "http://loinc.org/",
+          code: "75622-1",
+          display: metadata.description,
         },
-        "identifier": [
-            {
-                "use": "official",
-                "system": "urn:ietf:rfc:3986",
-                "value": "${docId}"
-            }
-        ],
-        "status": "current",
-        "type": {
-          "coding": [
-              {
-                  "system": "http://loinc.org/",
-                  "code": "75622-1",
-                  "display":  "${metadata.description}"
-              }
-          ]
-        },
-        "subject": {
-            "reference": "Patient/${patient.id}",
-            "type": "Patient"
-        },
-        "author": [
-            {
-                "reference": "#${organization.id}",
-                "type": "Organization"
-            }
-        ],
-        "description": "${metadata.description}",
-        "content": [${metriportContent}],
-        "context": {
-          "period": {
-              "start": "${now.format()}",
-              "end": "${now.add(1, "hour").format()}"
-          },
-          "sourcePatientInfo": {
-              "reference": "#${patient.id}",
-              "type": "Patient"
-          }
-      }
-    }`;
+      ],
+    },
+    subject: {
+      reference: `Patient/${patient.id}`,
+      type: "Patient",
+    },
+    author: [
+      {
+        reference: `#${organization.id}`,
+        type: "Organization",
+      },
+    ],
+    description: metadata.description,
+    content: [metriportContent],
+    context: {
+      period: {
+        start: now.format(),
+        end: now.add(1, "hour").format(),
+      },
+      sourcePatientInfo: {
+        reference: `#${patient.id}`,
+        type: "Patient",
+      },
+    },
+  };
 
-  const result = JSON.parse(data);
+  await fhirApi.updateResource(data);
 
-  await fhirApi.updateResource(result);
-
-  return result;
+  return data;
 }
