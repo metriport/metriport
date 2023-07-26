@@ -46,14 +46,13 @@ export const toFHIR = (
     size: doc.metriport.fileSize != null ? doc.metriport.fileSize : doc.content?.size, // can't trust the file size from CW, use what we actually saved
     creation: doc.content?.indexed,
   };
-  const metriportContent: DocumentReferenceContent = {
-    attachment: {
-      ...baseAttachment,
-      title: doc.metriport.fileName,
-      url: doc.metriport.location,
-    },
-    extension: [metriportDataSourceExtension],
-  };
+
+  const metriportContent = createMetriportDocReference({
+    ...baseAttachment,
+    fileName: doc.metriport.fileName,
+    location: doc.metriport.location,
+  });
+
   const cwContent = doc.content?.location
     ? [
         {
@@ -108,6 +107,33 @@ export const toFHIR = (
     context: doc.content?.context,
   };
 };
+
+export function createMetriportDocReference({
+  contentType,
+  size,
+  fileName,
+  location,
+  creation,
+}: {
+  contentType?: string;
+  size?: number;
+  fileName: string;
+  location: string;
+  creation: string;
+}): DocumentReferenceContent {
+  const metriportContent: DocumentReferenceContent = {
+    attachment: {
+      contentType,
+      size,
+      creation,
+      title: fileName,
+      url: location,
+    },
+    extension: [metriportDataSourceExtension],
+  };
+
+  return metriportContent;
+}
 
 // TODO once we merge DocumentIdentifier with Identifier on CW SDK, let's move this to
 // an identifier-specific file

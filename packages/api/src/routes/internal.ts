@@ -1,11 +1,12 @@
 import { Request, Response, Router } from "express";
+import { v4 as uuidv4 } from "uuid";
 import httpStatus from "http-status";
 import multer from "multer";
 import { accountInit } from "../command/account-init";
 import {
   PopulateFhirServerResponse,
   populateFhirServer,
-} from "../command/medical/admin-populate-fhir";
+} from "../command/medical/admin/populate-fhir";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
@@ -16,7 +17,8 @@ import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getCxIdFromQueryOrFail, getFrom, getFromQueryOrFail } from "./util";
 import { makeS3Client } from "../external/aws/s3";
 import { Config } from "../shared/config";
-import { createAndUploadDocReference } from "../command/medical/admin-upload-doc";
+import { createAndUploadDocReference } from "../command/medical/admin/upload-doc";
+import { createS3FileName } from "../shared/external";
 
 const router = Router();
 const upload = multer();
@@ -152,10 +154,13 @@ router.post(
       throw new BadRequestError("File must be provided");
     }
 
+    const docRefId = uuidv4();
+    const fileName = createS3FileName(cxId, patientId, docRefId);
+
     await s3client
       .upload({
         Bucket: bucketName,
-        Key: file.originalname,
+        Key: fileName,
         Body: file.buffer,
         ContentType: file.mimetype,
       })
@@ -163,14 +168,18 @@ router.post(
 
     const metadata = JSON.parse(req.body.metadata);
 
-    await createAndUploadDocReference({
+    const docRef = await createAndUploadDocReference({
       cxId,
       patientId,
-      file,
+      docId: docRefId,
+      file: {
+        ...file,
+        originalname: fileName,
+      },
       metadata,
     });
 
-    return res.send(httpStatus.OK);
+    return res.status(httpStatus.OK).json(docRef);
   })
 );
 
