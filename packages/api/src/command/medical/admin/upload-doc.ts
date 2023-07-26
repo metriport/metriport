@@ -91,7 +91,7 @@ export async function createAndUploadDocReference({
             }
         ],
         "description": "${metadata.description}",
-        "content": [${metriportContent}],
+        "content": [${JSON.stringify(metriportContent)}],
         "context": {
           "period": {
               "start": "${now.format()}",
