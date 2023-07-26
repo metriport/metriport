@@ -1,36 +1,52 @@
-import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
-import { makeFhirApi } from "../../external/fhir/api/api-factory";
-import { getOrganizationOrFail } from "./organization/get-organization";
-import { getPatientOrFail } from "./patient/get-patient";
-import { Config } from "../../shared/config";
+import { DocumentReference } from "@medplum/fhirtypes";
+import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { getOrganizationOrFail } from "../organization/get-organization";
+import { getPatientOrFail } from "../patient/get-patient";
+import { Config } from "../../../shared/config";
+import { createMetriportDocReference } from "../../../external/fhir/document";
 
 const docContributionUrl = Config.getDocContributionUrl();
+
+/**
+ * ADMIN LOGIC
+ * This function is to be able to create a document reference
+ * and upload it to the FHIR server with the purpose of testing.
+ */
 
 export async function createAndUploadDocReference({
   cxId,
   patientId,
+  docId,
   file,
   metadata,
 }: {
   cxId: string;
   patientId: string;
+  docId: string;
   file: Express.Multer.File;
   metadata: {
     description: string;
   };
-}): Promise<void> {
+}): Promise<DocumentReference> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const organization = await getOrganizationOrFail({ cxId });
 
   const fhirApi = makeFhirApi(cxId);
-  const docRefId = uuidv4();
 
   const now = dayjs();
 
+  const metriportContent = createMetriportDocReference({
+    contentType: file.mimetype,
+    size: file.size,
+    creation: now.format(),
+    fileName: file.originalname,
+    location: `${docContributionUrl}?fileName=${file.originalname}`,
+  });
+
   const data = `{
         "resourceType": "DocumentReference",
-        "id": "${docRefId}",
+        "id": "${docId}",
         "contained": [
             {
                 "resourceType": "Organization",
@@ -44,13 +60,13 @@ export async function createAndUploadDocReference({
         ],
         "masterIdentifier": {
             "system": "urn:ietf:rfc:3986",
-            "value": "${docRefId}"
+            "value": "${docId}"
         },
         "identifier": [
             {
                 "use": "official",
                 "system": "urn:ietf:rfc:3986",
-                "value": "${docRefId}"
+                "value": "${docId}"
             }
         ],
         "status": "current",
@@ -74,14 +90,7 @@ export async function createAndUploadDocReference({
             }
         ],
         "description": "${metadata.description}",
-        "content": [
-            {
-                "attachment": {
-                    "contentType": "${file.mimetype}",
-                    "url": "${docContributionUrl}?fileName=${file.originalname}"
-                }
-            }
-        ],
+        "content": [${metriportContent}],
         "context": {
           "period": {
               "start": "${now.format()}",
@@ -94,5 +103,9 @@ export async function createAndUploadDocReference({
       }
     }`;
 
-  await fhirApi.updateResource(JSON.parse(data));
+  const result = JSON.parse(data);
+
+  await fhirApi.updateResource(result);
+
+  return result;
 }
