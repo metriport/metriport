@@ -8,7 +8,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { chunk, partition } from "lodash";
 import {
-  docToFile,
+  getDocToFileFunction,
   getFileInfoFromS3,
   getS3Info,
   getUrl,
@@ -21,19 +21,20 @@ import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../../command/webhook/medical";
 import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
+import { MedicalDataSource } from "../../../external";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
-import { getDocumentPrimaryId } from "../../../shared/external";
+import { mapDocRefToMetriport } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
-import { MAX_FHIR_DOC_ID_LENGTH, toFHIR as toFHIRDocRef } from "../../fhir/document";
+import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
@@ -42,7 +43,12 @@ import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument as downloadDocumentFromCW } from "./document-download";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
-import { CWDocumentWithMetriportData, getFileName } from "./shared";
+import {
+  CWDocumentWithMetriportData,
+  DocumentWithLocation,
+  DocumentWithMetriportId,
+  getFileName,
+} from "./shared";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -116,6 +122,12 @@ export async function queryAndProcessDocuments({
   }
 }
 
+/**
+ * Query for doc refs @ CommonWell. Those are not the documents themselves, just
+ * references to them.
+ *
+ * @returns document references with CW format
+ */
 export async function internalGetDocuments({
   patient,
   organization,
@@ -300,31 +312,44 @@ async function initPatientDocQuery(
   });
 }
 
-type DocumentWithLocation = Document & { content: { location: string } };
-
 // custom type guard, this is dangerous as the compiler can't tell whether we're checking or not - but either this or exclamation point
-function isValidDoc(doc: Document): doc is DocumentWithLocation {
-  const fhirDocId = getDocumentPrimaryId(doc);
-  // Make this before download and insert on S3 bc of https://metriport.slack.com/archives/C04DBBJSKGB/p1684113732495119?thread_ts=1684105959.041439&cid=C04DBBJSKGB
-  if (fhirDocId.length > MAX_FHIR_DOC_ID_LENGTH) {
-    capture.message("FHIR doc ID too long", { extra: { fhirDocId, docId: doc.id } });
-    return false;
-  }
+function isValidDoc(doc: DocumentWithMetriportId): doc is DocumentWithLocation {
   const docLocation = doc.content.location;
   if (!docLocation) {
-    console.log(`Doc without location, skipping - fhirDocId ${fhirDocId}, docId ${doc.id}`);
+    console.log(
+      `Doc without location, skipping - fhirDocId ${doc.id}, originalDocId ${doc.originalId}`
+    );
     return false;
   }
   return true;
 }
 
-function convertToNonExistingS3Info(patient: Patient): (doc: Document) => S3Info {
-  return (doc: Document): S3Info => {
-    const simpleFile = docToFile(patient)(doc);
+function convertToNonExistingS3Info(
+  patient: Patient
+): (doc: DocumentWithMetriportId) => Promise<S3Info> {
+  return async (doc: DocumentWithMetriportId): Promise<S3Info> => {
+    const docToFile = getDocToFileFunction(patient);
+    const simpleFile = await docToFile(doc);
     return {
       ...simpleFile,
       fileExists: false,
       fileSize: undefined,
+    };
+  };
+}
+
+function addMetriportDocRefId({ cxId, patientId }: { cxId: string; patientId: string }) {
+  return async (document: Document): Promise<DocumentWithMetriportId> => {
+    const { metriportId, originalId } = await mapDocRefToMetriport({
+      cxId,
+      patientId,
+      document,
+      source: MedicalDataSource.COMMONWELL,
+    });
+    return {
+      ...document,
+      originalId: originalId,
+      id: metriportId,
     };
   };
 }
@@ -351,13 +376,22 @@ export async function downloadDocsAndUpsertFHIR({
   let errorCount = 0;
   let errorCountConvertible = 0;
 
-  const validDocs = documents.filter(isValidDoc);
+  const docsWithMetriportId = await Promise.all(
+    documents.map(
+      addMetriportDocRefId({
+        cxId: patient.cxId,
+        patientId: patient.id,
+      })
+    )
+  );
+
+  const validDocs = docsWithMetriportId.filter(isValidDoc);
   log(`I have ${validDocs.length} valid docs to process`);
 
   // Get File info from S3 (or from memory, if override = true)
   const getFilesWithStorageInfo = async () =>
     override
-      ? validDocs.map(convertToNonExistingS3Info(patient))
+      ? await Promise.all(validDocs.map(convertToNonExistingS3Info(patient)))
       : await getS3Info(validDocs, patient);
 
   // Get all DocumentReferences for this patient + File info from S3
@@ -371,8 +405,10 @@ export async function downloadDocsAndUpsertFHIR({
     (f: S3Info) => f.fileExists
   );
   // Make sure the found ones are on FHIR, otherwise also download them and store on FHIR
-  const foundButNotOnFHIR = foundOnStorage.filter(f => !foundOnFHIR.find(d => d.id === f.docId));
-  const filesToDownload = notFoundOnStorage.concat(foundButNotOnFHIR);
+  const foundOnStorageButNotOnFHIR = foundOnStorage.filter(
+    f => !foundOnFHIR.find(d => d.id === f.docId)
+  );
+  const filesToDownload = notFoundOnStorage.concat(foundOnStorageButNotOnFHIR);
 
   const docsToDownload = filesToDownload.flatMap(f => validDocs.find(d => d.id === f.docId) ?? []);
 
@@ -391,9 +427,9 @@ export async function downloadDocsAndUpsertFHIR({
         const isConvertibleDoc = isConvertible(doc);
         try {
           const fileInfo = fileInfoByDocId(doc.id);
-          if (!fileInfo)
+          if (!fileInfo) {
             throw new MetriportError("Missing file info", undefined, { docId: doc.id });
-          const fhirDocId = fileInfo.fhirDocId;
+          }
 
           let uploadToS3: () => Promise<{
             bucket: string;
@@ -479,7 +515,7 @@ export async function downloadDocsAndUpsertFHIR({
             try {
               await convertCDAToFHIR({
                 patient,
-                document: { ...doc, id: fhirDocId },
+                document: doc,
                 s3FileName: file.key,
                 s3BucketName: file.bucket,
               });
@@ -495,7 +531,7 @@ export async function downloadDocsAndUpsertFHIR({
             errorCountConvertible++;
           }
 
-          const FHIRDocRef = toFHIRDocRef(fhirDocId, docWithFile, organization, patient);
+          const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, organization, patient);
           try {
             await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
           } catch (error) {
