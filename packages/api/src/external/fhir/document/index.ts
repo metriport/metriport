@@ -47,7 +47,7 @@ export const toFHIR = (
     creation: doc.content?.indexed,
   };
 
-  const metriportContent = createMetriportDocReference({
+  const metriportContent = createMetriportDocReferenceContent({
     ...baseAttachment,
     fileName: doc.metriport.fileName,
     location: doc.metriport.location,
@@ -108,7 +108,7 @@ export const toFHIR = (
   };
 };
 
-export function createMetriportDocReference({
+export function createMetriportDocReferenceContent({
   contentType,
   size,
   fileName,

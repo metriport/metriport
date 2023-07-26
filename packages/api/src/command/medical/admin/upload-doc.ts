@@ -4,7 +4,7 @@ import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { getPatientOrFail } from "../patient/get-patient";
 import { Config } from "../../../shared/config";
-import { createMetriportDocReference } from "../../../external/fhir/document";
+import { createMetriportDocReferenceContent } from "../../../external/fhir/document";
 
 const docContributionUrl = Config.getDocContributionUrl();
 
@@ -36,7 +36,7 @@ export async function createAndUploadDocReference({
 
   const now = dayjs();
 
-  const metriportContent = createMetriportDocReference({
+  const metriportContent = createMetriportDocReferenceContent({
     contentType: file.mimetype,
     size: file.size,
     creation: now.format(),
@@ -44,6 +44,7 @@ export async function createAndUploadDocReference({
     location: `${docContributionUrl}?fileName=${file.originalname}`,
   });
 
+  // WHEN OPENING THIS FOR CX'S NEED TO UPDATE THE CONTENT
   const data = `{
         "resourceType": "DocumentReference",
         "id": "${docId}",
