@@ -11,7 +11,7 @@ export const googleResp = (googleActivityDataSourceId: any) => {
         dataset: z.array(
           z.object({
             dataSourceId: googleActivityDataSourceId,
-            point: googlePoint,
+            point: googlePointArray,
           })
         ),
       })
@@ -19,28 +19,28 @@ export const googleResp = (googleActivityDataSourceId: any) => {
   });
 };
 
-export const googlePoint = z.array(
-  z.object({
-    startTimeNanos: z.string(),
-    endTimeNanos: z.string(),
-    dataTypeName: z.string(),
-    originDataSourceId: z.string().nullish(),
-    value: z.array(
-      z.object({
-        fpVal: z.number().optional(),
-        intVal: z.number().optional(),
-        mapVal: z.array(
-          z.object({
-            key: z.string(),
-            value: z.object({ fpVal: z.number().optional() }),
-          })
-        ),
-      })
-    ),
-  })
-);
+const googlePoint = z.object({
+  startTimeNanos: z.string(),
+  endTimeNanos: z.string(),
+  dataTypeName: z.string(),
+  originDataSourceId: z.string().nullish(),
+  value: z.array(
+    z.object({
+      fpVal: z.number().optional(),
+      intVal: z.number().optional(),
+      mapVal: z.array(
+        z.object({
+          key: z.string(),
+          value: z.object({ fpVal: z.number().optional() }),
+        })
+      ),
+    })
+  ),
+});
+export type SingleGooglePoint = z.infer<typeof googlePoint>;
 
-export type GooglePoint = z.infer<typeof googlePoint>;
+const googlePointArray = z.array(googlePoint);
+export type GooglePoint = z.infer<typeof googlePointArray>;
 
 const sessionSchema = z.object({
   id: z.string(),
