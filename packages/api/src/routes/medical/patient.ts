@@ -33,14 +33,14 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
-import { createConsolidatedPatientData } from "../../command/medical/patient/create-consolidate-data";
+import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/create-consolidate-data";
 import { bundleSchema } from "./schemas/fhir";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 
 const router = Router();
-const MAX_RESOURCE_POST_LIMIT = 50;
+const MAX_RESOURCE_POST_COUNT = 50;
 const MAX_RESOURCE_STORED_LIMIT = 1000;
-const MAX_CONTENT_LENGTH = 1000000;
+const MAX_CONTENT_LENGTH_BYTES = 1000000;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -253,33 +253,33 @@ router.post(
       // limit the amount of resources stored in sandbox mode
       if (data.entry && data.entry.length >= MAX_RESOURCE_STORED_LIMIT) {
         return res.status(status.BAD_REQUEST).json({
-          message: `Cannot create bundle with size greater than ${MAX_RESOURCE_STORED_LIMIT} bytes in Sandbox mode!`,
+          message: `Cannot create bundle with size greater than ${MAX_RESOURCE_STORED_LIMIT} bytes in Sandbox mode.`,
         });
       }
     }
 
     // Limit the amount of resources that can be created at once
-    if (validatedBundle.entry.length >= MAX_RESOURCE_POST_LIMIT) {
+    if (validatedBundle.entry.length >= MAX_RESOURCE_POST_COUNT) {
       return res.status(status.BAD_REQUEST).json({
-        message: `Cannot create more than ${MAX_RESOURCE_POST_LIMIT} resources at a time!`,
+        message: `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time.`,
       });
     }
 
     const contentLength = req.headers["content-length"];
     // limit the payload size that can be created
-    if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH) {
+    if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
       return res.status(status.BAD_REQUEST).json({
-        message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH} bytes!`,
+        message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`,
       });
     }
 
-    const data = await createConsolidatedPatientData({
-      cxId,
-      patientId: patient.id,
-      fhirBundle: validatedBundle,
-    });
+    // const data = await createOrUpdateConsolidatedPatientData({
+    //   cxId,
+    //   patientId: patient.id,
+    //   fhirBundle: validatedBundle,
+    // });
 
-    return res.json(data);
+    return res.json("data");
   })
 );
 

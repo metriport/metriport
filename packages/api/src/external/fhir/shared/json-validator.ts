@@ -9,28 +9,27 @@ type Error = {
   errors: ErrorObject[] | null | undefined;
 };
 
+const ajv = new Ajv({
+  // I need to use strict as an option but its not in the AJV.Options
+  // eslint-disable-next-line
+  // @ts-ignore
+  strict: false,
+});
+
+ajv.addMetaSchema(metaSchema);
+const validate = ajv.compile(schema);
+
 export const validateFhirEntries = (bundle: Bundle): Bundle => {
-  const ajv = new Ajv({
-    // I need to use strict as an option but its not in the AJV.Options
-    // eslint-disable-next-line
-    // @ts-ignore
-    strict: false,
-  });
-
-  ajv.addMetaSchema(metaSchema);
-
   const errors: Error[] = [];
 
-  for (const resource of bundle.entry) {
-    const resourceType = resource.resource.resourceType;
+  for (const entry of bundle.entry) {
+    const resourceType = entry.resource.resourceType;
 
-    const validate = ajv.compile(schema);
-
-    const isValid = validate(resource.resource);
+    const isValid = validate(entry.resource);
 
     if (!isValid) {
       const resourceValidate = ajv.compile(getSubSchema(resourceType));
-      resourceValidate(resource.resource);
+      resourceValidate(entry.resource);
       errors.push({ resourceType, errors: resourceValidate.errors });
     }
   }
@@ -46,5 +45,6 @@ export const validateFhirEntries = (bundle: Bundle): Bundle => {
 const getSubSchema = (resourceType: string) => {
   const subSchema = schema;
   schema.oneOf = [{ $ref: `#/definitions/${resourceType}` }];
+
   return subSchema;
 };

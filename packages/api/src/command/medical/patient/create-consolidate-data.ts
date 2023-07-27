@@ -1,9 +1,8 @@
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 
-export async function createConsolidatedPatientData({
+export async function createOrUpdateConsolidatedPatientData({
   cxId,
   patientId,
   fhirBundle,
@@ -12,7 +11,9 @@ export async function createConsolidatedPatientData({
   patientId: string;
   fhirBundle: Bundle;
 }): Promise<Bundle | undefined> {
-  const { log } = Util.out(`createConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}`);
+  const { log } = Util.out(
+    `createOrUpdateConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}`
+  );
 
   try {
     const fhir = makeFhirApi(cxId);
@@ -29,13 +30,6 @@ export async function createConsolidatedPatientData({
     return bundleResource;
   } catch (error) {
     log(`Error converting and executing fhir bundle resources: `, error);
-    capture.error(error, {
-      extra: {
-        context: `createConsolidatedPatientData`,
-        patientId,
-        error,
-      },
-    });
     throw error;
   }
 }
