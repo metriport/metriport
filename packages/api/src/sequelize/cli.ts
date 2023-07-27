@@ -3,6 +3,7 @@ dotenv.config();
 // Keep dotenv import and config before everything else
 import { Sequelize } from "sequelize";
 import { getUmzugWithMeta } from "./index";
+import MetriportError from "../errors/metriport-error";
 
 /**
  * NOT TO BE USED WITHIN THE APPLICATION!
@@ -21,7 +22,7 @@ try {
 } catch (err) {
   const msg = "Error processing DB_CREDS env var";
   console.log(msg, err);
-  throw new Error(msg, { cause: err });
+  throw new MetriportError(msg, { cause: err });
 }
 
 const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
