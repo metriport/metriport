@@ -559,6 +559,20 @@ Note: if you need help with the `deploy-infra.sh` script at any time, you can ru
 $ ./packages/scripts/deploy-infra.sh -h
 ```
 
+### **Initialization**
+
+The API Server works with the concept of "Customer", which is basically a tenant on the API Server DB.
+There must be at least one customer on the API Server DB - you can think of it as your account in case you're
+planning to have only one.
+
+Each new Customer on the API Server should be initialized by calling the "init" endpoint with said customer ID:
+
+```
+POST /internal/init?cxId=<customer-id>
+```
+
+The customer ID must be a UUID.
+
 ## License
 
 Distributed under the AGPLv3 License. See `LICENSE` for more information.

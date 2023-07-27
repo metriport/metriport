@@ -3,7 +3,7 @@ import * as sdk from "@metriport/commonwell-sdk";
 import * as nanoid from "nanoid";
 import * as stream from "stream";
 import NotImplementedError from "../../errors/not-implemented";
-import { uuidv7 } from "../../shared/uuid-v7";
+import { makeOrganizationOID, makePatientOID } from "../../shared/oid";
 import {
   createDocument,
   createPatient,
@@ -16,8 +16,11 @@ const cwURL = "https://sandbox.rest.api.commonwellalliance.org";
 const idAlphabet = "123456789";
 export const primaryPatientId = nanoid.customAlphabet(idAlphabet, 6)();
 
+const randonNumber = () => Math.random() * 1000;
+
 function makePatientId() {
-  return uuidv7();
+  const orgId = makeOrganizationOID(randonNumber());
+  return makePatientOID(orgId, randonNumber());
 }
 
 export class CommonWellMock implements sdk.CommonWellAPI {

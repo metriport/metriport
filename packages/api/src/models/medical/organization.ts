@@ -20,7 +20,6 @@ export type OrganizationData = {
 
 export interface OrganizationCreate extends BaseDomainCreate {
   cxId: string;
-  oid: string;
   organizationNumber: number;
   data: OrganizationData;
 }
@@ -30,7 +29,6 @@ export interface Organization extends BaseDomain, OrganizationCreate {}
 export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {
   static NAME = "organization";
   declare cxId: string;
-  declare oid: string;
   declare organizationNumber: number;
   declare data: OrganizationData;
 
@@ -40,9 +38,6 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
         ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
-        },
-        oid: {
-          type: DataTypes.STRING,
         },
         organizationNumber: {
           type: DataTypes.INTEGER,

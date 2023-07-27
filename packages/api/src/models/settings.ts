@@ -7,6 +7,7 @@ export const WEBHOOK_STATUS_BAD_RESPONSE = "Bad response from webhook call";
 
 export class Settings extends BaseModel<Settings> {
   static NAME = "settings";
+  declare id: string;
   declare webhookUrl: string | null;
   declare webhookKey: string | null;
   declare webhookEnabled: boolean;
@@ -16,6 +17,10 @@ export class Settings extends BaseModel<Settings> {
     Settings.init(
       {
         ...BaseModel.attributes(),
+        id: {
+          type: DataTypes.UUID,
+          primaryKey: true,
+        },
         webhookUrl: {
           type: DataTypes.STRING,
         },

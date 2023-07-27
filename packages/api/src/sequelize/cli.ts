@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
 import { Sequelize } from "sequelize";
-import { getUmzugWithMeta } from "./index";
+import { getUmzug } from "./index";
 
 /**
  * NOT TO BE USED WITHIN THE APPLICATION!
@@ -37,13 +37,7 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
 });
 
 async function main() {
-  const { umzug, migrations, executed, pending } = await getUmzugWithMeta(sequelize);
-  console.log("");
-  console.log(
-    `[--- SEQUELIZE ---] Migrations: ${executed} executed, ${pending} pending, ${migrations} total`
-  );
-  console.log("");
-  await umzug.runAsCLI();
+  await getUmzug(sequelize).runAsCLI();
   process.exit();
 }
 
