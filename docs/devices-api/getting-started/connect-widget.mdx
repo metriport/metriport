@@ -240,6 +240,27 @@ For a comprehensive list of available colors [visit here](https://www.w3schools.
   src="https://connect.metriport.com/?token=demo&customColor=orange"
 ></iframe>
 
+### redirectUrl
+
+After users successfully connect a provider, they can be redirected to a URL of your choosing.<br/>
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&redirectUrl=https%3A%2F%2Fmy-app.com%2Fgood-news`;
+```
+
+<Tip>
+  For optimal results, we advise that you encode your URLs before including them in query
+  parameters. ie. redirectUrl=https%3A%2F%2Fmy-app.com%2Fgood-news
+</Tip>
+
+### failRedirectUrl
+
+After a failed attempt to connect a provider, your users can be redirected to another URL of your choosing. This is similar to [redirectUrl](#redirecturl) above.<br/>
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&failRedirectUrl=https%3A%2F%2Fmy-app.com%2Fless-good-news`;
+```
+
 ### providers
 
 You can choose the providers you wish to display to your users. It must be a comma separated lowercased list of providers.

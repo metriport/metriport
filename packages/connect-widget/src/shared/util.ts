@@ -17,6 +17,15 @@ export function redirectToMain(navigate: NavigateFunction, searchParams: URLSear
   }
 }
 
+// redirects to the custom redirect url
+export function redirectToCustomUrl(url: string) {
+  try {
+    window.location.href = url;
+  } catch (err) {
+    capture.error(err, { extra: { context: `redirectToCustomUrl`, url } });
+  }
+}
+
 /**
  * Checks to see if the app is running in a local development environment.
  *

@@ -3,14 +3,20 @@ import { Container, Flex, Heading, Text, Card, IconButton } from "@chakra-ui/rea
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WidgetContainer from "../../shared/components/WidgetContainer";
-import { redirectToMain } from "../../shared/util";
+import { redirectToCustomUrl, redirectToMain } from "../../shared/util";
 import Analytics from "../../shared/analytics";
+import Constants from "../../shared/constants";
 
 export default function Success() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const handleClick = () => {
     Analytics.emit(Analytics.events.connectSuccess);
+    const redirectUrl = localStorage.getItem(Constants.SUCCESS_REDIRECT_URL_PARAM);
+    if (redirectUrl) {
+      redirectToCustomUrl(redirectUrl);
+      return;
+    }
     redirectToMain(navigate, searchParams);
   };
 
