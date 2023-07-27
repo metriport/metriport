@@ -1,4 +1,4 @@
-import { getStatusFromProgress, Progress } from "../../../domain/medical/document-query";
+import { getStatusFromProgress, Progress } from "../../../domain/medical/document-reference";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";

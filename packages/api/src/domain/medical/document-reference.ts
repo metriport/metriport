@@ -1,4 +1,5 @@
 import { Patient } from "../../models/medical/patient";
+import { Util } from "../../shared/util";
 
 export const documentQueryStatus = ["processing", "completed", "failed"] as const;
 export type DocumentQueryStatus = (typeof documentQueryStatus)[number];
@@ -27,7 +28,14 @@ export const calculateConversionProgress = ({
 } & {
   patient: Pick<Patient, "data" | "id">;
 }): DocumentQueryProgress => {
+  // TODO 785 shouldn't be logging on a domain class, remove as soon as we can remove those logs re: 785
+  const { log } = Util.out(`calculateConversionProgress - patient ${patient.id}`);
   const docQueryProgress = patient.data.documentQueryProgress ?? {};
+
+  // TODO 785 remove this once we're confident with the flow
+  log(
+    `IN convert result: ${convertResult}; docQueryProgress : ${JSON.stringify(docQueryProgress)}`
+  );
 
   const totalToConvert = docQueryProgress?.convert?.total ?? 0;
 
@@ -46,6 +54,8 @@ export const calculateConversionProgress = ({
     errors,
   };
 
+  // TODO 785 remove this once we're confident with the flow
+  log(`OUT docQueryProgress: ${JSON.stringify(docQueryProgress)}`);
   return docQueryProgress;
 };
 

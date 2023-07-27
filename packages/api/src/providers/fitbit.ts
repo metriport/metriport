@@ -337,7 +337,6 @@ export class Fitbit extends Provider implements OAuth2 {
   override async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
     const accessToken = await this.getAccessToken(connectedUser);
 
-    // TODO reuse `fetchUserProfile()`
     return this.oauth.fetchProviderData<User>(
       `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
       accessToken,

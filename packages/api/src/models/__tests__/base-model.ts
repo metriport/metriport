@@ -1,7 +1,6 @@
 import { randUuid } from "@ngneat/falso";
-import { BaseDomain } from "../base-domain";
 
-export const makeBaseDomain = ({ id }: { id?: string } = {}): BaseDomain => {
+export const makeBaseModel = ({ id }: { id?: string } = {}) => {
   return {
     id: id ?? randUuid(),
     createdAt: new Date(),
