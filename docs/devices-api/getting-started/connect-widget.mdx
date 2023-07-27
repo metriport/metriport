@@ -248,6 +248,11 @@ After users successfully connect a provider, they can be redirected to a URL of 
 `https://connect.metriport.com/?token=${connectToken}&redirectUrl=https://my-app.com/good-news`;
 ```
 
+<Tip>
+  For optimal results, we advise that you encode your URLs before including them in query
+  parameters. ie. redirectUrl=https://my-app.com/?query=my%20achievements
+</Tip>
+
 ### failRedirectUrl
 
 After a failed attempt to connect a provider, your users can be redirected to another URL of your choosing. This is similar to [redirectUrl](#redirecturl) above.<br/>
