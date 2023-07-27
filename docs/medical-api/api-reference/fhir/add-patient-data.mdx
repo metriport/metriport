@@ -16,9 +16,47 @@ api: "POST /medical/v1/patient/{id}/consolidated"
   The entry needs to be an array of [FHIR resources](/medical-api/fhir/resources).
 </ParamField>
 
+<Info>
+  At the moment there is a limit to how much data you can send in a single request. You can send up
+  to 50 resources in a single request and the content-length must not exceed 1Mb.
+</Info>
+
 ## Response
 
 Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-response" with the entry being the outcome of the request.
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api-sdk";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const consolidatedData = await metriportClient.createPatientConsolidated("PATIENT_ID", {
+  resourceType: "Bundle",
+  type: "collection",
+  entry: [
+    {
+      resource: {
+        id: "1234",
+        resourceType: "ServiceRequest",
+        status: "active",
+        intent: "directive",
+        subject: {
+          reference: "Patient/12345",
+          display: "John Doe",
+        },
+        meta: {
+          versionId: "12345",
+          lastUpdated: "2023-05-24T13:21:28.527Z",
+        },
+      },
+    },
+  ],
+});
+```
+
+</ResponseExample>
 
 ```json
 {

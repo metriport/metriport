@@ -43,6 +43,23 @@ api: "GET /medical/v1/patient/{id}/consolidated"
 
 Returns a [Bundle](/medical-api/fhir/resources/bundle) that contains a property entry which is simply an array of [FHIR resources](/medical-api/fhir/resources).
 
+<ResponseExample>
+
+```javascript Metriport SDK
+import { Metriport } from "@metriport/api-sdk";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const consolidatedData = await metriportClient.createPatientConsolidated(
+  "PATIENT_ID",
+  ["AllergyIntolerance", "DocumentReference"],
+  "2023-03-01",
+  "2023-04-01"
+);
+```
+
+</ResponseExample>
+
 ```json
 {
   "resourceType": "Bundle",

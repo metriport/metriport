@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, Patient, Resource } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -10,8 +10,8 @@ export async function createConsolidatedPatientData({
 }: {
   cxId: string;
   patientId: string;
-  fhirBundle: Bundle<Resource>;
-}): Promise<Bundle<Resource> | undefined> {
+  fhirBundle: Bundle;
+}): Promise<Bundle | undefined> {
   const { log } = Util.out(`createConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}`);
 
   try {
@@ -45,9 +45,9 @@ const convertCollectionBundleToTransactionBundle = ({
   fhirBundle,
 }: {
   patient: Patient;
-  fhirBundle: Bundle<Resource>;
-}): Bundle<Resource> => {
-  const transactionBundle: Bundle<Resource> = {
+  fhirBundle: Bundle;
+}): Bundle => {
+  const transactionBundle: Bundle = {
     resourceType: "Bundle",
     type: "transaction",
     entry: [],
@@ -80,7 +80,7 @@ const convertCollectionBundleToTransactionBundle = ({
     )
       continue;
 
-    const transactionEntry: BundleEntry<Resource> = {
+    const transactionEntry: BundleEntry = {
       resource: {
         ...resource,
         contained: resource.contained ? [...resource.contained, patient] : [patient],
