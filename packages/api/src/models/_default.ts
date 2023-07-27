@@ -27,7 +27,7 @@ export abstract class BaseModel<T extends Model<any, any>>
   static attributes() {
     return {
       id: {
-        type: DataTypes.UUID,
+        type: DataTypes.STRING,
         primaryKey: true,
       },
       createdAt: {

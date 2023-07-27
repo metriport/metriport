@@ -1,5 +1,5 @@
 import { FacilityData, FacilityModel } from "../../../models/medical/facility";
-import { uuidv7 } from "../../../shared/uuid-v7";
+import { createFacilityId } from "../customer-sequence/create-id";
 
 export const createFacility = async ({
   cxId,
@@ -8,8 +8,10 @@ export const createFacility = async ({
   cxId: string;
   data: FacilityData;
 }): Promise<FacilityModel> => {
+  const { id, facilityNumber } = await createFacilityId(cxId);
   return FacilityModel.create({
-    id: uuidv7(),
+    id,
+    facilityNumber,
     cxId,
     data,
   });
