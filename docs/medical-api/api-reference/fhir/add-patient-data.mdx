@@ -37,20 +37,25 @@ const consolidatedData = await metriportClient.createPatientConsolidated("PATIEN
   type: "collection",
   entry: [
     {
-      resource: {
-        id: "1234",
-        resourceType: "ServiceRequest",
-        status: "active",
-        intent: "directive",
-        subject: {
-          reference: "Patient/12345",
-          display: "John Doe",
+      resourceType: "Bundle",
+      type: "collection",
+      entry: [
+        {
+          resource: {
+            resourceType: "ServiceRequest",
+            status: "active",
+            intent: "directive",
+            subject: {
+              reference: "Patient/12345",
+              display: "John Doe",
+            },
+            meta: {
+              versionId: "12345",
+              lastUpdated: "2023-05-24T13:21:28.527Z",
+            },
+          },
         },
-        meta: {
-          versionId: "12345",
-          lastUpdated: "2023-05-24T13:21:28.527Z",
-        },
-      },
+      ],
     },
   ],
 });
@@ -61,21 +66,21 @@ const consolidatedData = await metriportClient.createPatientConsolidated("PATIEN
 ```json
 {
   "resourceType": "Bundle",
-  "id": "b2c28be3-8aae-4b3c-b0ff-ca5d0f0b0d1e",
+  "id": "12345-1234-1234-1234",
   "type": "transaction-response",
   "link": [
     {
       "relation": "self",
-      "url": "http://fhir.metriport.com/oauth/fhir/1234abcd-123a-1a2b-a3b2-bd9cd75a0717/21fa432e-723b-4a1d-a3b2-bd9cd75a0717"
+      "url": "https://fhir.metriport.com/oauth/fhir/123412341234/1234123412341234"
     }
   ],
   "entry": [
     {
       "response": {
-        "status": "200 OK",
-        "location": "DiagnosticReport/1234abcd-1234-abcd-b0fe-899bb455f0f0/_history/2",
-        "etag": "2",
-        "lastModified": "2023-05-25T00:28:06.321+00:00",
+        "status": "201 Created",
+        "location": "ServiceRequest/1234/_history/1",
+        "etag": "1",
+        "lastModified": "2023-07-27T21:29:31.491+00:00",
         "outcome": {
           "resourceType": "OperationOutcome",
           "issue": [
@@ -86,12 +91,12 @@ const consolidatedData = await metriportClient.createPatientConsolidated("PATIEN
                 "coding": [
                   {
                     "system": "https://hapifhir.io/fhir/CodeSystem/hapi-fhir-storage-response-code",
-                    "code": "SUCCESSFUL_UPDATE",
-                    "display": "Update succeeded."
+                    "code": "SUCCESSFUL_CREATE",
+                    "display": "Create succeeded."
                   }
                 ]
               },
-              "diagnostics": "Successfully updated resource \"DiagnosticReport/1234abcd-1234-abcd-b0fe-899bb455f0f0/_history/2\"."
+              "diagnostics": "Successfully created resource \"ServiceRequest/1234/_history/1\". Took 8ms."
             }
           ]
         }
