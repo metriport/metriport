@@ -1,17 +1,18 @@
+import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { setupApi, isDemo } from "../../shared/api";
+import { isDemo, setupApi } from "../../shared/api";
 import WidgetContainer from "../../shared/components/WidgetContainer";
 import Constants from "../../shared/constants";
 import { acceptAgreement, setAgreementState } from "../../shared/localStorage/agreement";
 import { storeColorMode } from "../../shared/localStorage/color-mode";
+import { storeFailRedirectUrl, storeRedirectUrl } from "../../shared/localStorage/redirect-url";
 import { capture } from "../../shared/notifications";
+import { DemoTokenError } from "../../shared/token-errors";
 import Agreement from "./components/agreement";
 import AgreementFooter from "./components/agreement-footer";
 import ConnectProviders from "./components/connect-providers";
 import ErrorDialog from "./components/error-dialog";
-import { Box } from "@chakra-ui/react";
-import { DemoTokenError } from "../../shared/token-errors";
 
 type DisplayError = {
   message: string;
@@ -26,11 +27,15 @@ const ConnectPage = () => {
   const [error, setError] = useState<DisplayError | null>(null);
 
   const colorMode = searchParams.get(Constants.COLOR_MODE_PARAM);
+  const redirectUrl = searchParams.get(Constants.SUCCESS_REDIRECT_URL_PARAM);
+  const failRedirectUrl = searchParams.get(Constants.FAILURE_REDIRECT_URL_PARAM);
 
   useEffect(() => {
     async function setupConnectPage() {
       try {
         storeColorMode(colorMode);
+        storeRedirectUrl(redirectUrl);
+        storeFailRedirectUrl(failRedirectUrl);
         setAgreementState(setAgreement);
         await setupApi(searchParams);
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
