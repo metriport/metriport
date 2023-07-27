@@ -273,13 +273,13 @@ router.post(
       });
     }
 
-    // const data = await createOrUpdateConsolidatedPatientData({
-    //   cxId,
-    //   patientId: patient.id,
-    //   fhirBundle: validatedBundle,
-    // });
+    const data = await createOrUpdateConsolidatedPatientData({
+      cxId,
+      patientId: patient.id,
+      fhirBundle: validatedBundle,
+    });
 
-    return res.json("data");
+    return res.json(data);
   })
 );
 
