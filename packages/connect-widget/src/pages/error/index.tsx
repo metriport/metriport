@@ -5,12 +5,20 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WidgetContainer from "../../shared/components/WidgetContainer";
 import { capture } from "../../shared/notifications";
-import { redirectToMain } from "../../shared/util";
+import { redirectToCustomUrl, redirectToMain } from "../../shared/util";
+import Constants from "../../shared/constants";
 
 export default function Error() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const handleClick = () => redirectToMain(navigate, searchParams);
+  const handleClick = () => {
+    const redirectUrl = localStorage.getItem(Constants.FAILURE_REDIRECT_URL_PARAM);
+    if (redirectUrl) {
+      redirectToCustomUrl(redirectUrl);
+      return;
+    }
+    redirectToMain(navigate, searchParams);
+  };
   useEffect(() => {
     capture.message("errorPage.loaded", { extra: { searchParams } });
   }, []);

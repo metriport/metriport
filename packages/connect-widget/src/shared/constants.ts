@@ -6,6 +6,8 @@ export default class Constants {
   static readonly CLOUD_ENV = "production"; // NODE_ENV is production when not local
   static readonly COLOR_MODE_PARAM = "colorMode";
   static readonly CUSTOM_COLOR_PARAM = "customColor";
+  static readonly SUCCESS_REDIRECT_URL_PARAM = "redirectUrl";
+  static readonly FAILURE_REDIRECT_URL_PARAM = "failRedirectUrl";
   static readonly PROVIDERS_PARAM = "providers";
   static readonly APPLE_PARAM = "apple";
   static readonly BREAKPOINTS = {
