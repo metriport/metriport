@@ -414,12 +414,12 @@ For a comprehensive list of available colors [visit here](https://www.w3schools.
 After users successfully connect a provider, they can be redirected to a URL of your choosing.<br/>
 
 ```typescript
-`https://connect.metriport.com/?token=${connectToken}&redirectUrl=https://my-app.com/good-news`;
+`https://connect.metriport.com/?token=${connectToken}&redirectUrl=https%3A%2F%2Fmy-app.com%2Fgood-news`;
 ```
 
 <Tip>
   For optimal results, we advise that you encode your URLs before including them in query
-  parameters. ie. redirectUrl=https://my-app.com/?query=my%20achievements
+  parameters. ie. redirectUrl=https%3A%2F%2Fmy-app.com%2Fgood-news
 </Tip>
 
 ### failRedirectUrl
@@ -427,7 +427,7 @@ After users successfully connect a provider, they can be redirected to a URL of 
 After a failed attempt to connect a provider, your users can be redirected to another URL of your choosing. This is similar to [redirectUrl](#redirecturl) above.<br/>
 
 ```typescript
-`https://connect.metriport.com/?token=${connectToken}&failRedirectUrl=https://my-app.com/less-good-news`;
+`https://connect.metriport.com/?token=${connectToken}&failRedirectUrl=https%3A%2F%2Fmy-app.com%2Fless-good-news`;
 ```
 
 ### providers
