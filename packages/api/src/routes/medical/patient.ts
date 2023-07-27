@@ -258,7 +258,7 @@ router.post(
       }
     }
 
-    // limit the amount of resources that can be created at once
+    // Limit the amount of resources that can be created at once
     if (validatedBundle.entry.length >= MAX_RESOURCE_POST_LIMIT) {
       return res.status(status.BAD_REQUEST).json({
         message: `Cannot create more than ${MAX_RESOURCE_POST_LIMIT} resources at a time!`,
