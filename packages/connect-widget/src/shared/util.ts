@@ -22,7 +22,7 @@ export function redirectToCustomUrl(url: string) {
   try {
     window.location.href = url;
   } catch (err) {
-    capture.error(err, { extra: { context: `redirectToCustomUrl` } });
+    capture.error(err, { extra: { context: `redirectToCustomUrl`, url } });
   }
 }
 
