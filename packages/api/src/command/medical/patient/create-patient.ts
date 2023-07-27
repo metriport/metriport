@@ -1,10 +1,10 @@
-import { Patient, PatientCreate, PatientData, PatientModel } from "../../../models/medical/patient";
-import { createPatientId } from "../customer-sequence/create-id";
-import { getFacilityOrFail } from "../facility/get-facility";
-import { sanitize, validate } from "./shared";
-import cwCommands from "../../../external/commonwell";
 import { processAsyncError } from "../../../errors";
+import cwCommands from "../../../external/commonwell";
+import { Patient, PatientCreate, PatientData, PatientModel } from "../../../models/medical/patient";
+import { uuidv7 } from "../../../shared/uuid-v7";
+import { getFacilityOrFail } from "../facility/get-facility";
 import { getPatientByDemo } from "./get-patient";
+import { sanitize, validate } from "./shared";
 
 type Identifier = Pick<Patient, "cxId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -23,20 +23,17 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
     cxId,
     demo: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
   });
-
   if (patientExists) return patientExists;
 
+  // validate facility exists and cx has access to it
   await getFacilityOrFail({ cxId, id: facilityId });
-  const { id, patientNumber } = await createPatientId(cxId);
 
   const patientCreate: PatientCreate = {
-    id,
-    patientNumber,
+    id: uuidv7(),
     cxId,
     facilityIds: [facilityId],
     data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
   };
-
   const newPatient = await PatientModel.create(patientCreate);
 
   // TODO: #393 declarative, event-based integration

@@ -1,9 +1,10 @@
 import { BundleEntry } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
+import { uuidv7 } from "../../../shared/uuid-v7";
 
 export function makeConsolidatedMockBundle(): BundleEntry[] {
   const cxId = uuidv4();
-  const orgId = uuidv4();
+  const orgId = uuidv7();
   const orgName = `Org ${orgId}`;
   return [
     {

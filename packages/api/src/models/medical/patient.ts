@@ -65,7 +65,6 @@ export type PatientData = {
 export interface PatientCreate extends BaseDomainCreate {
   cxId: string;
   facilityIds: string[];
-  patientNumber: number;
   data: PatientData;
 }
 
@@ -84,7 +83,6 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
   static NAME = "patient";
   declare cxId: string;
   declare facilityIds: string[];
-  declare patientNumber: number;
   declare data: PatientData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -96,9 +94,6 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
         },
         facilityIds: {
           type: DataTypes.ARRAY(DataTypes.STRING),
-        },
-        patientNumber: {
-          type: DataTypes.INTEGER,
         },
         data: {
           type: DataTypes.JSONB,
