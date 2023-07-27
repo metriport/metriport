@@ -5,6 +5,7 @@ import { Sequelize } from "sequelize";
 import { MedplumClient } from "@medplum/core";
 import { Organization as FHIROrganization, Patient as FHIRPatient } from "@medplum/fhirtypes";
 import { PersonalIdentifier } from "@metriport/api-sdk";
+import { getEnvVarOrFail } from "./shared/env";
 
 /**
  * Migrate existing orgs and patients to FHIR
@@ -49,17 +50,6 @@ async function main() {
   }
 
   console.log(`Done`);
-}
-
-function getEnvVar(varName: string): string | undefined {
-  return process.env[varName];
-}
-function getEnvVarOrFail(varName: string): string {
-  const value = getEnvVar(varName);
-  if (!value || value.trim().length < 1) {
-    throw new Error(`Missing ${varName} env var`);
-  }
-  return value;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

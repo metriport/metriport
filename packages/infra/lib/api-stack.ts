@@ -286,74 +286,71 @@ export class APIStack extends Stack {
     // S3 bucket for Medical Documents
     //-------------------------------------------
 
-    if (props.config.medicalDocumentsBucketName) {
-      const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
-        bucketName: props.config.medicalDocumentsBucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-      });
+    const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
+      bucketName: props.config.medicalDocumentsBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
 
-      //-------------------------------------------
-      // FHIR CONNECTORS - Finish setting it up
-      //-------------------------------------------
+    //-------------------------------------------
+    // FHIR CONNECTORS - Finish setting it up
+    //-------------------------------------------
+    provideAccessToQueue({
+      accessType: "send",
+      queue: fhirConverterQueue,
+      resource: apiService.service.taskDefinition.taskRole,
+    });
+    fhirServerQueue &&
       provideAccessToQueue({
         accessType: "send",
-        queue: fhirConverterQueue,
+        queue: fhirServerQueue,
         resource: apiService.service.taskDefinition.taskRole,
       });
-      fhirServerQueue &&
-        provideAccessToQueue({
-          accessType: "send",
-          queue: fhirServerQueue,
-          resource: apiService.service.taskDefinition.taskRole,
-        });
-      const fhirConverterLambda = fhirServerQueue?.queueUrl
-        ? fhirConverterConnector.createLambda({
-            envType: props.config.environmentType,
-            stack: this,
-            lambdaLayers,
-            vpc: this.vpc,
-            sourceQueue: fhirConverterQueue,
-            destinationQueue: fhirServerQueue,
-            dlq: fhirConverterDLQ,
-            fhirConverterBucket,
-            conversionResultQueueUrl: fhirServerQueue.queueUrl,
-            apiServiceDnsAddress: apiLoadBalancerAddress,
-            alarmSnsAction: slackNotification?.alarmAction,
-          })
-        : undefined;
+    const fhirConverterLambda = fhirServerQueue?.queueUrl
+      ? fhirConverterConnector.createLambda({
+          envType: props.config.environmentType,
+          stack: this,
+          lambdaLayers,
+          vpc: this.vpc,
+          sourceQueue: fhirConverterQueue,
+          destinationQueue: fhirServerQueue,
+          dlq: fhirConverterDLQ,
+          fhirConverterBucket,
+          conversionResultQueueUrl: fhirServerQueue.queueUrl,
+          apiServiceDnsAddress: apiLoadBalancerAddress,
+          alarmSnsAction: slackNotification?.alarmAction,
+        })
+      : undefined;
 
-      // sidechain FHIR converter
-      provideAccessToQueue({
-        accessType: "send",
-        queue: sidechainFHIRConverterQueue,
-        resource: apiService.service.taskDefinition.taskRole,
-      });
-      const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
-        ? sidechainFHIRConverterConnector.createLambda({
-            envType: props.config.environmentType,
-            stack: this,
-            lambdaLayers,
-            vpc: this.vpc,
-            sourceQueue: sidechainFHIRConverterQueue,
-            destinationQueue: fhirServerQueue,
-            dlq: sidechainFHIRConverterDLQ,
-            fhirConverterBucket: sidechainFHIRConverterBucket,
-            apiServiceDnsAddress: apiLoadBalancerAddress,
-            alarmSnsAction: slackNotification?.alarmAction,
-          })
-        : undefined;
+    // sidechain FHIR converter
+    provideAccessToQueue({
+      accessType: "send",
+      queue: sidechainFHIRConverterQueue,
+      resource: apiService.service.taskDefinition.taskRole,
+    });
+    const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
+      ? sidechainFHIRConverterConnector.createLambda({
+          envType: props.config.environmentType,
+          stack: this,
+          lambdaLayers,
+          vpc: this.vpc,
+          sourceQueue: sidechainFHIRConverterQueue,
+          destinationQueue: fhirServerQueue,
+          dlq: sidechainFHIRConverterDLQ,
+          fhirConverterBucket: sidechainFHIRConverterBucket,
+          apiServiceDnsAddress: apiLoadBalancerAddress,
+          alarmSnsAction: slackNotification?.alarmAction,
+        })
+      : undefined;
 
-      // Access grant for medical documents bucket
-      sandboxSeedDataBucket &&
-        sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-      medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
-      sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
-      fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
-      sidechainFHIRConverterLambda &&
-        medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
-    }
+    // Access grant for medical documents bucket
+    sandboxSeedDataBucket &&
+      sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+    medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
+    medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+    sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
+    fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
+    sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
 
     createDocQueryChecker({
       lambdaLayers,
@@ -435,6 +432,19 @@ export class APIStack extends Stack {
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
     this.setupAPIGWOAuthResource(id, api, link, oauthAuth, oauthScopes, apiLoadBalancerAddress);
+
+    const contributionResource = api.root.addResource("doc-contribution");
+
+    // setup cw doc contribution
+    this.setupCWDocContribution({
+      baseResource: contributionResource,
+      lambdaLayers,
+      alarmAction: slackNotification?.alarmAction,
+      authorizer: oauthAuth,
+      oauthScopes: oauthScopes,
+      envType: props.config.environmentType,
+      bucket: medicalDocumentsBucket,
+    });
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
@@ -789,6 +799,44 @@ export class APIStack extends Stack {
     });
 
     return cdaToVisualizationLambda;
+  }
+
+  private setupCWDocContribution(ownProps: {
+    baseResource: apig.Resource;
+    lambdaLayers: lambda.ILayerVersion[];
+    alarmAction: SnsAction | undefined;
+    authorizer: apig.IAuthorizer;
+    oauthScopes: cognito.OAuthScope[];
+    envType: string;
+    bucket: s3.Bucket;
+  }): Lambda {
+    const { baseResource, lambdaLayers, alarmAction, authorizer, oauthScopes, envType, bucket } =
+      ownProps;
+
+    const cwLambda = createLambda({
+      stack: this,
+      name: "CommonWellDocContribution",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "cw-doc-contribution",
+      layers: lambdaLayers,
+      alarmSnsAction: alarmAction,
+      envVars: {
+        ENV_TYPE: envType,
+        ...(bucket && {
+          MEDICAL_DOCUMENTS_BUCKET_NAME: bucket.bucketName,
+        }),
+      },
+    });
+
+    const cwResource = baseResource.addResource("commonwell");
+    cwResource.addMethod("GET", new apig.LambdaIntegration(cwLambda), {
+      authorizer: authorizer,
+      authorizationScopes: oauthScopes.map(s => s.scopeName),
+    });
+
+    bucket.grantReadWrite(cwLambda);
+
+    return cwLambda;
   }
 
   private setupTokenAuthLambda(

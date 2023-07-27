@@ -1,0 +1,38 @@
+---
+title: "Node"
+description: "Access the Devices API using our Node SDK"
+---
+
+We've developed an SDK to help you get access to our API without the HTTP plumbing. It's currently only available for
+Node-based applications ([let us know](https://www.metriport.com/contact-us) what other languages you'd like to see it available on).
+
+The SDK is available as an NPM package and you can access it [here](https://www.npmjs.com/package/@metriport/api-sdk) - it's written
+in Typescript, and includes strong typing for all of our [data models](/devices-api/more-info/models).
+
+To install:
+
+```shell
+npm install --save @metriport/api-sdk
+```
+
+Initialize it like so:
+
+<Snippet file="devices-api-init.mdx" />
+
+Some examples of usage, once the API client is initialized:
+
+```typescript
+// create user in Metriport and get the Metriport user ID
+const metriportUserId = await metriportClient.getMetriportUserId("your-internal-user-id");
+
+// create a session token to be used in the Metriport Connect widget
+const connectToken = await metriportClient.getConnectToken(metriportUserId);
+
+// query for body data after the user has connected a device
+const response = await metriportClient.getBodyData(metriportUserId, "2023-01-01");
+```
+
+The operations available follow the [API Reference specification](/devices-api/api-reference).
+
+The client source code contain only the exposed operations and is available
+[here](https://github.com/metriport/metriport/blob/master/packages/api-sdk/src/devices/client/metriport.ts).
