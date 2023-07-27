@@ -1,6 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { isMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
-import { decodeExternalId } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
 
@@ -20,12 +19,11 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
   if (docs) {
     return docs.flatMap(doc => {
       if (doc && doc.id && doc.content) {
-        const decodedId = decodeExternalId(doc.id);
         const contents = doc.content.filter(isMetriportContent);
         if (contents.length > 1) {
           capture.message("Doc contains more than one Metriport content item", {
             extra: {
-              id: decodedId,
+              id: doc.id,
               content_length: contents.length,
             },
           });
@@ -33,7 +31,7 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
         const content = contents[0];
         if (content && content.attachment && content.attachment.title && content.attachment.url) {
           return {
-            id: decodedId,
+            id: doc.id,
             description: doc.description,
             fileName: content.attachment.title,
             location: content.attachment.url,
@@ -44,13 +42,10 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
             size: content.attachment.size,
           };
         }
-
         return [];
       }
-
       return [];
     });
   }
-
   return [];
 }

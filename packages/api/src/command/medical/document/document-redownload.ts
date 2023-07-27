@@ -18,9 +18,10 @@ import { hasCommonwellContent, isCommonwellContent } from "../../../external/com
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { downloadedFromHIEs } from "../../../external/fhir/shared";
 import { isMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
-import { decodeExternalId } from "../../../shared/external";
+import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
+import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { getPatientOrFail } from "../patient/get-patient";
 import { updateDocQuery } from "./document-query";
@@ -76,7 +77,7 @@ export const reprocessDocuments = async ({
   log(`Done.`);
 };
 
-export async function downloadDocsAndUpsertFHIRWithDocRefs({
+async function downloadDocsAndUpsertFHIRWithDocRefs({
   cxId,
   documents,
   override,
@@ -122,7 +123,7 @@ async function processDocsOfPatient({
   }
   const organization = await getOrganizationOrFail({ cxId });
 
-  const docsAsCW: Document[] = convertDocRefToCW(docs, override);
+  const docsAsCW: Document[] = await convertDocRefToCW(docs, override);
   if (docsAsCW.length !== docs.length) {
     const idsDocs = docs.map(d => d.id);
     const idsDocsCW = docsAsCW.map(d => d.id);
@@ -164,91 +165,98 @@ async function processDocsOfPatient({
   log(`Done for patient ${patientId}`);
 }
 
-function convertDocRefToCW(docs: DocumentReference[], isOverride: boolean): Document[] {
-  return docs.flatMap(d => {
-    const emptyMsg = (property: string) => {
-      console.log(`Document ${d.id} is missing ${property}, skipping...`);
-      return [];
-    };
-    if (!d.id) return emptyMsg("id");
-    if (!d.content) return emptyMsg("content");
-    if (!d.content.length) return emptyMsg("content.length");
-    let content: DocumentReferenceContent | undefined = {};
-    if (isOverride) {
-      // if we want to override we need the CW url
-      const cwContent = d.content.filter(isCommonwellContent);
-      content = cwContent[0];
-      if (!content) return emptyMsg("cwContent");
-    } else {
-      const metriportContent = d.content.filter(isMetriportContent);
-      content = metriportContent[0];
-      if (!content) return emptyMsg("cwContent");
-    }
-    if (!d.type) return emptyMsg("type");
-    if (!d.status) return emptyMsg("status");
-    if (!d.masterIdentifier) return emptyMsg("masterIdentifier");
-    const masterIdValue = d.masterIdentifier.value;
-    if (!masterIdValue) return emptyMsg("masterIdentifier.value");
-    if (!d.subject) return emptyMsg("subject");
-    const subjectReference = d.subject.reference;
-    if (!subjectReference) return emptyMsg("subject.reference");
-    if (!d.context) return emptyMsg("context");
-    try {
-      const cwDoc: Document = {
-        /**
-         * HEADS UP: This is important! We assume the doc refs we get from the FHIR
-         * server were inserted with their IDs encoded.
-         */
-        id: decodeExternalId(d.id),
-        content: {
-          resourceType: "DocumentReference",
-          ...(d.contained && {
-            contained: d.contained.map(fhirContainedToCW).flatMap(c => c ?? []),
-          }),
-          ...(d.masterIdentifier && {
-            masterIdentifier: {
-              ...d.masterIdentifier,
-              value: masterIdValue,
-            },
-          }),
-          ...(d.identifier && { identifier: d.identifier.map(fhirIdentifierToCW) }),
-          subject: {
-            ...d.subject,
-            reference: subjectReference,
-          },
-          ...(d.type && { type: d.type }),
-          ...(d.category && { category: d.category }),
-          ...(d.author && {
-            author: d.author.flatMap(a => (a.reference ? { reference: a.reference } : [])),
-          }),
-          indexed: d.date ?? d.meta?.lastUpdated ?? new Date().toISOString(),
-          status: fhirStatusToCW(d.status),
-          description: d.description,
-          mimeType: content.attachment?.contentType,
-          size: content.attachment?.size,
-          hash: content.attachment?.hash,
-          location: content.attachment?.url,
-          ...(content.format && { format: fhirFormatToCW(content.format) }),
-          context: d.context,
-          type: {
-            coding: d.type.coding,
-            text: d.type.text,
-          },
-        },
+async function convertDocRefToCW(
+  docs: DocumentReference[],
+  isOverride: boolean
+): Promise<Document[]> {
+  const converted = await Promise.all(
+    docs.map(async d => {
+      const emptyMsg = (property: string) => {
+        console.log(`Document ${d.id} is missing ${property}, skipping...`);
+        return undefined;
       };
-      return cwDoc;
-    } catch (error) {
-      console.log(`[convertDocRefToCW] Error converting docRef ${d.id} to CW: ${error}`);
-      capture.error(error, {
-        extra: {
-          context: `convertDocRefToCW`,
-          document: d,
-          error,
-        },
-      });
-      return [];
-    }
-  });
+      if (!d.id) return emptyMsg("id");
+      const docRefMapping = await getDocRefMapping(d.id);
+      if (!docRefMapping) {
+        console.log(`Document ${d.id} not found on DB, skipping...`);
+        return undefined;
+      }
+
+      if (!d.content) return emptyMsg("content");
+      if (!d.content.length) return emptyMsg("content.length");
+      let content: DocumentReferenceContent | undefined = {};
+      if (isOverride) {
+        // if we want to override we need the CW url
+        const cwContent = d.content.filter(isCommonwellContent);
+        content = cwContent[0];
+        if (!content) return emptyMsg("cwContent");
+      } else {
+        const metriportContent = d.content.filter(isMetriportContent);
+        content = metriportContent[0];
+        if (!content) return emptyMsg("cwContent");
+      }
+      if (!d.type) return emptyMsg("type");
+      if (!d.status) return emptyMsg("status");
+      if (!d.masterIdentifier) return emptyMsg("masterIdentifier");
+      const masterIdValue = d.masterIdentifier.value;
+      if (!masterIdValue) return emptyMsg("masterIdentifier.value");
+      if (!d.subject) return emptyMsg("subject");
+      const subjectReference = d.subject.reference;
+      if (!subjectReference) return emptyMsg("subject.reference");
+      if (!d.context) return emptyMsg("context");
+      try {
+        const cwDoc: Document = {
+          id: docRefMapping.externalId,
+          content: {
+            resourceType: "DocumentReference",
+            ...(d.contained && {
+              contained: d.contained.map(fhirContainedToCW).flatMap(c => c ?? []),
+            }),
+            ...(d.masterIdentifier && {
+              masterIdentifier: {
+                ...d.masterIdentifier,
+                value: masterIdValue,
+              },
+            }),
+            ...(d.identifier && { identifier: d.identifier.map(fhirIdentifierToCW) }),
+            subject: {
+              ...d.subject,
+              reference: subjectReference,
+            },
+            ...(d.type && { type: d.type }),
+            ...(d.category && { category: d.category }),
+            ...(d.author && {
+              author: d.author.flatMap(a => (a.reference ? { reference: a.reference } : [])),
+            }),
+            indexed: d.date ?? d.meta?.lastUpdated ?? new Date().toISOString(),
+            status: fhirStatusToCW(d.status),
+            description: d.description,
+            mimeType: content.attachment?.contentType,
+            size: content.attachment?.size,
+            hash: content.attachment?.hash,
+            location: content.attachment?.url,
+            ...(content.format && { format: fhirFormatToCW(content.format) }),
+            context: d.context,
+            type: {
+              coding: d.type.coding,
+              text: d.type.text,
+            },
+          },
+        };
+        return cwDoc;
+      } catch (error) {
+        console.log(`[convertDocRefToCW] Error converting docRef ${d.id} to CW: ${error}`);
+        capture.error(error, {
+          extra: {
+            context: `convertDocRefToCW`,
+            document: d,
+            error,
+          },
+        });
+      }
+    })
+  );
+  return converted.flatMap(filterTruthy);
 }
 
 export const fhirContainedToCW = (contained: Resource): Contained | undefined => {

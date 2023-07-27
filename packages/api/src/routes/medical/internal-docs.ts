@@ -10,9 +10,8 @@ import {
 import { reprocessDocuments } from "../../command/medical/document/document-redownload";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../command/webhook/medical";
-import { convertResult } from "../../domain/medical/document-reference";
+import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
-import { encodeExternalId } from "../../shared/external";
 import { capture } from "../../shared/notifications";
 import { stringToBoolean } from "../../shared/types";
 import { Util } from "../../shared/util";
@@ -31,14 +30,11 @@ const router = Router();
  * - re-convert it to FHIR (when applicable);
  * - update the FHIR server with the results.
  *
- * Assumes document references it gets from the FHIR server were inserted with their IDs
- * encoded. See usages of `getDocumentPrimaryId()` on `document-query.ts`.
- *
  * Asychronous operation, returns 200 immediately.
  *
  * @param req.query.cxId - The customer/account's ID.
- * @param req.query.documentIds - Optional comma-separated list of document IDs to
- *     re-download; if not set all documents of the customer will be re-downloaded.
+ * @param req.query.documentIds - Optional comma-separated list of metriport document
+ *     IDs to re-download; if not set all documents of the customer will be re-downloaded;
  * @param req.query.override - Optional, defines whether we should re-download the
  *     documents from CommonWell, defaults to false.
  * @return 200
@@ -58,29 +54,6 @@ router.post(
       capture.error(err);
     });
     return res.json({ processing: true });
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /internal/docs/encode-ids
- *
- * Encode the document IDs using the same logic used to send docs to the FHIR server.
- *
- * @param req.query.documentIds - The comma-separated list of document IDs to re-download.
- * @return 200
- */
-router.get(
-  "/encode-ids",
-  asyncHandler(async (req: Request, res: Response) => {
-    const documentIdsRaw = getFrom("query").optional("documentIds", req);
-    const documentIds = documentIdsRaw
-      ? stringListSchema.parse(documentIdsRaw.split(",").map(id => id.trim()))
-      : [];
-    const result: Record<string, string> = {};
-    documentIds.forEach(id => {
-      result[id] = encodeExternalId(id);
-    });
-    return res.json(result);
   })
 );
 

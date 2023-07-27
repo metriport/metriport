@@ -1,6 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
-import { DocumentQueryProgress } from "../../domain/medical/document-reference";
+import { DocumentQueryProgress } from "../../domain/medical/document-query";
 import { MedicalDataSource } from "../../external";
 import { USState } from "../../shared/geographic-locations";
 import { BaseModel, ModelSetup } from "../_default";
