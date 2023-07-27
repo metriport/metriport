@@ -4,13 +4,7 @@ import { Patient } from "../../../models/medical/patient";
 
 export const sandboxSleepTime = 5000;
 
-export type DocumentWithMetriportId = Document & {
-  originalId: string;
-};
-
-export type DocumentWithLocation = DocumentWithMetriportId & { content: { location: string } };
-
-export type CWDocumentWithMetriportData = DocumentWithMetriportId & {
+export type CWDocumentWithMetriportData = Document & {
   metriport: {
     fileName: string;
     location: string;

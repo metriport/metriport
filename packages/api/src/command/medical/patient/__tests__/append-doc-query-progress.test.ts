@@ -3,8 +3,8 @@ import { faker } from "@faker-js/faker";
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
-import { DocumentQueryProgress } from "../../../../domain/medical/document-query";
-import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
+import { DocumentQueryProgress } from "../../../../domain/medical/document-reference";
+import { makeProgress } from "../../../../domain/medical/__tests__/document-reference";
 import { Patient, PatientModel } from "../../../../models/medical/patient";
 import {
   makePatient,

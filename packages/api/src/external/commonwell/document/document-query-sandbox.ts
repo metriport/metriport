@@ -5,9 +5,9 @@ import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
+import { encodeExternalId } from "../../../shared/external";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
-import { uuidv7 } from "../../../shared/uuid-v7";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { getFileExtension, sandboxSleepTime } from "./shared";
@@ -71,14 +71,18 @@ export async function sandboxGetDocRefsAndUpsert({
       : undefined),
   });
 
-  for (const entry of entries) {
-    const prevDocId = entry.docRef.id;
-    entry.docRef.id = uuidv7();
+  for (const [index, entry] of entries.entries()) {
+    let prevDocId;
     try {
+      prevDocId = entry.docRef.id;
+      // TODO find a better way to define a unique doc ID
+      entry.docRef.id = encodeExternalId(patient.id + "_" + index);
+      const fhirDocId = entry.docRef.id;
+
       await convertCDAToFHIR({
         patient,
         document: {
-          id: entry.docRef.id,
+          id: fhirDocId,
           content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
         },
         s3FileName: entry.s3Info.key,
@@ -102,7 +106,13 @@ export async function sandboxGetDocRefsAndUpsert({
       entry.docRef.contained = contained;
       await upsertDocumentToFHIRServer(patient.cxId, entry.docRef);
     } catch (err) {
-      log(`Error w/ file docId ${entry.docRef.id}, prevDocId ${prevDocId}: ${JSON.stringify(err)}`);
+      log(
+        `Error w/ file docId ${entry.docRef.id}, prevDocId ${prevDocId}: ${JSON.stringify(
+          err,
+          null,
+          2
+        )}`
+      );
     }
   }
 

@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { makeBaseDomain } from "../../../domain/__tests__/base-model";
+import { makeBaseModel } from "../../__tests__/base-model";
 import { Organization, OrganizationData, OrgType } from "../organization";
 import { makeAddressStrict } from "./location-address";
 
@@ -18,7 +18,7 @@ export const makeOrganization = ({
   organizationNumber,
 }: Partial<Organization> = {}): Organization => {
   return {
-    ...makeBaseDomain({ id }),
+    ...makeBaseModel({ id }),
     oid: oid ?? faker.string.uuid(),
     cxId: faker.string.uuid(),
     organizationNumber: organizationNumber != null ? organizationNumber : makeOrgNumber(),

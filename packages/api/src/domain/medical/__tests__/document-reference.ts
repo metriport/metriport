@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { DeepNullable } from "ts-essentials";
 import { makeOptionalNumber } from "../../../shared/__tests__/utils";
-import { DocumentQueryProgress, documentQueryStatus, Progress } from "../document-query";
+import { DocumentQueryProgress, documentQueryStatus, Progress } from "../document-reference";
 
 export function makeProgress(seed: Partial<DeepNullable<Progress>> = {}): Progress {
   return {

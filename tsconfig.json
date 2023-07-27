@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "types": ["jest"],
+    "types": ["reflect-metadata", "jest"],
     "typeRoots": ["./types", "./node_modules/@types"],
     "noErrorTruncation": true,
   },
