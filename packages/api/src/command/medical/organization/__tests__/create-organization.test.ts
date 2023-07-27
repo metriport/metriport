@@ -5,11 +5,11 @@ dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
 import { v4 as uuidv4 } from "uuid";
 import * as createTenant from "../../../../external/fhir/admin";
-import { OrganizationModel } from "../../../../models/medical/organization";
 import {
   makeOrganization,
   makeOrganizationData,
 } from "../../../../models/medical/__tests__/organization";
+import { OrganizationModel } from "../../../../models/medical/organization";
 import { makeOrganizationOID } from "../../../../shared/oid";
 import * as createId from "../../customer-sequence/create-id";
 import { createOrganization } from "../create-organization";
@@ -21,7 +21,7 @@ beforeAll(() => {
   jest.restoreAllMocks();
   const organizationNumber = randNumber();
   createOrganizationId_mock = jest.spyOn(createId, "createOrganizationId").mockResolvedValue({
-    id: makeOrganizationOID(organizationNumber),
+    oid: makeOrganizationOID(organizationNumber),
     organizationNumber,
   });
   createTenantIfNotExistsMock = jest
@@ -49,19 +49,19 @@ describe("createOrganization", () => {
     ).rejects.toThrow();
   });
 
-  it("creates org with id and number from createOrganizationId", async () => {
+  it("creates org with oid and number from createOrganizationId", async () => {
     OrganizationModel.findOne = jest.fn().mockResolvedValueOnce(undefined);
     const organizationNumber = randNumber();
-    const id = makeOrganizationOID(organizationNumber);
-    createOrganizationId_mock.mockResolvedValueOnce({ id, organizationNumber });
-    const org = makeOrganization({ id, organizationNumber });
+    const oid = makeOrganizationOID(organizationNumber);
+    createOrganizationId_mock.mockResolvedValueOnce({ oid, organizationNumber });
+    const org = makeOrganization({ oid, organizationNumber });
     OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(org));
     const orgCreate = makeOrganizationData();
 
     await createOrganization({ ...orgCreate, cxId });
 
     expect(OrganizationModel.create).toHaveBeenCalledWith(
-      expect.objectContaining({ id, organizationNumber, cxId, data: orgCreate })
+      expect.objectContaining({ oid, organizationNumber, cxId, data: orgCreate })
     );
   });
 

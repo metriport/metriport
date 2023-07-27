@@ -15,10 +15,6 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
     WebhookRequest.init(
       {
         ...BaseModel.attributes(),
-        id: {
-          type: DataTypes.UUID,
-          primaryKey: true,
-        },
         cxId: {
           type: DataTypes.STRING,
         },

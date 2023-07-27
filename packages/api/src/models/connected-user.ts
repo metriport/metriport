@@ -14,7 +14,6 @@ export type ProviderMap = {
 
 export class ConnectedUser extends BaseModel<ConnectedUser> {
   static NAME = "connected_user";
-  declare id: string;
   declare cxId: string;
   declare cxUserId: string;
   declare providerMap?: ProviderMap;
@@ -23,10 +22,6 @@ export class ConnectedUser extends BaseModel<ConnectedUser> {
     ConnectedUser.init(
       {
         ...BaseModel.attributes(),
-        id: {
-          type: DataTypes.UUID,
-          primaryKey: true,
-        },
         cxId: {
           type: DataTypes.UUID,
         },

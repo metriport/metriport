@@ -2,7 +2,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
 import { Sequelize } from "sequelize";
-import { getUmzug } from "./index";
+import { getUmzugWithMeta } from "./index";
+import MetriportError from "../errors/metriport-error";
 
 /**
  * NOT TO BE USED WITHIN THE APPLICATION!
@@ -21,7 +22,7 @@ try {
 } catch (err) {
   const msg = "Error processing DB_CREDS env var";
   console.log(msg, err);
-  throw new Error(msg, { cause: err });
+  throw new MetriportError(msg, { cause: err });
 }
 
 const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
@@ -37,7 +38,13 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
 });
 
 async function main() {
-  await getUmzug(sequelize).runAsCLI();
+  const { umzug, migrations, executed, pending } = await getUmzugWithMeta(sequelize);
+  console.log("");
+  console.log(
+    `[--- SEQUELIZE ---] Migrations: ${executed} executed, ${pending} pending, ${migrations} total`
+  );
+  console.log("");
+  await umzug.runAsCLI();
   process.exit();
 }
 

@@ -28,14 +28,6 @@ export function makeOrganizationOID(orgNumber: string | number): string {
   return `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}`;
 }
 
-export function makeFacilityOID(orgId: string, facilityNumber: string | number): string {
-  return `${orgId}.${OIDNode.locations}.${facilityNumber}`;
-}
-
-export function makePatientOID(orgId: string, patientNumber: string | number): string {
-  return `${orgId}.${OIDNode.patients}.${patientNumber}`;
-}
-
 export const driversLicenseURIs: { [k in USState]: string } = {
   AK: `${OID_PREFIX}2.16.840.1.113883.4.3.2`,
   AL: `${OID_PREFIX}2.16.840.1.113883.4.3.1`,
