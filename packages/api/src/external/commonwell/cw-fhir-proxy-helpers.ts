@@ -3,8 +3,12 @@ import { Organization, OrganizationModel } from "../../models/medical/organizati
 
 // Didn't reuse getOrganizationOrFail bc we don't have `cxId` in this context and
 // we want to keep that function requiring `cxId` to avoid cross-tenant data access
-export async function getOrgOrFail(orgId: string): Promise<Organization> {
-  const org = await OrganizationModel.findByPk(orgId);
-  if (!org) throw new NotFoundError(`Could not find organization ${orgId}`);
+export async function getOrgOrFail(orgOID: string): Promise<Organization> {
+  const org = await OrganizationModel.findOne({
+    where: {
+      oid: orgOID,
+    },
+  });
+  if (!org) throw new NotFoundError(`Could not find organization with OID ${orgOID}`);
   return org;
 }
