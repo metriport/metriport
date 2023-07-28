@@ -1,5 +1,6 @@
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { DATA_SOURCE_EXTENSION_URL } from "../../../external/fhir/shared/extensions/extension";
 import { Util } from "../../../shared/util";
 
 export async function createOrUpdateConsolidatedPatientData({
@@ -27,7 +28,9 @@ export async function createOrUpdateConsolidatedPatientData({
 
     const bundleResource = await fhir.executeBatch(fhirBundleTransaction);
 
-    return bundleResource;
+    const transformedBundle = removeUnwantedFhirData(bundleResource);
+
+    return transformedBundle;
   } catch (error) {
     log(`Error converting and executing fhir bundle resources: `, error);
     throw error;
@@ -88,4 +91,42 @@ const convertCollectionBundleToTransactionBundle = ({
   }
 
   return transactionBundle;
+};
+
+const removeUnwantedFhirData = (data: Bundle): Bundle => {
+  return {
+    resourceType: data.resourceType,
+    id: data.id,
+    type: data.type,
+    entry: data.entry?.map(replaceCodingSystem),
+  };
+};
+
+const replaceCodingSystem = (resourceEntry: BundleEntry): BundleEntry => {
+  return {
+    response: {
+      ...resourceEntry.response,
+      ...(resourceEntry.response?.outcome
+        ? {
+            outcome: {
+              ...resourceEntry.response.outcome,
+              issue: resourceEntry.response.outcome.issue?.map(issue => {
+                return {
+                  ...issue,
+                  details: {
+                    ...issue.details,
+                    coding: issue.details?.coding?.map(coding => {
+                      return {
+                        ...coding,
+                        system: DATA_SOURCE_EXTENSION_URL,
+                      };
+                    }),
+                  },
+                };
+              }),
+            },
+          }
+        : {}),
+    },
+  };
 };
