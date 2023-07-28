@@ -47,7 +47,7 @@ export const transactionRespBundle: Bundle = {
                 coding: [
                   {
                     system:
-                      "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+                      "https://public.metriport.com/fhir/StructureDefinition/CodeSystem/operation-outcome",
                     code: "SUCCESSFUL_UPDATE",
                     display: "Update succeeded.",
                   },
