@@ -4,6 +4,7 @@ dotenv.config();
 import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
 import csv from "csv-parser";
 import fs from "fs";
+import { getEnvVarOrFail } from "./shared/env";
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
@@ -87,17 +88,6 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
     ...(csvPatient.phone ? { contact: { phone: csvPatient.phone } } : {}),
   };
 };
-
-function getEnvVar(varName: string): string | undefined {
-  return process.env[varName];
-}
-function getEnvVarOrFail(varName: string): string {
-  const value = getEnvVar(varName);
-  if (!value || value.trim().length < 1) {
-    throw new Error(`Missing ${varName} env var`);
-  }
-  return value;
-}
 
 main();
 

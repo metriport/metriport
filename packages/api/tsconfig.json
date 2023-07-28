@@ -23,7 +23,9 @@
 
     "sourceMap": false /* Create source map files for emitted JavaScript files. */,
     "rootDir": "./src" /* Specify the root folder within your source files. */,
-    "outDir": "./dist" /* Specify an output folder for all emitted files. */
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */,
+    "noErrorTruncation": true,
+    "resolveJsonModule": true
   },
   "include": ["./src/**/*"],
   "exclude": [

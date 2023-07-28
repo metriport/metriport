@@ -1,0 +1,100 @@
+---
+title: "Swift"
+description: "A package to integrate with Metriport on Swift - including Apple Health integrations."
+---
+
+<Info>
+  If you haven't already, visit the [Apple Health docs](/devices-api/getting-started/apple-health#1-enable-healthkit) and follow
+  the "Enable HealthKit" section to configure HealthKit.
+</Info>
+
+## Installation
+
+Our packages can be downloaded using SPM (Swift Package Manager).
+To add a package dependency to your Xcode project, select `File > Add Packages` and enter our repo URL:
+
+```
+https://github.com/metriport/metriport-ios-sdk
+```
+
+<img className="h-100" src="/images/package-install.png" />
+
+<Info>
+  We recommend using the latest available package release version - you can [find the latest release
+  version in our GitHub repo](https://github.com/metriport/metriport-ios-sdk/releases).
+</Info>
+
+Now, let's setup the `MetriportSDK` package to receive background updates.
+
+<Snippet file="metriport-sdk-appdelegate.mdx" />
+
+## Usage
+
+To use our SDK go to the root of your project and add:
+
+```swift
+import MetriportSDK
+
+var healthStore = MetriportHealthStoreManager(clientApiKey: "CLIENT_API_KEY", sandbox: false);
+```
+
+Next, initialize the `MetriportWidget` inside of a view to display it. See the following
+snippet for an example initialization from a button tap, that then displays the Connect Widget
+in a sheet:
+
+```swift
+class WidgetController: ObservableObject {
+    @Published var showWidget = false;
+    var token = "";
+
+    func openWidget(token: String) {
+        self.showWidget = true
+        self.token = token
+    }
+
+}
+
+struct ContentView: View {
+    // Manages the Metriport Widget
+    @ObservedObject var widgetController = WidgetController()
+
+    var body: some View {
+        VStack {
+            Button {
+                // This is an example, you'll need to get a session token from your server.
+                let token = "TOKEN"
+                widgetController.openWidget(token: token);
+            } label: {
+                Text("Open Metriport Widget")
+            }
+            .sheet(isPresented: $widgetController.showWidget) {
+                MetriportWidget(
+                    healthStore: healthStore,
+                    token: widgetController.token,
+                    sandbox: false)
+            }
+        }
+        .padding()
+    }
+}
+```
+
+<Warning>
+  Ensure you use your Client Key here, and not your Secret Key. You can read more about the
+  differences between the two in our [API Keys guide](/home/api-info/api-keys).
+</Warning>
+
+<Info>
+  As per the guide, we recommend to store your Client Key in environment secrets, and not commit it
+  in plain text to your repository.
+</Info>
+
+<Info>
+  As per the Quickstart guide, you'll need to generate a token on your server before opening the
+  Connect Widget. You can read more about this
+  [here](/devices-api/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app).
+</Info>
+
+## Apple Health
+
+For details about receiving Apple Health data via webhooks, see the guide [here.](/devices-api/getting-started/apple-health#receiving-data)

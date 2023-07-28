@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
   API_KEY_HEADER,
   BASE_ADDRESS,
@@ -225,6 +226,46 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return patientSchema.parse(resp.data);
+  }
+
+  /** ---------------------------------------------------------------------------
+   * Returns a patient's consolidated data.
+   *
+   * Note if only patientId is provided the endpoint may take long to respond as its
+   * fetching all the resources for the patient.
+   *
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @param resources Optional comma-separated list of resources to be returned.
+   * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @return Patient's consolidated data.
+   */
+  async getPatientConsolidated(
+    patientId: string,
+    resources?: string[],
+    dateFrom?: string,
+    dateTo?: string
+  ): Promise<Bundle<Resource>> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated`, {
+      params: { resources, dateFrom, dateTo },
+    });
+
+    return resp.data;
+  }
+
+  /** ---------------------------------------------------------------------------
+   * Returns a Bundle with the outcome of the query.
+   *
+   * Note max resources you can add is 50 with a max content length of 1Mb.
+   *
+   * @param patientId The ID of the patient to associate resources to.
+   * @param payload The FHIR Bundle to create resources.
+   * @return FHIR Bundle with operation outcome.
+   */
+  async createPatientConsolidated(patientId: string, payload: Bundle): Promise<Bundle<Resource>> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated`, payload);
+
+    return resp.data;
   }
 
   /**

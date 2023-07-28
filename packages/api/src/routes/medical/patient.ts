@@ -6,7 +6,7 @@ import { areDocumentsProcessing } from "../../command/medical/document/document-
 import {
   getConsolidatedPatientData,
   resourceTypeForConsolidation,
-} from "../../command/medical/patient/consolidate-data";
+} from "../../command/medical/patient/get-consolidate-data";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
@@ -33,8 +33,14 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/create-consolidate-data";
+import { bundleSchema } from "./schemas/fhir";
+import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 
 const router = Router();
+const MAX_RESOURCE_POST_COUNT = 50;
+const MAX_RESOURCE_STORED_LIMIT = 1000;
+const MAX_CONTENT_LENGTH_BYTES = 1000000;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -218,6 +224,60 @@ router.get(
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
     const data = await getConsolidatedPatientData({ cxId, patientId, resources, dateFrom, dateTo });
+
+    return res.json(data);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/consolidated
+ *
+ * Returns a Bundle with the outcome of the query.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient to associate resources to.
+ * @param req.body The FHIR Bundle to create resources.
+ * @return FHIR Bundle with operation outcome.
+ */
+router.post(
+  "/:id/consolidated",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const fhirBundle = bundleSchema.parse(req.body);
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+    const validatedBundle = validateFhirEntries(fhirBundle);
+
+    if (Config.isSandbox()) {
+      const data = await getConsolidatedPatientData({ cxId, patientId });
+      // limit the amount of resources stored in sandbox mode
+      if (data.entry && data.entry.length >= MAX_RESOURCE_STORED_LIMIT) {
+        return res.status(status.BAD_REQUEST).json({
+          message: `Cannot create bundle with size greater than ${MAX_RESOURCE_STORED_LIMIT} bytes in Sandbox mode.`,
+        });
+      }
+    }
+
+    // Limit the amount of resources that can be created at once
+    if (validatedBundle.entry.length >= MAX_RESOURCE_POST_COUNT) {
+      return res.status(status.BAD_REQUEST).json({
+        message: `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time.`,
+      });
+    }
+
+    const contentLength = req.headers["content-length"];
+    // limit the payload size that can be created
+    if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+      return res.status(status.BAD_REQUEST).json({
+        message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`,
+      });
+    }
+
+    const data = await createOrUpdateConsolidatedPatientData({
+      cxId,
+      patientId: patient.id,
+      fhirBundle: validatedBundle,
+    });
 
     return res.json(data);
   })

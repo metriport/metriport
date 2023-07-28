@@ -5,7 +5,7 @@ import { Observation } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
 import { HapiFhirClient } from "../../../external/fhir/api/api-hapi";
 import { makePatient } from "../../../models/medical/__tests__/patient";
-import { getConsolidatedPatientData } from "../patient/consolidate-data";
+import { getConsolidatedPatientData } from "../patient/get-consolidate-data";
 import * as getPatient from "../patient/get-patient";
 
 let getPatientOrFailMock: jest.SpyInstance;

@@ -13,7 +13,11 @@ Here's a preview:
 
 ## How to Implement
 
-You can use the references below for sample implementations on various platforms. Generally, you can simply link to the Connect Widget in web apps, and use WebViews to implement the Widget on mobile platforms.
+You can use the references below for sample implementations on various platforms. Generally, you can either:
+
+- use one of our supported SDKs to implement the Widget (required to integrate with Apple Health);
+- or, link to the Connect Widget in web apps;
+- or, use WebViews to implement the Widget on mobile platforms.
 
 <Info>
   As per the [Quickstart
@@ -34,96 +38,7 @@ window.open(`https://connect.metriport.com/?token=${connectToken}`);
 
 ### iOS (Swift)
 
-```swift
-import SwiftUI
-import Foundation
-import WebKit
-
-@main
-struct Metriport_mobileApp: App {
-    // Return the scene.
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
-}
-
-struct ContentView: View {
-    @State private var showWebView = false
-
-    // var localWebView = MetriportWidget(url: URL(string: "http://localhost:3001/?token={YOUR_TOKEN}")!)
-    // For more information of how to create a token view link below
-    // https://docs.metriport.com/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app
-    var webView = MetriportWidget(url: URL(string: "https://connect.metriport.com/?token=demo")!)
-
-    var body: some View {
-        VStack {
-          webView
-          HStack {
-            Button(action: {
-              self.webView.goBack()
-            }){
-              Image(systemName: "arrowtriangle.left.fill")
-                                .font(.title)
-                                .foregroundColor(.blue)
-                                .padding()
-            }
-            Spacer()
-            Button(action: {
-              self.webView.refresh()
-            }){
-              Image(systemName: "arrow.clockwise.circle.fill")
-                    .font(.title)
-                    .foregroundColor(.blue)
-                    .padding()
-            }
-            Spacer()
-            Button(action: {
-              self.webView.goForward()
-            }){
-              Image(systemName: "arrowtriangle.right.fill")
-                    .font(.title)
-                    .foregroundColor(.blue)
-                    .padding()
-            }
-          }
-        }
-      }
-}
-
-struct MetriportWidget: UIViewRepresentable {
-
-    var url: URL
-    private var webView: WKWebView?
-
-    public init(url: URL) {
-        self.webView = WKWebView()
-        self.url = url
-    }
-
-    public func makeUIView(context: Context) -> WKWebView {
-        return webView!
-    }
-
-    public func updateUIView(_ webView: WKWebView, context: Context) {
-       let request = URLRequest(url: url)
-       webView.load(request)
-    }
-
-    public func goBack(){
-        webView?.goBack()
-    }
-
-    public func goForward(){
-        webView?.goForward()
-    }
-
-    public func refresh() {
-        webView?.reload()
-    }
-}
-```
+See our [Swift SDK guide](/devices-api/sdks/connect-widget/swift) for implementation details.
 
 <Tip>
   Our GitHub repo has [an example
@@ -251,61 +166,7 @@ class MainActivity : AppCompatActivity() {
 
 ### React Native
 
-```typescript
-import React, { useState } from "react";
-import { Modal, StyleSheet, Text, Pressable, View } from "react-native";
-import { WebView } from "react-native-webview";
-
-const App = () => {
-  const [modalVisible, setModalVisible] = useState(false);
-
-  return (
-    <View style={styles.centeredView}>
-      <Modal animationType="slide" presentationStyle="formSheet" visible={modalVisible}>
-        <Pressable
-          style={{
-            backgroundColor: "#748df0",
-            height: 40,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onPress={() => setModalVisible(false)}
-        >
-          <Text style={styles.textStyle}>CLOSE</Text>
-        </Pressable>
-        <WebView source={{ uri: "https://connect.metriport.com/?token=demo" }} />
-      </Modal>
-      <Pressable style={[styles.button, styles.buttonOpen]} onPress={() => setModalVisible(true)}>
-        <Text style={styles.textStyle}>Show Metriport Widget</Text>
-      </Pressable>
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 22,
-  },
-  button: {
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2,
-  },
-  buttonOpen: {
-    backgroundColor: "#748df0",
-  },
-  textStyle: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-});
-
-export default App;
-```
+See our [React Native SDK guide](/devices-api/sdks/connect-widget/react-native) for implementation details.
 
 <Tip>
   Our GitHub repo has [an example
@@ -315,41 +176,11 @@ export default App;
 
 ### Flutter
 
-See our [Flutter guide](/devices-api/more-info/flutter) for implementation details.
+See our [Flutter SDK guide](/devices-api/sdks/connect-widget/flutter) for implementation details.
 
 ### Cordova
 
-```html index.html
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self' data: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; img-src 'self' data: content:;"
-    />
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="msapplication-tap-highlight" content="no" />
-    <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover" />
-    <meta name="color-scheme" content="light dark" />
-    <link rel="stylesheet" href="css/index.css" />
-  </head>
-
-  <body>
-    <div class="app">
-      <h1>Metriport Cordova</h1>
-      <div id="deviceready" class="blink">
-        <p class="event listening">Connecting to Device</p>
-        <p class="event received">Device is Ready</p>
-      </div>
-      <button id="show">Open widget</button>
-    </div>
-    <script src="cordova.js"></script>
-    <script src="js/index.js"></script>
-  </body>
-</html>
-```
-
-<Snippet file="cordova-js-example.mdx" />
+See our [Cordova SDK guide](/devices-api/sdks/connect-widget/cordova) for implementation details.
 
 <Tip>
   Our GitHub repo has [an example
@@ -408,6 +239,27 @@ For a comprehensive list of available colors [visit here](https://www.w3schools.
   height="700"
   src="https://connect.metriport.com/?token=demo&customColor=orange"
 ></iframe>
+
+### redirectUrl
+
+After users successfully connect a provider, they can be redirected to a URL of your choosing.<br/>
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&redirectUrl=https%3A%2F%2Fmy-app.com%2Fgood-news`;
+```
+
+<Tip>
+  For optimal results, we advise that you encode your URLs before including them in query
+  parameters. ie. redirectUrl=https%3A%2F%2Fmy-app.com%2Fgood-news
+</Tip>
+
+### failRedirectUrl
+
+After a failed attempt to connect a provider, your users can be redirected to another URL of your choosing. This is similar to [redirectUrl](#redirecturl) above.<br/>
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&failRedirectUrl=https%3A%2F%2Fmy-app.com%2Fless-good-news`;
+```
 
 ### providers
 
