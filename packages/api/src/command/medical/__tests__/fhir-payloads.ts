@@ -30,12 +30,6 @@ export const transactionRespBundle: Bundle = {
   resourceType: "Bundle",
   id: "b2c28be3-8aae-4b3c-b0ff-ca5d0f0b0d1e",
   type: "transaction-response",
-  link: [
-    {
-      relation: "self",
-      url: "https://localhost:8888/oauth/fhir/21fa432e-723b-4a1d-a3b2-bd9cd75a0717/21fa432e-723b-4a1d-a3b2-bd9cd75a0717",
-    },
-  ],
   entry: [
     {
       response: {
@@ -52,7 +46,8 @@ export const transactionRespBundle: Bundle = {
               details: {
                 coding: [
                   {
-                    system: "https://hapifhir.io/fhir/CodeSystem/hapi-fhir-storage-response-code",
+                    system:
+                      "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
                     code: "SUCCESSFUL_UPDATE",
                     display: "Update succeeded.",
                   },
