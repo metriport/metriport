@@ -14,7 +14,8 @@ import { processAsyncError } from "../../errors";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/organization";
 import { upsertOrgToFHIRServer } from "../../external/fhir/organization/upsert-organization";
-import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
+import { getETag } from "../../shared/http";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import { organizationCreateSchema, organizationUpdateSchema } from "./schemas/organization";
 

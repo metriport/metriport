@@ -10,6 +10,7 @@ import initDB from "./models/db";
 import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
+import { isClientError } from "./shared/http";
 
 const app: Application = express();
 const version = Config.getVersion();
@@ -41,9 +42,10 @@ app.get("/", (req: Request, res: Response) => {
 if (isSentryEnabled()) {
   app.use(
     Sentry.Handlers.errorHandler({
-      //eslint-disable-next-line @typescript-eslint/no-unused-vars
-      shouldHandleError: (error): boolean => {
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+      shouldHandleError: (error: any): boolean => {
         // here we can dd logic to decide if we want to send the error to Sentry, like filtering out 404s
+        if (isClientError(error)) return false;
         return true;
       },
     })
