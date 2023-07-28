@@ -1,11 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
-// import { MetriportMedicalApi } from "@metriport/api";
+// import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { patients } from "./patients";
 import axios from "axios";
-import * as fs from "fs";
-import { janeDocs } from "./jane";
+// import * as fs from "fs";
+// import { janeDocs } from "./jane";
+import { ollieDocs } from "./ollie";
 
 export type Doc = {
   index: number;
@@ -25,8 +26,7 @@ const stagingTestAccountAPIKey = getEnvVarOrFail("COMMONWELL_ORG_PRIVATE_KEY");
 const orgId = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_ORGANIZATION_ID");
 const orgName = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_ORGANIZATION_NAME");
 
-// const stagingFhirUrl = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_FHIR_URL");
-// const docUrl = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_URL");
+const docUrl = getEnvVarOrFail("DOCUMENT_CONTRIBUTION_URL");
 const stagingApiUrl = getEnvVarOrFail("METRIPORT_API_URL");
 
 async function main() {
@@ -38,13 +38,9 @@ async function main() {
     // const createdPatient = await metriportAPI.createPatient(patient, facilityId);
     // console.log(`Created patient ${JSON.stringify(createdPatient, null, 2)}`);
 
-    if (patient.firstName === "Jane") {
-      janeDocs.forEach(async (doc: Doc) => {
-        await addDocumentRefAndBinaryToFHIRServer(
-          "2.16.840.1.113883.3.9621.5.109.2.102",
-          "jane",
-          doc
-        );
+    if (patient.firstName === "Ollie") {
+      ollieDocs.forEach(async (doc: Doc) => {
+        await addDocumentRefAndBinaryToFHIRServer("2.16.840.1.113883.3.9621.5.109.2.105", doc);
       });
     }
   }
@@ -63,7 +59,6 @@ function getEnvVarOrFail(varName: string): string {
 
 async function addDocumentRefAndBinaryToFHIRServer(
   patientId: string,
-  name: string,
   doc: Doc
 ): Promise<{ docRefId: string; binaryId: string }> {
   const fhirApi = axios.create({
@@ -75,22 +70,10 @@ async function addDocumentRefAndBinaryToFHIRServer(
   });
 
   const binaryId = `${orgId}.${doc.index}`;
-  const contents = fs.readFileSync(`./${name}/${doc.fileName}`);
-  const payload = Buffer.from(contents).toString("base64");
-  const binaryData = `{
-    "resourceType": "Binary",
-    "id": "${binaryId}",
-    "contentType": "application/xml",
-    "data": "${payload}"
-  }`;
-
-  console.log("1", binaryId);
-
-  await fhirApi.put(`/Binary/${binaryId}`, JSON.parse(binaryData));
-
-  console.log("2");
-
   const docRefId = `${orgId}.${doc.index}`;
+
+  console.log(docRefId);
+
   const data = `{
     "resourceType": "DocumentReference",
     "id": "${docRefId}",
@@ -141,7 +124,7 @@ async function addDocumentRefAndBinaryToFHIRServer(
         {
             "attachment": {
                 "contentType": "application/xml",
-                "url": "https://api.staging.metriport.com/oauth/fhir/Binary/${binaryId}"
+                "url": "${docUrl}${doc.fileName}"
             }
         }
     ],
@@ -158,7 +141,6 @@ async function addDocumentRefAndBinaryToFHIRServer(
 }`;
 
   await fhirApi.put(`/DocumentReference/${docRefId}`, JSON.parse(data));
-  console.log("3");
 
   return { docRefId, binaryId };
 }
