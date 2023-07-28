@@ -20,5 +20,10 @@ export const organizationCreateSchema = z.object({
 });
 export type OrganizationCreate = z.infer<typeof organizationCreateSchema>;
 
-export const organizationSchema = organizationCreateSchema.merge(baseUpdateSchema);
+export const organizationSchema = z
+  .object({
+    oid: z.string(),
+  })
+  .merge(organizationCreateSchema)
+  .merge(baseUpdateSchema);
 export type Organization = z.infer<typeof organizationSchema>;

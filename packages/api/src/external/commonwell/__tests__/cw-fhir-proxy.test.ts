@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
 import NotFoundError from "../../../errors/not-found";
+import { uuidv7 } from "../../../shared/uuid-v7";
 import { processBinary, processDocReference } from "../cw-fhir-proxy";
 import * as helper from "../cw-fhir-proxy-helpers";
 
@@ -34,7 +35,7 @@ describe("cw-fhir-proxy", () => {
       jest.clearAllMocks();
     });
     const makeQuery = (patientParamName: string, patientParamValue: string) =>
-      `?_include=DocumentReference:patient` +
+      `_include=DocumentReference:patient` +
       `&_include=DocumentReference:subject` +
       `&_include=DocumentReference:authenticator` +
       `&_include=DocumentReference:author` +
@@ -61,7 +62,7 @@ describe("cw-fhir-proxy", () => {
     it("returns expected when URL has tenant", async () => {
       const tenant = "1541456f-6734-42a5-9eb7-ef0d98b10d49";
       const orgId = "2.16.840.1.113883.3.9621.5.106";
-      const patientId = "2.16.840.1.113883.3.9621.5.106.2.102";
+      const patientId = uuidv7();
       const path = `/DocumentReference`;
       const inputPatientParam = "patient.identifier";
       const expectedPatientParam = "patient";

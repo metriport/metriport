@@ -19,7 +19,7 @@ type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
 export async function organizationToCommonwell(
   org: Organization
 ): Promise<CWOrganizationWithOrgId> {
-  const cwId = OID_PREFIX.concat(org.id);
+  const cwId = OID_PREFIX.concat(org.oid);
   return {
     name: org.data.name,
     type: org.data.type,

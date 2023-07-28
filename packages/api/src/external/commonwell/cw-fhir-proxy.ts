@@ -54,12 +54,13 @@ export async function processDocReference(path: string, queryString?: string): P
   if (!queryString) throw new BadRequestError(`Missing query string`);
   const queryParams = new URLSearchParams(queryString);
   const patientIdRaw = queryParams.get("patient.identifier")?.split("|") ?? [];
-  const orgId = (patientIdRaw[0] ?? "").replace("urn:oid:", "");
-  const org = await getOrgOrFail(orgId);
+  const orgOID = (patientIdRaw[0] ?? "").replace("urn:oid:", "");
+  const patientId = (patientIdRaw[1] ?? "").replace("urn:oid:", "").replace("urn:uuid:", "");
+  const org = await getOrgOrFail(orgOID);
   const tenant = org.cxId;
-  const updatedPath = path;
-  const updatedQuery = queryString ? updateQueryString(path, queryString) : undefined;
-  return { updatedPath, updatedQuery, tenant };
+  queryParams.set("patient.identifier", patientId);
+  const updatedQuery = queryParams ? updateQueryString(path, queryParams.toString()) : undefined;
+  return { updatedPath: path, updatedQuery, tenant };
 }
 
 export async function process(path: string, queryString?: string): Promise<MainType> {
@@ -68,6 +69,9 @@ export async function process(path: string, queryString?: string): Promise<MainT
   throw new BadRequestError(`Unsupported resource type`);
 }
 
+/**
+ * Processes the request before sending it the FHIR server.
+ */
 export async function proxyReqPathResolver(req: Request) {
   console.log(`ORIGINAL HEADERS: `, JSON.stringify(req.headers));
   console.log(`ORIGINAL URL: `, req.url);
@@ -84,6 +88,9 @@ export async function proxyReqPathResolver(req: Request) {
   return updatedURL;
 }
 
+/**
+ * Processes the response from the FHIR server before sending it back to CW.
+ */
 export async function userResDecorator(
   proxyRes: IncomingMessage, // eslint-disable-line @typescript-eslint/no-unused-vars
   proxyResData: any,

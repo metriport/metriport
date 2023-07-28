@@ -158,7 +158,7 @@ export async function internalGetDocuments({
   };
 
   const orgName = organization.data.name;
-  const orgId = organization.id;
+  const orgId = organization.oid;
   const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
   const commonWell = makeCommonWellAPI(orgName, oid(orgId));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
