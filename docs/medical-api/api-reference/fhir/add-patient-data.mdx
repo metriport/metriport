@@ -69,12 +69,6 @@ const consolidatedData = await metriportClient.createPatientConsolidated("PATIEN
   "resourceType": "Bundle",
   "id": "12345-1234-1234-1234",
   "type": "transaction-response",
-  "link": [
-    {
-      "relation": "self",
-      "url": "https://fhir.metriport.com/oauth/fhir/123412341234/1234123412341234"
-    }
-  ],
   "entry": [
     {
       "response": {
@@ -91,7 +85,7 @@ const consolidatedData = await metriportClient.createPatientConsolidated("PATIEN
               "details": {
                 "coding": [
                   {
-                    "system": "https://hapifhir.io/fhir/CodeSystem/hapi-fhir-storage-response-code",
+                    "system": "https://public.metriport.com/fhir/StructureDefinition/CodeSystem/operation-outcome",
                     "code": "SUCCESSFUL_CREATE",
                     "display": "Create succeeded."
                   }
