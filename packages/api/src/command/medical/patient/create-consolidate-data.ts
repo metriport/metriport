@@ -1,6 +1,6 @@
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { DATA_SOURCE_EXTENSION_URL } from "../../../external/fhir/shared/extensions/extension";
+import { OPERATION_OUTCOME_EXTENSION_URL } from "../../../external/fhir/shared/extensions/extension";
 import { Util } from "../../../shared/util";
 
 export async function createOrUpdateConsolidatedPatientData({
@@ -118,7 +118,7 @@ const replaceCodingSystem = (resourceEntry: BundleEntry): BundleEntry => {
                     coding: issue.details?.coding?.map(coding => {
                       return {
                         ...coding,
-                        system: DATA_SOURCE_EXTENSION_URL,
+                        system: OPERATION_OUTCOME_EXTENSION_URL,
                       };
                     }),
                   },
