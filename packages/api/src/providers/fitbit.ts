@@ -1,6 +1,7 @@
 import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api-sdk";
 
 import axios from "axios";
+import status from "http-status";
 import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";
 import { mapToBody } from "../mappings/fitbit/body";
@@ -346,9 +347,9 @@ export class Fitbit extends Provider implements OAuth2 {
     );
   }
 
-  async postAuth(token: string, userId?: string) {
+  async postAuth(token: string) {
     const accessToken = JSON.parse(token).access_token;
-
+    const fitbitUserId = JSON.parse(token).user_id;
     const scopes = JSON.parse(token).scope;
 
     const subscriptionTypes: Record<FitbitScopes, FitbitCollectionTypesWithoutUserRevokedAccess> = {
@@ -358,13 +359,14 @@ export class Fitbit extends Provider implements OAuth2 {
       [FitbitScopes.weight]: "body",
     };
 
-    const subscriptionId = userId;
-
+    const subscriptionId = fitbitUserId;
+    const activeSubscriptions = await this.checkExistingSubscriptions(accessToken);
     // TODO #652: Implement userRevokedAccess
 
+    // Creates new WH subscriptions based on the user's selected scopes, if those subscriptions don't already exist for this Fitbit user
     await Promise.all(
       Object.entries(subscriptionTypes).map(async ([key, subscriptionType]) => {
-        if (scopes.includes(key)) {
+        if (scopes.includes(key) && !activeSubscriptions.includes(subscriptionType)) {
           const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}-${subscriptionType}.json`;
           this.createSubscription(subscriptionUrl, accessToken);
         }
@@ -372,7 +374,26 @@ export class Fitbit extends Provider implements OAuth2 {
     );
   }
 
-  // Creates a subscription for all or one specific collectionType
+  // Fetches existing subscriptions for the Fitbit user, and returns an array of subscribed collectionTypes
+  async checkExistingSubscriptions(accessToken: string): Promise<string[]> {
+    const url = `${Fitbit.URL}/${Fitbit.API_PATH}/apiSubscriptions.json`;
+    const resp = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const subscriptions: string[] = [];
+    if (resp.status === status.OK) {
+      if (resp.data.apiSubscriptions) {
+        resp.data.apiSubscriptions.forEach((sub: { collectionType: string }) => {
+          subscriptions.push(sub.collectionType);
+        });
+      }
+    }
+    return subscriptions;
+  }
+
+  // Creates a WH subscription for the collectionTypes specified in the url
   async createSubscription(url: string, accessToken: string): Promise<void> {
     try {
       const resp = await axios.post(url, null, {
@@ -382,14 +403,18 @@ export class Fitbit extends Provider implements OAuth2 {
           "Content-Length": 0,
         },
       });
-      console.log("Fitbit WH subscription created successfully.", resp.data);
+      console.log(
+        "Fitbit WH subscription created successfully with status:",
+        resp.status,
+        "and data:",
+        resp.data
+      );
     } catch (error) {
-      console.log("createSubscription for Fitbit failed.");
+      console.log("createSubscription for Fitbit failed");
       capture.error(error, {
         extra: { context: `fitbit.createSubscription`, url },
       });
-
-      throw new Error(`WH subscription failed Fitbit`, { cause: error });
+      throw new Error("Failed WH subscription for Fitbit", { cause: error });
     }
   }
 }
