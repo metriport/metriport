@@ -1,7 +1,17 @@
-import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api-sdk";
+import {
+  Activity,
+  Biometrics,
+  Body,
+  Nutrition,
+  ProviderSource,
+  Sleep,
+  User,
+} from "@metriport/api-sdk";
 
 import axios from "axios";
 import status from "http-status";
+import { getConnectedUsersByTokenOrFail } from "../command/connected-user/get-connected-user";
+import { sendProviderDisconnected } from "../command/webhook/devices";
 import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";
 import { mapToBody } from "../mappings/fitbit/body";
@@ -347,7 +357,7 @@ export class Fitbit extends Provider implements OAuth2 {
     );
   }
 
-  async postAuth(token: string) {
+  async postAuth(token: string, userId: string) {
     const accessToken = JSON.parse(token).access_token;
     const fitbitUserId = JSON.parse(token).user_id;
     const scopes = JSON.parse(token).scope;
@@ -361,17 +371,75 @@ export class Fitbit extends Provider implements OAuth2 {
 
     const subscriptionId = fitbitUserId;
     const activeSubscriptions = await this.checkExistingSubscriptions(accessToken);
+    await this.revokeTokenFromExistingUser(userId, fitbitUserId, activeSubscriptions, accessToken);
+
     // TODO #652: Implement userRevokedAccess
 
-    // Creates new WH subscriptions based on the user's selected scopes, if those subscriptions don't already exist for this Fitbit user
+    // Creates new WH subscriptions based on the user's selected scopes
     await Promise.all(
       Object.entries(subscriptionTypes).map(async ([key, subscriptionType]) => {
-        if (scopes.includes(key) && !activeSubscriptions.includes(subscriptionType)) {
+        if (scopes.includes(key)) {
           const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}-${subscriptionType}.json`;
           this.createSubscription(subscriptionUrl, accessToken);
         }
       })
     );
+  }
+
+  // Finds existing users connected to this Fitbit account, revokes their tokens and sends WH updates about the disconnections
+  async revokeTokenFromExistingUser(
+    userId: string,
+    fitbitUserId: string,
+    activeSubscriptions: string[],
+    accessToken: string
+  ) {
+    try {
+      if (activeSubscriptions.length > 0) {
+        const connectedUsers = await getConnectedUsersByTokenOrFail(
+          ProviderSource.fitbit,
+          fitbitUserId
+        );
+        await Promise.all(
+          Object.values(connectedUsers).map(async user => {
+            if (user.dataValues.id !== userId) {
+              await this.oauth.revokeLocal(user);
+              await sendProviderDisconnected(user, [ProviderSource.fitbit]);
+            }
+          })
+        );
+        await this.deleteSubscriptions(activeSubscriptions, fitbitUserId, accessToken);
+      }
+    } catch (err) {
+      console.log("Failed to revoke the token of a Fitbit user.", err);
+      capture.error("Failed to revoke the token of a Fitbit user.", {
+        extra: { context: "fitbit.revokeTokenFromExistingUse" },
+      });
+    }
+  }
+
+  // Deletes all WH subscriptions for a user
+  async deleteSubscriptions(
+    activeSubscriptions: string[],
+    fitbitUserId: string,
+    accessToken: string
+  ): Promise<void> {
+    try {
+      await Promise.all(
+        activeSubscriptions.map(async subscriptionType => {
+          const url = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${fitbitUserId}-${subscriptionType}.json`;
+          await axios.delete(url, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+        })
+      );
+    } catch (err) {
+      console.log("Failed to delete existing Fitbit WH subscriptions", err);
+      capture.error("Failed to delete existing Fitbit WH subscriptions", {
+        extra: { context: "fitbit.revokeTokenFromExistingUse" },
+      });
+    }
   }
 
   // Fetches existing subscriptions for the Fitbit user, and returns an array of subscribed collectionTypes
