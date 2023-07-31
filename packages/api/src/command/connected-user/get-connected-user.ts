@@ -80,23 +80,23 @@ export const getConnectedUserByTokenOrFail = async (
 
 export const getConnectedUsersByTokenOrFail = async (
   provider: string,
-  str: string
+  token: string
 ): Promise<ConnectedUser[]> => {
-  const connectedUser = await ConnectedUser.findAll({
+  const connectedUsers = await ConnectedUser.findAll({
     where: {
       providerMap: {
         [provider]: {
           token: {
             // TODO: Find more optimal solution
-            [Op.like]: "%" + str + "%",
+            [Op.like]: "%" + token + "%",
           },
         },
       },
     },
   });
 
-  if (!connectedUser)
+  if (!connectedUsers)
     throw new NotFoundError(`Could not find connected users with str matching token`);
 
-  return connectedUser;
+  return connectedUsers;
 };
