@@ -10,7 +10,10 @@ import {
 
 import axios from "axios";
 import status from "http-status";
-import { getConnectedUsersByTokenOrFail } from "../command/connected-user/get-connected-user";
+import {
+  getConnectedUserOrFail,
+  getConnectedUsersByTokenOrFail,
+} from "../command/connected-user/get-connected-user";
 import { sendProviderDisconnected } from "../command/webhook/devices";
 import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";
@@ -359,9 +362,7 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   async postAuth(token: string, userId: string) {
-    const accessToken = JSON.parse(token).access_token;
-    const fitbitUserId = JSON.parse(token).user_id;
-    const scopes = JSON.parse(token).scope;
+    const { access_token: accessToken, user_id: fitbitUserId, scope: scopes } = JSON.parse(token);
 
     const subscriptionTypes: Record<FitbitScopes, FitbitCollectionTypesWithoutUserRevokedAccess> = {
       [FitbitScopes.activity]: "activities",
@@ -372,7 +373,7 @@ export class Fitbit extends Provider implements OAuth2 {
 
     const subscriptionId = fitbitUserId;
     const activeSubscriptions = await this.checkExistingSubscriptions(accessToken);
-    await this.revokeTokenFromExistingUser(userId, fitbitUserId, activeSubscriptions, accessToken);
+    await this.revokeTokenFromExistingUsers(userId, fitbitUserId, activeSubscriptions, accessToken);
 
     // TODO #652: Implement userRevokedAccess
 
@@ -388,7 +389,7 @@ export class Fitbit extends Provider implements OAuth2 {
   }
 
   // Finds existing users connected to this Fitbit account, revokes their tokens and sends WH updates about the disconnections
-  async revokeTokenFromExistingUser(
+  async revokeTokenFromExistingUsers(
     userId: string,
     fitbitUserId: string,
     activeSubscriptions: string[],
@@ -404,7 +405,11 @@ export class Fitbit extends Provider implements OAuth2 {
           Object.values(connectedUsers).map(async user => {
             if (user.dataValues.id !== userId) {
               await this.oauth.revokeLocal(user);
-              await sendProviderDisconnected(user, [ProviderSource.fitbit]);
+              user = await getConnectedUserOrFail({
+                id: user.id,
+                cxId: user.cxId,
+              });
+              sendProviderDisconnected(user, [ProviderSource.fitbit]);
             }
           })
         );
@@ -413,7 +418,7 @@ export class Fitbit extends Provider implements OAuth2 {
     } catch (err) {
       console.log("Failed to revoke the token of a Fitbit user.", err);
       capture.error("Failed to revoke the token of a Fitbit user.", {
-        extra: { context: "fitbit.revokeTokenFromExistingUse" },
+        extra: { context: "fitbit.revokeTokenFromExistingUsers" },
       });
     }
   }
@@ -438,7 +443,7 @@ export class Fitbit extends Provider implements OAuth2 {
     } catch (err) {
       console.log("Failed to delete existing Fitbit WH subscriptions", err);
       capture.error("Failed to delete existing Fitbit WH subscriptions", {
-        extra: { context: "fitbit.revokeTokenFromExistingUse" },
+        extra: { context: "fitbit.deleteSubscriptions" },
       });
     }
   }
