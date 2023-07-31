@@ -30,6 +30,9 @@ aws ecs update-service \
   --force-new-deployment
 
 # Wait for the service to be stable
-aws ecs wait services-stable \
-  --cluster "$ECS_CLUSTER" \
-  --service "$ECS_SERVICE"
+until aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE"
+do
+    echo "'aws ecs wait services-stable' timed out, trying again in 5s..."
+    sleep 5
+done
+echo -e "Done."
