@@ -30,7 +30,7 @@ export const humanNameSchema = z.object({
   family: z.array(z.string()),
   given: z.array(z.string()).optional(),
   prefix: z.string().or(z.array(z.string())).optional().nullable(),
-  suffix: z.string().optional().nullable(),
+  suffix: z.string().or(z.array(z.string())).optional().nullable(),
   period: periodSchema.optional().nullable(),
 });
 
