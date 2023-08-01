@@ -12,6 +12,7 @@ import { linkCreateSchema } from "./schemas/link";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { processAsyncError } from "../../errors";
 
 const router = Router();
 
@@ -45,7 +46,11 @@ router.post(
           contact: patient.data.contact,
           personalIdentifiers: patient.data.personalIdentifiers,
         };
-        await updatePatient(patientUpdate);
+        const updatedPatient = await updatePatient(patientUpdate);
+        // Intentionally asynchronous - it takes too long to perform
+        cwCommands.patient
+          .update(updatedPatient, facility.id)
+          .catch(processAsyncError(`cw.patient.update`));
       }
 
       return res.sendStatus(status.OK);
