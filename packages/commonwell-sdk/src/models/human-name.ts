@@ -23,6 +23,7 @@ export const nameUseCodesSchema = z.enum(Object.keys(NameUseCodes) as [string, .
 // names, the different parts may or may not be imbued with some implicit meaning; various
 // cultures associate different importance with the name parts and the degree to which systems
 // must care about name parts around the world varies widely.
+//
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.10 HumanName)
 export const humanNameSchema = z.object({
   use: nameUseCodesSchema.optional().nullable(),
