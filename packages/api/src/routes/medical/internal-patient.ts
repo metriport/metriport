@@ -1,18 +1,19 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import { getFacilities } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { getPatients } from "../../command/medical/patient/get-patient";
+import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
 import cwCommands from "../../external/commonwell";
+import { findDuplicatedPersons } from "../../external/commonwell/patient-duplicates";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getETag, getFromParamsOrFail, getFromQueryOrFail } from "../util";
 import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
-import { getFacilities } from "../../command/medical/facility/get-facility";
-import { getPatients } from "../../command/medical/patient/get-patient";
-import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
-import { processAsyncError } from "../../errors";
 
 const router = Router();
 
@@ -52,9 +53,8 @@ router.post(
           .update(updatedPatient, facility.id)
           .catch(processAsyncError(`cw.patient.update`));
       }
-
-      return res.sendStatus(status.OK);
     }
+    return res.sendStatus(status.OK);
   })
 );
 
@@ -173,6 +173,23 @@ router.get(
     links.currentLinks = [...cwConvertedLinks.currentLinks];
 
     return res.status(status.OK).json(links);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/duplicates
+ * *
+ * @param req.query.cxId The customer ID (optional, defaults to all customers).
+ *
+ * @return list of cxs with patients that have duplicated persons, along w/ each
+ *         person, who enrolled and when
+ */
+router.get(
+  "/duplicates",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").optional();
+    const result = await findDuplicatedPersons(cxId);
+    return res.status(status.OK).json(result);
   })
 );
 
