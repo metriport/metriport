@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-import * as dotenv from "dotenv";
 import * as updateProviderDataFile from "../../command/connected-user/save-connected-user";
 import * as getUserTokenFile from "../../command/cx-user/get-user-token";
 import * as saveUserTokenFile from "../../command/cx-user/save-user-token";
@@ -12,7 +10,6 @@ import {
   userTokenMocked,
   userTokenModified,
 } from "./deregister-input";
-dotenv.config({ path: ".env.test" });
 
 let getUserTokenByUATMock: jest.SpyInstance;
 let saveUserTokenMock: jest.SpyInstance;
