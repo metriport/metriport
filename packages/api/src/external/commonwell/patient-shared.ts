@@ -32,7 +32,7 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
 
 type SimplifiedPersonalId = { key: string; system: string };
 
-type FindOrCreatePersonResponse = { personId: string; person: CommonwellPerson } | undefined;
+export type FindOrCreatePersonResponse = { personId: string; person: CommonwellPerson } | undefined;
 
 export async function findOrCreatePerson({
   commonWell,

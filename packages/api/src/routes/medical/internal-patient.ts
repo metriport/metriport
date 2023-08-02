@@ -10,6 +10,7 @@ import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
 import cwCommands from "../../external/commonwell";
+import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
 import { findDuplicatedPersons } from "../../external/commonwell/patient-duplicates";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getETag, getFromParamsOrFail, getFromQueryOrFail } from "../util";
@@ -192,6 +193,23 @@ router.get(
     const result = await findDuplicatedPersons(cxId);
     console.log(`Result: ${stringify(result)}`);
     return res.status(status.OK).json(result);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/recreate-at-hies
+ *
+ * Recreates patients at HIEs.
+ *
+ * @param req.query.cxId The customer ID (optional, default to all cxs).
+ * @return 200 OK
+ */
+router.post(
+  "/recreate-at-hies",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").optional();
+    const resultCW = await recreatePatientsAtCW(cxId);
+    return res.status(status.OK).json(resultCW);
   })
 );
 
