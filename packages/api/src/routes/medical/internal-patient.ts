@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import stringify from "json-stringify-safe";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatients } from "../../command/medical/patient/get-patient";
@@ -189,6 +190,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const result = await findDuplicatedPersons(cxId);
+    console.log(`Result: ${stringify(result)}`);
     return res.status(status.OK).json(result);
   })
 );
