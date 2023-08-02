@@ -1,14 +1,14 @@
 import { getId } from "@metriport/commonwell-sdk";
 import stringify from "json-stringify-safe";
 import { chunk, groupBy } from "lodash";
-import { Patient, PatientModel } from "../../models/medical/patient";
-import { filterTruthy } from "../../shared/filter-map-utils";
-import { capture } from "../../shared/notifications";
-import { oid } from "../../shared/oid";
-import { Util } from "../../shared/util";
-import { MedicalDataSource } from "../index";
-import { makeCommonWellAPI, organizationQueryMeta } from "./api";
-import { PatientDataCommonwell, getPatientData } from "./patient-shared";
+import { Patient, PatientModel } from "../../../models/medical/patient";
+import { filterTruthy } from "../../../shared/filter-map-utils";
+import { capture } from "../../../shared/notifications";
+import { oid } from "../../../shared/oid";
+import { Util } from "../../../shared/util";
+import { MedicalDataSource } from "../../index";
+import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { PatientDataCommonwell, getPatientData } from "../patient-shared";
 
 const MAX_QUERIES_IN_PARALLEL = 10;
 
