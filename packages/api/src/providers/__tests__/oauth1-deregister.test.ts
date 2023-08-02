@@ -1,3 +1,5 @@
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.test" });
 import * as updateProviderDataFile from "../../command/connected-user/save-connected-user";
 import * as getUserTokenFile from "../../command/cx-user/get-user-token";
 import * as saveUserTokenFile from "../../command/cx-user/save-user-token";
