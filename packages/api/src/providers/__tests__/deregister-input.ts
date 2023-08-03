@@ -1,32 +1,23 @@
+import { createUserToken } from "../../domain/__tests__/user-token";
 import { UserToken } from "../../domain/user-token";
-import { PROVIDER_GARMIN } from "../../shared/constants";
-import { OAuth1, OAuth1DefaultImpl } from "../oauth1";
-import Provider, { ConsumerHealthDataType } from "../provider";
+import { v4 as uuidv4 } from "uuid";
 
-function createUserToken(token: Partial<UserToken>): UserToken {
-  return UserToken.build({
-    token: token.token || "",
-    cxId: token.cxId || "",
-    userId: token.userId || "",
-    expiryTime: token.expiryTime || 0,
-    oauthRequestToken: token.oauthRequestToken || "",
-    oauthRequestSecret: token.oauthRequestSecret || "",
-    oauthUserAccessToken: token.oauthUserAccessToken || "",
-    oauthUserAccessSecret: token.oauthUserAccessSecret || "",
-  });
-}
+const userId = uuidv4();
+const userId_2 = uuidv4();
+const cxId = uuidv4();
+const cxId_2 = uuidv4();
 
 const commonUserAttributes = {
   token: "connect_token",
-  userId: "user_id",
-  expiryTime: 1690851486,
+  expiryTime: getPastTimestamp(),
   oauthRequestToken: "",
   oauthRequestSecret: "",
 };
 
 export const userTokenMocked: UserToken = {
   ...commonUserAttributes,
-  cxId: "1234",
+  userId,
+  cxId,
   oauthUserAccessToken: "some_uat_string",
   oauthUserAccessSecret: "some_ua_secret_string",
 
@@ -35,9 +26,10 @@ export const userTokenMocked: UserToken = {
   },
 };
 
-export const userTokenModified: UserToken = {
+export const updatedUserToken: UserToken = {
   ...commonUserAttributes,
-  cxId: "1234",
+  userId,
+  cxId,
   oauthUserAccessToken: undefined,
   oauthUserAccessSecret: undefined,
 
@@ -48,7 +40,8 @@ export const userTokenModified: UserToken = {
 
 export const anotherUserTokenMocked: UserToken = {
   ...commonUserAttributes,
-  cxId: "4321",
+  userId: userId_2,
+  cxId: cxId_2,
   oauthUserAccessToken: "some_uat_string",
   oauthUserAccessSecret: "some_ua_secret_string",
 
@@ -57,9 +50,10 @@ export const anotherUserTokenMocked: UserToken = {
   },
 };
 
-export const anotherUserTokenMockedModified: UserToken = {
+export const anotherUserTokenModified: UserToken = {
   ...commonUserAttributes,
-  cxId: "4321",
+  userId: userId_2,
+  cxId: cxId_2,
   oauthUserAccessToken: undefined,
   oauthUserAccessSecret: undefined,
 
@@ -69,16 +63,16 @@ export const anotherUserTokenMockedModified: UserToken = {
 };
 
 export const testUser = {
-  cxId: "1234",
+  cxId,
   providerMap: {
     garmin: {
-      token: userTokenMocked.oauthUserAccessToken,
+      token: "some_uat_string",
     },
   },
 };
 
 export const thirdTestUser = {
-  cxId: "1234",
+  cxId,
   providerMap: {
     garmin: {
       token: "crazy_token_string",
@@ -87,34 +81,14 @@ export const thirdTestUser = {
 };
 
 export const testUserModified = {
-  cxId: "1234",
+  cxId,
   providerMap: {},
 };
 
-export class TestGarmin extends Provider implements OAuth1 {
-  constructor(
-    private readonly oauth: OAuth1 = new OAuth1DefaultImpl(PROVIDER_GARMIN, "", "", "", "", "")
-  ) {
-    super({
-      // All disabled for synchronous mode
-      [ConsumerHealthDataType.Activity]: false,
-      [ConsumerHealthDataType.Body]: false,
-      [ConsumerHealthDataType.Biometrics]: false,
-      [ConsumerHealthDataType.Nutrition]: false,
-      [ConsumerHealthDataType.Sleep]: false,
-      [ConsumerHealthDataType.User]: false,
-    });
-  }
+function getPastTimestamp(): number {
+  const currentDate = new Date();
+  const pastDate = new Date(currentDate);
+  pastDate.setDate(currentDate.getDate() - 1);
 
-  async processStep1(token: string) {
-    return this.oauth.processStep1(token);
-  }
-
-  async processStep2(userToken: UserToken, oauth_verifier: string) {
-    return this.oauth.processStep2(userToken, oauth_verifier);
-  }
-
-  async deregister(userAccessTokens: string[], cxId?: string): Promise<void> {
-    return this.oauth.deregister(userAccessTokens, cxId);
-  }
+  return Math.floor(pastDate.getTime() / 1000);
 }

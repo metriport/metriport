@@ -161,24 +161,37 @@ export class OAuth1DefaultImpl implements OAuth1 {
     return { oauth_token, oauth_token_secret };
   }
 
+  /**
+   * Deregisters all users with the given UATs. Could be used to revoke tokens from all customers or a specific one
+   *
+   * @param {string[]} userAccessTokens list of token strings
+   * @param {string} cxId customer ID to revoke the token for a specific customer only
+   */
   async deregister(userAccessTokens: string[], cxId?: string): Promise<void> {
     for (const oauthUserAccessToken of userAccessTokens) {
       const userTokenList = await getUserTokenByUAT({ oauthUserAccessToken });
       for (const userToken of userTokenList) {
         // DynamoDB (Webhook and auth)
-        if (!cxId || cxId === userToken.cxId) {
-          capture.setUser({ id: userToken.userId });
-          const updatedUserToken = userToken.clone();
-          updatedUserToken.oauthUserAccessToken = undefined;
-          updatedUserToken.oauthUserAccessSecret = undefined;
-          await saveUserToken(updatedUserToken);
+        try {
+          if (!cxId || cxId === userToken.cxId) {
+            capture.setUser({ id: userToken.cxId });
+            const updatedUserToken = userToken.clone();
+            updatedUserToken.oauthUserAccessToken = undefined;
+            updatedUserToken.oauthUserAccessSecret = undefined;
+            await saveUserToken(updatedUserToken);
 
-          // Postgres (app standard)
-          await updateProviderData({
-            id: userToken.userId,
-            cxId: userToken.cxId,
-            provider: this.providerName,
-            providerItem: undefined,
+            // Postgres (app standard)
+            await updateProviderData({
+              id: userToken.userId,
+              cxId: userToken.cxId,
+              provider: this.providerName,
+              providerItem: undefined,
+            });
+          }
+        } catch (error) {
+          console.log("OAuth1 deregester failed", error);
+          capture.error("OAuth1 deregister failed", {
+            extra: { context: `oauth1.deregister`, error },
           });
         }
       }
