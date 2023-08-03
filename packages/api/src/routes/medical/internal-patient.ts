@@ -11,7 +11,7 @@ import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
 import cwCommands from "../../external/commonwell";
 import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
-import { findDuplicatedPersons } from "../../external/commonwell/patient-duplicates";
+import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getETag, getFromParamsOrFail, getFromQueryOrFail } from "../util";
 import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
