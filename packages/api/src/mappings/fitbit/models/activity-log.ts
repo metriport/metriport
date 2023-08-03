@@ -89,8 +89,8 @@ export type FitbitActivityLogs = z.infer<typeof fitbitActivityLogResp>;
 
 export interface HeartRateZone {
   caloriesOut?: number | null;
-  max: number;
-  min: number;
-  minutes: number;
-  name: string;
+  max?: number | null;
+  min?: number | null;
+  minutes?: number | null;
+  name?: string | null;
 }

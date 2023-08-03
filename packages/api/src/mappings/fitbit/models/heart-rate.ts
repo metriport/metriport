@@ -8,24 +8,24 @@ export const fitbitHeartRateResp = z
       customHeartRateZones: z
         .array(
           z.object({
-            caloriesOut: z.number(),
-            max: z.number(),
-            min: z.number(),
-            minutes: z.number(),
-            name: z.string(),
+            caloriesOut: z.number().nullish(),
+            max: z.number().nullish(),
+            min: z.number().nullish(),
+            minutes: z.number().nullish(),
+            name: z.string().nullish(),
           })
         )
         .optional(),
       heartRateZones: z.array(
         z.object({
-          caloriesOut: z.number(),
-          max: z.number(),
-          min: z.number(),
-          minutes: z.number(),
-          name: z.string(),
+          caloriesOut: z.number().nullish(),
+          max: z.number().nullish(),
+          min: z.number().nullish(),
+          minutes: z.number().nullish(),
+          name: z.string().nullish(),
         })
       ),
-      restingHeartRate: z.number().nullable(),
+      restingHeartRate: z.number().nullish(),
     }),
   })
   .optional();
