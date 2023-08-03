@@ -135,8 +135,13 @@ export const findMinMaxHeartRate = (heartrateZones: HeartRateZone[]) => {
   );
   const getHeartRates = acceptableHeartRateZones.reduce((acc: number[], heartRate) => {
     if (heartRate.name !== "Out of Range") {
-      acc.push(heartRate.max);
-      acc.push(heartRate.min);
+      if (heartRate.max) {
+        acc.push(heartRate.max);
+      }
+
+      if (heartRate.min) {
+        acc.push(heartRate.min);
+      }
     }
 
     return acc;
