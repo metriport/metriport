@@ -40,9 +40,9 @@ export const create = async (
     }
 
     const orgName = organization.data.name;
-    const orgId = organization.oid;
+    const orgOID = organization.oid;
     const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-    commonWell = makeCommonWellAPI(orgName, oid(orgId));
+    commonWell = makeCommonWellAPI(orgName, oid(orgOID));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
     const cwPatient = await commonWell.getPatient(queryMeta, cwPatientId);
