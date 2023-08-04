@@ -175,6 +175,7 @@ export class OAuth1DefaultImpl implements OAuth1 {
         try {
           if (!cxId || cxId === userToken.cxId) {
             capture.setUser({ id: userToken.cxId });
+            capture.setExtra({ id: userToken.userId });
             const updatedUserToken = userToken.clone();
             updatedUserToken.oauthUserAccessToken = undefined;
             updatedUserToken.oauthUserAccessSecret = undefined;
@@ -189,9 +190,9 @@ export class OAuth1DefaultImpl implements OAuth1 {
             });
           }
         } catch (error) {
-          console.log("OAuth1 deregester failed", error);
-          capture.error("OAuth1 deregister failed", {
-            extra: { context: `oauth1.deregister`, error },
+          console.log(`OAuth1 deregester failed. Cause: ${error}`);
+          capture.error(error, {
+            extra: { context: `oauth1.deregister`, error, userToken },
           });
         }
       }
