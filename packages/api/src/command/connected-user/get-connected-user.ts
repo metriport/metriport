@@ -95,7 +95,7 @@ export const getConnectedUsersByTokenOrFail = async (
     },
   });
 
-  if (!connectedUsers)
+  if (!connectedUsers.length)
     throw new NotFoundError(`Could not find connected users with str matching token`);
 
   return connectedUsers;
