@@ -14,7 +14,7 @@ const commonUserAttributes = {
   oauthRequestSecret: "",
 };
 
-export const userTokenMocked: UserToken = {
+export const userToken_1: UserToken = {
   ...commonUserAttributes,
   userId,
   cxId,
@@ -26,7 +26,7 @@ export const userTokenMocked: UserToken = {
   },
 };
 
-export const updatedUserToken: UserToken = {
+export const userToken_1_upd: UserToken = {
   ...commonUserAttributes,
   userId,
   cxId,
@@ -38,7 +38,7 @@ export const updatedUserToken: UserToken = {
   },
 };
 
-export const anotherUserTokenMocked: UserToken = {
+export const userToken_2: UserToken = {
   ...commonUserAttributes,
   userId: userId_2,
   cxId: cxId_2,
@@ -50,7 +50,7 @@ export const anotherUserTokenMocked: UserToken = {
   },
 };
 
-export const anotherUserTokenModified: UserToken = {
+export const userToken_2_upd: UserToken = {
   ...commonUserAttributes,
   userId: userId_2,
   cxId: cxId_2,
@@ -62,7 +62,7 @@ export const anotherUserTokenModified: UserToken = {
   },
 };
 
-export const testUser = {
+export const testUser_1 = {
   cxId,
   providerMap: {
     garmin: {
@@ -71,18 +71,30 @@ export const testUser = {
   },
 };
 
-export const thirdTestUser = {
+export const testUser_1_upd = {
   cxId,
+  providerMap: {},
+};
+
+export const testUser_2 = {
+  cxId: cxId_2,
   providerMap: {
     garmin: {
-      token: "crazy_token_string",
+      token: "crazy_uat_string",
+    },
+    fitbit: {
+      token: "qweasdzxc",
     },
   },
 };
 
-export const testUserModified = {
-  cxId,
-  providerMap: {},
+export const testUser_2_upd = {
+  cxId: cxId_2,
+  providerMap: {
+    fitbit: {
+      token: "qweasdzxc",
+    },
+  },
 };
 
 function getPastTimestamp(): number {

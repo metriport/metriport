@@ -57,6 +57,10 @@ export const capture = {
     Sentry.setUser(user);
   },
 
+  setExtra: (user: UserData): void => {
+    Sentry.setExtra("userId", user.id);
+  },
+
   /**
    * Captures an exception event and sends it to Sentry.
    *

@@ -5,47 +5,18 @@ dotenv.config({ path: ".env.test" });
 import * as updateProviderDataFile from "../../command/connected-user/save-connected-user";
 import * as getUserTokenFile from "../../command/cx-user/get-user-token";
 import * as saveUserTokenFile from "../../command/cx-user/save-user-token";
-import { UserToken } from "../../domain/user-token";
 import { PROVIDER_GARMIN } from "../../shared/constants";
-import { OAuth1, OAuth1DefaultImpl } from "../oauth1";
-import Provider, { ConsumerHealthDataType } from "../provider";
+import { OAuth1DefaultImpl } from "../oauth1";
 import {
-  anotherUserTokenMocked,
-  anotherUserTokenModified,
-  testUser,
-  testUserModified,
-  thirdTestUser,
-  userTokenMocked,
-  updatedUserToken,
+  userToken_2,
+  userToken_2_upd,
+  testUser_1,
+  testUser_1_upd,
+  testUser_2,
+  userToken_1_upd,
+  userToken_1,
+  testUser_2_upd,
 } from "./deregister-input";
-
-class TestGarmin extends Provider implements OAuth1 {
-  constructor(
-    private readonly oauth: OAuth1 = new OAuth1DefaultImpl(PROVIDER_GARMIN, "", "", "", "", "")
-  ) {
-    super({
-      // All disabled for synchronous mode
-      [ConsumerHealthDataType.Activity]: false,
-      [ConsumerHealthDataType.Body]: false,
-      [ConsumerHealthDataType.Biometrics]: false,
-      [ConsumerHealthDataType.Nutrition]: false,
-      [ConsumerHealthDataType.Sleep]: false,
-      [ConsumerHealthDataType.User]: false,
-    });
-  }
-
-  async processStep1(token: string) {
-    return this.oauth.processStep1(token);
-  }
-
-  async processStep2(userToken: UserToken, oauth_verifier: string) {
-    return this.oauth.processStep2(userToken, oauth_verifier);
-  }
-
-  async deregister(userAccessTokens: string[], cxId?: string): Promise<void> {
-    return this.oauth.deregister(userAccessTokens, cxId);
-  }
-}
 
 let getUserTokenByUATMock: jest.SpyInstance;
 let saveUserTokenMock: jest.SpyInstance;
@@ -58,7 +29,7 @@ beforeEach(() => {
   updateProviderDataMock = jest.spyOn(updateProviderDataFile, "updateProviderData");
 });
 
-const testGarmin = new TestGarmin();
+const testGarmin = new OAuth1DefaultImpl(PROVIDER_GARMIN, "", "", "", "", "");
 
 describe("oauth1-deregister", () => {
   it("handles empty uat array", async () => {
@@ -70,68 +41,164 @@ describe("oauth1-deregister", () => {
   });
 
   it("deregisters users if no cxid provided", async () => {
-    getUserTokenByUATMock.mockReturnValueOnce([userTokenMocked, anotherUserTokenMocked]);
+    getUserTokenByUATMock.mockReturnValueOnce([userToken_1, userToken_2]);
 
-    saveUserTokenMock.mockReturnValueOnce(updatedUserToken);
-    saveUserTokenMock.mockReturnValueOnce(anotherUserTokenModified);
+    saveUserTokenMock.mockReturnValueOnce(userToken_1_upd);
+    saveUserTokenMock.mockReturnValueOnce(userToken_2_upd);
 
-    updateProviderDataMock.mockReturnValue(testUserModified);
+    updateProviderDataMock.mockReturnValue(testUser_1_upd);
 
-    await testGarmin.deregister([testUser.providerMap.garmin.token]);
+    await testGarmin.deregister([testUser_1.providerMap.garmin.token]);
 
     expect(getUserTokenByUATMock).toHaveBeenCalledTimes(1);
     expect(getUserTokenByUATMock).toHaveBeenCalledWith({
-      oauthUserAccessToken: testUser.providerMap.garmin.token,
+      oauthUserAccessToken: testUser_1.providerMap.garmin.token,
     });
+
     expect(saveUserTokenMock).toHaveBeenCalledTimes(2);
+
+    const firstToken = saveUserTokenMock.mock.calls[0][0];
+    const secondToken = saveUserTokenMock.mock.calls[1][0];
+
+    expect(firstToken).toEqual(
+      expect.objectContaining({
+        oauthUserAccessToken: undefined,
+        oauthUserAccessSecret: undefined,
+      })
+    );
+    expect(secondToken).toEqual(
+      expect.objectContaining({
+        oauthUserAccessToken: undefined,
+        oauthUserAccessSecret: undefined,
+      })
+    );
+
     expect(updateProviderDataMock).toHaveBeenCalledTimes(2);
     expect(updateProviderDataMock).toHaveBeenCalledWith({
-      id: updatedUserToken.userId,
-      cxId: updatedUserToken.cxId,
+      id: userToken_1_upd.userId,
+      cxId: userToken_1_upd.cxId,
       provider: "garmin",
       providerItem: undefined,
     });
     expect(updateProviderDataMock).toHaveBeenCalledWith({
-      id: anotherUserTokenModified.userId,
-      cxId: anotherUserTokenModified.cxId,
+      id: userToken_2_upd.userId,
+      cxId: userToken_2_upd.cxId,
       provider: "garmin",
       providerItem: undefined,
     });
   });
 
   it("deregisters users from the correct cx", async () => {
-    getUserTokenByUATMock.mockReturnValueOnce([userTokenMocked, anotherUserTokenMocked]);
-    saveUserTokenMock.mockReturnValueOnce(updatedUserToken);
-    updateProviderDataMock.mockReturnValueOnce(testUserModified);
+    getUserTokenByUATMock.mockReturnValueOnce([userToken_1, userToken_2]);
+    saveUserTokenMock.mockReturnValueOnce(userToken_1_upd);
+    updateProviderDataMock.mockReturnValueOnce(testUser_1_upd);
 
-    await testGarmin.deregister([testUser.providerMap.garmin.token], testUser.cxId);
+    await testGarmin.deregister([testUser_1.providerMap.garmin.token], testUser_1.cxId);
 
     expect(getUserTokenByUATMock).toHaveBeenCalledTimes(1);
     expect(getUserTokenByUATMock).toHaveBeenCalledWith({
-      oauthUserAccessToken: testUser.providerMap.garmin.token,
+      oauthUserAccessToken: testUser_1.providerMap.garmin.token,
     });
     expect(saveUserTokenMock).toHaveBeenCalledTimes(1);
+
+    const firstToken = saveUserTokenMock.mock.calls[0][0];
+
+    expect(firstToken).toEqual(
+      expect.objectContaining({
+        oauthUserAccessToken: undefined,
+        oauthUserAccessSecret: undefined,
+      })
+    );
+
     expect(updateProviderDataMock).toHaveBeenCalledTimes(1);
     expect(updateProviderDataMock).toHaveBeenCalledWith({
-      id: updatedUserToken.userId,
-      cxId: updatedUserToken.cxId,
+      id: userToken_1_upd.userId,
+      cxId: userToken_1_upd.cxId,
       provider: "garmin",
       providerItem: undefined,
     });
   });
 
   it("processes multiple tokens", async () => {
-    getUserTokenByUATMock.mockReturnValue([userTokenMocked]);
-    saveUserTokenMock.mockReturnValue(userTokenMocked);
-    updateProviderDataMock.mockReturnValue(testUserModified);
+    getUserTokenByUATMock.mockReturnValueOnce([userToken_1]);
+    getUserTokenByUATMock.mockReturnValueOnce([userToken_2]);
+    saveUserTokenMock.mockReturnValueOnce(userToken_1_upd);
+    saveUserTokenMock.mockReturnValueOnce(userToken_2_upd);
+    updateProviderDataMock.mockReturnValueOnce(testUser_1_upd);
+    updateProviderDataMock.mockReturnValueOnce(testUser_2_upd);
 
-    await testGarmin.deregister(
-      [testUser.providerMap.garmin.token, thirdTestUser.providerMap.garmin.token],
-      testUser.cxId
-    );
+    await testGarmin.deregister([
+      testUser_1.providerMap.garmin.token,
+      testUser_2.providerMap.garmin.token,
+    ]);
 
     expect(getUserTokenByUATMock).toHaveBeenCalledTimes(2);
+    expect(getUserTokenByUATMock).toHaveBeenCalledWith({
+      oauthUserAccessToken: testUser_1.providerMap.garmin.token,
+    });
+    expect(getUserTokenByUATMock).toHaveBeenCalledWith({
+      oauthUserAccessToken: testUser_2.providerMap.garmin.token,
+    });
+
+    const firstTokenList = getUserTokenByUATMock.mock.calls[0][0];
+    const secondTokenList = getUserTokenByUATMock.mock.calls[1][0];
+
+    expect(firstTokenList).toEqual(
+      expect.objectContaining({
+        oauthUserAccessToken: "some_uat_string",
+      })
+    );
+    expect(secondTokenList).toEqual(
+      expect.objectContaining({
+        oauthUserAccessToken: "crazy_uat_string",
+      })
+    );
+
+    const firstToken = saveUserTokenMock.mock.calls[0][0];
+    const secondToken = saveUserTokenMock.mock.calls[1][0];
     expect(saveUserTokenMock).toHaveBeenCalledTimes(2);
+    expect(firstToken).toEqual(
+      expect.objectContaining({
+        oauthUserAccessToken: undefined,
+        oauthUserAccessSecret: undefined,
+      })
+    );
+    expect(secondToken).toEqual(
+      expect.objectContaining({
+        oauthUserAccessToken: undefined,
+        oauthUserAccessSecret: undefined,
+      })
+    );
+
     expect(updateProviderDataMock).toHaveBeenCalledTimes(2);
+    expect(updateProviderDataMock).toHaveBeenCalledWith({
+      id: userToken_1_upd.userId,
+      cxId: userToken_1_upd.cxId,
+      provider: "garmin",
+      providerItem: undefined,
+    });
+    expect(updateProviderDataMock).toHaveBeenCalledWith({
+      id: userToken_2_upd.userId,
+      cxId: userToken_2_upd.cxId,
+      provider: "garmin",
+      providerItem: undefined,
+    });
+
+    const firstUserUpd = updateProviderDataMock.mock.results[0].value;
+    const secondUserUpd = updateProviderDataMock.mock.results[1].value;
+    expect(firstUserUpd).toEqual(
+      expect.objectContaining({
+        providerMap: {},
+      })
+    );
+    expect(secondUserUpd).toEqual(
+      expect.objectContaining({
+        providerMap: {
+          fitbit: {
+            token: "qweasdzxc",
+          },
+        },
+      })
+    );
   });
 });
