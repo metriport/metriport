@@ -372,7 +372,7 @@ export class Fitbit extends Provider implements OAuth2 {
     };
 
     const subscriptionId = fitbitUserId;
-    const activeSubscriptions = await this.checkExistingSubscriptions(accessToken);
+    const activeSubscriptions = await this.getSubscriptionCollectionTypes(accessToken);
     await this.revokeTokenFromExistingUsers(userId, fitbitUserId, activeSubscriptions, accessToken);
 
     // TODO #652: Implement userRevokedAccess
@@ -402,7 +402,7 @@ export class Fitbit extends Provider implements OAuth2 {
           fitbitUserId
         );
         await Promise.all(
-          Object.values(connectedUsers).map(async user => {
+          connectedUsers.map(async user => {
             if (user.dataValues.id !== userId) {
               await this.oauth.revokeLocal(user);
               user = await getConnectedUserOrFail({
@@ -423,7 +423,13 @@ export class Fitbit extends Provider implements OAuth2 {
     }
   }
 
-  // Deletes all WH subscriptions for a user
+  /**
+   * Deletes all WH subscriptions for a user
+   *
+   * @param activeSubscriptions
+   * @param fitbitUserId
+   * @param accessToken
+   */
   async deleteSubscriptions(
     activeSubscriptions: string[],
     fitbitUserId: string,
@@ -441,15 +447,20 @@ export class Fitbit extends Provider implements OAuth2 {
         })
       );
     } catch (err) {
-      console.log("Failed to delete existing Fitbit WH subscriptions", err);
+      console.log(`Failed to delete existing Fitbit WH subscriptions. Cause: ${err}`);
       capture.error("Failed to delete existing Fitbit WH subscriptions", {
         extra: { context: "fitbit.deleteSubscriptions" },
       });
     }
   }
 
-  // Fetches existing subscriptions for the Fitbit user, and returns an array of subscribed collectionTypes
-  async checkExistingSubscriptions(accessToken: string): Promise<string[]> {
+  /**
+   * Fetches existing subscriptions for the Fitbit user, and returns an array of subscribed collectionTypes
+   *
+   * @param accessToken
+   * @returns
+   */
+  async getSubscriptionCollectionTypes(accessToken: string): Promise<string[]> {
     const url = `${Fitbit.URL}/${Fitbit.API_PATH}/apiSubscriptions.json`;
     const resp = await axios.get(url, {
       headers: {
@@ -467,7 +478,12 @@ export class Fitbit extends Provider implements OAuth2 {
     return subscriptions;
   }
 
-  // Creates a WH subscription for the collectionTypes specified in the url
+  /**
+   * Creates a WH subscription for the collectionTypes specified in the url
+   *
+   * @param url
+   * @param accessToken
+   */
   async createSubscription(url: string, accessToken: string): Promise<void> {
     try {
       const resp = await axios.post(url, null, {
