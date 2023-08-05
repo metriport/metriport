@@ -41,6 +41,14 @@ export const getProviderTokenFromConnectedUserOrFail = (
   throw new NotFoundError(`Could not find connect token for ${provider}`);
 };
 
+export const getAllConnectedUsers = async (cxId?: string): Promise<ConnectedUser[]> => {
+  return ConnectedUser.findAll({
+    where: {
+      ...(cxId ? { cxId } : undefined),
+    },
+  });
+};
+
 export const getConnectedUsers = async ({
   ids,
   cxId,

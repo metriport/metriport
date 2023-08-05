@@ -506,7 +506,7 @@ export class Fitbit extends Provider implements OAuth2 {
         resp.data
       );
     } catch (error) {
-      console.log(`createSubscription for Fitbit failed. Cause: ${error}`);
+      console.log(`createSubscription for Fitbit failed. Url: ${url}, Cause: ${error}`);
       capture.error(error, {
         extra: { context: `fitbit.createSubscription`, url },
       });
