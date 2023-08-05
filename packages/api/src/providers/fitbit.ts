@@ -457,6 +457,7 @@ export class Fitbit extends Provider implements OAuth2 {
       capture.error("Failed to delete existing Fitbit WH subscriptions", {
         extra: { context: "fitbit.deleteSubscriptions" },
       });
+      throw new Error("Failed to delete active WH subscriptions for Fitbit", { cause: err });
     }
   }
 
@@ -481,6 +482,7 @@ export class Fitbit extends Provider implements OAuth2 {
     } catch (err) {
       console.log(`Failed to fetch active subscriptions. Url: ${url}, Error: ${err}.`);
       capture.error(err, { extra: { context: `fitbit.getActiveSubscriptions`, url, err } });
+      throw new Error("Failed to get active WH subscriptions for Fitbit", { cause: err });
     }
   }
 
@@ -510,7 +512,7 @@ export class Fitbit extends Provider implements OAuth2 {
       capture.error(error, {
         extra: { context: `fitbit.createSubscription`, url },
       });
-      throw new Error("Failed WH subscription for Fitbit", { cause: error });
+      throw new Error("Failed to create a WH subscription for Fitbit", { cause: error });
     }
   }
 }

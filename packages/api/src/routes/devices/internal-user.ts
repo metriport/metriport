@@ -82,6 +82,10 @@ router.post(
     const connectedUsers = await getAllConnectedUsers(cxId);
 
     let usersAffected = 0;
+    const errorsCaught: { count: number; errors: unknown[] } = {
+      count: 0,
+      errors: [],
+    };
     for (const connectedUser of connectedUsers) {
       const providers = connectedUser.providerMap ? Object.keys(connectedUser.providerMap) : [];
       for (const providerStr of providers) {
@@ -98,6 +102,8 @@ router.post(
                 usersAffected++;
               }
             } catch (err) {
+              errorsCaught.count++;
+              errorsCaught.errors.push(err);
               console.log(
                 `Failed to add webhook subscriptions through the internal user route. User: ${connectedUser}, Provider: ${providerStr}, Error: ${err}.`
               );
@@ -109,6 +115,7 @@ router.post(
     return res.status(status.OK).json({
       usersProcessed: connectedUsers.length,
       usersAffected,
+      errorsCaught,
     });
   })
 );
