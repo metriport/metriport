@@ -63,6 +63,7 @@ export const getConnectedUsers = async ({
   });
 };
 
+// TODO 749: This function should be removed in this issue: https://github.com/metriport/metriport/issues/749
 export const getConnectedUserByTokenOrFail = async (
   provider: string,
   str: string
@@ -86,6 +87,7 @@ export const getConnectedUserByTokenOrFail = async (
   return connectedUser;
 };
 
+// TODO 749: See if this function can be improved for token matching within the scope of this issue: https://github.com/metriport/metriport/issues/749
 export const getConnectedUsersByTokenOrFail = async (
   provider: string,
   token: string

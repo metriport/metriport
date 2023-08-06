@@ -427,6 +427,9 @@ export class Fitbit extends Provider implements OAuth2 {
       capture.error(err, {
         extra: { context: "fitbit.revokeTokenFromExistingUsers", err, user: currentUser },
       });
+      throw new Error(
+        `Failed to revoke Fitbit token and delete subscriptions for another user. User: ${currentUser}, Error: ${err}.`
+      );
     }
   }
 
