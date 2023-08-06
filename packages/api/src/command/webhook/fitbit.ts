@@ -9,9 +9,10 @@ import { Constants } from "../../shared/constants";
 import { ISO_DATE } from "../../shared/date";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
+import { getConnectedUsersByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes } from "../usage/report-usage";
+import { reportDevicesUsage } from "./devices";
 import {
   DataType,
   WebhookDataPayloadWithoutMessageId,
@@ -19,7 +20,6 @@ import {
   processRequest,
 } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
-import { reportDevicesUsage } from "./devices";
 
 interface Entry {
   cxId: string;
@@ -30,64 +30,82 @@ interface Entry {
 const log = Util.log(`Fitbit Webhook`);
 
 export const processData = async (data: FitbitWebhook): Promise<void> => {
-  console.log("Starting to process the webhook");
+  console.log("Starting to process a Fitbit webhook.");
 
   const connectedUsersAndData = await Promise.all(
     data.map(async d => {
       const { collectionType, date, ownerId: fitbitUserId } = d;
-      const connectedUser = await getConnectedUserByTokenOrFail(
-        ProviderSource.fitbit,
-        fitbitUserId
-      );
+      try {
+        const connectedUsers = await getConnectedUsersByTokenOrFail(
+          ProviderSource.fitbit,
+          fitbitUserId
+        );
 
-      const userFitbitData = await mapData(collectionType, connectedUser, date);
-      return { cxId: connectedUser.cxId, userId: connectedUser.id, typedData: userFitbitData };
+        const userFitbitData = await mapData(collectionType, connectedUsers[0], date);
+        const returnData: Entry[] = [];
+
+        connectedUsers.forEach(connectedUser => {
+          returnData.push({
+            cxId: connectedUser.cxId,
+            userId: connectedUser.id,
+            typedData: userFitbitData,
+          });
+        });
+        return returnData;
+      } catch (err) {
+        console.log(`Failed to collect and map Fitbit data on a webhook. Cause: ${err}`);
+        capture.error(err, { extra: { context: `fitbit.processData`, err } });
+      }
     })
   );
 
   const reducedData: Entry[] = [];
+  connectedUsersAndData.forEach(clusterEntry => {
+    clusterEntry?.forEach(entry => {
+      const existingUserIndex = reducedData.findIndex(
+        item => item.cxId === entry.cxId && item.userId === entry.userId
+      );
 
-  connectedUsersAndData.forEach(entry => {
-    const existingUserIndex = reducedData.findIndex(
-      item => item.cxId === entry.cxId && item.userId === entry.userId
-    );
+      if (existingUserIndex >= 0) {
+        const entryKeys = Object.keys(entry.typedData) as DataType[];
 
-    if (existingUserIndex >= 0) {
-      const entryKeys = Object.keys(entry.typedData) as DataType[];
-
-      reducedData[existingUserIndex] = {
-        ...reducedData[existingUserIndex],
-        typedData: {
-          ...reducedData[existingUserIndex].typedData,
-          ...(entryKeys.includes("activity")
-            ? {
-                activity: union(
-                  reducedData[existingUserIndex].typedData.activity,
-                  entry.typedData.activity
-                ),
-              }
-            : undefined),
-          ...(entryKeys.includes("nutrition")
-            ? {
-                nutrition: union(
-                  reducedData[existingUserIndex].typedData.nutrition,
-                  entry.typedData.nutrition
-                ),
-              }
-            : undefined),
-          ...(entryKeys.includes("body")
-            ? { body: union(reducedData[existingUserIndex].typedData.body, entry.typedData.body) }
-            : undefined),
-          ...(entryKeys.includes("sleep")
-            ? {
-                sleep: union(reducedData[existingUserIndex].typedData.sleep, entry.typedData.sleep),
-              }
-            : undefined),
-        },
-      };
-    } else {
-      reducedData.push(entry);
-    }
+        reducedData[existingUserIndex] = {
+          ...reducedData[existingUserIndex],
+          typedData: {
+            ...reducedData[existingUserIndex].typedData,
+            ...(entryKeys.includes("activity")
+              ? {
+                  activity: union(
+                    reducedData[existingUserIndex].typedData.activity,
+                    entry.typedData.activity
+                  ),
+                }
+              : undefined),
+            ...(entryKeys.includes("nutrition")
+              ? {
+                  nutrition: union(
+                    reducedData[existingUserIndex].typedData.nutrition,
+                    entry.typedData.nutrition
+                  ),
+                }
+              : undefined),
+            ...(entryKeys.includes("body")
+              ? { body: union(reducedData[existingUserIndex].typedData.body, entry.typedData.body) }
+              : undefined),
+            ...(entryKeys.includes("sleep")
+              ? {
+                  sleep: union(
+                    reducedData[existingUserIndex].typedData.sleep,
+                    entry.typedData.sleep
+                  ),
+                }
+              : undefined),
+          },
+        };
+      } else {
+        reducedData.push(entry);
+      }
+    });
   });
 
   const dataByCustomer = groupBy(reducedData, v => v.cxId);
