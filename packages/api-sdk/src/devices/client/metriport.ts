@@ -23,6 +23,7 @@ import { dateIsValid } from "./util/date-util";
 export type Options = {
   sandbox?: boolean;
   timeout?: number;
+  baseAddress?: string;
 };
 
 export class MetriportDevicesApi {
@@ -35,10 +36,11 @@ export class MetriportDevicesApi {
    * @param options - Optional parameters
    * @param options.sandbox - Indicates whether to connect to the sandbox, default false.
    * @param options.timeout - Connection timeout in milliseconds, default 20 seconds.
+   * @param options.baseAddress - Base address to be used instead of the default.
    */
   constructor(apiKey: string, options: Options = {}) {
     const { sandbox, timeout } = options;
-    const baseURL = sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS;
+    const baseURL = options.baseAddress || (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS);
     this.api = axios.create({
       timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
