@@ -115,6 +115,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   e2e-tests:
+    name: E2E Tests
     steps:
         - name: Run Tests
         run: npm run test
