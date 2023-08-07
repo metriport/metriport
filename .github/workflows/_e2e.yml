@@ -2,6 +2,9 @@ name: Reusable e2e workflow for API
 
 on:
   workflow_call:
+    secrets:
+      TEST_API_KEY:
+        required: true
 
 jobs:
   test:
