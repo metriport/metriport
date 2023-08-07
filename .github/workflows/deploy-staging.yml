@@ -120,7 +120,7 @@ jobs:
       run: npm run test:e2e
       working-directory: ${{ inputs.path }}
     secrets:
-      TEST_API_KEY: ${{ vars.TEST_API_KEY }}
+      TEST_API_KEY: ${{ vars.TEST_API_KEY_STAGING }}
 
   release:
     uses: ./.github/workflows/_release.yml
