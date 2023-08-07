@@ -8,6 +8,6 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     steps:
-        - name: Run Tests
+      - name: Run Tests
         run: npm run test
         working-directory: ${{ inputs.path }}
