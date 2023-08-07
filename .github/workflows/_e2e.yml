@@ -1,0 +1,11 @@
+name: Reusable e2e workflow for API
+
+on:
+  workflow_call:
+
+jobs:
+  deploy:
+    steps:
+        - name: Run Tests
+        run: npm run test
+        working-directory: ${{ inputs.path }}
