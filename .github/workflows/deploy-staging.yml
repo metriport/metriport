@@ -115,10 +115,10 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   e2e-tests:
-    tests:
-      name: Run e2e Tests
-      run: npm run test:e2e
-      working-directory: ${{ inputs.path }}
+    steps:
+        - name: Run Tests
+        run: npm run test
+        working-directory: ${{ inputs.path }}
     secrets:
       TEST_API_KEY: ${{ vars.TEST_API_KEY_STAGING }}
 
