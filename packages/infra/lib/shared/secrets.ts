@@ -30,7 +30,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
 
   buildSecrets(config.providerSecretNames);
   buildSecrets(config.cwSecretNames);
-  if (config.analyticsSecretNames) buildSecrets(config.analyticsSecretNames);
+  if (config.developerSecretNames) buildSecrets(config.developerSecretNames);
 
   return secrets;
 }

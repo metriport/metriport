@@ -78,7 +78,7 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  
+
   infra-api-lambdas:
     uses: ./.github/workflows/_deploy_cdk.yml
     if: needs.files-changed.outputs.infra-lambdas == 'true'
@@ -113,6 +113,12 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  e2e-tests:
+    tests:
+      name: Run e2e Tests
+      run: npm run test:e2e
+      working-directory: ${{ inputs.path }}
 
   release:
     uses: ./.github/workflows/_release.yml
