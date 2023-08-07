@@ -2,6 +2,12 @@ name: Reusable e2e workflow for API
 
 on:
   workflow_call:
+    inputs:
+      path:
+        description: "sub-directory where this workflow should execute lint and build "
+        required: false
+        type: string
+        default: "packages/api"
     secrets:
       TEST_API_KEY:
         required: true
@@ -14,3 +20,5 @@ jobs:
       - name: Run Tests
         run: npm run test
         working-directory: ${{ inputs.path }}
+        env:
+          TEST_API_KEY: ${{ secrets.TEST_API_KEY }}

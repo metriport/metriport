@@ -116,6 +116,7 @@ jobs:
 
   e2e-tests:
     uses: ./.github/workflows/_e2e.yml
+    needs: [widget, api, infra-api-lambdas, infra-widget]
     secrets:
       TEST_API_KEY: ${{ vars.TEST_API_KEY_STAGING }}
 
