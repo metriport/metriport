@@ -26,9 +26,8 @@ export type EnvConfig = {
   systemRootOID: string;
   medicalDocumentsBucketName: string;
   fhirConverterBucketName?: string;
-  developerSecretNames?: {
+  analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
-    TEST_API_KEY: string;
   };
   commonwell: {
     CW_MEMBER_NAME: string;

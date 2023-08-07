@@ -119,6 +119,8 @@ jobs:
       name: Run e2e Tests
       run: npm run test:e2e
       working-directory: ${{ inputs.path }}
+    secrets:
+      TEST_API_KEY: ${{ vars.TEST_API_KEY }}
 
   release:
     uses: ./.github/workflows/_release.yml
