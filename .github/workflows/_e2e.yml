@@ -4,7 +4,9 @@ on:
   workflow_call:
 
 jobs:
-  deploy:
+  test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
     steps:
         - name: Run Tests
         run: npm run test
