@@ -60,7 +60,7 @@ jobs:
         working-directory: "./"
 
       - name: Run Tests
-        run: npm run test
+        run: npm run test:e2e
         working-directory: ${{ inputs.path }}
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
