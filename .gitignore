@@ -3,6 +3,7 @@
 .AppleDouble
 .LSOverride
 node_modules
+lerna-debug.log
 
 # Icon must end with two \r
 Icon

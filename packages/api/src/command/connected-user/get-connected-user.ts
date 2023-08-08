@@ -41,6 +41,14 @@ export const getProviderTokenFromConnectedUserOrFail = (
   throw new NotFoundError(`Could not find connect token for ${provider}`);
 };
 
+export const getAllConnectedUsers = async (cxId?: string): Promise<ConnectedUser[]> => {
+  return ConnectedUser.findAll({
+    where: {
+      ...(cxId ? { cxId } : undefined),
+    },
+  });
+};
+
 export const getConnectedUsers = async ({
   ids,
   cxId,
@@ -55,6 +63,7 @@ export const getConnectedUsers = async ({
   });
 };
 
+// TODO 749: This function should be removed in this issue: https://github.com/metriport/metriport/issues/749
 export const getConnectedUserByTokenOrFail = async (
   provider: string,
   str: string
@@ -76,4 +85,28 @@ export const getConnectedUserByTokenOrFail = async (
     throw new NotFoundError(`Could not find connected user with str matching token`);
 
   return connectedUser;
+};
+
+// TODO 749: See if this function can be improved for token matching within the scope of this issue: https://github.com/metriport/metriport/issues/749
+export const getConnectedUsersByTokenOrFail = async (
+  provider: string,
+  token: string
+): Promise<ConnectedUser[]> => {
+  const connectedUsers = await ConnectedUser.findAll({
+    where: {
+      providerMap: {
+        [provider]: {
+          token: {
+            // TODO: Find more optimal solution
+            [Op.like]: "%" + token + "%",
+          },
+        },
+      },
+    },
+  });
+
+  if (!connectedUsers.length)
+    throw new NotFoundError(`Could not find connected users with str matching token`);
+
+  return connectedUsers;
 };

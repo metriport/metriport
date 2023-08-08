@@ -88,10 +88,10 @@ export async function recreatePatientAtCW(
   // Get Org info to setup API access
   const { organization, facility } = await getPatientData(patient, facilityId);
   const orgName = organization.data.name;
-  const orgId = organization.oid;
+  const orgOID = organization.oid;
   const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
-  const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
   // create new patient, including linkint to person and network link to other patients

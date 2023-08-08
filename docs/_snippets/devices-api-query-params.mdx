@@ -1,0 +1,27 @@
+<ParamField query="userId" type="string" required>
+  The Metriport user ID to create a session token for.
+</ParamField>
+
+<ParamField query="date" type="string" required>
+  Day for which to pull the data. Formatted `YYYY-MM-DD`.
+
+  <Info>
+    For simplicity, all queries assume the UTC timezone for the specified date
+    starting at 00:00 to 23:59 - unless otherwise specified by the `timezoneId`
+    parameter.
+  </Info>
+</ParamField>
+
+<ParamField query="timezoneId" type="string" optional>
+  Timezone ID to use for the specified date. If not specified, the UTC timezone is used.
+  For example this can be valid timezones like `America/Los_Angeles` or `Europe/Kiev`.
+
+  <Info>
+    Valid timezones can be found at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+  </Info>
+
+  <Warning>
+    Support for this parameter is under development, and currently only supported
+    for the Google Fit provider.
+  </Warning>
+</ParamField>

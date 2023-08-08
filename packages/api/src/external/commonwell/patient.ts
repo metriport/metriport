@@ -78,14 +78,14 @@ export async function create(
 
     const { organization, facility } = patientData ?? (await getPatientData(patient, facilityId));
     const orgName = organization.data.name;
-    const orgId = organization.oid;
+    const orgOID = organization.oid;
     const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
     const storeIds = getStoreIdsFn(patient.id, patient.cxId);
 
-    commonWell = makeCommonWellAPI(orgName, oid(orgId));
+    commonWell = makeCommonWellAPI(orgName, oid(orgOID));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-    const commonwellPatient = patientToCommonwell({ patient, orgName, orgId });
+    const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
     debug(`Registering this Patient: ${JSON.stringify(commonwellPatient, undefined, 2)}`);
 
     const { commonwellPatientId, patientRefLink } = await registerPatient({
@@ -301,12 +301,12 @@ async function setupUpdate(
 
   const { organization, facility } = await getPatientData(patient, facilityId);
   const orgName = organization.data.name;
-  const orgId = organization.oid;
+  const orgOID = organization.oid;
   const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-  const commonwellPatient = patientToCommonwell({ patient, orgName, orgId });
-  const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+  const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
+  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
 
   return { commonWell, queryMeta, commonwellPatient, commonwellPatientId, personId };
 }

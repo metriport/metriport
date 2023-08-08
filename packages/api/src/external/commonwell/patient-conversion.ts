@@ -34,16 +34,16 @@ export function makePersonForPatient(cwPatient: CommonwellPatient): CommonwellPe
 export function patientToCommonwell({
   patient,
   orgName,
-  orgId,
+  orgOID,
 }: {
   patient: Patient;
   orgName: string;
-  orgId: string;
+  orgOID: string;
 }): CommonwellPatient {
   const identifier: Identifier = {
     use: "usual",
     label: orgName,
-    system: oid(orgId),
+    system: oid(orgOID),
     key: patient.id,
     assigner: orgName,
   };
