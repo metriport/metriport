@@ -6,18 +6,7 @@ api: "GET /user"
 
 ## Query Params
 
-<ParamField query="userId" type="string" required>
-  The Metriport user ID to create a session token for.
-</ParamField>
-
-<ParamField query="date" type="string" required>
-  Day for which to pull the data. Formatted YYYY-MM-DD.
-
-  <Info>
-    For simplicity, all queries assume the UTC timezone for the specified date
-    starting at 00:00 to 23:59.
-  </Info>
-</ParamField>
+<Snippet file="devices-api-query-params.mdx" />
 
 ## Response
 

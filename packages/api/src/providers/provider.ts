@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/api-sdk";
 
 import NotImplementedError from "../errors/not-implemented";
@@ -13,6 +14,10 @@ export enum ConsumerHealthDataType {
   User = "User",
 }
 
+export type DAPIParams = {
+  timezoneId?: string;
+};
+
 export type ConsumerHealthDataTypeMap = {
   [key in ConsumerHealthDataType]: boolean;
 };
@@ -23,33 +28,51 @@ export default abstract class Provider {
     return this.supportedDataTypes[dataType];
   }
 
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
+  async getActivityData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<Activity> {
     throw new NotImplementedError();
   }
 
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
+  async getBodyData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<Body> {
     throw new NotImplementedError();
   }
 
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getBiometricsData(connectedUser: ConnectedUser, date: string): Promise<Biometrics> {
+  async getBiometricsData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<Biometrics> {
     throw new NotImplementedError();
   }
 
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
+  async getNutritionData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<Nutrition> {
     throw new NotImplementedError();
   }
 
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
+  async getSleepData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<Sleep> {
     throw new NotImplementedError();
   }
 
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
+  async getUserData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<User> {
     throw new NotImplementedError();
   }
 }

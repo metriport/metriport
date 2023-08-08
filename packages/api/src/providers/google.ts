@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 
 import { PROVIDER_GOOGLE } from "../shared/constants";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
-import Provider, { ConsumerHealthDataType } from "./provider";
+import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "../models/connected-user";
 import { mapToActivity } from "../mappings/google/activity";
@@ -19,6 +19,9 @@ import { mapToSleep } from "../mappings/google/sleep";
 import { sessionSleepType } from "../mappings/google/models/sleep";
 import { sessionResp, GoogleSessions } from "../mappings/google/models";
 import { capture } from "../shared/notifications";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(timezone);
 
 export class Google extends Provider implements OAuth2 {
   static URL = "https://www.googleapis.com";
@@ -88,16 +91,23 @@ export class Google extends Provider implements OAuth2 {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async fetchGoogleData(connectedUser: ConnectedUser, date: string, options: any) {
+  async fetchGoogleData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    options: any
+  ) {
     try {
       const access_token = await this.getAccessToken(connectedUser);
-
+      const baseDate = extraParams.timezoneId
+        ? dayjs.tz(date, extraParams.timezoneId)
+        : dayjs(date);
       const resp = await axios.post(
         `${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`,
         {
-          startTimeMillis: dayjs(date).valueOf(),
-          endTimeMillis: dayjs(date).add(24, "hours").valueOf(),
+          startTimeMillis: baseDate.valueOf(),
+          endTimeMillis: baseDate.add(24, "hours").valueOf(),
           ...options,
         },
         {
@@ -117,17 +127,24 @@ export class Google extends Provider implements OAuth2 {
     }
   }
 
-  async fetchGoogleSessions(connectedUser: ConnectedUser, date: string, type?: number) {
+  async fetchGoogleSessions(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams,
+    type?: number
+  ) {
     try {
       const access_token = await this.getAccessToken(connectedUser);
-
+      const baseDate = extraParams.timezoneId
+        ? dayjs.tz(date, extraParams.timezoneId)
+        : dayjs(date);
       const resp = await axios.get(`${Google.URL}${Google.API_PATH}/users/me/sessions`, {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
         params: {
-          startTime: dayjs(date).toISOString(),
-          endTime: dayjs(date).add(24, "hours").toISOString(),
+          startTimeMillis: baseDate.valueOf(),
+          endTimeMillis: baseDate.add(24, "hours").valueOf(),
           activityType: type,
         },
       });
@@ -142,10 +159,14 @@ export class Google extends Provider implements OAuth2 {
     }
   }
 
-  override async getActivityData(connectedUser: ConnectedUser, date: string): Promise<Activity> {
+  override async getActivityData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<Activity> {
     const [resSessions, resData] = await Promise.allSettled([
-      this.fetchActivitySessions(connectedUser, date),
-      this.fetchActivityData(connectedUser, date),
+      this.fetchActivitySessions(connectedUser, date, extraParams),
+      this.fetchActivityData(connectedUser, date, extraParams),
     ]);
 
     const sessions = resSessions.status === "fulfilled" ? resSessions.value : undefined;
@@ -168,14 +189,22 @@ export class Google extends Provider implements OAuth2 {
     return mapToActivity(date, data, sessions);
   }
 
-  async fetchActivitySessions(connectedUser: ConnectedUser, date: string): Promise<GoogleSessions> {
-    const activitySessions = await this.fetchGoogleSessions(connectedUser, date);
+  async fetchActivitySessions(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<GoogleSessions> {
+    const activitySessions = await this.fetchGoogleSessions(connectedUser, date, extraParams);
 
     return sessionResp.parse(activitySessions);
   }
 
-  async fetchActivityData(connectedUser: ConnectedUser, date: string): Promise<GoogleActivity> {
-    const activity = await this.fetchGoogleData(connectedUser, date, {
+  async fetchActivityData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<GoogleActivity> {
+    const activity = await this.fetchGoogleData(connectedUser, date, extraParams, {
       aggregateBy: [
         {
           dataTypeName: "com.google.active_minutes",
@@ -203,9 +232,10 @@ export class Google extends Provider implements OAuth2 {
 
   override async getBiometricsData(
     connectedUser: ConnectedUser,
-    date: string
+    date: string,
+    extraParams: DAPIParams
   ): Promise<Biometrics> {
-    const biometrics = await this.fetchGoogleData(connectedUser, date, {
+    const biometrics = await this.fetchGoogleData(connectedUser, date, extraParams, {
       aggregateBy: [
         {
           dataTypeName: "com.google.blood_pressure",
@@ -228,8 +258,12 @@ export class Google extends Provider implements OAuth2 {
     return mapToBiometrics(googleBiometricsResp.parse(biometrics), date);
   }
 
-  override async getBodyData(connectedUser: ConnectedUser, date: string): Promise<Body> {
-    const body = await this.fetchGoogleData(connectedUser, date, {
+  override async getBodyData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<Body> {
+    const body = await this.fetchGoogleData(connectedUser, date, extraParams, {
       aggregateBy: [
         {
           dataTypeName: "com.google.weight",
@@ -246,8 +280,12 @@ export class Google extends Provider implements OAuth2 {
     return mapToBody(googleBodyResp.parse(body), date);
   }
 
-  override async getNutritionData(connectedUser: ConnectedUser, date: string): Promise<Nutrition> {
-    const nutrition = await this.fetchGoogleData(connectedUser, date, {
+  override async getNutritionData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<Nutrition> {
+    const nutrition = await this.fetchGoogleData(connectedUser, date, extraParams, {
       aggregateBy: [
         {
           dataTypeName: "com.google.hydration",
@@ -261,8 +299,17 @@ export class Google extends Provider implements OAuth2 {
     return mapToNutrition(googleNutritionResp.parse(nutrition), date);
   }
 
-  override async getSleepData(connectedUser: ConnectedUser, date: string): Promise<Sleep> {
-    const sleepSessions = await this.fetchGoogleSessions(connectedUser, date, sessionSleepType);
+  override async getSleepData(
+    connectedUser: ConnectedUser,
+    date: string,
+    extraParams: DAPIParams
+  ): Promise<Sleep> {
+    const sleepSessions = await this.fetchGoogleSessions(
+      connectedUser,
+      date,
+      extraParams,
+      sessionSleepType
+    );
 
     return mapToSleep(sessionResp.parse(sleepSessions), date);
   }
