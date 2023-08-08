@@ -1,6 +1,6 @@
 import { UserToken } from "../user-token";
 
-export function createUserToken(token: Partial<UserToken>): UserToken {
+export function makeUserToken(token: Partial<UserToken>): UserToken {
   return UserToken.build({
     token: token.token || "",
     cxId: token.cxId || "",

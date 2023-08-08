@@ -174,8 +174,8 @@ export class OAuth1DefaultImpl implements OAuth1 {
         // DynamoDB (Webhook and auth)
         try {
           if (!cxId || cxId === userToken.cxId) {
-            capture.setUser({ id: userToken.cxId });
-            capture.setExtra({ id: userToken.userId });
+            capture.setUser({ id: userToken.userId });
+            capture.setExtra({ cxId: userToken.cxId });
             const updatedUserToken = userToken.clone();
             updatedUserToken.oauthUserAccessToken = undefined;
             updatedUserToken.oauthUserAccessSecret = undefined;

@@ -52,13 +52,17 @@ export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
 
 export type UserData = Pick<Sentry.User, "id" | "email">;
 
+type ExtraUserData = {
+  cxId: string;
+};
+
 export const capture = {
   setUser: (user: UserData): void => {
     Sentry.setUser(user);
   },
 
-  setExtra: (user: UserData): void => {
-    Sentry.setExtra("userId", user.id);
+  setExtra: (extraData: ExtraUserData): void => {
+    Sentry.setExtra("cxId", extraData.cxId);
   },
 
   /**

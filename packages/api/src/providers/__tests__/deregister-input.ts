@@ -1,4 +1,4 @@
-import { createUserToken } from "../../domain/__tests__/user-token";
+import { makeUserToken } from "../../domain/__tests__/user-token";
 import { UserToken } from "../../domain/user-token";
 import { v4 as uuidv4 } from "uuid";
 
@@ -22,7 +22,7 @@ export const userToken_1: UserToken = {
   oauthUserAccessSecret: "some_ua_secret_string",
 
   clone: function (): UserToken {
-    return createUserToken(this);
+    return makeUserToken(this);
   },
 };
 
@@ -34,7 +34,7 @@ export const userToken_1_upd: UserToken = {
   oauthUserAccessSecret: undefined,
 
   clone: function (): UserToken {
-    return createUserToken(this);
+    return makeUserToken(this);
   },
 };
 
@@ -46,7 +46,7 @@ export const userToken_2: UserToken = {
   oauthUserAccessSecret: "some_ua_secret_string",
 
   clone: function (): UserToken {
-    return createUserToken(this);
+    return makeUserToken(this);
   },
 };
 
@@ -58,7 +58,7 @@ export const userToken_2_upd: UserToken = {
   oauthUserAccessSecret: undefined,
 
   clone: function (): UserToken {
-    return createUserToken(this);
+    return makeUserToken(this);
   },
 };
 
