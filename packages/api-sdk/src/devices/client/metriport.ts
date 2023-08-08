@@ -32,7 +32,6 @@ export class MetriportDevicesApi {
   /**
    * Creates a new instance of the Metriport Devices API client.
    *
-   *
    * @param apiKey - Your Metriport API key.
    * @param options - Optional parameters
    * @param options.sandbox - Indicates whether to connect to the sandbox, default false.
