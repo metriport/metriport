@@ -67,16 +67,20 @@ export const mapData = async (
   const provider = Constants.PROVIDER_MAP[ProviderSource.withings];
 
   if (categoryNum === activityCategory) {
-    const activity = await provider.getActivityData(connectedUser, startdate);
+    const activity = await provider.getActivityData(connectedUser, startdate, {});
     payload.activity = [activity];
   } else if (categoryNum === bodyCategory) {
-    const body = await provider.getBodyData(connectedUser, startdate);
+    const body = await provider.getBodyData(connectedUser, startdate, {});
     payload.body = [body];
   } else if (biometricsCategories.includes(categoryNum)) {
-    const biometrics = await provider.getBiometricsData(connectedUser, startdate);
+    const biometrics = await provider.getBiometricsData(connectedUser, startdate, {});
     payload.biometrics = [biometrics];
   } else if (categoryNum === sleepCategory) {
-    const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format("YYYY-MM-DD"));
+    const sleep = await provider.getSleepData(
+      connectedUser,
+      dayjs(startdate).format("YYYY-MM-DD"),
+      {}
+    );
     payload.sleep = [sleep];
   }
 
