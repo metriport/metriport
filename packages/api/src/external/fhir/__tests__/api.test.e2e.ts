@@ -7,8 +7,9 @@ import { makeFhirAdminApi } from "../api/api-factory";
 
 const fhirApi = makeFhirAdminApi();
 
+jest.setTimeout(30_000);
+
 describe("Integration FHIR Client", () => {
-  console.log(fhirApi);
   describe("tenant", () => {
     const organizationNumber = makeOrgNumber();
     const cxId = uuidv4();
