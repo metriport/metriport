@@ -19,6 +19,7 @@ import { WebhookStatusResponse } from "./models/webhook-status-response";
 import { GetConnectedUsersResponse } from "./models/get-connected-users-response";
 import { ConnectedUserInfo } from "../models/common/connected-user-info";
 import { dateIsValid } from "./util/date-util";
+import { isValidTimezone } from "./util/timezone-util";
 
 export type Options = {
   sandbox?: boolean;
@@ -125,11 +126,12 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
+   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of activity data from each connected provider.
    */
-  async getActivityData(userId: string, date: string): Promise<Activity[]> {
+  async getActivityData(userId: string, date: string, timezoneId?: string): Promise<Activity[]> {
     const resp = await this.api.get<Activity[]>("/activity", {
-      params: this.validateAndBuildParams(userId, date),
+      params: this.validateAndBuildParams(userId, date, timezoneId),
     });
     return resp.data;
   }
@@ -139,11 +141,12 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
+   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of body data from each connected provider.
    */
-  async getBodyData(userId: string, date: string): Promise<Body[]> {
+  async getBodyData(userId: string, date: string, timezoneId?: string): Promise<Body[]> {
     const resp = await this.api.get<Body[]>("/body", {
-      params: this.validateAndBuildParams(userId, date),
+      params: this.validateAndBuildParams(userId, date, timezoneId),
     });
     return resp.data;
   }
@@ -153,11 +156,16 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
+   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of biometrics data from each connected provider.
    */
-  async getBiometricsData(userId: string, date: string): Promise<Biometrics[]> {
+  async getBiometricsData(
+    userId: string,
+    date: string,
+    timezoneId?: string
+  ): Promise<Biometrics[]> {
     const resp = await this.api.get<Biometrics[]>("/biometrics", {
-      params: this.validateAndBuildParams(userId, date),
+      params: this.validateAndBuildParams(userId, date, timezoneId),
     });
     return resp.data;
   }
@@ -167,11 +175,12 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
+   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of nutrition data from each connected provider.
    */
-  async getNutritionData(userId: string, date: string): Promise<Nutrition[]> {
+  async getNutritionData(userId: string, date: string, timezoneId?: string): Promise<Nutrition[]> {
     const resp = await this.api.get<Nutrition[]>("/nutrition", {
-      params: this.validateAndBuildParams(userId, date),
+      params: this.validateAndBuildParams(userId, date, timezoneId),
     });
     return resp.data;
   }
@@ -183,9 +192,9 @@ export class MetriportDevicesApi {
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
    * @returns An array of sleep data from each connected provider.
    */
-  async getSleepData(userId: string, date: string): Promise<Sleep[]> {
+  async getSleepData(userId: string, date: string, timezoneId?: string): Promise<Sleep[]> {
     const resp = await this.api.get<Sleep[]>("/sleep", {
-      params: this.validateAndBuildParams(userId, date),
+      params: this.validateAndBuildParams(userId, date, timezoneId),
     });
     return resp.data;
   }
@@ -195,11 +204,12 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
+   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of user data from each connected provider.
    */
-  async getUserData(userId: string, date: string): Promise<User[]> {
+  async getUserData(userId: string, date: string, timezoneId?: string): Promise<User[]> {
     const resp = await this.api.get<User[]>("/user", {
-      params: this.validateAndBuildParams(userId, date),
+      params: this.validateAndBuildParams(userId, date, timezoneId),
     });
     return resp.data;
   }
@@ -209,13 +219,16 @@ export class MetriportDevicesApi {
    * an object with the userId and date.
    *
    * @param {string} userId - The userId of the user you want to get the data for.
-   * @param {string} date - The date to get the user's schedule for.
+   * @param {string} date - The date to get the user's data for.
+   * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns an object with the userId and date properties.
    */
-  private validateAndBuildParams(userId: string, date: string) {
+  private validateAndBuildParams(userId: string, date: string, timezoneId?: string) {
     if (userId.trim().length < 1) throw Error(`userId must not be empty!`);
     if (!dateIsValid(date)) throw Error(`date must be in format YYYY-MM-DD!`);
-    return { userId, date };
+    if (timezoneId && !isValidTimezone(timezoneId))
+      throw Error(`timezoneId must be a valid timezoneId!`);
+    return { userId, date, timezoneId };
   }
 
   /**
