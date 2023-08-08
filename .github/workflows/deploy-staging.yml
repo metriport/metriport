@@ -121,8 +121,8 @@ jobs:
       deploy_env: "staging"
     secrets:
       TEST_API_KEY: ${{ vars.TEST_API_KEY_STAGING }}
-        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   release:
     uses: ./.github/workflows/_release.yml
