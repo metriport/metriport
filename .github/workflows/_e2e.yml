@@ -19,6 +19,7 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
+    workflow_dispatch: # manually executed by a user
 
 jobs:
   test:
