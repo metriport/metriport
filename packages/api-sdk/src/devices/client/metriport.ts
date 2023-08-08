@@ -126,7 +126,7 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
-   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
+   * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of activity data from each connected provider.
    */
   async getActivityData(userId: string, date: string, timezoneId?: string): Promise<Activity[]> {
@@ -141,7 +141,7 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
-   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
+   * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of body data from each connected provider.
    */
   async getBodyData(userId: string, date: string, timezoneId?: string): Promise<Body[]> {
@@ -156,7 +156,7 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
-   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
+   * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of biometrics data from each connected provider.
    */
   async getBiometricsData(
@@ -175,7 +175,7 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
-   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
+   * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of nutrition data from each connected provider.
    */
   async getNutritionData(userId: string, date: string, timezoneId?: string): Promise<Nutrition[]> {
@@ -190,6 +190,7 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
+   * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of sleep data from each connected provider.
    */
   async getSleepData(userId: string, date: string, timezoneId?: string): Promise<Sleep[]> {
@@ -204,7 +205,7 @@ export class MetriportDevicesApi {
    *
    * @param {string} userId - The userId of the user you want to get data for.
    * @param {string} date - The date you want to get the data for (YYYY-MM-DD).
-   * * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
+   * @param {string} timezoneId - The timezoneId to get the user's data for (for example: America/Los_Angeles).
    * @returns An array of user data from each connected provider.
    */
   async getUserData(userId: string, date: string, timezoneId?: string): Promise<User[]> {
