@@ -17,6 +17,8 @@ on:
         required: true
       API_URL:
         required: true
+      FHIR_SERVER_URL:
+        required: true
       DOCKERHUB_USERNAME:
         required: true
       DOCKERHUB_TOKEN:
@@ -69,3 +71,4 @@ jobs:
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
           API_URL: ${{ secrets.API_URL }}
+          FHIR_SERVER_URL: ${{ secrets.FHIR_SERVER_URL }}
