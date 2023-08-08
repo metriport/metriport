@@ -101,11 +101,14 @@ router.post(
                 );
                 usersAffected++;
               }
-            } catch (err) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (err: any) {
               errorsCaught.count++;
-              errorsCaught.errors.push(err);
+              errorsCaught.errors.push(err.cause);
               console.log(
-                `Failed to add webhook subscriptions through the internal user route. User: ${connectedUser}, Provider: ${providerStr}, Error: ${err}.`
+                `Failed to add webhook subscriptions through the internal user route. User: ${JSON.stringify(
+                  connectedUser
+                )}, Provider: ${providerStr}, Error: ${err}.`
               );
             }
           }

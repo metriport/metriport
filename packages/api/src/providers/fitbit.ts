@@ -13,8 +13,10 @@ import status from "http-status";
 import {
   getConnectedUserOrFail,
   getConnectedUsersByTokenOrFail,
+  getProviderTokenFromConnectedUserOrFail,
 } from "../command/connected-user/get-connected-user";
 import { sendProviderDisconnected } from "../command/webhook/devices";
+import { FitbitWebhookSubscriptions, fitbitWebhookSubscriptionSchema } from "../mappings/fitbit";
 import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";
 import { mapToBody } from "../mappings/fitbit/body";
@@ -50,7 +52,6 @@ import { PROVIDER_FITBIT } from "../shared/constants";
 import { capture } from "../shared/notifications";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
-import { FitbitWebhookSubscriptions, fitbitWebhookSubscriptionSchema } from "../mappings/fitbit";
 
 export class Fitbit extends Provider implements OAuth2 {
   static URL = "https://api.fitbit.com";
@@ -78,6 +79,12 @@ export class Fitbit extends Provider implements OAuth2 {
 
   private static clientId = Config.getFitbitClientId();
   private static clientSecret = Config.getFitbitClientSecret();
+  static subscriptionTypes: Record<FitbitScopes, FitbitCollectionTypesWithoutUserRevokedAccess> = {
+    [FitbitScopes.activity]: "activities",
+    [FitbitScopes.nutrition]: "foods",
+    [FitbitScopes.sleep]: "sleep",
+    [FitbitScopes.weight]: "body",
+  };
 
   constructor(
     private readonly oauth = new OAuth2DefaultImpl(
@@ -363,63 +370,50 @@ export class Fitbit extends Provider implements OAuth2 {
 
   async postAuth(token: string, user: ConnectedUser): Promise<void> {
     const { access_token: accessToken, user_id: fitbitUserId, scope: scopes } = JSON.parse(token);
-
-    const subscriptionTypes: Record<FitbitScopes, FitbitCollectionTypesWithoutUserRevokedAccess> = {
-      [FitbitScopes.activity]: "activities",
-      [FitbitScopes.nutrition]: "foods",
-      [FitbitScopes.sleep]: "sleep",
-      [FitbitScopes.weight]: "body",
-    };
-
-    const activeSubscriptions = await this.getActiveSubscriptions(accessToken);
-    if (activeSubscriptions)
-      await this.revokeTokenFromOtherUsers(user, fitbitUserId, activeSubscriptions, accessToken);
-
-    // TODO #652: Implement userRevokedAccess
+    await this.revokeTokenFromOtherUsers(user, fitbitUserId);
 
     // Creates new WH subscriptions based on the user's selected scopes
     await Promise.all(
-      Object.entries(subscriptionTypes).map(async ([key, subscriptionType]) => {
+      Object.entries(Fitbit.subscriptionTypes).map(async ([key, subscriptionType]) => {
         if (scopes.includes(key)) {
           const subscriptionId = `${fitbitUserId}-${subscriptionType}`;
           const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}.json`;
-          this.createSubscription(subscriptionUrl, accessToken);
+          await this.createSubscription(subscriptionUrl, accessToken);
         }
       })
     );
   }
 
-  // Finds existing users connected to this Fitbit account, revokes their tokens and sends WH updates about the disconnections
-  async revokeTokenFromOtherUsers(
-    currentUser: ConnectedUser,
-    fitbitUserId: string,
-    activeSubscriptions: FitbitWebhookSubscriptions,
-    accessToken: string
-  ): Promise<void> {
+  /**
+   * Finds all users connected to the same Fitbit user, removes their tokens and deletes their WH subscriptions, if there are any.
+   *
+   * @param currentUser current ConnectedUser who is connecting to Fitbit
+   * @param fitbitUserId Fitbit ID
+   */
+  async revokeTokenFromOtherUsers(currentUser: ConnectedUser, fitbitUserId: string): Promise<void> {
     try {
-      if (activeSubscriptions.length > 0) {
-        const connectedUsers = await getConnectedUsersByTokenOrFail(
-          ProviderSource.fitbit,
-          fitbitUserId
-        );
+      const connectedUsers = await getConnectedUsersByTokenOrFail(
+        ProviderSource.fitbit,
+        fitbitUserId
+      );
 
-        await Promise.all(
-          connectedUsers.map(async user => {
-            if (
-              user.dataValues.id !== currentUser.dataValues.id &&
-              user.dataValues.cxId === currentUser.dataValues.cxId
-            ) {
-              await this.oauth.revokeLocal(user);
-              user = await getConnectedUserOrFail({
-                id: user.id,
-                cxId: user.cxId,
-              });
-              sendProviderDisconnected(user, [ProviderSource.fitbit]);
-            }
-          })
-        );
-        await this.deleteSubscriptions(activeSubscriptions, accessToken);
-      }
+      await Promise.all(
+        connectedUsers.map(async user => {
+          if (user.dataValues.id !== currentUser.dataValues.id) {
+            const token = getProviderTokenFromConnectedUserOrFail(user, ProviderSource.fitbit);
+            const { access_token: accessToken, scope: scopes } = JSON.parse(token);
+            const activeSubscriptions = await this.getActiveSubscriptions(accessToken, scopes);
+            await this.oauth.revokeLocal(user);
+            user = await getConnectedUserOrFail({
+              id: user.id,
+              cxId: user.cxId,
+            });
+            sendProviderDisconnected(user, [ProviderSource.fitbit]);
+            if (activeSubscriptions.length)
+              await this.deleteSubscriptions(activeSubscriptions, accessToken);
+          }
+        })
+      );
     } catch (err) {
       console.log(
         `Failed to revoke the token of a Fitbit user. User: ${currentUser}, Error: ${err}`
@@ -428,7 +422,8 @@ export class Fitbit extends Provider implements OAuth2 {
         extra: { context: "fitbit.revokeTokenFromExistingUsers", err, user: currentUser },
       });
       throw new Error(
-        `Failed to revoke Fitbit token and delete subscriptions for another user. User: ${currentUser}, Error: ${err}.`
+        `Failed to revoke Fitbit token and delete subscriptions for another user. User: ${currentUser}.`,
+        { cause: err }
       );
     }
   }
@@ -470,22 +465,36 @@ export class Fitbit extends Provider implements OAuth2 {
    * @returns List of active FitbitWebhookSubscriptions or undefined
    */
   async getActiveSubscriptions(
-    accessToken: string
-  ): Promise<FitbitWebhookSubscriptions | undefined> {
-    const url = `${Fitbit.URL}/${Fitbit.API_PATH}/apiSubscriptions.json`;
-    try {
-      const resp = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      if (resp.status === status.OK)
-        return fitbitWebhookSubscriptionSchema.parse(resp.data.apiSubscriptions);
-    } catch (err) {
-      console.log(`Failed to fetch active subscriptions. Url: ${url}, Error: ${err}.`);
-      capture.error(err, { extra: { context: `fitbit.getActiveSubscriptions`, url, err } });
-      throw new Error("Failed to get active WH subscriptions for Fitbit", { cause: err });
-    }
+    accessToken: string,
+    scopes: string
+  ): Promise<FitbitWebhookSubscriptions> {
+    const activeSubscriptions: FitbitWebhookSubscriptions[] = [];
+    await Promise.all(
+      Object.entries(Fitbit.subscriptionTypes).map(async ([scope, collectionType]) => {
+        if (scopes.includes(scope)) {
+          const url = `${Fitbit.URL}/${Fitbit.API_PATH}/${collectionType}/apiSubscriptions.json`;
+          try {
+            const resp = await axios.get(url, {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            });
+            if (resp.status === status.OK && resp.data.apiSubscriptions.length) {
+              const activeSubscription = fitbitWebhookSubscriptionSchema.parse(
+                resp.data.apiSubscriptions
+              );
+              activeSubscriptions.push(activeSubscription);
+            }
+          } catch (err) {
+            console.log(`Failed to fetch active subscriptions. Url: ${url}, Error: ${err}.`);
+            capture.error(err, { extra: { context: `fitbit.getActiveSubscriptions`, url, err } });
+            throw new Error("Failed to get active WH subscriptions for Fitbit", { cause: err });
+          }
+        }
+      })
+    );
+    const activeSubs = activeSubscriptions.flat();
+    return activeSubs;
   }
 
   /**
@@ -495,6 +504,7 @@ export class Fitbit extends Provider implements OAuth2 {
    * @param accessToken Authorization Bearer-type token
    */
   async createSubscription(url: string, accessToken: string): Promise<void> {
+    // TODO #652: Implement userRevokedAccess
     try {
       const resp = await axios.post(url, null, {
         headers: {
@@ -510,11 +520,13 @@ export class Fitbit extends Provider implements OAuth2 {
         resp.data
       );
     } catch (error) {
-      console.log(`createSubscription for Fitbit failed. Url: ${url}, Cause: ${error}`);
+      console.log(`createSubscription for Fitbit failed. Url: ${url}, Error: ${error}`);
       capture.error(error, {
         extra: { context: `fitbit.createSubscription`, url },
       });
-      throw new Error("Failed to create a WH subscription for Fitbit", { cause: error });
+      throw new Error(`Failed to create a WH subscription for Fitbit. URL: ${url}`, {
+        cause: error,
+      });
     }
   }
 }
