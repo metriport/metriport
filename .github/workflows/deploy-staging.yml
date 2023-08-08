@@ -44,79 +44,80 @@ jobs:
               - "packages/connect-widget/**"
               - "package*.json"
 
-  widget:
-    if: needs.files-changed.outputs.widget == 'true'
-    needs: files-changed
-    uses: ./.github/workflows/_deploy_widget.yml
-    with:
-      build_env: "staging"
-      deploy_env: "staging"
-      S3_BUCKET: ${{ vars.S3_BUCKET_STAGING }}
-      CF_DISTRIB_ID: ${{ vars.CF_DISTRIB_ID_STAGING }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  #   widget:
+  #     if: needs.files-changed.outputs.widget == 'true'
+  #     needs: files-changed
+  #     uses: ./.github/workflows/_deploy_widget.yml
+  #     with:
+  #       build_env: "staging"
+  #       deploy_env: "staging"
+  #       S3_BUCKET: ${{ vars.S3_BUCKET_STAGING }}
+  #       CF_DISTRIB_ID: ${{ vars.CF_DISTRIB_ID_STAGING }}
+  #     secrets:
+  #       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  #       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  #       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  #       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  api:
-    if: needs.files-changed.outputs.api == 'true'
-    needs: files-changed
-    uses: ./.github/workflows/_deploy_api.yml
-    with:
-      deploy_env: "staging"
-      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
-      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_STAGING }}
-      ECS_SERVICE: ${{ vars.ECS_SERVICE_STAGING }}
-      AWS_REGION: ${{ vars.API_REGION_STAGING }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  #   api:
+  #     if: needs.files-changed.outputs.api == 'true'
+  #     needs: files-changed
+  #     uses: ./.github/workflows/_deploy_api.yml
+  #     with:
+  #       deploy_env: "staging"
+  #       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
+  #       ECS_CLUSTER: ${{ vars.ECS_CLUSTER_STAGING }}
+  #       ECS_SERVICE: ${{ vars.ECS_SERVICE_STAGING }}
+  #       AWS_REGION: ${{ vars.API_REGION_STAGING }}
+  #     secrets:
+  #       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  #       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  #       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  #       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  infra-api-lambdas:
-    uses: ./.github/workflows/_deploy_cdk.yml
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
-    needs: files-changed
-    with:
-      deploy_env: "staging"
-      cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
-      AWS_REGION: ${{ vars.API_REGION_STAGING }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
-    secrets:
-      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  infra-widget:
-    uses: ./.github/workflows/_deploy_cdk.yml
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
-    needs: files-changed
-    with:
-      deploy_env: "staging"
-      cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
-      AWS_REGION: ${{ vars.WIDGET_REGION_STAGING }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
-    secrets:
-      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  #   infra-api-lambdas:
+  #     uses: ./.github/workflows/_deploy_cdk.yml
+  #     if: needs.files-changed.outputs.infra-lambdas == 'true'
+  #     needs: files-changed
+  #     with:
+  #       deploy_env: "staging"
+  #       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
+  #       AWS_REGION: ${{ vars.API_REGION_STAGING }}
+  #       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
+  #     secrets:
+  #       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+  #       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  #       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  #       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  #       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  #   infra-widget:
+  #     uses: ./.github/workflows/_deploy_cdk.yml
+  #     if: needs.files-changed.outputs.infra-lambdas == 'true'
+  #     needs: files-changed
+  #     with:
+  #       deploy_env: "staging"
+  #       cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
+  #       AWS_REGION: ${{ vars.WIDGET_REGION_STAGING }}
+  #       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
+  #     secrets:
+  #       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+  #       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  #       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  #       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  #       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   e2e-tests:
     uses: ./.github/workflows/_e2e.yml
-    needs: [widget, api, infra-api-lambdas, infra-widget]
+    # needs: [widget, api, infra-api-lambdas, infra-widget]
+    needs: files-changed
     with:
       deploy_env: "staging"
     secrets:
@@ -126,7 +127,8 @@ jobs:
 
   release:
     uses: ./.github/workflows/_release.yml
-    needs: [widget, api, infra-api-lambdas, infra-widget, e2e-tests]
+    # needs: [widget, api, infra-api-lambdas, infra-widget, e2e-tests]
+    needs: [e2e-tests]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run

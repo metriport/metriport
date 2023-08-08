@@ -53,6 +53,8 @@ jobs:
       - name: Install dependencies
         run: npm run install-deps
         working-directory: "./"
+        env:
+          TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
 
       - name: Build/compile
         # build from root because of dependencies
