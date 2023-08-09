@@ -92,7 +92,6 @@ export class HapiFhirAdminClient extends HapiFhirClient implements FhirAdminClie
 
   async createTenant(org: { organizationNumber: number; cxId: string }): Promise<void> {
     const url = this.fhirUrl("$partition-management-create-partition");
-    console.log(url, "url");
     const payload = {
       ...this.baseHAPIPayload,
       parameter: [
