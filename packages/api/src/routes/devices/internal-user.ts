@@ -105,7 +105,7 @@ router.post(
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (err: any) {
               errorsCaught.count++;
-              errorsCaught.errors.push(err.cause);
+              errorsCaught.errors.push(err.cause ? err.cause : err);
               console.log(
                 `Failed to add webhook subscriptions through the internal user route. User: ${connectedUser.id}, CX: ${connectedUser.cxId}, Error: ${err}.`
               );
