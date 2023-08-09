@@ -157,3 +157,15 @@ jobs:
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
     if: ${{ !failure() && (needs.widget.result == 'success' || needs.api-sandbox.result == 'success' || needs.infra-api-lambdas-sandbox.result == 'success' || needs.infra-widget.result == 'success') }}
     secrets: inherit
+
+  e2e-tests:
+    uses: ./.github/workflows/_e2e.yml
+    needs: release
+    with:
+      deploy_env: "production"
+    secrets:
+      TEST_API_KEY: ${{ secrets.TEST_API_KEY_PRODUCTION }}
+      API_URL: ${{ secrets.API_URL_PRODUCTION }}
+      FHIR_SERVER_URL: ${{ secrets.FHIR_SERVER_URL_PRODUCTION }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

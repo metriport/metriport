@@ -3,11 +3,6 @@ name: Reusable e2e workflow for API
 on:
   workflow_call:
     inputs:
-      path:
-        description: "sub-directory where this workflow should execute lint and build "
-        required: false
-        type: string
-        default: "packages/api"
       deploy_env:
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
         required: true
@@ -57,8 +52,6 @@ jobs:
       - name: Install dependencies
         run: npm run install-deps
         working-directory: "./"
-        env:
-          TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
 
       - name: Build/compile
         # build from root because of dependencies
@@ -67,7 +60,7 @@ jobs:
 
       - name: Run Tests
         run: npm run test:e2e
-        working-directory: ${{ inputs.path }}
+        working-directory: "./"
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
           API_URL: ${{ secrets.API_URL }}
