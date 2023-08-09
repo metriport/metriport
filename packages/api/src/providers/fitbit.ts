@@ -52,6 +52,7 @@ import { PROVIDER_FITBIT } from "../shared/constants";
 import { capture } from "../shared/notifications";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
+import MetriportError from "../errors/metriport-error";
 
 export type FitbitToken = {
   accessToken: string;
@@ -62,6 +63,14 @@ export type FitbitToken = {
   userId: string; // Fitbit user ID
   expiresAt: Date;
 };
+
+class FitbitPostAuthError extends MetriportError {
+  rejected: unknown;
+  constructor(message = "Failed to create Fitbit WH subscriptions.", rejected?: unknown) {
+    super(message);
+    this.rejected = rejected;
+  }
+}
 
 export class Fitbit extends Provider implements OAuth2 {
   static URL = "https://api.fitbit.com";
@@ -454,7 +463,7 @@ export class Fitbit extends Provider implements OAuth2 {
         extra: { rejected, fitbitUserId, currentUser },
       });
       if (internal) {
-        throw new Error("Failed to revoke the token of a Fitbit user.", { cause: rejected });
+        throw new FitbitPostAuthError("Failed to revoke the token of a Fitbit user.", rejected);
       }
     }
   }
@@ -545,7 +554,7 @@ export class Fitbit extends Provider implements OAuth2 {
       );
       capture.message(`Failed to create Fitbit WH subscriptions.`, { extra: { rejected } });
       if (internal) {
-        throw new Error("Failed to create Fitbit WH subscriptions.", { cause: rejected });
+        throw new FitbitPostAuthError("Failed to create Fitbit WH subscriptions.", rejected);
       }
     }
   }
