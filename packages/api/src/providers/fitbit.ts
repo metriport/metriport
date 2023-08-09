@@ -379,6 +379,14 @@ export class Fitbit extends Provider implements OAuth2 {
     );
   }
 
+  /**
+   * If multiple users are connected to the same Fitbit user, revokes their tokens and deletes their WH subscriptions.
+   * Then creates new WH subscriptions based on the user's selected scopes.
+   *
+   * @param token Fitbit token string, as stored in the database
+   * @param user ConnectedUser who is connecting to Fitbit
+   * @param internal boolean to indicate whether this is coming from internal/user/resubscribe-fitbit-webhooks endpoint, in which case it rethrows the errors to be caught by the caller
+   */
   async postAuth(token: string, user: ConnectedUser, internal?: boolean): Promise<void> {
     const fitbitToken = parseFitbitToken(token);
     await this.revokeTokenFromOtherUsers(user, fitbitToken.userId, internal);
@@ -401,38 +409,40 @@ export class Fitbit extends Provider implements OAuth2 {
       fitbitUserId
     );
     const rejected: { userId: string; cxId: string; err: unknown }[] = [];
-    await Promise.allSettled(
-      connectedUsers.map(async user => {
-        if (user.dataValues.id !== currentUser.dataValues.id) {
-          try {
-            const token = getProviderTokenFromConnectedUserOrFail(user, ProviderSource.fitbit);
-            const fitbitToken = parseFitbitToken(token);
-            await this.oauth.revokeLocal(user);
-            const updatedUser = await getConnectedUserOrFail({
-              id: user.id,
-              cxId: user.cxId,
-            });
-            // intentionally asynchronous, not waiting for the result
-            sendProviderDisconnected(updatedUser, [ProviderSource.fitbit]);
-            const activeSubscriptions = await this.getActiveSubscriptions(fitbitToken);
+    if (connectedUsers.length > 1) {
+      await Promise.allSettled(
+        connectedUsers.map(async user => {
+          if (user.dataValues.id !== currentUser.dataValues.id) {
+            try {
+              const token = getProviderTokenFromConnectedUserOrFail(user, ProviderSource.fitbit);
+              const fitbitToken = parseFitbitToken(token);
+              await this.oauth.revokeLocal(user);
+              const updatedUser = await getConnectedUserOrFail({
+                id: user.id,
+                cxId: user.cxId,
+              });
+              // intentionally asynchronous, not waiting for the result
+              sendProviderDisconnected(updatedUser, [ProviderSource.fitbit]);
+              const activeSubscriptions = await this.getActiveSubscriptions(fitbitToken);
 
-            await Promise.allSettled(
-              activeSubscriptions.map(async subscription => {
-                const url = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscription.collectionType}/apiSubscriptions/${subscription.subscriptionId}.json`;
-                try {
-                  await this.deleteSubscription(url, fitbitToken.accessToken);
-                } catch (err) {
-                  rejected.push({ userId: user.id, cxId: user.cxId, err });
-                  throw err;
-                }
-              })
-            );
-          } catch (err) {
-            rejected.push({ userId: user.id, cxId: user.cxId, err });
+              await Promise.allSettled(
+                activeSubscriptions.map(async subscription => {
+                  const url = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscription.collectionType}/apiSubscriptions/${subscription.subscriptionId}.json`;
+                  try {
+                    await this.deleteSubscription(url, fitbitToken.accessToken);
+                  } catch (err) {
+                    rejected.push({ userId: user.id, cxId: user.cxId, err });
+                    throw err;
+                  }
+                })
+              );
+            } catch (err) {
+              rejected.push({ userId: user.id, cxId: user.cxId, err });
+            }
           }
-        }
-      })
-    );
+        })
+      );
+    }
 
     if (rejected.length > 0) {
       console.log(
