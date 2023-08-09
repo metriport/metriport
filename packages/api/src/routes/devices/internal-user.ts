@@ -97,7 +97,8 @@ router.post(
               if (fitbitToken) {
                 await Constants.PROVIDER_OAUTH2_MAP[ProviderSource.fitbit].postAuth?.(
                   fitbitToken,
-                  connectedUser
+                  connectedUser,
+                  true
                 );
                 usersAffected++;
               }
@@ -106,9 +107,7 @@ router.post(
               errorsCaught.count++;
               errorsCaught.errors.push(err.cause);
               console.log(
-                `Failed to add webhook subscriptions through the internal user route. User: ${JSON.stringify(
-                  connectedUser
-                )}, Provider: ${providerStr}, Error: ${err}.`
+                `Failed to add webhook subscriptions through the internal user route. User: ${connectedUser.id}, CX: ${connectedUser.cxId}, Error: ${err}.`
               );
             }
           }
