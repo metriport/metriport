@@ -3,6 +3,7 @@
     "workbench.colorCustomizations": {
       "statusBar.background": "#007acc"
     },
+    "typescript.tsdk": "node_modules/typescript/lib",
     "githubPullRequests.ignoredPullRequestBranches": [
       "develop"
     ]
