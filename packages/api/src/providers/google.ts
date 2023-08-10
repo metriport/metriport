@@ -1,7 +1,6 @@
 import { Activity, Biometrics, Body, Nutrition, Sleep } from "@metriport/api-sdk";
 import axios from "axios";
 import dayjs from "dayjs";
-
 import timezone from "dayjs/plugin/timezone";
 import { mapToActivity } from "../mappings/google/activity";
 import { mapToBiometrics } from "../mappings/google/biometrics";
