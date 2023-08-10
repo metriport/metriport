@@ -57,7 +57,9 @@ export class OAuth1DefaultImpl implements OAuth1 {
     // build the authorization URL for the user
     const callbackUrl =
       Config.getConnectRedirectUrl() + `/${this.providerName}/?state=${userToken.token}`;
-    return `${this.userApproveUrl}?oauth_token=${oauth_token}&oauth_callback=${callbackUrl}`;
+    return `${this.userApproveUrl}?oauth_token=${oauth_token}&oauth_callback=${encodeURIComponent(
+      callbackUrl
+    )}`;
   }
 
   /**
