@@ -603,7 +603,7 @@ export class Fitbit extends Provider implements OAuth2 {
       "Fitbit WH subscription created successfully with status:",
       resp.status,
       "at url: ",
-      url
+      subscriptionUrl
     );
   }
 }
