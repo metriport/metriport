@@ -12,14 +12,5 @@
     "outDir": "./dist" /* Specify an output folder for all emitted files. */
   },
   "include": ["./src/**/*"],
-  "exclude": [
-    "dist",
-    "node_modules",
-    "**/*.test.*",
-    "**/*.spec.*",
-    "**/__mocks__/",
-    "**/__tests__/",
-    "layers",
-    "static"
-  ]
+  "exclude": ["dist", "node_modules", "layers", "static"]
 }

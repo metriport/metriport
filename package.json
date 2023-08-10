@@ -52,9 +52,6 @@
       "path": "@commitlint/cz-commitlint"
     }
   },
-  "dependencies": {
-    "typescript": "^4.9.4"
-  },
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",
     "@commitlint/config-conventional": "^17.4.2",

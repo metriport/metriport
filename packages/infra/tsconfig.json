@@ -19,13 +19,5 @@
     "preserveSymlinks": true
   },
   "include": ["bin", "lib", "config"],
-  "exclude": [
-    "cdk.out",
-    "dist",
-    "node_modules",
-    "**/*.test.*",
-    "**/*.spec.*",
-    "**/__mocks__/",
-    "**/__tests__/"
-  ]
+  "exclude": ["cdk.out", "dist", "node_modules"]
 }

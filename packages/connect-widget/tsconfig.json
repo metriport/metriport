@@ -7,16 +7,9 @@
     "allowUnreachableCode": false,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
-    "checkJs": true,
+    "checkJs": true
     // END
   },
   "include": ["src"],
-  "exclude": [
-    "build",
-    "node_modules",
-    "**/*.test.*",
-    "**/*.spec.*",
-    "**/__mocks__/",
-    "**/__tests__/"
-  ]
+  "exclude": ["build", "node_modules"]
 }

@@ -98,10 +98,6 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-        # TODO: #156 disabled bc its not working, waiting Sentry support
-        # https://metriport.slack.com/archives/C04FZ9859FZ/p1680112432771159?thread_ts=1680110062.829999&cid=C04FZ9859FZ
-        # if: env.SENTRY_AUTH_TOKEN != null && env.SENTRY_ORG != null
-        if: false
         with:
           environment: ${{ inputs.deploy_env }}
           version: ${{ github.sha }}
