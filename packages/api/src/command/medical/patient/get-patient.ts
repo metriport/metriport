@@ -3,7 +3,7 @@ import { Op, Transaction } from "sequelize";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
-import { Patient, PatientData, PatientModel } from "../../../models/medical/patient";
+import { Patient, PatientData, PatientModel, splitName } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
@@ -70,8 +70,10 @@ export const getPatientByDemo = async ({
     }
     // If the IDs don't match, or none were provided, check the demo for a match
     let demoMatch =
-      intersectionWith(patient.data.firstName, demo.firstName, isEqual).length > 0 &&
-      intersectionWith(patient.data.lastName, demo.lastName, isEqual).length > 0 &&
+      intersectionWith(splitName(patient.data.firstName), splitName(demo.firstName), isEqual)
+        .length > 0 &&
+      intersectionWith(splitName(patient.data.lastName), splitName(demo.lastName), isEqual).length >
+        0 &&
       intersectionWith(patient.data.address, demo.address, isEqual).length > 0;
     if (demoMatch && demo.contact && demo.contact.length > 0) {
       demoMatch = intersectionWith(patient.data.contact, demo.contact, isEqual).length > 0;
