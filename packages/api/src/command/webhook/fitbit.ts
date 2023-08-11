@@ -9,7 +9,7 @@ import { Constants } from "../../shared/constants";
 import { ISO_DATE } from "../../shared/date";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { getConnectedUsersByTokenOrFail } from "../connected-user/get-connected-user";
+import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes } from "../usage/report-usage";
 import { reportDevicesUsage } from "./devices";
@@ -32,80 +32,93 @@ const log = Util.log(`Fitbit Webhook`);
 export const processData = async (data: FitbitWebhook): Promise<void> => {
   console.log("Starting to process a Fitbit webhook.");
 
+  // Group notifications by Fitbit user ID
+  const fitbitUserGroupedNotifications: {
+    [fitbitUserId: string]: { collectionType: FitbitCollectionTypes; date: string }[];
+  } = {};
+
+  data.forEach(d => {
+    if (!fitbitUserGroupedNotifications[d.ownerId]) {
+      fitbitUserGroupedNotifications[d.ownerId] = [];
+    }
+    fitbitUserGroupedNotifications[d.ownerId].push({
+      collectionType: d.collectionType,
+      date: d.date,
+    });
+  });
+
+  // collect and group data by ConnectedUser
   const connectedUsersAndData = await Promise.all(
-    data.map(async d => {
-      const { collectionType, date, ownerId: fitbitUserId } = d;
-      try {
-        const connectedUsers = await getConnectedUsersByTokenOrFail(
-          ProviderSource.fitbit,
-          fitbitUserId
-        );
+    Object.entries(fitbitUserGroupedNotifications).map(async ([fitbitUserId, notifications]) => {
+      const connectedUser = await getConnectedUserByTokenOrFail(
+        ProviderSource.fitbit,
+        fitbitUserId
+      );
+      const accessToken = await Constants.PROVIDER_OAUTH2_MAP[ProviderSource.fitbit].getAccessToken(
+        connectedUser
+      );
 
-        const userFitbitData = await mapData(collectionType, connectedUsers[0], date);
-        const returnData: Entry[] = [];
+      const userFitbitData: WebhookUserDataPayload = {};
+      await Promise.all(
+        notifications.map(async d => {
+          const mappedData = await mapData(connectedUser, d.collectionType, d.date, accessToken);
+          const entryKeys = Object.keys(mappedData) as DataType[];
+          for (const key of entryKeys) {
+            if (!userFitbitData[key]) {
+              userFitbitData[key] = [];
+            }
+            userFitbitData[key] = union(userFitbitData[key], mappedData[key]);
+          }
+        })
+      );
 
-        connectedUsers.forEach(connectedUser => {
-          returnData.push({
-            cxId: connectedUser.cxId,
-            userId: connectedUser.id,
-            typedData: userFitbitData,
-          });
-        });
-        return returnData;
-      } catch (err) {
-        console.log(`Failed to collect and map Fitbit data on a webhook. Cause: ${err}`);
-        capture.error(err, { extra: { context: `fitbit.processData`, err } });
-      }
+      return { cxId: connectedUser.cxId, userId: connectedUser.id, typedData: userFitbitData };
     })
   );
 
   const reducedData: Entry[] = [];
-  connectedUsersAndData.forEach(clusterEntry => {
-    clusterEntry?.forEach(entry => {
-      const existingUserIndex = reducedData.findIndex(
-        item => item.cxId === entry.cxId && item.userId === entry.userId
-      );
 
-      if (existingUserIndex >= 0) {
-        const entryKeys = Object.keys(entry.typedData) as DataType[];
+  connectedUsersAndData.forEach(entry => {
+    const existingUserIndex = reducedData.findIndex(
+      item => item.cxId === entry.cxId && item.userId === entry.userId
+    );
 
-        reducedData[existingUserIndex] = {
-          ...reducedData[existingUserIndex],
-          typedData: {
-            ...reducedData[existingUserIndex].typedData,
-            ...(entryKeys.includes("activity")
-              ? {
-                  activity: union(
-                    reducedData[existingUserIndex].typedData.activity,
-                    entry.typedData.activity
-                  ),
-                }
-              : undefined),
-            ...(entryKeys.includes("nutrition")
-              ? {
-                  nutrition: union(
-                    reducedData[existingUserIndex].typedData.nutrition,
-                    entry.typedData.nutrition
-                  ),
-                }
-              : undefined),
-            ...(entryKeys.includes("body")
-              ? { body: union(reducedData[existingUserIndex].typedData.body, entry.typedData.body) }
-              : undefined),
-            ...(entryKeys.includes("sleep")
-              ? {
-                  sleep: union(
-                    reducedData[existingUserIndex].typedData.sleep,
-                    entry.typedData.sleep
-                  ),
-                }
-              : undefined),
-          },
-        };
-      } else {
-        reducedData.push(entry);
-      }
-    });
+    if (existingUserIndex >= 0) {
+      const entryKeys = Object.keys(entry.typedData) as DataType[];
+
+      reducedData[existingUserIndex] = {
+        ...reducedData[existingUserIndex],
+        typedData: {
+          ...reducedData[existingUserIndex].typedData,
+          ...(entryKeys.includes("activity")
+            ? {
+                activity: union(
+                  reducedData[existingUserIndex].typedData.activity,
+                  entry.typedData.activity
+                ),
+              }
+            : undefined),
+          ...(entryKeys.includes("nutrition")
+            ? {
+                nutrition: union(
+                  reducedData[existingUserIndex].typedData.nutrition,
+                  entry.typedData.nutrition
+                ),
+              }
+            : undefined),
+          ...(entryKeys.includes("body")
+            ? { body: union(reducedData[existingUserIndex].typedData.body, entry.typedData.body) }
+            : undefined),
+          ...(entryKeys.includes("sleep")
+            ? {
+                sleep: union(reducedData[existingUserIndex].typedData.sleep, entry.typedData.sleep),
+              }
+            : undefined),
+        },
+      };
+    } else {
+      reducedData.push(entry);
+    }
   });
 
   const dataByCustomer = groupBy(reducedData, v => v.cxId);
@@ -114,24 +127,27 @@ export const processData = async (data: FitbitWebhook): Promise<void> => {
 };
 
 export const mapData = async (
-  collectionType: FitbitCollectionTypes,
   connectedUser: ConnectedUser,
-  startdate: string
+  collectionType: FitbitCollectionTypes,
+  startdate: string,
+  accessToken: string
 ): Promise<WebhookUserDataPayload> => {
   const payload: WebhookUserDataPayload = {};
   const provider = Constants.PROVIDER_MAP[ProviderSource.fitbit];
 
   if (collectionType === "activities") {
-    const activity = await provider.getActivityData(connectedUser, startdate, {});
+    const activity = await provider.getActivityData(connectedUser, startdate, { accessToken });
     payload.activity = [activity];
   } else if (collectionType === "body") {
-    const body = await provider.getBodyData(connectedUser, startdate, {});
+    const body = await provider.getBodyData(connectedUser, startdate, { accessToken });
     payload.body = [body];
   } else if (collectionType === "foods") {
-    const nutrition = await provider.getNutritionData(connectedUser, startdate, {});
+    const nutrition = await provider.getNutritionData(connectedUser, startdate, { accessToken });
     payload.nutrition = [nutrition];
   } else if (collectionType === "sleep") {
-    const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format(ISO_DATE), {});
+    const sleep = await provider.getSleepData(connectedUser, dayjs(startdate).format(ISO_DATE), {
+      accessToken,
+    });
     payload.sleep = [sleep];
   } else if (collectionType === "userRevokedAccess") {
     // do nothing until issue #652 is resolved
