@@ -11,6 +11,8 @@ describe("Metriport TestSuite", () => {
       return;
     });
 
+    await metriportClient.updateSettings("");
+
     const TEST_WEBHOOK_URL = "https://test.site/123";
 
     const getSettingsResp = await metriportClient.getSettings();

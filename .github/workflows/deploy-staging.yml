@@ -128,9 +128,9 @@ jobs:
     needs: release
     with:
       deploy_env: "staging"
+      api_url: ${{ secrets.API_URL_STAGING }}
+      fhir_url: ${{ secrets.FHIR_SERVER_URL_STAGING }}
     secrets:
       TEST_API_KEY: ${{ secrets.TEST_API_KEY_STAGING }}
-      API_URL: ${{ secrets.API_URL_STAGING }}
-      FHIR_SERVER_URL: ${{ secrets.FHIR_SERVER_URL_STAGING }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
