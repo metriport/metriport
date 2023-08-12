@@ -4,11 +4,31 @@ import { Organization } from "../models/organization";
 import { Patient } from "../models/patient";
 import { Person, PersonSearchResp } from "../models/person";
 
+/**
+ * Returns the ID of a person.
+ * @deprecated Use {@link getPersonId} instead.
+ */
 export function getId(object: Person | undefined): string | undefined {
+  return getPersonId(object);
+}
+
+/**
+ * Returns the ID of a person.
+ */
+export function getPersonId(object: Person | undefined): string | undefined {
   if (!object) return undefined;
   const url = object._links?.self?.href;
-  if (!url) return undefined;
-  return url.substring(url.lastIndexOf("/") + 1);
+  return getPersonIdFromUrl(url);
+}
+
+/**
+ * Returns the ID of a person from its URL.
+ *
+ * @param personUrl - The person's URL as returned from `Person._links.self.href`
+ */
+export function getPersonIdFromUrl(personUrl: string | undefined | null): string | undefined {
+  if (!personUrl) return undefined;
+  return personUrl.substring(personUrl.lastIndexOf("/") + 1);
 }
 
 export function getPersonIdFromSearchByPatientDemo(object: PersonSearchResp): string | undefined {
