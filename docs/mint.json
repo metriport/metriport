@@ -125,7 +125,7 @@
           ]
         },
         {
-          "group": "Fhir",
+          "group": "FHIR",
           "pages": [
             "medical-api/api-reference/fhir/get-patient-consolidated",
             "medical-api/api-reference/fhir/create-patient-consolidated"
