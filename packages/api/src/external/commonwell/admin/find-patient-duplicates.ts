@@ -1,14 +1,11 @@
-import { getId } from "@metriport/commonwell-sdk";
+import { getPersonId } from "@metriport/commonwell-sdk";
 import stringify from "json-stringify-safe";
 import { chunk, groupBy } from "lodash";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
-import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
-import { MedicalDataSource } from "../../index";
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
-import { PatientDataCommonwell, getPatientData } from "../patient-shared";
+import { getCWAccessForPatient } from "./shared";
 
 const MAX_QUERIES_IN_PARALLEL = 10;
 
@@ -18,13 +15,16 @@ const JITTER_DELAY_MIN_PCT = 30; // 1-100% of max delay
 const CHUNK_DELAY_MAX_MS = 500; // in milliseconds
 const CHUNK_DELAY_MIN_PCT = 50; // 1-100% of max delay
 
+const indetermined = "unknown";
+
 /**
  * personId might be the actual personId or "falsy" to indicate that the personId is `null | undefined`
  */
 export type DuplicatedPersonsOfPatient = {
   // each person ID and the number of links it has to patients
   [personId: string]: {
-    amountOfLinks?: number;
+    amountOfLinks?: number | string;
+    enrolled?: boolean | string;
     enroller?: string;
     enrollmentDate?: string;
     /**
@@ -37,7 +37,7 @@ export type DuplicatedPersonsOfPatient = {
      */
     mismatchLocalId?: {
       id: string;
-      amountOfLinks?: number;
+      amountOfLinks?: number | string;
       enroller?: string;
       enrollmentDate?: string;
     };
@@ -98,40 +98,23 @@ const failed = (reason: string, isMetriport?: true): DuplicatedPersonsOfPatient 
 export async function findDuplicatedPersonsByPatient(
   patient: Patient
 ): Promise<DuplicatedPersonsOfPatient | undefined> {
+  const simpleErrorLog = (op: string) => (err: unknown) =>
+    console.log(`[patient ${patient.id}] Failed/error to ${op}: ${err}`);
   try {
-    const facilityId = patient.facilityIds[0];
-    if (!facilityId) {
-      console.log(`Patient ${patient.id} has no facilityId, skipping...`);
-      return failed("missing-facility-id", true);
-    }
-    const commonwellData = patient.data.externalData
-      ? (patient.data.externalData[MedicalDataSource.COMMONWELL] as PatientDataCommonwell)
-      : undefined;
-    if (!commonwellData) {
-      console.log(`Patient ${patient.id} has no externalData for CommonWell, skipping...`);
-      return failed("missing-external-data", true);
-    }
-    const cwPatientId = commonwellData.patientId;
-    const storedPersonId = commonwellData.personId;
+    const cwAccess = await getCWAccessForPatient(patient);
+    if (cwAccess.error != null) return failed(cwAccess.error, true);
 
-    // Get Org info to setup API access
-    const { organization, facility } = await getPatientData(patient, facilityId);
-    const orgName = organization.data.name;
-    const orgOID = organization.oid;
-    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-
-    const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+    const { commonWell, queryMeta, cwPatientId, cwPersonId: storedPersonId } = cwAccess;
 
     const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, cwPatientId);
 
     const persons = respSearch._embedded?.person
-      ? respSearch._embedded.person.flatMap(p => (p && getId(p) ? p : []))
+      ? respSearch._embedded.person.flatMap(p => (p && getPersonId(p) ? p : []))
       : [];
     const filteredPersons = persons.flatMap(filterTruthy);
     if (filteredPersons.length === 1) {
       const thePerson = filteredPersons[0];
-      const foundPersonId = getId(thePerson);
+      const foundPersonId = getPersonId(thePerson);
       if (foundPersonId === storedPersonId && storedPersonId != undefined) {
         console.log(`Good! No duplicates found for patient ${patient.id} AND person IDs match!`);
         return undefined;
@@ -140,26 +123,41 @@ export async function findDuplicatedPersonsByPatient(
           `No duplicates found for patient ${patient.id}, but person IDs dont match or are falsy (stored: ${storedPersonId}, found: ${foundPersonId})`
         );
         const [foundPersonLinks, storedPerson, storedPersonLinks] = await Promise.all([
-          foundPersonId ? commonWell.getPatientLinks(queryMeta, foundPersonId) : undefined,
-          storedPersonId ? commonWell.getPersonById(queryMeta, storedPersonId) : undefined,
-          storedPersonId ? commonWell.getPatientLinks(queryMeta, storedPersonId) : undefined,
+          foundPersonId
+            ? commonWell
+                .getPatientLinks(queryMeta, foundPersonId)
+                .catch(simpleErrorLog(`getPatientLinks, person ${foundPersonId}`))
+            : undefined,
+          storedPersonId
+            ? commonWell
+                .getPersonById(queryMeta, storedPersonId)
+                .catch(simpleErrorLog(`getPersonById, person ${storedPersonId}`))
+            : undefined,
+          storedPersonId
+            ? commonWell
+                .getPatientLinks(queryMeta, storedPersonId)
+                .catch(simpleErrorLog(`getPatientLinks, person ${storedPersonId}`))
+            : undefined,
         ]);
         return {
           [foundPersonId ?? "falsy"]: {
             ...(foundPersonLinks
               ? {
-                  amountOfLinks: foundPersonLinks._embedded?.patientLink?.length || 0,
-                  enroller: thePerson?.enrollmentSummary?.enroller || "unknown",
-                  enrollmentDate: thePerson?.enrollmentSummary?.dateEnrolled || "unknown",
+                  amountOfLinks: foundPersonLinks?._embedded?.patientLink?.length || indetermined,
+                  enrolled: thePerson?.enrolled ?? indetermined,
+                  enroller: thePerson?.enrollmentSummary?.enroller ?? indetermined,
+                  enrollmentDate: thePerson?.enrollmentSummary?.dateEnrolled ?? indetermined,
                 }
               : {}),
             mismatchLocalId: {
               id: storedPersonId ?? "falsy",
               ...(storedPersonLinks
                 ? {
-                    amountOfLinks: storedPersonLinks._embedded?.patientLink?.length || 0,
-                    enroller: storedPerson?.enrollmentSummary?.enroller || "unknown",
-                    enrollmentDate: storedPerson?.enrollmentSummary?.dateEnrolled || "unknown",
+                    amountOfLinks:
+                      storedPersonLinks?._embedded?.patientLink?.length ?? indetermined,
+                    enrolled: storedPerson?.enrolled ?? indetermined,
+                    enroller: storedPerson?.enrollmentSummary?.enroller ?? indetermined,
+                    enrollmentDate: storedPerson?.enrollmentSummary?.dateEnrolled ?? indetermined,
                   }
                 : {}),
             },
@@ -172,7 +170,7 @@ export async function findDuplicatedPersonsByPatient(
     }
     console.log(`Found ${filteredPersons.length} persons for patient ${patient.id}`);
 
-    const personIds = filteredPersons.map(getId).flatMap(filterTruthy);
+    const personIds = filteredPersons.map(getPersonId).flatMap(filterTruthy);
     if (personIds.length < 1) {
       console.log(`Got FALSY person IDs for patient ${patient.id} - we should look into this!`);
       return failed("falsy-person-id");
@@ -182,18 +180,21 @@ export async function findDuplicatedPersonsByPatient(
 
     // for each person, get their enrolment details
     for (const person of filteredPersons) {
-      const personId = getId(person);
+      const personId = getPersonId(person);
       if (!personId) {
         console.log(
           `Got a person without ID for patient ${patient.id}, skipping - ${stringify(person)}`
         );
         continue;
       }
-      const patientLinks = await commonWell.getPatientLinks(queryMeta, personId);
+      const patientLinks = await commonWell
+        .getPatientLinks(queryMeta, personId)
+        .catch(simpleErrorLog(`getPatientLinks, person ${personId}`));
       res[personId] = {
-        amountOfLinks: patientLinks._embedded?.patientLink?.length || 0,
-        enroller: person.enrollmentSummary?.enroller || "unknown",
-        enrollmentDate: person.enrollmentSummary?.dateEnrolled || "unknown",
+        amountOfLinks: patientLinks?._embedded?.patientLink?.length ?? indetermined,
+        enrolled: person.enrolled ?? indetermined,
+        enroller: person.enrollmentSummary?.enroller ?? indetermined,
+        enrollmentDate: person.enrollmentSummary?.dateEnrolled ?? indetermined,
         ...(storedPersonId === personId ? { isMetriport: true } : {}),
       };
     }
