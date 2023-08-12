@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import stringify from "json-stringify-safe";
+import { z } from "zod";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatients } from "../../command/medical/patient/get-patient";
@@ -10,11 +11,13 @@ import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
 import cwCommands from "../../external/commonwell";
-import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
+import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
+import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
+import { stringToBoolean } from "../../shared/types";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getETag, getFromParamsOrFail, getFromQueryOrFail } from "../util";
-import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { asyncHandler, getETag, getFrom, getFromParamsOrFail, getFromQueryOrFail } from "../util";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
 
 const router = Router();
@@ -193,6 +196,67 @@ router.get(
     const result = await findDuplicatedPersons(cxId);
     console.log(`Result: ${stringify(result)}`);
     return res.status(status.OK).json(result);
+  })
+);
+
+// Zod schema to validate the request body based on the response of GET /duplicates
+const patchDuplicatesSchema = z.record(
+  // cx
+  z.record(
+    // patient
+    z.record(z.object({}).nullish())
+  )
+);
+
+/** ---------------------------------------------------------------------------
+ * PATCH /internal/patient/duplicates
+ *
+ * Links the patient to the chosen person.
+ * Additionally, unenroll:
+ * - any other person linked to the patient; AND
+ * - all other persons matching the patient's demographics.
+ *
+ * @param req.body The request body in the same format of the output of "GET /duplicates".
+ *     Each patient must have one chosen person. Less than one it gets skipped; more
+ *     than one it throws an error.
+ */
+router.patch(
+  "/duplicates",
+  asyncHandler(async (req: Request, res: Response) => {
+    const unenrollByDemographics = stringToBoolean(
+      getFrom("query").optional("unenrollByDemographics", req)
+    );
+    const payload = patchDuplicatesSchema.parse(req.body);
+
+    const result = await Promise.allSettled(
+      Object.entries(payload).flatMap(([cxId, patients]) => {
+        return Object.entries(patients).flatMap(async ([patientId, persons]) => {
+          const personEntries = Object.entries(persons);
+          if (personEntries.length < 1) return;
+          if (personEntries.length > 1)
+            throw new BadRequestError(
+              `Failed to patch patient ${patientId} - One chosen person per patient allowed`
+            );
+          const personId = personEntries[0][0] as string;
+          return patchDuplicatedPersonsForPatient(
+            cxId,
+            patientId,
+            personId,
+            unenrollByDemographics
+          ).catch(e => {
+            console.log(`Error: ${e}, ${String(e)}`);
+            throw `Failed to patch patient ${patientId} - ${String(e)}`;
+          });
+        });
+      })
+    );
+    const succeded = result.filter(r => r.status === "fulfilled");
+    const failed = result.flatMap(r => (r.status === "rejected" ? r.reason : []));
+    return res.status(status.OK).json({
+      succededCount: succeded.length,
+      failedCount: failed.length,
+      failed,
+    });
   })
 );
 
