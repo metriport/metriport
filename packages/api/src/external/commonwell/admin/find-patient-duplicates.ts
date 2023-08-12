@@ -195,8 +195,8 @@ export async function findDuplicatedPersonsByPatient(
 }
 
 const getLinkInfo = (person?: Person, links?: PatientLinkSearchResp) => ({
-  amountOfLinks: links?._embedded?.patientLink?.length || undetermined,
-  enrolled: person?.enrolled || undetermined,
+  amountOfLinks: links?._embedded?.patientLink?.length ?? undetermined,
+  enrolled: person?.enrolled ?? undetermined,
   enroller: person?.enrollmentSummary?.enroller || undetermined,
   enrollmentDate: person?.enrollmentSummary?.dateEnrolled || undetermined,
 });
