@@ -1,4 +1,4 @@
-import { getPersonId } from "@metriport/commonwell-sdk";
+import { getPersonId, PatientLinkSearchResp, Person } from "@metriport/commonwell-sdk";
 import stringify from "json-stringify-safe";
 import { chunk, groupBy } from "lodash";
 import { Patient, PatientModel } from "../../../models/medical/patient";
@@ -15,7 +15,7 @@ const JITTER_DELAY_MIN_PCT = 30; // 1-100% of max delay
 const CHUNK_DELAY_MAX_MS = 500; // in milliseconds
 const CHUNK_DELAY_MIN_PCT = 50; // 1-100% of max delay
 
-const indetermined = "unknown";
+const undetermined = "unknown";
 
 /**
  * personId might be the actual personId or "falsy" to indicate that the personId is `null | undefined`
@@ -98,8 +98,10 @@ const failed = (reason: string, isMetriport?: true): DuplicatedPersonsOfPatient 
 export async function findDuplicatedPersonsByPatient(
   patient: Patient
 ): Promise<DuplicatedPersonsOfPatient | undefined> {
-  const simpleErrorLog = (op: string) => (err: unknown) =>
+  const simpleErrorLog = (op: string) => (err: unknown) => {
     console.log(`[patient ${patient.id}] Failed/error to ${op}: ${err}`);
+    return undefined;
+  };
   try {
     const cwAccess = await getCWAccessForPatient(patient);
     if (cwAccess.error != null) return failed(cwAccess.error, true);
@@ -141,25 +143,10 @@ export async function findDuplicatedPersonsByPatient(
         ]);
         return {
           [foundPersonId ?? "falsy"]: {
-            ...(foundPersonLinks
-              ? {
-                  amountOfLinks: foundPersonLinks?._embedded?.patientLink?.length || indetermined,
-                  enrolled: thePerson?.enrolled ?? indetermined,
-                  enroller: thePerson?.enrollmentSummary?.enroller ?? indetermined,
-                  enrollmentDate: thePerson?.enrollmentSummary?.dateEnrolled ?? indetermined,
-                }
-              : {}),
+            ...getLinkInfo(thePerson, foundPersonLinks),
             mismatchLocalId: {
               id: storedPersonId ?? "falsy",
-              ...(storedPersonLinks
-                ? {
-                    amountOfLinks:
-                      storedPersonLinks?._embedded?.patientLink?.length ?? indetermined,
-                    enrolled: storedPerson?.enrolled ?? indetermined,
-                    enroller: storedPerson?.enrollmentSummary?.enroller ?? indetermined,
-                    enrollmentDate: storedPerson?.enrollmentSummary?.dateEnrolled ?? indetermined,
-                  }
-                : {}),
+              ...getLinkInfo(storedPerson, storedPersonLinks),
             },
           },
         };
@@ -191,10 +178,7 @@ export async function findDuplicatedPersonsByPatient(
         .getPatientLinks(queryMeta, personId)
         .catch(simpleErrorLog(`getPatientLinks, person ${personId}`));
       res[personId] = {
-        amountOfLinks: patientLinks?._embedded?.patientLink?.length ?? indetermined,
-        enrolled: person.enrolled ?? indetermined,
-        enroller: person.enrollmentSummary?.enroller ?? indetermined,
-        enrollmentDate: person.enrollmentSummary?.dateEnrolled ?? indetermined,
+        ...getLinkInfo(person, patientLinks),
         ...(storedPersonId === personId ? { isMetriport: true } : {}),
       };
     }
@@ -209,6 +193,13 @@ export async function findDuplicatedPersonsByPatient(
     return undefined;
   }
 }
+
+const getLinkInfo = (person?: Person, links?: PatientLinkSearchResp) => ({
+  amountOfLinks: links?._embedded?.patientLink?.length || undetermined,
+  enrolled: person?.enrolled || undetermined,
+  enroller: person?.enrollmentSummary?.enroller || undetermined,
+  enrollmentDate: person?.enrollmentSummary?.dateEnrolled || undetermined,
+});
 
 async function jitterInsideChunk(): Promise<void> {
   return Util.sleepRandom(JITTER_DELAY_MAX_MS, JITTER_DELAY_MIN_PCT / 100);

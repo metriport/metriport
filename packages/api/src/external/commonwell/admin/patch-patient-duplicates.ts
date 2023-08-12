@@ -2,7 +2,9 @@ import { getPersonId, getPersonIdFromUrl } from "@metriport/commonwell-sdk";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import MetriportError from "../../../errors/metriport-error";
 import { Util } from "../../../shared/util";
+import { autoUpgradeNetworkLinks } from "../link/shared";
 import { setCommonwellId } from "../patient-external-data";
+import { isEnrolledBy } from "../person-shared";
 import { getCWAccessForPatient } from "./shared";
 
 /**
@@ -11,9 +13,10 @@ import { getCWAccessForPatient } from "./shared";
  * Patch duplicated persons in CommonWell - sibling of find-patient-duplicates.ts
  *
  * Links the patient to the chosen person.
- * Additionally, unenroll:
+ * Additionally, unenroll those enrolled by Metriport:
  * - any other person linked to the patient; AND
- * - all other persons matching the patient's demographics.
+ * - all other persons matching the patient's demographics if the `unenrollByDemographics`
+ *   param is set to true (defaults to false).
  */
 export async function patchDuplicatedPersonsForPatient(
   cxId: string,
@@ -21,12 +24,13 @@ export async function patchDuplicatedPersonsForPatient(
   chosenPersonId: string,
   unenrollByDemographics = false
 ): Promise<void> {
-  const { log } = Util.out(`patchDuplicatedPersonsForPatient ${patientId}`);
+  const context = "patchDuplicatedPersonsForPatient";
+  const { log } = Util.out(`${context} ${patientId}`);
 
   const patient = await getPatientOrFail({ cxId, id: patientId });
   const cwAccess = await getCWAccessForPatient(patient);
   if (cwAccess.error != null) throw new MetriportError(cwAccess.error);
-  const { commonWell, queryMeta, cwPatientId } = cwAccess;
+  const { commonWell, queryMeta, cwPatientId, orgName } = cwAccess;
 
   // make sure the person exists @ CW
   await commonWell.getPersonById(queryMeta, chosenPersonId);
@@ -39,15 +43,20 @@ export async function patchDuplicatedPersonsForPatient(
     ? getPersonIdFromUrl(cwPatient._links.person?.href)
     : undefined;
 
-  // if not the same, unlink the stored person
+  // if not the same, unlink/unenroll the currently linked person
   if (currentLinkedPersonId && currentLinkedPersonId !== chosenPersonId) {
     log(`unlinking/unenrolling current person ${currentLinkedPersonId}...`);
     await commonWell.resetPatientLink(queryMeta, currentLinkedPersonId, cwPatientId);
-    await commonWell.unenrollPerson(queryMeta, currentLinkedPersonId);
+    const currentLinkedPerson = await commonWell.getPersonById(queryMeta, currentLinkedPersonId);
+    if (isEnrolledBy(orgName, currentLinkedPerson)) {
+      await commonWell.unenrollPerson(queryMeta, currentLinkedPersonId);
+    }
   }
 
-  // link the chosen person to the patient
+  // link the chosen person to the patient...
   await commonWell.addPatientLink(queryMeta, chosenPersonId, cwPatientUri);
+  // ...and upgrade the network links w/ that person's patients
+  await autoUpgradeNetworkLinks(commonWell, queryMeta, cwPatientId, chosenPersonId, context);
 
   // update Metriport's DB
   await setCommonwellId({
@@ -65,10 +74,12 @@ export async function patchDuplicatedPersonsForPatient(
       ? respSearch._embedded.person.flatMap(p => (p && getPersonId(p) ? p : []))
       : [];
     for (const person of persons) {
-      const cwPersonId = getPersonId(person);
-      if (!cwPersonId) continue;
-      if (cwPersonId === chosenPersonId) continue; // don't unenroll the chosen person!
-      await commonWell.unenrollPerson(queryMeta, cwPersonId);
+      const personId = getPersonId(person);
+      if (!personId) continue;
+      if (personId === chosenPersonId) continue; // don't unenroll the chosen person!
+      if (isEnrolledBy(orgName, person)) {
+        await commonWell.unenrollPerson(queryMeta, personId);
+      }
     }
   }
 }

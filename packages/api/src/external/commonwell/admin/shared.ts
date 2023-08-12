@@ -10,6 +10,7 @@ export type CWAccess =
       commonWell: CommonWellAPI;
       queryMeta: RequestMetadata;
       orgOID: string;
+      orgName: string;
       cwPatientId: string;
       cwPersonId: string | undefined;
       error?: never;
@@ -43,5 +44,5 @@ export async function getCWAccessForPatient(patient: Patient): Promise<CWAccess>
   const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
-  return { commonWell, queryMeta, cwPatientId, cwPersonId, orgOID };
+  return { commonWell, queryMeta, cwPatientId, cwPersonId, orgOID, orgName };
 }

@@ -218,9 +218,10 @@ const patchDuplicatesSchema = z.record(
  * PATCH /internal/patient/duplicates
  *
  * Links the patient to the chosen person.
- * Additionally, unenroll:
+ * Additionally, unenroll those enrolled by Metriport:
  * - any other person linked to the patient; AND
- * - all other persons matching the patient's demographics.
+ * - all other persons matching the patient's demographics if the `unenrollByDemographics`
+ *   query param is set to true (defaults to false).
  *
  * @param req.body The request body in the same format of the output of "GET /duplicates".
  *     Each patient must have one chosen person. Less than one it gets skipped; more
