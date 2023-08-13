@@ -6,9 +6,9 @@ export { makeJwt } from "./common/make-jwt";
 export {
   getDemographics,
   getId,
-  getPersonId,
   getIdTrailingSlash,
   getPatientStrongIds,
+  getPersonId,
   getPersonIdFromSearchByPatientDemo,
   getPersonIdFromUrl,
 } from "./common/util";
@@ -38,5 +38,12 @@ export {
   PatientNetworkLinkResp,
   PatientSearchResp,
 } from "./models/patient";
-export { PatientLink, PatientLinkSearchResp, Person, PersonSearchResp } from "./models/person";
+export {
+  isEnrolled,
+  isUnenrolled,
+  PatientLink,
+  PatientLinkSearchResp,
+  Person,
+  PersonSearchResp,
+} from "./models/person";
 export { PurposeOfUse } from "./models/purpose-of-use";
