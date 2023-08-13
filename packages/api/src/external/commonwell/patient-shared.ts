@@ -1,13 +1,15 @@
 import {
   CommonWellAPI,
   getDemographics,
-  getId,
+  getPersonId,
+  isEnrolled,
+  isUnenrolled,
   Patient as CommonwellPatient,
   Person as CommonwellPerson,
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-import _, { maxBy } from "lodash";
+import _, { minBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
 import { Facility } from "../../models/medical/facility";
@@ -17,8 +19,8 @@ import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
 import { driversLicenseURIs } from "../../shared/oid";
 import { Util } from "../../shared/util";
-import { makePersonForPatient } from "./patient-conversion";
 import { LinkStatus } from "../patient-link";
+import { makePersonForPatient } from "./patient-conversion";
 
 export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(
@@ -70,27 +72,56 @@ export async function findOrCreatePerson({
     const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, commonwellPatientId);
     debug(`resp searchPersonByPatientDemo: ${JSON.stringify(respSearch, null, 2)}`);
     const persons = respSearch._embedded?.person
-      ? respSearch._embedded.person.flatMap(p => (p && getId(p) ? p : []))
+      ? respSearch._embedded.person
+          .flatMap(p => (p && getPersonId(p) ? p : []))
+          .flatMap(filterTruthy)
       : [];
-    if (persons.length > 1) {
-      return alertAndReturnMostRecentPerson(
+
+    const enrolledPersons = persons.filter(isEnrolled);
+    if (enrolledPersons.length === 1) {
+      const result = buildReturn(enrolledPersons[0]);
+      if (result) return result;
+    }
+
+    if (enrolledPersons.length > 1) {
+      // TODO needs to be rewritten to return the one with most links
+      return alertAndReturnEarliestPerson(
         commonwellPatientId,
-        [persons[0] as CommonwellPerson, ...persons.slice(1)], // to match the type requiring at least one element
+        [enrolledPersons[0] as CommonwellPerson, ...enrolledPersons.slice(1)], // to match the type requiring at least one element
         commonWell.lastReferenceHeader,
         context
       );
     }
-    const cwPerson = persons.flatMap(filterTruthy)[0];
-    const personId = getId(cwPerson);
-    if (cwPerson && personId) return { personId, person: cwPerson };
-    // if didn't find any, proceed to enroll
+
+    const unenrolledPersons = persons.filter(isUnenrolled);
+    if (unenrolledPersons.length === 1) {
+      const result = buildReturn(unenrolledPersons[0]);
+      if (result) {
+        await commonWell.reenrollPerson(queryMeta, result.personId);
+        return result;
+      }
+    }
+    if (unenrolledPersons.length > 1) {
+      const result = alertAndReturnEarliestPerson(
+        commonwellPatientId,
+        [unenrolledPersons[0] as CommonwellPerson, ...unenrolledPersons.slice(1)], // to match the type requiring at least one element
+        commonWell.lastReferenceHeader,
+        context
+      );
+      if (result) {
+        await commonWell.reenrollPerson(queryMeta, result.personId);
+        return result;
+      }
+    }
+
+    // if didn't find any, proceed to add/enroll
   }
 
   // If not found, enroll/add person
   debug(`Enrolling this person: ${JSON.stringify(person, null, 2)}`);
   const respPerson = await commonWell.enrollPerson(queryMeta, person);
   debug(`resp enrollPerson: ${JSON.stringify(respPerson, null, 2)}`);
-  const personId = getId(respPerson);
+  const personId = getPersonId(respPerson);
   if (!personId) {
     const msg = `Could not get person ID from CW response`;
     log(`${msg} - CW response: ${JSON.stringify(respPerson)}`);
@@ -99,7 +130,13 @@ export async function findOrCreatePerson({
   return { personId, person };
 }
 
-function alertAndReturnMostRecentPerson(
+function buildReturn(cwPerson?: CommonwellPerson): FindOrCreatePersonResponse | undefined {
+  const personId = getPersonId(cwPerson);
+  if (cwPerson && personId) return { personId, person: cwPerson };
+  return undefined;
+}
+
+function alertAndReturnEarliestPerson(
   commonwellPatientId: string,
   persons: [CommonwellPerson, ...CommonwellPerson[]],
   cwReference?: string,
@@ -108,29 +145,29 @@ function alertAndReturnMostRecentPerson(
   const { log } = Util.out(
     `CW alertAndReturnMostRecentPerson - CW patientId ${commonwellPatientId}`
   );
-  const personIds = persons.map(getId).flatMap(filterTruthy);
+  const personIds = persons.map(getPersonId).flatMap(filterTruthy);
   const subject = "Found more than one person for patient demographics";
   const message = idsToAlertMessage(commonwellPatientId, personIds);
-  log(`${subject} - using the most recent one: ${message}`);
+  log(`${subject} - using the earliest one: ${message}`);
   capture.message(subject, {
     extra: {
-      action: `Using the most recent one`,
+      action: `Using the earliest one`,
       commonwellPatientId,
       persons: getDemographics(persons),
       cwReference,
       context,
     },
   });
-  const person = getMostRecentPerson(persons);
-  const personId = getId(person);
+  const person = getEarliestPerson(persons);
+  const personId = getPersonId(person);
   if (person && personId) return { personId, person };
   return undefined;
 }
 
-function getMostRecentPerson(persons: [CommonwellPerson, ...CommonwellPerson[]]): CommonwellPerson {
-  const mostRecent = maxBy(persons, p => p.enrollmentSummary?.dateEnrolled);
-  const lastOne = persons[persons.length - 1]; // .at(-1) doesn't expose the correct type
-  return (mostRecent ?? lastOne) as CommonwellPerson;
+function getEarliestPerson(persons: [CommonwellPerson, ...CommonwellPerson[]]): CommonwellPerson {
+  const earlierst = minBy(persons, p => p.enrollmentSummary?.dateEnrolled);
+  const firstOne = persons[0];
+  return (earlierst ?? firstOne) as CommonwellPerson;
 }
 
 function idsToAlertMessage(cwPatientId: string, personIds: string[]): string {
@@ -187,7 +224,7 @@ export async function searchPersonIds({
   const fulfilledPersons = respSearches
     .flatMap(r => (r.status === "fulfilled" ? r.value._embedded?.person : []))
     .flatMap(filterTruthy);
-  const duplicatedPersonIds = fulfilledPersons.flatMap(getId).flatMap(filterTruthy);
+  const duplicatedPersonIds = fulfilledPersons.flatMap(getPersonId).flatMap(filterTruthy);
   return Array.from(new Set(duplicatedPersonIds));
 }
 
