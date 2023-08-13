@@ -25,7 +25,7 @@
     "commit": "cz",
     "check-secrets": "docker run -v $(pwd):/path zricethezav/gitleaks:v8.17.0 protect --source='/path' --staged --no-banner -v",
     "publish:alpha": "npm run build && npx lerna publish --dist-tag next prerelease",
-    "publish": "npm run build && npx lerna publish",
+    "publish:prod": "npm run build && npx lerna publish",
     "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
   },
   "workspaces": [
