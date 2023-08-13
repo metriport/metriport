@@ -27,29 +27,60 @@ interface Entry {
   typedData: WebhookUserDataPayload;
 }
 
+type UserNotifications = {
+  [fitbitUserId: string]: { collectionType: FitbitCollectionTypes; date: string }[];
+};
+
 const log = Util.log(`Fitbit Webhook`);
 
+/**
+ * Processes a Fitbit webhook by grouping the individual updates by Fitbit user ID, then mapping the data for each notification
+ * and sending it to the customer
+ *
+ * @param data Fitbit webhook notification
+ */
 export const processData = async (data: FitbitWebhook): Promise<void> => {
   console.log("Starting to process a Fitbit webhook.");
 
-  // Group notifications by Fitbit user ID
-  const fitbitUserGroupedNotifications: {
-    [fitbitUserId: string]: { collectionType: FitbitCollectionTypes; date: string }[];
-  } = {};
+  const groupedNotifications = groupByUser(data);
+  const dataMappedByConnectedUser = await mapDataByConnectedUser(groupedNotifications);
+  const dataByCustomer = groupBy(dataMappedByConnectedUser, v => v.cxId);
+
+  await createAndSendCustomerPayloads(dataByCustomer);
+};
+
+/**
+ * Groups the individual updates within a webhook by Fitbit user ID
+ *
+ * @param data: FitbitWebhook
+ * @returns UserNotifications
+ */
+function groupByUser(data: FitbitWebhook): UserNotifications {
+  const groupedNotifications: UserNotifications = {};
 
   data.forEach(d => {
-    if (!fitbitUserGroupedNotifications[d.ownerId]) {
-      fitbitUserGroupedNotifications[d.ownerId] = [];
+    if (!groupedNotifications[d.ownerId]) {
+      groupedNotifications[d.ownerId] = [];
     }
-    fitbitUserGroupedNotifications[d.ownerId].push({
+    groupedNotifications[d.ownerId].push({
       collectionType: d.collectionType,
       date: d.date,
     });
   });
+  return groupedNotifications;
+}
 
-  // collect and group data by ConnectedUser
-  const connectedUsersAndData = await Promise.all(
-    Object.entries(fitbitUserGroupedNotifications).map(async ([fitbitUserId, notifications]) => {
+/**
+ * Gets the ConnectedUser and their access token by Fitbit user ID, then maps the data for each notification
+ * and returns an array of entries to be sent to the customer
+ *
+ * @param groupedNotifications WH notifications grouped by Fitbit user ID
+ * @returns
+ */
+async function mapDataByConnectedUser(groupedNotifications: UserNotifications): Promise<Entry[]> {
+  const connectedUsersAndData: Entry[] = [];
+  await Promise.allSettled(
+    Object.entries(groupedNotifications).map(async ([fitbitUserId, notifications]) => {
       const connectedUser = await getConnectedUserByTokenOrFail(
         ProviderSource.fitbit,
         fitbitUserId
@@ -59,7 +90,7 @@ export const processData = async (data: FitbitWebhook): Promise<void> => {
       );
 
       const userFitbitData: WebhookUserDataPayload = {};
-      await Promise.all(
+      const res = await Promise.allSettled(
         notifications.map(async d => {
           const mappedData = await mapData(connectedUser, d.collectionType, d.date, accessToken);
           const entryKeys = Object.keys(mappedData) as DataType[];
@@ -72,60 +103,34 @@ export const processData = async (data: FitbitWebhook): Promise<void> => {
         })
       );
 
-      return { cxId: connectedUser.cxId, userId: connectedUser.id, typedData: userFitbitData };
+      const failed = res.filter(r => r.status === "rejected");
+      if (failed.length > 0) {
+        log(`Failed to map data on Fitbit Webhook`, failed);
+        capture.error(failed, {
+          extra: { context: `webhook.mapDataByConnectedUser.fitbit`, failed },
+        });
+      }
+
+      connectedUsersAndData.push({
+        cxId: connectedUser.cxId,
+        userId: connectedUser.id,
+        typedData: userFitbitData,
+      });
     })
   );
 
-  const reducedData: Entry[] = [];
+  return connectedUsersAndData;
+}
 
-  connectedUsersAndData.forEach(entry => {
-    const existingUserIndex = reducedData.findIndex(
-      item => item.cxId === entry.cxId && item.userId === entry.userId
-    );
-
-    if (existingUserIndex >= 0) {
-      const entryKeys = Object.keys(entry.typedData) as DataType[];
-
-      reducedData[existingUserIndex] = {
-        ...reducedData[existingUserIndex],
-        typedData: {
-          ...reducedData[existingUserIndex].typedData,
-          ...(entryKeys.includes("activity")
-            ? {
-                activity: union(
-                  reducedData[existingUserIndex].typedData.activity,
-                  entry.typedData.activity
-                ),
-              }
-            : undefined),
-          ...(entryKeys.includes("nutrition")
-            ? {
-                nutrition: union(
-                  reducedData[existingUserIndex].typedData.nutrition,
-                  entry.typedData.nutrition
-                ),
-              }
-            : undefined),
-          ...(entryKeys.includes("body")
-            ? { body: union(reducedData[existingUserIndex].typedData.body, entry.typedData.body) }
-            : undefined),
-          ...(entryKeys.includes("sleep")
-            ? {
-                sleep: union(reducedData[existingUserIndex].typedData.sleep, entry.typedData.sleep),
-              }
-            : undefined),
-        },
-      };
-    } else {
-      reducedData.push(entry);
-    }
-  });
-
-  const dataByCustomer = groupBy(reducedData, v => v.cxId);
-
-  await createAndSendCustomerPayloads(dataByCustomer);
-};
-
+/**
+ * Creates and returns a payload with the data for each collection type
+ * @param connectedUser ConnectedUser whose data is being mapped
+ * @param collectionType Data collection type
+ * @param startdate Start date of the data
+ * @param accessToken Access token for the user
+ *
+ * @returns
+ */
 export const mapData = async (
   connectedUser: ConnectedUser,
   collectionType: FitbitCollectionTypes,
@@ -160,6 +165,10 @@ export const mapData = async (
   return payload;
 };
 
+/**
+ * Creates and sends payloads to each customer
+ * @param dataByCustomer Dictionary of entries grouped by customer ID
+ */
 async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>) {
   await Promise.allSettled(
     Object.keys(dataByCustomer).map(async cxId => {
@@ -199,9 +208,9 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
           dataAndUserList.map(du => du.userId)
         );
       } catch (err) {
-        log(`Error on processData: ${err}`);
+        log(`Failed to create and send customer payloads: ${err}`);
         capture.error(err, {
-          extra: { context: `webhook.processData.fitbit`, err },
+          extra: { context: `fitbit.webhook.createAndSendCustomerPayloads`, err },
         });
       }
     })
