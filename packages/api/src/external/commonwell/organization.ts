@@ -19,7 +19,7 @@ type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
 export async function organizationToCommonwell(
   org: Organization
 ): Promise<CWOrganizationWithOrgId> {
-  const cwId = OID_PREFIX.concat(org.id);
+  const cwId = OID_PREFIX.concat(org.oid);
   return {
     name: org.data.name,
     type: org.data.type,
@@ -62,7 +62,7 @@ export async function organizationToCommonwell(
 }
 
 export const create = async (org: Organization): Promise<void> => {
-  const { log, debug } = Util.out(`CW create - M orgId ${org.id}`);
+  const { log, debug } = Util.out(`CW create - M oid ${org.oid}, id ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
   const commonWell = makeCommonWellAPI(
     Config.getMetriportOrgName(),
@@ -74,7 +74,7 @@ export const create = async (org: Organization): Promise<void> => {
     const respAddCert = await commonWell.addCertificateToOrg(
       metriportQueryMeta,
       getCertificate(),
-      org.id
+      org.oid
     );
     debug(`resp respAddCert: ${JSON.stringify(respAddCert, null, 2)}`);
   } catch (error) {
@@ -83,6 +83,7 @@ export const create = async (org: Organization): Promise<void> => {
     capture.error(error, {
       extra: {
         orgId: org.id,
+        orgOID: org.oid,
         cwReference: commonWell.lastReferenceHeader,
         context: `cw.org.create`,
         payload: cwOrg,
@@ -93,7 +94,7 @@ export const create = async (org: Organization): Promise<void> => {
 };
 
 export const update = async (org: Organization): Promise<void> => {
-  const { log, debug } = Util.out(`CW update - M orgId ${org.id}`);
+  const { log, debug } = Util.out(`CW update - M oid ${org.oid}, id ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
   const commonWell = makeCommonWellAPI(
     Config.getMetriportOrgName(),
@@ -107,6 +108,7 @@ export const update = async (org: Organization): Promise<void> => {
   } catch (error: any) {
     const extra = {
       orgId: org.id,
+      orgOID: org.oid,
       cwReference: commonWell.lastReferenceHeader,
       context: `cw.org.update`,
     };

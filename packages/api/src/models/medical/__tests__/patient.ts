@@ -1,15 +1,8 @@
-import {
-  rand,
-  randFirstName,
-  randLastName,
-  randNumber,
-  randPastDate,
-  randUuid,
-} from "@ngneat/falso";
+import { rand, randFirstName, randLastName, randPastDate, randUuid } from "@ngneat/falso";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../../shared/date";
 import { USState } from "../../../shared/geographic-locations";
-import { makeBaseModel } from "../../__tests__/base-model";
+import { makeBaseDomain } from "../../../domain/__tests__/base-model";
 import { Patient, PatientData, PatientModel, PersonalIdentifier } from "../patient";
 import { makeAddressStrict } from "./location-address";
 
@@ -33,10 +26,9 @@ export const makePatientData = (data: Partial<PatientData> = {}): PatientData =>
 };
 export const makePatient = (params: Partial<Patient> = {}): Patient => {
   return {
-    ...makeBaseModel(),
+    ...makeBaseDomain(),
     ...(params.id ? { id: params.id } : {}),
     cxId: params.cxId ?? randUuid(),
-    patientNumber: params.patientNumber ?? randNumber(),
     facilityIds: params.facilityIds ?? [randUuid()],
     data: makePatientData(params.data),
   };

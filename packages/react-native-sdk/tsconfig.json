@@ -35,13 +35,5 @@
     "strict": true
   },
   "include": ["./src"],
-  "exclude": [
-    "lib",
-    "node_modules",
-    "**/*.test.*",
-    "**/*.spec.*",
-    "**/__mocks__/",
-    "**/__tests__/"
-  ]
-
+  "exclude": ["lib", "node_modules"]
 }

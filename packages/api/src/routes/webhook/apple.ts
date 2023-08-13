@@ -38,7 +38,11 @@ routes.post(
 
     if (payload.error) {
       capture.error(new Error(payload.error), {
-        extra: { metriportUserId, context: `webhook.appleError` },
+        extra: {
+          metriportUserId,
+          context: `webhook.appleError`,
+          ...(payload.extra ? JSON.parse(payload.extra) : {}),
+        },
       });
     } else {
       const mappedData = mapData(appleSchema.parse(payload), hourly);

@@ -21,9 +21,9 @@ export async function downloadDocument({
 }): Promise<void> {
   const { organization, facility } = await getPatientData({ id: patientId, cxId }, facilityId);
   const orgName = organization.data.name;
-  const orgId = organization.id;
+  const orgOID = organization.oid;
   const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-  const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
   try {

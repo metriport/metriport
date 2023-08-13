@@ -8,6 +8,8 @@ import {
   getIdTrailingSlash,
 } from "@metriport/commonwell-sdk";
 import { MedicalDataSource } from "..";
+import { Facility } from "../../models/medical/facility";
+import { Organization } from "../../models/medical/organization";
 import { Patient, PatientExternalData } from "../../models/medical/patient";
 import { capture } from "../../shared/notifications";
 import { oid } from "../../shared/oid";
@@ -18,11 +20,13 @@ import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { setCommonwellId } from "./patient-external-data";
 import {
+  FindOrCreatePersonResponse,
   PatientDataCommonwell,
   findOrCreatePerson,
   getMatchingStrongIds,
   getPatientData,
 } from "./patient-shared";
+import MetriportError from "../../errors/metriport-error";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -60,21 +64,28 @@ function getStoreIdsFn(patientId: string, cxId: string): StoreIdsFunction {
   };
 }
 
-export async function create(patient: Patient, facilityId: string): Promise<void> {
+export async function create(
+  patient: Patient,
+  facilityId: string,
+  patientData?: {
+    organization: Organization;
+    facility: Facility;
+  }
+): Promise<{ commonwellPatientId: string; personId: string }> {
   let commonWell: CommonWellAPI | undefined;
   try {
     const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
-    const { organization, facility } = await getPatientData(patient, facilityId);
+    const { organization, facility } = patientData ?? (await getPatientData(patient, facilityId));
     const orgName = organization.data.name;
-    const orgId = organization.id;
+    const orgOID = organization.oid;
     const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
     const storeIds = getStoreIdsFn(patient.id, patient.cxId);
 
-    commonWell = makeCommonWellAPI(orgName, oid(orgId));
+    commonWell = makeCommonWellAPI(orgName, oid(orgOID));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-    const commonwellPatient = patientToCommonwell({ patient, orgName, orgId });
+    const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
     debug(`Registering this Patient: ${JSON.stringify(commonwellPatient, undefined, 2)}`);
 
     const { commonwellPatientId, patientRefLink } = await registerPatient({
@@ -84,7 +95,7 @@ export async function create(patient: Patient, facilityId: string): Promise<void
       storeIds,
     });
 
-    await findOrCreatePersonAndLink({
+    const personId = await findOrCreatePersonAndLink({
       commonWell,
       queryMeta,
       commonwellPatient,
@@ -92,6 +103,8 @@ export async function create(patient: Patient, facilityId: string): Promise<void
       patientRefLink,
       storeIds,
     });
+
+    return { commonwellPatientId, personId };
   } catch (err) {
     console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
     capture.error(err, {
@@ -116,7 +129,8 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       capture.message("Could not find external data on Patient, creating it @ CW", {
         extra: { patientId: patient.id, context: updateContext },
       });
-      return create(patient, facilityId);
+      await create(patient, facilityId);
+      return;
     }
     const { queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;
     commonWell = updateData.commonWell;
@@ -287,12 +301,12 @@ async function setupUpdate(
 
   const { organization, facility } = await getPatientData(patient, facilityId);
   const orgName = organization.data.name;
-  const orgId = organization.id;
+  const orgOID = organization.oid;
   const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-  const commonwellPatient = patientToCommonwell({ patient, orgName, orgId });
-  const commonWell = makeCommonWellAPI(orgName, oid(orgId));
+  const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
+  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
 
   return { commonWell, queryMeta, commonwellPatient, commonwellPatientId, personId };
 }
@@ -311,11 +325,11 @@ async function findOrCreatePersonAndLink({
   commonwellPatientId: string;
   patientRefLink: string;
   storeIds: StoreIdsFunction;
-}): Promise<string | undefined> {
+}): Promise<string> {
   const { log, debug } = Util.out(
     `CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`
   );
-  let findOrCreateResponse;
+  let findOrCreateResponse: FindOrCreatePersonResponse;
   try {
     findOrCreateResponse = await findOrCreatePerson({
       commonWell,
@@ -328,7 +342,7 @@ async function findOrCreatePersonAndLink({
     await storeIds({ commonwellPatientId, status: "failed" });
     throw err;
   }
-  if (!findOrCreateResponse) return undefined;
+  if (!findOrCreateResponse) throw new MetriportError("Programming error: unexpected state");
   const { personId, person } = findOrCreateResponse;
 
   await storeIds({ commonwellPatientId, personId, status: "completed" });

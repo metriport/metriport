@@ -2,6 +2,7 @@ import * as nanoid from "nanoid";
 import { Patient } from "@metriport/commonwell-sdk";
 import { driversLicenseURIs } from "../../shared/oid";
 import { DocumentQueryResponse } from "@metriport/commonwell-sdk";
+import { uuidv7 } from "../../shared/uuid-v7";
 
 const cwURL = "https://sandbox.rest.api.commonwellalliance.org";
 const cwLabel = "abcd123-1234-dedee-asd9-cnil132uil3n";
@@ -61,7 +62,7 @@ export const createPatientWithLinks = (patient: Patient) => {
 };
 
 export const createPatient = (
-  localOrgId: string,
+  localOrgOID: string,
   localOrgName: string,
   patientId: string
 ): Patient => {
@@ -71,8 +72,8 @@ export const createPatient = (
       {
         use: "usual",
         label: localOrgName,
-        system: `urn:oid:${localOrgId}`,
-        key: `${localOrgId}.2.100`,
+        system: `urn:oid:${localOrgOID}`,
+        key: patientId,
         assigner: localOrgName,
       },
       {
@@ -85,7 +86,7 @@ export const createPatient = (
     ],
     provider: {
       type: "organization",
-      reference: `${cwURL}/v1/org/${localOrgId}/`,
+      reference: `${cwURL}/v1/org/${localOrgOID}/`,
       display: localOrgName,
     },
     details: {
@@ -103,10 +104,10 @@ export const createPatient = (
         href: `${cwURL}/${personRoute}/${primaryPersonId}`,
       },
       networkLink: {
-        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${localOrgId}/patient/${patientId}/networkLink`,
+        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${localOrgOID}/patient/${patientId}/networkLink`,
       },
       self: {
-        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${localOrgId}/patient/${patientId}/`,
+        href: `${cwURL}/${orgRoute}/urn%3aoid%3a${localOrgOID}/patient/${patientId}/`,
       },
     },
   };
@@ -196,7 +197,7 @@ export const createDocument = (orgId: string, orgName: string): DocumentQueryRes
                 },
                 {
                   system: "urn:oid:1.2.3.4.5.6.7.8.9Test Org2",
-                  value: "1.2.3.4.5.6.7.8.9.2.118",
+                  value: uuidv7(),
                 },
               ],
               name: [

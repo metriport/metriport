@@ -1,8 +1,5 @@
 import { Request, Response, Router } from "express";
-import { v4 as uuidv4 } from "uuid";
 import httpStatus from "http-status";
-import multer from "multer";
-import { accountInit } from "../command/account-init";
 import {
   PopulateFhirServerResponse,
   populateFhirServer,
@@ -10,42 +7,17 @@ import {
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
+import userRoutes from "./devices/internal-user";
 import docsRoutes from "./medical/internal-docs";
 import patientRoutes from "./medical/internal-patient";
-import userRoutes from "./devices/internal-user";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getCxIdFromQueryOrFail, getFrom, getFromQueryOrFail } from "./util";
-import { makeS3Client } from "../external/aws/s3";
-import { Config } from "../shared/config";
-import { createAndUploadDocReference } from "../command/medical/admin/upload-doc";
-import { createS3FileName } from "../shared/external";
+import { asyncHandler, getFrom } from "./util";
 
 const router = Router();
-const upload = multer();
-const s3client = makeS3Client();
-const bucketName = Config.getMedicalDocumentsBucketName();
 
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
 router.use("/user", userRoutes);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/init
- *
- * Initialize a (customer's) account. This is an idempotent operation, which
- * means it can be called multiple times without side effects.
- *
- * @param req.query.cxId - The customer/account's ID.
- * @return 200 Indicating the account has been initialized.
- */
-router.post(
-  "/init",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdFromQueryOrFail(req);
-    await accountInit(cxId);
-    return res.sendStatus(httpStatus.OK);
-  })
-);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
@@ -127,59 +99,6 @@ router.post(
       result[org.cxId] = orgRes;
     }
     return res.json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/upload-doc
- *
- * Upload doc for a patient
- *
- * @param req.query.cxId - The customer/account's ID.
- * @param req.query.patientId - The patient ID.
- * @param req.file - The file to be stored.
- * @param req.body.metadata - The metadata for the file.
-
- * @return 200 Indicating the file was successfully uploaded.
- */
-router.post(
-  "/upload-doc",
-  upload.single("file"),
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromQueryOrFail("patientId", req);
-    const file = req.file;
-
-    if (!file) {
-      throw new BadRequestError("File must be provided");
-    }
-
-    const docRefId = uuidv4();
-    const fileName = createS3FileName(cxId, patientId, docRefId);
-
-    await s3client
-      .upload({
-        Bucket: bucketName,
-        Key: fileName,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      })
-      .promise();
-
-    const metadata = JSON.parse(req.body.metadata);
-
-    const docRef = await createAndUploadDocReference({
-      cxId,
-      patientId,
-      docId: docRefId,
-      file: {
-        ...file,
-        originalname: fileName,
-      },
-      metadata,
-    });
-
-    return res.status(httpStatus.OK).json(docRef);
   })
 );
 

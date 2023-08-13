@@ -20,18 +20,36 @@ export const getUmzug = (sequelize: Sequelize): Umzug<QueryInterface> => {
   return umzug;
 };
 
+export const getUmzugWithMeta = async (
+  sequelize: Sequelize
+): Promise<{
+  umzug: Umzug<QueryInterface>;
+  migrations: number;
+  executed: number;
+  pending: number;
+}> => {
+  const queryInterface = sequelize.getQueryInterface();
+  const umzug = getUmzug(sequelize);
+  const migrations = await umzug.migrations(queryInterface);
+  const executed = await umzug.executed();
+  const pending = await umzug.pending();
+  return {
+    umzug,
+    migrations: migrations.length,
+    executed: executed.length,
+    pending: pending.length,
+  };
+};
+
 // export the type helper exposed by umzug, which will have the `context` argument typed correctly
 export type Migration = (params: MigrationParams<QueryInterface>) => Promise<unknown>;
 
 const updateDB = async (sequelize: Sequelize): Promise<MigrationMeta[]> => {
-  const queryInterface = sequelize.getQueryInterface();
-  const migrations = await getUmzug(sequelize).migrations(queryInterface);
-  const executed = await getUmzug(sequelize).executed();
-  const pending = await getUmzug(sequelize).pending();
+  const { umzug, migrations, executed, pending } = await getUmzugWithMeta(sequelize);
   console.log(
-    `[--- SEQUELIZE ---] Migrations: ${executed.length} executed, ${pending.length} pending, ${migrations.length} total`
+    `[--- SEQUELIZE ---] Migrations: ${executed} executed, ${pending} pending, ${migrations} total`
   );
-  return getUmzug(sequelize).up();
+  return umzug.up();
 };
 
 export default updateDB;

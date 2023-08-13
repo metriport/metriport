@@ -8,8 +8,8 @@ import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
-} from "../../../../domain/medical/document-reference";
-import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/document-reference";
+} from "../../../../domain/medical/document-query";
+import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/document-query";
 import { PatientModel } from "../../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";

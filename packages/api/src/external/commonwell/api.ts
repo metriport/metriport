@@ -16,22 +16,22 @@ const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
 /**
  *
  * @param orgName Organization Name
- * @param orgId Organization ID without 'urn:oid:' namespace
+ * @param orgOID Organization OID without 'urn:oid:' namespace
  * @returns CommonWell API
  */
-export function makeCommonWellAPI(orgName: string, orgId: string): CommonWellAPI {
+export function makeCommonWellAPI(orgName: string, orgOID: string): CommonWellAPI {
   if (Config.isSandbox()) {
-    return new CommonWellMock(orgName, orgId);
+    return new CommonWellMock(orgName, orgOID);
   }
 
-  const isMember = orgId === Config.getMemberManagementOID();
+  const isMemberMgmt = orgOID === Config.getMemberManagementOID();
 
-  if (isMember) {
+  if (isMemberMgmt) {
     return new CommonWell(
       Config.getMemberManagementCert(),
       Config.getMemberManagementPrivateKey(),
       orgName,
-      orgId,
+      orgOID,
       apiMode
     );
   }
@@ -40,7 +40,7 @@ export function makeCommonWellAPI(orgName: string, orgId: string): CommonWellAPI
     Config.getMetriportCert(),
     Config.getMetriportPrivateKey(),
     orgName,
-    orgId,
+    orgOID,
     apiMode
   );
 }

@@ -1,11 +1,16 @@
 import { Document } from "@metriport/commonwell-sdk";
 import { contentType, extension } from "mime-types";
 import { Patient } from "../../../models/medical/patient";
-import { makePatientOID } from "../../../shared/oid";
 
 export const sandboxSleepTime = 5000;
 
-export type CWDocumentWithMetriportData = Document & {
+export type DocumentWithMetriportId = Document & {
+  originalId: string;
+};
+
+export type DocumentWithLocation = DocumentWithMetriportId & { content: { location: string } };
+
+export type CWDocumentWithMetriportData = DocumentWithMetriportId & {
   metriport: {
     fileName: string;
     location: string;
@@ -14,7 +19,7 @@ export type CWDocumentWithMetriportData = Document & {
 };
 
 export function getFileName(patient: Patient, doc: Document): string {
-  const prefix = "document_" + makePatientOID("", patient.patientNumber).substring(1);
+  const prefix = "document_" + patient.id;
   const display = doc.content?.type?.coding?.length
     ? doc.content?.type.coding[0]?.display
     : undefined;

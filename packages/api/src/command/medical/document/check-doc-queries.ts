@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
-import { Progress } from "../../../domain/medical/document-reference";
+import { Progress } from "../../../domain/medical/document-query";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
