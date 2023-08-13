@@ -114,7 +114,7 @@ export async function recreatePatientAtCW(
       newPersonId,
     };
     if (originalCWPatientId === newCWPatientId) {
-      const msg = `Patient created/update with the same ID`;
+      const msg = `Patient created/updated with the same ID`;
       log(msg);
       capture.message(msg, { extra, level: "error" });
     } else if (!originalPersonId && !newPersonId) {
