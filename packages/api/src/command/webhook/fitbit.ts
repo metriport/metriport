@@ -40,7 +40,7 @@ const log = Util.log(`Fitbit Webhook`);
  * @param data Fitbit webhook notification
  */
 export const processData = async (data: FitbitWebhook): Promise<void> => {
-  console.log("Starting to process a Fitbit webhook.");
+  console.log(`Starting to process a Fitbit webhook: ${data}`);
 
   const groupedNotifications = groupByUser(data);
   const dataMappedByConnectedUser = await mapDataByConnectedUser(groupedNotifications);
@@ -107,7 +107,7 @@ async function mapDataByConnectedUser(groupedNotifications: UserNotifications): 
       if (failed.length > 0) {
         log(`Failed to map data on Fitbit Webhook`, failed);
         capture.error(failed, {
-          extra: { context: `webhook.mapDataByConnectedUser.fitbit`, failed },
+          extra: { context: `webhook.fitbit.mapDataByConnectedUser`, failed },
         });
       }
 
@@ -158,7 +158,7 @@ export const mapData = async (
     // do nothing until issue #652 is resolved
   } else {
     capture.message(`Unrecognized Fitbit collection type.`, {
-      extra: { context: "fitbit.webhook.mapData", collectionType, connectedUser },
+      extra: { context: "webhook.fitbit.mapData", collectionType, connectedUser },
     });
   }
 
@@ -210,7 +210,7 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
       } catch (err) {
         log(`Failed to create and send customer payloads: ${err}`);
         capture.error(err, {
-          extra: { context: `fitbit.webhook.createAndSendCustomerPayloads`, err },
+          extra: { context: `webhook.fitbit.createAndSendCustomerPayloads`, err },
         });
       }
     })
