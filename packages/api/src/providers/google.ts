@@ -1,25 +1,24 @@
 import { Activity, Biometrics, Body, Nutrition, Sleep } from "@metriport/api-sdk";
 import axios from "axios";
 import dayjs from "dayjs";
-
+import timezone from "dayjs/plugin/timezone";
+import { mapToActivity } from "../mappings/google/activity";
+import { mapToBiometrics } from "../mappings/google/biometrics";
+import { mapToBody } from "../mappings/google/body";
+import { GoogleSessions, sessionResp } from "../mappings/google/models";
+import { GoogleActivity, googleActivityResp } from "../mappings/google/models/activity";
+import { googleBiometricsResp } from "../mappings/google/models/biometrics";
+import { googleBodyResp } from "../mappings/google/models/body";
+import { googleNutritionResp } from "../mappings/google/models/nutrition";
+import { sessionSleepType } from "../mappings/google/models/sleep";
+import { mapToNutrition } from "../mappings/google/nutrition";
+import { mapToSleep } from "../mappings/google/sleep";
+import { ConnectedUser } from "../models/connected-user";
+import { Config } from "../shared/config";
 import { PROVIDER_GOOGLE } from "../shared/constants";
+import { capture } from "../shared/notifications";
 import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
-import { Config } from "../shared/config";
-import { ConnectedUser } from "../models/connected-user";
-import { mapToActivity } from "../mappings/google/activity";
-import { googleActivityResp, GoogleActivity } from "../mappings/google/models/activity";
-import { mapToBody } from "../mappings/google/body";
-import { googleBodyResp } from "../mappings/google/models/body";
-import { mapToBiometrics } from "../mappings/google/biometrics";
-import { googleBiometricsResp } from "../mappings/google/models/biometrics";
-import { mapToNutrition } from "../mappings/google/nutrition";
-import { googleNutritionResp } from "../mappings/google/models/nutrition";
-import { mapToSleep } from "../mappings/google/sleep";
-import { sessionSleepType } from "../mappings/google/models/sleep";
-import { sessionResp, GoogleSessions } from "../mappings/google/models";
-import { capture } from "../shared/notifications";
-import timezone from "dayjs/plugin/timezone";
 
 dayjs.extend(timezone);
 
@@ -91,40 +90,29 @@ export class Google extends Provider implements OAuth2 {
     }
   }
 
-  async fetchGoogleData(
+  private async fetchGoogleData(
     connectedUser: ConnectedUser,
     date: string,
     extraParams: DAPIParams,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     options: any
   ) {
-    try {
-      const access_token = await this.getAccessToken(connectedUser);
-      const baseDate = extraParams.timezoneId
-        ? dayjs.tz(date, extraParams.timezoneId)
-        : dayjs(date);
-      const resp = await axios.post(
-        `${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`,
-        {
-          startTimeMillis: baseDate.valueOf(),
-          endTimeMillis: baseDate.add(24, "hours").valueOf(),
-          ...options,
+    const access_token = await this.getAccessToken(connectedUser);
+    const baseDate = extraParams.timezoneId ? dayjs.tz(date, extraParams.timezoneId) : dayjs(date);
+    const resp = await axios.post(
+      `${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`,
+      {
+        startTimeMillis: baseDate.valueOf(),
+        endTimeMillis: baseDate.add(24, "hours").valueOf(),
+        ...options,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          },
-        }
-      );
-
-      return resp.data;
-    } catch (error) {
-      capture.error(error, {
-        extra: { context: `google.fetch.data` },
-      });
-
-      throw new Error(`Request failed google`, { cause: error });
-    }
+      }
+    );
+    return resp.data;
   }
 
   async fetchGoogleSessions(

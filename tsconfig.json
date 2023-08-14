@@ -4,7 +4,7 @@
     "typeRoots": ["./types", "./node_modules/@types"],
     "noErrorTruncation": true,
   },
-  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"],
+  "exclude": ["node_modules"],
   "files": [],
   "references": [
     {

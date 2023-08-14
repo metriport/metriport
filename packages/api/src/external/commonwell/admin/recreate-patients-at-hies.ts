@@ -6,7 +6,7 @@ import { Util } from "../../../shared/util";
 import { MedicalDataSource } from "../../index";
 import { makeCommonWellAPI, organizationQueryMeta } from "../api";
 import { create } from "../patient";
-import { PatientDataCommonwell, getPatientData } from "../patient-shared";
+import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string;
@@ -60,81 +60,88 @@ export async function recreatePatientAtCW(
   patient: Patient
 ): Promise<RecreateResultOfPatient | undefined> {
   const { log } = Util.out(`recreatePatientAtCW - ${patient.id}`);
-  const facilityId = patient.facilityIds[0];
-  if (!facilityId) {
-    const msg = `Patient has no facilityId`;
-    log(msg + ", skipping...");
-    capture.message(msg, { extra: { patient }, level: "error" });
-    return undefined;
-  }
-  const commonwellData = patient.data.externalData
-    ? (patient.data.externalData[MedicalDataSource.COMMONWELL] as PatientDataCommonwell)
-    : undefined;
-  if (!commonwellData) {
-    const msg = `Patient has no externalData for CommonWell`;
-    log(msg + ", skipping...");
-    capture.message(msg, { extra: { patient }, level: "error" });
-    return undefined;
-  }
-  const originalPersonId = commonwellData.personId;
-  const originalCWPatientId = commonwellData.patientId;
-  if (originalCWPatientId.includes(patient.id)) {
-    const msg = `Patient ID and CW patientId already match`;
-    log(msg + ", skipping...");
-    capture.message(msg, { extra: { patient }, level: "warning" });
-    return undefined;
-  }
-
-  // Get Org info to setup API access
-  const { organization, facility } = await getPatientData(patient, facilityId);
-  const orgName = organization.data.name;
-  const orgOID = organization.oid;
-  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-
-  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-
-  // create new patient, including linkint to person and network link to other patients
-  log(`Creating new patient at CW...`);
-  const { commonwellPatientId: newCWPatientId, personId: newPersonId } = await create(
-    patient,
-    facilityId,
-    {
-      organization,
-      facility,
+  try {
+    const facilityId = patient.facilityIds[0];
+    if (!facilityId) {
+      const msg = `Patient has no facilityId`;
+      log(msg + ", skipping...");
+      capture.message(msg, { extra: { patient }, level: "error" });
+      return undefined;
     }
-  );
+    const commonwellData = patient.data.externalData
+      ? (patient.data.externalData[MedicalDataSource.COMMONWELL] as PatientDataCommonwell)
+      : undefined;
+    if (!commonwellData) {
+      const msg = `Patient has no externalData for CommonWell`;
+      log(msg + ", skipping...");
+      capture.message(msg, { extra: { patient }, level: "error" });
+      return undefined;
+    }
+    const originalPersonId = commonwellData.personId;
+    const originalCWPatientId = commonwellData.patientId;
+    if (originalCWPatientId.includes(patient.id)) {
+      const msg = `Patient ID and CW patientId already match`;
+      log(msg + ", skipping...");
+      capture.message(msg, { extra: { patient }, level: "warning" });
+      return undefined;
+    }
 
-  const extra = {
-    patientId: patient.id,
-    originalCWPatientId,
-    newCWPatientId,
-    originalPersonId,
-    newPersonId,
-  };
-  if (originalCWPatientId === newCWPatientId) {
-    const msg = `Patient created/update with the same ID`;
+    // Get Org info to setup API access
+    const { organization, facility } = await getPatientData(patient, facilityId);
+    const orgName = organization.data.name;
+    const orgOID = organization.oid;
+    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
+
+    const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
+    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+
+    // create new patient, including linkint to person and network link to other patients
+    log(`Creating new patient at CW...`);
+    const { commonwellPatientId: newCWPatientId, personId: newPersonId } = await create(
+      patient,
+      facilityId,
+      {
+        organization,
+        facility,
+      }
+    );
+
+    const extra = {
+      patientId: patient.id,
+      originalCWPatientId,
+      newCWPatientId,
+      originalPersonId,
+      newPersonId,
+    };
+    if (originalCWPatientId === newCWPatientId) {
+      const msg = `Patient created/updated with the same ID`;
+      log(msg);
+      capture.message(msg, { extra, level: "error" });
+    } else if (!originalPersonId && !newPersonId) {
+      const msg = `Patient had no personId and we could not determine one again`;
+      log(msg);
+      capture.message(msg, { extra, level: "error" });
+    } else if (originalPersonId && !newPersonId) {
+      const msg = `Patient had a personId but we could not determine one while recreating`;
+      log(`${msg} - original person ID: ${originalPersonId}`);
+      capture.message(msg, { extra, level: "error" });
+    } else if (!originalPersonId && newPersonId) {
+      log(`Good news: patient had no personId but we got one now`);
+    } else if (originalPersonId !== newPersonId) {
+      const msg = `Patient original and new person ID do not match while recreating`;
+      log(`${msg} - original person ID: ${originalPersonId}, new person ID: ${newPersonId}`);
+      capture.message(msg, { extra, level: "error" });
+    }
+
+    // remove old patient
+    log(`Deleting old patient from CW...`);
+    await commonWell.deletePatient(queryMeta, originalCWPatientId);
+
+    return { originalCWPatientId, newCWPatientId };
+  } catch (error) {
+    const msg = `Error while recreating patient at CW: ${error}`;
     log(msg);
-    capture.message(msg, { extra, level: "error" });
-  } else if (!originalPersonId && !newPersonId) {
-    const msg = `Patient had no personId and we could not determine one again`;
-    log(msg);
-    capture.message(msg, { extra, level: "error" });
-  } else if (originalPersonId && !newPersonId) {
-    const msg = `Patient had a personId but we could not determine one while recreating`;
-    log(`${msg} - original person ID: ${originalPersonId}`);
-    capture.message(msg, { extra, level: "error" });
-  } else if (!originalPersonId && newPersonId) {
-    log(`Good news: patient had no personId but we got one now`);
-  } else if (originalPersonId !== newPersonId) {
-    const msg = `Patient original and new person ID do not match while recreating`;
-    log(`${msg} - original person ID: ${originalPersonId}, new person ID: ${newPersonId}`);
-    capture.message(msg, { extra, level: "error" });
+    capture.error(error, { extra: { patient, error } });
+    return undefined;
   }
-
-  // remove old patient
-  log(`Deleting old patient from CW...`);
-  await commonWell.deletePatient(queryMeta, originalCWPatientId);
-
-  return { originalCWPatientId, newCWPatientId };
 }

@@ -24,8 +24,9 @@
     "lambdas:no-run": "cd packages/lambdas && npm $SCRIPT && cd ../..",
     "lambdas": "cd packages/lambdas && npm run $SCRIPT && cd ../..",
     "commit": "cz",
-    "publish:alpha": "npm run build && npx lerna publish --dist-tag next",
-    "publish": "npm run build && npx lerna publish",
+    "check-secrets": "docker run -v $(pwd):/path zricethezav/gitleaks:v8.17.0 protect --source='/path' --staged --no-banner -v",
+    "publish:alpha": "npm run build && npx lerna publish --dist-tag next prerelease",
+    "publish:prod": "npm run build && npx lerna publish",
     "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
   },
   "workspaces": [
@@ -52,9 +53,6 @@
       "path": "@commitlint/cz-commitlint"
     }
   },
-  "dependencies": {
-    "typescript": "^4.9.4"
-  },
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",
     "@commitlint/config-conventional": "^17.4.2",
@@ -70,6 +68,6 @@
     "lerna": "^7.1.1",
     "lint-staged": "^13.1.0",
     "semantic-release": "^20.0.2",
-    "typescript": "^4.9.4"
+    "typescript": "^4.9.5"
   }
 }

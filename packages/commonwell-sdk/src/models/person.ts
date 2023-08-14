@@ -20,15 +20,16 @@ export const personSchema = z.object({
   details: demographicsSchema,
   _links: personLinksSchema.optional().nullable(),
 });
-
 export type Person = z.infer<typeof personSchema>;
+
+export const isEnrolled = (person: Person): boolean => person.enrolled ?? false;
+export const isUnenrolled = (person: Person): boolean => !isEnrolled(person);
 
 export const personSearchRespSchema = z.object({
   message: z.string(),
   _embedded: z.object({ person: z.array(personSchema) }),
   _links: z.object({ self: linkSchema }),
 });
-
 export type PersonSearchResp = z.infer<typeof personSearchRespSchema>;
 
 // Within the context of a Person resource, a PatientLink represents a confirmed relationship to a Patient Record.
@@ -39,12 +40,10 @@ export const patientLinkSchema = z.object({
   assuranceLevel: lolaSchema,
   _links: personLinksSchema.optional().nullable(),
 });
-
 export type PatientLink = z.infer<typeof patientLinkSchema>;
 
 export const patientLinkSearchRespSchema = z.object({
   _embedded: z.object({ patientLink: z.array(patientLinkSchema) }),
   _links: z.object({ self: linkSchema }),
 });
-
 export type PatientLinkSearchResp = z.infer<typeof patientLinkSearchRespSchema>;
