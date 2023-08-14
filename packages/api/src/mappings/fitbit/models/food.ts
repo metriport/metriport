@@ -13,7 +13,7 @@ export const fitbitFoodResp = z.object({
         brand: z.string(),
         calories: z.number(),
         foodId: z.number(),
-        locale: z.string(),
+        locale: z.string().nullish(),
         mealTypeId: z.number(),
         name: z.string(),
         unit: z.object({
