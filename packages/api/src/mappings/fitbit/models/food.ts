@@ -37,7 +37,7 @@ export const fitbitFoodResp = z.object({
   ),
   goals: z.object({ calories: z.number() }).optional(),
   summary: z.object({
-    calories: z.number(),
+    calories: z.number().nullish(),
     carbs: z.number(),
     fat: z.number(),
     fiber: z.number(),
