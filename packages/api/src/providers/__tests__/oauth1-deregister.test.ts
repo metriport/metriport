@@ -11,23 +11,13 @@ import { makeConnectedUser } from "../../domain/__tests__/make-connected-user";
 import { makeUserToken } from "../../domain/__tests__/user-token";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 import { OAuth1DefaultImpl } from "../oauth1";
-import { ProviderSource } from "@metriport/api-sdk";
-
-const userId = uuidv4();
-const cxId = uuidv4();
-const garminToken = nanoid();
-
-const userId_2 = uuidv4();
-const cxId_2 = uuidv4();
-const garminToken_2 = nanoid();
-
-const fitbitToken = nanoid();
 
 let getUserTokenByUATMock: jest.SpyInstance;
 let saveUserTokenMock: jest.SpyInstance;
 let updateProviderDataMock: jest.SpyInstance;
 
 beforeEach(() => {
+  const { userId, cxId, userId_2, cxId_2 } = makeUserTokensAndUsers();
   jest.restoreAllMocks();
   getUserTokenByUATMock = jest.spyOn(getUserTokenFile, "getUserTokenByUAT");
   saveUserTokenMock = jest.spyOn(saveUserTokenFile, "saveUserToken");
@@ -61,12 +51,12 @@ describe("oauth1-deregister", () => {
   });
 
   it("deregisters users if no cxid provided", async () => {
+    const { userId, cxId, garminToken, userId_2, cxId_2, garminToken_2 } = makeUserTokensAndUsers();
     getUserTokenByUATMock.mockReturnValueOnce([
       makeUserToken({ userId, cxId, oauthUserAccessToken: garminToken }),
       makeUserToken({ userId: userId_2, cxId: cxId_2, oauthUserAccessToken: garminToken_2 }),
     ]);
 
-    updateProviderDataMock.mockReturnValue(makeConnectedUser(userId, cxId, ""));
     await testGarmin.deregister([garminToken]);
     expect(getUserTokenByUATMock).toHaveBeenCalledTimes(1);
     expect(getUserTokenByUATMock).toHaveBeenCalledWith({
@@ -105,6 +95,7 @@ describe("oauth1-deregister", () => {
   });
 
   it("deregisters users from the correct cx", async () => {
+    const { userId, cxId, garminToken, userId_2, cxId_2, garminToken_2 } = makeUserTokensAndUsers();
     getUserTokenByUATMock.mockReturnValueOnce([
       makeUserToken({ userId, cxId, oauthUserAccessToken: garminToken }),
       makeUserToken({ userId: userId_2, cxId: cxId_2, oauthUserAccessToken: garminToken_2 }),
@@ -117,6 +108,7 @@ describe("oauth1-deregister", () => {
   });
 
   it("processes multiple tokens", async () => {
+    const { userId, cxId, garminToken, userId_2, cxId_2, garminToken_2 } = makeUserTokensAndUsers();
     getUserTokenByUATMock.mockReturnValueOnce([
       makeUserToken({ userId, cxId, oauthUserAccessToken: garminToken }),
     ]);
@@ -124,15 +116,7 @@ describe("oauth1-deregister", () => {
       makeUserToken({ userId: userId_2, cxId: cxId_2, oauthUserAccessToken: garminToken_2 }),
     ]);
 
-    updateProviderDataMock.mockReturnValueOnce(makeConnectedUser(userId, cxId, ""));
-    const secondUser = makeConnectedUser(userId_2, cxId_2, "");
-    secondUser.providerMap = {
-      ...secondUser.providerMap,
-      [ProviderSource.fitbit]: {
-        token: fitbitToken,
-      },
-    };
-    updateProviderDataMock.mockReturnValueOnce(secondUser);
+    updateProviderDataMock.mockReturnValueOnce(await makeConnectedUser({ id: userId, cxId }));
 
     await testGarmin.deregister([garminToken, garminToken_2]);
     expect(getUserTokenByUATMock).toHaveBeenCalledTimes(2);
@@ -145,26 +129,16 @@ describe("oauth1-deregister", () => {
 
     expect(saveUserTokenMock).toHaveBeenCalledTimes(2);
     expect(updateProviderDataMock).toHaveBeenCalledTimes(2);
-    const firstUserUpd = updateProviderDataMock.mock.results[0].value;
-    const secondUserUpd = updateProviderDataMock.mock.results[1].value;
-
-    expect(firstUserUpd).toEqual(
-      expect.objectContaining({
-        id: userId,
-        cxId,
-        providerMap: {},
-      })
-    );
-    expect(secondUserUpd).toEqual(
-      expect.objectContaining({
-        id: userId_2,
-        cxId: cxId_2,
-        providerMap: {
-          [ProviderSource.fitbit]: {
-            token: fitbitToken,
-          },
-        },
-      })
-    );
   });
 });
+
+function makeUserTokensAndUsers() {
+  return {
+    userId: uuidv4(),
+    cxId: uuidv4(),
+    garminToken: nanoid(),
+    userId_2: uuidv4(),
+    cxId_2: uuidv4(),
+    garminToken_2: nanoid(),
+  };
+}

@@ -1,13 +1,14 @@
 import { nanoid } from "nanoid";
 import { UserToken } from "../user-token";
 import { v4 as uuidv4 } from "uuid";
+import { faker } from "@faker-js/faker";
 
 export const makeUserToken = (token: Partial<UserToken>): UserToken => {
   return {
     token: token.token ?? nanoid(),
     cxId: token.cxId ?? uuidv4(),
     userId: token.userId ?? uuidv4(),
-    expiryTime: token.expiryTime ?? getPastTimestamp(),
+    expiryTime: token.expiryTime ?? faker.date.past().getTime(),
     oauthRequestToken: token.oauthRequestToken ?? "",
     oauthRequestSecret: token.oauthRequestSecret ?? "",
     oauthUserAccessToken: token.oauthUserAccessToken ?? nanoid(),
@@ -17,11 +18,3 @@ export const makeUserToken = (token: Partial<UserToken>): UserToken => {
     },
   };
 };
-
-function getPastTimestamp(): number {
-  const currentDate = new Date();
-  const pastDate = new Date(currentDate);
-  pastDate.setDate(currentDate.getDate() - 1);
-
-  return Math.floor(pastDate.getTime() / 1000);
-}

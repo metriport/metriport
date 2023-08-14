@@ -1,20 +1,10 @@
 import { ConnectedUser } from "../../models/connected-user";
-import { ProviderSource } from "@metriport/api-sdk";
+import { v4 as uuidv4 } from "uuid";
 
-export function makeConnectedUser(
-  userId: string,
-  cxId: string,
-  token: string
-): Partial<ConnectedUser> {
+export function makeConnectedUser(user: Partial<ConnectedUser>): Partial<ConnectedUser> {
   return {
-    id: userId,
-    cxId,
-    providerMap: token
-      ? {
-          [ProviderSource.garmin]: {
-            token,
-          },
-        }
-      : {},
+    id: user.id ?? uuidv4(),
+    cxId: user.cxId ?? uuidv4(),
+    providerMap: user.providerMap ?? {},
   };
 }
