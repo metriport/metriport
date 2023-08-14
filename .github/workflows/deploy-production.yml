@@ -163,12 +163,10 @@ jobs:
     needs: release
     with:
       deploy_env: "production"
-      api_url: ${{ secrets.API_URL_PRODUCTION }}
-      fhir_url: ${{ secrets.FHIR_SERVER_URL_PRODUCTION }}
-      widget_url: ${{ secrets.WIDGET_URL_PRODUCTION }}
+      api_url: ${{ vars.API_URL_PRODUCTION }}
+      fhir_url: ${{ vars.FHIR_SERVER_URL_PRODUCTION }}
+      widget_url: ${{ vars.WIDGET_URL_PRODUCTION }}
     secrets:
       TEST_API_KEY: ${{ secrets.TEST_API_KEY_PRODUCTION }}
-      API_URL: ${{ secrets.API_URL_PRODUCTION }}
-      FHIR_SERVER_URL: ${{ secrets.FHIR_SERVER_URL_PRODUCTION }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
