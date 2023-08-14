@@ -1,6 +1,7 @@
 import { DocRefMapping } from "../../../domain/medical/docref-mapping";
 import { MedicalDataSource } from "../../../external";
 import { DocRefMappingModel } from "../../../models/medical/docref-mapping";
+import { uuidv7 } from "../../../shared/uuid-v7";
 
 export const getDocRefMapping = async (id: string): Promise<DocRefMapping | undefined> => {
   const docRef = await DocRefMappingModel.findByPk(id);
@@ -21,7 +22,10 @@ export const getOrCreateDocRefMapping = async ({
   const docRef = { cxId, patientId, externalId, source };
   const [res] = await DocRefMappingModel.findOrCreate({
     where: docRef,
-    // no need for `defaults` since all columns for the new record are part of the filter
+    defaults: {
+      id: uuidv7(),
+      ...docRef,
+    },
   });
   return res;
 };
