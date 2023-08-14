@@ -57,6 +57,12 @@ export const capture = {
     Sentry.setUser(user);
   },
 
+  setExtra: (extra: Record<string, unknown>): void => {
+    Object.entries(extra).forEach(([key, value]) => {
+      Sentry.setExtra(key, value);
+    });
+  },
+
   /**
    * Captures an exception event and sends it to Sentry.
    *

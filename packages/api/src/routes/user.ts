@@ -1,4 +1,4 @@
-import { User, ConnectedUserInfo } from "@metriport/api-sdk";
+import { ConnectedUserInfo, User } from "@metriport/api-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -16,11 +16,16 @@ import { ConnectedUser } from "../models/connected-user";
 import { Apple } from "../providers/apple";
 import { ConsumerHealthDataType } from "../providers/provider";
 import { Config } from "../shared/config";
-import { Constants, providerOAuth2OptionsSchema, PROVIDER_APPLE } from "../shared/constants";
+import {
+  Constants,
+  PROVIDER_APPLE,
+  providerOAuth1OptionsSchema,
+  providerOAuth2OptionsSchema,
+} from "../shared/constants";
+import { capture } from "../shared/notifications";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdOrFail } from "./util";
-import { capture } from "../shared/notifications";
 
 const router = Router();
 
@@ -159,19 +164,17 @@ async function revokeUserProviderAccess(
   provider: any
 ): Promise<void> {
   const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(provider);
-  // TODO #249: implement garmin revoke support
-  // const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(
-  //   req.query.provider
-  // );
+  const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(provider);
+
   if (providerOAuth2.success) {
     await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
+  } else if (providerOAuth1.success) {
+    const token = connectedUser.dataValues.providerMap?.garmin?.token;
+    const cxId = connectedUser.dataValues.cxId;
+    if (token) await Constants.PROVIDER_OAUTH1_MAP[providerOAuth1.data].deregister([token], cxId);
   } else if (provider === PROVIDER_APPLE) {
     const apple = new Apple();
     await apple.revokeProviderAccess(connectedUser);
-    // } else if (providerOAuth1.success) {
-    //   // await Constants.PROVIDER_OAUTH1_MAP[
-    //   //   providerOAuth1.data
-    //   // ].deregister(connectedUser);
   } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
