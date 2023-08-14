@@ -11,7 +11,7 @@
     "lint": "npx eslint src/**/*.ts src/**/*.tsx",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.{ts,tsx}' --write",
-    "test": "craco test --watchAll=false --passWithNoTests",
+    "test": "echo 'no unit tests yet, use test:e2e for integration tests'",
     "test:e2e": "REACT_APP_ENV_TYPE=development npx playwright test",
     "eject": "craco eject"
   },
