@@ -12,6 +12,7 @@
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.{ts,tsx}' --write",
     "test": "craco test --watchAll=false --passWithNoTests",
+    "test:e2e": "REACT_APP_ENV_TYPE=development npx playwright test",
     "eject": "craco eject"
   },
   "eslintConfig": {
@@ -60,6 +61,7 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.1.0",
+    "@playwright/test": "^1.37.0",
     "@tsconfig/create-react-app": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
