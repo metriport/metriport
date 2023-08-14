@@ -10,8 +10,8 @@ export const fitbitFoodResp = z.object({
       loggedFood: z.object({
         accessLevel: z.string(),
         amount: z.number(),
-        brand: z.string(),
-        calories: z.number(),
+        brand: z.string().nullish(),
+        calories: z.number().nullish(),
         foodId: z.number(),
         locale: z.string().nullish(),
         mealTypeId: z.number(),
@@ -25,7 +25,7 @@ export const fitbitFoodResp = z.object({
       }),
       nutritionalValues: z
         .object({
-          calories: z.number(),
+          calories: z.number().nullish(),
           carbs: z.number(),
           fat: z.number(),
           fiber: z.number(),
