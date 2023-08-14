@@ -1,12 +1,13 @@
-import { MetriportDevicesApi } from "../metriport";
+import { mocked } from "jest-mock";
 import axios from "axios";
+import { MetriportDevicesApi } from "../metriport";
 
 jest.mock("axios");
 
 describe("getMetriportUserId", () => {
   const userId = "1";
   const apiKey = "FAKE_KEY";
-  const mockedAxios = axios as jest.Mocked<typeof axios>;
+  const mockedAxios = mocked(axios);
 
   it("returns the userId", async () => {
     const metriportClient = new MetriportDevicesApi(apiKey);
