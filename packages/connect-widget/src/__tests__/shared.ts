@@ -7,8 +7,13 @@ export const buildEnvVarName = (key: string, envType: string) => `${key}_${envTy
  * While on Checkly, we get those from env vars on Checkly, with the env suffix, e.g. DASH_URL_STAGING.
  */
 export function envVarForTest(key: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return getEnvVar(key) ?? process.env[buildEnvVarName(key, getEnvType())]!;
+  const envKey = getEnvVar(key) ?? process.env[buildEnvVarName(key, getEnvType())];
+
+  if (!envKey) {
+    throw new Error(`Missing ${key} env var`);
+  }
+
+  return envKey;
 }
 
 export function getTestConfig() {
