@@ -159,7 +159,7 @@ jobs:
     secrets: inherit
 
   e2e-tests:
-    uses: ./.github/workflows/_e2e.yml
+    uses: ./.github/workflows/_e2e-tests.yml
     needs: release
     with:
       deploy_env: "production"
