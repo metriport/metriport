@@ -13,8 +13,8 @@ export function envVarForTest(key: string): string {
 
 export function getTestConfig() {
   return {
-    apiUrl: envVarForTest("REACT_APP_API_URL"),
-    widgetUrl: envVarForTest("REACT_APP_WIDGET_URL"),
+    apiUrl: envVarForTest("API_URL"),
+    widgetUrl: envVarForTest("WIDGET_URL"),
     testApiKey: envVarForTest("TEST_API_KEY"),
   };
 }

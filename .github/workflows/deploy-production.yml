@@ -165,6 +165,7 @@ jobs:
       deploy_env: "production"
       api_url: ${{ secrets.API_URL_PRODUCTION }}
       fhir_url: ${{ secrets.FHIR_SERVER_URL_PRODUCTION }}
+      widget_url: ${{ secrets.WIDGET_URL_PRODUCTION }}
     secrets:
       TEST_API_KEY: ${{ secrets.TEST_API_KEY_PRODUCTION }}
       API_URL: ${{ secrets.API_URL_PRODUCTION }}

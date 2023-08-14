@@ -15,6 +15,10 @@ on:
         description: "the url for the fhir server"
         required: true
         type: string
+      widget_url:
+        description: "the url for the connect widget"
+        required: true
+        type: string
     secrets:
       TEST_API_KEY:
         required: true
@@ -60,4 +64,5 @@ jobs:
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
           API_URL: ${{ inputs.api_url }}
+          WIDGET_URL: ${{ inputs.widget_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}
