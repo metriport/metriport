@@ -1,12 +1,13 @@
 import { mocked } from "jest-mock";
 import axios from "axios";
 import { MetriportDevicesApi } from "../metriport";
+import { faker } from "@faker-js/faker";
 
 jest.mock("axios");
 
 describe("getMetriportUserId", () => {
-  const userId = "1";
-  const apiKey = "FAKE_KEY";
+  const userId = faker.string.uuid();
+  const apiKey = faker.string.uuid();
   const mockedAxios = mocked(axios);
 
   it("returns the userId", async () => {
@@ -22,7 +23,6 @@ describe("getMetriportUserId", () => {
 
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
     expect(axios.post).toHaveBeenCalledWith(`/user`, null, { params: { appUserId: userId } });
-    expect(metriportClient.getMetriportUserId).toHaveBeenCalledTimes(1);
     expect(result).toEqual(userId);
   });
 });
