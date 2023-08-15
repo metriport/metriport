@@ -22,6 +22,9 @@ on:
         required: false
         type: string
         default: "deploy-widget.sh"
+      AWS_REGION:
+        required: true
+        type: string
       S3_BUCKET:
         description: "The URI of the S3 bucket to deploy to"
         required: true
@@ -122,5 +125,6 @@ jobs:
           ./packages/scripts/${{ inputs.script_name }}
         working-directory: "./"
         env:
+          AWS_REGION: ${{ inputs.AWS_REGION }}
           S3_BUCKET: ${{ inputs.S3_BUCKET }}
           CF_DISTRIB_ID: ${{ inputs.CF_DISTRIB_ID }}

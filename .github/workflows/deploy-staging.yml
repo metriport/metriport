@@ -51,6 +51,7 @@ jobs:
     with:
       build_env: "staging"
       deploy_env: "staging"
+      AWS_REGION: ${{ vars.WIDGET_REGION_STAGING }}
       S3_BUCKET: ${{ vars.S3_BUCKET_STAGING }}
       CF_DISTRIB_ID: ${{ vars.CF_DISTRIB_ID_STAGING }}
     secrets:
