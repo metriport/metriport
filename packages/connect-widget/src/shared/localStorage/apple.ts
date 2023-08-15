@@ -3,7 +3,7 @@ import { isDemo } from "../api";
 
 const isAppleStorageKey = "is-apple";
 
-export const getIsApple = (searchParams: URLSearchParams): boolean | null => {
+export const getIsApple = (searchParams: URLSearchParams): boolean => {
   const isAppleParam = searchParams.get(Constants.APPLE_PARAM);
 
   const appleParamTrue = isAppleParam && isAppleParam === "true";
@@ -16,5 +16,5 @@ export const getIsApple = (searchParams: URLSearchParams): boolean | null => {
     return appleParamTrue;
   }
 
-  return localStorage ? !!localStorage.getItem(isAppleStorageKey) : null;
+  return localStorage ? !!localStorage.getItem(isAppleStorageKey) : false;
 };

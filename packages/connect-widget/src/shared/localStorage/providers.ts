@@ -18,7 +18,7 @@ const providersLocalStorageKey = "providers";
 
 export const getProviders = (
   searchParams: URLSearchParams,
-  isApple: boolean | null
+  isApple: boolean
 ): DefaultProvider[] => {
   const providerParams = searchParams.get(Constants.PROVIDERS_PARAM);
   const providers = toggleProvidersWithApple(defaultProviders, isApple);
