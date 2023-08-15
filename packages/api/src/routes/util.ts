@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ApiTypes } from "../command/usage/report-usage";
 import BadRequestError from "../errors/bad-request";
-import { EventTypes, analytics } from "../shared/analytics";
+import { analytics, EventTypes } from "../shared/analytics";
 import { Config } from "../shared/config";
 import { capture } from "../shared/notifications";
 
@@ -19,7 +19,8 @@ export const asyncHandler =
       analyzeRoute(req);
       await f(req, res, next);
     } catch (err) {
-      Config.isCloudEnv() && console.error(err);
+      if (Config.isCloudEnv()) console.error(String(err));
+      else console.error(err);
       next(err);
     }
   };

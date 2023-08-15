@@ -26,6 +26,6 @@ export const getFacilityOrFail = async ({ cxId, id }: GetFacilityQuery): Promise
       cxId,
     },
   });
-  if (!facility) throw new NotFoundError(`Could not find facility`);
+  if (!facility) throw new NotFoundError(`Could not find facility`, undefined, { facilityId: id });
   return facility;
 };
