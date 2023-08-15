@@ -89,6 +89,10 @@ jobs:
           npm run build:cloud
         working-directory: ${{ inputs.path }}
 
+      - name: Install playwright
+        run: npx playwright install
+        working-directory: "./"
+
       - name: Run Tests
         run: npm run test
         working-directory: ${{ inputs.path }}
