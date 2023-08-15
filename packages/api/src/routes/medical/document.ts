@@ -21,14 +21,6 @@ const router = Router();
  *
  * Lists all Documents that can be retrieved for a Patient.
  *
- *
- * It also returns the status of querying document references across HIEs,
- * indicating whether there is an asynchronous query in progress (status processing)
- * or not (status completed).
- *
- * If the query is in progress, you will also receive the total number of documents
- * to be queried as well as the ones that have already been completed.
- *
  * @param req.query.patientId Patient ID for which to list documents.
  * @param req.query.dateFrom Optional start date that docs will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that docs will be filtered by (inclusive).
