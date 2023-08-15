@@ -91,7 +91,7 @@ jobs:
 
       - name: Install playwright
         if: ${{ inputs.path == 'packages/connect-widget' && steps.playwright-cache.outputs.cache-hit == 'true' }}
-        run: npx playwright install-deps
+        run: npx playwright install && npx playwright install-deps
         working-directory: ${{ inputs.path }}
 
       - name: Run Tests

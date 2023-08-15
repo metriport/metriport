@@ -36,15 +36,15 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { channel: "chromium" },
+      use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "firefox",
-      use: { channel: "firefox" },
+      use: { ...devices["Desktop Firefox"] },
     },
     {
       name: "webkit",
-      use: { channel: "webkit" },
+      use: { ...devices["Desktop Safari"] },
     },
 
     // Test against mobile viewports.
