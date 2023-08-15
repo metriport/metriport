@@ -90,8 +90,9 @@ jobs:
         working-directory: ${{ inputs.path }}
 
       - name: Install playwright
-        run: npx playwright install
-        working-directory: "./"
+        if: ${{ inputs.path == 'packages/connect-widget' && steps.playwright-cache.outputs.cache-hit == 'true' }}
+        run: npx playwright install-deps
+        working-directory: ${{ inputs.path }}
 
       - name: Run Tests
         run: npm run test
