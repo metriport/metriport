@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { getApi, isDemo } from "../../../shared/api";
 import Constants from "../../../shared/constants";
 import { getProviders } from "../../../shared/localStorage/providers";
+import { getIsApple } from "../../../shared/localStorage/apple";
 import { capture } from "../../../shared/notifications";
 import Providers from "./providers";
 
@@ -32,7 +33,8 @@ const ConnectProviders = () => {
   }, []);
 
   const searchProviders = searchParams.get(Constants.PROVIDERS_PARAM);
-  const isApple = searchParams.get(Constants.APPLE_PARAM);
+  const isAppleParam = searchParams.get(Constants.APPLE_PARAM);
+  const isApple = getIsApple(isAppleParam, isDemo);
   const providers = getProviders(searchProviders, isDemo, isApple);
 
   return (
