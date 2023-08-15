@@ -9,7 +9,7 @@ import { create } from "../patient";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 
 export type RecreateResultOfPatient = {
-  originalCWPatientId: string;
+  originalCWPatientId: string | undefined;
   newCWPatientId: string;
 };
 export type RecreateResult = {
@@ -73,16 +73,15 @@ export async function recreatePatientAtCW(
       : undefined;
     if (!commonwellData) {
       const msg = `Patient has no externalData for CommonWell`;
-      log(msg + ", skipping...");
-      capture.message(msg, { extra: { patient }, level: "error" });
-      return undefined;
+      log(msg + ", creating a new patient @ CW...");
+      capture.message(msg, { extra: { patient }, level: "warning" });
     }
-    const originalPersonId = commonwellData.personId;
-    const originalCWPatientId = commonwellData.patientId;
-    if (originalCWPatientId.includes(patient.id)) {
+    const originalPersonId = commonwellData?.personId ?? undefined;
+    const originalCWPatientId = commonwellData?.patientId ?? undefined;
+    if (originalPersonId && originalCWPatientId && originalCWPatientId.includes(patient.id)) {
       const msg = `Patient ID and CW patientId already match`;
       log(msg + ", skipping...");
-      capture.message(msg, { extra: { patient }, level: "warning" });
+      capture.message(msg, { extra: { patient }, level: "info" });
       return undefined;
     }
 
@@ -106,36 +105,38 @@ export async function recreatePatientAtCW(
       }
     );
 
-    const extra = {
-      patientId: patient.id,
-      originalCWPatientId,
-      newCWPatientId,
-      originalPersonId,
-      newPersonId,
-    };
-    if (originalCWPatientId === newCWPatientId) {
-      const msg = `Patient created/updated with the same ID`;
-      log(msg);
-      capture.message(msg, { extra, level: "error" });
-    } else if (!originalPersonId && !newPersonId) {
-      const msg = `Patient had no personId and we could not determine one again`;
-      log(msg);
-      capture.message(msg, { extra, level: "error" });
-    } else if (originalPersonId && !newPersonId) {
-      const msg = `Patient had a personId but we could not determine one while recreating`;
-      log(`${msg} - original person ID: ${originalPersonId}`);
-      capture.message(msg, { extra, level: "error" });
-    } else if (!originalPersonId && newPersonId) {
-      log(`Good news: patient had no personId but we got one now`);
-    } else if (originalPersonId !== newPersonId) {
-      const msg = `Patient original and new person ID do not match while recreating`;
-      log(`${msg} - original person ID: ${originalPersonId}, new person ID: ${newPersonId}`);
-      capture.message(msg, { extra, level: "error" });
-    }
+    if (originalCWPatientId) {
+      const extra = {
+        patientId: patient.id,
+        originalCWPatientId,
+        newCWPatientId,
+        originalPersonId,
+        newPersonId,
+      };
+      if (originalCWPatientId === newCWPatientId) {
+        const msg = `Patient created/updated with the same ID`;
+        log(msg);
+        capture.message(msg, { extra, level: "error" });
+      } else if (!originalPersonId && !newPersonId) {
+        const msg = `Patient had no personId and we could not determine one again`;
+        log(msg);
+        capture.message(msg, { extra, level: "error" });
+      } else if (originalPersonId && !newPersonId) {
+        const msg = `Patient had a personId but we could not determine one while recreating`;
+        log(`${msg} - original person ID: ${originalPersonId}`);
+        capture.message(msg, { extra, level: "error" });
+      } else if (!originalPersonId && newPersonId) {
+        log(`Good news: patient had no personId but we got one now`);
+      } else if (originalPersonId !== newPersonId) {
+        const msg = `Patient original and new person ID do not match while recreating`;
+        log(`${msg} - original person ID: ${originalPersonId}, new person ID: ${newPersonId}`);
+        capture.message(msg, { extra, level: "error" });
+      }
 
-    // remove old patient
-    log(`Deleting old patient from CW...`);
-    await commonWell.deletePatient(queryMeta, originalCWPatientId);
+      // remove old patient
+      log(`Deleting old patient from CW...`);
+      await commonWell.deletePatient(queryMeta, originalCWPatientId);
+    }
 
     return { originalCWPatientId, newCWPatientId };
   } catch (error) {
