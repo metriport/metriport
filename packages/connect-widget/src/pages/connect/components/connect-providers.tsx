@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { getApi, isDemo } from "../../../shared/api";
-import Constants from "../../../shared/constants";
 import { getProviders } from "../../../shared/localStorage/providers";
+import { getIsApple } from "../../../shared/localStorage/apple";
 import { capture } from "../../../shared/notifications";
 import Providers from "./providers";
 
@@ -31,9 +31,8 @@ const ConnectProviders = () => {
     getConnectedProviders();
   }, []);
 
-  const searchProviders = searchParams.get(Constants.PROVIDERS_PARAM);
-  const isApple = searchParams.get(Constants.APPLE_PARAM);
-  const providers = getProviders(searchProviders, isDemo, isApple);
+  const isApple = getIsApple(searchParams);
+  const providers = getProviders(searchParams, isApple);
 
   return (
     <>

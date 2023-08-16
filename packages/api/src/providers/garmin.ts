@@ -34,7 +34,7 @@ export class Garmin extends Provider implements OAuth1 {
     return this.oauth.processStep2(userToken, oauth_verifier);
   }
 
-  async deregister(userAccessTokens: string[]): Promise<void> {
-    return this.oauth.deregister(userAccessTokens);
+  async deregister(userAccessTokens: string[], cxId?: string): Promise<void> {
+    return this.oauth.deregister(userAccessTokens, cxId);
   }
 }

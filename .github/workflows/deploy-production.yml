@@ -52,8 +52,9 @@ jobs:
     with:
       build_env: "production"
       deploy_env: "production"
+      AWS_REGION: ${{ vars.WIDGET_REGION_PRODUCTION }}
       S3_BUCKET: ${{ vars.S3_BUCKET_PRODUCTION }}
-      CF_DISTRIB_ID: ${{ vars.CF_DISTRIB_ID_PRODUCTION }}
+      CF_DISTRIB_ID: ${{ vars.WIDGET_CF_DISTRIB_ID_PRODUCTION }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

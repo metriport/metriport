@@ -3,6 +3,7 @@ import NotFoundError from "../../errors/not-found";
 import { ConnectedUser } from "../../models/connected-user";
 import { ProviderOptions } from "../../shared/constants";
 import { AtLeastOne } from "../../shared/types";
+import { capture } from "../../shared/notifications";
 
 export const getConnectedUser = async ({
   id,
@@ -68,7 +69,7 @@ export const getConnectedUserByTokenOrFail = async (
   provider: string,
   str: string
 ): Promise<ConnectedUser> => {
-  const connectedUser = await ConnectedUser.findOne({
+  const connectedUser = await ConnectedUser.findAll({
     where: {
       providerMap: {
         [provider]: {
@@ -81,10 +82,15 @@ export const getConnectedUserByTokenOrFail = async (
     },
   });
 
-  if (!connectedUser)
+  if (!connectedUser.length)
     throw new NotFoundError(`Could not find connected user with str matching token`);
 
-  return connectedUser;
+  if (connectedUser.length > 1)
+    capture.message(`Found multiple connected users with str matching token`, {
+      extra: { context: `getConnectedUserByTokenOrFail`, connectedUser },
+    });
+
+  return connectedUser[0];
 };
 
 // TODO 749: See if this function can be improved for token matching within the scope of this issue: https://github.com/metriport/metriport/issues/749

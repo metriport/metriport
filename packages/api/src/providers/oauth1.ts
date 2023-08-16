@@ -29,7 +29,7 @@ export interface OAuth1 {
     userAccessToken: string;
     userAccessTokenSecret: string;
   }>;
-  deregister(userAccessTokens: string[]): Promise<void>;
+  deregister(userAccessTokens: string[], cxId?: string): Promise<void>;
 }
 
 export class OAuth1DefaultImpl implements OAuth1 {
@@ -163,23 +163,40 @@ export class OAuth1DefaultImpl implements OAuth1 {
     return { oauth_token, oauth_token_secret };
   }
 
-  async deregister(userAccessTokens: string[]): Promise<void> {
+  /**
+   * Deregisters all users with the given UATs. Could be used to revoke tokens from all customers or a specific one
+   *
+   * @param {string[]} userAccessTokens list of token strings
+   * @param {string} cxId customer ID to revoke the token for a specific customer only
+   */
+  async deregister(userAccessTokens: string[], cxId?: string): Promise<void> {
     for (const oauthUserAccessToken of userAccessTokens) {
       const userTokenList = await getUserTokenByUAT({ oauthUserAccessToken });
       for (const userToken of userTokenList) {
-        capture.setUser({ id: userToken.userId });
         // DynamoDB (Webhook and auth)
-        const updatedUserToken = userToken.clone();
-        updatedUserToken.oauthUserAccessToken = undefined;
-        updatedUserToken.oauthUserAccessSecret = undefined;
-        await saveUserToken(updatedUserToken);
-        // Postgres (app standard)
-        await updateProviderData({
-          id: userToken.userId,
-          cxId: userToken.cxId,
-          provider: this.providerName,
-          providerItem: undefined,
-        });
+        try {
+          if (!cxId || cxId === userToken.cxId) {
+            capture.setUser({ id: userToken.cxId });
+            capture.setExtra({ metriportUserId: userToken.userId });
+            const updatedUserToken = userToken.clone();
+            updatedUserToken.oauthUserAccessToken = undefined;
+            updatedUserToken.oauthUserAccessSecret = undefined;
+            await saveUserToken(updatedUserToken);
+
+            // Postgres (app standard)
+            await updateProviderData({
+              id: userToken.userId,
+              cxId: userToken.cxId,
+              provider: this.providerName,
+              providerItem: undefined,
+            });
+          }
+        } catch (error) {
+          console.log(`OAuth1 deregister failed. Cause: ${error}`);
+          capture.error(error, {
+            extra: { context: `oauth1.deregister`, error, userToken },
+          });
+        }
       }
     }
   }

@@ -4,6 +4,7 @@ import updateDB from "../sequelize";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
+import { DocRefMappingModel } from "./medical/docref-mapping";
 import { FacilityModel } from "./medical/facility";
 import { MAPIAccess } from "./medical/mapi-access";
 import { OrganizationModel } from "./medical/organization";
@@ -21,6 +22,7 @@ const models: ModelSetup[] = [
   FacilityModel.setup,
   PatientModel.setup,
   MAPIAccess.setup,
+  DocRefMappingModel.setup,
 ];
 
 export type MetriportDB = {
