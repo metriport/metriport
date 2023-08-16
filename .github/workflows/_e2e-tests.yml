@@ -54,7 +54,7 @@ jobs:
         working-directory: "./"
 
       - name: Install playwright
-        run: npx playwright install
+        run: npx playwright install && npx playwright install-deps
         working-directory: "packages/connect-widget"
 
       - name: Build/compile
