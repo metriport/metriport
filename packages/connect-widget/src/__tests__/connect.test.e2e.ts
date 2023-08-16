@@ -10,8 +10,8 @@ const testApiKey = getTestConfig().testApiKey;
 const metriportClient = new MetriportDevicesApi(testApiKey, { baseAddress: apiUrl });
 
 test("check if renders agreement", async ({ page }) => {
-  const appId = uuidv4();
-  const userId = await metriportClient.getMetriportUserId(appId);
+  const appUserId = uuidv4();
+  const userId = await metriportClient.getMetriportUserId(appUserId);
   const token = await metriportClient.getConnectToken(userId);
 
   await page.goto(`${widgetUrl}/?token=${token}`);
