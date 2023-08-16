@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from "express";
-import httpStatus from "http-status";
 import { ApiTypes } from "../command/usage/report-usage";
 import BadRequestError from "../errors/bad-request";
 import { analytics, EventTypes } from "../shared/analytics";
@@ -20,7 +19,8 @@ export const asyncHandler =
       analyzeRoute(req);
       await f(req, res, next);
     } catch (err) {
-      Config.isCloudEnv() && console.error(err);
+      if (Config.isCloudEnv()) console.error(String(err));
+      else console.error(err);
       next(err);
     }
   };
@@ -171,17 +171,3 @@ export const getDateOrFail = (req: Request): string => {
   if (!date) throw new BadRequestError("Missing date query param");
   return date as string;
 };
-
-export function getETag(req: Request): {
-  eTag: string | undefined;
-} {
-  const eTagHeader = req.header("If-Match");
-  const eTagPayload = req.body.eTag;
-  return {
-    eTag: eTagHeader ?? eTagPayload,
-  };
-}
-
-export function isHttpOK(statusCode: number): boolean {
-  return httpStatus[`${statusCode}_CLASS`] === httpStatus.classes.SUCCESSFUL;
-}

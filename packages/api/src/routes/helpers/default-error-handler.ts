@@ -2,9 +2,12 @@ import { OperationOutcomeError } from "@medplum/core";
 import { ErrorRequestHandler } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
-import MetriportError from "./errors/metriport-error";
-import { operationOutcomeIssueToString } from "./external/fhir/shared";
-import { httpResponseBody } from "./routes/util";
+import MetriportError from "../../errors/metriport-error";
+import { operationOutcomeIssueToString } from "../../external/fhir/shared";
+import { isClientError } from "../../shared/http";
+import { capture } from "../../shared/notifications";
+import { httpResponseBody } from "../util";
+import { isReportClientErrors } from "./report-client-errors";
 
 // Errors in Metriport are based off of https://www.rfc-editor.org/rfc/rfc7807
 // This is specifically how the fields are used:
@@ -41,6 +44,16 @@ const zodResponseBody = (err: ZodError): string => {
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   res.setHeader(`x-sentry-id`, (res as any).sentry || ``);
+
+  if (isReportClientErrors(req) && isClientError(err)) {
+    capture.error(err, {
+      extra: {
+        error: err,
+        ...(err instanceof MetriportError ? err.additionalInfo : {}),
+      },
+    });
+  }
+
   if (err instanceof MetriportError) {
     return res.contentType("json").status(err.status).send(metriportResponseBody(err));
   }
