@@ -3,10 +3,12 @@ import MetriportError from "./metriport-error";
 export type ErrorCause = Error & { message: string; status?: number };
 
 export default class WebhookError extends MetriportError {
-  override cause: ErrorCause;
-  constructor(message = "Unexpected error with webhook", cause: ErrorCause) {
-    super(message, cause);
+  constructor(
+    message = "Unexpected error with webhook",
+    cause?: unknown,
+    additionalInfo?: Record<string, string | undefined | null>
+  ) {
+    super(message, cause, additionalInfo);
     this.name = this.constructor.name;
-    this.cause = cause;
   }
 }
