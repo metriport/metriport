@@ -79,7 +79,7 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  
+
   infra-api-lambdas:
     uses: ./.github/workflows/_deploy_cdk.yml
     if: needs.files-changed.outputs.infra-lambdas == 'true'
@@ -123,3 +123,16 @@ jobs:
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
     if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
     secrets: inherit
+
+  e2e-tests:
+    uses: ./.github/workflows/_e2e-tests.yml
+    needs: release
+    with:
+      deploy_env: "staging"
+      api_url: ${{ vars.API_URL_STAGING }}
+      fhir_url: ${{ vars.FHIR_SERVER_URL_STAGING }}
+      widget_url: ${{ vars.WIDGET_URL_STAGING }}
+    secrets:
+      TEST_API_KEY: ${{ secrets.TEST_API_KEY_STAGING }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
