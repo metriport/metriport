@@ -1,0 +1,80 @@
+name: Reusable e2e workflow for API
+
+on:
+  workflow_call:
+    inputs:
+      deploy_env:
+        description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
+        required: true
+        type: string
+      api_url:
+        description: "the url for the oss api"
+        required: true
+        type: string
+      fhir_url:
+        description: "the url for the fhir server"
+        required: true
+        type: string
+      widget_url:
+        description: "the url for the connect widget"
+        required: true
+        type: string
+    secrets:
+      TEST_API_KEY:
+        required: true
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
+jobs:
+  test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.deploy_env }}
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18.14"
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Log Git Ref
+        run: |
+          echo "Git ref: $(git rev-parse HEAD)"
+        shell: bash
+
+      - name: Install dependencies
+        run: npm run install-deps
+        working-directory: "./"
+
+      - name: Install playwright
+        run: npx playwright install && npx playwright install-deps
+        working-directory: "packages/connect-widget"
+
+      - name: Build/compile
+        # build from root because of dependencies
+        run: npm run build:cloud
+        working-directory: "./"
+
+      - name: Run Tests
+        run: npm run test:e2e
+        working-directory: "./"
+        env:
+          TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
+          API_URL: ${{ inputs.api_url }}
+          WIDGET_URL: ${{ inputs.widget_url }}
+          FHIR_SERVER_URL: ${{ inputs.fhir_url }}
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v3
+        if: ${{ hashFiles('packages/connect-widget/playwright-report/index.html') != '' }}
+        with:
+          name: playwright-report
+          path: "packages/connect-widget/playwright-report/"
+          retention-days: 30

@@ -3,7 +3,8 @@ import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
-import { requestLogger } from "./helpers/requestLogger";
+import { reportClientErrors } from "./helpers/report-client-errors";
+import { requestLogger } from "./helpers/request-logger";
 import internal from "./internal";
 import medical from "./medical";
 import fhirRouter from "./medical/fhir-r4-proxy";
@@ -20,7 +21,7 @@ export default (app: Application) => {
   app.use(requestLogger);
 
   // internal only routes, should be disabled at API Gateway
-  app.use("/webhook", webhook);
+  app.use("/webhook", reportClientErrors, webhook);
   app.use("/internal", internal);
 
   // routes with API key auth
@@ -40,5 +41,5 @@ export default (app: Application) => {
   app.use("/connect", connect);
 
   // routes with OAuth based authentication
-  app.use("/oauth", oauthRoutes);
+  app.use("/oauth", reportClientErrors, oauthRoutes);
 };

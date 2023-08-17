@@ -101,7 +101,7 @@ export async function queryAndProcessDocuments({
       return fhirDocRefs.length;
     }
   } catch (err) {
-    console.log(`Error: `, err);
+    console.log(`Error: ${err}`);
     processPatientDocumentRequest(
       organization.cxId,
       patient.id,

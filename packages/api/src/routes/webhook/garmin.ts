@@ -27,7 +27,7 @@ import { asyncHandler } from "../util";
 
 const routes = Router();
 
-const log = Util.log(`GARMIN.Webhook`);
+const { log, debug } = Util.out(`GARMIN.Webhook`);
 
 // TODO #34 #118 Finish and document
 /** ---------------------------------------------------------------------------
@@ -38,8 +38,8 @@ const log = Util.log(`GARMIN.Webhook`);
 routes.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
-    // TODO #118 remove
     logRequest(req);
+
     // USER/AUTH related
     if (req.body.deregistrations) {
       await deregister(deregisterUsersSchema.parse(req.body.deregistrations));
@@ -103,9 +103,9 @@ function mapData(body: any): UserData<MetriportData>[] | undefined {
 }
 
 function logRequest(req: Request): void {
-  log(`Headers: ${JSON.stringify(req.headers)}`);
-  log(`Query: ${JSON.stringify(req.query)}`);
-  log(`BODY: ${JSON.stringify(req.body)}`);
+  debug(`Headers: ${JSON.stringify(req.headers)}`);
+  debug(`Query: ${JSON.stringify(req.query)}`);
+  debug(`BODY: ${JSON.stringify(req.body)}`);
 }
 
 export default routes;

@@ -57,7 +57,7 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
     log(`Done (${amount} patients found)`);
   } catch (error) {
     const msg = "Error checking document queries";
-    log(msg, error);
+    log(msg, String(error));
     capture.message(msg, { extra: { patientIds, error }, level: "error" });
   }
 }
