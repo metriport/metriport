@@ -6,10 +6,9 @@ const numericStatus = httpStatus.BAD_REQUEST;
 export default class BadRequestError extends MetriportError {
   constructor(
     message = "Unexpected issue with the request - check inputs and try again",
-    cause?: unknown,
-    additionalInfo?: Record<string, string | undefined | null>
+    cause?: unknown
   ) {
-    super(message, cause, additionalInfo);
+    super(message, cause);
     this.status = numericStatus;
     this.name = this.constructor.name;
   }

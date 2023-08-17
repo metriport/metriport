@@ -87,7 +87,7 @@ const testWebhook = async ({ id, webhookUrl, webhookKey }: TestWebhookCommand): 
       await updateWebhookStatus({
         id,
         webhookEnabled: false,
-        webhookStatusDetail: String(err.cause),
+        webhookStatusDetail: err.cause.message,
       });
     } else {
       log(`Unexpected error testing webhook: ${err}`);

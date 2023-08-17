@@ -102,7 +102,7 @@ export async function sandboxGetDocRefsAndUpsert({
       entry.docRef.contained = contained;
       await upsertDocumentToFHIRServer(patient.cxId, entry.docRef);
     } catch (err) {
-      log(`Error w/ file docId ${entry.docRef.id}, prevDocId ${prevDocId}: ${err}`);
+      log(`Error w/ file docId ${entry.docRef.id}, prevDocId ${prevDocId}: ${JSON.stringify(err)}`);
     }
   }
 

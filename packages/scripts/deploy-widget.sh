@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-if [[ -z "${AWS_REGION}" ]]; then
-  echo "AWS_REGION is missing"
-  exit 1
-fi
 if [[ -z "${S3_BUCKET}" ]]; then
   echo "S3_BUCKET is missing"
   exit 1
@@ -22,7 +18,6 @@ pushd packages/connect-widget
 # it can cause a bad cache entry in CloudFront.
 
 aws s3 cp build/ "s3://${S3_BUCKET}/" \
-  --region "$AWS_REGION" \
   --recursive \
   --cache-control "public, max-age=31536000" \
   --exclude "*.html" \
@@ -35,14 +30,12 @@ aws s3 cp build/ "s3://${S3_BUCKET}/" \
 # because they reference the previously uploaded hashed files.
 
 aws s3 cp build/ "s3://${S3_BUCKET}/" \
-  --region "$AWS_REGION" \
   --recursive \
   --cache-control "no-cache" \
   --exclude "*" \
   --include "asset-manifest.json"
 
 aws s3 cp build/ "s3://${S3_BUCKET}/" \
-  --region "$AWS_REGION" \
   --recursive \
   --cache-control "no-cache" \
   --exclude "*" \
@@ -53,7 +46,6 @@ aws s3 cp build/ "s3://${S3_BUCKET}/" \
 
 aws cloudfront create-invalidation \
   --no-cli-pager \
-  --region "$AWS_REGION" \
   --distribution-id ${CF_DISTRIB_ID} \
   --paths "/*"
 

@@ -1,6 +1,4 @@
 import { DefaultProvider } from "../../pages/connect/components/connect-providers";
-import Constants from "../constants";
-import { isDemo } from "../api";
 
 const defaultProviders: DefaultProvider[] = [
   { name: "apple", image: "apple.png" },
@@ -17,10 +15,10 @@ const defaultProviders: DefaultProvider[] = [
 const providersLocalStorageKey = "providers";
 
 export const getProviders = (
-  searchParams: URLSearchParams,
-  isApple: boolean
+  providerParams: string | null,
+  isDemo: boolean,
+  isApple: string | null
 ): DefaultProvider[] => {
-  const providerParams = searchParams.get(Constants.PROVIDERS_PARAM);
   const providers = toggleProvidersWithApple(defaultProviders, isApple);
   const validProviders = getValidProviders(providers, providerParams);
 
@@ -69,7 +67,7 @@ const getLocalStorageProviders = (): DefaultProvider[] | null => {
   return null;
 };
 
-const toggleProvidersWithApple = (providers: DefaultProvider[], isApple: boolean | null) => {
+const toggleProvidersWithApple = (providers: DefaultProvider[], isApple: string | null) => {
   if (isApple) {
     return providers;
   }

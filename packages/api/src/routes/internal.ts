@@ -1,8 +1,8 @@
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import {
-  populateFhirServer,
   PopulateFhirServerResponse,
+  populateFhirServer,
 } from "../command/medical/admin/populate-fhir";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import BadRequestError from "../errors/bad-request";
@@ -65,8 +65,6 @@ router.delete(
  * @param req.query.allCustomers - Whether we should populate all customers.
  * @param req.query.createIfNotExists - Creates the tenant on the FHIR server if
  *          it does not exist. (optional, default false)
- * @param req.query.triggerDocQuery - Triggers a new document query for each patient.
- *          (optional, default false)
  * @return 200 When successful, including the patient count.
  */
 router.post(

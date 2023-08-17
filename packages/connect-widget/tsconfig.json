@@ -7,8 +7,7 @@
     "allowUnreachableCode": false,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
-    "checkJs": true,
-    "isolatedModules": false
+    "checkJs": true
     // END
   },
   "include": ["src"],
