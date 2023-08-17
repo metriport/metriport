@@ -94,20 +94,20 @@ export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string
       };
     }
 
-    if (fitbitActivityLog.hasActiveZoneMinutes && fitbitActivityLog.heartRateZones) {
-      const heartZones = fitbitActivityLog.heartRateZones;
+    // if (fitbitActivityLog.hasActiveZoneMinutes && fitbitActivityLog.heartRateZones) {
+    //   const heartZones = fitbitActivityLog.heartRateZones;
 
-      // TODO #805: Include a more thorough breakdown of the heart rate data to get the actual min and max bpm, instead of relying on heartRateZones
-      // https://github.com/metriport/metriport/issues/805
-      const { min_item, max_item } = findMinMaxHeartRate(heartZones);
+    // TODO #805: Include a more thorough breakdown of the heart rate data to get the actual min and max bpm, instead of relying on heartRateZones
+    // https://github.com/metriport/metriport/issues/805
+    //   const { min_item, max_item } = findMinMaxHeartRate(heartZones);
 
-      activityLog.biometrics = {
-        heart_rate: {
-          min_bpm: min_item,
-          max_bpm: max_item,
-        },
-      };
-    }
+    //   activityLog.biometrics = {
+    //     heart_rate: {
+    //       min_bpm: min_item,
+    //       max_bpm: max_item,
+    //     },
+    //   };
+    // }
 
     if (fitbitActivityLog.averageHeartRate) {
       activityLog.biometrics = {

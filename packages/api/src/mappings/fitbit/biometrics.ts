@@ -2,7 +2,7 @@ import { Biometrics } from "@metriport/api-sdk";
 
 import { PROVIDER_FITBIT } from "../../shared/constants";
 import { Util } from "../../shared/util";
-import { findMinMaxHeartRate } from "./activity";
+// import { findMinMaxHeartRate } from "./activity";
 import { FitbitBreathingRate } from "./models/breathing-rate";
 import { FitbitCardioScore } from "./models/cardio-score";
 import { FitbitHeartRate } from "./models/heart-rate";
@@ -54,17 +54,19 @@ export const mapToBiometrics = (
       ...Util.addDataToObject("resting_bpm", hr.value.restingHeartRate),
     };
 
-    if (hr.value.heartRateZones && hr.value.heartRateZones.length) {
-      const heartZones = hr?.value.heartRateZones;
+    // if (hr.value.heartRateZones && hr.value.heartRateZones.length) {
+    //   const heartZones = hr?.value.heartRateZones;
 
-      const { min_item, max_item } = findMinMaxHeartRate(heartZones);
+    // TODO #805: Include a more thorough breakdown of the heart rate data to get the actual min and max bpm, instead of relying on heartRateZones
+    // https://github.com/metriport/metriport/issues/805
+    //   const { min_item, max_item } = findMinMaxHeartRate(heartZones);
 
-      biometrics.heart_rate = {
-        ...biometrics.heart_rate,
-        min_bpm: min_item,
-        max_bpm: max_item,
-      };
-    }
+    //   biometrics.heart_rate = {
+    //     ...biometrics.heart_rate,
+    //     min_bpm: min_item,
+    //     max_bpm: max_item,
+    //   };
+    // }
   }
 
   if (hrv) {
