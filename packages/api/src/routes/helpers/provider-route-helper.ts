@@ -8,6 +8,7 @@ import { capture } from "../../shared/notifications";
 import { getUserIdFrom } from "../schemas/user-id";
 import { getCxIdOrFail, getDateOrFail } from "../util";
 import { getTimezoneIdFrom } from "../schemas/timezone-id";
+import dayjs from "dayjs";
 
 // TODO make one of this for each Type so we can avoid the potential type mismatching
 // on the caller's side
@@ -17,7 +18,7 @@ export async function getProviderDataForType<T>(
 ): Promise<T[]> {
   const cxId = getCxIdOrFail(req);
   const userId = getUserIdFrom("query", req).orFail();
-  const date = getDateOrFail(req);
+  const date = dayjs(getDateOrFail(req)).format("YYYY-MM-DD");
   const params: DAPIParams = {
     timezoneId: getTimezoneIdFrom("query", req).optional(),
   };
