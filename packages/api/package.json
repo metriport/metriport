@@ -61,7 +61,7 @@
     "ts-essentials": "^9.3.0",
     "umzug": "^3.2.1",
     "uuid": "^8.3.2",
-    "zod": "^3.20.2"
+    "zod": "^3.22.1"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
