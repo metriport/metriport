@@ -37,13 +37,6 @@ export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string
       },
     };
 
-    if (fitbitActivityLog.calories) {
-      activityLog.energy_expenditure = {
-        ...activityLog.energy_expenditure,
-        active_kcal: fitbitActivityLog.calories,
-      };
-    }
-
     if (fitbitActivityLog.activityLevel && fitbitActivityLog.activityLevel.length) {
       const level = fitbitActivityLog.activityLevel;
       activityLog.durations = {
