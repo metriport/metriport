@@ -21,10 +21,7 @@ import { MetriportDevicesApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
-const response = await metriportClient.getActivityData(
-  "metriportUserId",
-  "date"
-);
+const response = await metriportClient.getActivityData("metriportUserId", "date");
 ```
 
 </ResponseExample>
@@ -40,7 +37,7 @@ const response = await metriportClient.getActivityData(
       "biometrics": {
         "heart_rate": {
           "avg_bpm": 70,
-          "max_bpm": 220,
+          "max_bpm": 172,
           "min_bpm": 45,
           "resting_bpm": 45,
           "samples_bpm": [
@@ -146,7 +143,7 @@ const response = await metriportClient.getActivityData(
         "biometrics": {
           "heart_rate": {
             "avg_bpm": 70,
-            "max_bpm": 220,
+            "max_bpm": 172,
             "min_bpm": 45,
             "resting_bpm": 45,
             "samples_bpm": [
