@@ -2,8 +2,7 @@ import { NextFunction, Request } from "express";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
 import { Util } from "../../shared/util";
 import { getUserIdFrom } from "../schemas/user-id";
-import { getCxId } from "../util";
-import { isHttpOK } from "../../shared/http";
+import { getCxId, isHttpOK } from "../util";
 
 const log = Util.log("USAGE");
 

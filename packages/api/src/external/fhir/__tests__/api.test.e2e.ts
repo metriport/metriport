@@ -7,9 +7,7 @@ import { makeFhirAdminApi } from "../api/api-factory";
 
 const fhirApi = makeFhirAdminApi();
 
-// For e2e tests we need to use the fhir api and the vpc is currently not connnected
-// For reference https://github.com/metriport/metriport/pull/751#discussion_r1289443897
-describe.skip("Integration FHIR Client", () => {
+describe("Integration FHIR Client", () => {
   describe("tenant", () => {
     const organizationNumber = makeOrgNumber();
     const cxId = uuidv4();

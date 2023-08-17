@@ -12,7 +12,7 @@ export const upsertDocumentToFHIRServer = async (
       ...docRef,
     });
   } catch (err) {
-    console.log(`[upsertDocumentToFHIRServer] ${err}`);
+    console.log(`[upsertDocumentToFHIRServer] ` + JSON.stringify(err));
     throw err;
   }
 };

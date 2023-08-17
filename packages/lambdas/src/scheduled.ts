@@ -28,7 +28,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
 
     console.log(`Done, request completed. (not waiting for a response)`);
   } catch (error) {
-    console.log(`Error calling ${url}; ${error}`);
+    console.log(`Error calling ${url}; ${JSON.stringify(error)}`);
     capture.error(error, { extra: { url, event, lambdaName, error } });
     throw error;
   }

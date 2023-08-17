@@ -2,10 +2,23 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
 import { AxiosResponse } from "axios";
+import { v4 as uuidv4 } from "uuid";
+import { makeFhirAdminApi } from "../../../../../external/fhir/api/api-factory";
+import { makeOrgNumber } from "../../../../../models/medical/__tests__/organization";
 import { api } from "../../../../__tests__/shared";
 import { makePatient } from "./patient";
 
 const patient = makePatient();
+const organizationNumber = makeOrgNumber();
+const cxId = uuidv4();
+const fhirClient = makeFhirAdminApi();
+
+beforeAll(async () => {
+  await fhirClient.createTenant({ organizationNumber, cxId });
+});
+afterAll(async () => {
+  await fhirClient.deleteTenant({ organizationNumber });
+});
 
 describe("Integration FHIR Patient", () => {
   test("create patient", async () => {

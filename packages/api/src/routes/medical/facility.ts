@@ -5,8 +5,7 @@ import { createFacility } from "../../command/medical/facility/create-facility";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import NotFoundError from "../../errors/not-found";
-import { getETag } from "../../shared/http";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
+import { asyncHandler, getCxIdOrFail, getETag, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/facilityDTO";
 import { facilityCreateSchema, facilityUpdateSchema } from "./schemas/facility";
 

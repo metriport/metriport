@@ -3,39 +3,39 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/create-consolidate-data";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
-import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getConsolidatedPatientData,
   resourceTypeForConsolidation,
 } from "../../command/medical/patient/get-consolidate-data";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/patient";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
-import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
-import { getETag } from "../../shared/http";
 import {
   asyncHandler,
   getCxIdOrFail,
+  getETag,
   getFrom,
   getFromParamsOrFail,
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
-import { bundleSchema } from "./schemas/fhir";
 import {
   patientCreateSchema,
   patientUpdateSchema,
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/create-consolidate-data";
+import { bundleSchema } from "./schemas/fhir";
+import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;

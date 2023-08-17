@@ -404,7 +404,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           });
           await sqsUtils.reEnqueue(message);
         } else {
-          console.log(`Error processing message: ${JSON.stringify(message)}; \n${err}: ${err}`);
+          console.log(
+            `Error processing message: ${JSON.stringify(message)}; \n${err}: ${JSON.stringify(err)}`
+          );
           capture.error(err, {
             extra: { message, context: lambdaName, retryCount: count },
           });
@@ -418,7 +420,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
     }
     console.log(`Done`);
   } catch (err) {
-    console.log(`Error processing event: ${JSON.stringify(event)}; ${err}`);
+    console.log(`Error processing event: ${JSON.stringify(event)}; ${JSON.stringify(err)}`);
     capture.error(err, {
       extra: { event, context: lambdaName, additional: "outer catch" },
     });
