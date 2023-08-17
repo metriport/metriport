@@ -16,8 +16,8 @@ export const getDocuments = async ({
       docs.push(...page);
     }
   } catch (error) {
-    const msg = `Error getting documents for patient ${patientId} from FHIR server`;
-    console.log(msg, error);
+    const msg = `Error getting documents from FHIR server`;
+    console.log(`${msg} - patientId: ${patientId}, error: ${error}`);
     capture.message(msg, { extra: { patientId, error }, level: "error" });
     throw error;
   }

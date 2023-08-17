@@ -14,9 +14,10 @@ import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
 import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
 import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
+import { getETag } from "../../shared/http";
 import { stringToBoolean } from "../../shared/types";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getETag, getFrom, getFromParamsOrFail, getFromQueryOrFail } from "../util";
+import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryOrFail } from "../util";
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
 

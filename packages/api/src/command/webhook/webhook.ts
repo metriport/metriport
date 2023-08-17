@@ -127,7 +127,7 @@ export const processRequest = async (
     }
     let webhookStatusDetail;
     if (err instanceof WebhookError) {
-      webhookStatusDetail = err.cause.message;
+      webhookStatusDetail = String(err.cause);
     } else {
       log(`Unexpected error testing webhook`, err);
       webhookStatusDetail = `Internal error: ${err?.message}`;

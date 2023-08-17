@@ -52,8 +52,9 @@ jobs:
     with:
       build_env: "production"
       deploy_env: "production"
+      AWS_REGION: ${{ vars.WIDGET_REGION_PRODUCTION }}
       S3_BUCKET: ${{ vars.S3_BUCKET_PRODUCTION }}
-      CF_DISTRIB_ID: ${{ vars.CF_DISTRIB_ID_PRODUCTION }}
+      CF_DISTRIB_ID: ${{ vars.WIDGET_CF_DISTRIB_ID_PRODUCTION }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -157,3 +158,16 @@ jobs:
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
     if: ${{ !failure() && (needs.widget.result == 'success' || needs.api-sandbox.result == 'success' || needs.infra-api-lambdas-sandbox.result == 'success' || needs.infra-widget.result == 'success') }}
     secrets: inherit
+
+  e2e-tests:
+    uses: ./.github/workflows/_e2e-tests.yml
+    needs: release
+    with:
+      deploy_env: "production"
+      api_url: ${{ vars.API_URL_PRODUCTION }}
+      fhir_url: ${{ vars.FHIR_SERVER_URL_PRODUCTION }}
+      widget_url: ${{ vars.WIDGET_URL_PRODUCTION }}
+    secrets:
+      TEST_API_KEY: ${{ secrets.TEST_API_KEY_PRODUCTION }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

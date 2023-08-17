@@ -74,7 +74,7 @@ export async function findDuplicatedPersons(cxId?: string): Promise<DuplicatedPe
     const chunks = chunk(patients, MAX_QUERIES_IN_PARALLEL);
     const n = chunks.length;
     for (const [i, chunk] of chunks.entries()) {
-      log(`Running chunk ${i + 1}/${n})...`);
+      log(`Running chunk ${i + 1}/${n}...`);
 
       await Promise.allSettled(
         chunk.map(async patient => {
@@ -185,7 +185,7 @@ export async function findDuplicatedPersonsByPatient(
     return res;
   } catch (error) {
     const msg = "Error while checking duplicates for patient";
-    console.log(`${msg} ${patient.id} - error: ${stringify(error)}`);
+    console.log(`${msg} ${patient.id} - error: ${error}`);
     capture.message(msg, {
       extra: { context: `findDuplicatedPersonsByPatient`, patient, error },
       level: "error",
