@@ -46,7 +46,6 @@ routes.post(
       });
     } else {
       const mappedData = mapData(appleSchema.parse(payload), hourly);
-
       processAppleData(mappedData, metriportUserId, cxId);
     }
 
