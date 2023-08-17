@@ -162,6 +162,10 @@ jobs:
   e2e-tests:
     uses: ./.github/workflows/_e2e-tests.yml
     needs: release
+    # run even if one of the dependencies didn't
+    # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
+    # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
+    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
     with:
       deploy_env: "production"
       api_url: ${{ vars.API_URL_PRODUCTION }}
