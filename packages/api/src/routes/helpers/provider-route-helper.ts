@@ -31,9 +31,14 @@ export async function getProviderDataForType<T>(
     const providerName = p as ProviderOptions; // not proud of this :/
     const provider = Constants.PROVIDER_MAP[providerName];
     if (provider.consumerHealthDataTypeSupported(type)) {
-      const getData = Constants.PROVIDER_MAP[providerName][`get${type}Data`];
       requests.push(
-        (getData(connectedUser, date, params) as Promise<T>).catch(error => {
+        (
+          Constants.PROVIDER_MAP[providerName][`get${type}Data`](
+            connectedUser,
+            date,
+            params
+          ) as Promise<T>
+        ).catch(error => {
           console.error(String(error));
           capture.error(error, {
             extra: {
