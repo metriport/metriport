@@ -14,6 +14,13 @@ api: "GET /activity"
   An array of activity objects for each of the user's connected providers
 </ResponseField>
 
+<Warning>
+  The `min_bpm` and `max_bpm` for Fitbit's activity biometrics are based on the so-called [heart
+  rate
+  zones](https://help.fitbit.com/manuals/luxe/Content/manuals/Topics/Exercise%20and%20Heart%20Health/Check%20your%20heart%20rate.htm),
+  and are not accurate readings. Obtaining the exact readings is currently in development.
+</Warning>
+
 <ResponseExample>
 
 ```javascript Metriport SDK
@@ -21,10 +28,7 @@ import { MetriportDevicesApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
-const response = await metriportClient.getActivityData(
-  "metriportUserId",
-  "date"
-);
+const response = await metriportClient.getActivityData("metriportUserId", "date");
 ```
 
 </ResponseExample>
@@ -40,7 +44,7 @@ const response = await metriportClient.getActivityData(
       "biometrics": {
         "heart_rate": {
           "avg_bpm": 70,
-          "max_bpm": 220,
+          "max_bpm": 172,
           "min_bpm": 45,
           "resting_bpm": 45,
           "samples_bpm": [
@@ -146,7 +150,7 @@ const response = await metriportClient.getActivityData(
         "biometrics": {
           "heart_rate": {
             "avg_bpm": 70,
-            "max_bpm": 220,
+            "max_bpm": 172,
             "min_bpm": 45,
             "resting_bpm": 45,
             "samples_bpm": [
