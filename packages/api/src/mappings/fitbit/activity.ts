@@ -37,6 +37,13 @@ export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string
       },
     };
 
+    if (fitbitActivityLog.calories) {
+      activityLog.energy_expenditure = {
+        ...activityLog.energy_expenditure,
+        active_kcal: fitbitActivityLog.calories,
+      };
+    }
+
     if (fitbitActivityLog.activityLevel && fitbitActivityLog.activityLevel.length) {
       const level = fitbitActivityLog.activityLevel;
       activityLog.durations = {
@@ -87,15 +94,27 @@ export const mapToActivity = (fitbitActiveLogs: FitbitActivityLogs, date: string
       };
     }
 
-    if (fitbitActivityLog.hasActiveZoneMinutes && fitbitActivityLog.heartRateZones) {
-      const heartZones = fitbitActivityLog.heartRateZones;
+    // if (fitbitActivityLog.hasActiveZoneMinutes && fitbitActivityLog.heartRateZones) {
+    //   const heartZones = fitbitActivityLog.heartRateZones;
 
-      const { min_item, max_item } = findMinMaxHeartRate(heartZones);
+    // TODO #805: Include a more thorough breakdown of the heart rate data to get the actual min and max bpm, instead of relying on heartRateZones
+    // https://github.com/metriport/metriport/issues/805
+    //   const { min_item, max_item } = findMinMaxHeartRate(heartZones);
 
+    //   activityLog.biometrics = {
+    //     heart_rate: {
+    //       min_bpm: min_item,
+    //       max_bpm: max_item,
+    //     },
+    //   };
+    // }
+
+    if (fitbitActivityLog.averageHeartRate) {
       activityLog.biometrics = {
+        ...activityLog.biometrics,
         heart_rate: {
-          min_bpm: min_item,
-          max_bpm: max_item,
+          ...activityLog.biometrics?.heart_rate,
+          avg_bpm: fitbitActivityLog.averageHeartRate,
         },
       };
     }
@@ -129,19 +148,18 @@ const findAndConvertActivityLevelToSec = (
   return undefined;
 };
 
-export const findMinMaxHeartRate = (heartrateZones: HeartRateZone[]) => {
-  const acceptableHeartRateZones = heartrateZones.filter(
-    heartRate => heartRate.name !== "Out of Range"
+export const findMinMaxHeartRate = (heartRateZones: HeartRateZone[]) => {
+  const relevantZones = heartRateZones.filter(
+    heartRate => heartRate.minutes && heartRate.minutes > 0
   );
-  const getHeartRates = acceptableHeartRateZones.reduce((acc: number[], heartRate) => {
-    if (heartRate.name !== "Out of Range") {
-      if (heartRate.max) {
-        acc.push(heartRate.max);
-      }
 
-      if (heartRate.min) {
-        acc.push(heartRate.min);
-      }
+  const getHeartRates = relevantZones.reduce((acc: number[], heartRate) => {
+    if (heartRate.max) {
+      acc.push(heartRate.max);
+    }
+
+    if (heartRate.min) {
+      acc.push(heartRate.min);
     }
 
     return acc;
