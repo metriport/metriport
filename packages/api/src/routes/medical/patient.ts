@@ -3,13 +3,13 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/create-consolidate-data";
+import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getConsolidatedPatientData,
   resourceTypeForConsolidation,
-} from "../../command/medical/patient/get-consolidate-data";
+} from "../../command/medical/patient/consolidated-get";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
