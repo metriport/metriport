@@ -32,9 +32,12 @@ export function mapDataToBody(data: AppleHealth, hourly: boolean) {
     addToBody(appleItem, "lean_mass_kg")
   );
   data.HKQuantityTypeIdentifierBodyMass?.forEach(appleItem => addToBody(appleItem, "weight_kg"));
-  data.HKQuantityTypeIdentifierBodyFatPercentage?.forEach(appleItem =>
-    addToBody(appleItem, "body_fat_pct")
-  );
+  data.HKQuantityTypeIdentifierBodyFatPercentage?.forEach(appleItem => {
+    const CONVERT_DECIMAL = 100;
+
+    appleItem.value = appleItem.value * CONVERT_DECIMAL;
+    addToBody(appleItem, "body_fat_pct");
+  });
 
   return body;
 }
