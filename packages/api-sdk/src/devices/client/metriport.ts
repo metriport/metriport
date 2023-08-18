@@ -37,7 +37,6 @@ export class MetriportDevicesApi {
    * @param options - Optional parameters
    * @param options.sandbox - Indicates whether to connect to the sandbox, default false.
    * @param options.timeout - Connection timeout in milliseconds, default 20 seconds.
-   * @param options.baseAddress - Base address to be used instead of the default.
    */
   constructor(apiKey: string, options: Options = {}) {
     const { sandbox, timeout } = options;
