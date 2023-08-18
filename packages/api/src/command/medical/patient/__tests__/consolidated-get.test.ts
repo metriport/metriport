@@ -1,12 +1,12 @@
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.test" });
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Observation } from "@medplum/fhirtypes";
-import * as dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import { HapiFhirClient } from "../../../../external/fhir/api/api-hapi";
 import { makePatient } from "../../../../models/medical/__tests__/patient";
 import { getConsolidatedPatientData } from "../consolidated-get";
 import * as getPatient from "../get-patient";
-dotenv.config({ path: ".env.test" });
 
 let getPatientOrFailMock: jest.SpyInstance;
 let fhir_searchResourcePages: jest.SpyInstance;
