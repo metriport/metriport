@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import NotFoundError from "../../errors/not-found";
 import { WebhookRequest, WebhookRequestStatus } from "../../models/webhook-request";
 import { DAPIWebhookType } from "./devices";
-import { MAPIWebhookType } from "./medical";
+import { MAPIWebhookType } from "../medical/document/document-webhook";
 
 export type CreateWebhookRequestCommand = {
   cxId: string;

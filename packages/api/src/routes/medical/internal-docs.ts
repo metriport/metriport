@@ -10,8 +10,11 @@ import {
   updateDocQuery,
 } from "../../command/medical/document/document-query";
 import { reprocessDocuments } from "../../command/medical/document/document-redownload";
+import {
+  MAPIWebhookStatus,
+  processPatientDocumentRequest,
+} from "../../command/medical/document/document-webhook";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../command/webhook/medical";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { makeS3Client } from "../../external/aws/s3";

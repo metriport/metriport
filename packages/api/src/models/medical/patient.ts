@@ -1,6 +1,7 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
 import { DocumentQueryProgress } from "../../domain/medical/document-query";
+import { QueryProgress } from "../../domain/medical/query-status";
 import { MedicalDataSource } from "../../external";
 import { USState } from "../../shared/geographic-locations";
 import { BaseModel, ModelSetup } from "../_default";
@@ -59,6 +60,7 @@ export type PatientData = {
   address: Address[];
   contact?: Contact[];
   documentQueryProgress?: DocumentQueryProgress;
+  consolidatedQuery?: QueryProgress;
   externalData?: PatientExternalData;
 };
 
