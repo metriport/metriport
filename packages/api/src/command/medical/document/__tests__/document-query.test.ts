@@ -5,7 +5,7 @@ dotenv.config({ path: ".env.test" });
 import { PatientModel } from "../../../../models/medical/patient";
 import { makePatient, makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
-import * as whMedical from "../../../webhook/medical";
+import * as whMedical from "../document-webhook";
 import * as docQueryProgress from "../../patient/append-doc-query-progress";
 import * as docQuery from "../document-query";
 import { updateDocQuery } from "../document-query";

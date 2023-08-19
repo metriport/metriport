@@ -1,10 +1,10 @@
-import { DocumentReferenceDTO } from "../../routes/medical/dtos/documentDTO";
-import { capture } from "../../shared/notifications";
-import { Util } from "../../shared/util";
-import { getSettingsOrFail } from "../settings/getSettings";
-import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { WebhookMetadataPayload, processRequest } from "./webhook";
-import { createWebhookRequest } from "./webhook-request";
+import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
+import { capture } from "../../../shared/notifications";
+import { Util } from "../../../shared/util";
+import { getSettingsOrFail } from "../../settings/getSettings";
+import { ApiTypes, reportUsage as reportUsageCmd } from "../../usage/report-usage";
+import { WebhookMetadataPayload, processRequest } from "../../webhook/webhook";
+import { createWebhookRequest } from "../../webhook/webhook-request";
 
 const log = Util.log(`Medical Webhook`);
 

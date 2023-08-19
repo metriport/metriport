@@ -1,6 +1,9 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import {
+  MAPIWebhookStatus,
+  processPatientDocumentRequest,
+} from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
-import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";

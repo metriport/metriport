@@ -4,12 +4,12 @@ import status from "http-status";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
-import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
-  getConsolidatedPatientData,
   resourceTypeForConsolidation,
+  startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
@@ -202,14 +202,15 @@ const resourceSchema = z.enum(resourceTypeForConsolidation).array();
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated
  *
- * Returns a patient's consolidated data.
+ * Triggers a patient's consolidated data query. Results are sent through Webhook.
+ * If the query is already in progress, just return the current status.
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @return Patient's consolidated data.
+ * @return status of querying for the Patient's consolidated data.
  */
 router.get(
   "/:id/consolidated",
@@ -223,7 +224,7 @@ router.get(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    const data = await getConsolidatedPatientData({ cxId, patientId, resources, dateFrom, dateTo });
+    const data = await startConsolidatedQuery({ cxId, patientId, resources, dateFrom, dateTo });
 
     return res.json(data);
   })
@@ -242,6 +243,13 @@ router.get(
 router.post(
   "/:id/consolidated",
   asyncHandler(async (req: Request, res: Response) => {
+    // limit the payload size that can be created
+    const contentLength = req.headers["content-length"];
+    if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+      return res.status(status.BAD_REQUEST).json({
+        message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`,
+      });
+    }
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const fhirBundle = bundleSchema.parse(req.body);
@@ -262,14 +270,6 @@ router.post(
     if (validatedBundle.entry.length >= MAX_RESOURCE_POST_COUNT) {
       return res.status(status.BAD_REQUEST).json({
         message: `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time.`,
-      });
-    }
-
-    const contentLength = req.headers["content-length"];
-    // limit the payload size that can be created
-    if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
-      return res.status(status.BAD_REQUEST).json({
-        message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`,
       });
     }
 

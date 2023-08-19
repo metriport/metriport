@@ -1,8 +1,8 @@
 import { Bundle, BundleEntry, DiagnosticReport } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
 import { HapiFhirClient } from "../../../../external/fhir/api/api-hapi";
+import { diagnosticReport, patient, transactionRespBundle } from "../../__tests__/fhir-payloads";
 import { createOrUpdateConsolidatedPatientData } from "../consolidated-create";
-import { patient, diagnosticReport, transactionRespBundle } from "../../__tests__/fhir-payloads";
 
 let fhir_readResource: jest.SpyInstance;
 let fhir_executeBatch: jest.SpyInstance;
