@@ -169,8 +169,7 @@ export const sendPayload = async (
       timeout,
     });
     return res.data;
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err) {
     // Don't change this error message, it's used to detect if the webhook is working or not
     throw new WebhookError(`Failed to send payload`, err);
   }
