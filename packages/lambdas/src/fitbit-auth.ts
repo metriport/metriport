@@ -1,19 +1,22 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
+import { APIGatewayEvent } from "aws-lambda";
 import axios from "axios";
 import { createHmac } from "crypto";
 import status from "http-status";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-import { APIGatewayEvent } from "aws-lambda";
 
 // Keep this as early on the file as possible
 capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 const fitbitClientSecretName = getEnvOrFail("FITBIT_CLIENT_SECRET");
+const fitbitTimeoutInMillis = getEnvOrFail("FITBIT_TIMEOUT_MS");
 
-const api = axios.create();
+const api = axios.create({
+  timeout: Math.max(Number(fitbitTimeoutInMillis) - 100, 100),
+});
 
 const buildResponse = (status: number, body?: unknown) => ({
   statusCode: status,
