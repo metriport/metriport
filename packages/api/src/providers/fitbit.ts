@@ -7,15 +7,15 @@ import {
   Sleep,
   User,
 } from "@metriport/api-sdk";
-
-import axios from "axios";
 import status from "http-status";
+import stringify from "json-stringify-safe";
 import {
   getConnectedUserOrFail,
   getConnectedUsersByTokenOrFail,
   getProviderTokenFromConnectedUserOrFail,
 } from "../command/connected-user/get-connected-user";
 import { sendProviderDisconnected } from "../command/webhook/devices";
+import MetriportError from "../errors/metriport-error";
 import { FitbitWebhookSubscriptions, fitbitWebhookSubscriptionsSchema } from "../mappings/fitbit";
 import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";
@@ -47,12 +47,16 @@ import { mapToNutrition } from "../mappings/fitbit/nutrition";
 import { mapToSleep } from "../mappings/fitbit/sleep";
 import { mapToUser } from "../mappings/fitbit/user";
 import { ConnectedUser } from "../models/connected-user";
+import { analytics, EventTypes } from "../shared/analytics";
 import { Config } from "../shared/config";
 import { PROVIDER_FITBIT } from "../shared/constants";
 import { capture } from "../shared/notifications";
-import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
-import MetriportError from "../errors/metriport-error";
+import { executeAndReportAnalytics, ExtraType } from "./shared/analytics";
+import { getHttpClient } from "./shared/http";
+import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
+
+const api = getHttpClient();
 
 export type FitbitToken = {
   accessToken: string;
@@ -162,14 +166,21 @@ export class Fitbit extends Provider implements OAuth2 {
     const accessToken =
       extraParams?.accessToken ?? (await this.oauth.getAccessToken(connectedUser));
 
-    return this.oauth.fetchProviderData<Activity>(
-      `${Fitbit.URL}/${Fitbit.API_PATH}/activities/list.json`,
-      accessToken,
-      async resp => {
-        return mapToActivity(fitbitActivityLogResp.parse(resp.data.activities), date);
-      },
-      params
-    );
+    const getData = () =>
+      this.oauth.fetchProviderData<Activity>(
+        `${Fitbit.URL}/${Fitbit.API_PATH}/activities/list.json`,
+        accessToken,
+        async resp => {
+          return mapToActivity(fitbitActivityLogResp.parse(resp.data.activities), date);
+        },
+        params
+      );
+    return execute(getData, connectedUser, {
+      action: "getActivityData",
+      date,
+      timezone: extraParams?.timezoneId,
+      params: stringify(params),
+    });
   }
 
   async fetchBreathingData(accessToken: string, date: string): Promise<FitbitBreathingRate> {
@@ -251,8 +262,8 @@ export class Fitbit extends Provider implements OAuth2 {
   ): Promise<Biometrics> {
     const accessToken = await this.getAccessToken(connectedUser);
 
-    const [resBreathing, resCardio, resHr, resHrv, resSpo, resTempCore, resTempSkin] =
-      await Promise.allSettled([
+    const fetchData = () =>
+      Promise.allSettled([
         this.fetchBreathingData(accessToken, date),
         this.fetchCardioData(accessToken, date),
         this.fetchHeartRateData(accessToken, date),
@@ -261,6 +272,8 @@ export class Fitbit extends Provider implements OAuth2 {
         this.fetchTempCoreData(accessToken, date),
         this.fetchTempSkinData(accessToken, date),
       ]);
+    const [resBreathing, resCardio, resHr, resHrv, resSpo, resTempCore, resTempSkin] =
+      await execute(fetchData, connectedUser, { action: "getBiometricsData", date });
 
     const breathing = resBreathing.status === "fulfilled" ? resBreathing.value : undefined;
     const cardio = resCardio.status === "fulfilled" ? resCardio.value : undefined;
@@ -319,10 +332,16 @@ export class Fitbit extends Provider implements OAuth2 {
       "Accept-Language": "en_GB", // For higher precision in weight readings, we are retrieving data in stones and converting it to kg
     };
 
-    const [resUser, resWeight] = await Promise.allSettled([
-      this.fetchUserProfile(accessToken, extraHeaders),
-      this.fetchWeights(accessToken, date, extraHeaders),
-    ]);
+    const fetchData = () =>
+      Promise.allSettled([
+        this.fetchUserProfile(accessToken, extraHeaders),
+        this.fetchWeights(accessToken, date, extraHeaders),
+      ]);
+    const [resUser, resWeight] = await execute(fetchData, connectedUser, {
+      action: "getBodyData",
+      date,
+      timezone: extraParams.timezoneId,
+    });
 
     const user = resUser.status === "fulfilled" ? resUser.value : undefined;
     const weight = resWeight.status === "fulfilled" ? resWeight.value : undefined;
@@ -364,10 +383,16 @@ export class Fitbit extends Provider implements OAuth2 {
     const accessToken =
       extraParams?.accessToken ?? (await this.oauth.getAccessToken(connectedUser));
 
-    const [resFood, resWater] = await Promise.allSettled([
-      this.fetchFoodData(accessToken, date),
-      this.fetchWaterData(accessToken, date),
-    ]);
+    const fetchData = () =>
+      Promise.allSettled([
+        this.fetchFoodData(accessToken, date),
+        this.fetchWaterData(accessToken, date),
+      ]);
+    const [resFood, resWater] = await execute(fetchData, connectedUser, {
+      action: "getNutritionData",
+      date,
+      timezone: extraParams.timezoneId,
+    });
 
     const food = resFood.status === "fulfilled" ? resFood.value : undefined;
     const water = resWater.status === "fulfilled" ? resWater.value : undefined;
@@ -387,26 +412,34 @@ export class Fitbit extends Provider implements OAuth2 {
     const accessToken =
       extraParams?.accessToken ?? (await this.oauth.getAccessToken(connectedUser));
 
-    return this.oauth.fetchProviderData<Sleep>(
-      `${Fitbit.URL}/${Fitbit.API_PATH}/sleep/date/${date}.json`,
-      accessToken,
-      async resp => {
-        return mapToSleep(fitbitSleepResp.parse(resp.data), date);
-      }
-    );
+    const getData = () =>
+      this.oauth.fetchProviderData<Sleep>(
+        `${Fitbit.URL}/${Fitbit.API_PATH}/sleep/date/${date}.json`,
+        accessToken,
+        async resp => {
+          return mapToSleep(fitbitSleepResp.parse(resp.data), date);
+        }
+      );
+    return execute(getData, connectedUser, {
+      action: "getSleepData",
+      date,
+      timezone: extraParams?.timezoneId,
+    });
   }
 
   override async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
     const accessToken = await this.getAccessToken(connectedUser);
 
-    // TODO reuse `fetchUserProfile()`
-    return this.oauth.fetchProviderData<User>(
-      `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
-      accessToken,
-      async resp => {
-        return mapToUser(fitbitUserResp.parse(resp.data), date);
-      }
-    );
+    const getData = () =>
+      // TODO reuse `fetchUserProfile()`
+      this.oauth.fetchProviderData<User>(
+        `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
+        accessToken,
+        async resp => {
+          return mapToUser(fitbitUserResp.parse(resp.data), date);
+        }
+      );
+    return execute(getData, connectedUser, { action: "getUserData", date });
   }
 
   /**
@@ -507,7 +540,7 @@ export class Fitbit extends Provider implements OAuth2 {
       activeSubscriptions.map(async subscription => {
         const deleteUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscription.collectionType}/apiSubscriptions/${subscription.subscriptionId}.json`;
         try {
-          await axios.delete(deleteUrl, {
+          await api.delete(deleteUrl, {
             headers: {
               Authorization: `Bearer ${token.accessToken}`,
             },
@@ -531,29 +564,34 @@ export class Fitbit extends Provider implements OAuth2 {
   async getActiveSubscriptions(token: FitbitToken): Promise<FitbitWebhookSubscriptions> {
     const rejected: { url: string; err: unknown }[] = [];
     const activeSubscriptions: FitbitWebhookSubscriptions[] = [];
-    await Promise.allSettled(
-      Object.entries(Fitbit.subscriptionTypes).map(async ([scope, collectionType]) => {
-        if (token.scope.includes(scope)) {
-          const url = `${Fitbit.URL}/${Fitbit.API_PATH}/${collectionType}/apiSubscriptions.json`;
-          try {
-            const resp = await axios.get(url, {
-              headers: {
-                Authorization: `Bearer ${token.accessToken}`,
-              },
-            });
-            if (resp.status === status.OK && resp.data.apiSubscriptions.length) {
-              const activeSubscription = fitbitWebhookSubscriptionsSchema.parse(
-                resp.data.apiSubscriptions
-              );
-              activeSubscriptions.push(activeSubscription);
+    const getActiveSubs = () =>
+      Promise.allSettled(
+        Object.entries(Fitbit.subscriptionTypes).map(async ([scope, collectionType]) => {
+          if (token.scope.includes(scope)) {
+            const url = `${Fitbit.URL}/${Fitbit.API_PATH}/${collectionType}/apiSubscriptions.json`;
+            try {
+              const resp = await api.get(url, {
+                headers: {
+                  Authorization: `Bearer ${token.accessToken}`,
+                },
+              });
+              if (resp.status === status.OK && resp.data.apiSubscriptions.length) {
+                const activeSubscription = fitbitWebhookSubscriptionsSchema.parse(
+                  resp.data.apiSubscriptions
+                );
+                activeSubscriptions.push(activeSubscription);
+              }
+            } catch (err) {
+              rejected.push({ url, err });
+              throw err;
             }
-          } catch (err) {
-            rejected.push({ url, err });
-            throw err;
           }
-        }
-      })
-    );
+        })
+      );
+    await executeWithoutConnectedUser(getActiveSubs, token.userId, {
+      action: "getActiveSubscriptions",
+    });
+
     if (rejected.length > 0) {
       console.log(`Failed to get active Fitbit WH subscriptions.`, rejected);
       capture.message(`Failed to get active Fitbit WH subscriptions.`, {
@@ -614,13 +652,19 @@ export class Fitbit extends Provider implements OAuth2 {
 
     const subscriptionId = `${userId}-${subscriptionType}`;
     const subscriptionUrl = `${Fitbit.URL}/${Fitbit.API_PATH}/${subscriptionType}/apiSubscriptions/${subscriptionId}.json`;
-    const resp = await axios.post(subscriptionUrl, null, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Length": 0,
-      },
+
+    const createSub = () =>
+      api.post(subscriptionUrl, null, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Length": 0,
+        },
+      });
+    const resp = await executeWithoutConnectedUser(createSub, userId, {
+      action: "createSubscription",
     });
+
     console.log(
       "Fitbit WH subscription created successfully with status:",
       resp.status,
@@ -649,4 +693,47 @@ export function parseFitbitToken(token: string): FitbitToken {
     userId: user_id,
     expiresAt: new Date(expires_at),
   };
+}
+
+/**
+ * Sends a request to Fitbit and report the duration to our analytics service.
+ *
+ * @param fnToExecute the function making the request to Fitbit
+ * @param connectedUser Metriport's connected user
+ * @param additionalAnalyticsData additional information to send to the analytics service
+ * @returns Fitbit's response
+ */
+export async function execute<R>(
+  fnToExecute: () => Promise<R>,
+  connectedUser: ConnectedUser,
+  additionalAnalyticsData: ExtraType
+): Promise<R> {
+  return executeAndReportAnalytics(
+    fnToExecute,
+    connectedUser,
+    ProviderSource.fitbit,
+    additionalAnalyticsData
+  );
+}
+
+export async function executeWithoutConnectedUser<R>(
+  fnToExecute: () => Promise<R>,
+  distinctId: string,
+  additionalAnalyticsData?: Record<string, string | undefined>
+): Promise<R> {
+  const timeBefore = Date.now();
+
+  const resp = await fnToExecute();
+
+  const durationInMs = Date.now() - timeBefore;
+  analytics({
+    distinctId,
+    event: EventTypes.query,
+    properties: {
+      provider: ProviderSource.fitbit,
+      duration: durationInMs,
+      ...additionalAnalyticsData,
+    },
+  });
+  return resp;
 }

@@ -1,5 +1,4 @@
-import { Activity, Biometrics, Body, Nutrition, Sleep } from "@metriport/api-sdk";
-import axios from "axios";
+import { Activity, Biometrics, Body, Nutrition, ProviderSource, Sleep } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import { mapToActivity } from "../mappings/google/activity";
@@ -17,10 +16,14 @@ import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_GOOGLE } from "../shared/constants";
 import { capture } from "../shared/notifications";
-import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
+import { executeAndReportAnalytics, ExtraType } from "./shared/analytics";
+import { getHttpClient } from "./shared/http";
+import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 
 dayjs.extend(timezone);
+
+const api = getHttpClient();
 
 export class Google extends Provider implements OAuth2 {
   static URL = "https://www.googleapis.com";
@@ -99,7 +102,7 @@ export class Google extends Provider implements OAuth2 {
   ) {
     const access_token = await this.getAccessToken(connectedUser);
     const baseDate = extraParams.timezoneId ? dayjs.tz(date, extraParams.timezoneId) : dayjs(date);
-    const resp = await axios.post(
+    const resp = await api.post(
       `${Google.URL}${Google.API_PATH}/users/me/dataset:aggregate`,
       {
         startTimeMillis: baseDate.valueOf(),
@@ -115,36 +118,26 @@ export class Google extends Provider implements OAuth2 {
     return resp.data;
   }
 
-  async fetchGoogleSessions(
+  private async fetchGoogleSessions(
     connectedUser: ConnectedUser,
     date: string,
     extraParams: DAPIParams,
     type?: number
   ) {
-    try {
-      const access_token = await this.getAccessToken(connectedUser);
-      const baseDate = extraParams.timezoneId
-        ? dayjs.tz(date, extraParams.timezoneId)
-        : dayjs(date);
-      const resp = await axios.get(`${Google.URL}${Google.API_PATH}/users/me/sessions`, {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
-        params: {
-          startTimeMillis: baseDate.valueOf(),
-          endTimeMillis: baseDate.add(24, "hours").valueOf(),
-          activityType: type,
-        },
-      });
+    const access_token = await this.getAccessToken(connectedUser);
+    const baseDate = extraParams.timezoneId ? dayjs.tz(date, extraParams.timezoneId) : dayjs(date);
+    const resp = await api.get(`${Google.URL}${Google.API_PATH}/users/me/sessions`, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+      params: {
+        startTimeMillis: baseDate.valueOf(),
+        endTimeMillis: baseDate.add(24, "hours").valueOf(),
+        activityType: type,
+      },
+    });
 
-      return resp.data;
-    } catch (error) {
-      capture.error(error, {
-        extra: { context: `google.fetch.sessions` },
-      });
-
-      throw new Error(`Request failed google`, { cause: error });
-    }
+    return resp.data;
   }
 
   override async getActivityData(
@@ -152,10 +145,16 @@ export class Google extends Provider implements OAuth2 {
     date: string,
     extraParams: DAPIParams
   ): Promise<Activity> {
-    const [resSessions, resData] = await Promise.allSettled([
-      this.fetchActivitySessions(connectedUser, date, extraParams),
-      this.fetchActivityData(connectedUser, date, extraParams),
-    ]);
+    const getData = () =>
+      Promise.allSettled([
+        this.fetchActivitySessions(connectedUser, date, extraParams),
+        this.fetchActivityData(connectedUser, date, extraParams),
+      ]);
+    const [resSessions, resData] = await execute(getData, connectedUser, {
+      action: "getActivityData",
+      date,
+      timezone: extraParams.timezoneId,
+    });
 
     const sessions = resSessions.status === "fulfilled" ? resSessions.value : undefined;
     if (resSessions.status === "rejected") {
@@ -187,7 +186,7 @@ export class Google extends Provider implements OAuth2 {
     return sessionResp.parse(activitySessions);
   }
 
-  async fetchActivityData(
+  private async fetchActivityData(
     connectedUser: ConnectedUser,
     date: string,
     extraParams: DAPIParams
@@ -223,24 +222,30 @@ export class Google extends Provider implements OAuth2 {
     date: string,
     extraParams: DAPIParams
   ): Promise<Biometrics> {
-    const biometrics = await this.fetchGoogleData(connectedUser, date, extraParams, {
-      aggregateBy: [
-        {
-          dataTypeName: "com.google.blood_pressure",
-        },
-        {
-          dataTypeName: "com.google.blood_glucose",
-        },
-        {
-          dataTypeName: "com.google.body.temperature",
-        },
-        {
-          dataTypeName: "com.google.oxygen_saturation",
-        },
-        {
-          dataTypeName: "com.google.heart_rate.bpm",
-        },
-      ],
+    const getData = () =>
+      this.fetchGoogleData(connectedUser, date, extraParams, {
+        aggregateBy: [
+          {
+            dataTypeName: "com.google.blood_pressure",
+          },
+          {
+            dataTypeName: "com.google.blood_glucose",
+          },
+          {
+            dataTypeName: "com.google.body.temperature",
+          },
+          {
+            dataTypeName: "com.google.oxygen_saturation",
+          },
+          {
+            dataTypeName: "com.google.heart_rate.bpm",
+          },
+        ],
+      });
+    const biometrics = await execute(getData, connectedUser, {
+      action: "getBiometricsData",
+      date,
+      timezone: extraParams.timezoneId,
     });
 
     return mapToBiometrics(googleBiometricsResp.parse(biometrics), date);
@@ -251,18 +256,24 @@ export class Google extends Provider implements OAuth2 {
     date: string,
     extraParams: DAPIParams
   ): Promise<Body> {
-    const body = await this.fetchGoogleData(connectedUser, date, extraParams, {
-      aggregateBy: [
-        {
-          dataTypeName: "com.google.weight",
-        },
-        {
-          dataTypeName: "com.google.height",
-        },
-        {
-          dataTypeName: "com.google.body.fat.percentage",
-        },
-      ],
+    const getData = () =>
+      this.fetchGoogleData(connectedUser, date, extraParams, {
+        aggregateBy: [
+          {
+            dataTypeName: "com.google.weight",
+          },
+          {
+            dataTypeName: "com.google.height",
+          },
+          {
+            dataTypeName: "com.google.body.fat.percentage",
+          },
+        ],
+      });
+    const body = await execute(getData, connectedUser, {
+      action: "getBodyData",
+      date,
+      timezone: extraParams.timezoneId,
     });
 
     return mapToBody(googleBodyResp.parse(body), date);
@@ -273,15 +284,21 @@ export class Google extends Provider implements OAuth2 {
     date: string,
     extraParams: DAPIParams
   ): Promise<Nutrition> {
-    const nutrition = await this.fetchGoogleData(connectedUser, date, extraParams, {
-      aggregateBy: [
-        {
-          dataTypeName: "com.google.hydration",
-        },
-        {
-          dataTypeName: "com.google.nutrition",
-        },
-      ],
+    const getData = () =>
+      this.fetchGoogleData(connectedUser, date, extraParams, {
+        aggregateBy: [
+          {
+            dataTypeName: "com.google.hydration",
+          },
+          {
+            dataTypeName: "com.google.nutrition",
+          },
+        ],
+      });
+    const nutrition = await execute(getData, connectedUser, {
+      action: "getNutritionData",
+      date,
+      timezone: extraParams.timezoneId,
     });
 
     return mapToNutrition(googleNutritionResp.parse(nutrition), date);
@@ -292,13 +309,35 @@ export class Google extends Provider implements OAuth2 {
     date: string,
     extraParams: DAPIParams
   ): Promise<Sleep> {
-    const sleepSessions = await this.fetchGoogleSessions(
-      connectedUser,
+    const getData = () =>
+      this.fetchGoogleSessions(connectedUser, date, extraParams, sessionSleepType);
+    const sleepSessions = await execute(getData, connectedUser, {
+      action: "getSleepData",
       date,
-      extraParams,
-      sessionSleepType
-    );
+      timezone: extraParams.timezoneId,
+    });
 
     return mapToSleep(sessionResp.parse(sleepSessions), date);
   }
+}
+
+/**
+ * Sends a request to Google and report the duration to our analytics service.
+ *
+ * @param fnToExecute the function making the request to Google
+ * @param connectedUser Metriport's connected user
+ * @param additionalAnalyticsData additional information to send to the analytics service
+ * @returns Google's response
+ */
+export async function execute<R>(
+  fnToExecute: () => Promise<R>,
+  connectedUser: ConnectedUser,
+  additionalAnalyticsData: ExtraType
+): Promise<R> {
+  return executeAndReportAnalytics(
+    fnToExecute,
+    connectedUser,
+    ProviderSource.google,
+    additionalAnalyticsData
+  );
 }

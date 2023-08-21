@@ -4,14 +4,14 @@ import { nanoid } from "nanoid";
 import url from "node:url";
 import oauthSignature from "oauth-signature";
 import { z } from "zod";
-import { updateProviderData } from "../command/connected-user/save-connected-user";
-import { getUserToken, getUserTokenByUAT } from "../command/cx-user/get-user-token";
-import { saveUserToken } from "../command/cx-user/save-user-token";
-import { UserToken } from "../domain/user-token";
-import { Config } from "../shared/config";
-import { ProviderOAuth1Options } from "../shared/constants";
-import { capture } from "../shared/notifications";
-import { Util } from "../shared/util";
+import { updateProviderData } from "../../command/connected-user/save-connected-user";
+import { getUserToken, getUserTokenByUAT } from "../../command/cx-user/get-user-token";
+import { saveUserToken } from "../../command/cx-user/save-user-token";
+import { UserToken } from "../../domain/user-token";
+import { Config } from "../../shared/config";
+import { ProviderOAuth1Options } from "../../shared/constants";
+import { capture } from "../../shared/notifications";
+import { Util } from "../../shared/util";
 
 const axios = Axios.create();
 

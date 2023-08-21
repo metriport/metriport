@@ -1,5 +1,4 @@
 import { Activity, Biometrics, Body, Sleep, User } from "@metriport/api-sdk";
-
 import {
   mapToActivity,
   OuraDailyActivity,
@@ -17,7 +16,7 @@ import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_OURA } from "../shared/constants";
 import { getStartAndEndDate, getStartAndEndDateTime } from "../shared/date";
-import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
+import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 
 export class Oura extends Provider implements OAuth2 {

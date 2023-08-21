@@ -10,7 +10,7 @@ import * as saveUserTokenFile from "../../command/cx-user/save-user-token";
 import { makeConnectedUser } from "../../domain/__tests__/make-connected-user";
 import { makeUserToken } from "../../domain/__tests__/user-token";
 import { PROVIDER_GARMIN } from "../../shared/constants";
-import { OAuth1DefaultImpl } from "../oauth1";
+import { OAuth1DefaultImpl } from "../shared/oauth1";
 
 let getUserTokenByUATMock: jest.SpyInstance;
 let saveUserTokenMock: jest.SpyInstance;
