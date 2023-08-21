@@ -31,6 +31,8 @@ import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
+const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
+
 interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
@@ -724,10 +726,12 @@ export class APIStack extends Stack {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/fitbit`,
         ENV_TYPE: envType,
         FITBIT_CLIENT_SECRET: fitbitClientSecret,
+        FITBIT_TIMEOUT_MS: FITBIT_LAMBDA_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
       alarmSnsAction: alarmAction,
+      timeout: FITBIT_LAMBDA_TIMEOUT,
     });
 
     const fitbitSubscriberVerificationLambda = createLambda({
