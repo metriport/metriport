@@ -1,5 +1,5 @@
 import { PROVIDER_WHOOP } from "../shared/constants";
-import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
+import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "../models/connected-user";
