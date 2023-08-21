@@ -1,23 +1,23 @@
 import { Biometrics, Nutrition } from "@metriport/api-sdk";
 import dayjs from "dayjs";
-import Axios from "axios";
 import { Token } from "simple-oauth2";
-import { PROVIDER_DEXCOM } from "../shared/constants";
-import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
-import Provider, { ConsumerHealthDataType } from "./provider";
-import { Config } from "../shared/config";
-import { ConnectedUser } from "../models/connected-user";
-import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { getProviderTokenFromConnectedUserOrFail } from "../command/connected-user/get-connected-user";
+import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { mapToBiometrics } from "../mappings/dexcom/biometrics";
-import { mapToNutrition } from "../mappings/dexcom/nutrition";
-import { dexcomEvgsResp } from "../mappings/dexcom/models/evgs";
 import { dexcomEventsResp } from "../mappings/dexcom/models/events";
-import { capture } from "../shared/notifications";
+import { dexcomEvgsResp } from "../mappings/dexcom/models/evgs";
+import { mapToNutrition } from "../mappings/dexcom/nutrition";
+import { ConnectedUser } from "../models/connected-user";
+import { Config } from "../shared/config";
+import { PROVIDER_DEXCOM } from "../shared/constants";
 import { ISO_DATE } from "../shared/date";
+import { capture } from "../shared/notifications";
 import { Util } from "../shared/util";
+import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
+import Provider, { ConsumerHealthDataType } from "./provider";
+import { getHttpClient } from "./shared/http";
 
-const axios = Axios.create();
+const api = getHttpClient();
 
 export class Dexcom extends Provider implements OAuth2 {
   static URL =
@@ -79,7 +79,7 @@ export class Dexcom extends Provider implements OAuth2 {
       const formBody = new URLSearchParams(formData).toString();
 
       try {
-        const response = await axios.post(`${Dexcom.URL}${Dexcom.TOKEN_PATH}`, formBody, {
+        const response = await api.post(`${Dexcom.URL}${Dexcom.TOKEN_PATH}`, formBody, {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
@@ -131,7 +131,7 @@ export class Dexcom extends Provider implements OAuth2 {
 
     const formBody = new URLSearchParams(formData).toString();
 
-    const resp = await axios.post(`${Dexcom.URL}${Dexcom.TOKEN_PATH}`, formBody, {
+    const resp = await api.post(`${Dexcom.URL}${Dexcom.TOKEN_PATH}`, formBody, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },

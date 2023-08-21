@@ -1,11 +1,11 @@
 import axios, { AxiosResponse } from "axios";
 import { AuthorizationCode, Token } from "simple-oauth2";
 import { z } from "zod";
-import { updateProviderData } from "../command/connected-user/save-connected-user";
-import { ConnectedUser } from "../models/connected-user";
-import { Config } from "../shared/config";
-import { ProviderOAuth2Options } from "../shared/constants";
-import { getProviderTokenFromConnectedUserOrFail } from "../command/connected-user/get-connected-user";
+import { updateProviderData } from "../../command/connected-user/save-connected-user";
+import { ConnectedUser } from "../../models/connected-user";
+import { Config } from "../../shared/config";
+import { ProviderOAuth2Options } from "../../shared/constants";
+import { getProviderTokenFromConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
 
 export const oauthUserTokenResponse = z.object({
   oauth_token: z.string(),
