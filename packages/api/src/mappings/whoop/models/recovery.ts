@@ -20,6 +20,6 @@ export const whoopRecoveryResp = z.object({
     })
     .nullable()
     .optional(),
-});
+}).optional();
 
 export type WhoopRecovery = z.infer<typeof whoopRecoveryResp>;

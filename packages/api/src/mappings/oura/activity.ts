@@ -144,7 +144,7 @@ export const ouraDailyActivityResponse = z.object({
   total_calories: z.number(),
   day: z.string(),
   timestamp: z.string(),
-});
+}).optional();
 
 export type OuraDailyActivity = z.infer<typeof ouraDailyActivityResponse>;
 
