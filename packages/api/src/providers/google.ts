@@ -131,8 +131,8 @@ export class Google extends Provider implements OAuth2 {
         Authorization: `Bearer ${access_token}`,
       },
       params: {
-        startTimeMillis: baseDate.valueOf(),
-        endTimeMillis: baseDate.add(24, "hours").valueOf(),
+        startTime: baseDate.toISOString(),
+        endTime: baseDate.add(24, "hours").toISOString(),
         activityType: type,
       },
     });
