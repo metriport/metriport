@@ -8,20 +8,24 @@ import {
   ResourceType,
 } from "@medplum/fhirtypes";
 import { intersection } from "lodash";
+import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   isoDateRangeToFHIRDateQuery,
   resourceSupportsDateQuery,
 } from "../../../external/fhir/shared";
+import { Patient } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
+import { emptyFunction, Util } from "../../../shared/util";
+import { udpateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
+import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { getPatientOrFail } from "./get-patient";
 
 function fullDateQueryForResource(fullDateQuery: string, resource: ResourceType): string {
   return resourceSupportsDateQuery(resource) ? fullDateQuery : "";
 }
 
-export async function getConsolidatedPatientData({
+export async function startConsolidatedQuery({
   cxId,
   patientId,
   resources,
@@ -33,12 +37,58 @@ export async function getConsolidatedPatientData({
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
+}): Promise<QueryProgress> {
+  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
+  const patient = await getPatientOrFail({ id: patientId, cxId });
+  if (patient.data.consolidatedQuery?.status === "processing") {
+    log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
+    return patient.data.consolidatedQuery;
+  }
+  const progress: QueryProgress = { status: "processing" };
+  await udpateConsolidatedQueryProgress({
+    patient,
+    progress,
+    reset: true,
+  });
+  getConsolidatedAndSendToCx({ patient, resources, dateFrom, dateTo }).catch(emptyFunction);
+  return progress;
+}
+
+async function getConsolidatedAndSendToCx({
+  patient,
+  resources,
+  dateFrom,
+  dateTo,
+}: {
+  patient: Pick<Patient, "id" | "cxId">;
+  resources?: ResourceTypeForConsolidation[];
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<void> {
+  const bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+  // trigger WH call
+  processConsolidatedDataWebhook({
+    patient,
+    bundle,
+    filters: { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo },
+  }).catch(emptyFunction);
+}
+
+export async function getConsolidatedPatientData({
+  patient,
+  resources,
+  dateFrom,
+  dateTo,
+}: {
+  patient: Pick<Patient, "id" | "cxId">;
+  resources?: ResourceTypeForConsolidation[];
+  dateFrom?: string;
+  dateTo?: string;
 }): Promise<Bundle<Resource>> {
-  const { log } = Util.out(`[getConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}]`);
-
-  // Just validate that the patient exists
-  await getPatientOrFail({ id: patientId, cxId });
-
+  const { log } = Util.out(
+    `[getConsolidatedPatientData - cxId ${patient.cxId}, patientId ${patient.id}]`
+  );
+  const { id: patientId, cxId } = patient;
   const resourcesByPatient = resources
     ? intersection(resources, resourcesSearchableByPatient)
     : resourcesSearchableByPatient;
@@ -50,66 +100,77 @@ export async function getConsolidatedPatientData({
 
   const fhir = makeFhirApi(cxId);
   const errorsToReport: Record<string, string> = {};
-  const searchResources = async <K extends ResourceType>(
-    resource: K,
-    searchFunction: () => AsyncGenerator<ExtractResource<K>[]>
-  ) => {
-    try {
-      const pages: Resource[] = [];
-      for await (const page of searchFunction()) {
-        pages.push(...page);
-      }
-      return pages;
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      if (err instanceof OperationOutcomeError && err.outcome.id === "not-found") throw err;
-      if (err instanceof OperationOutcomeError) errorsToReport[resource] = getMessage(err);
-      else errorsToReport[resource] = err.message;
-      throw err;
-    }
-  };
+
   const fhirDateQuery = isoDateRangeToFHIRDateQuery(dateFrom, dateTo);
   const fullDateQuery = fhirDateQuery ? `&${fhirDateQuery}` : "";
   const settled = await Promise.allSettled([
     ...resourcesByPatient.map(async resource =>
-      searchResources(resource, () =>
-        fhir.searchResourcePages(
-          resource,
-          `patient=${patientId}${fullDateQueryForResource(fullDateQuery, resource)}`
-        )
+      searchResources(
+        resource,
+        () =>
+          fhir.searchResourcePages(
+            resource,
+            `patient=${patientId}${fullDateQueryForResource(fullDateQuery, resource)}`
+          ),
+        errorsToReport
       )
     ),
     ...resourcesBySubject.map(async resource =>
-      searchResources(resource, () =>
-        fhir.searchResourcePages(
-          resource,
-          `subject=${patientId}${fullDateQueryForResource(fullDateQuery, resource)}`
-        )
+      searchResources(
+        resource,
+        () =>
+          fhir.searchResourcePages(
+            resource,
+            `subject=${patientId}${fullDateQueryForResource(fullDateQuery, resource)}`
+          ),
+        errorsToReport
       )
     ),
   ]);
 
   const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
 
-  if (Object.keys(errorsToReport).length > 0) {
+  const failuresAmount = Object.keys(errorsToReport).length;
+  if (failuresAmount > 0) {
     log(
-      `Failed to get some resources (${success.length} succeeded): ${JSON.stringify(
-        errorsToReport
-      )}`
+      `Failed to get FHIR resources (${failuresAmount} failures, ${
+        success.length
+      } succeeded): ${JSON.stringify(errorsToReport)}`
     );
-    capture.error(new Error(`Failed to get some resources for patient`), {
+    capture.message(`Failed to get FHIR resources`, {
       extra: {
         context: `getConsolidatedPatientData`,
         patientId,
         errorsToReport,
         succeeded: success.length,
+        failed: failuresAmount,
       },
+      level: "error",
     });
   }
 
   const entry: BundleEntry[] = success.map(r => ({ resource: r }));
   return buildResponse(entry);
 }
+
+const searchResources = async <K extends ResourceType>(
+  resource: K,
+  searchFunction: () => AsyncGenerator<ExtractResource<K>[]>,
+  errorsToReport: Record<string, string>
+) => {
+  try {
+    const pages: Resource[] = [];
+    for await (const page of searchFunction()) {
+      pages.push(...page);
+    }
+    return pages;
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && err.outcome.id === "not-found") throw err;
+    if (err instanceof OperationOutcomeError) errorsToReport[resource] = getMessage(err);
+    else errorsToReport[resource] = String(err);
+    throw err;
+  }
+};
 
 function buildResponse(entries: BundleEntry[]): Bundle<Resource> {
   return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };

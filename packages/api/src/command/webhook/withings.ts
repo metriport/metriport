@@ -5,8 +5,8 @@ import { Constants } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { reportDevicesUsage } from "./devices";
-import { processRequest, WebhookUserDataPayload } from "./webhook";
+import { reportDevicesUsage, WebhookUserDataPayload } from "./devices";
+import { processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
 export type WithingsWebhook = {

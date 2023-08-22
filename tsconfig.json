@@ -3,6 +3,7 @@
     "types": ["jest"],
     "typeRoots": ["./types", "./node_modules/@types"],
     "noErrorTruncation": true,
+    "skipLibCheck": true,
   },
   "exclude": ["node_modules"],
   "files": [],
