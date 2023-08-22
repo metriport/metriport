@@ -1,39 +1,41 @@
 import { Activity, Biometrics, Body, Sleep } from "@metriport/api-sdk";
-import axios from "axios";
-import dayjs from "dayjs";
 import crypto from "crypto";
+import dayjs from "dayjs";
 import { Token } from "simple-oauth2";
-import { PROVIDER_WITHINGS } from "../shared/constants";
-import { ConnectedUser } from "../models/connected-user";
-import { OAuth2, OAuth2DefaultImpl } from "./oauth2";
-import Provider, { ConsumerHealthDataType } from "./provider";
-import { Config } from "../shared/config";
 import { getProviderTokenFromConnectedUserOrFail } from "../command/connected-user/get-connected-user";
-import { mapToActivity } from "../mappings/withings/activity";
-import { mapToBody } from "../mappings/withings/body";
-import { mapToBiometrics } from "../mappings/withings/biometrics";
-import { mapToSleep } from "../mappings/withings/sleep";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
+import {
+  activityCategory,
+  biometricsCategories,
+  bodyCategory,
+  sleepCategory,
+} from "../command/webhook/withings";
+import { mapToActivity } from "../mappings/withings/activity";
+import { mapToBiometrics } from "../mappings/withings/biometrics";
+import { mapToBody } from "../mappings/withings/body";
 import {
   withingsActivityLogResp,
   WithingsActivityLogs,
 } from "../mappings/withings/models/activity";
-import { withingsWorkoutLogsResp, WithingsWorkoutLogs } from "../mappings/withings/models/workouts";
-import { withingsHeartRateResp, WithingsHeartRate } from "../mappings/withings/models/heart-rate";
+import { WithingsHeartRate, withingsHeartRateResp } from "../mappings/withings/models/heart-rate";
 import {
   withingsMeasurementResp,
   WithingsMeasurements,
 } from "../mappings/withings/models/measurements";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
-import { Util } from "../shared/util";
-import {
-  activityCategory,
-  bodyCategory,
-  biometricsCategories,
-  sleepCategory,
-} from "../command/webhook/withings";
 import { userDevicesSchema, WithingsUserDevices } from "../mappings/withings/models/user";
+import { WithingsWorkoutLogs, withingsWorkoutLogsResp } from "../mappings/withings/models/workouts";
+import { mapToSleep } from "../mappings/withings/sleep";
+import { ConnectedUser } from "../models/connected-user";
+import { Config } from "../shared/config";
+import { PROVIDER_WITHINGS } from "../shared/constants";
 import { capture } from "../shared/notifications";
+import { Util } from "../shared/util";
+import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
+import Provider, { ConsumerHealthDataType } from "./provider";
+import { getHttpClient } from "./shared/http";
+
+const api = getHttpClient();
 
 export class Withings extends Provider implements OAuth2 {
   static URL = "https://wbsapi.withings.net";
@@ -76,7 +78,7 @@ export class Withings extends Provider implements OAuth2 {
   }
 
   async getTokenFromAuthCode(code: string): Promise<string> {
-    const response = await axios.post(
+    const response = await api.post(
       "https://wbsapi.withings.net/v2/oauth2",
       `action=requesttoken&grant_type=authorization_code&client_id=${
         Withings.clientId
@@ -110,7 +112,7 @@ export class Withings extends Provider implements OAuth2 {
     for (const category of webhookCategories) {
       const subscriptionBody = `action=subscribe&callbackurl=${callbackUrl}&appli=${category}`;
       try {
-        const resp = await axios.post(subscriptionUrl, subscriptionBody, {
+        const resp = await api.post(subscriptionUrl, subscriptionBody, {
           headers: {
             Authorization: `Bearer ${access_token}`,
           },
@@ -140,7 +142,7 @@ export class Withings extends Provider implements OAuth2 {
 
     if (isExpired) {
       try {
-        const response = await axios.post(
+        const response = await api.post(
           "https://wbsapi.withings.net/v2/oauth2",
           `action=requesttoken&grant_type=refresh_token&client_id=${Withings.clientId}&client_secret=${Withings.clientSecret}&refresh_token=${access_token.refresh_token}`,
           {
@@ -208,7 +210,7 @@ export class Withings extends Provider implements OAuth2 {
       .update(nonceSignature)
       .digest("hex");
 
-    const { data } = await axios.post(
+    const { data } = await api.post(
       `${Withings.URL}/v2/signature?action=${nonceAction}&client_id=${clientId}&timestamp=${timestamp}&signature=${hashString}`
     );
 
@@ -230,7 +232,7 @@ export class Withings extends Provider implements OAuth2 {
       .digest("hex");
     const parsedToken = JSON.parse(token);
 
-    const { data } = await axios.post(`
+    const { data } = await api.post(`
     ${Withings.URL}/${Withings.TOKEN_PATH}?action=revoke&client_id=${clientId}&timestamp=${timestamp}&signature=${revokeHashString}&userid=${parsedToken.userid}&nonce=${nonce}
   `);
 
@@ -295,7 +297,7 @@ export class Withings extends Provider implements OAuth2 {
       enddate: dayjs(date).add(1, "day").unix(),
     };
 
-    const response = await axios.post(`${Withings.URL}/measure`, null, {
+    const response = await api.post(`${Withings.URL}/measure`, null, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

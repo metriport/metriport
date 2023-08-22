@@ -1,7 +1,7 @@
 import { UserToken } from "../domain/user-token";
 import { Config } from "../shared/config";
 import { PROVIDER_GARMIN } from "../shared/constants";
-import { OAuth1, OAuth1DefaultImpl } from "./oauth1";
+import { OAuth1, OAuth1DefaultImpl } from "./shared/oauth1";
 import Provider, { ConsumerHealthDataType } from "./provider";
 
 export class Garmin extends Provider implements OAuth1 {
