@@ -1,9 +1,10 @@
 import { NextFunction, Request } from "express";
-import { ApiTypes, reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
+import { reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
+import { Product } from "../../domain/product";
+import { isHttpOK } from "../../shared/http";
 import { Util } from "../../shared/util";
 import { getUserIdFrom } from "../schemas/user-id";
 import { getCxId } from "../util";
-import { isHttpOK } from "../../shared/http";
 
 const log = Util.log("USAGE");
 
@@ -12,7 +13,7 @@ const log = Util.log("USAGE");
  * Thanks to https://stackoverflow.com/questions/20175806/before-and-after-hooks-for-a-request-in-express-to-be-executed-before-any-req-a
  */
 export const reportUsage = (
-  apiType: ApiTypes,
+  product: Product,
   getEntityIdFn: (req: Request) => string | undefined
 ) => {
   return async (
@@ -24,7 +25,7 @@ export const reportUsage = (
     function afterResponse() {
       res.removeListener("finish", afterResponse);
       res.removeListener("close", afterResponse);
-      if (isHttpOK(res.statusCode)) reportIt(req, apiType, getEntityIdFn(req));
+      if (isHttpOK(res.statusCode)) reportIt(req, product, getEntityIdFn(req));
     }
     res.on("finish", afterResponse);
     res.on("close", afterResponse);
@@ -36,11 +37,11 @@ export const reportUsage = (
  * Reports usage base on the the customer ID on the Request, property 'cxId', and
  * the customer's userId on the request params, 'userId'.
  */
-export const reportDeviceUsage = reportUsage(ApiTypes.devices, getDevicesEntityId);
+export const reportDeviceUsage = reportUsage(Product.devices, getDevicesEntityId);
 
 const reportIt = async (
   req: Request,
-  apiType: ApiTypes,
+  product: Product,
   entityId: string | undefined
 ): Promise<void> => {
   const cxId = getCxId(req);
@@ -52,7 +53,7 @@ const reportIt = async (
     log(`Skipped, missing entityId`);
     return;
   }
-  reportUsageCmd({ cxId, entityId, apiType });
+  reportUsageCmd({ cxId, entityId, product });
 };
 
 function getDevicesEntityId(req: Request): string | undefined {

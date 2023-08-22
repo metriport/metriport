@@ -8,7 +8,7 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
   declare id: string;
   declare cxId: string;
   declare type: string; // intentionally 'string' to avoid circular dependency and coupling
-  declare payload: unknown;
+  declare payload: object;
   declare status: WebhookRequestStatus;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {

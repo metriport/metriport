@@ -13,6 +13,7 @@ import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
+import BadRequestError from "../../errors/bad-request";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/patient";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
@@ -20,6 +21,7 @@ import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
+import { filterTruthy } from "../../shared/filter-map-utils";
 import { getETag } from "../../shared/http";
 import {
   asyncHandler,
@@ -39,8 +41,8 @@ import {
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
-const MAX_RESOURCE_STORED_LIMIT = 1000;
-const MAX_CONTENT_LENGTH_BYTES = 1000000;
+// const MAX_RESOURCE_STORED_LIMIT = 1000;
+const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -218,14 +220,26 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const resourcesRaw = getFrom("query").optional("resources", req);
-    const resources = resourcesRaw
-      ? resourceSchema.parse(resourcesRaw.split(",").map(r => r.trim()))
-      : undefined;
+    let resourcesUnparsed: string[];
+    try {
+      resourcesUnparsed = resourcesRaw
+        ? resourcesRaw
+            .replaceAll('"', "")
+            .replaceAll("'", "")
+            .split(",")
+            .map(r => r.trim())
+            .flatMap(filterTruthy)
+        : [];
+    } catch (err) {
+      throw new BadRequestError(
+        `Invalid resources: it must be a comma-separated list of resources`
+      );
+    }
+    const resources = resourceSchema.parse(resourcesUnparsed);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
     const data = await startConsolidatedQuery({ cxId, patientId, resources, dateFrom, dateTo });
-
     return res.json(data);
   })
 );
@@ -250,21 +264,23 @@ router.post(
         message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`,
       });
     }
+
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const fhirBundle = bundleSchema.parse(req.body);
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const validatedBundle = validateFhirEntries(fhirBundle);
 
-    if (Config.isSandbox()) {
-      const data = await getConsolidatedPatientData({ cxId, patientId });
-      // limit the amount of resources stored in sandbox mode
-      if (data.entry && data.entry.length >= MAX_RESOURCE_STORED_LIMIT) {
-        return res.status(status.BAD_REQUEST).json({
-          message: `Cannot create bundle with size greater than ${MAX_RESOURCE_STORED_LIMIT} bytes in Sandbox mode.`,
-        });
-      }
-    }
+    // TODO #870 review this
+    // if (Config.isSandbox()) {
+    //   const data = await getConsolidatedPatientData({ patient: { id: patientId, cxId } });
+    //   // limit the amount of resources stored in sandbox mode
+    //   if (data.entry && data.entry.length >= MAX_RESOURCE_STORED_LIMIT) {
+    //     return res.status(status.BAD_REQUEST).json({
+    //       message: `Cannot create bundle with size greater than ${MAX_RESOURCE_STORED_LIMIT} bytes in Sandbox mode.`,
+    //     });
+    //   }
+    // }
 
     // Limit the amount of resources that can be created at once
     if (validatedBundle.entry.length >= MAX_RESOURCE_POST_COUNT) {

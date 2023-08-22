@@ -3,12 +3,11 @@ import convert from "convert-units";
 import { groupBy } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, garminTypes, User, UserData } from ".";
-import { DataType } from "../../command/webhook/webhook";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 import { toISODate } from "../../shared/date";
 
 export const mapToBody = (items: GarminBodyCompositionList): UserData<Body>[] => {
-  const type: DataType = "body";
+  const type = "body";
   const byUAT = groupBy(items, a => a.userAccessToken);
   return Object.entries(byUAT).flatMap(([key, values]) => {
     const uat = key;
