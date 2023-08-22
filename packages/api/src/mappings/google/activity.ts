@@ -1,8 +1,9 @@
 import { Activity } from "@metriport/api-sdk";
+import { ActivityLog } from "@metriport/api-sdk/devices/models/common/activity-log";
 import convert from "convert-units";
 import dayjs from "dayjs";
 import { sum } from "lodash";
-import { ValueKey, getValues } from ".";
+import { getValues, ValueKey } from ".";
 import { PROVIDER_GOOGLE } from "../../shared/constants";
 import { Util } from "../../shared/util";
 import { GooglePoint, GoogleSessions, SingleGooglePoint } from "./models";
@@ -16,7 +17,6 @@ import {
   sourceIdSteps,
 } from "./models/activity";
 import { sessionSleepType } from "./models/sleep";
-import { ActivityLog } from "@metriport/api-sdk/devices/models/common/activity-log";
 
 export const mapToActivity = (
   date: string,
@@ -97,22 +97,21 @@ export const mapToActivity = (
               active_kcal: formatNumber(sum(values)),
             },
           };
-          activity.activity_logs?.map(act => {
-            addToActivityLogs(
-              activity,
+          activity.activity_logs =
+            activity.activity_logs &&
+            updateActivityLogs(
+              activity.activity_logs,
               data.point,
               "fpVal",
-              (act: ActivityLog, updatedValue: number) => {
+              (activityLog: ActivityLog, updatedValue: number) => {
                 return {
-                  ...act,
+                  ...activityLog,
                   energy_expenditure: {
                     active_kcal: formatNumber(updatedValue),
                   },
                 };
               }
             );
-            return act;
-          });
         }
 
         if (data.dataSourceId === sourceIdSteps) {
@@ -123,9 +122,10 @@ export const mapToActivity = (
               steps_count: sum(intValues),
             },
           };
-          activity.activity_logs?.map(act => {
-            addToActivityLogs(
-              activity,
+          activity.activity_logs =
+            activity.activity_logs &&
+            updateActivityLogs(
+              activity.activity_logs,
               data.point,
               "intVal",
               (act: ActivityLog, updatedValue: number) => {
@@ -138,10 +138,7 @@ export const mapToActivity = (
                 };
               }
             );
-            return act;
-          });
         }
-
         if (data.dataSourceId === sourceIdDistance) {
           activity.summary = {
             ...activity.summary,
@@ -150,9 +147,10 @@ export const mapToActivity = (
               distance_meters: sum(values),
             },
           };
-          activity.activity_logs?.map(act => {
-            addToActivityLogs(
-              activity,
+          activity.activity_logs =
+            activity.activity_logs &&
+            updateActivityLogs(
+              activity.activity_logs,
               data.point,
               "fpVal",
               (act: ActivityLog, updatedValue: number) => {
@@ -165,16 +163,15 @@ export const mapToActivity = (
                 };
               }
             );
-            return act;
-          });
         }
 
         const activitySpeedTimeMap: { speed: number; totalTime: number }[] = [];
 
         if (data.dataSourceId === sourceIdSpeed) {
-          activity.activity_logs?.map(act => {
-            addToActivityLogs(
-              activity,
+          activity.activity_logs =
+            activity.activity_logs &&
+            updateActivityLogs(
+              activity.activity_logs,
               data.point,
               "fpVal",
               (act: ActivityLog, updatedValue: number) => {
@@ -202,9 +199,6 @@ export const mapToActivity = (
                 };
               }
             );
-
-            return act;
-          });
 
           const avgSpeed = calculateAvgSpeed(activitySpeedTimeMap);
           const { max_item } = Util.getMinMaxItem(values);
@@ -277,23 +271,23 @@ function getISOString(timeMillis: string): string {
   return dayjs(Number(timeMillis)).toISOString();
 }
 
-function addToActivityLogs(
-  activity: Activity,
+function updateActivityLogs(
+  activityLogs: ActivityLog[],
   dataPoint: GooglePoint,
   valueKey: "fpVal" | "intVal",
-  callbackFn: (act: ActivityLog, updatedValue: number) => Activity
+  updateEntry: (act: ActivityLog, updatedValue: number) => Activity
 ) {
-  activity.activity_logs = activity.activity_logs?.map(act => {
+  return activityLogs?.map(entry => {
     const matchingActivity = dataPoint.find((point: SingleGooglePoint) =>
-      matchActivityTime(act.start_time, act.end_time, parseInt(point.startTimeNanos))
+      matchActivityTime(entry.start_time, entry.end_time, parseInt(point.startTimeNanos))
     );
     const propValue =
       matchingActivity && matchingActivity.value.length
         ? matchingActivity.value[0][valueKey]
         : undefined;
     if (matchingActivity && propValue) {
-      act = callbackFn(act, propValue);
+      return updateEntry(entry, propValue);
     }
-    return act;
+    return entry;
   });
 }
