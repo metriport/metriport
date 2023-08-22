@@ -23,7 +23,7 @@ beforeEach(() => {
   appendDocQueryProgress_mock = jest
     .spyOn(docQueryProgress, "appendDocQueryProgress")
     .mockImplementation(async () => patientModel);
-  jest.spyOn(whMedical, "processPatientDocumentRequest").mockImplementation(async () => true);
+  jest.spyOn(whMedical, "processPatientDocumentRequest").mockImplementation(async () => {});
 });
 
 describe("document-query", () => {

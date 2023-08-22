@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.test" });
 import { Observation } from "@medplum/fhirtypes";
+import * as dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import { HapiFhirClient } from "../../../../external/fhir/api/api-hapi";
 import { makePatient } from "../../../../models/medical/__tests__/patient";
 import { getConsolidatedPatientData } from "../consolidated-get";
 import * as getPatient from "../get-patient";
+dotenv.config({ path: ".env.test" });
 
 let getPatientOrFailMock: jest.SpyInstance;
 let fhir_searchResourcePages: jest.SpyInstance;
@@ -43,13 +43,15 @@ describe("getConsolidatedPatientData", () => {
     })();
     fhir_searchResourcePages.mockReturnValue(generator);
 
-    const resp = await getConsolidatedPatientData({ cxId, patientId, resources: ["Observation"] });
+    const resp = await getConsolidatedPatientData({
+      patient: { cxId, id: patientId },
+      resources: ["Observation"],
+    });
 
     expect(resp).toBeTruthy();
     expect(resp.resourceType).toEqual(`Bundle`);
     expect(resp.total).toEqual(2);
     expect(resp.entry).toEqual(expect.arrayContaining([{ resource: returnedResource }]));
-    expect(getPatientOrFailMock).toHaveBeenCalledTimes(1);
     expect(fhir_searchResourcePages).toHaveBeenCalledTimes(1);
   });
 });
