@@ -12,16 +12,16 @@ import { Config } from "../shared/config";
 import {
   Constants,
   PROVIDER_APPLE,
-  providerMedicalDevicesSchema,
+  rpmDeviceProviderSchema,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
+import { connectDevice } from "./middlewares/noauth";
 import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdFromHeaders } from "./util";
-import { processNoAuth } from "./middlewares/noauth";
 
 const router = Router();
 
@@ -139,13 +139,14 @@ router.get(
         return res.redirect(`${buildRedirectURL(true, connectToken)}`);
       }
 
-      const providerMedical = providerMedicalDevicesSchema.safeParse(req.params.provider);
-      if (providerMedical.success) {
-        if (!device_id)
+      const rpmDeviceProvider = rpmDeviceProviderSchema.safeParse(req.params.provider);
+      if (rpmDeviceProvider.success) {
+        if (!device_id) {
           return res.status(status.BAD_REQUEST).send("device_id query parameter is required");
-        const provider = providerMedical.data;
+        }
+        const provider = rpmDeviceProvider.data;
 
-        const connectedUser = await processNoAuth(provider, connectToken, device_id);
+        const connectedUser = await connectDevice(provider, connectToken, device_id);
         sendProviderConnected(connectedUser, provider, device_id);
         return res.sendStatus(status.NO_CONTENT);
       }

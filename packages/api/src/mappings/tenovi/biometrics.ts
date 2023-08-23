@@ -22,8 +22,8 @@ export const mapToBiometrics = (
   tenoviBiometrics.forEach(reading => {
     const { metric, device_name, hwi_device_id, value_1, value_2, timestamp } = reading; // Available, but unused properties: sensor_code, timezone_offset, estimated_timestamp
 
-    const num_value_1 = getFloatValue(value_1);
-    const num_value_2 = value_2 ? getFloatValue(value_2) : undefined;
+    const numValue = getFloatValue(value_1);
+    const numValue2 = value_2 ? getFloatValue(value_2) : undefined;
 
     const sourceInfo: SourceInfo = {
       id: hwi_device_id,
@@ -31,14 +31,14 @@ export const mapToBiometrics = (
       source_type: SourceType.device,
     };
 
-    map_bp(biometrics, metric, timestamp, num_value_1, num_value_2, sourceInfo);
-    map_hr(biometrics, metric, timestamp, num_value_1, num_value_2, sourceInfo);
-    map_spo2(biometrics, metric, num_value_1, num_value_2);
-    map_perf_index(biometrics, metric, num_value_1);
-    map_temp(biometrics, metric, timestamp, num_value_1, sourceInfo);
-    map_blood_gluc(biometrics, metric, timestamp, num_value_1, sourceInfo);
-    map_peak_flow(biometrics, metric, num_value_1);
-    map_forced_exp_vol(biometrics, metric, num_value_1);
+    updateBiometricsWithBP(biometrics, metric, timestamp, numValue, numValue2, sourceInfo);
+    updateBiometricsWithHR(biometrics, metric, timestamp, numValue, numValue2, sourceInfo);
+    updateBiometricsWithSPO2(biometrics, metric, numValue, numValue2);
+    updateBiometricsWithPerfIndex(biometrics, metric, numValue);
+    updateBiometricsWithTemperature(biometrics, metric, timestamp, numValue, sourceInfo);
+    updateBiometricsWithBloodGluc(biometrics, metric, timestamp, numValue, sourceInfo);
+    updateBiometricsWithPeakFlow(biometrics, metric, numValue);
+    updateBiometricsWithForcedExpVol(biometrics, metric, numValue);
   });
 
   return biometrics;
@@ -47,12 +47,12 @@ export const mapToBiometrics = (
 /**
  * Maps the blood pressure.
  */
-export function map_bp(
+export function updateBiometricsWithBP(
   biometrics: Biometrics,
   metric: TenoviMetricTypes,
   timestamp: string,
-  num_value_1: number,
-  num_value_2: number | undefined,
+  value: number,
+  value2: number | undefined,
   sourceInfo?: SourceInfo
 ): void {
   if (metric === "blood_pressure") {
@@ -61,20 +61,20 @@ export function map_bp(
         samples: [
           {
             time: timestamp,
-            value: num_value_1,
+            value,
             data_source: sourceInfo,
           },
         ],
       },
     };
-    if (num_value_2) {
+    if (value2) {
       biometrics.blood_pressure = {
         ...biometrics.blood_pressure,
         diastolic_mm_Hg: {
           samples: [
             {
               time: timestamp,
-              value: num_value_2,
+              value: value2,
               data_source: sourceInfo,
             },
           ],
@@ -87,12 +87,12 @@ export function map_bp(
 /**
  * Maps the heart rate. Standard deviation is mapped if multiple samples were taken by the device.
  */
-export function map_hr(
+export function updateBiometricsWithHR(
   biometrics: Biometrics,
   metric: TenoviMetricTypes,
   timestamp: string,
-  num_value_1: number,
-  num_value_2: number | undefined,
+  value: number,
+  value2: number | undefined,
   sourceInfo?: SourceInfo
 ): void {
   if (metric === "pulse") {
@@ -100,8 +100,8 @@ export function map_hr(
       samples_bpm: [
         {
           time: timestamp,
-          value: num_value_1,
-          std_dev: num_value_2,
+          value,
+          std_dev: value2,
           data_source: sourceInfo,
         },
       ],
@@ -112,18 +112,18 @@ export function map_hr(
 /**
  * Maps oxygen saturation (spO2) in percents. Standard deviation is mapped if multiple samples were taken by the device.
  */
-export function map_spo2(
+export function updateBiometricsWithSPO2(
   biometrics: Biometrics,
   metric: TenoviMetricTypes,
-  num_value_1: number,
-  num_value_2: number | undefined
+  value: number,
+  value2: number | undefined
 ): void {
   if (metric === "spO2") {
     biometrics.respiration = {
       ...biometrics.respiration,
       spo2: {
-        avg_pct: num_value_1,
-        std_dev: num_value_2,
+        avg_pct: value,
+        std_dev: value2,
       },
     };
   }
@@ -132,24 +132,24 @@ export function map_spo2(
 /**
  * Maps perfusion index in percents
  */
-export function map_perf_index(
+export function updateBiometricsWithPerfIndex(
   biometrics: Biometrics,
   metric: TenoviMetricTypes,
-  num_value_1: number
+  value: number
 ) {
   if (metric === "perfusion_index") {
-    biometrics.perfusion_index_pct = num_value_1;
+    biometrics.perfusion_index_pct = value;
   }
 }
 
 /**
  * Maps temperature in Celsius
  */
-export function map_temp(
+export function updateBiometricsWithTemperature(
   biometrics: Biometrics,
   metric: TenoviMetricTypes,
   timestamp: string,
-  num_value_1: number,
+  value: number,
   sourceInfo?: SourceInfo
 ) {
   if (metric === "temperature") {
@@ -158,7 +158,7 @@ export function map_temp(
         samples_celcius: [
           {
             time: timestamp,
-            value: convert(num_value_1).from("F").to("C"),
+            value: convert(value).from("F").to("C"),
             data_source: sourceInfo,
           },
         ],
@@ -170,11 +170,11 @@ export function map_temp(
 /**
  * Maps blood glucose levels in mg/dL
  */
-export function map_blood_gluc(
+export function updateBiometricsWithBloodGluc(
   biometrics: Biometrics,
   metric: TenoviMetricTypes,
   timestamp: string,
-  num_value_1: number,
+  value: number,
   sourceInfo?: SourceInfo
 ) {
   if (metric === "glucose") {
@@ -182,7 +182,7 @@ export function map_blood_gluc(
       samples_mg_dL: [
         {
           time: timestamp,
-          value: num_value_1,
+          value,
           data_source: sourceInfo,
         },
       ],
@@ -193,15 +193,15 @@ export function map_blood_gluc(
 /**
  * Maps peak expiratory flow in L/min
  */
-export function map_peak_flow(
+export function updateBiometricsWithPeakFlow(
   biometrics: Biometrics,
   metric: TenoviMetricTypes,
-  num_value_1: number
+  value: number
 ) {
   if (metric === "peak_expiratory_flow") {
     biometrics.respiration = {
       ...biometrics.respiration,
-      peak_flow_L_min: num_value_1,
+      peak_flow_L_min: value,
     };
   }
 }
@@ -209,15 +209,15 @@ export function map_peak_flow(
 /**
  * Maps forced expiratory volume in L
  */
-export function map_forced_exp_vol(
+export function updateBiometricsWithForcedExpVol(
   biometrics: Biometrics,
   metric: TenoviMetricTypes,
-  num_value_1: number
+  value: number
 ) {
   if (metric === "forced_expiratory_volume") {
     biometrics.respiration = {
       ...biometrics.respiration,
-      forced_volume_L: num_value_1,
+      forced_volume_L: value,
     };
   }
 }

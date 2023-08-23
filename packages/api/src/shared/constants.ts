@@ -27,8 +27,8 @@ export const PROVIDER_WHOOP = ProviderSource.whoop;
 export const PROVIDER_WITHINGS = ProviderSource.withings;
 export const PROVIDER_TENOVI = ProviderSource.tenovi;
 
-export const providerMedicalDevicesSchema = z.enum([PROVIDER_TENOVI]);
-export type ProviderMedicalDevicesOptions = z.infer<typeof providerMedicalDevicesSchema>;
+export const rpmDeviceProviderSchema = z.enum([PROVIDER_TENOVI]);
+export type RPMDeviceProviderOptions = z.infer<typeof rpmDeviceProviderSchema>;
 
 export const providerOAuth1OptionsSchema = z.enum([PROVIDER_GARMIN]);
 export type ProviderOAuth1Options = z.infer<typeof providerOAuth1OptionsSchema>;
@@ -51,7 +51,7 @@ export type ProviderOptions =
   | ProviderOAuth1Options
   | ProviderOAuth2Options
   | ProviderNoAuthSchema
-  | ProviderMedicalDevicesOptions;
+  | RPMDeviceProviderOptions;
 
 export class Constants {
   // the default time in seconds for which an auth token for a widget connect

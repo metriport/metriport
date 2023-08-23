@@ -2,14 +2,14 @@ import { Biometrics, Body, ProviderSource, SourceType } from "@metriport/api-sdk
 import convert from "convert-units";
 import { TenoviMeasurement } from "../../mappings/tenovi";
 import {
-  map_blood_gluc,
-  map_bp,
-  map_forced_exp_vol,
-  map_hr,
-  map_peak_flow,
-  map_perf_index,
-  map_spo2,
-  map_temp,
+  updateBiometricsWithBloodGluc,
+  updateBiometricsWithBP,
+  updateBiometricsWithForcedExpVol,
+  updateBiometricsWithHR,
+  updateBiometricsWithPeakFlow,
+  updateBiometricsWithPerfIndex,
+  updateBiometricsWithSPO2,
+  updateBiometricsWithTemperature,
 } from "../../mappings/tenovi/biometrics";
 import { tenoviMetricTypes } from "../../mappings/tenovi/constants";
 import { ConnectedUser } from "../../models/connected-user";
@@ -63,14 +63,15 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
     metadata,
   };
 
-  map_bp(biometrics, metric, timestamp, num_value_1, num_value_2);
-  map_hr(biometrics, metric, timestamp, num_value_1, num_value_2);
-  map_spo2(biometrics, metric, num_value_1, num_value_2);
-  map_perf_index(biometrics, metric, num_value_1);
-  map_temp(biometrics, metric, timestamp, num_value_1);
-  map_blood_gluc(biometrics, metric, timestamp, num_value_1);
-  map_peak_flow(biometrics, metric, num_value_1);
-  map_forced_exp_vol(biometrics, metric, num_value_1);
+  updateBiometricsWithBP(biometrics, metric, timestamp, num_value_1, num_value_2);
+  updateBiometricsWithHR(biometrics, metric, timestamp, num_value_1, num_value_2);
+  updateBiometricsWithSPO2(biometrics, metric, num_value_1, num_value_2);
+  updateBiometricsWithPerfIndex(biometrics, metric, num_value_1);
+  updateBiometricsWithTemperature(biometrics, metric, timestamp, num_value_1);
+  updateBiometricsWithBloodGluc(biometrics, metric, timestamp, num_value_1);
+  updateBiometricsWithPeakFlow(biometrics, metric, num_value_1);
+  updateBiometricsWithForcedExpVol(biometrics, metric, num_value_1);
+  payload.biometrics = [biometrics];
 
   if (metric === "weight") {
     const body: Body = {
@@ -87,8 +88,6 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
       },
     });
   }
-
-  payload.biometrics = [biometrics];
 
   return payload;
 }
@@ -109,15 +108,6 @@ async function createAndSendPayload(
   const userData: WebhookUserPayload = { userId, ...data, patient_id };
   const payload: WebhookDataPayloadWithoutMessageId = { users: [userData] };
 
-  analytics({
-    distinctId: cxId,
-    event: EventTypes.query,
-    properties: {
-      method: "POST",
-      url: "/webhook/tenovi",
-      apiType: ApiTypes.devices,
-    },
-  });
   const webhookRequest = await createWebhookRequest({
     cxId,
     type: "devices.health-data",
@@ -127,5 +117,14 @@ async function createAndSendPayload(
   const settings = await getSettingsOrFail({ id: cxId });
   await processRequest(webhookRequest, settings);
 
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.query,
+    properties: {
+      method: "POST",
+      url: "/webhook/tenovi",
+      apiType: ApiTypes.devices,
+    },
+  });
   reportDevicesUsage(cxId, [userId]);
 }
