@@ -89,12 +89,14 @@ export async function getConsolidatedPatientData({
     `[getConsolidatedPatientData - cxId ${patient.cxId}, patientId ${patient.id}]`
   );
   const { id: patientId, cxId } = patient;
-  const resourcesByPatient = resources
-    ? intersection(resources, resourcesSearchableByPatient)
-    : resourcesSearchableByPatient;
-  const resourcesBySubject = resources
-    ? intersection(resources, resourcesSearchableBySubject)
-    : resourcesSearchableBySubject;
+  const resourcesByPatient =
+    resources && resources.length
+      ? intersection(resources, resourcesSearchableByPatient)
+      : resourcesSearchableByPatient;
+  const resourcesBySubject =
+    resources && resources.length
+      ? intersection(resources, resourcesSearchableBySubject)
+      : resourcesSearchableBySubject;
   log(`Getting consolidated data with resources by patient: ${resourcesByPatient.join(", ")}...`);
   log(`...and by subject: ${resourcesBySubject.join(", ")}`);
 
@@ -104,28 +106,22 @@ export async function getConsolidatedPatientData({
   const fhirDateQuery = isoDateRangeToFHIRDateQuery(dateFrom, dateTo);
   const fullDateQuery = fhirDateQuery ? `&${fhirDateQuery}` : "";
   const settled = await Promise.allSettled([
-    ...resourcesByPatient.map(async resource =>
-      searchResources(
+    ...resourcesByPatient.map(async resource => {
+      const dateFilter = fullDateQueryForResource(fullDateQuery, resource);
+      return searchResources(
         resource,
-        () =>
-          fhir.searchResourcePages(
-            resource,
-            `patient=${patientId}${fullDateQueryForResource(fullDateQuery, resource)}`
-          ),
+        () => fhir.searchResourcePages(resource, `patient=${patientId}${dateFilter}`),
         errorsToReport
-      )
-    ),
-    ...resourcesBySubject.map(async resource =>
-      searchResources(
+      );
+    }),
+    ...resourcesBySubject.map(async resource => {
+      const dateFilter = fullDateQueryForResource(fullDateQuery, resource);
+      return searchResources(
         resource,
-        () =>
-          fhir.searchResourcePages(
-            resource,
-            `subject=${patientId}${fullDateQueryForResource(fullDateQuery, resource)}`
-          ),
+        () => fhir.searchResourcePages(resource, `subject=${patientId}${dateFilter}`),
         errorsToReport
-      )
-    ),
+      );
+    }),
   ]);
 
   const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
