@@ -354,7 +354,8 @@
       "pages": [
         "devices-api/getting-started/connect-quickstart",
         "devices-api/getting-started/connect-widget",
-        "devices-api/getting-started/apple-health"
+        "devices-api/getting-started/apple-health",
+        "devices-api/getting-started/tenovi"
       ]
     },
     {
@@ -371,6 +372,12 @@
                 "devices-api/api-reference/user/get-connected-providers",
                 "devices-api/api-reference/user/revoke-provider-access",
                 "devices-api/api-reference/user/delete-user"
+              ]
+            },
+            {
+              "group": "Connect",
+              "pages": [
+                "devices-api/api-reference/connect/connect-provider"
               ]
             }
           ]

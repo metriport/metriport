@@ -123,6 +123,17 @@ export class MetriportDevicesApi {
   }
 
   /**
+   * Connects the user to a healthcare data provider. This route mainly exists to connect to RPM device providers (currently only Tenovi).
+   *
+   * @param provider
+   * @param state
+   * @param device_id
+   */
+  async connectProvider(provider: ProviderSource, state: string, device_id?: string) {
+    await this.api.get(`/connect/:provider=${provider}/state?=${state}&device_id=${device_id}`);
+  }
+
+  /**
    * Gets the activity info for the specified user ID and date.
    *
    * @param {string} userId - The userId of the user you want to get data for.

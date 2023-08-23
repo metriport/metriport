@@ -1,0 +1,19 @@
+---
+title: "Tenovi"
+description: "Get Tenovi data via webhooks."
+---
+
+## Overview
+
+This is a guide to help you integrate with Tenovi - a remote patient monitoring (RPM) hardware and software provider.
+We provide an SDK that allows you to receive Tenovi data in the background via webhooks. When a patient takes measurements with Tenovi RPM devices,
+the SDK will automatically send it to the Metriport API, and we'll forward it to your webhook URL.
+
+<Tip>
+  As a prerequisite, we suggest looking at our [webhooks docs](/home/api-info/webhooks) to
+  understand how the flow works.
+</Tip>
+
+### Connecting Tenovi
+
+To connect to Tenovi, you will need to obtain a [connect token](/devices-api/api-reference/user/create-connect-token), and use the [Connect Provider](/devices-api/api-reference/connect/connect-provider) endpoint.

@@ -147,7 +147,7 @@ router.get(
 
         const connectedUser = await processNoAuth(provider, connectToken, device_id);
         sendProviderConnected(connectedUser, provider, device_id);
-        return res.status(status.OK).send("Tenovi connected.");
+        return res.sendStatus(status.NO_CONTENT);
       }
     } catch (err) {
       console.log(`Error on /connect/${req.params.provider}`, err);
