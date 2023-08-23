@@ -23,7 +23,6 @@ export type WebhookDataPayload = {
 export type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
 export type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
 
-// DAPI
 export type WebhookUserDataPayload = {
   [k in DataType]?: MetriportData[];
 };

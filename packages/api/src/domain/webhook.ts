@@ -1,4 +1,6 @@
-export const dapiWHPrefix = "devices";
+import { Product } from "./product";
+
+export const dapiWHPrefix = Product.devices;
 export const dapiWebhookType = [
   `${dapiWHPrefix}.provider-connected`,
   `${dapiWHPrefix}.provider-disconnected`,
@@ -6,7 +8,7 @@ export const dapiWebhookType = [
 ] as const;
 export type DAPIWebhookType = (typeof dapiWebhookType)[number];
 
-export const mapiWHPrefix = "medical";
+export const mapiWHPrefix = Product.medical;
 export const mapiWebhookType = [
   `${mapiWHPrefix}.document-download`,
   `${mapiWHPrefix}.document-conversion`,
