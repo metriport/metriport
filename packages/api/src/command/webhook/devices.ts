@@ -40,8 +40,7 @@ export const sendProviderConnected = async (
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
 
     const connectedDevices = getConnectedDevices(connectedUser);
-
-    const newDevices = deviceIds?.split(",");
+    const devices = deviceIds?.split(",");
 
     const payload = {
       users: [
@@ -49,7 +48,7 @@ export const sendProviderConnected = async (
           userId,
           providers: [provider],
           connectedProviders: providers,
-          newDevices,
+          devices,
           connectedDevices,
         },
       ],
