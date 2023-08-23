@@ -12,6 +12,7 @@ import { Config } from "../shared/config";
 import {
   Constants,
   PROVIDER_APPLE,
+  providerMedicalDevicesSchema,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
 } from "../shared/constants";
@@ -20,6 +21,7 @@ import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdFromHeaders } from "./util";
+import { processNoAuth } from "./middlewares/noauth";
 
 const router = Router();
 
@@ -81,6 +83,7 @@ const providerRequest = z.object({
   // OAuth v1
   oauth_token: z.string().optional(),
   oauth_verifier: z.string().optional(),
+  device_id: z.string().optional(),
 });
 
 /** ---------------------------------------------------------------------------------------
@@ -89,11 +92,12 @@ const providerRequest = z.object({
  * Gets and stores the auth token for the specified provider for future requests. If all is
  * well, will redirect to the Success page in the Connect widget.
  *
- * @param   {string}  req.params.provider       The provider for the request.
- * @param   {string}  req.query.state           The connect token.
- * @param   {string}  req.query.authCode        The OAuth v2 authorization code.
- * @param   {string}  req.query.oauth_token     The OAuth v1 request token.
- * @param   {string}  req.query.oauth_verifier  The OAuth v1 request token verifier.
+ * @param   {string}   req.params.provider       The provider for the request.
+ * @param   {string}   req.query.state           The connect token.
+ * @param   {string}   req.query.authCode        The OAuth v2 authorization code.
+ * @param   {string}   req.query.oauth_token     The OAuth v1 request token.
+ * @param   {string}   req.query.oauth_verifier  The OAuth v1 request token verifier.
+ * @param   {string}   req.query.device_id       The IDs of devices to be connected.
  *
  * @return  redirect to the Success page.
  */
@@ -105,6 +109,7 @@ router.get(
       code: authCode,
       oauth_token,
       oauth_verifier,
+      device_id,
     } = providerRequest.parse(req.query);
 
     try {
@@ -114,6 +119,7 @@ router.get(
         const provider = providerOAuth2.data;
         const cxId = getCxIdFromHeaders(req);
         const userId = getUserIdFrom("headers", req).optional();
+
         const connectedUser = await processOAuth2(provider, connectToken, authCode, cxId, userId);
         sendProviderConnected(connectedUser, provider);
         return res.redirect(`${buildRedirectURL(true, connectToken)}`);
@@ -131,6 +137,17 @@ router.get(
         );
         sendProviderConnected(connectedUser, provider);
         return res.redirect(`${buildRedirectURL(true, connectToken)}`);
+      }
+
+      const providerMedical = providerMedicalDevicesSchema.safeParse(req.params.provider);
+      if (providerMedical.success) {
+        if (!device_id)
+          return res.status(status.BAD_REQUEST).send("device_id query parameter is required");
+        const provider = providerMedical.data;
+
+        const connectedUser = await processNoAuth(provider, connectToken, device_id);
+        sendProviderConnected(connectedUser, provider, device_id);
+        return res.status(status.OK).send("Tenovi connected.");
       }
     } catch (err) {
       console.log(`Error on /connect/${req.params.provider}`, err);

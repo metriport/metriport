@@ -26,10 +26,7 @@ import { MetriportDevicesApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
 
-const response = await metriportClient.getBiometricsData(
-  "metriportUserId",
-  "date"
-);
+const response = await metriportClient.getBiometricsData("metriportUserId", "date");
 ```
 
 </ResponseExample>
@@ -77,11 +74,15 @@ const response = await metriportClient.getBiometricsData(
       "avg_breaths_per_minute": 44,
       "spo2": {
         "avg_pct": 97,
+        "std_dev": 2,
         "max_pct": 99,
         "min_pct": 95
       },
-      "vo2_max": 390
+      "vo2_max": 390,
+      "peak_flow_L_min": 464,
+      "forced_volume_L": 3.67;
     },
+    "perfusion_index_pct": 97,
     "blood_glucose": {
       "avg_mg_dL": 132,
       "samples_mg_dL": [

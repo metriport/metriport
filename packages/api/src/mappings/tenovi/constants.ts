@@ -1,0 +1,13 @@
+export const tenoviMetricTypes = [
+  "blood_pressure",
+  "pulse",
+  "spO2",
+  "perfusion_index",
+  "weight",
+  "temperature",
+  "glucose",
+  "peak_expiratory_flow",
+  "forced_expiratory_volume",
+] as const;
+
+export type TenoviMetricTypes = (typeof tenoviMetricTypes)[number];

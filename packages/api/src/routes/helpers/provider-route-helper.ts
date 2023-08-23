@@ -8,6 +8,7 @@ import { capture } from "../../shared/notifications";
 import { getTimezoneIdFrom } from "../schemas/timezone-id";
 import { getUserIdFrom } from "../schemas/user-id";
 import { getCxIdOrFail, getDateOrFail } from "../util";
+import { getPatientIdFrom } from "../schemas/patient-id";
 
 // TODO make one of this for each Type so we can avoid the potential type mismatching
 // on the caller's side
@@ -20,6 +21,7 @@ export async function getProviderDataForType<T>(
   const date = getDateOrFail(req);
   const params: DAPIParams = {
     timezoneId: getTimezoneIdFrom("query", req).optional(),
+    patientId: getPatientIdFrom("query", req).optional(),
   };
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
   if (!connectedUser.providerMap) return [];

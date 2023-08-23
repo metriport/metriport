@@ -34,8 +34,14 @@ Example payload:
   "users": [
     {
       "userId": "951faef1-5cfd-464a-81f7-31f76edf309e",
-      "providers": ["garmin"],
-      "connectedProviders": ["fitbit", "garmin", "cronometer"]
+      "providers": ["tenovi"],
+      "newDevices": ["12345678-abcd-1234-abcd-1234567890ab"],
+      "connectedDevices": [
+        {
+          "tenovi": ["11112222-wxyz-9999-wxyz-1234567890yz", "12345678-abcd-1234-abcd-1234567890ab"]
+        }
+      ],
+      "connectedProviders": ["fitbit", "garmin", "cronometer", "tenovi"]
     }
   ]
 }
@@ -67,6 +73,14 @@ The format follows:
 
     <ResponseField name="providers" type="string[]" required>
       An array of the newly-connected providers for the user.
+    </ResponseField>
+
+    <ResponseField name="newDevices" type="string[]">
+      An array of the newly-connected devices for the user.
+    </ResponseField>
+
+    <ResponseField name="connectedDevices" type="object[]">
+      An array of connected connected devices for each connected medical device provider.
     </ResponseField>
 
     <ResponseField name="connectedProviders" type="string[]" required>
