@@ -203,6 +203,46 @@ const resourceSchema = z.enum(resourceTypeForConsolidation).array();
 
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated
+ * @deprecated use /patient/:id/consolidated/query instead
+ */
+router.get(
+  "/:id/consolidated",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    return res.json({
+      status: patient.data.consolidatedQuery?.status ?? "not-started",
+      message:
+        "WARNING - this endpoint has been deprecated; please use GET /patient/:id/consolidated/query instead",
+    });
+  })
+);
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/consolidated/query
+ *
+ * Triggers a patient's consolidated data query. Results are sent through Webhook.
+ * If the query is already in progress, just return the current status.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @return status of querying for the Patient's consolidated data.
+ */
+router.get(
+  "/:id/consolidated/query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    return res.json({
+      status: patient.data.consolidatedQuery?.status ?? "not-started",
+      message:
+        "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
+    });
+  })
+);
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/consolidated/query
  *
  * Triggers a patient's consolidated data query. Results are sent through Webhook.
  * If the query is already in progress, just return the current status.
@@ -214,8 +254,8 @@ const resourceSchema = z.enum(resourceTypeForConsolidation).array();
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  * @return status of querying for the Patient's consolidated data.
  */
-router.get(
-  "/:id/consolidated",
+router.post(
+  "/:id/consolidated/query",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
