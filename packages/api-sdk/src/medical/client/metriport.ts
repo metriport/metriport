@@ -252,7 +252,6 @@ export class MetriportMedicalApi {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated`, {
       params: { resources: resources && resources.join(","), dateFrom, dateTo },
     });
-
     return resp.data;
   }
 
