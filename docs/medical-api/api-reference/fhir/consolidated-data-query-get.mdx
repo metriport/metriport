@@ -27,12 +27,7 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi(apiToken);
 
-const status = await metriport.getConsolidatedQueryStatus(
-  patientId,
-  ["AllergyIntolerance", "Appointment"],
-  "2023-03-01",
-  "2023-04-01"
-);
+const status = await metriport.getConsolidatedQueryStatus(patientId);
 ```
 
 </ResponseExample>
