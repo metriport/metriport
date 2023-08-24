@@ -99,8 +99,6 @@ const providerRequest = z.object({
  * @param   {string}   req.query.authCode        The OAuth v2 authorization code.
  * @param   {string}   req.query.oauth_token     The OAuth v1 request token.
  * @param   {string}   req.query.oauth_verifier  The OAuth v1 request token verifier.
- * @param   {string}   req.query.device_id       The IDs of devices to be connected.
- * @param   {string}   req.query.device_user_id  The ID of a device user (patient ID, for some providers)
  *
  * @return  redirect to the Success page.
  */
@@ -112,8 +110,6 @@ router.get(
       code: authCode,
       oauth_token,
       oauth_verifier,
-      device_id: deviceId,
-      device_user_id: deviceUserId,
     } = providerRequest.parse(req.query);
 
     try {
@@ -142,7 +138,35 @@ router.get(
         sendProviderConnected(connectedUser, provider);
         return res.redirect(`${buildRedirectURL(true, connectToken)}`);
       }
+    } catch (err) {
+      console.log(`Error on /connect/${req.params.provider}`, err);
+      capture.error(err, { extra: { context: `connect.${req.params.provider}` } });
+      return res.redirect(buildRedirectURL(false, connectToken));
+    }
+  })
+);
 
+/** ---------------------------------------------------------------------------------------
+ * POST /connect/rpm/:provider
+ *
+ * Connects the user to the specified RPM device provider and stores their specified device ID(s).
+ *
+ * @param   {string}   req.params.provider       The provider for the request.
+ * @param   {string}   req.query.state           The connect token.
+ * @param   {string}   req.query.device_id       The IDs of devices to be connected.
+ * @param   {string}   req.query.device_user_id  The ID of a device user (patient ID, for some providers)
+ *
+ */
+router.post(
+  "/rpm/:provider",
+  asyncHandler(async (req: Request, res: Response) => {
+    const {
+      state: connectToken,
+      device_id: deviceId,
+      device_user_id: deviceUserId,
+    } = providerRequest.parse(req.query);
+
+    try {
       // RPM DEVICES
       const rpmDeviceProvider = rpmDeviceProviderSchema.safeParse(req.params.provider);
       if (rpmDeviceProvider.success) {
@@ -157,12 +181,12 @@ router.get(
         const connectedUser = await connectDevice(provider, connectToken, deviceId, deviceUserId);
 
         sendProviderConnected(connectedUser, provider, deviceId);
-        return res.sendStatus(status.NO_CONTENT);
+        return res.sendStatus(status.OK);
       }
+      return res.status(status.BAD_REQUEST).send("Invalid provider. Try: tenovi");
     } catch (err) {
       console.log(`Error on /connect/${req.params.provider}`, err);
       capture.error(err, { extra: { context: `connect.${req.params.provider}` } });
-      return res.redirect(buildRedirectURL(false, connectToken));
     }
   })
 );
