@@ -186,7 +186,7 @@ router.post(
       return res.status(status.BAD_REQUEST).send("Invalid provider. Try: tenovi");
     } catch (err) {
       console.log(`Error on /connect/${req.params.provider}`, err);
-      capture.error(err, { extra: { context: `connect.${req.params.provider}` } });
+      capture.error(err, { extra: { context: `connect.rpm-devices` } });
     }
   })
 );
