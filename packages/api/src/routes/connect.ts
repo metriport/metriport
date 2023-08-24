@@ -12,10 +12,9 @@ import { Config } from "../shared/config";
 import {
   Constants,
   PROVIDER_APPLE,
-  rpmDeviceProviderSchema,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
-  PROVIDER_TENOVI,
+  rpmDeviceProviderSchema,
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
 import { connectDevice } from "./middlewares/connect-device";
@@ -84,6 +83,7 @@ const providerRequest = z.object({
   // OAuth v1
   oauth_token: z.string().optional(),
   oauth_verifier: z.string().optional(),
+  // RPM Devices
   device_id: z.string().optional(),
   device_user_id: z.string().optional(),
 });
@@ -143,18 +143,19 @@ router.get(
         return res.redirect(`${buildRedirectURL(true, connectToken)}`);
       }
 
+      // RPM DEVICES
       const rpmDeviceProvider = rpmDeviceProviderSchema.safeParse(req.params.provider);
       if (rpmDeviceProvider.success) {
         if (!deviceId) {
           return res.status(status.BAD_REQUEST).send("device_id query parameter is required");
         }
-
-        const provider = rpmDeviceProvider.data;
-        if (!deviceUserId && provider === PROVIDER_TENOVI) {
+        if (!deviceUserId) {
           return res.status(status.BAD_REQUEST).send("device_user_id query parameter is required");
         }
 
+        const provider = rpmDeviceProvider.data;
         const connectedUser = await connectDevice(provider, connectToken, deviceId, deviceUserId);
+
         sendProviderConnected(connectedUser, provider, deviceId);
         return res.sendStatus(status.NO_CONTENT);
       }

@@ -11,14 +11,14 @@ import { RPMDeviceProviderOptions } from "../../shared/constants";
  * @param {RPMDeviceProviderOptions}      provider      A medical device provider (i.e. Tenovi)
  * @param {string}                        token         Connect Token
  * @param {string}                        deviceIds     Comma-separated string of device IDs
- * @param {string}                        deviceUserId  Device User ID  (optional)
+ * @param {string}                        deviceUserId  Device User ID
  * @returns
  */
 export const connectDevice = async (
   provider: RPMDeviceProviderOptions,
   token: string,
   deviceIds: string,
-  deviceUserId?: string
+  deviceUserId: string
 ): Promise<ConnectedUser> => {
   const userToken = await getUserToken({ token });
   const cxId = userToken.cxId;

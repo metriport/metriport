@@ -124,9 +124,7 @@ export const sendProviderDisconnected = async (
  * @param connectedUser
  * @returns
  */
-function getConnectedDevices(
-  connectedUser: ConnectedUser
-): { [x: string]: string[] }[] | undefined {
+function getConnectedDevices(connectedUser: ConnectedUser): { [x: string]: string[] }[] {
   const connectedDevices = [];
   if (connectedUser.providerMap) {
     const providerMap: ProviderMap = connectedUser.providerMap;
@@ -138,5 +136,5 @@ function getConnectedDevices(
     }
   }
 
-  if (connectedDevices.length) return connectedDevices;
+  return connectedDevices;
 }

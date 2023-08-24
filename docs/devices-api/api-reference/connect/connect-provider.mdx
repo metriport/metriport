@@ -1,6 +1,6 @@
 ---
-title: "Connect Provider"
-description: "Connects the user to a provider"
+title: "Connect RPM Provider"
+description: "Connects the user to a remote patient monitoring (RPM) device provider."
 api: "GET /connect/:provider"
 ---
 
@@ -17,20 +17,19 @@ api: "GET /connect/:provider"
   The user's [connect token](/devices-api/api-reference/user/create-connect-token).
 </ParamField>
 
-<ParamField query="deviceIds" type="string">
+<ParamField query="deviceIds" type="string" required>
   A comma-separated string containing device ID(s).
 </ParamField>
 <Info>Example of connecting two devices at once: `device_id=device_id_0001,device_id_1234`.</Info>
 
-<ParamField query="deviceUserId" type="string">
+<ParamField query="deviceUserId" type="string" required>
   The user ID (patient ID, with some providers) of the user that is connected to the device.
 </ParamField>
 
 <Info>
-  The `deviceIds` and `deviceUserId` query parameters should only be used to connect RPM device
-  providers, which currently only include [Tenovi](/devices-api/getting-started/tenovi).
+  Currently, [Tenovi](/devices-api/getting-started/tenovi) is the only RMP device provider we
+  support.
 </Info>
-<Warning>`deviceIds` and `deviceUserId` are **required** for Tenovi.</Warning>
 
 <ResponseExample>
 

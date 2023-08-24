@@ -133,8 +133,8 @@ export class MetriportDevicesApi {
   async connectProvider(
     provider: ProviderSource,
     state: string,
-    deviceIds?: string,
-    deviceUserId?: string
+    deviceIds: string,
+    deviceUserId: string
   ) {
     await this.api.get(
       `/connect/:provider=${provider}/state?=${state}&device_id=${deviceIds}&device_user_id=${deviceUserId}`
