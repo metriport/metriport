@@ -1,8 +1,16 @@
 ---
-title: "Get Patient's Consolidated Data"
-description: "Get Patient's Consolidated Data in a FHIR Bundle."
-api: "GET /medical/v1/patient/{id}/consolidated"
+title: "Start Consolidated Data Query"
+description: "Trigger a consolidated data query for the given patient"
+api: "POST /medical/v1/patient/{id}/consolidated/query"
 ---
+
+When executed, this endpoint triggers an asynchronous query to retrieve a Patient's consolidated data from
+the FHIR repository.
+
+Once the data is consolidated and ready for consumption, a [Webhook request](/medical-api/more-info/webhooks#patient-consolidated-data)
+is sent to your configured URL containing the Patient's data in FHIR-compliant format, based on the filters used to trigger the query.
+
+You can check the status of the data query by calling [get consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-get).
 
 ## Path Params
 
@@ -41,18 +49,19 @@ api: "GET /medical/v1/patient/{id}/consolidated"
 
 ## Response
 
-Returns a [Bundle](/medical-api/fhir/resources/bundle) that contains a property entry which is simply an array of [FHIR resources](/medical-api/fhir/resources).
+Returns a JSON containing a `status` property indicating the query status. Possible values for consolidated
+data query status are `processing`, `completed`, or `failed`.
 
 <ResponseExample>
 
 ```javascript Metriport SDK
-import { Metriport } from "@metriport/api-sdk";
+import { MetriportMedicalApi } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi(apiToken);
 
-const consolidatedData = await metriportClient.getPatientConsolidated(
-  "PATIENT_ID",
-  ["AllergyIntolerance", "DocumentReference"],
+const consolidatedData = await metriport.startConsolidatedQuery(
+  patientId,
+  ["AllergyIntolerance", "Appointment"],
   "2023-03-01",
   "2023-04-01"
 );
@@ -62,49 +71,8 @@ const consolidatedData = await metriportClient.getPatientConsolidated(
 
 ```json
 {
-  "resourceType": "Bundle",
-  "total": 1,
-  "type": "searchset",
-  "entry": [
-    {
-      "id": 1234,
-      "content": {
-        "resourceType": "DocumentReference",
-        "contained": [],
-        "type": {
-          "coding": [
-            {
-              "system": "http://loinc.org/",
-              "code": "1234-1",
-              "display": "HIV 1 and 2 tests - Meaningful Use set"
-            }
-          ]
-        },
-        "status": "current",
-        "description": "Summarization Of Episode Notes - provided by Metriport",
-        "mimeType": "application/pdf",
-        "location": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        "context": {
-          "event": [
-            {
-              "coding": [
-                {
-                  "system": "http://snomed.info/sct",
-                  "code": "62479008",
-                  "display": "AIDS"
-                }
-              ]
-            }
-          ],
-          "period": {
-            "start": "2022-10-05T22:00:00Z",
-            "end": "2022-10-05T23:00:00Z"
-          }
-        }
-      }
-    }
-  ]
-};
+    "status": "processing"
+}
 ```
 
 ## Available FHIR resources
