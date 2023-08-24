@@ -5,6 +5,8 @@ import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
+  getConsolidatedPatientData,
+  ResourceTypeForConsolidation,
   resourceTypeForConsolidation,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
@@ -41,7 +43,7 @@ import {
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
-// const MAX_RESOURCE_STORED_LIMIT = 1000;
+const MAX_RESOURCE_STORED_LIMIT = 1000;
 const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
 
 /** ---------------------------------------------------------------------------
@@ -200,24 +202,61 @@ router.get(
 );
 
 const resourceSchema = z.enum(resourceTypeForConsolidation).array();
+function getResourcesQueryParam(req: Request): ResourceTypeForConsolidation[] {
+  const resourcesRaw = getFrom("query").optional("resources", req);
+  let resourcesUnparsed: string[];
+  try {
+    resourcesUnparsed = resourcesRaw
+      ? resourcesRaw
+          .replaceAll('"', "")
+          .replaceAll("'", "")
+          .split(",")
+          .map(r => r.trim())
+          .flatMap(filterTruthy)
+      : [];
+  } catch (err) {
+    throw new BadRequestError(`Invalid resources: it must be a comma-separated list of resources`);
+  }
+  return resourceSchema.parse(resourcesUnparsed);
+}
 
+// TODO #870 move this to internal
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated
  * @deprecated use /patient/:id/consolidated/query instead
+ *
+ * Returns a patient's consolidated data.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.resources Optional comma-separated list of resources to be returned.
+ * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @return Patient's consolidated data.
  */
 router.get(
   "/:id/consolidated",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    return res.json({
-      status: patient.data.consolidatedQuery?.status ?? "not-started",
-      message:
-        "WARNING - this endpoint has been deprecated; please use GET /patient/:id/consolidated/query instead",
+    const resources = getResourcesQueryParam(req);
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+
+    const data = await getConsolidatedPatientData({
+      patient: {
+        cxId,
+        id: patientId,
+      },
+      resources,
+      dateFrom,
+      dateTo,
     });
+
+    return res.json(data);
   })
 );
+
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated/query
  *
@@ -241,6 +280,7 @@ router.get(
     });
   })
 );
+
 /** ---------------------------------------------------------------------------
  * POST /patient/:id/consolidated/query
  *
@@ -259,23 +299,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
-    const resourcesRaw = getFrom("query").optional("resources", req);
-    let resourcesUnparsed: string[];
-    try {
-      resourcesUnparsed = resourcesRaw
-        ? resourcesRaw
-            .replaceAll('"', "")
-            .replaceAll("'", "")
-            .split(",")
-            .map(r => r.trim())
-            .flatMap(filterTruthy)
-        : [];
-    } catch (err) {
-      throw new BadRequestError(
-        `Invalid resources: it must be a comma-separated list of resources`
-      );
-    }
-    const resources = resourceSchema.parse(resourcesUnparsed);
+    const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
@@ -312,15 +336,15 @@ router.post(
     const validatedBundle = validateFhirEntries(fhirBundle);
 
     // TODO #870 review this
-    // if (Config.isSandbox()) {
-    //   const data = await getConsolidatedPatientData({ patient: { id: patientId, cxId } });
-    //   // limit the amount of resources stored in sandbox mode
-    //   if (data.entry && data.entry.length >= MAX_RESOURCE_STORED_LIMIT) {
-    //     return res.status(status.BAD_REQUEST).json({
-    //       message: `Cannot create bundle with size greater than ${MAX_RESOURCE_STORED_LIMIT} bytes in Sandbox mode.`,
-    //     });
-    //   }
-    // }
+    if (Config.isSandbox()) {
+      const data = await getConsolidatedPatientData({ patient: { id: patientId, cxId } });
+      // limit the amount of resources stored in sandbox mode
+      if (data.entry && data.entry.length >= MAX_RESOURCE_STORED_LIMIT) {
+        return res.status(status.BAD_REQUEST).json({
+          message: `Cannot create bundle with size greater than ${MAX_RESOURCE_STORED_LIMIT} bytes in Sandbox mode.`,
+        });
+      }
+    }
 
     // Limit the amount of resources that can be created at once
     if (validatedBundle.entry.length >= MAX_RESOURCE_POST_COUNT) {
