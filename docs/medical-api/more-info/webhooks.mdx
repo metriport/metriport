@@ -141,10 +141,10 @@ The format follows:
 
 ### Patient Consolidated Data
 
-A patient's consolidated data is the result of converting C-CDA documents from HIEs into FHIR, as well as other FHIR data your application
-[insert into Metriport's FHIR storage](/medical-api/api-reference/fhir/create-patient-consolidated).
+A Patient's consolidated data is the result of converting C-CDA documents from HIEs into FHIR, as well as other FHIR data your application
+has [inserted into Metriport's FHIR repository](/medical-api/api-reference/fhir/create-patient-consolidated).
 
-Patients can have a large amount of data, so in order to have access to a patient's data:
+Patients can have a large amount of data, so in order to have access to a Patient's data:
 
 1. [Trigger a consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-post) - one query per patient at any given time;
 1. Your app can check the status by calling [get consolidated query status](/medical-api/api-reference/fhir/consolidated-data-query-get);
@@ -262,20 +262,20 @@ The format follows:
       The filters used to obtain the patient's consolidated data.
       <Expandable title="Filter properties">
 
-      <ParamField query="resources" type="string" optional>
-        A comma separated, case sensitive list of resources to be returned. If none are provided all
-        resources will be included.
-      </ParamField>
+        <ParamField query="resources" type="string" optional>
+          A comma separated, case sensitive list of resources to be returned. If none are provided all
+          resources will be included.
+        </ParamField>
 
-      <ParamField query="dateFrom" type="string" optional>
-        The start date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
-        ISO 8601. If not provided, no start date filter will be applied.
-      </ParamField>
+        <ParamField query="dateFrom" type="string" optional>
+          The start date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
+          ISO 8601. If not provided, no start date filter will be applied.
+        </ParamField>
 
-      <ParamField query="dateTo" type="string" optional>
-        The end date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
-        ISO 8601. If not provided, no end date filter will be applied.
-      </ParamField>
+        <ParamField query="dateTo" type="string" optional>
+          The end date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
+          ISO 8601. If not provided, no end date filter will be applied.
+        </ParamField>
 
       </Expandable>
     </ResponseField>
