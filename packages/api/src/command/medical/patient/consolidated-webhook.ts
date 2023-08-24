@@ -38,10 +38,12 @@ type PayloadWithoutMeta = Omit<Payload, "meta">;
  */
 export const processConsolidatedDataWebhook = async ({
   patient,
+  status,
   bundle,
   filters,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
+  status: ConsolidatedWebhookStatus;
   bundle?: Bundle<Resource>;
   filters?: Filters;
 }): Promise<void> => {
@@ -49,11 +51,10 @@ export const processConsolidatedDataWebhook = async ({
   const { id: patientId, cxId } = patient;
   try {
     const settings = await getSettingsOrFail({ id: cxId });
-    const completedStatus = "completed";
 
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
-      patients: [{ patientId, status: completedStatus, bundle, filters }],
+      patients: [{ patientId, status, bundle, filters }],
     };
     const webhookRequest = await createWebhookRequest({
       cxId,
@@ -65,7 +66,7 @@ export const processConsolidatedDataWebhook = async ({
 
     await udpateConsolidatedQueryProgress({
       patient,
-      progress: { status: completedStatus },
+      progress: { status },
     });
 
     reportUsageCmd({ cxId, entityId: patientId, product: apiType });

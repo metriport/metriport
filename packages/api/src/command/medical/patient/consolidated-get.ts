@@ -65,13 +65,35 @@ async function getConsolidatedAndSendToCx({
   dateFrom?: string;
   dateTo?: string;
 }): Promise<void> {
-  const bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
-  // trigger WH call
-  processConsolidatedDataWebhook({
-    patient,
-    bundle,
-    filters: { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo },
-  }).catch(emptyFunction);
+  const { log } = Util.out(
+    `[getConsolidatedAndSendToCx - cxId ${patient.cxId}, patientId ${patient.id}]`
+  );
+  const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
+  try {
+    const bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+    // trigger WH call
+    processConsolidatedDataWebhook({
+      patient,
+      status: "completed",
+      bundle,
+      filters,
+    }).catch(emptyFunction);
+  } catch (error) {
+    log(`Failed to get FHIR resources: ${JSON.stringify(filters)}`);
+    processConsolidatedDataWebhook({
+      patient,
+      status: "failed",
+      filters: { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo },
+    }).catch(emptyFunction);
+    capture.error(error, {
+      extra: {
+        context: `getConsolidatedAndSendToCx`,
+        patientId: patient.id,
+        filters,
+        error,
+      },
+    });
+  }
 }
 
 export async function getConsolidatedPatientData({
