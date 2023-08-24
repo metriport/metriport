@@ -4,5 +4,5 @@ export function getFloatValue(value: string | number): number {
 
 // Truncate the number to 2 decimal places
 export function formatNumber(num: number): number {
-  return parseInt((num * 100).toFixed(2)) / 100;
+  return Math.floor(num * 100) / 100;
 }

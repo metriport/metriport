@@ -3,32 +3,26 @@ import { updateProviderData } from "../../command/connected-user/save-connected-
 import { getUserToken } from "../../command/cx-user/get-user-token";
 import UnauthorizedError from "../../errors/unauthorized";
 import { ConnectedUser } from "../../models/connected-user";
-import { Config } from "../../shared/config";
 import { RPMDeviceProviderOptions } from "../../shared/constants";
 
 /**
  * Connects the user to a provider that does not use OAuth1 or OAuth2.
  *
- * @param {RPMDeviceProviderOptions}      provider    A medical device provider (i.e. Tenovi)
- * @param {string}                        token       Connect Token
- * @param {string}                        deviceIds   Comma-separated string of device IDs
+ * @param {RPMDeviceProviderOptions}      provider      A medical device provider (i.e. Tenovi)
+ * @param {string}                        token         Connect Token
+ * @param {string}                        deviceIds     Comma-separated string of device IDs
+ * @param {string}                        deviceUserId  Device User ID  (optional)
  * @returns
  */
 export const connectDevice = async (
   provider: RPMDeviceProviderOptions,
   token: string,
-  deviceIds: string
+  deviceIds: string,
+  deviceUserId?: string
 ): Promise<ConnectedUser> => {
-  // get the cx/user ids from DDB if this isn't cloud mode
-  let userToken;
-  let cxId;
-  let userId;
-
-  if (!Config.isCloudEnv()) {
-    userToken = await getUserToken({ token });
-    cxId = userToken.cxId;
-    userId = userToken.userId;
-  }
+  const userToken = await getUserToken({ token });
+  const cxId = userToken.cxId;
+  const userId = userToken.userId;
 
   if (!provider || !cxId || !userId) {
     throw new UnauthorizedError();
@@ -46,6 +40,7 @@ export const connectDevice = async (
     providerItem: {
       token: "true",
       connectedDeviceIds,
+      deviceUserId,
     },
   });
 
@@ -65,7 +60,7 @@ function getConnectedDeviceIds(
   provider: RPMDeviceProviderOptions,
   deviceIds: string
 ): string[] | undefined {
-  if (connectedUser.providerMap && provider in connectedUser.providerMap) {
+  if (connectedUser.providerMap) {
     const deviceIdList = deviceIds.split(",");
     const prevConnectedDevices = connectedUser.providerMap[provider]?.connectedDeviceIds;
     const connectedDevices = prevConnectedDevices

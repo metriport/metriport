@@ -17,7 +17,6 @@ export enum ConsumerHealthDataType {
 export type DAPIParams = {
   timezoneId?: string;
   accessToken?: string;
-  patientId?: string;
 };
 
 export type ConsumerHealthDataTypeMap = {

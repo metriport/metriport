@@ -15,9 +15,10 @@ import {
   rpmDeviceProviderSchema,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
+  PROVIDER_TENOVI,
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
-import { connectDevice } from "./middlewares/noauth";
+import { connectDevice } from "./middlewares/connect-device";
 import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
 import { getUserIdFrom } from "./schemas/user-id";
@@ -84,6 +85,7 @@ const providerRequest = z.object({
   oauth_token: z.string().optional(),
   oauth_verifier: z.string().optional(),
   device_id: z.string().optional(),
+  device_user_id: z.string().optional(),
 });
 
 /** ---------------------------------------------------------------------------------------
@@ -98,6 +100,7 @@ const providerRequest = z.object({
  * @param   {string}   req.query.oauth_token     The OAuth v1 request token.
  * @param   {string}   req.query.oauth_verifier  The OAuth v1 request token verifier.
  * @param   {string}   req.query.device_id       The IDs of devices to be connected.
+ * @param   {string}   req.query.device_user_id  The ID of a device user (patient ID, for some providers)
  *
  * @return  redirect to the Success page.
  */
@@ -109,7 +112,8 @@ router.get(
       code: authCode,
       oauth_token,
       oauth_verifier,
-      device_id,
+      device_id: deviceId,
+      device_user_id: deviceUserId,
     } = providerRequest.parse(req.query);
 
     try {
@@ -141,13 +145,17 @@ router.get(
 
       const rpmDeviceProvider = rpmDeviceProviderSchema.safeParse(req.params.provider);
       if (rpmDeviceProvider.success) {
-        if (!device_id) {
+        if (!deviceId) {
           return res.status(status.BAD_REQUEST).send("device_id query parameter is required");
         }
-        const provider = rpmDeviceProvider.data;
 
-        const connectedUser = await connectDevice(provider, connectToken, device_id);
-        sendProviderConnected(connectedUser, provider, device_id);
+        const provider = rpmDeviceProvider.data;
+        if (!deviceUserId && provider === PROVIDER_TENOVI) {
+          return res.status(status.BAD_REQUEST).send("device_user_id query parameter is required");
+        }
+
+        const connectedUser = await connectDevice(provider, connectToken, deviceId, deviceUserId);
+        sendProviderConnected(connectedUser, provider, deviceId);
         return res.sendStatus(status.NO_CONTENT);
       }
     } catch (err) {

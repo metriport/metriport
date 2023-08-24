@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Biometrics, Body } from "@metriport/api-sdk";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -40,12 +41,12 @@ export class Tenovi extends Provider {
     date: string,
     extraParams: DAPIParams
   ): Promise<Body> {
-    // TODO: If no extraParams.patientId -> throw err?
-
     const startDate = dayjs(date).toISOString();
     const endDate = dayjs(date).add(1, "day").toISOString();
 
-    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/patients/${extraParams.patientId}/measurements/?metric__name=weight&timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
+    const patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+
+    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/patients/${patientId}/measurements/?metric__name=weight&timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
     const weightData = await this.fetchPatientData(patientMeasUrl);
 
     return mapToBody(date, weightData);
@@ -56,12 +57,12 @@ export class Tenovi extends Provider {
     date: string,
     extraParams: DAPIParams
   ): Promise<Biometrics> {
-    // TODO: If no extraParams.patientId -> throw err?
-
     const startDate = dayjs(date).toISOString();
     const endDate = dayjs(date).add(1, "day").toISOString();
 
-    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/patients/${extraParams.patientId}/measurements/?timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
+    const patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+
+    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/patients/${patientId}/measurements/?timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
     const patientBiometricsData = await this.fetchPatientData(patientMeasUrl);
 
     return mapToBiometrics(date, patientBiometricsData);

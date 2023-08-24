@@ -39,7 +39,7 @@ export const processMeasurementData = async (data: TenoviMeasurement): Promise<v
   const connectedUser = await getConnectedUserByDeviceId(ProviderSource.tenovi, data.hwi_device_id);
 
   const userData = mapData(data);
-  createAndSendPayload(connectedUser, userData, data.patient_id);
+  createAndSendPayload(connectedUser, userData);
 };
 
 /**
@@ -53,8 +53,8 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
 
   const { metric, device_name, hwi_device_id, value_1, value_2, created, timestamp } = data; // Available, but unused properties: sensor_code, timezone_offset, estimated_timestamp
 
-  const num_value_1 = getFloatValue(value_1);
-  const num_value_2 = value_2 ? getFloatValue(value_2) : undefined;
+  const numValue = getFloatValue(value_1);
+  const numValue2 = value_2 ? getFloatValue(value_2) : undefined;
 
   const sourceInfo = { id: hwi_device_id, name: device_name, source_type: SourceType.device };
   const metadata = { date: created, source: ProviderSource.tenovi, data_source: sourceInfo };
@@ -63,20 +63,20 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
     metadata,
   };
 
-  updateBiometricsWithBP(biometrics, metric, timestamp, num_value_1, num_value_2);
-  updateBiometricsWithHR(biometrics, metric, timestamp, num_value_1, num_value_2);
-  updateBiometricsWithSPO2(biometrics, metric, num_value_1, num_value_2);
-  updateBiometricsWithPerfIndex(biometrics, metric, num_value_1);
-  updateBiometricsWithTemperature(biometrics, metric, timestamp, num_value_1);
-  updateBiometricsWithBloodGluc(biometrics, metric, timestamp, num_value_1);
-  updateBiometricsWithPeakFlow(biometrics, metric, num_value_1);
-  updateBiometricsWithForcedExpVol(biometrics, metric, num_value_1);
+  updateBiometricsWithBP(biometrics, metric, timestamp, numValue, numValue2);
+  updateBiometricsWithHR(biometrics, metric, timestamp, numValue, numValue2);
+  updateBiometricsWithSPO2(biometrics, metric, numValue, numValue2);
+  updateBiometricsWithPerfIndex(biometrics, metric, numValue);
+  updateBiometricsWithTemperature(biometrics, metric, timestamp, numValue);
+  updateBiometricsWithBloodGluc(biometrics, metric, timestamp, numValue);
+  updateBiometricsWithPeakFlow(biometrics, metric, numValue);
+  updateBiometricsWithForcedExpVol(biometrics, metric, numValue);
   payload.biometrics = [biometrics];
 
   if (metric === "weight") {
     const body: Body = {
       metadata,
-      weight_kg: formatNumber(convert(num_value_1).from("lb").to("kg")),
+      weight_kg: formatNumber(convert(numValue).from("lb").to("kg")),
     };
     payload.body = [body];
   } else if (!tenoviMetricTypes.includes(metric)) {
@@ -101,11 +101,10 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
  */
 async function createAndSendPayload(
   user: ConnectedUser,
-  data: WebhookUserDataPayload,
-  patient_id: string
+  data: WebhookUserDataPayload
 ): Promise<void> {
   const { id: userId, cxId } = user;
-  const userData: WebhookUserPayload = { userId, ...data, patient_id };
+  const userData: WebhookUserPayload = { userId, ...data };
   const payload: WebhookDataPayloadWithoutMessageId = { users: [userData] };
 
   const webhookRequest = await createWebhookRequest({
