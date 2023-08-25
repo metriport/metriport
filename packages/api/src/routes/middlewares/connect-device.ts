@@ -47,7 +47,7 @@ export const saveRpmDevice = async (
 
     return updatedConnectedUser;
   } catch (err) {
-    throw new Error(`Error saving RPM device for user ${userId} and cxId ${cxId}`);
+    throw new Error(`Error saving RPM device.`);
   }
 };
 
