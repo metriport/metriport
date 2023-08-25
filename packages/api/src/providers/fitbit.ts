@@ -352,12 +352,8 @@ export class Fitbit extends Provider implements OAuth2 {
     const user = resUser?.status === "fulfilled" ? resUser.value : undefined;
 
     // User has body info, so we want to keep processing if only `weight` is missing
-    if (!weight) {
-      if (!containsProfile) {
-        throw new Error("All Requests failed");
-      } else if (!user) {
-        throw new Error("All Requests failed");
-      }
+    if (!containsProfile || !user) {
+      throw new Error("All Requests failed");
     }
 
     return mapToBody(date, user, weight);
