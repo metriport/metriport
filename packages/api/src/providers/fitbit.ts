@@ -291,17 +291,20 @@ export class Fitbit extends Provider implements OAuth2 {
 
   async fetchUserProfile(
     accessToken: string,
+    hasScope: boolean,
     extraHeaders?: { [k: string]: string }
-  ): Promise<FitbitUser> {
-    return this.oauth.fetchProviderData<FitbitUser>(
-      `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
-      accessToken,
-      async resp => {
-        return fitbitUserResp.parse(resp.data);
-      },
-      undefined,
-      extraHeaders
-    );
+  ): Promise<FitbitUser | undefined> {
+    if (hasScope) {
+      return this.oauth.fetchProviderData<FitbitUser>(
+        `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
+        accessToken,
+        async resp => {
+          return fitbitUserResp.parse(resp.data);
+        },
+        undefined,
+        extraHeaders
+      );
+    }
   }
 
   async fetchWeights(
@@ -332,9 +335,13 @@ export class Fitbit extends Provider implements OAuth2 {
       "Accept-Language": "en_GB", // For higher precision in weight readings, we are retrieving data in stones and converting it to kg
     };
 
+    const fitbitToken = connectedUser.providerMap?.fitbit?.token;
+    const scopes = fitbitToken ? JSON.parse(fitbitToken).scope : [];
+    const containsProfile = scopes.includes("profile");
+
     const fetchData = () =>
       Promise.allSettled([
-        this.fetchUserProfile(accessToken, extraHeaders),
+        this.fetchUserProfile(accessToken, containsProfile, extraHeaders),
         this.fetchWeights(accessToken, date, extraHeaders),
       ]);
     const [resUser, resWeight] = await execute(fetchData, connectedUser, {
@@ -347,7 +354,7 @@ export class Fitbit extends Provider implements OAuth2 {
     const weight = resWeight.status === "fulfilled" ? resWeight.value : undefined;
 
     // User has body info, so we want to keep processing if only `weight` is missing
-    if (!user) {
+    if (containsProfile && !user) {
       if (!weight) throw new Error("All Requests failed");
       throw new Error("User Request failed");
     }
