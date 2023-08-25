@@ -28,27 +28,23 @@ export const saveRpmDevice = async (
     throw new UnauthorizedError();
   }
 
-  try {
-    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+  const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
-    const connectedDeviceIds = getConnectedDeviceIds(connectedUser, provider, deviceIds);
+  const connectedDeviceIds = getConnectedDeviceIds(connectedUser, provider, deviceIds);
 
-    // save the access token in the provider map
-    const updatedConnectedUser = await updateProviderData({
-      id: userId,
-      cxId,
-      provider,
-      providerItem: {
-        token: "N/A",
-        connectedDeviceIds,
-        deviceUserId,
-      },
-    });
+  // save the access token in the provider map
+  const updatedConnectedUser = await updateProviderData({
+    id: userId,
+    cxId,
+    provider,
+    providerItem: {
+      token: "N/A",
+      connectedDeviceIds,
+      deviceUserId,
+    },
+  });
 
-    return updatedConnectedUser;
-  } catch (err) {
-    throw new Error(`Error saving RPM device.`);
-  }
+  return updatedConnectedUser;
 };
 
 /**
