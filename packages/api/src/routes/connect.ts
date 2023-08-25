@@ -17,11 +17,13 @@ import {
   rpmDeviceProviderSchema,
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
-import { connectDevice } from "./middlewares/connect-device";
+import { saveRpmDevice } from "./middlewares/connect-device";
 import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdFromHeaders } from "./util";
+
+// import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
@@ -83,9 +85,6 @@ const providerRequest = z.object({
   // OAuth v1
   oauth_token: z.string().optional(),
   oauth_verifier: z.string().optional(),
-  // RPM Devices
-  device_id: z.string().optional(),
-  device_user_id: z.string().optional(),
 });
 
 /** ---------------------------------------------------------------------------------------
@@ -146,6 +145,12 @@ router.get(
   })
 );
 
+const rpmProviderRequest = z.object({
+  state: z.string(),
+  device_id: z.string(),
+  device_user_id: z.string(),
+});
+
 /** ---------------------------------------------------------------------------------------
  * POST /connect/rpm/:provider
  *
@@ -153,7 +158,7 @@ router.get(
  *
  * @param   {string}   req.params.provider       The provider for the request.
  * @param   {string}   req.query.state           The connect token.
- * @param   {string}   req.query.device_id       The IDs of devices to be connected.
+ * @param   {string}   req.query.device_id       A comma-separated string of device IDs to be connected.
  * @param   {string}   req.query.device_user_id  The ID of a device user (patient ID, for some providers)
  *
  */
@@ -164,29 +169,21 @@ router.post(
       state: connectToken,
       device_id: deviceId,
       device_user_id: deviceUserId,
-    } = providerRequest.parse(req.query);
+    } = rpmProviderRequest.parse(req.query);
 
     try {
       // RPM DEVICES
-      const rpmDeviceProvider = rpmDeviceProviderSchema.safeParse(req.params.provider);
-      if (rpmDeviceProvider.success) {
-        if (!deviceId) {
-          return res.status(status.BAD_REQUEST).send("device_id query parameter is required");
-        }
-        if (!deviceUserId) {
-          return res.status(status.BAD_REQUEST).send("device_user_id query parameter is required");
-        }
+      const provider = rpmDeviceProviderSchema.parse(req.params.provider);
+      const deviceIds = deviceId.split(",");
 
-        const provider = rpmDeviceProvider.data;
-        const connectedUser = await connectDevice(provider, connectToken, deviceId, deviceUserId);
+      const connectedUser = await saveRpmDevice(provider, connectToken, deviceIds, deviceUserId);
 
-        sendProviderConnected(connectedUser, provider, deviceId);
-        return res.sendStatus(status.OK);
-      }
-      return res.status(status.BAD_REQUEST).send("Invalid provider. Try: tenovi");
+      sendProviderConnected(connectedUser, provider, deviceIds);
+      return res.sendStatus(status.OK);
     } catch (err) {
       console.log(`Error on /connect/rpm`, err);
       capture.error(err, { extra: { context: `connect.rpm` } });
+      return res.sendStatus(status.INTERNAL_SERVER_ERROR).send(`Error connecting device: ${err}`);
     }
   })
 );

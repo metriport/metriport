@@ -32,7 +32,7 @@ export type WebhookDataPayload = {
   users: WebhookUserPayload[];
 };
 export type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
-export type WebhookUserPayload = { userId: string; patient_id?: string } & WebhookUserDataPayload;
+export type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
 
 // DAPI
 export type WebhookUserDataPayload = {

@@ -28,11 +28,15 @@ export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
  * Sends an update to the CX about their user subscribing to a provider.
  *
  * Executed asynchronously, so it should treat errors w/o expecting it to be done upstream.
+ *
+ * @param connectedUser   The connected user
+ * @param provider        The newly-connected provider
+ * @param deviceIds       A list of newly-connected device IDs
  */
 export const sendProviderConnected = async (
   connectedUser: ConnectedUser,
   provider: ProviderOptions,
-  deviceIds?: string
+  deviceIds?: string[]
 ): Promise<void> => {
   let webhookRequest;
   try {
@@ -40,7 +44,6 @@ export const sendProviderConnected = async (
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
 
     const connectedDevices = getConnectedDevices(connectedUser);
-    const devices = deviceIds?.split(",");
 
     const payload = {
       users: [
@@ -48,7 +51,7 @@ export const sendProviderConnected = async (
           userId,
           providers: [provider],
           connectedProviders: providers,
-          devices,
+          devices: deviceIds,
           connectedDevices,
         },
       ],

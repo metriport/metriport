@@ -24,9 +24,12 @@ api: "GET /biometrics"
 ```javascript Metriport SDK
 import { MetriportDevicesApi } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+const metriport = new MetriportDevicesApi("YOUR_API_KEY");
 
-const response = await metriportClient.getBiometricsData("metriportUserId", "date");
+const response = await metriport.getBiometricsData(
+  "metriportUserId", 
+  "date"
+);
 ```
 
 </ResponseExample>
