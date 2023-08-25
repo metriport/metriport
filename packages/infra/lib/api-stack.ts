@@ -486,6 +486,18 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
+    this.setupTenoviWebhook({
+      lambdaLayers,
+      baseResource: webhookResource,
+      secrets,
+      vpc: this.vpc,
+      fargateService: apiService,
+      tenoviAuthHeader: props.config.providerSecretNames.TENOVI_AUTH_HEADER,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     // add webhook path for apple health clients
     const appleHealthResource = webhookResource.addResource("apple");
     const integrationApple = new apig.Integration({
@@ -765,6 +777,58 @@ export class APIStack extends Stack {
     const fitbitResource = baseResource.addResource("fitbit");
     fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitAuthLambda));
     fitbitResource.addMethod("GET", new apig.LambdaIntegration(fitbitSubscriberVerificationLambda));
+  }
+
+  private setupTenoviWebhook(ownProps: {
+    lambdaLayers: lambda.ILayerVersion[];
+    baseResource: apig.Resource;
+    secrets: Secrets;
+    vpc: ec2.IVpc;
+    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+    tenoviAuthHeader: string;
+    envType: string;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }) {
+    const {
+      lambdaLayers,
+      baseResource,
+      secrets,
+      vpc,
+      fargateService: server,
+      tenoviAuthHeader,
+      envType,
+      sentryDsn,
+      alarmAction,
+    } = ownProps;
+
+    const tenoviAuthLambda = createLambda({
+      stack: this,
+      name: "TenoviAuth",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "tenovi",
+      layers: lambdaLayers,
+      envVars: {
+        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/tenovi`,
+        ENV_TYPE: envType,
+        TENOVI_AUTH_HEADER: tenoviAuthHeader,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    type SecretKeys = keyof EnvConfig["providerSecretNames"];
+
+    const tenoviAuthHeaderSecretKey: SecretKeys = "TENOVI_AUTH_HEADER";
+    if (!secrets[tenoviAuthHeaderSecretKey]) {
+      throw new Error(`${tenoviAuthHeaderSecretKey} is not defined in config`);
+    }
+
+    secrets[tenoviAuthHeaderSecretKey].grantRead(tenoviAuthLambda);
+
+    const tenoviResource = baseResource.addResource("tenovi");
+    tenoviResource.addMethod("POST", new apig.LambdaIntegration(tenoviAuthLambda));
   }
 
   private setupCdaToVisualization(ownProps: {
