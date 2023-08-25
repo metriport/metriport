@@ -1,10 +1,7 @@
+import { ResourceTypeForConsolidation, resourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Request } from "express";
 import { z } from "zod";
 import BadRequestError from "../../../errors/bad-request";
-import {
-  ResourceTypeForConsolidation,
-  resourceTypeForConsolidation,
-} from "../../../external/fhir/patient/consolidated";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { getFrom } from "../../util";
 

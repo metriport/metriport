@@ -128,7 +128,8 @@
           "group": "FHIR",
           "pages": [
             "medical-api/api-reference/fhir/consolidated-data-query-post",
-            "medical-api/api-reference/fhir/consolidated-data-query-get"
+            "medical-api/api-reference/fhir/consolidated-data-query-get",
+            "medical-api/api-reference/fhir/consolidated-data-count"
           ]
         }
       ]

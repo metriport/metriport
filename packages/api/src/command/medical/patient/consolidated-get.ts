@@ -7,9 +7,9 @@ import {
   Resource,
   ResourceType,
 } from "@medplum/fhirtypes";
+import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { ResourceTypeForConsolidation } from "../../../external/fhir/patient/consolidated";
 import {
   fullDateQueryForResource,
   getPatientFilter,
