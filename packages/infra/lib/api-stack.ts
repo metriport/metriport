@@ -486,7 +486,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
-    this.setupTenoviWebhook({
+    this.setupTenoviWebhookAuth({
       lambdaLayers,
       baseResource: webhookResource,
       secrets,
@@ -762,12 +762,11 @@ export class APIStack extends Stack {
     });
 
     // granting secrets read access to both lambdas
-    type SecretKeys = keyof EnvConfig["providerSecretNames"];
-    const fitbitClientSecretKey: SecretKeys = "FITBIT_CLIENT_SECRET";
+    const fitbitClientSecretKey = "FITBIT_CLIENT_SECRET";
     if (!secrets[fitbitClientSecretKey]) {
       throw new Error(`${fitbitClientSecretKey} is not defined in config`);
     }
-    const fitbitSubVerifSecretKey: SecretKeys = "FITBIT_SUBSCRIBER_VERIFICATION_CODE";
+    const fitbitSubVerifSecretKey = "FITBIT_SUBSCRIBER_VERIFICATION_CODE";
     secrets[fitbitClientSecretKey].grantRead(fitbitAuthLambda);
     if (!secrets[fitbitSubVerifSecretKey]) {
       throw new Error(`${fitbitSubVerifSecretKey} is not defined in config`);
@@ -779,7 +778,7 @@ export class APIStack extends Stack {
     fitbitResource.addMethod("GET", new apig.LambdaIntegration(fitbitSubscriberVerificationLambda));
   }
 
-  private setupTenoviWebhook(ownProps: {
+  private setupTenoviWebhookAuth(ownProps: {
     lambdaLayers: lambda.ILayerVersion[];
     baseResource: apig.Resource;
     secrets: Secrets;
@@ -818,9 +817,7 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    type SecretKeys = keyof EnvConfig["providerSecretNames"];
-
-    const tenoviAuthHeaderSecretKey: SecretKeys = "TENOVI_AUTH_HEADER";
+    const tenoviAuthHeaderSecretKey = "TENOVI_AUTH_HEADER";
     if (!secrets[tenoviAuthHeaderSecretKey]) {
       throw new Error(`${tenoviAuthHeaderSecretKey} is not defined in config`);
     }

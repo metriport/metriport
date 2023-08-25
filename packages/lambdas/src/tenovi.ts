@@ -29,7 +29,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
 
   const authHeader: string = (await getSecret(tenoviAuthHeader)) as string;
   if (!authHeader) {
-    throw new Error(`Config error - TENOVI_AUTH_HEADER doesn't exist`);
+    throw new Error(`Config error - TENOVI_AUTH_HEADER not found`);
   }
 
   const verificationSuccessful = verifyRequest(event, authHeader);

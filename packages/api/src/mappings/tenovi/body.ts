@@ -31,9 +31,10 @@ export const mapToBody = (date: string, tenoviWeight: TenoviMeasurementData): Bo
 
     const weightSamples: Sample[] = [];
     tenoviWeight.forEach(reading => {
+      const weightKg = convert(getFloatValue(reading.value_1)).from("lb").to("kg");
       weightSamples.push({
         time: reading.timestamp,
-        value: formatNumber(convert(getFloatValue(reading.value_1)).from("lb").to("kg")),
+        value: formatNumber(weightKg),
       });
     });
 
