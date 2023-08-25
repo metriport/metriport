@@ -1,13 +1,10 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
   getConsolidatedPatientData,
-  ResourceTypeForConsolidation,
-  resourceTypeForConsolidation,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
@@ -18,12 +15,12 @@ import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/patient";
+import { countResourcesPerPatient } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
-import { filterTruthy } from "../../shared/filter-map-utils";
 import { getETag } from "../../shared/http";
 import {
   asyncHandler,
@@ -33,7 +30,7 @@ import {
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
-import { bundleSchema } from "./schemas/fhir";
+import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   patientCreateSchema,
   patientUpdateSchema,
@@ -201,25 +198,6 @@ router.get(
   })
 );
 
-const resourceSchema = z.enum(resourceTypeForConsolidation).array();
-function getResourcesQueryParam(req: Request): ResourceTypeForConsolidation[] {
-  const resourcesRaw = getFrom("query").optional("resources", req);
-  let resourcesUnparsed: string[];
-  try {
-    resourcesUnparsed = resourcesRaw
-      ? resourcesRaw
-          .replaceAll('"', "")
-          .replaceAll("'", "")
-          .split(",")
-          .map(r => r.trim())
-          .flatMap(filterTruthy)
-      : [];
-  } catch (err) {
-    throw new BadRequestError(`Invalid resources: it must be a comma-separated list of resources`);
-  }
-  return resourceSchema.parse(resourcesUnparsed);
-}
-
 // TODO #870 move this to internal
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated
@@ -311,7 +289,7 @@ router.post(
 /** ---------------------------------------------------------------------------
  * POST /patient/:id/consolidated
  *
- * Returns a Bundle with the outcome of the query.
+ * Adds a FHIR bundle to the FHIR server.
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient to associate resources to.
@@ -321,12 +299,12 @@ router.post(
 router.post(
   "/:id/consolidated",
   asyncHandler(async (req: Request, res: Response) => {
-    // limit the payload size that can be created
+    // Limit the payload size that can be created
     const contentLength = req.headers["content-length"];
     if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
-      return res.status(status.BAD_REQUEST).json({
-        message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`,
-      });
+      throw new BadRequestError(
+        `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`
+      );
     }
 
     const cxId = getCxIdOrFail(req);
@@ -334,31 +312,32 @@ router.post(
     const fhirBundle = bundleSchema.parse(req.body);
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const validatedBundle = validateFhirEntries(fhirBundle);
+    const incomingAmount = validatedBundle.entry.length;
 
-    // TODO #870 review this
-    if (Config.isSandbox()) {
-      const data = await getConsolidatedPatientData({ patient: { id: patientId, cxId } });
-      // limit the amount of resources stored in sandbox mode
-      if (data.entry && data.entry.length >= MAX_RESOURCE_STORED_LIMIT) {
-        return res.status(status.BAD_REQUEST).json({
-          message: `Cannot create bundle with size greater than ${MAX_RESOURCE_STORED_LIMIT} bytes in Sandbox mode.`,
-        });
+    // Limit the amount of resources per patient
+    if (!Config.isCloudEnv() || Config.isSandbox()) {
+      const { total: currentAmount } = await countResourcesPerPatient({
+        patient: { id: patientId, cxId },
+      });
+      if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
+        throw new BadRequestError(
+          `Reached maximum number of resources per patient in Sandbox mode ` +
+            `(current: ${currentAmount}, incoming: ${incomingAmount}, max: ${MAX_RESOURCE_STORED_LIMIT})`
+        );
       }
     }
-
     // Limit the amount of resources that can be created at once
-    if (validatedBundle.entry.length >= MAX_RESOURCE_POST_COUNT) {
-      return res.status(status.BAD_REQUEST).json({
-        message: `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time.`,
-      });
+    if (incomingAmount > MAX_RESOURCE_POST_COUNT) {
+      throw new BadRequestError(
+        `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time ` +
+          `(incoming: ${incomingAmount})`
+      );
     }
-
     const data = await createOrUpdateConsolidatedPatientData({
       cxId,
       patientId: patient.id,
       fhirBundle: validatedBundle,
     });
-
     return res.json(data);
   })
 );
