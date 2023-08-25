@@ -17,6 +17,7 @@ import {
   sourceIdSteps,
 } from "./models/activity";
 import { sessionSleepType } from "./models/sleep";
+import { formatNumber } from "../../shared/numbers";
 
 export const mapToActivity = (
   date: string,
@@ -240,11 +241,6 @@ function matchActivityTime(
     nanoTimeString(activityStartTime) <= startTimeNanos &&
     startTimeNanos < nanoTimeString(activityEndTime)
   );
-}
-
-// Truncate the number to 2 decimal places
-function formatNumber(num: number): number {
-  return parseInt((num * 100).toFixed(2)) / 100;
 }
 
 function calculateAvgSpeed(activitySpeedTimeMap: { speed: number; totalTime: number }[]) {

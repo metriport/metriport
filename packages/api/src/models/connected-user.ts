@@ -6,6 +6,8 @@ export type ProviderMapItem = {
   token: string; // user authorization token
   secret?: string; // user authorization secret (OAuth1)
   scopes?: string[]; // scopes authorized to be accessed by this app
+  connectedDeviceIds?: string[]; // list of connected devices
+  deviceUserId?: string; // id used in other services
 };
 
 export type ProviderMap = {

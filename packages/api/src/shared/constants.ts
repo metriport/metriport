@@ -12,6 +12,7 @@ import { Oura } from "../providers/oura";
 import Provider from "../providers/provider";
 import { Whoop } from "../providers/whoop";
 import { Withings } from "../providers/withings";
+import { Tenovi } from "../providers/tenovi";
 
 export const METRIPORT = "METRIPORT";
 
@@ -24,6 +25,10 @@ export const PROVIDER_GOOGLE = ProviderSource.google;
 export const PROVIDER_FITBIT = ProviderSource.fitbit;
 export const PROVIDER_WHOOP = ProviderSource.whoop;
 export const PROVIDER_WITHINGS = ProviderSource.withings;
+export const PROVIDER_TENOVI = ProviderSource.tenovi;
+
+export const rpmDeviceProviderSchema = z.enum([PROVIDER_TENOVI]);
+export type RPMDeviceProviderOptions = z.infer<typeof rpmDeviceProviderSchema>;
 
 export const providerOAuth1OptionsSchema = z.enum([PROVIDER_GARMIN]);
 export type ProviderOAuth1Options = z.infer<typeof providerOAuth1OptionsSchema>;
@@ -42,7 +47,11 @@ export type ProviderOAuth2Options = z.infer<typeof providerOAuth2OptionsSchema>;
 export const providerNoAuthSchema = z.enum([PROVIDER_APPLE]);
 export type ProviderNoAuthSchema = z.infer<typeof providerNoAuthSchema>;
 
-export type ProviderOptions = ProviderOAuth1Options | ProviderOAuth2Options | ProviderNoAuthSchema;
+export type ProviderOptions =
+  | ProviderOAuth1Options
+  | ProviderOAuth2Options
+  | ProviderNoAuthSchema
+  | RPMDeviceProviderOptions;
 
 export class Constants {
   // the default time in seconds for which an auth token for a widget connect
@@ -73,6 +82,7 @@ export class Constants {
     garmin: new Garmin(),
     google: new Google(),
     fitbit: new Fitbit(),
+    tenovi: new Tenovi(),
     whoop: new Whoop(),
     withings: new Withings(),
   };

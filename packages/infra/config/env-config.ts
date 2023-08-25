@@ -57,6 +57,7 @@ export type EnvConfig = {
     WITHINGS_CLIENT_SECRET: string;
     WHOOP_CLIENT_ID: string;
     WHOOP_CLIENT_SECRET: string;
+    TENOVI_API_KEY: string;
   };
   cwSecretNames: {
     CW_PRIVATE_KEY: string;

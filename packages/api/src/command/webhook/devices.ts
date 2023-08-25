@@ -1,11 +1,12 @@
 import stringify from "json-stringify-safe";
-import { ConnectedUser } from "../../models/connected-user";
+import { ConnectedUser, ProviderMap } from "../../models/connected-user";
 import { WebhookRequest } from "../../models/webhook-request";
 import { capture } from "../../shared/notifications";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
 import { processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
+import { ProviderOptions } from "../../shared/constants";
 
 export const dapiWebhookType = [
   "devices.provider-connected",
@@ -27,16 +28,34 @@ export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
  * Sends an update to the CX about their user subscribing to a provider.
  *
  * Executed asynchronously, so it should treat errors w/o expecting it to be done upstream.
+ *
+ * @param connectedUser   The connected user
+ * @param provider        The newly-connected provider
+ * @param deviceIds       A list of newly-connected device IDs
  */
 export const sendProviderConnected = async (
   connectedUser: ConnectedUser,
-  provider: string
+  provider: ProviderOptions,
+  deviceIds?: string[]
 ): Promise<void> => {
   let webhookRequest;
   try {
     const { id: userId, cxId } = connectedUser;
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
-    const payload = { users: [{ userId, providers: [provider], connectedProviders: providers }] };
+
+    const connectedDevices = getConnectedDevices(connectedUser);
+
+    const payload = {
+      users: [
+        {
+          userId,
+          providers: [provider],
+          connectedProviders: providers,
+          devices: deviceIds,
+          connectedDevices,
+        },
+      ],
+    };
     const settings = await getSettingsOrFail({ id: cxId });
 
     webhookRequest = await createWebhookRequest({
@@ -101,3 +120,24 @@ export const sendProviderDisconnected = async (
     });
   }
 };
+
+/**
+ * Gets the list of all connected devices for a user
+ *
+ * @param connectedUser
+ * @returns
+ */
+function getConnectedDevices(connectedUser: ConnectedUser): { [x: string]: string[] }[] {
+  const connectedDevices = [];
+  if (connectedUser.providerMap) {
+    const providerMap: ProviderMap = connectedUser.providerMap;
+
+    for (const [key, value] of Object.entries(providerMap)) {
+      if (value.connectedDeviceIds) {
+        connectedDevices.push({ [key]: value.connectedDeviceIds });
+      }
+    }
+  }
+
+  return connectedDevices;
+}
