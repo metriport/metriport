@@ -291,20 +291,17 @@ export class Fitbit extends Provider implements OAuth2 {
 
   async fetchUserProfile(
     accessToken: string,
-    hasScope: boolean,
     extraHeaders?: { [k: string]: string }
-  ): Promise<FitbitUser | undefined> {
-    if (hasScope) {
-      return this.oauth.fetchProviderData<FitbitUser>(
-        `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
-        accessToken,
-        async resp => {
-          return fitbitUserResp.parse(resp.data);
-        },
-        undefined,
-        extraHeaders
-      );
-    }
+  ): Promise<FitbitUser> {
+    return this.oauth.fetchProviderData<FitbitUser>(
+      `${Fitbit.URL}/${Fitbit.API_PATH}/profile.json`,
+      accessToken,
+      async resp => {
+        return fitbitUserResp.parse(resp.data);
+      },
+      undefined,
+      extraHeaders
+    );
   }
 
   async fetchWeights(
@@ -336,27 +333,29 @@ export class Fitbit extends Provider implements OAuth2 {
     };
 
     const fitbitToken = connectedUser.providerMap?.fitbit?.token;
-    const scopes = fitbitToken ? JSON.parse(fitbitToken).scope : [];
-    const containsProfile = scopes.includes("profile");
+    const scopes = fitbitToken ? JSON.parse(fitbitToken).scope : "";
+    const containsProfile = typeof scopes === "string" ? scopes.includes("profile") : false;
 
     const fetchData = () =>
       Promise.allSettled([
-        this.fetchUserProfile(accessToken, containsProfile, extraHeaders),
         this.fetchWeights(accessToken, date, extraHeaders),
+        ...(containsProfile ? [this.fetchUserProfile(accessToken, extraHeaders)] : []),
       ]);
-    const [resUser, resWeight] = await execute(fetchData, connectedUser, {
+
+    const [resWeight, resUser] = await execute(fetchData, connectedUser, {
       action: "getBodyData",
       date,
       timezone: extraParams.timezoneId,
     });
 
-    const user = resUser.status === "fulfilled" ? resUser.value : undefined;
     const weight = resWeight.status === "fulfilled" ? resWeight.value : undefined;
+    const user = resUser?.status === "fulfilled" ? resUser.value : undefined;
 
     // User has body info, so we want to keep processing if only `weight` is missing
-    if (containsProfile && !user) {
-      if (!weight) throw new Error("All Requests failed");
-      throw new Error("User Request failed");
+    if (!weight) {
+      if (containsProfile && !user) {
+        throw new Error("All Requests failed");
+      }
     }
 
     return mapToBody(date, user, weight);

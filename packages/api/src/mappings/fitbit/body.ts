@@ -31,11 +31,11 @@ export const mapToBody = (
   if (fitbitUser) {
     if (fitbitUser.user.height) {
       if (fitbitUser.user.heightUnit === US_LOCALE) {
-        body.height_cm = parseFloat(fitbitUser.user.height.toFixed(DECIMAL_PLACES));
-      } else {
         body.height_cm = parseFloat(
           convert(fitbitUser.user.height).from("in").to("cm").toFixed(DECIMAL_PLACES)
         );
+      } else {
+        body.height_cm = parseFloat(fitbitUser.user.height.toFixed(DECIMAL_PLACES));
       }
     }
 
