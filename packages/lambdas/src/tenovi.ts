@@ -2,7 +2,6 @@ import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import { APIGatewayEvent } from "aws-lambda";
 import axios from "axios";
-import { createHmac } from "crypto";
 import status from "http-status";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -11,12 +10,9 @@ import { getEnvOrFail } from "./shared/env";
 capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
-const fitbitClientSecretName = getEnvOrFail("FITBIT_CLIENT_SECRET");
-const fitbitTimeoutInMillis = getEnvOrFail("FITBIT_TIMEOUT_MS");
+const tenoviAuthHeader = getEnvOrFail("TENOVI_AUTH_HEADER");
 
-const api = axios.create({
-  timeout: Math.max(Number(fitbitTimeoutInMillis) - 100, 100),
-});
+const api = axios.create();
 
 const buildResponse = (status: number, body?: unknown) => ({
   statusCode: status,
@@ -31,19 +27,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
     return defaultResponse();
   }
 
-  const secret: string = (await getSecret(fitbitClientSecretName)) as string;
-  if (!secret) {
-    throw new Error(`Config error - FITBIT_CLIENT_SECRET not found`);
+  const authHeader: string = (await getSecret(tenoviAuthHeader)) as string;
+  if (!authHeader) {
+    throw new Error(`Config error - TENOVI_AUTH_HEADER not found`);
   }
 
-  const verificationSuccessful = verifyRequest(event, event.body, secret);
-  console.log("WH Verification success", verificationSuccessful);
+  const verificationSuccessful = verifyRequest(event, authHeader);
+  console.log("Tenovi WH Verification success: ", verificationSuccessful);
   if (verificationSuccessful) {
     return forwardCallToServer(event);
   }
 
-  capture.message("Fitbit webhooks authentication fail", {
-    extra: { context: "webhook.fitbit.fitbitAuthLambda" },
+  capture.message("Tenovi webhooks authentication fail", {
+    extra: { context: "webhook.tenovi.tenoviAuthLambda" },
   });
   return buildResponse(status.NOT_FOUND);
 });
@@ -59,18 +55,17 @@ async function forwardCallToServer(event: APIGatewayEvent) {
 }
 
 /**
- * Checks for authenticity of the webhook notification by comparing a hashed value of the client secret to the fitbit signature provided in the request.
+ * Checks for authenticity of the webhook notification by comparing the authorization header in the request
+ * with the auth header stored in the environment variables.
  *
  * @param event APIGatewayProxyEvent
- * @param body APIGatewayProxyEvent body
- * @param secret Secret Client key for Fitbit
+ * @param authHeader Authorization header for Tenovi
  * @returns boolean
  */
-function verifyRequest(event: APIGatewayEvent, body: string, secret: string) {
-  const signingKey = secret + "&";
-  const hash = createHmac("sha1", signingKey).update(body).digest();
-  const encodedHash = Buffer.from(hash).toString("base64");
+function verifyRequest(event: APIGatewayEvent, authHeader: string): boolean {
+  if (event.headers["Authorization"] === authHeader) {
+    return true;
+  }
 
-  if (encodedHash === event.headers["X-Fitbit-Signature"]) return true;
   return false;
 }

@@ -133,7 +133,7 @@ function getConnectedDevices(connectedUser: ConnectedUser): { [x: string]: strin
     const providerMap: ProviderMap = connectedUser.providerMap;
 
     for (const [key, value] of Object.entries(providerMap)) {
-      if (value.connectedDeviceIds) {
+      if (value && value.connectedDeviceIds) {
         connectedDevices.push({ [key]: value.connectedDeviceIds });
       }
     }
