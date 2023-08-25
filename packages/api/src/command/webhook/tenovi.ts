@@ -35,7 +35,7 @@ import stringify from "json-stringify-safe";
  * @param data Tenovi Measurement webhook
  */
 export const processMeasurementData = async (data: TenoviMeasurement): Promise<void> => {
-  console.log(`Starting to process a Tenovi webhook: ${String(data)}`);
+  console.log(`Starting to process a Tenovi webhook: ${JSON.stringify(data)}`);
 
   try {
     const connectedUser = await getConnectedUserByDeviceId(
@@ -46,9 +46,9 @@ export const processMeasurementData = async (data: TenoviMeasurement): Promise<v
     const userData = mapData(data);
     createAndSendPayload(connectedUser, userData);
   } catch (error) {
-    console.log(`Failed to process Tenovi WH - error: ${String(error)}`);
+    console.log(`Failed to process Tenovi WH - error: ${stringify(error)}`);
     capture.error(error, {
-      extra: { context: `webhook.processMeasurementData`, error, data: stringify(data) },
+      extra: { context: `webhook.processMeasurementData`, error, data },
     });
   }
 };
@@ -140,9 +140,9 @@ async function createAndSendPayload(
     });
     reportDevicesUsage(cxId, [userId]);
   } catch (error) {
-    console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${String(error)}`);
+    console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${stringify(error)}`);
     capture.error(error, {
-      extra: { user, context: `webhook.createAndSendPayload`, error, data: stringify(data) },
+      extra: { user, context: `webhook.createAndSendPayload`, error, data },
     });
   }
 }
