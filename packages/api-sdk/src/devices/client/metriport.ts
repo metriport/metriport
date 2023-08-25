@@ -137,9 +137,9 @@ export class MetriportDevicesApi {
     deviceUserId: string
   ): Promise<void> {
     await this.api.post(
-      `/connect/rpm/:provider=${provider}/state?=${state}&device_id=${deviceIds.join(
+      `/connect/rpm/:provider=${provider}/state?=${state}&deviceIds=${deviceIds.join(
         ","
-      )}&device_user_id=${deviceUserId}`
+      )}&deviceUserId=${deviceUserId}`
     );
   }
 

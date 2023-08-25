@@ -23,8 +23,6 @@ import { processOAuth2 } from "./middlewares/oauth2";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdFromHeaders } from "./util";
 
-// import { v4 as uuidv4 } from "uuid";
-
 const router = Router();
 
 /** ---------------------------------------------------------------------------
@@ -147,8 +145,8 @@ router.get(
 
 const rpmProviderRequest = z.object({
   state: z.string(),
-  device_id: z.string(),
-  device_user_id: z.string(),
+  deviceIds: z.string(),
+  deviceUserId: z.string(),
 });
 
 /** ---------------------------------------------------------------------------------------
@@ -158,27 +156,23 @@ const rpmProviderRequest = z.object({
  *
  * @param   {string}   req.params.provider       The provider for the request.
  * @param   {string}   req.query.state           The connect token.
- * @param   {string}   req.query.device_id       A comma-separated string of device IDs to be connected.
- * @param   {string}   req.query.device_user_id  The ID of a device user (patient ID, for some providers)
+ * @param   {string}   req.query.deviceIds       A comma-separated string of device IDs to be connected.
+ * @param   {string}   req.query.deviceUserId  The ID of a device user (patient ID, for some providers)
  *
  */
 router.post(
   "/rpm/:provider",
   asyncHandler(async (req: Request, res: Response) => {
-    const {
-      state: connectToken,
-      device_id: deviceId,
-      device_user_id: deviceUserId,
-    } = rpmProviderRequest.parse(req.query);
+    const { state: connectToken, deviceIds, deviceUserId } = rpmProviderRequest.parse(req.query);
 
     try {
       // RPM DEVICES
       const provider = rpmDeviceProviderSchema.parse(req.params.provider);
-      const deviceIds = deviceId.split(",");
+      const deviceIdList = deviceIds.split(",");
 
-      const connectedUser = await saveRpmDevice(provider, connectToken, deviceIds, deviceUserId);
+      const connectedUser = await saveRpmDevice(provider, connectToken, deviceIdList, deviceUserId);
 
-      sendProviderConnected(connectedUser, provider, deviceIds);
+      sendProviderConnected(connectedUser, provider, deviceIdList);
       return res.sendStatus(status.OK);
     } catch (err) {
       console.log(`Error on /connect/rpm`, err);
