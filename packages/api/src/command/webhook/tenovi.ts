@@ -27,14 +27,15 @@ import {
   processRequest,
 } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
+import stringify from "json-stringify-safe";
 
 /**
- * Processes a Tenovi Measurement webhook
+ * Processes a Tenovi Measurement webhook, maps the data, and sends it to the CX
  *
  * @param data Tenovi Measurement webhook
  */
 export const processMeasurementData = async (data: TenoviMeasurement): Promise<void> => {
-  console.log(`Starting to process a Tenovi webhook: ${JSON.stringify(data)}`);
+  console.log(`Starting to process a Tenovi webhook: ${String(data)}`);
 
   try {
     const connectedUser = await getConnectedUserByDeviceId(
@@ -45,9 +46,9 @@ export const processMeasurementData = async (data: TenoviMeasurement): Promise<v
     const userData = mapData(data);
     createAndSendPayload(connectedUser, userData);
   } catch (error) {
-    console.log(`Failed to process Tenovi WH - error: ${JSON.stringify(error)}`);
+    console.log(`Failed to process Tenovi WH - error: ${String(error)}`);
     capture.error(error, {
-      extra: { context: `webhook.processMeasurementData`, error },
+      extra: { context: `webhook.processMeasurementData`, error, data: stringify(data) },
     });
   }
 };
@@ -109,7 +110,6 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
  *
  * @param user        Connected user
  * @param data        Patient mapped data
- * @param patient_id  Patient ID
  */
 async function createAndSendPayload(
   user: ConnectedUser,
@@ -140,9 +140,9 @@ async function createAndSendPayload(
     });
     reportDevicesUsage(cxId, [userId]);
   } catch (error) {
-    console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${JSON.stringify(error)}`);
+    console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${String(error)}`);
     capture.error(error, {
-      extra: { user, context: `webhook.createAndSendPayload`, error },
+      extra: { user, context: `webhook.createAndSendPayload`, error, data: stringify(data) },
     });
   }
 }

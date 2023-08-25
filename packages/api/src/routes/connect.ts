@@ -144,7 +144,7 @@ router.get(
 );
 
 const rpmProviderRequest = z.object({
-  state: z.string(),
+  token: z.string(),
   deviceIds: z.string(),
   deviceUserId: z.string(),
 });
@@ -155,30 +155,24 @@ const rpmProviderRequest = z.object({
  * Connects the user to the specified RPM device provider and stores their specified device ID(s).
  *
  * @param   {string}   req.params.provider       The provider for the request.
- * @param   {string}   req.query.state           The connect token.
+ * @param   {string}   req.query.token           The connect token.
  * @param   {string}   req.query.deviceIds       A comma-separated string of device IDs to be connected.
- * @param   {string}   req.query.deviceUserId  The ID of a device user (patient ID, for some providers)
+ * @param   {string}   req.query.deviceUserId    The ID of a device user (patient ID, for some providers)
  *
  */
 router.post(
   "/rpm/:provider",
   asyncHandler(async (req: Request, res: Response) => {
-    const { state: connectToken, deviceIds, deviceUserId } = rpmProviderRequest.parse(req.query);
+    const { token, deviceIds, deviceUserId } = rpmProviderRequest.parse(req.query);
 
-    try {
-      // RPM DEVICES
-      const provider = rpmDeviceProviderSchema.parse(req.params.provider);
-      const deviceIdList = deviceIds.split(",");
+    // RPM DEVICES
+    const provider = rpmDeviceProviderSchema.parse(req.params.provider);
+    const deviceIdList = deviceIds.split(",");
 
-      const connectedUser = await saveRpmDevice(provider, connectToken, deviceIdList, deviceUserId);
+    const connectedUser = await saveRpmDevice(provider, token, deviceIdList, deviceUserId);
 
-      sendProviderConnected(connectedUser, provider, deviceIdList);
-      return res.sendStatus(status.OK);
-    } catch (err) {
-      console.log(`Error on /connect/rpm`, err);
-      capture.error(err, { extra: { context: `connect.rpm` } });
-      return res.sendStatus(status.INTERNAL_SERVER_ERROR).send(`Error connecting device: ${err}`);
-    }
+    sendProviderConnected(connectedUser, provider, deviceIdList);
+    return res.sendStatus(status.OK);
   })
 );
 

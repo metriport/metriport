@@ -12,13 +12,14 @@ api: "POST /connect/rpm/:provider"
 
 ## Query Params
 
-<ParamField query="state" type="string" required>
+<ParamField query="token" type="string" required>
   The user's [connect token](/devices-api/api-reference/user/create-connect-token).
 </ParamField>
 
 <ParamField query="deviceIds" type="string" required>
   A comma-separated string containing device ID(s).
-<Info>Example of connecting two devices at once: `deviceIds=device-id-0001,device-id-1234`.</Info>
+
+  <Info>Example of connecting two devices at once: `deviceIds=device-id-0001,device-id-1234`.</Info>
 </ParamField>
 
 <ParamField query="deviceUserId" type="string" required>
