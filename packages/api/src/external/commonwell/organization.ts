@@ -61,13 +61,33 @@ export async function organizationToCommonwell(
   };
 }
 
+const commonWell = makeCommonWellAPI(Config.getMetriportOrgName(), Config.getMemberManagementOID());
+
+export const getOne = async (orgOid: string): Promise<CWOrganization | undefined> => {
+  const { log, debug } = Util.out(`CW get - id ${orgOid}`);
+  const cwId = OID_PREFIX.concat(orgOid);
+  try {
+    const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
+    debug(`resp: ${JSON.stringify(resp, null, 2)}`);
+    return resp;
+  } catch (error) {
+    const msg = `Failure getting Org @ CW`;
+    log(msg, error);
+    capture.error(error, {
+      extra: {
+        cwId,
+        cwReference: commonWell.lastReferenceHeader,
+        context: `cw.org.get`,
+      },
+    });
+    throw error;
+  }
+};
+
 export const create = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW create - M oid ${org.oid}, id ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
-  const commonWell = makeCommonWellAPI(
-    Config.getMetriportOrgName(),
-    Config.getMemberManagementOID()
-  );
+
   try {
     const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
     debug(`resp respCreate: ${JSON.stringify(respCreate, null, 2)}`);
@@ -96,10 +116,7 @@ export const create = async (org: Organization): Promise<void> => {
 export const update = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW update - M oid ${org.oid}, id ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
-  const commonWell = makeCommonWellAPI(
-    Config.getMetriportOrgName(),
-    Config.getMemberManagementOID()
-  );
+
   try {
     const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
     debug(`resp respUpdate: `, () => JSON.stringify(respUpdate, null, 2));

@@ -44,7 +44,8 @@
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
-    "test": "jest --runInBand --detectOpenHandles --passWithNoTests"
+    "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
+    "test:e2e": "E2E=true jest --runInBand --detectOpenHandles"
   },
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
