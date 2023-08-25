@@ -7,23 +7,19 @@ import {
   Resource,
   ResourceType,
 } from "@medplum/fhirtypes";
-import { intersection } from "lodash";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { ResourceTypeForConsolidation } from "../../../external/fhir/patient/consolidated";
 import {
-  isoDateRangeToFHIRDateQuery,
-  resourceSupportsDateQuery,
-} from "../../../external/fhir/shared";
+  fullDateQueryForResource,
+  getPatientFilter,
+} from "../../../external/fhir/patient/resource-filter";
 import { Patient } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { emptyFunction, Util } from "../../../shared/util";
 import { udpateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { getPatientOrFail } from "./get-patient";
-
-function fullDateQueryForResource(fullDateQuery: string, resource: ResourceType): string {
-  return resourceSupportsDateQuery(resource) ? fullDateQuery : "";
-}
 
 export async function startConsolidatedQuery({
   cxId,
@@ -66,7 +62,7 @@ async function getConsolidatedAndSendToCx({
   dateTo?: string;
 }): Promise<void> {
   const { log } = Util.out(
-    `[getConsolidatedAndSendToCx - cxId ${patient.cxId}, patientId ${patient.id}]`
+    `getConsolidatedAndSendToCx - cxId ${patient.cxId}, patientId ${patient.id}`
   );
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
@@ -108,25 +104,24 @@ export async function getConsolidatedPatientData({
   dateTo?: string;
 }): Promise<Bundle<Resource>> {
   const { log } = Util.out(
-    `[getConsolidatedPatientData - cxId ${patient.cxId}, patientId ${patient.id}]`
+    `getConsolidatedPatientData - cxId ${patient.cxId}, patientId ${patient.id}`
   );
   const { id: patientId, cxId } = patient;
-  const resourcesByPatient =
-    resources && resources.length
-      ? intersection(resources, resourcesSearchableByPatient)
-      : resourcesSearchableByPatient;
-  const resourcesBySubject =
-    resources && resources.length
-      ? intersection(resources, resourcesSearchableBySubject)
-      : resourcesSearchableBySubject;
+  const {
+    resourcesByPatient,
+    resourcesBySubject,
+    dateFilter: fullDateQuery,
+  } = getPatientFilter({
+    resources,
+    dateFrom,
+    dateTo,
+  });
   log(`Getting consolidated data with resources by patient: ${resourcesByPatient.join(", ")}...`);
   log(`...and by subject: ${resourcesBySubject.join(", ")}`);
 
   const fhir = makeFhirApi(cxId);
   const errorsToReport: Record<string, string> = {};
 
-  const fhirDateQuery = isoDateRangeToFHIRDateQuery(dateFrom, dateTo);
-  const fullDateQuery = fhirDateQuery ? `&${fhirDateQuery}` : "";
   const settled = await Promise.allSettled([
     ...resourcesByPatient.map(async resource => {
       const dateFilter = fullDateQueryForResource(fullDateQuery, resource);
@@ -205,77 +200,3 @@ function issueToString(issue: OperationOutcomeIssue): string {
     JSON.stringify(issue)
   );
 }
-
-export const resourcesSearchableByPatient = [
-  "Account",
-  "AllergyIntolerance",
-  "Appointment",
-  "AppointmentResponse",
-  "AuditEvent",
-  "Basic",
-  "BodyStructure",
-  "CarePlan",
-  "CareTeam",
-  "ChargeItem",
-  "Claim",
-  "ClaimResponse",
-  "ClinicalImpression",
-  "Communication",
-  "CommunicationRequest",
-  "Composition",
-  "Condition",
-  "Consent",
-  "Contract",
-  "Coverage",
-  "CoverageEligibilityRequest",
-  "CoverageEligibilityResponse",
-  "DetectedIssue",
-  "Device",
-  "DeviceRequest",
-  "DeviceUseStatement",
-  "DiagnosticReport",
-  "DocumentManifest",
-  "DocumentReference",
-  "Encounter",
-  "EnrollmentRequest",
-  "EpisodeOfCare",
-  "ExplanationOfBenefit",
-  "FamilyMemberHistory",
-  "Flag",
-  "Goal",
-  "GuidanceResponse",
-  "ImagingStudy",
-  "Immunization",
-  "ImmunizationEvaluation",
-  "ImmunizationRecommendation",
-  "Invoice",
-  "List",
-  "MeasureReport",
-  "Media",
-  "MedicationAdministration",
-  "MedicationDispense",
-  "MedicationRequest",
-  "MedicationStatement",
-  "MolecularSequence",
-  "NutritionOrder",
-  "Observation",
-  "Person",
-  "Procedure",
-  "Provenance",
-  "QuestionnaireResponse",
-  "RelatedPerson",
-  "RequestGroup",
-  "ResearchSubject",
-  "RiskAssessment",
-  "ServiceRequest",
-  "Specimen",
-] as const;
-
-export const resourcesSearchableBySubject = ["AdverseEvent", "Task"] as const;
-
-export const resourceTypeForConsolidation = [
-  ...resourcesSearchableByPatient,
-  ...resourcesSearchableBySubject,
-] as const;
-
-export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];
