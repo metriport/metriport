@@ -32,9 +32,9 @@ export const whoopSleepResp = z
           need_from_recent_nap_milli: z.number(),
         }),
         respiratory_rate: z.number(),
-        sleep_performance_percentage: z.number(),
-        sleep_consistency_percentage: z.number(),
-        sleep_efficiency_percentage: z.number(),
+        sleep_performance_percentage: z.number().nullish(),
+        sleep_consistency_percentage: z.number().nullish(),
+        sleep_efficiency_percentage: z.number().nullish(),
       })
       .nullable()
       .optional(),
