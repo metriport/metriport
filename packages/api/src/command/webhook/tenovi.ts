@@ -1,5 +1,7 @@
 import { Biometrics, Body, ProviderSource, SourceType } from "@metriport/api-sdk";
 import convert from "convert-units";
+import stringify from "json-stringify-safe";
+import { Product } from "../../domain/product";
 import { TenoviMeasurement } from "../../mappings/tenovi";
 import {
   updateBiometricsWithBloodGluc,
@@ -13,21 +15,19 @@ import {
 } from "../../mappings/tenovi/biometrics";
 import { tenoviMetricTypes } from "../../mappings/tenovi/constants";
 import { ConnectedUser } from "../../models/connected-user";
-import { EventTypes, analytics } from "../../shared/analytics";
+import { analytics, EventTypes } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { formatNumber, getFloatValue } from "../../shared/numbers";
 import { getConnectedUserByDeviceId } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { ApiTypes } from "../usage/report-usage";
-import { reportDevicesUsage } from "./devices";
 import {
+  reportDevicesUsage,
   WebhookDataPayloadWithoutMessageId,
   WebhookUserDataPayload,
   WebhookUserPayload,
-  processRequest,
-} from "./webhook";
+} from "./devices";
+import { processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
-import stringify from "json-stringify-safe";
 
 /**
  * Processes a Tenovi Measurement webhook, maps the data, and sends it to the CX
@@ -135,7 +135,7 @@ async function createAndSendPayload(
       properties: {
         method: "POST",
         url: "/webhook/tenovi",
-        apiType: ApiTypes.devices,
+        apiType: Product.devices,
       },
     });
     reportDevicesUsage(cxId, [userId]);
