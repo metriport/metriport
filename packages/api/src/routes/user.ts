@@ -167,7 +167,7 @@ const noAuthProviders = {
 
 async function revokeUserProviderAccess(
   connectedUser: ConnectedUser,
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   provider: any
 ): Promise<void> {
   const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(provider);
