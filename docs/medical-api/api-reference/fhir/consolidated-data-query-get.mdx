@@ -1,0 +1,40 @@
+---
+title: "Get Consolidated Data Query status"
+description: "Get the status of querying for patient's consolidated data."
+api: "GET /medical/v1/patient/{id}/consolidated/query"
+---
+
+This endpoint only returns the status of a consolidated data query. To trigger a new query you can
+[start a consolidated query](/medical-api/api-reference/fhir/consolidated-data-query-post).
+
+The result of the query will be sent through a [Webhook request](/medical-api/more-info/webhooks#patient-consolidated-data)
+in FHIR-compliant format.
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Response
+
+Returns the status of the last query for consolidated data performed for the given patient.
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi(apiToken);
+
+const status = await metriport.getConsolidatedQueryStatus(patientId);
+```
+
+</ResponseExample>
+
+```json
+{
+    "status": "completed",
+    "message": "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook"
+}
+```
