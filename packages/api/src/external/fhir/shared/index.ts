@@ -25,14 +25,14 @@ export function downloadedFromHIEs(doc: DocumentReference): boolean {
 
 // Creates a FHIR data query string based on the specified range.
 // For example, if dateFrom="2022-03-23" & dateTo="2024-01-02", result will look like:
-//  "date=ge2022-03-23&date=le2024-01-02"
+//  "date=sa2022-03-23&date=le2024-01-02"
 //
 // See details here: https://www.hl7.org/fhir/R4/search.html#date
 export function isoDateRangeToFHIRDateQuery(dateFrom?: string, dateTo?: string): string {
   const fhirDateQueryBase = "date=";
   let fhirDateQuery = `${fhirDateQueryBase}`;
   if (!dateFrom && !dateTo) return "";
-  if (dateFrom) fhirDateQuery += `${Operator.GREATER_THAN_OR_EQUALS}${dateFrom}`;
+  if (dateFrom) fhirDateQuery += `${Operator.STARTS_AFTER}${dateFrom}`;
   if (dateTo) {
     fhirDateQuery += `${dateFrom ? `&${fhirDateQueryBase}` : ""}${
       Operator.LESS_THAN_OR_EQUALS
