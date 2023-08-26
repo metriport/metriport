@@ -11,6 +11,7 @@ export interface Biometrics extends MetriportData {
   blood_pressure?: BloodPressure;
   heart_rate?: HeartRate;
   hrv?: HeartRateVariability;
+  perfusion_index_pct?: number;
   respiration?: Respiration;
   temperature?: Temperature;
   // todo: ecg?

@@ -16,7 +16,7 @@ const DECIMAL_PLACES = 2;
 
 export const mapToBody = (
   date: string,
-  fitbitUser: FitbitUser,
+  fitbitUser?: FitbitUser,
   fitbitWeight?: FitbitWeight
 ): Body => {
   const metadata = {
@@ -28,35 +28,37 @@ export const mapToBody = (
     metadata: metadata,
   };
 
-  if (fitbitUser.user.height) {
-    if (fitbitUser.user.heightUnit === US_LOCALE) {
-      body.height_cm = parseFloat(fitbitUser.user.height.toFixed(DECIMAL_PLACES));
-    } else {
-      body.height_cm = parseFloat(
-        convert(fitbitUser.user.height).from("in").to("cm").toFixed(DECIMAL_PLACES)
-      );
+  if (fitbitUser) {
+    if (fitbitUser.user.height) {
+      if (fitbitUser.user.heightUnit === US_LOCALE) {
+        body.height_cm = parseFloat(
+          convert(fitbitUser.user.height).from("in").to("cm").toFixed(DECIMAL_PLACES)
+        );
+      } else {
+        body.height_cm = parseFloat(fitbitUser.user.height.toFixed(DECIMAL_PLACES));
+      }
     }
-  }
 
-  if (fitbitUser.user.weight) {
-    body.weight_kg = convertStonesToKg(fitbitUser.user.weight);
-  }
+    if (fitbitUser.user.weight) {
+      body.weight_kg = convertStonesToKg(fitbitUser.user.weight);
+    }
 
-  if (fitbitWeight && fitbitWeight.length > 0) {
-    body.weight_samples_kg = fitbitWeight.map(weight => {
-      let dateTime = date + "T" + weight.time;
-      dateTime = fitbitUser.user.timezone
-        ? dayjs.tz(dateTime, fitbitUser.user.timezone).utc().format()
-        : dateTime;
-      return {
-        time: dayjs(dateTime).toISOString(),
-        value: convertStonesToKg(weight.weight),
-        data_source: {
-          name: weight.source,
-          source_type: checkSource(weight.source),
-        },
-      };
-    });
+    if (fitbitWeight && fitbitWeight.length > 0) {
+      body.weight_samples_kg = fitbitWeight.map(weight => {
+        let dateTime = date + "T" + weight.time;
+        dateTime = fitbitUser.user.timezone
+          ? dayjs.tz(dateTime, fitbitUser.user.timezone).utc().format()
+          : dateTime;
+        return {
+          time: dayjs(dateTime).toISOString(),
+          value: convertStonesToKg(weight.weight),
+          data_source: {
+            name: weight.source,
+            source_type: checkSource(weight.source),
+          },
+        };
+      });
+    }
   }
 
   return body;

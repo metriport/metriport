@@ -332,24 +332,28 @@ export class Fitbit extends Provider implements OAuth2 {
       "Accept-Language": "en_GB", // For higher precision in weight readings, we are retrieving data in stones and converting it to kg
     };
 
+    const fitbitToken = connectedUser.providerMap?.fitbit?.token;
+    const scopes = fitbitToken ? JSON.parse(fitbitToken).scope : "";
+    const containsProfile = typeof scopes === "string" ? scopes.includes("profile") : false;
+
     const fetchData = () =>
       Promise.allSettled([
-        this.fetchUserProfile(accessToken, extraHeaders),
         this.fetchWeights(accessToken, date, extraHeaders),
+        ...(containsProfile ? [this.fetchUserProfile(accessToken, extraHeaders)] : []),
       ]);
-    const [resUser, resWeight] = await execute(fetchData, connectedUser, {
+
+    const [resWeight, resUser] = await execute(fetchData, connectedUser, {
       action: "getBodyData",
       date,
       timezone: extraParams.timezoneId,
     });
 
-    const user = resUser.status === "fulfilled" ? resUser.value : undefined;
     const weight = resWeight.status === "fulfilled" ? resWeight.value : undefined;
+    const user = resUser?.status === "fulfilled" ? resUser.value : undefined;
 
     // User has body info, so we want to keep processing if only `weight` is missing
-    if (!user) {
-      if (!weight) throw new Error("All Requests failed");
-      throw new Error("User Request failed");
+    if (!containsProfile || !user) {
+      throw new Error("All Requests failed");
     }
 
     return mapToBody(date, user, weight);

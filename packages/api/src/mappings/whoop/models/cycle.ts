@@ -20,6 +20,6 @@ export const whoopCycleResp = z.object({
     })
     .nullable()
     .optional(),
-});
+}).optional();
 
 export type WhoopCycle = z.infer<typeof whoopCycleResp>;

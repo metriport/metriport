@@ -1,42 +1,69 @@
+import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import stringify from "json-stringify-safe";
+import { Product } from "../../domain/product";
 import { ConnectedUser } from "../../models/connected-user";
-import { WebhookRequest } from "../../models/webhook-request";
+import { ProviderOptions } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { processRequest } from "./webhook";
+import { reportUsage as reportUsageCmd } from "../usage/report-usage";
+import { processRequest, WebhookMetadataPayload } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
-export const dapiWebhookType = [
-  "devices.provider-connected",
-  "devices.provider-disconnected",
-  "devices.health-data",
-] as const;
-export type DAPIWebhookType = (typeof dapiWebhookType)[number];
+export type DataType = "activity" | "sleep" | "body" | "biometrics" | "nutrition";
 
-export function isDAPIWebhookRequest(webhookRequest: WebhookRequest): boolean {
-  return dapiWebhookType.map(String).includes(webhookRequest.type);
+export interface TypedData<T extends MetriportData> {
+  type: DataType;
+  data: T;
 }
 
+export type WebhookDataPayload = {
+  meta: WebhookMetadataPayload;
+  users: WebhookUserPayload[];
+};
+export type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
+export type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
+
+export type WebhookUserDataPayload = {
+  [k in DataType]?: MetriportData[];
+};
+
 export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
-  const apiType = ApiTypes.devices;
-  cxUserIds.forEach(cxUserId => reportUsageCmd({ cxId, entityId: cxUserId, apiType }));
+  const product = Product.devices;
+  cxUserIds.forEach(cxUserId => reportUsageCmd({ cxId, entityId: cxUserId, product }));
 };
 
 /**
  * Sends an update to the CX about their user subscribing to a provider.
  *
  * Executed asynchronously, so it should treat errors w/o expecting it to be done upstream.
+ *
+ * @param connectedUser   The connected user
+ * @param provider        The newly-connected provider
+ * @param deviceIds       A list of newly-connected device IDs
  */
 export const sendProviderConnected = async (
   connectedUser: ConnectedUser,
-  provider: string
+  provider: ProviderOptions,
+  deviceIds?: string[]
 ): Promise<void> => {
   let webhookRequest;
   try {
     const { id: userId, cxId } = connectedUser;
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
-    const payload = { users: [{ userId, providers: [provider], connectedProviders: providers }] };
+
+    const connectedDevices = getConnectedDevices(connectedUser);
+
+    const payload = {
+      users: [
+        {
+          userId,
+          providers: [provider],
+          connectedProviders: providers,
+          devices: deviceIds,
+          connectedDevices,
+        },
+      ],
+    };
     const settings = await getSettingsOrFail({ id: cxId });
 
     webhookRequest = await createWebhookRequest({
@@ -101,3 +128,24 @@ export const sendProviderDisconnected = async (
     });
   }
 };
+
+/**
+ * Gets the list of all connected devices for a user
+ *
+ * @param connectedUser
+ * @returns
+ */
+function getConnectedDevices(connectedUser: ConnectedUser): { [x: string]: string[] }[] {
+  const connectedDevices = [];
+  if (connectedUser.providerMap) {
+    const providerMap = connectedUser.providerMap;
+
+    for (const [key, value] of Object.entries(providerMap)) {
+      if (value && value.connectedDeviceIds) {
+        connectedDevices.push({ [key]: value.connectedDeviceIds });
+      }
+    }
+  }
+
+  return connectedDevices;
+}

@@ -1,3 +1,4 @@
+import { ZodError } from "zod";
 import { Config } from "./config";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -12,4 +13,10 @@ export function debug(msg: string, ...optionalParams: any[]): void {
   } else {
     console.log(msg);
   }
+}
+
+export function errorToString(err: unknown): string {
+  return err instanceof ZodError
+    ? Object.values(err.flatten().fieldErrors).join("; ")
+    : (err as any)["message"] ?? String(err); // eslint-disable-line @typescript-eslint/no-explicit-any
 }

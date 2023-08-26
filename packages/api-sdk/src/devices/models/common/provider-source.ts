@@ -6,6 +6,7 @@ export enum ProviderSource {
   garmin = "garmin",
   google = "google",
   oura = "oura",
+  tenovi = "tenovi",
   whoop = "whoop",
   withings = "withings",
 }

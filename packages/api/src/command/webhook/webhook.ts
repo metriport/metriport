@@ -1,18 +1,20 @@
-import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import Axios from "axios";
 import dayjs from "dayjs";
 import { nanoid } from "nanoid";
+import { Product } from "../../domain/product";
 import WebhookError from "../../errors/webhook";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
+import { analytics, EventTypes } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
-import { isDAPIWebhookRequest } from "./devices";
+import { isDAPIWebhookRequest } from "./devices-util";
 import { updateWebhookRequestStatus } from "./webhook-request";
 
+const DEFAULT_TIMEOUT_SEND_PAYLOAD_MS = 5_000;
+const DEFAULT_TIMEOUT_SEND_TEST_MS = 2_000;
 const axios = Axios.create();
-
 const log = Util.log(`Webhook`);
 
 // General
@@ -20,74 +22,90 @@ type WebhookPingPayload = {
   ping: string;
 };
 
-export type DataType = "activity" | "sleep" | "body" | "biometrics" | "nutrition";
+export type WebhookMetadataPayload = { messageId: string; when: string; type: string };
 
-export interface TypedData<T extends MetriportData> {
-  type: DataType;
-  data: T;
+async function missingWHSettings(
+  webhookRequest: WebhookRequest,
+  webhookUrl: string | null,
+  webhookKey: string | null
+): Promise<boolean> {
+  const msg = `Missing webhook config, skipping sending it`;
+  const loggableKey = webhookKey ? "<defined>" : null;
+  log(msg + ` (url: ${webhookUrl}, key: ${loggableKey}`);
+  capture.message(msg, {
+    extra: {
+      webhookRequestId: webhookRequest.id,
+      webhookUrl,
+      webhookKey: loggableKey,
+      context: `webhook.processRequest`,
+    },
+  });
+  // if this is for DAPI:
+  //    mark this request as failed on the DB - so it can be retried later
+  // if this is for MAPI:
+  //    silently ignore this since this is just a notification for ease-of-use
+  //    and won't result in data loss
+  if (isDAPIWebhookRequest(webhookRequest)) {
+    await updateWebhookRequestStatus({
+      id: webhookRequest.id,
+      status: "failure",
+    });
+    return false;
+  } else {
+    return true;
+  }
 }
 
-export type WebhookDataPayload = {
-  meta: WebhookMetadataPayload;
-  users: WebhookUserPayload[];
-};
-export type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
-export type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
-
-// DAPI
-export type WebhookUserDataPayload = {
-  [k in DataType]?: MetriportData[];
-};
-export type WebhookMetadataPayload = { messageId: string; when: string };
+function getProductFromWebhookRequest(webhookRequest: WebhookRequest): Product {
+  if (isDAPIWebhookRequest(webhookRequest)) {
+    return Product.devices;
+  } else {
+    return Product.medical;
+  }
+}
 
 export const processRequest = async (
   webhookRequest: WebhookRequest,
-  settings: Settings
+  settings: Settings,
+  additionalWHRequestMeta?: Record<string, string>
 ): Promise<boolean> => {
-  const payload = webhookRequest.payload;
-
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
-    const msg =
-      `Missing webhook config, skipping sending it ` +
-      `(url: ${webhookUrl}, key: ${webhookKey ? "<defined>" : null}`;
-    console.log(msg);
-    capture.message(msg, { extra: { context: `webhook.processRequest` } });
-    // if this is for DAPI:
-    //    mark this request as failed on the DB - so it can be retried later
-    // if this is for MAPI:
-    //    silently ignore this since this is just a notification for ease-of-use
-    //    and won't result in data loss
-    if (isDAPIWebhookRequest(webhookRequest)) {
-      await updateWebhookRequestStatus({
-        id: webhookRequest.id,
-        status: "failure",
-      });
-      return false;
-    } else {
-      return true;
-    }
+    return missingWHSettings(webhookRequest, webhookUrl, webhookKey);
   }
-  // TODO Separate preparing the payloads with the actual sending of that data over the wire
-  // It will simplify managing the webhook status (enabled?) and only retrying sending once
-  // every X minutes
+  const sendAnalytics = (status: string) => {
+    analytics({
+      distinctId: webhookRequest.cxId,
+      event: EventTypes.webhook,
+      properties: {
+        apiType: getProductFromWebhookRequest(webhookRequest),
+        whType: webhookRequest.type,
+        whStatus: status,
+        ...(additionalWHRequestMeta ? additionalWHRequestMeta : {}),
+      },
+    });
+  };
+
+  const payload = webhookRequest.payload;
   try {
+    const meta: WebhookMetadataPayload = {
+      messageId: webhookRequest.id,
+      when: dayjs(webhookRequest.createdAt).toISOString(),
+      type: webhookRequest.type,
+    };
     await sendPayload(
       {
-        meta: {
-          messageId: webhookRequest.id,
-          when: dayjs(webhookRequest.createdAt).toISOString(),
-          type: webhookRequest.type,
-        },
-        ...(payload as any), //eslint-disable-line @typescript-eslint/no-explicit-any
+        meta,
+        ...payload,
       },
       webhookUrl,
       webhookKey
     );
     // mark this request as successful on the DB
+    const status = "success";
     await updateWebhookRequestStatus({
       id: webhookRequest.id,
-      status: "success",
+      status,
     });
 
     // if the webhook was not working before, update the status to successful since we were able to send the payload
@@ -98,7 +116,9 @@ export const processRequest = async (
         webhookStatusDetail: WEBHOOK_STATUS_OK,
       });
     }
+    sendAnalytics(status);
     return true;
+
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     capture.error(err, {
@@ -109,11 +129,12 @@ export const processRequest = async (
         cause: err.cause,
       },
     });
+    const status = "failure";
     try {
       // mark this request as failed on the DB
       await updateWebhookRequestStatus({
         id: webhookRequest.id,
-        status: "failure",
+        status,
       });
     } catch (err2) {
       console.log(`Failed to store failure state on WH log`, err2);
@@ -125,6 +146,7 @@ export const processRequest = async (
         },
       });
     }
+    sendAnalytics(status);
     let webhookStatusDetail;
     if (err instanceof WebhookError) {
       webhookStatusDetail = String(err.cause);
@@ -140,7 +162,7 @@ export const processRequest = async (
         webhookStatusDetail,
       });
     } catch (err2) {
-      console.log(`Failed to store failure state on WH settings`, err2);
+      log(`Failed to store failure state on WH settings`, err2);
       capture.error(err2, {
         extra: {
           webhookRequestId: webhookRequest.id,
@@ -157,7 +179,7 @@ export const sendPayload = async (
   payload: unknown,
   url: string,
   apiKey: string,
-  timeout = 5_000
+  timeout = DEFAULT_TIMEOUT_SEND_PAYLOAD_MS
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   try {
@@ -169,8 +191,7 @@ export const sendPayload = async (
       timeout,
     });
     return res.data;
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err) {
     // Don't change this error message, it's used to detect if the webhook is working or not
     throw new WebhookError(`Failed to send payload`, err);
   }
@@ -181,7 +202,7 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
   const payload: WebhookPingPayload = {
     ping,
   };
-  const res = await sendPayload(payload, url, key, 2_000);
+  const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
   if (res.pong && res.pong === ping) return true;
   return false;
 };

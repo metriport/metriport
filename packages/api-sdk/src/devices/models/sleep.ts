@@ -9,7 +9,7 @@ export interface Sleep extends MetriportData {
   end_time?: string;
   durations?: SleepDurations;
   biometrics?: SleepBiometrics;
-  // TODO: sleep events, ie times woken up?
+  wakeup_frequency?: number;
 }
 export interface SleepDurations {
   total_seconds?: number;

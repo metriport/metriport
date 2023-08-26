@@ -5,10 +5,15 @@ import { mean } from "lodash";
 import { Stream } from "stream";
 import { debug } from "./log";
 
+// Useful as catch handler for asynchonous promises so we don't get an unhandled promise rejection
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+export const emptyFunction = () => {};
+
 export interface MinMaxItem {
   min_item: number;
   max_item: number;
 }
+
 export class Util {
   static isTokenExpired(expires_at: number): boolean {
     const bufferSeconds = 600;

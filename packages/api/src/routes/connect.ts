@@ -14,8 +14,10 @@ import {
   PROVIDER_APPLE,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
+  rpmDeviceProviderSchema,
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
+import { saveRpmDevice } from "./middlewares/connect-device";
 import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
 import { getUserIdFrom } from "./schemas/user-id";
@@ -89,11 +91,11 @@ const providerRequest = z.object({
  * Gets and stores the auth token for the specified provider for future requests. If all is
  * well, will redirect to the Success page in the Connect widget.
  *
- * @param   {string}  req.params.provider       The provider for the request.
- * @param   {string}  req.query.state           The connect token.
- * @param   {string}  req.query.authCode        The OAuth v2 authorization code.
- * @param   {string}  req.query.oauth_token     The OAuth v1 request token.
- * @param   {string}  req.query.oauth_verifier  The OAuth v1 request token verifier.
+ * @param   {string}   req.params.provider       The provider for the request.
+ * @param   {string}   req.query.state           The connect token.
+ * @param   {string}   req.query.authCode        The OAuth v2 authorization code.
+ * @param   {string}   req.query.oauth_token     The OAuth v1 request token.
+ * @param   {string}   req.query.oauth_verifier  The OAuth v1 request token verifier.
  *
  * @return  redirect to the Success page.
  */
@@ -114,6 +116,7 @@ router.get(
         const provider = providerOAuth2.data;
         const cxId = getCxIdFromHeaders(req);
         const userId = getUserIdFrom("headers", req).optional();
+
         const connectedUser = await processOAuth2(provider, connectToken, authCode, cxId, userId);
         sendProviderConnected(connectedUser, provider);
         return res.redirect(`${buildRedirectURL(true, connectToken)}`);
@@ -137,6 +140,39 @@ router.get(
       capture.error(err, { extra: { context: `connect.${req.params.provider}` } });
       return res.redirect(buildRedirectURL(false, connectToken));
     }
+  })
+);
+
+const rpmProviderRequest = z.object({
+  token: z.string(),
+  deviceIds: z.string(),
+  deviceUserId: z.string(),
+});
+
+/** ---------------------------------------------------------------------------------------
+ * POST /connect/rpm/:provider
+ *
+ * Connects the user to the specified RPM device provider and stores their specified device ID(s).
+ *
+ * @param   {string}   req.params.provider       The provider for the request.
+ * @param   {string}   req.query.token           The connect token.
+ * @param   {string}   req.query.deviceIds       A comma-separated string of device IDs to be connected.
+ * @param   {string}   req.query.deviceUserId    The ID of a device user (patient ID, for some providers)
+ *
+ */
+router.post(
+  "/rpm/:provider",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { token, deviceIds, deviceUserId } = rpmProviderRequest.parse(req.query);
+
+    // RPM DEVICES
+    const provider = rpmDeviceProviderSchema.parse(req.params.provider);
+    const deviceIdList = deviceIds.split(",");
+
+    const connectedUser = await saveRpmDevice(provider, token, deviceIdList, deviceUserId);
+
+    sendProviderConnected(connectedUser, provider, deviceIdList);
+    return res.sendStatus(status.OK);
   })
 );
 

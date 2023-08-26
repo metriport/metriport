@@ -127,8 +127,9 @@
         {
           "group": "FHIR",
           "pages": [
-            "medical-api/api-reference/fhir/get-patient-consolidated",
-            "medical-api/api-reference/fhir/create-patient-consolidated"
+            "medical-api/api-reference/fhir/consolidated-data-query-post",
+            "medical-api/api-reference/fhir/consolidated-data-query-get",
+            "medical-api/api-reference/fhir/consolidated-data-count"
           ]
         }
       ]
@@ -354,7 +355,8 @@
       "pages": [
         "devices-api/getting-started/connect-quickstart",
         "devices-api/getting-started/connect-widget",
-        "devices-api/getting-started/apple-health"
+        "devices-api/getting-started/apple-health",
+        "devices-api/getting-started/tenovi"
       ]
     },
     {
@@ -371,6 +373,12 @@
                 "devices-api/api-reference/user/get-connected-providers",
                 "devices-api/api-reference/user/revoke-provider-access",
                 "devices-api/api-reference/user/delete-user"
+              ]
+            },
+            {
+              "group": "Connect",
+              "pages": [
+                "devices-api/api-reference/connect/connect-rpm-device"
               ]
             }
           ]

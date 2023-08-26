@@ -9,7 +9,7 @@ import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../externa
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { Util } from "../../../shared/util";
+import { emptyFunction, Util } from "../../../shared/util";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
@@ -64,8 +64,7 @@ export async function queryDocumentsAcrossHIEs({
     reset: true,
   });
 
-  // intentionally asynchronous, not waiting for the result
-  getDocumentsFromCW({ patient, facilityId, override });
+  getDocumentsFromCW({ patient, facilityId, override }).catch(emptyFunction);
 
   return createQueryResponse("processing", updatedPatient);
 }
