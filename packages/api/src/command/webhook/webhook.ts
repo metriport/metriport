@@ -66,7 +66,8 @@ function getProductFromWebhookRequest(webhookRequest: WebhookRequest): Product {
 
 export const processRequest = async (
   webhookRequest: WebhookRequest,
-  settings: Settings
+  settings: Settings,
+  additionalWHRequestMeta?: Record<string, string>
 ): Promise<boolean> => {
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
@@ -80,6 +81,7 @@ export const processRequest = async (
         apiType: getProductFromWebhookRequest(webhookRequest),
         whType: webhookRequest.type,
         whStatus: status,
+        ...(additionalWHRequestMeta ? additionalWHRequestMeta : {}),
       },
     });
   };
