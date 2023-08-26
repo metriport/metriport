@@ -34,7 +34,12 @@ const metriport = new MetriportDevicesApi("YOUR_API_KEY");
 
 const token = await metriport.getConnectToken("metriportUserId");
 
-await metriport.connectProvider("tenovi", token, "1234-0001,5678-0002", "85300");
+await metriport.connectProvider(
+  "tenovi",
+  token,
+  "1234-0001,5678-0002",
+  "85300"
+);
 ```
 
 </ResponseExample>
