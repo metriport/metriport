@@ -8,6 +8,8 @@ import { mapToBody } from "../mappings/tenovi/body";
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
+import { updateProviderData } from "../command/connected-user/save-connected-user";
+import { PROVIDER_TENOVI } from "../shared/constants";
 
 export class Tenovi extends Provider {
   static URL = "https://api2.tenovi.com";
@@ -24,6 +26,15 @@ export class Tenovi extends Provider {
       [ConsumerHealthDataType.Nutrition]: false,
       [ConsumerHealthDataType.Sleep]: false,
       [ConsumerHealthDataType.User]: false,
+    });
+  }
+
+  async revokeProviderAccess(connectedUser: ConnectedUser): Promise<void> {
+    await updateProviderData({
+      id: connectedUser.id,
+      cxId: connectedUser.cxId,
+      provider: PROVIDER_TENOVI,
+      providerItem: undefined,
     });
   }
 
