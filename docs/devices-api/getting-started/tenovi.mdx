@@ -1,19 +1,35 @@
 ---
 title: "Tenovi"
-description: "Get Tenovi data via webhooks."
+description: "Connect to Tenovi RPM devices."
 ---
 
 ## Overview
 
-This is a guide to help you integrate with Tenovi - a remote patient monitoring (RPM) hardware and software provider.
-We provide an SDK that allows you to receive Tenovi data in the background via webhooks. When a patient takes measurements with Tenovi RPM devices,
-Tenovi will automatically send it to the Metriport API, and we'll forward it to your webhook URL.
+This is a guide to help you integrate with [Tenovi](https://tenovi.com/) - a remote patient monitoring (RPM) device provider.
+When a patient takes measurements with Tenovi RPM devices, the data will be made available both through [webhooks](/home/api-info/webhooks),
+and our [REST API](/devices-api/api-reference/get-biometrics-data).
 
 <Tip>
-  As a prerequisite, we suggest looking at our [webhooks docs](/home/api-info/webhooks) to
-  understand how the flow works.
+  You can read more about what data types are supported on our [integrations
+  page](/devices-api/more-info/our-integrations).
 </Tip>
 
-### Connecting Tenovi
+## Setup
 
-To connect to Tenovi, you will need to obtain a [connect token](/devices-api/api-reference/user/create-connect-token), and use the [Connect RPM Provider](/devices-api/api-reference/connect/connect-rpm-provider) endpoint.
+<Tip>
+  As a prerequisite, we recommend following our [Devices API quickstart
+  guide](/devices-api/getting-started/connect-quickstart), up to and including the "Integrate your
+  app with Metriport" step.
+</Tip>
+
+To integrate with Tenovi, you will need to do the following for each of your users:
+
+1. Obtain a [connect token](/devices-api/api-reference/user/create-connect-token) for the user;
+1. Activate the user's Tenovi device(s) using the [Connect RPM Device](/devices-api/api-reference/connect/connect-rpm-device) endpoint.
+
+<Info>
+  In the Connect RPM Device endpoint, you will need to use the Tenovi `Patient ID` as the
+  `deviceUserId`, and the `HWI ID`, as `deviceIds`.
+</Info>
+
+<img className="h-100" src="/images/tenovi-dashboard.png" />
