@@ -1,27 +1,35 @@
+import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import stringify from "json-stringify-safe";
-import { ConnectedUser, ProviderMap } from "../../models/connected-user";
-import { WebhookRequest } from "../../models/webhook-request";
+import { Product } from "../../domain/product";
+import { ConnectedUser } from "../../models/connected-user";
+import { ProviderOptions } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { ApiTypes, reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { processRequest } from "./webhook";
+import { reportUsage as reportUsageCmd } from "../usage/report-usage";
+import { processRequest, WebhookMetadataPayload } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
-import { ProviderOptions } from "../../shared/constants";
 
-export const dapiWebhookType = [
-  "devices.provider-connected",
-  "devices.provider-disconnected",
-  "devices.health-data",
-] as const;
-export type DAPIWebhookType = (typeof dapiWebhookType)[number];
+export type DataType = "activity" | "sleep" | "body" | "biometrics" | "nutrition";
 
-export function isDAPIWebhookRequest(webhookRequest: WebhookRequest): boolean {
-  return dapiWebhookType.map(String).includes(webhookRequest.type);
+export interface TypedData<T extends MetriportData> {
+  type: DataType;
+  data: T;
 }
 
+export type WebhookDataPayload = {
+  meta: WebhookMetadataPayload;
+  users: WebhookUserPayload[];
+};
+export type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;
+export type WebhookUserPayload = { userId: string } & WebhookUserDataPayload;
+
+export type WebhookUserDataPayload = {
+  [k in DataType]?: MetriportData[];
+};
+
 export const reportDevicesUsage = (cxId: string, cxUserIds: string[]): void => {
-  const apiType = ApiTypes.devices;
-  cxUserIds.forEach(cxUserId => reportUsageCmd({ cxId, entityId: cxUserId, apiType }));
+  const product = Product.devices;
+  cxUserIds.forEach(cxUserId => reportUsageCmd({ cxId, entityId: cxUserId, product }));
 };
 
 /**
@@ -130,7 +138,7 @@ export const sendProviderDisconnected = async (
 function getConnectedDevices(connectedUser: ConnectedUser): { [x: string]: string[] }[] {
   const connectedDevices = [];
   if (connectedUser.providerMap) {
-    const providerMap: ProviderMap = connectedUser.providerMap;
+    const providerMap = connectedUser.providerMap;
 
     for (const [key, value] of Object.entries(providerMap)) {
       if (value && value.connectedDeviceIds) {

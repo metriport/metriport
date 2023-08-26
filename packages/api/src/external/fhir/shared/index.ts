@@ -42,6 +42,7 @@ export function isoDateRangeToFHIRDateQuery(dateFrom?: string, dateTo?: string):
 }
 
 const resourcesSupportingDateQueriesMap: { [k in MedplumResourceType]?: boolean } = {
+  Appointment: true,
   AllergyIntolerance: true,
   CarePlan: true,
   CareTeam: true,

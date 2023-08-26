@@ -15,10 +15,14 @@ import {
   S3Info,
   uploadStream,
 } from "../../../command/medical/document/document-query-storage-info";
+import {
+  MAPIWebhookStatus,
+  processPatientDocumentRequest,
+} from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
-import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../../command/webhook/medical";
+import { reportUsage } from "../../../command/usage/report-usage";
+import { Product } from "../../../domain/product";
 import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import { MedicalDataSource } from "../../../external";
@@ -645,6 +649,6 @@ function reportDocQueryUsage(patient: Patient): void {
   reportUsage({
     cxId: patient.cxId,
     entityId: patient.id,
-    apiType: ApiTypes.medical,
+    product: Product.medical,
   });
 }

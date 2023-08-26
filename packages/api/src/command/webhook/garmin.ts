@@ -1,21 +1,21 @@
 import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import { chunk, groupBy } from "lodash";
-import {
-  TypedData,
-  WebhookDataPayloadWithoutMessageId,
-  WebhookUserPayload,
-} from "../../command/webhook/webhook";
+import { Product } from "../../domain/product";
 import { getErrorMessage } from "../../errors";
 import { UserData } from "../../mappings/garmin";
 import { Settings } from "../../models/settings";
-import { EventTypes, analytics } from "../../shared/analytics";
+import { analytics, EventTypes } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { ApiTypes } from "../usage/report-usage";
-import { reportDevicesUsage } from "./devices";
+import {
+  reportDevicesUsage,
+  TypedData,
+  WebhookDataPayloadWithoutMessageId,
+  WebhookUserPayload,
+} from "./devices";
 import { processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
@@ -112,7 +112,7 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
             properties: {
               method: "POST",
               url: "/webhook/garmin",
-              apiType: ApiTypes.devices,
+              apiType: Product.devices,
             },
           });
           await processOneCustomer(cxId, settings, payloads);

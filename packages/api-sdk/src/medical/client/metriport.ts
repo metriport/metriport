@@ -1,5 +1,5 @@
-import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import {
   API_KEY_HEADER,
   BASE_ADDRESS,
@@ -21,6 +21,7 @@ import {
   patientListSchema,
   patientSchema,
   PatientUpdate,
+  QueryStatus,
 } from "../models/patient";
 
 const NO_DATA_MESSAGE = "No data returned from API";
@@ -228,8 +229,10 @@ export class MetriportMedicalApi {
     return patientSchema.parse(resp.data);
   }
 
+  // TODO #870 remove this
   /** ---------------------------------------------------------------------------
    * Returns a patient's consolidated data.
+   * @deprecated Use startConsolidatedQuery() and getConsolidatedQueryStatus() instead.
    *
    * Note if only patientId is provided the endpoint may take long to respond as its
    * fetching all the resources for the patient.
@@ -247,16 +250,54 @@ export class MetriportMedicalApi {
     dateTo?: string
   ): Promise<Bundle<Resource>> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated`, {
-      params: { resources, dateFrom, dateTo },
+      params: { resources: resources && resources.join(","), dateFrom, dateTo },
     });
 
     return resp.data;
   }
 
   /** ---------------------------------------------------------------------------
-   * Returns a Bundle with the outcome of the query.
+   * Start a query for the patient's consolidated data (FHIR resources).
+   * The results are sent through Webhook (see https://docs.metriport.com/medical-api/more-info/webhooks).
+   * Only one query per given patient can be executed at a time.
    *
-   * Note max resources you can add is 50 with a max content length of 1Mb.
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @param resources Optional comma-separated list of resources to be returned.
+   * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @return The consolidated data query status.
+   */
+  async startConsolidatedQuery(
+    patientId: string,
+    resources?: string[],
+    dateFrom?: string,
+    dateTo?: string
+  ): Promise<QueryStatus> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, undefined, {
+      params: { resources: resources && resources.join(","), dateFrom, dateTo },
+    });
+    return resp.data;
+  }
+
+  /** ---------------------------------------------------------------------------
+   * Get the consolidated data query status for a given patient.
+   * The results to the query are sent through Webhook (see
+   * startConsolidatedQuery() and https://docs.metriport.com/medical-api/more-info/webhooks).
+   *
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @return The consolidated data query status.
+   */
+  async getConsolidatedQueryStatus(patientId: string): Promise<QueryStatus> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query`);
+    return resp.data;
+  }
+
+  /** ---------------------------------------------------------------------------
+   * Add patient data as FHIR resources. Those can later be queried with startConsolidatedQuery(),
+   * and will be made available to HIEs.
+   *
+   * Note: each call to this function is limited to 50 resources and 1Mb of data. You can make multiple
+   * calls to this function to add more data.
    *
    * @param patientId The ID of the patient to associate resources to.
    * @param payload The FHIR Bundle to create resources.

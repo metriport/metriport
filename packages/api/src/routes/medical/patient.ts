@@ -3,16 +3,19 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/create-consolidate-data";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
-import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
   getConsolidatedPatientData,
+  ResourceTypeForConsolidation,
   resourceTypeForConsolidation,
-} from "../../command/medical/patient/get-consolidate-data";
+  startConsolidatedQuery,
+} from "../../command/medical/patient/consolidated-get";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
+import BadRequestError from "../../errors/bad-request";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/patient";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
@@ -20,6 +23,7 @@ import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
+import { filterTruthy } from "../../shared/filter-map-utils";
 import { getETag } from "../../shared/http";
 import {
   asyncHandler,
@@ -40,7 +44,7 @@ import {
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
 const MAX_RESOURCE_STORED_LIMIT = 1000;
-const MAX_CONTENT_LENGTH_BYTES = 1000000;
+const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -198,9 +202,28 @@ router.get(
 );
 
 const resourceSchema = z.enum(resourceTypeForConsolidation).array();
+function getResourcesQueryParam(req: Request): ResourceTypeForConsolidation[] {
+  const resourcesRaw = getFrom("query").optional("resources", req);
+  let resourcesUnparsed: string[];
+  try {
+    resourcesUnparsed = resourcesRaw
+      ? resourcesRaw
+          .replaceAll('"', "")
+          .replaceAll("'", "")
+          .split(",")
+          .map(r => r.trim())
+          .flatMap(filterTruthy)
+      : [];
+  } catch (err) {
+    throw new BadRequestError(`Invalid resources: it must be a comma-separated list of resources`);
+  }
+  return resourceSchema.parse(resourcesUnparsed);
+}
 
+// TODO #870 move this to internal
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated
+ * @deprecated use /patient/:id/consolidated/query instead
  *
  * Returns a patient's consolidated data.
  *
@@ -216,15 +239,71 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
-    const resourcesRaw = getFrom("query").optional("resources", req);
-    const resources = resourcesRaw
-      ? resourceSchema.parse(resourcesRaw.split(",").map(r => r.trim()))
-      : undefined;
+    const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    const data = await getConsolidatedPatientData({ cxId, patientId, resources, dateFrom, dateTo });
+    const data = await getConsolidatedPatientData({
+      patient: {
+        cxId,
+        id: patientId,
+      },
+      resources,
+      dateFrom,
+      dateTo,
+    });
 
+    return res.json(data);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/consolidated/query
+ *
+ * Triggers a patient's consolidated data query. Results are sent through Webhook.
+ * If the query is already in progress, just return the current status.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @return status of querying for the Patient's consolidated data.
+ */
+router.get(
+  "/:id/consolidated/query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    return res.json({
+      status: patient.data.consolidatedQuery?.status ?? "not-started",
+      message:
+        "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
+    });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/consolidated/query
+ *
+ * Triggers a patient's consolidated data query. Results are sent through Webhook.
+ * If the query is already in progress, just return the current status.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.resources Optional comma-separated list of resources to be returned.
+ * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @return status of querying for the Patient's consolidated data.
+ */
+router.post(
+  "/:id/consolidated/query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const resources = getResourcesQueryParam(req);
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+
+    const data = await startConsolidatedQuery({ cxId, patientId, resources, dateFrom, dateTo });
     return res.json(data);
   })
 );
@@ -242,14 +321,23 @@ router.get(
 router.post(
   "/:id/consolidated",
   asyncHandler(async (req: Request, res: Response) => {
+    // limit the payload size that can be created
+    const contentLength = req.headers["content-length"];
+    if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+      return res.status(status.BAD_REQUEST).json({
+        message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`,
+      });
+    }
+
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const fhirBundle = bundleSchema.parse(req.body);
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const validatedBundle = validateFhirEntries(fhirBundle);
 
+    // TODO #870 review this
     if (Config.isSandbox()) {
-      const data = await getConsolidatedPatientData({ cxId, patientId });
+      const data = await getConsolidatedPatientData({ patient: { id: patientId, cxId } });
       // limit the amount of resources stored in sandbox mode
       if (data.entry && data.entry.length >= MAX_RESOURCE_STORED_LIMIT) {
         return res.status(status.BAD_REQUEST).json({
@@ -262,14 +350,6 @@ router.post(
     if (validatedBundle.entry.length >= MAX_RESOURCE_POST_COUNT) {
       return res.status(status.BAD_REQUEST).json({
         message: `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time.`,
-      });
-    }
-
-    const contentLength = req.headers["content-length"];
-    // limit the payload size that can be created
-    if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
-      return res.status(status.BAD_REQUEST).json({
-        message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`,
       });
     }
 
