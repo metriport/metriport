@@ -16,20 +16,6 @@ async function main() {
     timeout: 60_000,
   });
 
-  console.log(`Calling getPatientConsolidated...`);
-  const deprecated = await metriport.getPatientConsolidated(
-    patientId,
-    ["DocumentReference", "Appointment"],
-    "2021-03-01",
-    "2023-04-23"
-  );
-  console.log(`Result: ${JSON.stringify(deprecated, null, 2)}`);
-
-  console.log(`Calling getConsolidatedQueryStatus`);
-  let queryStatus = await metriport.getConsolidatedQueryStatus(patientId);
-  console.log(`queryStatus: ${JSON.stringify(queryStatus, null, 2)}`);
-
-  console.log(`Calling startConsolidatedQuery...`);
   const res = await metriport.startConsolidatedQuery(
     patientId,
     ["DocumentReference", "Appointment"],
@@ -39,7 +25,7 @@ async function main() {
   console.log(`Result: ${JSON.stringify(res, null, 2)}`);
 
   console.log(`Now, calling getConsolidatedQueryStatus`);
-  queryStatus = await metriport.getConsolidatedQueryStatus(patientId);
+  let queryStatus = await metriport.getConsolidatedQueryStatus(patientId);
   console.log(`queryStatus: ${JSON.stringify(queryStatus, null, 2)}`);
 
   console.log(`sleeping...`);
