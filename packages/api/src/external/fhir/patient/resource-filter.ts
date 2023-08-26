@@ -1,11 +1,11 @@
 import { ResourceType } from "@medplum/fhirtypes";
-import { intersection } from "lodash";
-import { isoDateRangeToFHIRDateQuery, resourceSupportsDateQuery } from "../shared";
 import {
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
   ResourceTypeForConsolidation,
-} from "./consolidated";
+} from "@metriport/api-sdk";
+import { intersection } from "lodash";
+import { isoDateRangeToFHIRDateQuery, resourceSupportsDateQuery } from "../shared";
 
 export function getPatientFilter({
   resources = [],

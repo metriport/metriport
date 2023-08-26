@@ -43,6 +43,13 @@ async function main() {
   console.log(`Calling getConsolidatedQueryStatus again`);
   queryStatus = await metriport.getConsolidatedQueryStatus(patientId);
   console.log(`queryStatus: ${JSON.stringify(queryStatus, null, 2)}`);
+
+  console.log(`Calling getConsolidatedQueryStatus again`);
+  const resources = ["Appointment", "Encounter"] as const;
+  const dateFrom = "2023-01-01";
+  const dateTo = "2023-01-31";
+  const count = await metriport.countPatientConsolidated(patientId, resources, dateFrom, dateTo);
+  console.log(`count: ${JSON.stringify(count, null, 2)}`);
 }
 
 main();

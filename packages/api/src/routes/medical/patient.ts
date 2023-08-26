@@ -347,4 +347,42 @@ router.post(
   })
 );
 
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/consolidated/count
+ *
+ * Returns the amount of resources a patient has on the FHIR server, total and per resource.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.query.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.resources Optional comma-separated list of resources to be returned.
+ * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ */
+router.get(
+  "/:id/consolidated/count",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const resources = getResourcesQueryParam(req);
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+
+    const resourceCount = await countResourcesPerPatient({
+      patient: { id: patientId, cxId },
+      resources,
+      dateFrom,
+      dateTo,
+    });
+
+    return res.json({
+      ...resourceCount,
+      filter: {
+        resources: resources.length ? resources : "all",
+        dateFrom,
+        dateTo,
+      },
+    });
+  })
+);
+
 export default router;

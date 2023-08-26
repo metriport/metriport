@@ -1,3 +1,20 @@
+import { z } from "zod";
+
+export const consolidatedFilterSchema = z.object({
+  resources: z.string(),
+  dateFrom: z.date().optional(),
+  dateTo: z.date().optional(),
+});
+export type ConsolidatedFilter = z.infer<typeof consolidatedFilterSchema>;
+
+export const consolidatedCountSchema = z.object({
+  total: z.number(),
+  resources: z.record(z.number()),
+  filter: consolidatedFilterSchema,
+});
+
+export type ConsolidatedCountResponse = z.infer<typeof consolidatedCountSchema>;
+
 export const resourcesSearchableByPatient = [
   "Account",
   "AllergyIntolerance",

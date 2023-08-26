@@ -14,6 +14,7 @@ import {
   DocumentReference,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
+import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   Patient,
@@ -238,7 +239,7 @@ export class MetriportMedicalApi {
    * fetching all the resources for the patient.
    *
    * @param patientId The ID of the patient whose data is to be returned.
-   * @param resources Optional comma-separated list of resources to be returned.
+   * @param resources Optional array of resources to be returned.
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @return Patient's consolidated data.
@@ -261,14 +262,14 @@ export class MetriportMedicalApi {
    * Only one query per given patient can be executed at a time.
    *
    * @param patientId The ID of the patient whose data is to be returned.
-   * @param resources Optional comma-separated list of resources to be returned.
+   * @param resources Optional array of resources to be returned.
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @return The consolidated data query status.
    */
   async startConsolidatedQuery(
     patientId: string,
-    resources?: string[],
+    resources?: readonly ResourceTypeForConsolidation[],
     dateFrom?: string,
     dateTo?: string
   ): Promise<QueryStatus> {
@@ -305,6 +306,27 @@ export class MetriportMedicalApi {
   async createPatientConsolidated(patientId: string, payload: Bundle): Promise<Bundle<Resource>> {
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated`, payload);
 
+    return resp.data;
+  }
+
+  /** ---------------------------------------------------------------------------
+   * Returns the amount of resources available for a given patient, per resource type.
+   *
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @param resources Optional array of resources to be considered.
+   * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @return the amount of resources available per resource type for the given Patient.
+   */
+  async countPatientConsolidated(
+    patientId: string,
+    resources?: readonly ResourceTypeForConsolidation[],
+    dateFrom?: string,
+    dateTo?: string
+  ): Promise<ConsolidatedCountResponse> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/count`, {
+      params: { resources: resources && resources.join(","), dateFrom, dateTo },
+    });
     return resp.data;
   }
 

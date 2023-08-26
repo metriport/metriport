@@ -10,7 +10,7 @@ When using the Medical API, Metriport will send Webhook messages to your app as 
 This is the usual flow to obtain Patient data:
 1. You trigger a [document query](/medical-api/api-reference/document/start-document-query) to retrieve a Patient's medical documents from HIEs;
    - XML C-CDA documents will be converted and stored on Metriport's FHIR storage;
-   - as documents get downloaded and converted you should get [patient document data](#patient-document-data) webhook messages;
+   - as documents get downloaded and converted, you should get [patient document data](#patient-document-data) webhook messages;
 1. Once document conversion is completed, you can [query for patient consolidated data](/medical-api/api-reference/fhir/consolidated-data-query-post);
    - depending on the amount of data this can take some time to crunch together, so results are sent through a webhook message: 
    [patient consolidated data](#patient-consolidated-data)

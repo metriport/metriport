@@ -1,8 +1,8 @@
+import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Patient } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { makeFhirApi } from "../api/api-factory";
-import { ResourceTypeForConsolidation } from "./consolidated";
 import { fullDateQueryForResource, getPatientFilter } from "./resource-filter";
 
 export type ResourceCount = {
