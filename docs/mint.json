@@ -378,7 +378,7 @@
             {
               "group": "Connect",
               "pages": [
-                "devices-api/api-reference/connect/connect-rpm-provider"
+                "devices-api/api-reference/connect/connect-rpm-device"
               ]
             }
           ]
