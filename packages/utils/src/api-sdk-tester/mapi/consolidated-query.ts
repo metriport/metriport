@@ -17,14 +17,6 @@ async function main() {
     timeout: 60_000,
   });
 
-  const deprecated = await metriport.getPatientConsolidated(
-    patientId,
-    ["DocumentReference", "Appointment"],
-    "2021-03-01",
-    "2023-04-23"
-  );
-  console.log(`Result: ${JSON.stringify(deprecated, null, 2)}`);
-
   const res = await metriport.startConsolidatedQuery(
     patientId,
     ["DocumentReference", "Appointment"],
