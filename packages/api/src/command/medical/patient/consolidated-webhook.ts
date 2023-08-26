@@ -62,7 +62,15 @@ export const processConsolidatedDataWebhook = async ({
       payload,
     });
     // send it to the customer and update the WH request status
-    await processRequest(webhookRequest, settings);
+    await processRequest(
+      webhookRequest,
+      settings,
+      bundle
+        ? {
+            bundleLength: optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown",
+          }
+        : undefined
+    );
 
     await udpateConsolidatedQueryProgress({
       patient,
@@ -81,4 +89,10 @@ export const processConsolidatedDataWebhook = async ({
     });
     throw err;
   }
+};
+
+const optionalToString = (
+  v: string | number | boolean | object | undefined
+): string | undefined => {
+  return v ? v.toString() : undefined;
 };
