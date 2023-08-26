@@ -309,8 +309,9 @@ router.post(
 
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
-    const fhirBundle = bundleSchema.parse(req.body);
     const patient = await getPatientOrFail({ id: patientId, cxId });
+
+    const fhirBundle = bundleSchema.parse(req.body);
     const validatedBundle = validateFhirEntries(fhirBundle);
     const incomingAmount = validatedBundle.entry.length;
 
@@ -325,14 +326,18 @@ router.post(
             `(current: ${currentAmount}, incoming: ${incomingAmount}, max: ${MAX_RESOURCE_STORED_LIMIT})`
         );
       }
+      // Limit the amount of resources that can be created at once
+      if (incomingAmount > MAX_RESOURCE_POST_COUNT) {
+        throw new BadRequestError(
+          `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time ` +
+            `(incoming: ${incomingAmount})`
+        );
+      }
     }
-    // Limit the amount of resources that can be created at once
-    if (incomingAmount > MAX_RESOURCE_POST_COUNT) {
-      throw new BadRequestError(
-        `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time ` +
-          `(incoming: ${incomingAmount})`
-      );
-    }
+    console.log(
+      `[POST /consolidated] cxId ${cxId}, patientId ${patientId}] ` +
+        `${incomingAmount} resources, ${contentLength} bytes`
+    );
     const data = await createOrUpdateConsolidatedPatientData({
       cxId,
       patientId: patient.id,
