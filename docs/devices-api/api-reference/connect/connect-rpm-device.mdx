@@ -1,13 +1,13 @@
 ---
-title: "Connect RPM Provider"
-description: "Connects the user to a remote patient monitoring (RPM) device provider."
+title: "Connect RPM Device"
+description: "Connects the user to remote patient monitoring (RPM) device(s) for the specified provider."
 api: "POST /connect/rpm/:provider"
 ---
 
 ## Path Params
 
 <ParamField path="provider" type="string" required>
-  An RPM device provider. Currently, we only support Tenovi.
+  An RPM device provider. Currently, `tenovi` is supported.
 </ParamField>
 
 ## Query Params
@@ -16,20 +16,14 @@ api: "POST /connect/rpm/:provider"
   The user's [connect token](/devices-api/api-reference/user/create-connect-token).
 </ParamField>
 
-<ParamField query="deviceIds" type="string" required>
-  A comma-separated string containing device ID(s).
-
-  <Info>Example of connecting two devices at once: `deviceIds=device-id-0001,device-id-1234`.</Info>
-</ParamField>
-
 <ParamField query="deviceUserId" type="string" required>
-  The user ID (aka `Patient ID` for Tenovi) of the user that is connected to the device.
+  The provider's user ID for which the RPM device(s) are provisioned.
 </ParamField>
 
-<Info>
-  Currently, [Tenovi](/devices-api/getting-started/tenovi) is the only RMP device provider we
-  support.
-</Info>
+<ParamField query="deviceIds" type="string" required>
+  A comma-separated string of the user's devices IDs to connect to. For example:
+  `1234-0001,5678-0002`.
+</ParamField>
 
 <ResponseExample>
 
@@ -41,9 +35,9 @@ const metriport = new MetriportDevicesApi("YOUR_API_KEY");
 const token = await metriport.getConnectToken("metriportUserId");
 
 await metriport.connectProvider(
-  "tenovi", 
-  token, 
-  "device-id-0001", 
+  "tenovi",
+  token,
+  "1234-0001,5678-0002",
   "85300"
 );
 ```
