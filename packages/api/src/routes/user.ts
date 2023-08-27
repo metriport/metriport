@@ -313,22 +313,17 @@ router.get("/connect", async (req: Request, res: Response) => {
 
 /**
  * Removes the device from the user's profile.
- *
- * @param req
- * @param userId
- * @returns
  */
 async function removeDevice(req: Request, userId: string) {
   const cxId = getCxIdOrFail(req);
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
-  const { provider, deviceId } = req.query;
-  if (!provider || !deviceId) throw new BadRequestError();
+  if (!req.query.provider || !req.query.deviceId) throw new BadRequestError();
 
-  if (provider === PROVIDER_TENOVI) {
+  if (req.query.provider === PROVIDER_TENOVI) {
     const tenovi = new Tenovi();
-    await tenovi.disconnectDevice(connectedUser, String(deviceId));
+    await tenovi.disconnectDevice(connectedUser, String(req.query.deviceId));
   } else {
-    throw new BadRequestError(`Provider not supported: ${provider}`);
+    throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
   }
 }
 
