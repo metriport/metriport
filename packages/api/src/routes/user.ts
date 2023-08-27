@@ -21,6 +21,7 @@ import {
   Constants,
   PROVIDER_APPLE,
   PROVIDER_TENOVI,
+  providerNoAuthSchema,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
 } from "../shared/constants";
@@ -172,6 +173,7 @@ async function revokeUserProviderAccess(
 ): Promise<void> {
   const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(provider);
   const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(provider);
+  const providerNoAuth = providerNoAuthSchema.safeParse(provider);
 
   if (providerOAuth2.success) {
     await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
@@ -179,9 +181,8 @@ async function revokeUserProviderAccess(
     const token = connectedUser.dataValues.providerMap?.garmin?.token;
     const cxId = connectedUser.dataValues.cxId;
     if (token) await Constants.PROVIDER_OAUTH1_MAP[providerOAuth1.data].deregister([token], cxId);
-  } else if (Object.keys(noAuthProviders).includes(provider)) {
-    const prov = provider as typeof PROVIDER_APPLE | typeof PROVIDER_TENOVI;
-    const noAuthProvider = new (noAuthProviders[prov] as typeof Apple | typeof Tenovi)();
+  } else if (providerNoAuth.success) {
+    const noAuthProvider = new noAuthProviders[providerNoAuth.data]();
     await noAuthProvider.revokeProviderAccess(connectedUser);
   } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
