@@ -310,4 +310,47 @@ router.get("/connect", async (req: Request, res: Response) => {
   return res.status(status.OK).json(users);
 });
 
+/**
+ * Removes the device from the user's profile.
+ *
+ * @param req
+ * @param userId
+ * @returns
+ */
+async function removeDevice(req: Request, userId: string) {
+  const cxId = getCxIdOrFail(req);
+  const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+  const { provider, deviceId } = req.query;
+  if (!provider || !deviceId) throw new BadRequestError();
+
+  if (provider === PROVIDER_TENOVI) {
+    const tenovi = new Tenovi();
+    await tenovi.disconnectDevice(connectedUser, String(deviceId));
+  } else {
+    throw new BadRequestError(`Provider not supported: ${provider}`);
+  }
+}
+
+/** ---------------------------------------------------------------------------------------
+* DELETE /user/:userId/device
+*
+* Removes the specified device from the user's profile.
+*
+* @param   {string}  req.params.userId     The internal user ID.
+* @param   {string}  req.query.provider    The device provider.
+* @param   {string}  req.query.deviceId    The device ID to disconnect.
+
+* @return  {{success: boolean}}      If successfully removed.
+*/
+router.delete(
+  "/:userId/device",
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = getUserIdFrom("params", req).orFail();
+    await removeDevice(req, userId);
+    return res
+      .status(status.OK)
+      .json({ message: `Device ${req.query.deviceId} has been removed for user ${userId}.` });
+  })
+);
+
 export default router;
