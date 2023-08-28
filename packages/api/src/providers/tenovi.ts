@@ -51,8 +51,8 @@ export class Tenovi extends Provider {
 
       const rejected = res.filter(r => r.status === "rejected");
       if (rejected.length) {
-        throw new MetriportError(`Failed to disconnect device(s) from Tenovi Gateway.`, {
-          numberOfDevices: rejected.length,
+        throw new MetriportError(`Failed to disconnect device(s) from Tenovi Gateway.`, undefined, {
+          numberOfDevices: rejected.length.toString(),
           user: connectedUser.dataValues.id,
         });
       }
@@ -99,7 +99,7 @@ export class Tenovi extends Provider {
 
         if (updateUser) {
           const index = connectedDevices.indexOf(deviceId);
-          if (index !== undefined && index !== -1) {
+          if (index !== -1) {
             connectedDevices.splice(index, 1);
           }
 

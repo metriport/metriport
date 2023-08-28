@@ -26,7 +26,7 @@ import {
 import { capture } from "../shared/notifications";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
-import { asyncHandler, getCxIdOrFail, getFromQuery } from "./util";
+import { asyncHandler, getCxIdOrFail, getFrom } from "./util";
 
 const router = Router();
 
@@ -338,10 +338,8 @@ router.delete(
     const cxId = getCxIdOrFail(req);
     const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
 
-    const provider = getFromQuery("provider", req);
-    const deviceId = getFromQuery("deviceId", req);
-    if (!provider) throw new BadRequestError("Missing required query param: provider");
-    if (!deviceId) throw new BadRequestError("Missing required query param: deviceId");
+    const provider = getFrom("query").orFail("provider", req);
+    const deviceId = getFrom("query").orFail("deviceId", req);
 
     await removeDevice(connectedUser, provider, deviceId);
     return res
