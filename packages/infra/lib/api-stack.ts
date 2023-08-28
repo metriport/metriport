@@ -858,7 +858,7 @@ export class APIStack extends Stack {
       },
       layers: [...lambdaLayers, chromiumLayer],
       memory: 512,
-      timeout: Duration.minutes(1),
+      timeout: Duration.minutes(5),
       vpc,
       alarmSnsAction: alarmAction,
     });
