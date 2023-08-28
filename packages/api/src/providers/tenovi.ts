@@ -82,39 +82,42 @@ export class Tenovi extends Provider {
     deviceId: string,
     updateUser = true
   ): Promise<void> {
-    const url = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/unlink-gateway/${deviceId}/`;
+    const connectedDevices = connectedUser.providerMap?.tenovi?.connectedDeviceIds;
+    if (connectedDevices && connectedDevices.includes(deviceId)) {
+      const url = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/unlink-gateway/${deviceId}/`;
 
-    try {
-      await axios.get(url, {
-        headers: {
-          Authorization: `Api-Key ${Tenovi.apiKey}`,
-        },
-      });
-
-      if (updateUser) {
-        const connectedDevices = connectedUser.providerMap?.tenovi?.connectedDeviceIds;
-        const index = connectedDevices?.indexOf(deviceId);
-        if (index !== undefined && index !== -1) {
-          connectedDevices?.splice(index, 1);
-        }
-
-        await updateProviderData({
-          id: connectedUser.id,
-          cxId: connectedUser.cxId,
-          provider: PROVIDER_TENOVI,
-          providerItem: {
-            token: "N/A",
-            connectedDeviceIds: connectedDevices,
-            deviceUserId: connectedUser.providerMap?.tenovi?.deviceUserId,
+      try {
+        await axios.get(url, {
+          headers: {
+            Authorization: `Api-Key ${Tenovi.apiKey}`,
           },
         });
+
+        if (updateUser) {
+          const connectedDevices = connectedUser.providerMap?.tenovi?.connectedDeviceIds;
+          const index = connectedDevices?.indexOf(deviceId);
+          if (index !== undefined && index !== -1) {
+            connectedDevices?.splice(index, 1);
+          }
+
+          await updateProviderData({
+            id: connectedUser.id,
+            cxId: connectedUser.cxId,
+            provider: PROVIDER_TENOVI,
+            providerItem: {
+              token: "N/A",
+              connectedDeviceIds: connectedDevices,
+              deviceUserId: connectedUser.providerMap?.tenovi?.deviceUserId,
+            },
+          });
+        }
+      } catch (err) {
+        console.log("Failed to disconnect devices from Tenovi Gateway", stringify(err));
+        capture.error(err, {
+          extra: { context: "tenovi.revokeProviderAccess", err, user: connectedUser.dataValues },
+        });
+        throw err;
       }
-    } catch (err) {
-      console.log("Failed to disconnect devices from Tenovi Gateway", stringify(err));
-      capture.error(err, {
-        extra: { context: "tenovi.revokeProviderAccess", err, user: connectedUser.dataValues },
-      });
-      throw err;
     }
   }
 
