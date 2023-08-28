@@ -13,6 +13,8 @@ import { PROVIDER_TENOVI } from "../shared/constants";
 import { capture } from "../shared/notifications";
 import stringify from "json-stringify-safe";
 
+export const TENOVI_DEFAULT_TOKEN_VALUE = "N/A";
+
 export class Tenovi extends Provider {
   static URL = "https://api2.tenovi.com";
   static API_PATH = "clients/metriport";
@@ -38,9 +40,10 @@ export class Tenovi extends Provider {
    * @param connectedUser The user to disconnect the device from
    */
   async revokeProviderAccess(connectedUser: ConnectedUser): Promise<void> {
-    if (connectedUser.providerMap?.tenovi?.connectedDeviceIds) {
+    const connectedDevices = connectedUser.providerMap?.tenovi?.connectedDeviceIds;
+    if (connectedDevices && connectedDevices.length) {
       const res = await Promise.allSettled(
-        connectedUser.providerMap?.tenovi?.connectedDeviceIds?.map(async deviceId => {
+        connectedDevices.map(async deviceId => {
           await this.disconnectDevice(connectedUser, deviceId, false);
         })
       );
@@ -50,21 +53,20 @@ export class Tenovi extends Provider {
         throw new Error(
           `Failed to disconnect ${rejected.length} devices from Tenovi Gateway. User: ${connectedUser.id}`
         );
-      } else {
-        try {
-          await updateProviderData({
-            id: connectedUser.id,
-            cxId: connectedUser.cxId,
-            provider: PROVIDER_TENOVI,
-            providerItem: undefined,
-          });
-        } catch (err) {
-          console.log("Failed to remove Tenovi from ProviderMap", stringify(err));
-          capture.error(err, {
-            extra: { context: "tenovi.revokeProviderAccess", err, user: connectedUser.dataValues },
-          });
-          throw err;
-        }
+      }
+      try {
+        await updateProviderData({
+          id: connectedUser.id,
+          cxId: connectedUser.cxId,
+          provider: PROVIDER_TENOVI,
+          providerItem: undefined,
+        });
+      } catch (err) {
+        console.log("Failed to remove Tenovi from ProviderMap", stringify(err));
+        capture.error(err, {
+          extra: { context: "tenovi.revokeProviderAccess", err, user: connectedUser.dataValues },
+        });
+        throw err;
       }
     }
   }
@@ -94,10 +96,9 @@ export class Tenovi extends Provider {
         });
 
         if (updateUser) {
-          const connectedDevices = connectedUser.providerMap?.tenovi?.connectedDeviceIds;
-          const index = connectedDevices?.indexOf(deviceId);
+          const index = connectedDevices.indexOf(deviceId);
           if (index !== undefined && index !== -1) {
-            connectedDevices?.splice(index, 1);
+            connectedDevices.splice(index, 1);
           }
 
           await updateProviderData({
@@ -105,7 +106,7 @@ export class Tenovi extends Provider {
             cxId: connectedUser.cxId,
             provider: PROVIDER_TENOVI,
             providerItem: {
-              token: "N/A",
+              token: TENOVI_DEFAULT_TOKEN_VALUE,
               connectedDeviceIds: connectedDevices,
               deviceUserId: connectedUser.providerMap?.tenovi?.deviceUserId,
             },
@@ -125,6 +126,7 @@ export class Tenovi extends Provider {
           deviceId,
           connectedDevices,
           user: connectedUser.dataValues,
+          level: "info",
         },
       });
       throw new Error(`Device ${deviceId} not found for this user.`);

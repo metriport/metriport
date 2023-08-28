@@ -63,6 +63,12 @@ export class Constants {
   } = {
     garmin: new Garmin(),
   };
+
+  static readonly noAuthProviders = {
+    [PROVIDER_APPLE]: Apple,
+    [PROVIDER_TENOVI]: Tenovi,
+  };
+
   static readonly PROVIDER_OAUTH2_MAP: {
     [k in ProviderOAuth2Options]: OAuth2;
   } = {
