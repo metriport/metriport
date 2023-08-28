@@ -44,7 +44,7 @@ export const providerOAuth2OptionsSchema = z.enum([
 ]);
 export type ProviderOAuth2Options = z.infer<typeof providerOAuth2OptionsSchema>;
 
-export const providerNoAuthSchema = z.enum([PROVIDER_APPLE]);
+export const providerNoAuthSchema = z.enum([PROVIDER_APPLE, PROVIDER_TENOVI]);
 export type ProviderNoAuthSchema = z.infer<typeof providerNoAuthSchema>;
 
 export type ProviderOptions =
@@ -63,6 +63,12 @@ export class Constants {
   } = {
     garmin: new Garmin(),
   };
+
+  static readonly noAuthProviders = {
+    [PROVIDER_APPLE]: Apple,
+    [PROVIDER_TENOVI]: Tenovi,
+  };
+
   static readonly PROVIDER_OAUTH2_MAP: {
     [k in ProviderOAuth2Options]: OAuth2;
   } = {

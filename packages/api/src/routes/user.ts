@@ -13,19 +13,20 @@ import BadRequestError from "../errors/bad-request";
 import NotFoundError from "../errors/not-found";
 import { ConnectedUser } from "../models/connected-user";
 
-import { Apple } from "../providers/apple";
 import { ConsumerHealthDataType } from "../providers/provider";
+import { Tenovi } from "../providers/tenovi";
 import { Config } from "../shared/config";
 import {
   Constants,
-  PROVIDER_APPLE,
+  PROVIDER_TENOVI,
+  providerNoAuthSchema,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
-import { asyncHandler, getCxIdOrFail } from "./util";
+import { asyncHandler, getCxIdOrFail, getFrom } from "./util";
 
 const router = Router();
 
@@ -165,6 +166,7 @@ async function revokeUserProviderAccess(
 ): Promise<void> {
   const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(provider);
   const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(provider);
+  const providerNoAuth = providerNoAuthSchema.safeParse(provider);
 
   if (providerOAuth2.success) {
     await Constants.PROVIDER_OAUTH2_MAP[providerOAuth2.data].revokeProviderAccess(connectedUser);
@@ -172,9 +174,9 @@ async function revokeUserProviderAccess(
     const token = connectedUser.dataValues.providerMap?.garmin?.token;
     const cxId = connectedUser.dataValues.cxId;
     if (token) await Constants.PROVIDER_OAUTH1_MAP[providerOAuth1.data].deregister([token], cxId);
-  } else if (provider === PROVIDER_APPLE) {
-    const apple = new Apple();
-    await apple.revokeProviderAccess(connectedUser);
+  } else if (providerNoAuth.success) {
+    const noAuthProvider = new Constants.noAuthProviders[providerNoAuth.data]();
+    await noAuthProvider.revokeProviderAccess(connectedUser);
   } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
@@ -301,5 +303,49 @@ router.get("/connect", async (req: Request, res: Response) => {
   const users: [] = [];
   return res.status(status.OK).json(users);
 });
+
+/**
+ * Removes the device from the user's profile.
+ *
+ * @param connectedUser The user to disconnect the device from
+ * @param provider      The device provider
+ * @param deviceId      The device to disconnect
+ */
+async function removeDevice(connectedUser: ConnectedUser, provider: string, deviceId: string) {
+  if (provider === PROVIDER_TENOVI) {
+    const tenovi = new Tenovi();
+    await tenovi.disconnectDevice(connectedUser, String(deviceId));
+  } else {
+    throw new BadRequestError(`Provider not supported: ${provider}`);
+  }
+}
+
+/** ---------------------------------------------------------------------------------------
+* DELETE /user/:userId/device
+*
+* Removes the specified device from the user's profile.
+*
+* @param   {string}  req.params.userId     The internal user ID.
+* @param   {string}  req.query.provider    The device provider.
+* @param   {string}  req.query.deviceId    The device ID to disconnect.
+
+* @return  {{success: boolean}}      If successfully removed.
+*/
+router.delete(
+  "/:userId/device",
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = getUserIdFrom("params", req).orFail();
+    const cxId = getCxIdOrFail(req);
+    const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
+
+    const provider = getFrom("query").orFail("provider", req);
+    const deviceId = getFrom("query").orFail("deviceId", req);
+
+    await removeDevice(connectedUser, provider, deviceId);
+    return res
+      .status(status.OK)
+      .json({ message: `Device ${deviceId} has been removed for user ${userId}.` });
+  })
+);
 
 export default router;
