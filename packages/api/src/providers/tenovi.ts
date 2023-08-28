@@ -12,6 +12,7 @@ import { updateProviderData } from "../command/connected-user/save-connected-use
 import { PROVIDER_TENOVI } from "../shared/constants";
 import { capture } from "../shared/notifications";
 import stringify from "json-stringify-safe";
+import MetriportError from "../errors/metriport-error";
 
 export const TENOVI_DEFAULT_TOKEN_VALUE = "N/A";
 
@@ -50,9 +51,10 @@ export class Tenovi extends Provider {
 
       const rejected = res.filter(r => r.status === "rejected");
       if (rejected.length) {
-        throw new Error(
-          `Failed to disconnect ${rejected.length} devices from Tenovi Gateway. User: ${connectedUser.id}`
-        );
+        throw new MetriportError(`Failed to disconnect device(s) from Tenovi Gateway.`, {
+          numberOfDevices: rejected.length,
+          user: connectedUser.dataValues.id,
+        });
       }
       try {
         await updateProviderData({
