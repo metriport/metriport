@@ -28,7 +28,7 @@ import {
 import { capture } from "../shared/notifications";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
-import { asyncHandler, getCxIdOrFail } from "./util";
+import { asyncHandler, getCxIdOrFail, getFromQuery } from "./util";
 
 const router = Router();
 
@@ -317,13 +317,16 @@ router.get("/connect", async (req: Request, res: Response) => {
 async function removeDevice(req: Request, userId: string) {
   const cxId = getCxIdOrFail(req);
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
-  if (!req.query.provider || !req.query.deviceId) throw new BadRequestError();
+  const provider = getFromQuery("provider", req);
+  const deviceId = getFromQuery("deviceId", req);
 
-  if (req.query.provider === PROVIDER_TENOVI) {
+  if (!provider || !deviceId) throw new BadRequestError();
+
+  if (provider === PROVIDER_TENOVI) {
     const tenovi = new Tenovi();
-    await tenovi.disconnectDevice(connectedUser, String(req.query.deviceId));
+    await tenovi.disconnectDevice(connectedUser, String(deviceId));
   } else {
-    throw new BadRequestError(`Provider not supported: ${req.query.provider}`);
+    throw new BadRequestError(`Provider not supported: ${provider}`);
   }
 }
 

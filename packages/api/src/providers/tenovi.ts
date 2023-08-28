@@ -118,6 +118,16 @@ export class Tenovi extends Provider {
         });
         throw err;
       }
+    } else {
+      capture.message(`Device ID not found for this user.`, {
+        extra: {
+          context: "tenovi.disconnectDevice",
+          deviceId,
+          connectedDevices,
+          user: connectedUser.dataValues,
+        },
+      });
+      throw new Error(`Device ${deviceId} not found for this user.`);
     }
   }
 
