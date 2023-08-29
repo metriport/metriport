@@ -273,11 +273,6 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /patient/:id/consolidated
- * @deprecated use the PUT version of this endpoint
- */
-router.post("/:id/consolidated", asyncHandler(putConsolidated));
-/** ---------------------------------------------------------------------------
  * PUT /patient/:id/consolidated
  *
  * Adds or updates resources from a FHIR bundle to/into the FHIR server.
