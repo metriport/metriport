@@ -1,7 +1,7 @@
 ---
 title: "Create Patient's Consolidated Data"
 description: "Create Patient's Consolidated Data with a FHIR Bundle."
-api: "POST /medical/v1/patient/{id}/consolidated"
+api: "PUT /medical/v1/patient/{id}/consolidated"
 ---
 
 ## Path Params
@@ -31,7 +31,8 @@ api: "POST /medical/v1/patient/{id}/consolidated"
 
 ## Response
 
-Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-response" with the entry being the outcome of the query.
+Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-response" with the 
+entry being the outcome of the query.
 
 <ResponseExample>
 

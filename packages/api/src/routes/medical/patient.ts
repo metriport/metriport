@@ -288,64 +288,67 @@ router.post(
 
 /** ---------------------------------------------------------------------------
  * POST /patient/:id/consolidated
+ * @deprecated use the PUT version of this endpoint
+ */
+router.post("/:id/consolidated", asyncHandler(putConsolidated));
+/** ---------------------------------------------------------------------------
+ * PUT /patient/:id/consolidated
  *
- * Adds a FHIR bundle to the FHIR server.
+ * Adds or updates resources from a FHIR bundle to/into the FHIR server.
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient to associate resources to.
- * @param req.body The FHIR Bundle to create resources.
+ * @param req.body The FHIR Bundle to create or update resources.
  * @return FHIR Bundle with operation outcome.
  */
-router.post(
-  "/:id/consolidated",
-  asyncHandler(async (req: Request, res: Response) => {
-    // Limit the payload size that can be created
-    const contentLength = req.headers["content-length"];
-    if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+router.put("/:id/consolidated", asyncHandler(putConsolidated));
+async function putConsolidated(req: Request, res: Response) {
+  // Limit the payload size that can be created
+  const contentLength = req.headers["content-length"];
+  if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+    throw new BadRequestError(
+      `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`
+    );
+  }
+
+  const cxId = getCxIdOrFail(req);
+  const patientId = getFrom("params").orFail("id", req);
+  const patient = await getPatientOrFail({ id: patientId, cxId });
+
+  const fhirBundle = bundleSchema.parse(req.body);
+  const validatedBundle = validateFhirEntries(fhirBundle);
+  const incomingAmount = validatedBundle.entry.length;
+
+  // Limit the amount of resources per patient
+  if (!Config.isCloudEnv() || Config.isSandbox()) {
+    const { total: currentAmount } = await countResourcesPerPatient({
+      patient: { id: patientId, cxId },
+    });
+    if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
       throw new BadRequestError(
-        `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`
+        `Reached maximum number of resources per patient in Sandbox mode ` +
+          `(current: ${currentAmount}, incoming: ${incomingAmount}, max: ${MAX_RESOURCE_STORED_LIMIT})`
       );
     }
-
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFrom("params").orFail("id", req);
-    const patient = await getPatientOrFail({ id: patientId, cxId });
-
-    const fhirBundle = bundleSchema.parse(req.body);
-    const validatedBundle = validateFhirEntries(fhirBundle);
-    const incomingAmount = validatedBundle.entry.length;
-
-    // Limit the amount of resources per patient
-    if (!Config.isCloudEnv() || Config.isSandbox()) {
-      const { total: currentAmount } = await countResourcesPerPatient({
-        patient: { id: patientId, cxId },
-      });
-      if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
-        throw new BadRequestError(
-          `Reached maximum number of resources per patient in Sandbox mode ` +
-            `(current: ${currentAmount}, incoming: ${incomingAmount}, max: ${MAX_RESOURCE_STORED_LIMIT})`
-        );
-      }
-      // Limit the amount of resources that can be created at once
-      if (incomingAmount > MAX_RESOURCE_POST_COUNT) {
-        throw new BadRequestError(
-          `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time ` +
-            `(incoming: ${incomingAmount})`
-        );
-      }
+    // Limit the amount of resources that can be created at once
+    if (incomingAmount > MAX_RESOURCE_POST_COUNT) {
+      throw new BadRequestError(
+        `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time ` +
+          `(incoming: ${incomingAmount})`
+      );
     }
-    console.log(
-      `[POST /consolidated] cxId ${cxId}, patientId ${patientId}] ` +
-        `${incomingAmount} resources, ${contentLength} bytes`
-    );
-    const data = await createOrUpdateConsolidatedPatientData({
-      cxId,
-      patientId: patient.id,
-      fhirBundle: validatedBundle,
-    });
-    return res.json(data);
-  })
-);
+  }
+  console.log(
+    `[PUT /consolidated] cxId ${cxId}, patientId ${patientId}] ` +
+      `${incomingAmount} resources, ${contentLength} bytes`
+  );
+  const data = await createOrUpdateConsolidatedPatientData({
+    cxId,
+    patientId: patient.id,
+    fhirBundle: validatedBundle,
+  });
+  return res.json(data);
+}
 
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated/count
