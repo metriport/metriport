@@ -304,7 +304,7 @@ export class MetriportMedicalApi {
    * @return FHIR Bundle with operation outcome.
    */
   async createPatientConsolidated(patientId: string, payload: Bundle): Promise<Bundle<Resource>> {
-    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated`, payload);
+    const resp = await this.api.put(`${PATIENT_URL}/${patientId}/consolidated`, payload);
 
     return resp.data;
   }

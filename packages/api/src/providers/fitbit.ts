@@ -51,6 +51,7 @@ import { analytics, EventTypes } from "../shared/analytics";
 import { Config } from "../shared/config";
 import { PROVIDER_FITBIT } from "../shared/constants";
 import { capture } from "../shared/notifications";
+import { Util } from "../shared/util";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
 import { executeAndReportAnalytics, ExtraType } from "./shared/analytics";
 import { getHttpClient } from "./shared/http";
@@ -260,6 +261,7 @@ export class Fitbit extends Provider implements OAuth2 {
     connectedUser: ConnectedUser,
     date: string
   ): Promise<Biometrics> {
+    const { log } = Util.out(`getBiometricsData - userId: ${connectedUser.id}, date: ${date}`);
     const accessToken = await this.getAccessToken(connectedUser);
 
     const fetchData = () =>
@@ -272,8 +274,8 @@ export class Fitbit extends Provider implements OAuth2 {
         this.fetchTempCoreData(accessToken, date),
         this.fetchTempSkinData(accessToken, date),
       ]);
-    const [resBreathing, resCardio, resHr, resHrv, resSpo, resTempCore, resTempSkin] =
-      await execute(fetchData, connectedUser, { action: "getBiometricsData", date });
+    const results = await execute(fetchData, connectedUser, { action: "getBiometricsData", date });
+    const [resBreathing, resCardio, resHr, resHrv, resSpo, resTempCore, resTempSkin] = results;
 
     const breathing = resBreathing.status === "fulfilled" ? resBreathing.value : undefined;
     const cardio = resCardio.status === "fulfilled" ? resCardio.value : undefined;
@@ -282,6 +284,9 @@ export class Fitbit extends Provider implements OAuth2 {
     const spo = resSpo.status === "fulfilled" ? resSpo.value : undefined;
     const tempCore = resTempCore.status === "fulfilled" ? resTempCore.value : undefined;
     const tempSkin = resTempSkin.status === "fulfilled" ? resTempSkin.value : undefined;
+
+    const failures = results.flatMap(r => (r.status === "rejected" ? r.reason : []));
+    log(`Failures (${failures.length}/${results.length}): ${failures.join("; ")}`);
 
     if (!breathing && !cardio && !hr && !hrv && !spo && !tempCore && !tempSkin) {
       throw new Error("All Requests failed");
