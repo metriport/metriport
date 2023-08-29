@@ -68,6 +68,7 @@ export const resourcesSearchableByPatient = [
   "MolecularSequence",
   "NutritionOrder",
   "Observation",
+  "Organization",
   "Person",
   "Procedure",
   "Provenance",
