@@ -5,7 +5,7 @@
     "dark": "/logo/dark.png"
   },
   "api": {
-    "baseUrl": ["https://api.metriport.com", "https://api.sandbox.metriport.com"],
+    "baseUrl": ["https://api.sandbox.metriport.com", "https://api.metriport.com"],
     "auth": {
       "method": "key",
       "name": "x-api-key"
