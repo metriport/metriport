@@ -91,11 +91,13 @@ export class Tenovi extends Provider {
       const url = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/unlink-gateway/${deviceId}/`;
 
       try {
-        await axios.get(url, {
-          headers: {
-            Authorization: `Api-Key ${Tenovi.apiKey}`,
-          },
-        });
+        if (deviceId !== Config.getTenoviTestDeviceId()) {
+          await axios.get(url, {
+            headers: {
+              Authorization: `Api-Key ${Tenovi.apiKey}`,
+            },
+          });
+        }
 
         if (updateUser) {
           const index = connectedDevices.indexOf(deviceId);

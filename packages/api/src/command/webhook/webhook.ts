@@ -29,7 +29,8 @@ async function missingWHSettings(
   webhookUrl: string | null,
   webhookKey: string | null
 ): Promise<boolean> {
-  const msg = `Missing webhook config, skipping sending it`;
+  const product = getProductFromWebhookRequest(webhookRequest);
+  const msg = `[${product}] Missing webhook config, skipping sending it`;
   const loggableKey = webhookKey ? "<defined>" : null;
   log(msg + ` (url: ${webhookUrl}, key: ${loggableKey}`);
   capture.message(msg, {
@@ -40,20 +41,11 @@ async function missingWHSettings(
       context: `webhook.processRequest`,
     },
   });
-  // if this is for DAPI:
-  //    mark this request as failed on the DB - so it can be retried later
-  // if this is for MAPI:
-  //    silently ignore this since this is just a notification for ease-of-use
-  //    and won't result in data loss
-  if (isDAPIWebhookRequest(webhookRequest)) {
-    await updateWebhookRequestStatus({
-      id: webhookRequest.id,
-      status: "failure",
-    });
-    return false;
-  } else {
-    return true;
-  }
+  await updateWebhookRequestStatus({
+    id: webhookRequest.id,
+    status: "failure",
+  });
+  return false;
 }
 
 function getProductFromWebhookRequest(webhookRequest: WebhookRequest): Product {
