@@ -68,7 +68,6 @@ export const resourcesSearchableByPatient = [
   "MolecularSequence",
   "NutritionOrder",
   "Observation",
-  "Organization",
   "Person",
   "Procedure",
   "Provenance",
@@ -85,9 +84,13 @@ export type ResourceSearchableByPatient = (typeof resourcesSearchableByPatient)[
 export const resourcesSearchableBySubject = ["AdverseEvent", "Task"] as const;
 export type ResourceSearchableBySubject = (typeof resourcesSearchableBySubject)[number];
 
+export const resourcesSearchableByOrganization = ["Organization"] as const;
+export type ResourceSearchableByOrganization = (typeof resourcesSearchableByOrganization)[number];
+
 export const resourceTypeForConsolidation = [
   ...resourcesSearchableByPatient,
   ...resourcesSearchableBySubject,
+  ...resourcesSearchableByOrganization,
 ] as const;
 
 export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];

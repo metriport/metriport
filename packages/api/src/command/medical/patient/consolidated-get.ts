@@ -110,6 +110,7 @@ export async function getConsolidatedPatientData({
   const {
     resourcesByPatient,
     resourcesBySubject,
+    resourcesByOrganization,
     dateFilter: fullDateQuery,
   } = getPatientFilter({
     resources,
@@ -138,6 +139,9 @@ export async function getConsolidatedPatientData({
         () => fhir.searchResourcePages(resource, `subject=${patientId}${dateFilter}`),
         errorsToReport
       );
+    }),
+    ...resourcesByOrganization.map(async resource => {
+      return await fhir.search(resource);
     }),
   ]);
 
