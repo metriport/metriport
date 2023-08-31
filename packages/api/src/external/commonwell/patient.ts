@@ -7,6 +7,7 @@ import {
   StrongId,
   getIdTrailingSlash,
 } from "@metriport/commonwell-sdk";
+import { Organization as LocalOrg, Facility as LocalFacility } from "@metriport/api-sdk";
 import { MedicalDataSource } from "..";
 import { Facility } from "../../models/medical/facility";
 import { Organization } from "../../models/medical/organization";
@@ -111,6 +112,40 @@ export async function create(
       extra: {
         facilityId,
         patientId: patient.id,
+        cwReference: commonWell?.lastReferenceHeader,
+        context: createContext,
+      },
+    });
+    throw err;
+  }
+}
+
+export async function getOne(
+  organization: LocalOrg,
+  facility: LocalFacility,
+  patientId: string
+): Promise<CommonwellPatient | undefined> {
+  let commonWell: CommonWellAPI | undefined;
+
+  try {
+    const orgName = organization.name;
+    const orgOid = organization.oid;
+    const facilityNPI = facility["npi"] as string; // TODO #414 move to strong type - remove `as string`
+
+    commonWell = makeCommonWellAPI(orgName, oid(orgOid));
+    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+
+    const cwPatient = await commonWell.getPatient(queryMeta, patientId);
+
+    return cwPatient;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    console.error(`Failure while getting patient ${patientId} @ CW: `, err);
+    capture.error(err, {
+      extra: {
+        facilityId: facility.id,
+        patientId: patientId,
         cwReference: commonWell?.lastReferenceHeader,
         context: createContext,
       },

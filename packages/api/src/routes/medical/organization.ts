@@ -5,15 +5,22 @@ import {
   OrganizationCreateCmd,
   createOrganization,
 } from "../../command/medical/organization/create-organization";
-import { getOrganization } from "../../command/medical/organization/get-organization";
+import {
+  getOrganization,
+  getOrganizationById,
+  getOrganizationOrFail,
+} from "../../command/medical/organization/get-organization";
 import {
   OrganizationUpdateCmd,
   updateOrganization,
+  incrementOrganization,
 } from "../../command/medical/organization/update-organization";
 import { processAsyncError } from "../../errors";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/organization";
 import { upsertOrgToFHIRServer } from "../../external/fhir/organization/upsert-organization";
+import { deleteOrgFromFHIRServer } from "../../external/fhir/organization/delete-organization";
+import { deleteOrganization } from "../../command/medical/organization/delete-organization";
 import { getETag } from "../../shared/http";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
@@ -100,6 +107,63 @@ router.get(
 
     const org = await getOrganization({ cxId });
     return res.status(status.OK).json(org ? dtoFromModel(org) : undefined);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /organization/:id
+ *
+ * Gets the org by id.
+ *
+ * @returns The organization.
+ */
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const id = getFromParamsOrFail("id", req);
+
+    const org = await getOrganizationById(id);
+    return res.status(status.OK).json(org ? dtoFromModel(org) : undefined);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * DELETE /organization
+ *
+ * Deletes the org corresponding to the customer ID.
+ *
+ * @returns 200 OK.
+ */
+router.delete(
+  "/",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const org = await getOrganizationOrFail({ cxId });
+
+    await deleteOrgFromFHIRServer(cxId, org.id);
+    await deleteOrganization({ cxId });
+
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * PUT /organization/increment/:id
+ *
+ * Increments the org oid and number.
+ * STRICTLY FOR TESTING ONLY - DO NOT USE IN PRODUCTION.
+ *
+ * @param req.id The data to update the organization.
+ * @returns The updated organization.
+ */
+router.put(
+  "/increment/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const id = getFromParamsOrFail("id", req);
+
+    const org = await incrementOrganization(id);
+
+    return res.status(status.OK).json(dtoFromModel(org));
   })
 );
 

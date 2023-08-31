@@ -1,7 +1,7 @@
 import { OrganizationModel, OrganizationData } from "../../../models/medical/organization";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
-import { getOrganizationOrFail } from "./get-organization";
+import { getOrganizationOrFail, getOrganizationById } from "./get-organization";
 
 export type OrganizationUpdateCmd = BaseUpdateCmdWithCustomer & OrganizationData;
 
@@ -19,5 +19,16 @@ export const updateOrganization = async (
       type,
       location,
     },
+  });
+};
+
+/**
+ * For testing only in staging.
+ */
+export const incrementOrganization = async (id: string): Promise<OrganizationModel> => {
+  const org = await getOrganizationById(id);
+
+  return org.update({
+    organizationNumber: org.organizationNumber + 1,
   });
 };
