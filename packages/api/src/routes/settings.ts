@@ -3,7 +3,7 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
 import { createSettings } from "../command/settings/createSettings";
-import { getSettings } from "../command/settings/getSettings";
+import { getSettings, getSettingsOrFail } from "../command/settings/getSettings";
 import { updateSettings } from "../command/settings/updateSettings";
 import { countFailedAndProcessingRequests } from "../command/webhook/count-failed";
 import { retryFailedRequests } from "../command/webhook/retry-failed";
@@ -107,8 +107,7 @@ router.get(
   "/webhook",
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
-    const settings = await getSettings({ id });
-    if (!settings) return res.status(status.OK).send({});
+    const settings = await getSettingsOrFail({ id });
     const { processing, failure } = await countFailedAndProcessingRequests(id);
     res
       .status(status.OK)
