@@ -16,3 +16,11 @@ export type Patient = z.infer<typeof patientSchema>;
 export const patientListSchema = z.object({
   patients: z.array(patientSchema),
 });
+
+export const queryStatusSchema = z.enum(["processing", "completed", "failed"]);
+export type QueryStatus = z.infer<typeof queryStatusSchema>;
+
+export const queryProgressSchema = z.object({
+  status: queryStatusSchema,
+});
+export type QueryProgress = z.infer<typeof queryProgressSchema>;

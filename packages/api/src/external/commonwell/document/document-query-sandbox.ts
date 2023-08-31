@@ -1,6 +1,9 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import {
+  MAPIWebhookStatus,
+  processPatientDocumentRequest,
+} from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
-import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../../command/webhook/medical";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
@@ -41,7 +44,15 @@ export async function sandboxGetDocRefsAndUpsert({
   await Util.sleep(Math.random() * sandboxSleepTime);
 
   const patientData = getSandboxSeedData(patient.data.firstName);
-  if (!patientData) return [];
+  if (!patientData) {
+    await appendDocQueryProgress({
+      patient: { id: patient.id, cxId: patient.cxId },
+      downloadProgress: {
+        status: "completed",
+      },
+    });
+    return [];
+  }
 
   const entries = patientData.docRefs;
   log(`Got ${entries.length} doc refs`);

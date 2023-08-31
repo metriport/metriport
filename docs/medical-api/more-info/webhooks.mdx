@@ -1,22 +1,31 @@
 ---
-title: "Webhooks"
-description: "Receive status updates as soon as data becomes available after initiating a document query."
+title: "Webhooks - Medical API"
+description: "Receive status updates as soon as data becomes available."
 ---
 
 ## Overview
 
-When using the Medical API, Metriport will send Webhook messages containing [patient document data](#patient-data-message) to your app, as soon
-as the data becomes available after initiating a [document query](/medical-api/api-reference/document/start-document-query).
+When using the Medical API, Metriport will send Webhook messages to your app as soon as data becomes available.
 
-You can expect to receive updates in the following scenarios:
-
-1. When queried documents have completed downloading (`type` for a patient in the message will be `document-download`, and at this point you'll be able to [download the raw files](/medical-api/api-reference/document/get-document));
-1. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has completed (`type` for a patient in the message will be `document-conversion`, and at this point you'll be able to [query for FHIR resrouces](/medical-api/api-reference/fhir/get-patient-consolidated)).
+This is the usual flow to obtain Patient data:
+1. You trigger a [document query](/medical-api/api-reference/document/start-document-query) to retrieve a Patient's medical documents from HIEs;
+   - XML C-CDA documents will be converted and stored on Metriport's FHIR storage;
+   - as documents get downloaded and converted, you should get [patient document data](#patient-document-data) webhook messages;
+1. Once document conversion is completed, you can [query for patient consolidated data](/medical-api/api-reference/fhir/consolidated-data-query-post);
+   - depending on the amount of data this can take some time to crunch together, so results are sent through a webhook message: 
+   [patient consolidated data](#patient-consolidated-data)
 
 To enable this integration approach with Metriport, and for some prerequesite reading to understand
 how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 
-### Patient data message
+### Patient Document Data
+
+These are messages you can expect to receive in the following scenarios:
+
+1. When [queried documents](/medical-api/api-reference/document/start-document-query) have completed downloading (`type` for a patient in
+the message will be `document-download`, and at this point you'll be able to [download the raw files](/medical-api/api-reference/document/get-document));
+1. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has completed (`type` for a patient in the message
+will be `document-conversion`, and at this point you'll be able to query for [patient consolidated data](#patient-consolidated-data) in FHIR-compliant format).
 
 Example payload:
 
@@ -25,12 +34,12 @@ Example payload:
   "meta": {
     "messageId": "<message-id>",
     "when": "<date-time-in-utc>",
-    "type": "medical"
+    "type": "medical.document-download"
   },
   "patients": [
     {
       "patientId": "<patient-id-1>",
-      "type": "document-conversion",
+      "type": "document-download",
       "status": "completed",
       "documents": [
         {
@@ -72,13 +81,12 @@ Example payload:
             ],
             "text": "Progress Notes"
           }
-        },
-
+        }
       ]
     },
     {
       "patientId": "<patient-id-2>",
-      "type": "document-conversion",
+      "type": "document-download",
       "status": "completed",
       ...
     }
@@ -94,7 +102,8 @@ The format follows:
   <Expandable title="meta type property details">
 
     <ResponseField name="type" type="string" required>
-      The type of the Medical API webhook data message. Can be one of: `medical.document-download`, `medical.document-conversion`.
+      The type of the Medical API webhook data message. Can be one of: `medical.document-download`, `medical.document-conversion`, 
+      `medical.consolidated-data`.
     </ResponseField>
 
   </Expandable>
@@ -124,6 +133,155 @@ The format follows:
       <Expandable title="DocumentReference properties">
         <Snippet file="document-reference-response.mdx" />
       </Expandable>
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+
+### Patient Consolidated Data
+
+A Patient's consolidated data is the result of converting C-CDA documents from HIEs into FHIR, as well as other FHIR data your application
+has [inserted into Metriport's FHIR repository](/medical-api/api-reference/fhir/create-patient-consolidated).
+
+Patients can have a large amount of data, so in order to have access to a Patient's data:
+
+1. [Trigger a consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-post) - one query per patient at any given time;
+1. Your app can check the status by calling [get consolidated query status](/medical-api/api-reference/fhir/consolidated-data-query-get);
+1. When the result is ready, we'll send a webhook message with the results (below).
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "when": "2023-08-23T22:09:11.373Z",
+    "type": "medical.consolidated-data"
+  },
+  "patients": [
+    {
+      "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "status": "completed",
+      "filters": {
+        "resources": "DocumentReference,Appointment"
+      },
+      "bundle": {
+        "type": "searchset",
+        "resourceType": "Bundle",
+        "total": 1,
+        "entry": [
+          {
+            "resource": {
+              "resourceType": "Appointment",
+              "id": "123",
+              "start": "2021-06-10T13:00:00.000Z",
+              "end": "2021-06-10T13:55:00.000Z",
+              "status": "booked",
+              "meta": {
+                "source": "#cXWJjuhQX33LJ0VJrPiD0",
+                "versionId": "2",
+                "lastUpdated": "2023-08-23T12:41:54.661-05:00"
+              },
+              "contained": [
+                {
+                  "id": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+                  "meta": {
+                    "source": "#4fh35tN5_DjOxfVrq3dfi"
+                  },
+                  "name": [
+                    {
+                      "given": [
+                        "John"
+                      ],
+                      "family": "Doe"
+                    }
+                  ],
+                  "gender": "male",
+                  "address": [
+                    {
+                      "country": "USA",
+                      "postalCode": "12345"
+                    }
+                  ],
+                  "birthDate": "1981-01-01",
+                  "resourceType": "Patient"
+                }
+              ],
+              "participant": [
+                {
+                  "actor": {
+                    "display": "John Doe",
+                    "reference": "Patient/eddeefa1-b54a-41d6-854f-0e91b7871d6a"
+                  },
+                  "period": {
+                    "end": "2021-05-24T13:21:28.527Z",
+                    "start": "2021-05-24T13:21:28.527Z"
+                  },
+                  "status": "accepted"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+The format follows:
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+
+  <Expandable title="meta type property details">
+
+    <ResponseField name="type" type="string" required>
+      For Patient Consolidated Data this will always be `medical.consolidated-data`.
+    </ResponseField>
+
+  </Expandable>
+
+</ResponseField>
+
+<ResponseField name="patients" type="PatientConsolidatedData[]" required>
+  Array of consolidated data query results - where each item corresponds to a specific patient.
+  
+  <Expandable title="PatientConsolidatedData properties">
+
+    <ResponseField name="patiendId" type="string" required>
+      The Patient ID.
+    </ResponseField>
+
+    <ResponseField name="status" type="string" required>
+      The outcome of consolidated data query - can be one of `completed` | `failed`.
+    </ResponseField>
+
+    <ResponseField name="filters" type="Filter[]" required>
+      The filters used to obtain the patient's consolidated data.
+      <Expandable title="Filter properties">
+
+        <ParamField query="resources" type="string" optional>
+          A comma separated, case sensitive list of resources to be returned. If none are provided all
+          resources will be included.
+        </ParamField>
+
+        <ParamField query="dateFrom" type="string" optional>
+          The start date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
+          ISO 8601. If not provided, no start date filter will be applied.
+        </ParamField>
+
+        <ParamField query="dateTo" type="string" optional>
+          The end date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
+          ISO 8601. If not provided, no end date filter will be applied.
+        </ParamField>
+
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="bundle" type="Bundle">
+      A FHIR [Bundle](/medical-api/fhir/resources/bundle) of type "searchset" with the entry being the outcome of the query.
     </ResponseField>
 
   </Expandable>

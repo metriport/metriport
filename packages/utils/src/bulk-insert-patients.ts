@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-
+// keep that ^ on top
 import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
 import csv from "csv-parser";
 import fs from "fs";

@@ -2,8 +2,8 @@ import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data"
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { z } from "zod";
+import { TypedData } from "../../command/webhook/devices";
 import { ISO_DATE } from "../../shared/date";
-import { TypedData } from "../../command/webhook/webhook";
 
 dayjs.extend(customParseFormat);
 

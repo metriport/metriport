@@ -15,12 +15,17 @@ import {
   S3Info,
   uploadStream,
 } from "../../../command/medical/document/document-query-storage-info";
+import {
+  MAPIWebhookStatus,
+  processPatientDocumentRequest,
+} from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { ApiTypes, reportUsage } from "../../../command/usage/report-usage";
-import { MAPIWebhookStatus, processPatientDocumentRequest } from "../../../command/webhook/medical";
+import { reportUsage } from "../../../command/usage/report-usage";
+import { Product } from "../../../domain/product";
 import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
+import NotFoundError from "../../../errors/not-found";
 import { MedicalDataSource } from "../../../external";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
@@ -205,13 +210,6 @@ export async function internalGetDocuments({
 
   log(`Document query got ${docs.length} documents${docs.length ? ", processing" : ""}...`);
   const documents: Document[] = docs.flatMap(d => {
-    if (d.content.size === 0) {
-      log(`Document is of size 0, this may result in a 404 error - doc id ${d.id}`);
-      capture.message("Document is of size 0", {
-        extra: { document: d },
-      });
-    }
-
     if (d.content && d.content.masterIdentifier?.value && d.content.location) {
       return {
         id: d.content.masterIdentifier.value,
@@ -487,6 +485,11 @@ export async function downloadDocsAndUpsertFHIR({
             file = await uploadToS3();
           } catch (error) {
             const isZeroLength = doc.content.size === 0;
+            if (isZeroLength && error instanceof NotFoundError) {
+              // we don't want to report errors when the file was originally flagged as empty
+              errorReported = true;
+              throw error;
+            }
             const zeroLengthDetailsStr = isZeroLength ? "zero length document" : "";
             log(
               `Error downloading ${zeroLengthDetailsStr} from CW and upserting to FHIR (docId ${doc.id}): ${error}`
@@ -645,6 +648,6 @@ function reportDocQueryUsage(patient: Patient): void {
   reportUsage({
     cxId: patient.cxId,
     entityId: patient.id,
-    apiType: ApiTypes.medical,
+    product: Product.medical,
   });
 }

@@ -1,0 +1,35 @@
+---
+title: "Tenovi"
+description: "Connect to Tenovi RPM devices."
+---
+
+## Overview
+
+This is a guide to help you integrate with [Tenovi](https://tenovi.com/) - a remote patient monitoring (RPM) device provider.
+When a patient takes measurements with Tenovi RPM devices, the data will be made available both through [webhooks](/home/api-info/webhooks),
+and our [REST API](/devices-api/api-reference/get-biometrics-data).
+
+<Tip>
+  You can read more about what data types are supported on our [integrations
+  page](/devices-api/more-info/our-integrations).
+</Tip>
+
+## Setup
+
+<Tip>
+  As a prerequisite, we recommend following our [Devices API quickstart
+  guide](/devices-api/getting-started/connect-quickstart), up to and including the "Integrate your
+  app with Metriport" step.
+</Tip>
+
+To integrate with Tenovi, you will need to do the following for each of your users:
+
+1. Obtain a [connect token](/devices-api/api-reference/user/create-connect-token) for the user;
+1. Activate the user's Tenovi device(s) using the [Connect RPM Device](/devices-api/api-reference/connect/connect-rpm-device) endpoint.
+
+<Info>
+  In the Connect RPM Device endpoint, you will need to use the Tenovi `Patient ID` as the
+  `deviceUserId`, and the `HWI ID`, as `deviceIds`.
+</Info>
+
+<img className="h-100" src="/images/tenovi-dashboard.png" />

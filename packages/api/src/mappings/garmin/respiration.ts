@@ -3,7 +3,6 @@ import dayjs from "dayjs";
 import { groupBy } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, garminTypes, User, UserData } from ".";
-import { DataType } from "../../command/webhook/webhook";
 import { PROVIDER_GARMIN } from "../../shared/constants";
 import { toISODate } from "../../shared/date";
 
@@ -12,7 +11,7 @@ type BreathAndDate = { date: string; breath: { time: string; value: number } };
 export const mapToBiometricsFromRespiration = (
   items: GarminRespirationList
 ): UserData<Biometrics>[] => {
-  const type: DataType = "biometrics";
+  const type = "biometrics";
   // group by user
   const itemsByUAT = groupBy(items, a => a.userAccessToken);
   return Object.entries(itemsByUAT).flatMap(([key, values]) => {

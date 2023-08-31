@@ -163,6 +163,7 @@ export interface Sleep extends MetriportData {
   end_time?: string;
   durations?: SleepDurations;
   biometrics?: SleepBiometrics;
+  wakeup_frequency?: number;
 }
 ```
 
@@ -412,8 +413,11 @@ export interface Respiration {
     min_pct?: number;
     max_pct?: number;
     avg_pct?: number;
+    std_dev?: number;
   };
   avg_breaths_per_minute?: number;
+  peak_flow_L_min?: number;
+  forced_volume_L?: number;
   /**
    * Samples of respiration readings, breaths per minute over time.
    */
@@ -427,6 +431,7 @@ export interface Respiration {
 export interface Sample {
   time: string;
   value: number;
+  std_dev?: number;
   data_source?: SourceInfo;
 }
 ```

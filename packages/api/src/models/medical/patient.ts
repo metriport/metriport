@@ -1,6 +1,7 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
 import { DocumentQueryProgress } from "../../domain/medical/document-query";
+import { QueryProgress } from "../../domain/medical/query-status";
 import { MedicalDataSource } from "../../external";
 import { USState } from "../../shared/geographic-locations";
 import { BaseModel, ModelSetup } from "../_default";
@@ -12,6 +13,7 @@ export const driversLicenseType = ["driversLicense"] as const;
 export type GeneralTypes = (typeof generalTypes)[number];
 export type DriverLicenseType = (typeof driversLicenseType)[number];
 
+// TODO move this to the domain folder
 export type Period =
   | {
       start: string;
@@ -22,6 +24,7 @@ export type Period =
       end: string;
     };
 
+// TODO move this to the domain folder
 export type BaseIdentifier = {
   period?: Period;
   assigner?: string;
@@ -32,24 +35,30 @@ export type BaseIdentifier = {
 //     | { type: GeneralTypes; value: string; state?: never }
 //     | { type: DriverLicenseType; value: string; state: USState }
 //   );
+// TODO move this to the domain folder
 export type PersonalIdentifier = BaseIdentifier & {
   type: DriverLicenseType;
   value: string;
   state: USState;
 };
 
+// TODO move this to the domain folder
 export type DriversLicense = {
   value: string;
   state: USState;
 };
 
+// TODO move this to the domain folder
 export const genderAtBirthTypes = ["F", "M"] as const;
 export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
+// TODO move this to the domain folder
 export abstract class PatientExternalDataEntry {}
 
+// TODO move this to the domain folder
 export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;
 
+// TODO move this to the domain folder
 export type PatientData = {
   firstName: string;
   lastName: string;
@@ -59,9 +68,11 @@ export type PatientData = {
   address: Address[];
   contact?: Contact[];
   documentQueryProgress?: DocumentQueryProgress;
+  consolidatedQuery?: QueryProgress;
   externalData?: PatientExternalData;
 };
 
+// TODO move this to the domain folder
 export interface PatientCreate extends BaseDomainCreate {
   cxId: string;
   facilityIds: string[];
@@ -77,6 +88,7 @@ export function joinName(name: string[]): string {
   return name.join(" ");
 }
 
+// TODO move this to the domain folder
 export interface Patient extends BaseDomain, PatientCreate {}
 
 export class PatientModel extends BaseModel<PatientModel> implements Patient {

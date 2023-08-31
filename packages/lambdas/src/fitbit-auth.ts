@@ -33,7 +33,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
 
   const secret: string = (await getSecret(fitbitClientSecretName)) as string;
   if (!secret) {
-    throw new Error(`Config error - FITBIT_CLIENT_SECRET doesn't exist`);
+    throw new Error(`Config error - FITBIT_CLIENT_SECRET not found`);
   }
 
   const verificationSuccessful = verifyRequest(event, event.body, secret);

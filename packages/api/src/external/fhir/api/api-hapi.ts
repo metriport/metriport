@@ -15,8 +15,8 @@ export class HapiFhirClient extends MedplumClient implements FhirClient {
    *
    * @param tenantId
    */
-  constructor(tenantId: string) {
-    super({ baseUrl: HapiFhirClient.fhirServerUrl, fhirUrlPath: `fhir/${tenantId}` });
+  constructor(tenantId: string, baseUrl = HapiFhirClient.fhirServerUrl) {
+    super({ baseUrl, fhirUrlPath: `fhir/${tenantId}` });
   }
 
   // needed to hack around HAPI FHIR urls returned in search queries

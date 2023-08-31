@@ -486,6 +486,18 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
+    this.setupTenoviWebhookAuth({
+      lambdaLayers,
+      baseResource: webhookResource,
+      secrets,
+      vpc: this.vpc,
+      fargateService: apiService,
+      tenoviAuthHeader: props.config.providerSecretNames.TENOVI_AUTH_HEADER,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     // add webhook path for apple health clients
     const appleHealthResource = webhookResource.addResource("apple");
     const integrationApple = new apig.Integration({
@@ -750,12 +762,11 @@ export class APIStack extends Stack {
     });
 
     // granting secrets read access to both lambdas
-    type SecretKeys = keyof EnvConfig["providerSecretNames"];
-    const fitbitClientSecretKey: SecretKeys = "FITBIT_CLIENT_SECRET";
+    const fitbitClientSecretKey = "FITBIT_CLIENT_SECRET";
     if (!secrets[fitbitClientSecretKey]) {
       throw new Error(`${fitbitClientSecretKey} is not defined in config`);
     }
-    const fitbitSubVerifSecretKey: SecretKeys = "FITBIT_SUBSCRIBER_VERIFICATION_CODE";
+    const fitbitSubVerifSecretKey = "FITBIT_SUBSCRIBER_VERIFICATION_CODE";
     secrets[fitbitClientSecretKey].grantRead(fitbitAuthLambda);
     if (!secrets[fitbitSubVerifSecretKey]) {
       throw new Error(`${fitbitSubVerifSecretKey} is not defined in config`);
@@ -765,6 +776,56 @@ export class APIStack extends Stack {
     const fitbitResource = baseResource.addResource("fitbit");
     fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitAuthLambda));
     fitbitResource.addMethod("GET", new apig.LambdaIntegration(fitbitSubscriberVerificationLambda));
+  }
+
+  private setupTenoviWebhookAuth(ownProps: {
+    lambdaLayers: lambda.ILayerVersion[];
+    baseResource: apig.Resource;
+    secrets: Secrets;
+    vpc: ec2.IVpc;
+    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+    tenoviAuthHeader: string;
+    envType: string;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }) {
+    const {
+      lambdaLayers,
+      baseResource,
+      secrets,
+      vpc,
+      fargateService: server,
+      tenoviAuthHeader,
+      envType,
+      sentryDsn,
+      alarmAction,
+    } = ownProps;
+
+    const tenoviAuthLambda = createLambda({
+      stack: this,
+      name: "TenoviAuth",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "tenovi",
+      layers: lambdaLayers,
+      envVars: {
+        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/tenovi`,
+        ENV_TYPE: envType,
+        TENOVI_AUTH_HEADER: tenoviAuthHeader,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    const tenoviAuthHeaderSecretKey = "TENOVI_AUTH_HEADER";
+    if (!secrets[tenoviAuthHeaderSecretKey]) {
+      throw new Error(`${tenoviAuthHeaderSecretKey} is not defined in config`);
+    }
+
+    secrets[tenoviAuthHeaderSecretKey].grantRead(tenoviAuthLambda);
+
+    const tenoviResource = baseResource.addResource("tenovi");
+    tenoviResource.addMethod("POST", new apig.LambdaIntegration(tenoviAuthLambda));
   }
 
   private setupCdaToVisualization(ownProps: {
@@ -797,7 +858,7 @@ export class APIStack extends Stack {
       },
       layers: [...lambdaLayers, chromiumLayer],
       memory: 512,
-      timeout: Duration.minutes(1),
+      timeout: Duration.minutes(5),
       vpc,
       alarmSnsAction: alarmAction,
     });

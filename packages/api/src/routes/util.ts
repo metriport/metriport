@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import { ApiTypes } from "../command/usage/report-usage";
+import { Product } from "../domain/product";
 import BadRequestError from "../errors/bad-request";
 import { analytics, EventTypes } from "../shared/analytics";
 import { Config } from "../shared/config";
+import { errorToString } from "../shared/log";
 import { capture } from "../shared/notifications";
 
 export const asyncHandler =
@@ -19,7 +20,7 @@ export const asyncHandler =
       analyzeRoute(req);
       await f(req, res, next);
     } catch (err) {
-      if (Config.isCloudEnv()) console.error(String(err));
+      if (Config.isCloudEnv()) console.error(errorToString(err));
       else console.error(err);
       next(err);
     }
@@ -55,9 +56,9 @@ export const analyzeRoute = (req: Request): void => {
         method: req.method,
         url: reqUrl,
         ...(isMedical
-          ? { apiType: ApiTypes.medical }
+          ? { apiType: Product.medical }
           : isDevices
-          ? { apiType: ApiTypes.devices }
+          ? { apiType: Product.devices }
           : undefined),
       },
     });

@@ -1,11 +1,13 @@
 import axios, { AxiosResponse } from "axios";
+import stringify from "json-stringify-safe";
 import { AuthorizationCode, Token } from "simple-oauth2";
 import { z } from "zod";
+import { getProviderTokenFromConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
 import { updateProviderData } from "../../command/connected-user/save-connected-user";
+import MetriportError from "../../errors/metriport-error";
 import { ConnectedUser } from "../../models/connected-user";
 import { Config } from "../../shared/config";
 import { ProviderOAuth2Options } from "../../shared/constants";
-import { getProviderTokenFromConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
 
 export const oauthUserTokenResponse = z.object({
   oauth_token: z.string(),
@@ -117,9 +119,7 @@ export class OAuth2DefaultImpl implements OAuth2 {
         if (this.providerName === "google") {
           const oldToken = JSON.parse(token);
           const extensibleToken = JSON.parse(JSON.stringify(accessToken));
-
           extensibleToken.refresh_token = oldToken.refresh_token;
-
           accessToken.token = extensibleToken;
         }
 
@@ -139,8 +139,11 @@ export class OAuth2DefaultImpl implements OAuth2 {
 
         return accessToken.token;
       } catch (error) {
-        console.log("Error refreshing access token: ", error);
-        throw new Error("Error refreshing access token", { cause: error });
+        const msg = `Error refreshing access token`;
+        console.log(`${msg}: ${String(error)}`);
+        throw new MetriportError(msg, error, {
+          connectedUserId: connectedUser.id,
+        });
       }
     }
 
@@ -196,9 +199,13 @@ export class OAuth2DefaultImpl implements OAuth2 {
       });
       return await callBack(resp);
     } catch (error) {
-      console.error(error);
-
-      throw new Error(`Request failed ${endpoint}`, { cause: error });
+      const msg = `Failed to fetch provider data`;
+      console.log(`${msg}: ${String(error)}`);
+      throw new MetriportError(msg, error, {
+        endpoint,
+        ...(params ? { params: stringify(params) } : {}),
+        ...(extraHeaders ? { extraHeaders: stringify(extraHeaders) } : {}),
+      });
     }
   }
 }

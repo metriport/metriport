@@ -1,24 +1,24 @@
 import { ProviderSource } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import { Dictionary, groupBy, union } from "lodash";
+import { Product } from "../../domain/product";
 import { FitbitWebhook } from "../../mappings/fitbit";
 import { FitbitCollectionTypes } from "../../mappings/fitbit/constants";
 import { ConnectedUser } from "../../models/connected-user";
-import { EventTypes, analytics } from "../../shared/analytics";
+import { analytics, EventTypes } from "../../shared/analytics";
 import { Constants } from "../../shared/constants";
 import { ISO_DATE } from "../../shared/date";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
-import { ApiTypes } from "../usage/report-usage";
-import { reportDevicesUsage } from "./devices";
 import {
   DataType,
+  reportDevicesUsage,
   WebhookDataPayloadWithoutMessageId,
   WebhookUserDataPayload,
-  processRequest,
-} from "./webhook";
+} from "./devices";
+import { processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
 
 interface Entry {
@@ -192,7 +192,7 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
           properties: {
             method: "POST",
             url: "/webhook/fitbit",
-            apiType: ApiTypes.devices,
+            apiType: Product.devices,
           },
         });
         const webhookRequest = await createWebhookRequest({

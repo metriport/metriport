@@ -1,20 +1,21 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/create-consolidate-data";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
-import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
   getConsolidatedPatientData,
-  resourceTypeForConsolidation,
-} from "../../command/medical/patient/get-consolidate-data";
+  startConsolidatedQuery,
+} from "../../command/medical/patient/consolidated-get";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
+import BadRequestError from "../../errors/bad-request";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/patient";
+import { countResourcesPerPatient } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 import { PatientModel as Patient } from "../../models/medical/patient";
@@ -29,7 +30,7 @@ import {
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
-import { bundleSchema } from "./schemas/fhir";
+import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   patientCreateSchema,
   patientUpdateSchema,
@@ -40,7 +41,7 @@ import {
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
 const MAX_RESOURCE_STORED_LIMIT = 1000;
-const MAX_CONTENT_LENGTH_BYTES = 1000000;
+const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -197,10 +198,10 @@ router.get(
   })
 );
 
-const resourceSchema = z.enum(resourceTypeForConsolidation).array();
-
+// TODO #870 move this to internal
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated
+ * @deprecated use /patient/:id/consolidated/query instead
  *
  * Returns a patient's consolidated data.
  *
@@ -216,70 +217,174 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
-    const resourcesRaw = getFrom("query").optional("resources", req);
-    const resources = resourcesRaw
-      ? resourceSchema.parse(resourcesRaw.split(",").map(r => r.trim()))
-      : undefined;
+    const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    const data = await getConsolidatedPatientData({ cxId, patientId, resources, dateFrom, dateTo });
+    const data = await getConsolidatedPatientData({
+      patient: {
+        cxId,
+        id: patientId,
+      },
+      resources,
+      dateFrom,
+      dateTo,
+    });
 
     return res.json(data);
   })
 );
 
 /** ---------------------------------------------------------------------------
- * POST /patient/:id/consolidated
+ * GET /patient/:id/consolidated/query
  *
- * Returns a Bundle with the outcome of the query.
+ * Triggers a patient's consolidated data query. Results are sent through Webhook.
+ * If the query is already in progress, just return the current status.
  *
  * @param req.cxId The customer ID.
- * @param req.param.id The ID of the patient to associate resources to.
- * @param req.body The FHIR Bundle to create resources.
- * @return FHIR Bundle with operation outcome.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @return status of querying for the Patient's consolidated data.
  */
-router.post(
-  "/:id/consolidated",
+router.get(
+  "/:id/consolidated/query",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
-    const fhirBundle = bundleSchema.parse(req.body);
-    const patient = await getPatientOrFail({ id: patientId, cxId });
-    const validatedBundle = validateFhirEntries(fhirBundle);
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    return res.json({
+      status: patient.data.consolidatedQuery?.status ?? "not-started",
+      message:
+        "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
+    });
+  })
+);
 
-    if (Config.isSandbox()) {
-      const data = await getConsolidatedPatientData({ cxId, patientId });
-      // limit the amount of resources stored in sandbox mode
-      if (data.entry && data.entry.length >= MAX_RESOURCE_STORED_LIMIT) {
-        return res.status(status.BAD_REQUEST).json({
-          message: `Cannot create bundle with size greater than ${MAX_RESOURCE_STORED_LIMIT} bytes in Sandbox mode.`,
-        });
-      }
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/consolidated/query
+ *
+ * Triggers a patient's consolidated data query. Results are sent through Webhook.
+ * If the query is already in progress, just return the current status.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.resources Optional comma-separated list of resources to be returned.
+ * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @return status of querying for the Patient's consolidated data.
+ */
+router.post(
+  "/:id/consolidated/query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const resources = getResourcesQueryParam(req);
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+
+    const data = await startConsolidatedQuery({ cxId, patientId, resources, dateFrom, dateTo });
+    return res.json(data);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/consolidated
+ * @deprecated use the PUT version of this endpoint
+ */
+router.post("/:id/consolidated", asyncHandler(putConsolidated));
+/** ---------------------------------------------------------------------------
+ * PUT /patient/:id/consolidated
+ *
+ * Adds or updates resources from a FHIR bundle to/into the FHIR server.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient to associate resources to.
+ * @param req.body The FHIR Bundle to create or update resources.
+ * @return FHIR Bundle with operation outcome.
+ */
+router.put("/:id/consolidated", asyncHandler(putConsolidated));
+async function putConsolidated(req: Request, res: Response) {
+  // Limit the payload size that can be created
+  const contentLength = req.headers["content-length"];
+  if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+    throw new BadRequestError(
+      `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`
+    );
+  }
+
+  const cxId = getCxIdOrFail(req);
+  const patientId = getFrom("params").orFail("id", req);
+  const patient = await getPatientOrFail({ id: patientId, cxId });
+
+  const fhirBundle = bundleSchema.parse(req.body);
+  const validatedBundle = validateFhirEntries(fhirBundle);
+  const incomingAmount = validatedBundle.entry.length;
+
+  // Limit the amount of resources per patient
+  if (!Config.isCloudEnv() || Config.isSandbox()) {
+    const { total: currentAmount } = await countResourcesPerPatient({
+      patient: { id: patientId, cxId },
+    });
+    if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
+      throw new BadRequestError(
+        `Reached maximum number of resources per patient in Sandbox mode ` +
+          `(current: ${currentAmount}, incoming: ${incomingAmount}, max: ${MAX_RESOURCE_STORED_LIMIT})`
+      );
     }
-
     // Limit the amount of resources that can be created at once
-    if (validatedBundle.entry.length >= MAX_RESOURCE_POST_COUNT) {
-      return res.status(status.BAD_REQUEST).json({
-        message: `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time.`,
-      });
+    if (incomingAmount > MAX_RESOURCE_POST_COUNT) {
+      throw new BadRequestError(
+        `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time ` +
+          `(incoming: ${incomingAmount})`
+      );
     }
+  }
+  console.log(
+    `[PUT /consolidated] cxId ${cxId}, patientId ${patientId}] ` +
+      `${incomingAmount} resources, ${contentLength} bytes`
+  );
+  const data = await createOrUpdateConsolidatedPatientData({
+    cxId,
+    patientId: patient.id,
+    fhirBundle: validatedBundle,
+  });
+  return res.json(data);
+}
 
-    const contentLength = req.headers["content-length"];
-    // limit the payload size that can be created
-    if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
-      return res.status(status.BAD_REQUEST).json({
-        message: `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`,
-      });
-    }
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/consolidated/count
+ *
+ * Returns the amount of resources a patient has on the FHIR server, total and per resource.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.query.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.resources Optional comma-separated list of resources to be returned.
+ * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ */
+router.get(
+  "/:id/consolidated/count",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const resources = getResourcesQueryParam(req);
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    const data = await createOrUpdateConsolidatedPatientData({
-      cxId,
-      patientId: patient.id,
-      fhirBundle: validatedBundle,
+    const resourceCount = await countResourcesPerPatient({
+      patient: { id: patientId, cxId },
+      resources,
+      dateFrom,
+      dateTo,
     });
 
-    return res.json(data);
+    return res.json({
+      ...resourceCount,
+      filter: {
+        resources: resources.length ? resources : "all",
+        dateFrom,
+        dateTo,
+      },
+    });
   })
 );
 

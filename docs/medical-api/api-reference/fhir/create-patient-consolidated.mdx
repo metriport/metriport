@@ -1,7 +1,7 @@
 ---
 title: "Create Patient's Consolidated Data"
 description: "Create Patient's Consolidated Data with a FHIR Bundle."
-api: "POST /medical/v1/patient/{id}/consolidated"
+api: "PUT /medical/v1/patient/{id}/consolidated"
 ---
 
 ## Path Params
@@ -24,28 +24,68 @@ api: "POST /medical/v1/patient/{id}/consolidated"
   The entry needs to be an array of [FHIR resources](/medical-api/fhir/resources).
 </ParamField>
 
+<Info>
+  At the moment there is a limit to how much data you can send in a single request. The
+  content-length must not exceed 1MB.
+</Info>
+
 ## Response
 
-Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-response" with the entry being the outcome of the query.
+Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-response" with the 
+entry being the outcome of the query.
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+await metriport.createPatientConsolidated(patientId, {
+  resourceType: "Bundle",
+  type: "collection",
+  entry: [
+    {
+      resource: {
+        resourceType: "Appointment",
+        status: "booked",
+        participant: [
+          {
+            actor: {
+              reference: `Patient/${patientId}`,
+              display: "John Doe",
+            },
+            status: "accepted",
+            period: {
+              start: "2021-05-24T13:21:28.527Z",
+              end: "2021-05-24T13:21:28.527Z",
+            },
+          },
+        ],
+        meta: {
+          versionId: "12345",
+          lastUpdated: "2023-05-24T13:21:28.527Z",
+        },
+      },
+    },
+  ],
+});
+```
+
+</ResponseExample>
 
 ```json
 {
   "resourceType": "Bundle",
-  "id": "b2c28be3-8aae-4b3c-b0ff-ca5d0f0b0d1e",
+  "id": "bc0fcad0-6457-4b9e-93b3-44212e386138",
   "type": "transaction-response",
-  "link": [
-    {
-      "relation": "self",
-      "url": "https://localhost:8888/oauth/fhir/21fa432e-723b-4a1d-a3b2-bd9cd75a0717/21fa432e-723b-4a1d-a3b2-bd9cd75a0717"
-    }
-  ],
   "entry": [
     {
       "response": {
-        "status": "200 OK",
-        "location": "DiagnosticReport/3f697895-18c2-4da5-b0fe-899bb455f0f0/_history/2",
-        "etag": "2",
-        "lastModified": "2023-05-25T00:28:06.321+00:00",
+        "status": "201 Created",
+        "location": "Appointment/3/_history/1",
+        "etag": "1",
+        "lastModified": "2023-07-27T21:29:31.491+00:00",
         "outcome": {
           "resourceType": "OperationOutcome",
           "issue": [
@@ -55,13 +95,13 @@ Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-resp
               "details": {
                 "coding": [
                   {
-                    "system": "https://hapifhir.io/fhir/CodeSystem/hapi-fhir-storage-response-code",
-                    "code": "SUCCESSFUL_UPDATE",
-                    "display": "Update succeeded."
+                    "system": "https://public.metriport.com/fhir/StructureDefinition/operation-outcome",
+                    "code": "SUCCESSFUL_CREATE",
+                    "display": "Create succeeded."
                   }
                 ]
               },
-              "diagnostics": "Successfully updated resource \"DiagnosticReport/3f697895-18c2-4da5-b0fe-899bb455f0f0/_history/2\"."
+              "diagnostics": "Successfully created resource \"Appointment/3/_history/1\". Took 7ms."
             }
           ]
         }
