@@ -15,6 +15,7 @@ import stringify from "json-stringify-safe";
 import MetriportError from "../errors/metriport-error";
 
 export const TENOVI_DEFAULT_TOKEN_VALUE = "N/A";
+const TENOVI_TEST_DEVICE_ID = "12345678-abcd-1234-abcd-1234567890ab";
 
 export class Tenovi extends Provider {
   static URL = "https://api2.tenovi.com";
@@ -91,7 +92,7 @@ export class Tenovi extends Provider {
       const url = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/unlink-gateway/${deviceId}/`;
 
       try {
-        if (deviceId !== Config.getTenoviTestDeviceId()) {
+        if (deviceId !== TENOVI_TEST_DEVICE_ID) {
           await axios.get(url, {
             headers: {
               Authorization: `Api-Key ${Tenovi.apiKey}`,

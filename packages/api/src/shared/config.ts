@@ -122,9 +122,6 @@ export class Config {
   static getTenoviApiKey(): string {
     return getEnvVarOrFail("TENOVI_API_KEY");
   }
-  static getTenoviTestDeviceId(): string {
-    return getEnvVarOrFail("TENOVI_TEST_DEVICE_ID");
-  }
 
   static getWhoopClientId(): string {
     return getEnvVarOrFail("WHOOP_CLIENT_ID");
