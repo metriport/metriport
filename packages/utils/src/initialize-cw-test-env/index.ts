@@ -1,10 +1,10 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
-import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { patients } from "./patients";
-import axios from "axios";
+import { MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
 import * as AWS from "aws-sdk";
+import axios from "axios";
+import { seedData } from "../../../api/src/shared/sandbox/sandbox-seed-data";
 import { getEnvVarOrFail } from "../shared/env";
 import { uuidv7 } from "../shared/uuid-v7";
 
@@ -40,6 +40,21 @@ async function main() {
 
   const facilityPatients = await metriportAPI.listPatients(facilityId);
 
+  const patients = Object.values(seedData).map(v => {
+    const patient: PatientCreate = {
+      ...v.demographics,
+      address: v.demographics.address.map(a => ({
+        ...a,
+        addressLine2: a.addressLine2 ?? "",
+        country: a.country ?? "USA",
+      })),
+    };
+    const docs = v.docRefs.map((d, idx) => ({
+      description: `${patient.firstName} ${patient.lastName} ${idx}`,
+      fileName: d.s3Info.key,
+    }));
+    return { patient, docs };
+  });
   for (const patient of patients) {
     let currentPatient = facilityPatients.find(p => p.firstName === patient.patient.firstName);
 
@@ -48,23 +63,15 @@ async function main() {
       console.log(`Created patient ${JSON.stringify(currentPatient, null, 2)}`);
     }
 
-    let index = 0;
-
     if (currentPatient) {
       for (const doc of patient.docs) {
-        await addDocumentToS3AndToFHIRServer(currentPatient?.id ?? "", doc, index);
-
-        index += 1;
+        await addDocumentToS3AndToFHIRServer(currentPatient?.id ?? "", doc);
       }
     }
   }
 }
 
-async function addDocumentToS3AndToFHIRServer(
-  patientId: string,
-  doc: Doc,
-  docIndex: number
-): Promise<void> {
+async function addDocumentToS3AndToFHIRServer(patientId: string, doc: Doc): Promise<void> {
   const fhirApi = axios.create({
     timeout: AXIOS_TIMEOUT_MILLIS,
     baseURL: `${stagingApiUrl}/fhir/R4`,
