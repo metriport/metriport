@@ -22,6 +22,8 @@ on:
     secrets:
       TEST_API_KEY:
         required: true
+      TEST_ACC_ID:
+        required: true
       DOCKERHUB_USERNAME:
         required: true
       DOCKERHUB_TOKEN:
@@ -67,6 +69,7 @@ jobs:
         working-directory: "./"
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
+          TEST_ACC_ID: ${{ secrets.TEST_ACC_ID }}
           API_URL: ${{ inputs.api_url }}
           WIDGET_URL: ${{ inputs.widget_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}

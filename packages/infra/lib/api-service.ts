@@ -93,6 +93,9 @@ export function createAPIService(
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
           }),
+          ...(props.config.testOrgId && {
+            TEST_ORG_ID: props.config.testOrgId,
+          }),
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
           }),

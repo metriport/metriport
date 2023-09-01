@@ -173,5 +173,6 @@ jobs:
       widget_url: ${{ vars.WIDGET_URL_PRODUCTION }}
     secrets:
       TEST_API_KEY: ${{ secrets.TEST_API_KEY_PRODUCTION }}
+      TEST_ACC_ID: ${{ secrets.TEST_ACC_ID_PRODUCTION }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
