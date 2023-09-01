@@ -8,6 +8,7 @@ import { ConnectedUser } from "../../models/connected-user";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { Constants } from "../../shared/constants";
 import { ISO_DATE } from "../../shared/date";
+import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
@@ -105,9 +106,11 @@ async function mapDataByConnectedUser(groupedNotifications: UserNotifications): 
 
       const failed = res.filter(r => r.status === "rejected");
       if (failed.length > 0) {
-        log(`Failed to map data on Fitbit Webhook`, failed);
-        capture.error(failed, {
-          extra: { context: `webhook.fitbit.mapDataByConnectedUser`, failed },
+        const msg = `Failed to map data on Fitbit Webhook`;
+        log(msg, failed);
+        capture.message(msg, {
+          extra: { context: `webhook.fitbit.mapDataByConnectedUser`, failed, fitbitUserId },
+          level: "error",
         });
       }
 
@@ -158,7 +161,13 @@ export const mapData = async (
     // do nothing until issue #652 is resolved
   } else {
     capture.message(`Unrecognized Fitbit collection type.`, {
-      extra: { context: "webhook.fitbit.mapData", collectionType, connectedUser },
+      extra: {
+        context: "webhook.fitbit.mapData",
+        collectionType,
+        startdate,
+        userId: connectedUser.id,
+      },
+      level: "error",
     });
   }
 
@@ -207,10 +216,10 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
           cxId,
           dataAndUserList.map(du => du.userId)
         );
-      } catch (err) {
-        log(`Failed to create and send customer payloads: ${err}`);
-        capture.error(err, {
-          extra: { context: `webhook.fitbit.createAndSendCustomerPayloads`, err },
+      } catch (error) {
+        log(`Failed to create and send customer payloads: ${errorToString(error)}`);
+        capture.error(error, {
+          extra: { context: `webhook.fitbit.createAndSendCustomerPayloads`, error, cxId },
         });
       }
     })
