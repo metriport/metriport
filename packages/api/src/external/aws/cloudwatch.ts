@@ -4,6 +4,7 @@ import { capture } from "../../shared/notifications";
 
 export const METRICS_NAMESPACE = "Metriport";
 
+// THINK ABOUT MORE
 const cw = new AWS.CloudWatch({
   apiVersion: "2010-08-01",
   region: Config.getAWSRegion(),

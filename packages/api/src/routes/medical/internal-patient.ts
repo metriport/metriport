@@ -5,7 +5,7 @@ import stringify from "json-stringify-safe";
 import { z } from "zod";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { getPatients } from "../../command/medical/patient/get-patient";
+import { getPatients, getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
@@ -282,6 +282,28 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const resultCW = await recreatePatientsAtCW(cxId);
     return res.status(status.OK).json(resultCW);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id
+ *
+ * Returns a patient corresponding to the specified facility at the customer's organization.
+ * The patient is returned with the whole patient model.
+ *
+ * @param   req.cxId      The customer ID.
+ * @param   req.param.id  The ID of the patient to be returned.
+ * @return  The customer's patients associated with the given facility.
+ */
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFromParamsOrFail("id", req);
+
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+
+    return res.status(status.OK).json(patient);
   })
 );
 

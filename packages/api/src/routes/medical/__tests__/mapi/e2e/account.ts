@@ -8,7 +8,7 @@ export type Customer = {
   website: string | null;
 };
 
-export type Account = { customer: Customer; idToken: string; accessToken: string };
+export type Account = { customer: Customer; idToken?: string; accessToken?: string };
 
 export const testAccount = {
   email: "test+123@metriport.com",

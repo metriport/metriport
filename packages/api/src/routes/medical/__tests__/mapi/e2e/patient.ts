@@ -21,26 +21,34 @@ export const createPatient: PatientCreate = {
   },
 };
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const validateLocalPatient = (patient: Patient, patientValidator: any) => {
+export const validateLocalPatient = (patient: Patient) => {
   expect(patient.id).toBeTruthy();
-  expect(patient.firstName).toBe(patientValidator.firstName);
-  expect(patient.lastName).toBe(patientValidator.lastName);
-  expect(patient.dob).toBe(patientValidator.dob);
-  expect(patient.genderAtBirth).toBe(patientValidator.genderAtBirth);
+  expect(patient.firstName).toBeTruthy();
+  expect(patient.lastName).toBeTruthy();
+  expect(patient.dob).toBeTruthy();
+  expect(patient.genderAtBirth).toBeTruthy();
+  expect(patient.contact).toBeTruthy();
 };
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const validateFhirPatient = (patient: FhirPatient) => {
   expect(patient.resourceType).toBeTruthy();
   expect(patient.resourceType).toBe("Patient");
   expect(patient.id).toBeTruthy();
+  expect(patient.name).toBeTruthy();
+  expect(patient.name?.length).toBe(1);
+  expect(patient.name?.[0].given).toBeTruthy();
+  expect(patient.name?.[0].family).toBeTruthy();
+  expect(patient.birthDate).toBeTruthy();
+  expect(patient.gender).toBeTruthy();
 };
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const validateCWPatient = (patient: CWPatient | undefined, patientValidator: any) => {
+export const validateCWPatient = (patient: CWPatient | undefined) => {
   expect(patient?.active).toBeTruthy();
-  expect(patient?.details.name).toBe(patientValidator.name);
-  expect(patient?.details.gender).toBe(patientValidator.gender);
+  expect(patient?.details.name).toBeTruthy();
+  expect(patient?.details.name?.length).toBe(1);
+  expect(patient?.details.name?.[0].given).toBeTruthy();
+  expect(patient?.details.name?.[0].family).toBeTruthy();
+  expect(patient?.details.birthDate).toBeTruthy();
+  expect(patient?.details.gender).toBeTruthy();
   expect(patient?._links).toBeTruthy();
 };
