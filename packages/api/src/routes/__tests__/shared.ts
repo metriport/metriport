@@ -3,7 +3,7 @@ dotenv.config();
 // Keep dotenv import and config before everything else
 import Axios from "axios";
 import { customAlphabet } from "nanoid";
-import { getEnvVarOrFail } from "../../shared/config";
+import { getEnvVarOrFail, getEnvVar } from "../../shared/config";
 import { Config } from "../../shared/config";
 
 export const nanoid = customAlphabet("1234567890abcdef", 10);
@@ -11,12 +11,15 @@ export const nanoid = customAlphabet("1234567890abcdef", 10);
 export const testApiKey = getEnvVarOrFail("TEST_API_KEY");
 
 export const baseURL = getEnvVarOrFail("API_URL");
-export const internalUrl = getEnvVarOrFail("INTERNAL_API_URL");
+
+// Used locally
+export const internalUrl = getEnvVar("STAGING_INTERNAL_API_URL");
 
 export function getCognitoBaseURL(): string {
-  const isProd = Config.isProdEnv();
+  const isStaging = Config.isProdEnv();
+  const isDev = !Config.isCloudEnv();
 
-  return isProd ? "" : baseURL;
+  return isStaging ? baseURL : isDev ? internalUrl || "" : "";
 }
 
 export function getInternalBaseUrl(): string {
