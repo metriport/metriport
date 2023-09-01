@@ -1,14 +1,19 @@
-import { DocumentReference, DocumentReferenceContent, Identifier } from "@medplum/fhirtypes";
+import {
+  DocumentReference,
+  DocumentReferenceContent,
+  Identifier,
+  Resource,
+} from "@medplum/fhirtypes";
 import { DocumentIdentifier } from "@metriport/commonwell-sdk";
+import dayjs from "dayjs";
+import isToday from "dayjs/plugin/isToday";
 import { MedicalDataSourceOid } from "../..";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
-import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
+import { CWDocumentWithMetriportData, getExtraResources } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
 import { ResourceType } from "../shared";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
-import dayjs from "dayjs";
-import isToday from "dayjs/plugin/isToday";
 dayjs.extend(isToday);
 
 export const MAX_FHIR_DOC_ID_LENGTH = 64;
@@ -65,20 +70,28 @@ export const toFHIR = (
         },
       ]
     : [];
+
+  const extras = getExtraResources(doc.content.contained);
+
+  const containedContent: Resource[] = [
+    {
+      resourceType: ResourceType.Patient,
+      id: patient.id,
+    },
+  ];
+
+  if (extras.organization) {
+    containedContent.push(extras.organization);
+  }
+
+  if (extras.practitioner) {
+    containedContent.push(...extras.practitioner);
+  }
+
   return {
     id: docId,
     resourceType: ResourceType.DocumentReference,
-    contained: [
-      {
-        resourceType: ResourceType.Organization,
-        id: organization.id,
-        name: organization.data.name,
-      },
-      {
-        resourceType: ResourceType.Patient,
-        id: patient.id,
-      },
-    ],
+    contained: containedContent,
     masterIdentifier: {
       system: doc.content?.masterIdentifier?.system,
       value: doc.content?.masterIdentifier?.value,

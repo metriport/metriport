@@ -1,7 +1,8 @@
-import { Document, DocumentContent, HumanName } from "@metriport/commonwell-sdk";
+import { Organization, Practitioner } from "@medplum/fhirtypes";
+import { Contained, Document, HumanName } from "@metriport/commonwell-sdk";
 import { contentType, extension } from "mime-types";
 import { Patient } from "../../../models/medical/patient";
-import { OrganizationDTO } from "../../../routes/medical/dtos/organizationDTO";
+import { ResourceType } from "../../fhir/shared";
 
 export const sandboxSleepTime = 5000;
 
@@ -19,12 +20,9 @@ export type CWDocumentWithMetriportData = DocumentWithMetriportId & {
   };
 };
 
-export type DocumentReferenceExtras = {
-  organization?: Partial<OrganizationDTO>;
-  practitioner?: {
-    name: HumanName;
-  };
-  facilityType?: string;
+export type ExtraResources = {
+  organization?: Organization;
+  practitioner?: Practitioner[];
 };
 
 export function getFileName(patient: Patient, doc: Document): string {
@@ -49,45 +47,64 @@ export function getFileExtension(value: string | undefined): string {
   return fileExtension ? `.${fileExtension}` : "";
 }
 
-export function getExtraDocRefInfo(content: DocumentContent | undefined): DocumentReferenceExtras {
-  const extraInfo: DocumentReferenceExtras = {};
-  const contained = content?.contained;
-  const context = content?.context;
+export function getExtraResources(contained: Contained[] | undefined | null): ExtraResources {
+  const resources: ExtraResources = {};
+  if (!contained) return resources;
 
-  if (contained) {
-    contained.forEach(item => {
-      const containedName = item.name;
-      if (item.resourceType === "Organization") {
-        if (typeof containedName === "string") {
-          extraInfo.organization = {
-            name: containedName,
-          };
-        }
-      } else if (item.resourceType === "Practitioner" && containedName) {
-        if (Array.isArray(containedName)) {
-          const name = containedName[0];
-          if (name) addPractitionerName(extraInfo, name);
-        } else if (typeof containedName === "object") {
-          addPractitionerName(extraInfo, containedName);
-        }
-      }
-    });
-  }
+  contained.forEach(item => {
+    const containedName = item.name;
+    if (item.resourceType === "Organization") {
+      resources.organization = getOrganizationResource(item);
+    } else if (item.resourceType === "Practitioner" && containedName) {
+      if (!resources.practitioner) resources.practitioner = [];
+      resources.practitioner.push(getPractitionerResource(item));
+    }
+  });
 
-  if (context?.facilityType?.text) {
-    extraInfo.facilityType = context.facilityType.text;
-  }
-  return extraInfo;
+  return resources;
 }
 
-export function addPractitionerName(extraInfo: DocumentReferenceExtras, name: HumanName): void {
-  if (name && name.given?.length && name.given[0] != "") {
-    extraInfo.practitioner = {
-      name: {
-        given: name.given,
-        family: name.family,
-        prefix: name.prefix?.length && name.prefix[0] !== "" ? name.prefix : undefined,
-      },
-    };
+function getOrganizationResource(item: Contained): Organization {
+  const org: Organization = {
+    resourceType: ResourceType.Organization,
+  };
+  if (typeof item.name === "string") {
+    org.name = item.name;
+  } else if (Array.isArray(item.name)) {
+    org.name = item.name[0] && item.name[0].text ? item.name[0].text : undefined;
+  } else if (typeof item.name === "object") {
+    org.name = item.name && item.name.text ? item.name?.text : undefined;
   }
+  return org;
+}
+
+function getPractitionerResource(item: Contained): Practitioner {
+  const practitioner: Practitioner = {
+    resourceType: ResourceType.Practitioner,
+  };
+  const containedName = item.name;
+
+  if (containedName) {
+    if (typeof containedName === "string") {
+      practitioner.name = [{ family: containedName }];
+    } else if (Array.isArray(containedName)) {
+      containedName.forEach(name => {
+        if (!practitioner.name) practitioner.name = [];
+
+        practitioner.name.push(getPractitionerName(name));
+      });
+    } else {
+      practitioner.name = [getPractitionerName(containedName)];
+    }
+  }
+  return practitioner;
+}
+
+function getPractitionerName(name: HumanName) {
+  return {
+    given: name.given,
+    family: name.family[0],
+    prefix:
+      name.prefix && Array.isArray(name.prefix) && name.prefix[0] !== "" ? name.prefix : undefined,
+  };
 }
