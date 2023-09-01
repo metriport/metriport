@@ -10,7 +10,7 @@ import isToday from "dayjs/plugin/isToday";
 import { MedicalDataSourceOid } from "../..";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
-import { CWDocumentWithMetriportData, getExtraResources } from "../../commonwell/document/shared";
+import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
 import { ResourceType } from "../shared";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
@@ -71,22 +71,13 @@ export const toFHIR = (
       ]
     : [];
 
-  const extras = getExtraResources(doc.content.contained);
-
   const containedContent: Resource[] = [
     {
       resourceType: ResourceType.Patient,
       id: patient.id,
     },
+    ...(doc.content.contained as Resource[]),
   ];
-
-  if (extras.organization) {
-    containedContent.push(extras.organization);
-  }
-
-  if (extras.practitioner) {
-    containedContent.push(...extras.practitioner);
-  }
 
   return {
     id: docId,
