@@ -3,6 +3,7 @@ import { updateProviderData } from "../../command/connected-user/save-connected-
 import { getUserToken } from "../../command/cx-user/get-user-token";
 import UnauthorizedError from "../../errors/unauthorized";
 import { ConnectedUser } from "../../models/connected-user";
+import { TENOVI_DEFAULT_TOKEN_VALUE } from "../../providers/tenovi";
 import { RPMDeviceProviderOptions } from "../../shared/constants";
 
 /**
@@ -38,7 +39,7 @@ export const saveRpmDevice = async (
     cxId,
     provider,
     providerItem: {
-      token: "N/A",
+      token: TENOVI_DEFAULT_TOKEN_VALUE,
       connectedDeviceIds,
       deviceUserId,
     },

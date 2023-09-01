@@ -117,10 +117,10 @@ export const getConnectedUsersByTokenOrFail = async (
   return connectedUsers;
 };
 
-export const getConnectedUserByDeviceId = async (
+export const getConnectedUsersByDeviceId = async (
   provider: string,
   device_id: string
-): Promise<ConnectedUser> => {
+): Promise<ConnectedUser[]> => {
   const connectedUsers = await ConnectedUser.findAll({
     where: {
       providerMap: {
@@ -137,11 +137,5 @@ export const getConnectedUserByDeviceId = async (
     throw new NotFoundError(`Could not find connected users associated with a device ID`);
   }
 
-  if (connectedUsers.length > 1) {
-    capture.message(`Found multiple connected users associated with a device ID`, {
-      extra: { context: `getConnectedUsersByDeviceId`, connectedUsers },
-    });
-  }
-
-  return connectedUsers[0];
+  return connectedUsers;
 };

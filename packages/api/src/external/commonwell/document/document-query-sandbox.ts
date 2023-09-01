@@ -44,7 +44,15 @@ export async function sandboxGetDocRefsAndUpsert({
   await Util.sleep(Math.random() * sandboxSleepTime);
 
   const patientData = getSandboxSeedData(patient.data.firstName);
-  if (!patientData) return [];
+  if (!patientData) {
+    await appendDocQueryProgress({
+      patient: { id: patient.id, cxId: patient.cxId },
+      downloadProgress: {
+        status: "completed",
+      },
+    });
+    return [];
+  }
 
   const entries = patientData.docRefs;
   log(`Got ${entries.length} doc refs`);
