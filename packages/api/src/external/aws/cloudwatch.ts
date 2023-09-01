@@ -4,7 +4,12 @@ import { capture } from "../../shared/notifications";
 
 export const METRICS_NAMESPACE = "Metriport";
 
-const cw = new AWS.CloudWatch({ apiVersion: "2010-08-01", region: Config.getAWSRegion() });
+const cw = new AWS.CloudWatch({
+  apiVersion: "2010-08-01",
+  region: Config.getAWSRegion(),
+  accessKeyId: process.env.ACCESS_KEY,
+  secretAccessKey: process.env.SECRET_KEY,
+});
 
 export type Metric = {
   name: string;

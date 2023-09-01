@@ -1,7 +1,7 @@
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { AxiosInstance } from "axios";
 import { FhirClient } from "../../../../../external/fhir/api/api";
-import { api, baseURL, stagingBaseUrl, internalBaseURL } from "../../../../__tests__/shared";
+import { createApi, baseURL, stagingBaseUrl, internalBaseURL } from "../../../../__tests__/shared";
 import { makeFhirApi } from "../../../../../external/fhir/api/api-factory";
 import { testAccount, Account } from "./account";
 
@@ -9,8 +9,8 @@ export const ACCOUNT_PATH = "/internal/admin/cx-account";
 const GENERATE_KEY = "/generateKey";
 export const MAPI_ACCESS = "/internal/mapi-access";
 
-export const stagingApi = api(stagingBaseUrl);
-export const internalApi = api(internalBaseURL);
+export const stagingApi = createApi(stagingBaseUrl);
+export const internalApi = createApi(internalBaseURL);
 
 export type Apis = {
   ossApi: AxiosInstance;
@@ -31,7 +31,7 @@ export const setupE2ETest = async (isDummy?: boolean): Promise<E2ETest> => {
         Authorization: account.data.idToken,
       },
     });
-    const ossApi = api(baseURL, apiKey.data.key);
+    const ossApi = createApi(baseURL, apiKey.data.key);
     const medicalApi = new MetriportMedicalApi(apiKey.data.key, { baseAddress: baseURL });
     const fhirApi = makeFhirApi(account.data.customer.id);
 
@@ -53,7 +53,7 @@ export const setupE2ETest = async (isDummy?: boolean): Promise<E2ETest> => {
     "Y1VRSllfTTE2TWdEbGFsdThzQmZiOjc3ZTMyNzg1LWY0NjMtNGIzZC1hNmMwLTc4YzY2YzUxMjUyZA";
 
   const fhirApi = makeFhirApi(dummyId);
-  const ossApi = api(baseURL, dummyApiKey);
+  const ossApi = createApi(baseURL, dummyApiKey);
   const medicalApi = new MetriportMedicalApi(dummyApiKey, { baseAddress: baseURL });
 
   return {

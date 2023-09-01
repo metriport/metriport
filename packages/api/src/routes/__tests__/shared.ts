@@ -13,9 +13,15 @@ export const baseURL = getEnvVarOrFail("API_URL");
 export const internalBaseURL = "http://localhost:8090";
 export const stagingBaseUrl = "https://api.staging.metriport.com";
 
-export const api = (url: string, apiKey?: string) =>
+export const createApi = (url: string, apiKey?: string) =>
   Axios.create({
     timeout: 10_000,
     baseURL: url ? url : baseURL,
     headers: { "x-api-key": apiKey ? apiKey : testApiKey, "Content-Type": "application/json" },
   });
+
+export const api = Axios.create({
+  timeout: 10_000,
+  baseURL: baseURL,
+  headers: { "x-api-key": testApiKey, "Content-Type": "application/json" },
+});
