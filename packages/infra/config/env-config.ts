@@ -24,6 +24,7 @@ export type EnvConfig = {
   fhirServerUrl?: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
+  testOrgId?: string;
   medicalDocumentsBucketName: string;
   fhirConverterBucketName?: string;
   analyticsSecretNames?: {
