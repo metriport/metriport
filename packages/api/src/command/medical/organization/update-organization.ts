@@ -23,7 +23,7 @@ export const updateOrganization = async (
 };
 
 /**
- * For testing only in staging.
+ * For E2E testing locally and staging.
  */
 export const incrementOrganization = async (id: string): Promise<OrganizationModel> => {
   const org = await getOrganizationById(id);

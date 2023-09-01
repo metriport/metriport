@@ -1,19 +1,18 @@
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { AxiosInstance } from "axios";
 import { FhirClient } from "../../../../../external/fhir/api/api";
-import { createApi, baseURL, stagingBaseUrl, internalBaseURL } from "../../../../__tests__/shared";
+import { apiCognito, api as apiOSS, baseURL, apiInternal } from "../../../../__tests__/shared";
 import { makeFhirApi } from "../../../../../external/fhir/api/api-factory";
 import { testAccount, Account } from "./account";
+import { Util } from "../../../../../shared/util";
+import { getEnvVarOrFail } from "../../../../../shared/config";
 
 export const ACCOUNT_PATH = "/internal/admin/cx-account";
-const GENERATE_KEY = "/generateKey";
 export const MAPI_ACCESS = "/internal/mapi-access";
-
-export const stagingApi = createApi(stagingBaseUrl);
-export const internalApi = createApi(internalBaseURL);
+const GENERATE_KEY = "/generateKey";
 
 export type Apis = {
-  ossApi: AxiosInstance;
+  apiOSS: AxiosInstance;
   medicalApi: MetriportMedicalApi;
   fhirApi: FhirClient;
 };
@@ -23,23 +22,24 @@ export type E2ETest = {
   account: Account;
 };
 
-export const setupE2ETest = async (isDummy?: boolean): Promise<E2ETest> => {
-  if (!isDummy) {
-    const account = await internalApi.post(ACCOUNT_PATH, testAccount);
-    const apiKey = await stagingApi.post(GENERATE_KEY, null, {
+export const setupE2ETest = async (isCreatingAccount?: boolean): Promise<E2ETest> => {
+  if (isCreatingAccount) {
+    const account = await apiInternal.post(ACCOUNT_PATH, testAccount);
+    const apiKey = await apiCognito.post(GENERATE_KEY, null, {
       headers: {
         Authorization: account.data.idToken,
       },
     });
-    const ossApi = createApi(baseURL, apiKey.data.key);
+    apiOSS.defaults.headers["x-api-key"] = apiKey.data.key;
+
     const medicalApi = new MetriportMedicalApi(apiKey.data.key, { baseAddress: baseURL });
     const fhirApi = makeFhirApi(account.data.customer.id);
 
-    await ossApi.post(`${MAPI_ACCESS}?cxId=${account.data.customer.id}`);
+    await apiOSS.post(`${MAPI_ACCESS}?cxId=${account.data.customer.id}`);
 
     return {
       apis: {
-        ossApi,
+        apiOSS,
         medicalApi,
         fhirApi,
       },
@@ -47,32 +47,29 @@ export const setupE2ETest = async (isDummy?: boolean): Promise<E2ETest> => {
     };
   }
 
-  // DUMMY ACCOUNT
-  const dummyId = "77e32785-f463-4b3d-a6c0-78c66c51252d";
-  const dummyApiKey =
-    "Y1VRSllfTTE2TWdEbGFsdThzQmZiOjc3ZTMyNzg1LWY0NjMtNGIzZC1hNmMwLTc4YzY2YzUxMjUyZA";
+  // For dev and prod
+  const testId = getEnvVarOrFail("TEST_ACC_ID");
+  const testApiKey = getEnvVarOrFail("TEST_API_KEY");
 
-  const fhirApi = makeFhirApi(dummyId);
-  const ossApi = createApi(baseURL, dummyApiKey);
-  const medicalApi = new MetriportMedicalApi(dummyApiKey, { baseAddress: baseURL });
+  const fhirApi = makeFhirApi(testId);
+  apiOSS.defaults.headers["x-api-key"] = testApiKey;
+  const medicalApi = new MetriportMedicalApi(testApiKey, { baseAddress: baseURL });
 
   return {
     apis: {
-      ossApi,
+      apiOSS,
       medicalApi,
       fhirApi,
     },
     account: {
-      accessToken: "",
-      idToken: "",
       customer: {
-        id: dummyId,
-        firstName: "Test",
-        lastName: "Customer",
-        email: "",
-        website: "",
-        stripeCxId: null,
+        id: testId,
         subscriptionStatus: "active",
+        stripeCxId: null,
+        firstName: null,
+        lastName: null,
+        email: null,
+        website: null,
       },
     },
   };
@@ -81,15 +78,16 @@ export const setupE2ETest = async (isDummy?: boolean): Promise<E2ETest> => {
 export const cleanUpE2ETest = async (
   apis: Apis,
   account: Account,
-  isDummy?: boolean
+  isCreatingAccount?: boolean
 ): Promise<void> => {
-  if (isDummy) return;
-  await apis.ossApi.delete(`${MAPI_ACCESS}?cxId=${account.customer.id}`);
-  await internalApi.delete(`${ACCOUNT_PATH}?cxId=${account.customer.id}`, {
-    headers: {
-      Authorization: account.accessToken,
-    },
-  });
+  if (isCreatingAccount) {
+    await apis.apiOSS.delete(`${MAPI_ACCESS}?cxId=${account.customer.id}`);
+    await apiInternal.delete(`${ACCOUNT_PATH}?cxId=${account.customer.id}`, {
+      headers: {
+        Authorization: account.accessToken,
+      },
+    });
+  }
 };
 
 export const retryFunction = async (
@@ -108,6 +106,7 @@ export const retryFunction = async (
     if (match && result[match.key] === match.value) break;
     if (!match && result) break;
     retry = count < maxRetries;
+    await Util.sleep(3000);
   }
 
   return result;

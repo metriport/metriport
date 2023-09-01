@@ -19,10 +19,11 @@ export const deletePatient = async (
   options: DeleteOptions = {}
 ): Promise<void> => {
   const { id, cxId, facilityId, eTag } = patientDelete;
+
   const patient = await getPatientOrFail({ id, cxId });
   validateVersionForUpdate(patient, eTag);
 
-  if (options.allEnvs || Config.isSandbox() || !Config.isCloudEnv()) {
+  if (options.allEnvs || Config.isSandbox()) {
     const fhirApi = makeFhirApi(cxId);
 
     try {

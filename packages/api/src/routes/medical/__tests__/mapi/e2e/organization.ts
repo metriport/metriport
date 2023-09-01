@@ -15,29 +15,43 @@ export const createOrg: OrganizationCreate = {
   },
 };
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const validateLocalOrg = (org: Organization, orgValidator: any) => {
+export const validateLocalOrg = (org: Organization) => {
   expect(org.id).toBeTruthy();
-  expect(org.type).toBe(orgValidator.type);
+  expect(org.type).toBeTruthy();
   expect(org.location).toBeTruthy();
-  expect(org.name).toBe(orgValidator.name);
+  expect(org.location.addressLine1).toBeTruthy();
+  expect(org.location.city).toBeTruthy();
+  expect(org.location.state).toBeTruthy();
+  expect(org.location.zip).toBeTruthy();
+  expect(org.location.country).toBeTruthy();
+  expect(org.name).toBeTruthy();
   expect(org.oid).toBeTruthy();
 };
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const validateFhirOrg = (org: FhirOrg, orgValidator: any) => {
+export const validateFhirOrg = (org: FhirOrg) => {
   expect(org.resourceType).toBeTruthy();
   expect(org.resourceType).toBe("Organization");
   expect(org.id).toBeTruthy();
-  expect(org.name).toBe(orgValidator.name);
+  expect(org.name).toBeTruthy();
   expect(org.address).toBeTruthy();
+  expect(org.address?.length).toBe(1);
+  expect(org.address?.[0].line).toBeTruthy();
+  expect(org.address?.[0].city).toBeTruthy();
+  expect(org.address?.[0].state).toBeTruthy();
+  expect(org.address?.[0].postalCode).toBeTruthy();
+  expect(org.address?.[0].country).toBeTruthy();
 };
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const validateCWOrg = (org: CWOrganization | undefined, orgValidator: any) => {
+export const validateCWOrg = (org: CWOrganization | undefined) => {
   expect(org?.organizationId).toBeTruthy();
-  expect(org?.name).toBe(orgValidator.name);
+  expect(org?.name).toBeTruthy();
   expect(org?.locations).toBeTruthy();
+  expect(org?.locations?.length).toBe(1);
+  expect(org?.locations?.[0].address1).toBeTruthy();
+  expect(org?.locations?.[0].city).toBeTruthy();
+  expect(org?.locations?.[0].state).toBeTruthy();
+  expect(org?.locations?.[0].postalCode).toBeTruthy();
+  expect(org?.locations?.[0].country).toBeTruthy();
   expect(org?.technicalContacts).toBeTruthy();
   expect(org?.isActive).toBeTruthy();
   expect(org?._links).toBeTruthy();

@@ -14,10 +14,15 @@ export const createFacility: FacilityCreate = {
   },
 };
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const validateFacility = (facility: Facility, facilityValidator: any) => {
+export const validateFacility = (facility: Facility) => {
   expect(facility.id).toBeTruthy();
-  expect(facility.npi).toBe(facilityValidator.npi);
+  expect(facility.npi).toBeTruthy();
   expect(facility.address).toBeTruthy();
-  expect(facility.name).toBe(facilityValidator.name);
+  expect(facility.address.addressLine1).toBeTruthy();
+  expect(facility.address.city).toBeTruthy();
+  expect(facility.address.state).toBeTruthy();
+  expect(facility.address.zip).toBeTruthy();
+  expect(facility.address.country).toBeTruthy();
+  expect(facility.name).toBeTruthy();
+  expect(facility.active).toBeTruthy();
 };
