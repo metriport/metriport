@@ -4,8 +4,8 @@ import { Patient as FhirPatient } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
 
 export const createPatient: PatientCreate = {
-  firstName: faker.person.firstName(),
-  lastName: faker.person.lastName(),
+  firstName: "John",
+  lastName: "Smith",
   dob: "2000-01-01",
   genderAtBirth: "M",
   contact: {
@@ -13,10 +13,10 @@ export const createPatient: PatientCreate = {
     email: faker.internet.email(),
   },
   address: {
-    addressLine1: faker.location.streetAddress(),
-    city: faker.location.city(),
-    state: USState.CA,
-    zip: faker.location.zipCode("#####"),
+    addressLine1: "123 test ave",
+    city: "Miami",
+    state: USState.FL,
+    zip: "12345",
     country: "USA",
   },
 };

@@ -10,7 +10,9 @@ import cwCommands from "../../../../../external/commonwell";
 import { validateCWOrg, validateFhirOrg, validateLocalOrg, createOrg } from "./organization";
 import { createFacility, validateFacility } from "./facility";
 import { createPatient, validateFhirPatient, validateLocalPatient } from "./patient";
+import { createConsolidated } from "./consolidated";
 import { setupE2ETest, retryFunction, cleanUpE2ETest } from "./shared";
+import { Util } from "../../../../../shared/util";
 
 type Customer = {
   id: string;
@@ -28,6 +30,8 @@ const FACILITY = "/medical/v1/facility";
 const maxRetries = 4;
 
 jest.setTimeout(30000);
+
+// NEED TO WORK THIS FOR JUST DEV AN STAGING - DISABLE IN PROD
 
 describe("MAPI E2E Tests", () => {
   let account: { customer: Customer; idToken: string; accessToken: string };
@@ -127,27 +131,59 @@ describe("MAPI E2E Tests", () => {
   it("creates a patient", async () => {
     patient = await medicalApi.createPatient(createPatient, facility.id);
 
-    // const localPatient = await getPatientOrFail({ id: patient.id, cxId: account.customer.id });
-
     const fhirPatient = await fhirApi.readResource(ResourceType.Patient, patient.id);
-
-    // const commonwellData = localPatient.data.externalData
-    //   ? (localPatient.data.externalData[MedicalDataSource.COMMONWELL] as PatientDataCommonwell)
-    //   : undefined;
-
-    // if (commonwellData) {
-    // const cwPatient = await retryFunction(
-    //   async () => await cwCommands.patient.getOne(org, facility, commonwellData.patientId),
-    //   maxRetries
-    // );
 
     validateLocalPatient(patient, createPatient);
     validateFhirPatient(fhirPatient);
-    // validateCWPatient(cwPatient, createPatient);
-    // }
+
+    await Util.sleep(10000);
   });
 
-  // DELETES AT THE END
+  // CONSIDER TESTING WEBHOOK FOR THIS
+  it("creates consolidated data for patient", async () => {
+    const payload = createConsolidated(patient.id);
+    const consolidated = await medicalApi.createPatientConsolidated(patient.id, payload);
+    const count = await medicalApi.countPatientConsolidated(patient.id);
+
+    expect(count.total).toBe(1);
+    expect(consolidated).toBeTruthy();
+  });
+
+  // In order to test doc query i need to have another org already set up with a patient in it similiar demographics to the one i just created
+
+  it("triggers a document query for the specified patient across HIEs", async () => {
+    const docQueryProgress = await medicalApi.startDocumentQuery(patient.id, facility.id);
+    let status = await medicalApi.getDocumentQueryStatus(patient.id);
+
+    while (
+      status.download?.status === "processing" ||
+      (status.convert && status.convert?.status === "processing")
+    ) {
+      await Util.sleep(5000);
+      status = await medicalApi.getDocumentQueryStatus(patient.id);
+    }
+
+    const documents = await medicalApi.listDocuments(patient.id, facility.id);
+
+    expect(docQueryProgress).toBeTruthy();
+    expect(documents).toBeTruthy();
+    expect(documents.length).toBe(1);
+  });
+
+  it("deletes a patient's consolidated data", async () => {
+    const consolidated = await medicalApi.getPatientConsolidated(patient.id);
+    const allergyResource = consolidated.entry?.[0]?.resource;
+    const docRefResource = consolidated.entry?.[1]?.resource;
+
+    if (allergyResource && allergyResource.id && docRefResource && docRefResource.id) {
+      await fhirApi.deleteResource(allergyResource.resourceType, allergyResource.id);
+      await fhirApi.deleteResource(docRefResource.resourceType, docRefResource.id);
+    }
+
+    const count = await medicalApi.countPatientConsolidated(patient.id);
+
+    expect(count.total).toBe(0);
+  });
 
   it("deletes a patient", async () => {
     await medicalApi.deletePatient(patient.id, facility.id);
