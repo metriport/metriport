@@ -49,6 +49,7 @@ import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { downloadDocument as downloadDocumentFromCW } from "./document-download";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
+  getExtraDocRefInfo,
   CWDocumentWithMetriportData,
   DocumentWithLocation,
   DocumentWithMetriportId,
@@ -212,6 +213,7 @@ export async function internalGetDocuments({
   const documents: Document[] = docs.flatMap(d => {
     if (d.content && d.content.masterIdentifier?.value && d.content.location) {
       return {
+        ...getExtraDocRefInfo(d.content),
         id: d.content.masterIdentifier.value,
         content: { location: d.content.location, ...d.content },
         contained: d.content.contained,
