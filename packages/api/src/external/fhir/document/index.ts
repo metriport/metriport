@@ -1,10 +1,11 @@
 import {
   DocumentReference,
   DocumentReferenceContent,
+  HumanName,
   Identifier,
   Resource,
 } from "@medplum/fhirtypes";
-import { DocumentIdentifier } from "@metriport/commonwell-sdk";
+import { HumanName as CWHumanName, Contained, DocumentIdentifier } from "@metriport/commonwell-sdk";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { MedicalDataSourceOid } from "../..";
@@ -76,8 +77,15 @@ export const toFHIR = (
       resourceType: ResourceType.Patient,
       id: patient.id,
     },
-    ...(doc.content.contained as Resource[]),
   ];
+
+  const contained = doc.content?.contained;
+  if (contained?.length) {
+    contained.forEach(cwResource => {
+      const fhirResource = convertToFHIRResource(cwResource);
+      if (fhirResource) containedContent.push(fhirResource);
+    });
+  }
 
   return {
     id: docId,
@@ -147,4 +155,111 @@ export function idToFHIR(id: DocumentIdentifier): Identifier {
     value: id.value,
     use: id.use === "unspecified" ? undefined : id.use,
   };
+}
+
+/**
+ * Takes a CW resource and converts it to a FHIR resource
+ *
+ * @param resource
+ * @returns
+ */
+function convertToFHIRResource(resource: Contained): Resource | undefined {
+  if (resource.resourceType === ResourceType.Patient && resource.id) {
+    return {
+      resourceType: ResourceType.Patient,
+      id: resource.id,
+    };
+  } else if (resource.resourceType === ResourceType.Organization && resource.name) {
+    return {
+      resourceType: ResourceType.Organization,
+      name: convertCWNameToString(resource.name),
+    };
+  } else if (resource.resourceType === ResourceType.Practitioner && resource.name) {
+    return {
+      resourceType: ResourceType.Practitioner,
+      name: convertCWNameToHumanName(resource.name),
+    };
+  }
+}
+
+/**
+ * Converts a CW name to a string
+ *
+ * @param name
+ * @returns
+ */
+function convertCWNameToString(name: string | CWHumanName | CWHumanName[]): string | undefined {
+  if (typeof name === "string") {
+    return name;
+  } else if (Array.isArray(name)) {
+    if (name.length) {
+      const names: string[] = [];
+      name.forEach(n => {
+        if (typeof n === "string") {
+          names.push(n);
+        } else if (typeof n === "object") {
+          const humanNames = getHumanNamesFromObject(n).map(n => n.family);
+          if (humanNames) names.push(humanNames.join(" "));
+        }
+      });
+      return names.join(" ");
+    }
+  } else if (typeof name === "object") {
+    return getHumanNamesFromObject(name)
+      .map(n => n.family)
+      .join(" ");
+  }
+}
+
+/**
+ * Converts a CW name to a FHIR HumanName
+ *
+ * @param name
+ * @returns
+ */
+function convertCWNameToHumanName(
+  name: string | CWHumanName | CWHumanName[]
+): HumanName[] | undefined {
+  if (typeof name === "string") {
+    return [
+      {
+        family: name,
+      },
+    ];
+  } else if (Array.isArray(name)) {
+    if (name.length) {
+      let names: HumanName[] = [];
+      name.forEach(n => {
+        if (typeof n === "string") {
+          names.push({
+            family: n,
+          });
+        } else if (typeof n === "object") {
+          names = getHumanNamesFromObject(n);
+        }
+      });
+    }
+  } else if (typeof name === "object") {
+    return getHumanNamesFromObject(name);
+  }
+}
+
+/**
+ * Converts a CW HumanName to a FHIR HumanName
+ *
+ * @param n
+ * @returns
+ */
+function getHumanNamesFromObject(n: CWHumanName): HumanName[] {
+  const names: HumanName[] = [];
+  if (n.family.length) {
+    for (let i = 0; i < n.family.length; i++) {
+      names.push({
+        family: n.family[i],
+        given: n.given && n.given[i] ? [n.given[i]] : undefined,
+        prefix: n.prefix && n.prefix[i] ? [n.prefix[i]] : undefined,
+      });
+    }
+  }
+  return names;
 }
