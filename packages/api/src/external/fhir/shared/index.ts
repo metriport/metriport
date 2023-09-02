@@ -9,6 +9,7 @@ import { Operator } from "@medplum/core";
 export enum ResourceType {
   Organization = "Organization",
   Patient = "Patient",
+  Practitioner = "Practitioner",
   DocumentReference = "DocumentReference",
 }
 
