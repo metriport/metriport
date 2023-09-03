@@ -27,7 +27,7 @@ router.delete(
     await deleteOrgFromFHIRServer(cxId, org.id);
     await deleteOrganization({ cxId });
 
-    return res.sendStatus(status.OK);
+    return res.sendStatus(status.NO_CONTENT);
   })
 );
 

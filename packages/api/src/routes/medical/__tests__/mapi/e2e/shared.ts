@@ -8,6 +8,7 @@ import { Util } from "../../../../../shared/util";
 import { getEnvVarOrFail } from "../../../../../shared/config";
 
 export const ACCOUNT_PATH = "/internal/admin/cx-account";
+export const CUSTOMER_PATH = "/internal/customer";
 export const MAPI_ACCESS = "/internal/mapi-access";
 const GENERATE_KEY = "/generateKey";
 
@@ -47,13 +48,13 @@ export const setupE2ETest = async (isCreatingAccount?: boolean): Promise<E2ETest
     };
   }
 
-  // For dev and prod
   const testId = getEnvVarOrFail("TEST_ACC_ID");
   const testApiKey = getEnvVarOrFail("TEST_API_KEY");
 
   const fhirApi = makeFhirApi(testId);
   apiOSS.defaults.headers["x-api-key"] = testApiKey;
   const medicalApi = new MetriportMedicalApi(testApiKey, { baseAddress: baseURL });
+  const customerResp = await apiInternal.get(`${ACCOUNT_PATH}?cxId=${testId}`);
 
   return {
     apis: {
@@ -62,15 +63,7 @@ export const setupE2ETest = async (isCreatingAccount?: boolean): Promise<E2ETest
       fhirApi,
     },
     account: {
-      customer: {
-        id: testId,
-        subscriptionStatus: "active",
-        stripeCxId: null,
-        firstName: null,
-        lastName: null,
-        email: null,
-        website: null,
-      },
+      customer: customerResp.data,
     },
   };
 };
@@ -90,21 +83,20 @@ export const cleanUpE2ETest = async (
   }
 };
 
-export const retryFunction = async (
-  fn: () => Promise<unknown>,
+export const retryFunction = async <K>(
+  fn: () => Promise<K>,
   maxRetries = 3,
-  match?: { key: string; value: string }
+  testFn?: (result: K) => boolean
 ) => {
   let count = 0;
   let retry = true;
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let result: any;
+  let result;
 
   while (retry) {
     count++;
     result = await fn();
-    if (match && result[match.key] === match.value) break;
-    if (!match && result) break;
+    if (testFn && testFn(result)) break;
+    if (!testFn && result) break;
     retry = count < maxRetries;
     await Util.sleep(3000);
   }

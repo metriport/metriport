@@ -21,7 +21,7 @@ router.delete(
 
     await deleteFacility({ cxId, id: facilityId });
 
-    return res.sendStatus(status.OK);
+    return res.sendStatus(status.NO_CONTENT);
   })
 );
 

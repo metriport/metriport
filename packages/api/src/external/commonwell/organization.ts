@@ -132,10 +132,11 @@ export const getOne = async (orgOid: string): Promise<CWOrganization | undefined
     debug(`resp: ${JSON.stringify(resp, null, 2)}`);
     return resp;
   } catch (error) {
-    const msg = `Failure getting Org @ CW`;
+    const msg = `[E2E]: Failure getting Org @ CW`;
     log(msg, error);
-    capture.error(error, {
+    capture.message(msg, {
       extra: {
+        orgOid,
         cwId,
         cwReference: commonWell.lastReferenceHeader,
         context: `cw.org.get`,

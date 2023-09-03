@@ -1,3 +1,5 @@
+import { faker } from "@faker-js/faker";
+
 export type Customer = {
   id: string;
   subscriptionStatus: "disabled" | "active" | "overdue";
@@ -11,9 +13,9 @@ export type Customer = {
 export type Account = { customer: Customer; idToken?: string; accessToken?: string };
 
 export const testAccount = {
-  email: "test+123@metriport.com",
-  password: "Abc123!@#",
-  firstName: "John",
-  lastName: "Doe",
-  website: "https://metriport.com",
+  email: faker.internet.email(),
+  password: faker.internet.password(),
+  firstName: faker.person.firstName(),
+  lastName: faker.person.lastName(),
+  website: faker.internet.url(),
 };

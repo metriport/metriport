@@ -514,6 +514,7 @@ export async function getOne(
     console.error(`Failure while getting patient ${patientId} @ CW: `, err);
     capture.error(err, {
       extra: {
+        organizationId: organization.id,
         facilityId: facility.id,
         patientId: patientId,
         cwReference: commonWell?.lastReferenceHeader,
