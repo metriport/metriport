@@ -534,7 +534,7 @@ export async function downloadDocsAndUpsertFHIR({
             errorCountConvertible++;
           }
 
-          const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, organization, patient);
+          const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
           try {
             await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
           } catch (error) {

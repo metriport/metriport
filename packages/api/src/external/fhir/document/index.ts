@@ -1,19 +1,27 @@
 import {
+  Address,
   DocumentReference,
   DocumentReferenceContent,
   HumanName,
   Identifier,
+  Organization as FhirOrganization,
+  Reference,
   Resource,
 } from "@medplum/fhirtypes";
-import { HumanName as CWHumanName, Contained, DocumentIdentifier } from "@metriport/commonwell-sdk";
+import {
+  Contained,
+  DocumentIdentifier as CWDocumentIdentifier,
+  DocumentIdentifier,
+  HumanName as CWHumanName,
+} from "@metriport/commonwell-sdk";
+import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { MedicalDataSourceOid } from "../..";
-import { Organization } from "../../../models/medical/organization";
-import { Patient } from "../../../models/medical/patient";
+import { joinName, Patient, splitName } from "../../../models/medical/patient";
+import { capture } from "../../../shared/notifications";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
-import { ResourceType } from "../shared";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
 dayjs.extend(isToday);
 
@@ -44,7 +52,6 @@ function getBestDateFromCWDocRef(doc: CWDocumentWithMetriportData): string {
 export const toFHIR = (
   docId: string,
   doc: CWDocumentWithMetriportData,
-  organization: Organization,
   patient: Patient
 ): DocumentReference => {
   const baseAttachment = {
@@ -74,7 +81,7 @@ export const toFHIR = (
 
   const containedContent: Resource[] = [
     {
-      resourceType: ResourceType.Patient,
+      resourceType: "Patient",
       id: patient.id,
     },
   ];
@@ -82,14 +89,17 @@ export const toFHIR = (
   const contained = doc.content?.contained;
   if (contained?.length) {
     contained.forEach(cwResource => {
-      const fhirResource = convertToFHIRResource(cwResource);
+      const fhirResource = convertToFHIRResource(cwResource, patient.id);
       if (fhirResource) containedContent.push(fhirResource);
     });
   }
 
+  const authorOrganization: Reference<FhirOrganization> | undefined =
+    extractAuthorOrganization(containedContent);
+
   return {
     id: docId,
-    resourceType: ResourceType.DocumentReference,
+    resourceType: "DocumentReference",
     contained: containedContent,
     masterIdentifier: {
       system: doc.content?.masterIdentifier?.system,
@@ -101,14 +111,9 @@ export const toFHIR = (
     type: doc.content?.type,
     subject: {
       reference: `Patient/${patient.id}`,
-      type: ResourceType.Patient,
+      type: "Patient",
     },
-    author: [
-      {
-        reference: `#${organization.id}`,
-        type: ResourceType.Organization,
-      },
-    ],
+    author: authorOrganization ? [authorOrganization] : undefined,
     // DEFAULT TO COMMONWELL FOR NOW
     custodian: {
       id: MedicalDataSourceOid.COMMONWELL,
@@ -163,22 +168,40 @@ export function idToFHIR(id: DocumentIdentifier): Identifier {
  * @param resource
  * @returns
  */
-function convertToFHIRResource(resource: Contained): Resource | undefined {
-  if (resource.resourceType === ResourceType.Patient && resource.id) {
+function convertToFHIRResource(resource: Contained, patientId: string): Resource | undefined {
+  if (resource.resourceType === "Patient" && resource.id && !resource.id.includes(patientId)) {
+    capture.message(`Found a matching Patient resource in CW docRef.contained`, {
+      extra: { context: `toFHIR.convertToFHIRResource`, resource, patientId, level: "warning" },
+    });
     return {
-      resourceType: ResourceType.Patient,
+      resourceType: "Patient",
       id: resource.id,
     };
-  } else if (resource.resourceType === ResourceType.Organization && resource.name) {
+  } else if (resource.resourceType === "Organization" && resource.name) {
     return {
-      resourceType: ResourceType.Organization,
+      resourceType: "Organization",
+      id: resource.id ?? undefined,
+      identifier: convertCWIdentifierToFHIR(resource.identifier),
       name: convertCWNameToString(resource.name),
+      address: convertCWAdressToFHIR(resource.address),
     };
-  } else if (resource.resourceType === ResourceType.Practitioner && resource.name) {
+  } else if (resource.resourceType === "Practitioner" && resource.name) {
     return {
-      resourceType: ResourceType.Practitioner,
+      resourceType: "Practitioner",
+      id: resource.id ?? undefined,
+      identifier: convertCWIdentifierToFHIR(resource.identifier),
       name: convertCWNameToHumanName(resource.name),
+      gender: convertCWGenderToFHIR(resource.gender?.coding),
     };
+  } else {
+    capture.message(`New Resource type on toFHIR conversion`, {
+      extra: {
+        context: `toFHIR.convertToFHIRResource`,
+        resourceType: resource.resourceType,
+        resource,
+        patientId,
+      },
+    });
   }
 }
 
@@ -238,6 +261,7 @@ function convertCWNameToHumanName(
           names = getHumanNamesFromObject(n);
         }
       });
+      return names;
     }
   } else if (typeof name === "object") {
     return getHumanNamesFromObject(name);
@@ -247,19 +271,122 @@ function convertCWNameToHumanName(
 /**
  * Converts a CW HumanName to a FHIR HumanName
  *
- * @param n
+ * @param name
  * @returns
  */
-function getHumanNamesFromObject(n: CWHumanName): HumanName[] {
+function getHumanNamesFromObject(name: CWHumanName): HumanName[] {
   const names: HumanName[] = [];
-  if (n.family.length) {
-    for (let i = 0; i < n.family.length; i++) {
-      names.push({
-        family: n.family[i],
-        given: n.given && n.given[i] ? [n.given[i]] : undefined,
-        prefix: n.prefix && n.prefix[i] ? [n.prefix[i]] : undefined,
-      });
-    }
-  }
+  if (name.use === "unspecified") return names;
+
+  const namePrefix = getHumanNameAttribute(name.prefix);
+  const nameSuffix = getHumanNameAttribute(name.suffix);
+
+  names.push({
+    family: joinName(name.family),
+    given: name.given,
+    prefix: namePrefix,
+    suffix: nameSuffix,
+    text: name.text ?? undefined,
+  });
   return names;
+}
+
+/**
+ * Converts a CW Document Identifier to a FHIR Identifier
+ *
+ * @param identifier
+ * @returns
+ */
+function convertCWIdentifierToFHIR(
+  identifier: CWDocumentIdentifier[] | null | undefined
+): Identifier[] | undefined {
+  if (identifier) {
+    return identifier.map(id => ({
+      use: id.use !== "unspecified" ? id.use : undefined,
+      system: id.system,
+      value: id.value,
+    }));
+  }
+}
+
+/**
+ * Extracts the author organization from the contained resources
+ *
+ * @param contained
+ * @returns
+ */
+function extractAuthorOrganization(contained: Resource[]): Reference<FhirOrganization> | undefined {
+  const org = contained.find(r => r.resourceType === "Organization");
+  if (org) {
+    return {
+      reference: `#${org.id}`,
+      type: "Organization",
+    };
+  }
+}
+
+/**
+ * Gets a CW HumanName attribute and returns it as a string[].
+ * Works with prefix and suffix.
+ *
+ * @param attribute
+ * @returns
+ */
+function getHumanNameAttribute(
+  attribute: string | string[] | null | undefined
+): string[] | undefined {
+  let nameAttribute: string[] | undefined;
+  if (attribute) {
+    nameAttribute = typeof attribute === "string" ? splitName(attribute) : attribute;
+  }
+  return nameAttribute;
+}
+
+/**
+ * Converts a CW Address to a FHIR Address
+ *
+ * @param address
+ * @returns
+ */
+function convertCWAdressToFHIR(address: Contained["address"] | undefined): Address[] | undefined {
+  if (address) {
+    const fhirAddress: Address[] = address.map(a => {
+      return {
+        line: a.line ?? undefined,
+        city: a.city ?? undefined,
+        state: a.state ?? undefined,
+        postalCode: a.zip ?? undefined,
+        country: a.country ?? undefined,
+        period: a.period ?? undefined,
+        use:
+          a.use == "home" ||
+          a.use == "work" ||
+          a.use == "temp" ||
+          a.use == "old" ||
+          a.use == "billing"
+            ? a.use
+            : undefined,
+      };
+    });
+
+    return fhirAddress;
+  }
+}
+
+/**
+ * Converts a CW gender code to a FHIR gender type.
+ *
+ * @param genders
+ * @returns
+ */
+function convertCWGenderToFHIR(
+  genders: Gender[] | null | undefined
+): "male" | "female" | "other" | "unknown" | undefined {
+  if (genders) {
+    if (genders[0].code === "M") return "male";
+    else if (genders[0].code === "F") return "female";
+    else if (genders[0].code === "UN") return "other";
+    else if (genders[0].code === "UNK") return "unknown";
+  }
+  return undefined;
 }
