@@ -32,17 +32,17 @@ const maxRetries = 4;
 
 jest.setTimeout(30000);
 
-describe("MAPI E2E Tests", () => {
-  let account: Account;
-  let medicalApi: MetriportMedicalApi;
-  let fhirApi: FhirClient;
-  let apiOSS: AxiosInstance;
+if (Config.isStaging() || !Config.isCloudEnv()) {
+  describe("MAPI E2E Tests", () => {
+    let account: Account;
+    let medicalApi: MetriportMedicalApi;
+    let fhirApi: FhirClient;
+    let apiOSS: AxiosInstance;
 
-  let org: Organization;
-  let facility: Facility;
-  let patient: Patient;
+    // let org: Organization;
+    let facility: Facility;
+    let patient: Patient;
 
-  if (Config.isStaging() || !Config.isCloudEnv()) {
     // When set to false it will use already created account in staging
     const isCreatingAccount = true;
 
@@ -59,7 +59,7 @@ describe("MAPI E2E Tests", () => {
     });
 
     it("creates an organization", async () => {
-      org = await medicalApi.createOrganization(createOrg);
+      const org = await medicalApi.createOrganization(createOrg);
 
       const fhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id);
 
@@ -68,12 +68,18 @@ describe("MAPI E2E Tests", () => {
         maxRetries
       );
 
-      validateLocalOrg(org);
-      validateFhirOrg(fhirOrg);
-      validateCWOrg(cwOrg);
+      validateLocalOrg(org, createOrg);
+      validateFhirOrg(fhirOrg, createOrg);
+      validateCWOrg(cwOrg, createOrg);
     });
 
     it("updates an organization", async () => {
+      const org = await medicalApi.getOrganization();
+
+      if (!org) {
+        throw new Error("Org not found");
+      }
+
       const newName = faker.word.noun();
 
       const updateOrg: Organization = {
@@ -81,24 +87,20 @@ describe("MAPI E2E Tests", () => {
         name: newName,
       };
 
-      org = await medicalApi.updateOrganization(updateOrg);
+      const updatedOrg = await medicalApi.updateOrganization(updateOrg);
 
       await fhirApi.invalidateAll();
-      const fhirOrg: FhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id);
+      const fhirOrg: FhirOrg = await fhirApi.readResource(ResourceType.Organization, updatedOrg.id);
 
-      const cwOrg: CWOrganization = await retryFunction(
-        async () => await cwCommands.organization.getOne(org.oid),
+      const cwOrg: CWOrganization | undefined = await retryFunction<CWOrganization | undefined>(
+        async () => await cwCommands.organization.getOne(updatedOrg.oid),
         maxRetries,
-        { key: "name", value: newName }
+        result => result?.name === newName
       );
 
-      validateLocalOrg(org);
-      validateFhirOrg(fhirOrg);
-      validateCWOrg(cwOrg);
-
-      expect(org.name).toBe(newName);
-      expect(fhirOrg.name).toBe(newName);
-      expect(cwOrg.name).toBe(newName);
+      validateLocalOrg(updatedOrg, updateOrg);
+      validateFhirOrg(fhirOrg, updateOrg);
+      validateCWOrg(cwOrg, updateOrg);
     });
 
     it("create a facility", async () => {
@@ -134,6 +136,12 @@ describe("MAPI E2E Tests", () => {
     });
 
     it("creates a patient", async () => {
+      const org = await medicalApi.getOrganization();
+
+      if (!org) {
+        throw new Error("Org not found");
+      }
+
       patient = await medicalApi.createPatient(createPatient, facility.id);
 
       const fhirPatient = await fhirApi.readResource(ResourceType.Patient, patient.id);
@@ -158,6 +166,12 @@ describe("MAPI E2E Tests", () => {
     });
 
     it("updates a patient", async () => {
+      const org = await medicalApi.getOrganization();
+
+      if (!org) {
+        throw new Error("Org not found");
+      }
+
       const newName = faker.person.firstName();
 
       // Getting etag issue if not fetched again
@@ -257,6 +271,12 @@ describe("MAPI E2E Tests", () => {
     });
 
     it("deletes an organization", async () => {
+      const org = await medicalApi.getOrganization();
+
+      if (!org) {
+        throw new Error("Org not found");
+      }
+
       await apiOSS.delete(`${ORGANIZATION}?cxId=${account.customer.id}`);
       await apiOSS.put(`${ORGANIZATION}/increment/${INCREMENT_ORG_ID}?cxId=${account.customer.id}`);
 
@@ -267,27 +287,5 @@ describe("MAPI E2E Tests", () => {
       expect(fhirOrg.length).toBe(0);
       expect(deleteOrg).toBeFalsy();
     });
-  } else {
-    beforeAll(async () => {
-      const setup = await setupE2ETest(false);
-
-      account = setup.account;
-      medicalApi = setup.apis.medicalApi;
-      fhirApi = setup.apis.fhirApi;
-      apiOSS = setup.apis.apiOSS;
-    });
-
-    it("gets an organization", async () => {
-      const org = await medicalApi.getOrganization();
-
-      if (org) {
-        const fhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id);
-        const cwOrg = await cwCommands.organization.getOne(org.oid);
-
-        validateLocalOrg(org);
-        validateCWOrg(cwOrg);
-        validateFhirOrg(fhirOrg);
-      }
-    });
-  }
-});
+  });
+}

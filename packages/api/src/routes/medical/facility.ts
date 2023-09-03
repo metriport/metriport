@@ -105,23 +105,4 @@ router.get(
   })
 );
 
-/** ---------------------------------------------------------------------------
- * DELETE /facility/:id
- *
- * Deletes the facility corresponding to the customer ID and facility id.
- *
- * @returns 200 OK.
- */
-router.delete(
-  "/:id",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const facilityId = getFromParamsOrFail("id", req);
-
-    await deleteFacility({ cxId, id: facilityId });
-
-    return res.sendStatus(status.OK);
-  })
-);
-
 export default router;
