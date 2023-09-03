@@ -1,10 +1,9 @@
 import { Organization } from "../../../models/medical/organization";
 import { Organization as FHIROrganization } from "@medplum/fhirtypes";
-import { ResourceType } from "../shared";
 
 export const toFHIR = (org: Organization): FHIROrganization => {
   return {
-    resourceType: ResourceType.Organization,
+    resourceType: "Organization",
     id: org.id,
     active: true,
     type: [
