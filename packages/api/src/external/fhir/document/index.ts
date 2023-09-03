@@ -167,7 +167,7 @@ export function idToFHIR(id: DocumentIdentifier): Identifier {
  *
  * @param resource CW Contained resource.
  * @param patientId Patient ID that the document is associated with.
- * @returns FHIR Resource.
+ * @returns FHIR Resource; otherwise sends a notification to Sentry if the resource type is not handled.
  */
 function convertToFHIRResource(resource: Contained, patientId: string): Resource | undefined {
   if (resource.resourceType === "Patient" && resource.id && !resource.id.includes(patientId)) {
@@ -217,7 +217,7 @@ function convertToFHIRResource(resource: Contained, patientId: string): Resource
  * Converts a CW name to a string.
  *
  * @param name One of the CW name types.
- * @returns a space-separated name string.
+ * @returns a space-separated name string; otherwise undefined if a valid name cannot be determined.
  */
 function convertCWNameToString(name: string | CWHumanName | CWHumanName[]): string | undefined {
   if (typeof name === "string") {
@@ -246,7 +246,7 @@ function convertCWNameToString(name: string | CWHumanName | CWHumanName[]): stri
  * Converts a CW name to a FHIR HumanName.
  *
  * @param name One of the CW name types.
- * @returns FHIR-compliant HumanName[].
+ * @returns FHIR-compliant HumanName[]; otherwise undefined if a valid name cannot be determined.
  */
 function convertCWNameToHumanName(
   name: string | CWHumanName | CWHumanName[]
@@ -280,7 +280,7 @@ function convertCWNameToHumanName(
  * Converts a CW HumanName to a FHIR HumanName.
  *
  * @param name CW HumanName.
- * @returns FHIR-compliant HumanName[].
+ * @returns FHIR-compliant HumanName[]; otherwise undefined if a valid name cannot be determined.
  */
 function getHumanNamesFromObject(name: CWHumanName): HumanName[] {
   const names: HumanName[] = [];
@@ -303,7 +303,7 @@ function getHumanNamesFromObject(name: CWHumanName): HumanName[] {
  * Converts a CW Document Identifier to a FHIR Identifier.
  *
  * @param identifier CW Document Identifier.
- * @returns FHIR Identifier[].
+ * @returns FHIR-compliant Identifier[]; otherwise undefined if a valid identifier cannot be determined.
  */
 function convertCWIdentifierToFHIR(
   identifier: CWDocumentIdentifier[] | null | undefined
@@ -321,7 +321,7 @@ function convertCWIdentifierToFHIR(
  * Extracts the author organization from the contained resources.
  *
  * @param contained FHIR-compliant resources built from CW resources.
- * @returns FHIR Reference to the author organization.
+ * @returns FHIR Reference to the author organization; otherwise undefined if a valid author organization cannot be determined.
  */
 function extractAuthorOrganization(contained: Resource[]): Reference<FhirOrganization> | undefined {
   const org = contained.find(r => r.resourceType === "Organization");
@@ -354,7 +354,7 @@ function getHumanNameAttribute(
  * Converts a CW Address to a FHIR Address.
  *
  * @param address CW Address.
- * @returns FHIR-compliant Address[].
+ * @returns FHIR-compliant Address[]; otherwise undefined if a valid address cannot be determined.
  */
 function convertCWAdressToFHIR(address: Contained["address"] | undefined): Address[] | undefined {
   if (address) {
@@ -385,7 +385,7 @@ function convertCWAdressToFHIR(address: Contained["address"] | undefined): Addre
  * Converts a CW gender code to a FHIR gender type.
  *
  * @param genders CW gender code.
- * @returns FHIR-compliant gender string.
+ * @returns FHIR-compliant gender string; otherwise undefined if a valid gender cannot be determined.
  */
 function convertCWGenderToFHIR(
   genders: Gender[] | null | undefined
