@@ -6,6 +6,13 @@ import {
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { Operator } from "@medplum/core";
 
+export enum ResourceType {
+  Organization = "Organization",
+  Patient = "Patient",
+  Practitioner = "Practitioner",
+  DocumentReference = "DocumentReference",
+}
+
 export function operationOutcomeIssueToString(i: OperationOutcomeIssue): string {
   return i.diagnostics ?? i.details?.text ?? i.code ?? "Unknown error";
 }
