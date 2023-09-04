@@ -4,7 +4,6 @@ import status from "http-status";
 import { createFacility } from "../../command/medical/facility/create-facility";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
-import { deleteFacility } from "../../command/medical/facility/delete-facility";
 import NotFoundError from "../../errors/not-found";
 import { getETag } from "../../shared/http";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
