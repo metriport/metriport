@@ -60,6 +60,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
             })
+            console.log("caches", caches)
             for (const cache of caches.data.actions_caches) {
               console.log(cache)
               github.rest.actions.deleteActionsCacheById({
