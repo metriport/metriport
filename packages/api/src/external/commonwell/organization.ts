@@ -120,28 +120,3 @@ export const update = async (org: Organization): Promise<void> => {
     throw error;
   }
 };
-
-/**
- * For E2E testing locally and staging.
- */
-export const getOne = async (orgOid: string): Promise<CWOrganization | undefined> => {
-  const { log, debug } = Util.out(`CW get - id ${orgOid}`);
-  const cwId = OID_PREFIX.concat(orgOid);
-  try {
-    const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
-    debug(`resp: ${JSON.stringify(resp, null, 2)}`);
-    return resp;
-  } catch (error) {
-    const msg = `[E2E]: Failure getting Org @ CW`;
-    log(msg, error);
-    capture.message(msg, {
-      extra: {
-        orgOid,
-        cwId,
-        cwReference: commonWell.lastReferenceHeader,
-        context: `cw.org.get`,
-      },
-    });
-    throw error;
-  }
-};
