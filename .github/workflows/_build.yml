@@ -51,6 +51,10 @@ jobs:
       # check commits' messages to make sure they follow Conventional Commits
       - uses: wagoid/commitlint-github-action@v5
 
+      - name: Run Clean
+        run: npm run clean
+        working-directory: ${{ inputs.path }}
+
       - name: Install on root
         if: ${{ inputs.treat-as-package == true }}
         run: |
@@ -68,10 +72,6 @@ jobs:
         run: npm run lint
         working-directory: ${{ inputs.path }}
       # move to an external file so both this and deploy can use this logic
-
-      - name: Run Clean
-        run: npm run clean
-        working-directory: ${{ inputs.path }}
 
       - name: Build/compile on root
         if: ${{ inputs.treat-as-package == true && inputs.build_env == 'production' }}
