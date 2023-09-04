@@ -9,6 +9,6 @@ export const getOrganizationById = async (id: string): Promise<OrganizationModel
   const org = await OrganizationModel.findOne({
     where: { id },
   });
-  if (!org) throw new NotFoundError(`Could not find organization`);
+  if (!org) throw new NotFoundError(`[E2E]: Could not find organization`);
   return org;
 };
