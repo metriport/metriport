@@ -25,11 +25,11 @@ export const getStartAndEndDate = (date: string) => {
   };
 };
 
-export const toISODate = (unixTime: number): string => {
+export const secondsToISODate = (unixTime: number): string => {
   return dayjs.unix(unixTime).format(ISO_DATE);
 };
 
-export const toISODateTime = (unixTime: number): string => {
+export const secondsToISODateTime = (unixTime: number): string => {
   return dayjs.unix(unixTime).toISOString();
 };
 

@@ -7,7 +7,7 @@ import { groupBy, partition } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
-import { toISODate, toISODateTime } from "../../shared/date";
+import { secondsToISODate, secondsToISODateTime } from "../../shared/date";
 import { Util } from "../../shared/util";
 import { activityTypeReadable } from "./activity-types";
 
@@ -90,7 +90,7 @@ export const garminActivitySummaryToActivityLog = (
 ): ActivityLog => {
   const res: ActivityLog = {
     metadata: {
-      date: toISODate(activity.startTimeInSeconds),
+      date: secondsToISODate(activity.startTimeInSeconds),
       source: PROVIDER_GARMIN,
     },
   };
@@ -101,10 +101,10 @@ export const garminActivitySummaryToActivityLog = (
     res.type = activityTypeReadable(activity.activityType);
   }
   if (activity.startTimeInSeconds != null) {
-    res.start_time = toISODateTime(activity.startTimeInSeconds);
+    res.start_time = secondsToISODateTime(activity.startTimeInSeconds);
   }
   if (activity.startTimeInSeconds != null && activity.durationInSeconds != null) {
-    res.end_time = toISODateTime(activity.startTimeInSeconds + activity.durationInSeconds);
+    res.end_time = secondsToISODateTime(activity.startTimeInSeconds + activity.durationInSeconds);
   }
   // durations: ActivityDurations, // nothing from Garmin's Activity Details, comes from Health API
   if (activity.activeKilocalories != null) {
