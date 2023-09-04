@@ -1,5 +1,5 @@
 import { makeFhirApi } from "../api/api-factory";
-import { ResourceType } from "../shared/index";
+import { ResourceType } from "../shared";
 
 /**
  * For E2E testing locally and staging.
