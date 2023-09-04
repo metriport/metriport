@@ -69,6 +69,10 @@ jobs:
         working-directory: ${{ inputs.path }}
       # move to an external file so both this and deploy can use this logic
 
+      - name: Run Clean
+        run: npm run clean
+        working-directory: ${{ inputs.path }}
+
       - name: Build/compile on root
         if: ${{ inputs.treat-as-package == true && inputs.build_env == 'production' }}
         run: |
