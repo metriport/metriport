@@ -6,22 +6,27 @@ import { Organization as CWOrganization, Patient as CWPatient } from "@metriport
 import { Organization as FhirOrg, Patient as FhirPatient } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
 import { AxiosInstance } from "axios";
-import { FhirClient } from "../../../../../external/fhir/api/api";
-import { ResourceType } from "../../../../../external/fhir/shared";
-import cwCommands from "../../../../../external/commonwell/__tests__";
-import { Account } from "./account";
-import { validateCWOrg, validateFhirOrg, validateLocalOrg, createOrg } from "./organization";
-import { createFacility, validateFacility } from "./facility";
+import { FhirClient } from "../../../external/fhir/api/api";
+import { ResourceType } from "../../../external/fhir/shared";
+import cwCommands from "../../../external/commonwell/__tests__";
+import { Account } from "./mapi/e2e/account";
+import {
+  validateCWOrg,
+  validateFhirOrg,
+  validateLocalOrg,
+  createOrg,
+} from "./mapi/e2e/organization";
+import { createFacility, validateFacility } from "./mapi/e2e/facility";
 import {
   createPatient,
   validateCWPatient,
   validateFhirPatient,
   validateLocalPatient,
-} from "./patient";
-import { createConsolidated } from "./consolidated";
-import { setupE2ETest, retryFunction, cleanUpE2ETest } from "./shared";
-import { Util } from "../../../../../shared/util";
-import { Config } from "../../../../../shared/config";
+} from "./mapi/e2e/patient";
+import { createConsolidated } from "./mapi/e2e/consolidated";
+import { setupE2ETest, retryFunction, cleanUpE2ETest } from "./mapi/e2e/shared";
+import { Util } from "../../../shared/util";
+import { Config } from "../../../shared/config";
 
 // Cant delete cw org so we need a test org to increment the id to avoid conflicts
 const INCREMENT_ORG_ID = process.env.TEST_ORG_ID || "";
