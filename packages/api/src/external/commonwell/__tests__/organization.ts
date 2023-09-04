@@ -26,6 +26,7 @@ export const getOne = async (orgOid: string): Promise<CWOrganization | undefined
         cwId,
         cwReference: commonWell.lastReferenceHeader,
         context: `cw.org.get`,
+        error,
       },
     });
     throw error;
