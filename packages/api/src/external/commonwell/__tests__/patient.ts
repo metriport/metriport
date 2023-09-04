@@ -29,14 +29,16 @@ export async function getOne(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    console.error(`Failure while getting patient ${patientId} @ CW: `, err);
-    capture.error(err, {
+    const msg = `[E2E]: Failure getting Patient @ CW`;
+    console.error(msg, err);
+    capture.message(msg, {
       extra: {
         organizationId: organization.id,
         facilityId: facility.id,
         patientId: patientId,
         cwReference: commonWell?.lastReferenceHeader,
         context: createContext,
+        err,
       },
     });
     throw err;
