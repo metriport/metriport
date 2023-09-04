@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { MetriportMedicalApi, Organization, Facility, Patient } from "@metriport/api-sdk";
-import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
+import { Organization as CWOrganization, Patient as CWPatient } from "@metriport/commonwell-sdk";
 import { Organization as FhirOrg, Patient as FhirPatient } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
 import { AxiosInstance } from "axios";
@@ -63,7 +63,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
 
       const fhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id);
 
-      const cwOrg = await retryFunction(
+      const cwOrg = await retryFunction<CWOrganization | undefined>(
         async () => await cwCommands.organization.getOne(org.oid),
         maxRetries
       );
@@ -157,7 +157,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       );
       const cwPatientId = localPatientResp.data.data.externalData["COMMONWELL"].patientId;
 
-      const cwPatient = await retryFunction(
+      const cwPatient = await retryFunction<CWPatient | undefined>(
         async () => await cwCommands.patient.getOne(org, facility, cwPatientId),
         maxRetries
       );
@@ -199,7 +199,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       );
       const cwPatientId = localPatientResp.data.data.externalData["COMMONWELL"].patientId;
 
-      const cwPatient = await retryFunction(
+      const cwPatient = await retryFunction<CWPatient | undefined>(
         async () => await cwCommands.patient.getOne(org, facility, cwPatientId),
         maxRetries
       );
