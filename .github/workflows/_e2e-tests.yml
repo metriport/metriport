@@ -20,6 +20,10 @@ on:
         required: true
         type: string
     secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
       TEST_API_KEY:
         required: true
       TEST_ACC_ID:
@@ -64,6 +68,12 @@ jobs:
       - name: Build/compile
         # build from root because of dependencies
         run: npm run build:cloud
+        working-directory: "./"
+
+      - name: Setup AWS CLI
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
         working-directory: "./"
 
       - name: Run Tests
