@@ -5,6 +5,7 @@ import {
   HumanName,
   Identifier,
   Organization as FhirOrganization,
+  Patient as PatientFHIR,
   Reference,
   Resource,
 } from "@medplum/fhirtypes";
@@ -12,6 +13,7 @@ import {
   Contained,
   DocumentIdentifier as CWDocumentIdentifier,
   DocumentIdentifier,
+  GenderCodes,
   HumanName as CWHumanName,
 } from "@metriport/commonwell-sdk";
 import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
@@ -79,12 +81,8 @@ export const toFHIR = (
       ]
     : [];
 
-  const containedContent: Resource[] = [
-    {
-      resourceType: "Patient",
-      id: patient.id,
-    },
-  ];
+  // https://www.hl7.org/fhir/R4/domainresource-definitions.html#DomainResource.contained
+  const containedContent: Resource[] = [];
 
   const contained = doc.content?.contained;
   if (contained?.length) {
@@ -327,7 +325,8 @@ function extractAuthorOrganization(contained: Resource[]): Reference<FhirOrganiz
   const org = contained.find(r => r.resourceType === "Organization");
   if (org) {
     return {
-      reference: `#${org.id}`,
+      // https://www.hl7.org/fhir/R4/references-definitions.html#Reference.reference
+      reference: `Organization/${org.id}`,
       type: "Organization",
     };
   }
@@ -387,14 +386,18 @@ function convertCWAdressToFHIR(address: Contained["address"] | undefined): Addre
  * @param genders CW gender code.
  * @returns FHIR-compliant gender string; otherwise undefined if a valid gender cannot be determined.
  */
-function convertCWGenderToFHIR(
-  genders: Gender[] | null | undefined
-): "male" | "female" | "other" | "unknown" | undefined {
-  if (genders) {
-    if (genders[0].code === "M") return "male";
-    else if (genders[0].code === "F") return "female";
-    else if (genders[0].code === "UN") return "other";
-    else if (genders[0].code === "UNK") return "unknown";
+function convertCWGenderToFHIR(genders: Gender[] | null | undefined): PatientFHIR["gender"] {
+  if (genders && genders[0]) {
+    switch (genders[0].code) {
+      case GenderCodes.M:
+        return "male";
+      case GenderCodes.F:
+        return "female";
+      case GenderCodes.UN:
+        return "other";
+      case GenderCodes.UNK:
+        return "unknown";
+    }
   }
   return undefined;
 }
