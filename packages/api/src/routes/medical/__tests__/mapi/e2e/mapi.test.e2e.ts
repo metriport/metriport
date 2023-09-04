@@ -43,7 +43,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
     let facility: Facility;
     let patient: Patient;
 
-    // When set to false it will use already created account in staging
+    // When set to false it will use already created account
     const isCreatingAccount = true;
 
     beforeAll(async () => {
