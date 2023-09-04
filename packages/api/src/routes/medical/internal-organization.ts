@@ -3,7 +3,7 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { incrementOrganization } from "../../command/medical/__tests__/update-organization";
-import { deleteOrgFromFHIRServer } from "../../external/fhir/organization/delete-organization";
+import { deleteOrgFromFHIRServer } from "../../external/fhir/__tests__/delete-organization";
 import { deleteOrganization } from "../../command/medical/__tests__/delete-organization";
 import { asyncHandler, getCxIdFromQueryOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
