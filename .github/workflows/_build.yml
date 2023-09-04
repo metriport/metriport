@@ -51,26 +51,6 @@ jobs:
       # check commits' messages to make sure they follow Conventional Commits
       - uses: wagoid/commitlint-github-action@v5
 
-      - name: Clear cache
-        uses: actions/github-script@v6
-        with:
-          script: |
-            console.log("About to clear")
-            const caches = await github.rest.actions.getActionsCacheList({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            })
-            console.log("caches", caches)
-            for (const cache of caches.data.actions_caches) {
-              console.log(cache)
-              github.rest.actions.deleteActionsCacheById({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                cache_id: cache.id,
-              })
-            }
-            console.log("Clear completed")
-
       - name: Install on root
         if: ${{ inputs.treat-as-package == true }}
         run: |
@@ -101,7 +81,6 @@ jobs:
         if: ${{ inputs.treat-as-package == true && inputs.build_env == 'staging' }}
         run: |
           pwd
-          echo "Git ref: $(inputs.build_env)"
           npm run build:staging
         working-directory: "./"
       - name: Build/compile on sub-folder/package
