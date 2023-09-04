@@ -18,7 +18,7 @@ import { ConnectedUser } from "../../models/connected-user";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { formatNumber, getFloatValue } from "../../shared/numbers";
-import { getConnectedUserByDeviceId } from "../connected-user/get-connected-user";
+import { getConnectedUsersByDeviceId } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import {
   reportDevicesUsage,
@@ -38,13 +38,13 @@ export const processMeasurementData = async (data: TenoviMeasurement): Promise<v
   console.log(`Starting to process a Tenovi webhook: ${JSON.stringify(data)}`);
 
   try {
-    const connectedUser = await getConnectedUserByDeviceId(
+    const connectedUsers = await getConnectedUsersByDeviceId(
       ProviderSource.tenovi,
       data.hwi_device_id
     );
 
     const userData = mapData(data);
-    createAndSendPayload(connectedUser, userData);
+    createAndSendPayload(connectedUsers, userData);
   } catch (error) {
     console.log(`Failed to process Tenovi WH - error: ${stringify(error)}`);
     capture.error(error, {
@@ -112,37 +112,41 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
  * @param data        Patient mapped data
  */
 async function createAndSendPayload(
-  user: ConnectedUser,
+  users: ConnectedUser[],
   data: WebhookUserDataPayload
 ): Promise<void> {
-  const { id: userId, cxId } = user;
-  const userData: WebhookUserPayload = { userId, ...data };
-  const payload: WebhookDataPayloadWithoutMessageId = { users: [userData] };
+  await Promise.allSettled(
+    users.map(async user => {
+      const { id: userId, cxId } = user;
+      const userData: WebhookUserPayload = { userId, ...data };
+      const payload: WebhookDataPayloadWithoutMessageId = { users: [userData] };
 
-  try {
-    const webhookRequest = await createWebhookRequest({
-      cxId,
-      type: "devices.health-data",
-      payload,
-    });
+      try {
+        const webhookRequest = await createWebhookRequest({
+          cxId,
+          type: "devices.health-data",
+          payload,
+        });
 
-    const settings = await getSettingsOrFail({ id: cxId });
-    await processRequest(webhookRequest, settings);
+        const settings = await getSettingsOrFail({ id: cxId });
+        await processRequest(webhookRequest, settings);
 
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.query,
-      properties: {
-        method: "POST",
-        url: "/webhook/tenovi",
-        apiType: Product.devices,
-      },
-    });
-    reportDevicesUsage(cxId, [userId]);
-  } catch (error) {
-    console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${stringify(error)}`);
-    capture.error(error, {
-      extra: { user, context: `webhook.createAndSendPayload`, error, data },
-    });
-  }
+        analytics({
+          distinctId: cxId,
+          event: EventTypes.query,
+          properties: {
+            method: "POST",
+            url: "/webhook/tenovi",
+            apiType: Product.devices,
+          },
+        });
+        reportDevicesUsage(cxId, [userId]);
+      } catch (error) {
+        console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${stringify(error)}`);
+        capture.error(error, {
+          extra: { user, context: `webhook.createAndSendPayload`, error, data },
+        });
+      }
+    })
+  );
 }
