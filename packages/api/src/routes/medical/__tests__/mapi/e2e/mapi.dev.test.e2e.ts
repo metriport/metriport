@@ -8,7 +8,7 @@ import { faker } from "@faker-js/faker";
 import { AxiosInstance } from "axios";
 import { FhirClient } from "../../../../../external/fhir/api/api";
 import { ResourceType } from "../../../../../external/fhir/shared";
-import cwCommands from "../../../../../external/commonwell";
+import cwCommands from "../../../../../external/commonwell/__tests__";
 import { Account } from "./account";
 import { validateCWOrg, validateFhirOrg, validateLocalOrg, createOrg } from "./organization";
 import { createFacility, validateFacility } from "./facility";
@@ -22,8 +22,6 @@ import { createConsolidated } from "./consolidated";
 import { setupE2ETest, retryFunction, cleanUpE2ETest } from "./shared";
 import { Util } from "../../../../../shared/util";
 import { Config } from "../../../../../shared/config";
-import { getOne as cwOrgGetOne } from "../../../../../external/commonwell/__tests__/organization";
-import { getOne as cwPatientGetOne } from "../../../../../external/commonwell/__tests__/patient";
 
 // Cant delete cw org so we need a test org to increment the id to avoid conflicts
 const INCREMENT_ORG_ID = process.env.TEST_ORG_ID || "";
@@ -65,7 +63,10 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
 
       const fhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id);
 
-      const cwOrg = await retryFunction(async () => await cwOrgGetOne(org.oid), maxRetries);
+      const cwOrg = await retryFunction(
+        async () => await cwCommands.organization.getOne(org.oid),
+        maxRetries
+      );
 
       validateLocalOrg(org, createOrg);
       validateFhirOrg(fhirOrg, createOrg);
@@ -92,7 +93,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       const fhirOrg: FhirOrg = await fhirApi.readResource(ResourceType.Organization, updatedOrg.id);
 
       const cwOrg: CWOrganization | undefined = await retryFunction<CWOrganization | undefined>(
-        async () => await cwOrgGetOne(updatedOrg.oid),
+        async () => await cwCommands.organization.getOne(updatedOrg.oid),
         maxRetries,
         result => result?.name === newName
       );
@@ -157,7 +158,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       const cwPatientId = localPatientResp.data.data.externalData["COMMONWELL"].patientId;
 
       const cwPatient = await retryFunction(
-        async () => await cwPatientGetOne(org, facility, cwPatientId),
+        async () => await cwCommands.patient.getOne(org, facility, cwPatientId),
         maxRetries
       );
 
@@ -199,7 +200,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       const cwPatientId = localPatientResp.data.data.externalData["COMMONWELL"].patientId;
 
       const cwPatient = await retryFunction(
-        async () => await cwPatientGetOne(org, facility, cwPatientId),
+        async () => await cwCommands.patient.getOne(org, facility, cwPatientId),
         maxRetries
       );
 
