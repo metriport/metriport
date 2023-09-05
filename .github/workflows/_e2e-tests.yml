@@ -42,6 +42,10 @@ on:
         required: false
       CW_MEMBER_PRIVATE_KEY:
         required: false
+      CW_MEMBER_OID:
+        required: false
+      CW_MEMBER_NAME:
+        required: false
 
 jobs:
   test:
@@ -95,6 +99,8 @@ jobs:
           CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY }}
           CW_MEMBER_CERTIFICATE: ${{ secrets.CW_MEMBER_CERTIFICATE }}
           CW_MEMBER_PRIVATE_KEY: ${{ secrets.CW_MEMBER_PRIVATE_KEY }}
+          CW_MEMBER_OID: ${{ secrets.CW_MEMBER_OID }}
+          CW_MEMBER_NAME: ${{ secrets.CW_MEMBER_NAME }}
           API_URL: ${{ inputs.api_url }}
           WIDGET_URL: ${{ inputs.widget_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}
