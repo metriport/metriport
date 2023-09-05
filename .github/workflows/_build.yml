@@ -73,7 +73,6 @@ jobs:
         if: ${{ inputs.treat-as-package == true && inputs.build_env == 'production' }}
         run: |
           pwd
-          echo "Git ref: $(inputs.build_env)"
           npm run build:cloud
         # build from root because of dependencies
         working-directory: "./"

@@ -11,7 +11,8 @@ export const nanoid = customAlphabet("1234567890abcdef", 10);
 export const testApiKey = getEnvVarOrFail("TEST_API_KEY");
 
 export const baseURL = getEnvVarOrFail("API_URL");
-export const internalUrl = getEnvVarOrFail("INTERNAL_API_URL");
+
+// export const internalUrl = getEnvVarOrFail("INTERNAL_API_URL");
 
 // Used locally
 export const cognitoApiUrl = getEnvVar("STAGING_INTERNAL_API_URL");
@@ -24,7 +25,7 @@ export function getCognitoBaseURL(): string | undefined {
 }
 
 export const apiCognito = Axios.create({ baseURL: getCognitoBaseURL() });
-export const apiInternal = Axios.create({ baseURL: internalUrl });
+// export const apiInternal = Axios.create({ baseURL: internalUrl });
 export const api = Axios.create({
   timeout: 10_000,
   baseURL: baseURL,

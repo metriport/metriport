@@ -1,7 +1,7 @@
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { AxiosInstance } from "axios";
 import { FhirClient } from "../../../../../external/fhir/api/api";
-import { api as apiOSS, baseURL, apiInternal } from "../../../../__tests__/shared";
+import { api as apiOSS, baseURL } from "../../../../__tests__/shared";
 import { makeFhirApi } from "../../../../../external/fhir/api/api-factory";
 import { Account } from "./account";
 import { Util } from "../../../../../shared/util";
@@ -23,7 +23,7 @@ export type E2ETest = {
 };
 
 export const setupE2ETest = async (): Promise<E2ETest> => {
-  // TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
+  // TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
   // if (isCreatingAccount) {
   //   const account = await apiInternal.post(ACCOUNT_PATH, testAccount);
   //   const apiKey = await apiCognito.post(GENERATE_KEY, null, {
@@ -54,7 +54,8 @@ export const setupE2ETest = async (): Promise<E2ETest> => {
   const fhirApi = makeFhirApi(testId);
   apiOSS.defaults.headers["x-api-key"] = testApiKey;
   const medicalApi = new MetriportMedicalApi(testApiKey, { baseAddress: baseURL });
-  const customerResp = await apiInternal.get(`${ACCOUNT_PATH}?cxId=${testId}`);
+  // TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
+  // const customerResp = await apiInternal.get(`${ACCOUNT_PATH}?cxId=${testId}`);
 
   return {
     apis: {
@@ -63,12 +64,20 @@ export const setupE2ETest = async (): Promise<E2ETest> => {
       fhirApi,
     },
     account: {
-      customer: customerResp.data,
+      customer: {
+        id: testId,
+        subscriptionStatus: "active",
+        stripeCxId: null,
+        firstName: null,
+        lastName: null,
+        email: null,
+        website: null,
+      },
     },
   };
 };
 
-// TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
+// TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
 // export const cleanUpE2ETest = async (
 //   apis: Apis,
 //   account: Account,
