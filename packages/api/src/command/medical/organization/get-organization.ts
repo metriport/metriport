@@ -10,6 +10,17 @@ export const getOrganization = async ({ cxId, id }: Filter): Promise<Organizatio
   return org;
 };
 
+/**
+ * For E2E testing locally and staging.
+ */
+export const getOrganizationById = async (id: string): Promise<OrganizationModel> => {
+  const org = await OrganizationModel.findOne({
+    where: { id },
+  });
+  if (!org) throw new NotFoundError(`[E2E]: Could not find organization`);
+  return org;
+};
+
 export const getOrganizationOrFail = async (filter: Filter): Promise<OrganizationModel> => {
   const org = await getOrganization(filter);
   if (!org) throw new NotFoundError(`Could not find organization`);

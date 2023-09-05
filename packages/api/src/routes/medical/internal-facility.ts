@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { deleteFacility } from "../../command/medical/__tests__/delete-facility";
+import { deleteFacility } from "../../command/medical/facility/delete-facility";
 import { asyncHandler, getCxIdFromQueryOrFail, getFromParamsOrFail } from "../util";
 
 const router = Router();
