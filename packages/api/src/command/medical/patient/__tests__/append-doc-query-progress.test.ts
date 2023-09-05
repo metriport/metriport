@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.test" });
-// Keep dotenv import and config before everything else
 import { DocumentQueryProgress } from "../../../../domain/medical/document-query";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { Patient, PatientModel } from "../../../../models/medical/patient";
