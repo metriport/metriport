@@ -34,6 +34,14 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
+      CW_CERTIFICATE:
+        required: false
+      CW_PRIVATE_KEY:
+        required: false
+      CW_MEMBER_CERTIFICATE:
+        required: false
+      CW_MEMBER_PRIVATE_KEY:
+        required: false
 
 jobs:
   test:
@@ -83,6 +91,10 @@ jobs:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
           TEST_ACC_ID: ${{ secrets.TEST_ACC_ID }}
           TEST_ORG_ID: ${{ secrets.TEST_ORG_ID }}
+          CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE }}
+          CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY }}
+          CW_MEMBER_CERTIFICATE: ${{ secrets.CW_MEMBER_CERTIFICATE }}
+          CW_MEMBER_PRIVATE_KEY: ${{ secrets.CW_MEMBER_PRIVATE_KEY }}
           API_URL: ${{ inputs.api_url }}
           WIDGET_URL: ${{ inputs.widget_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}
