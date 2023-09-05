@@ -1,13 +1,16 @@
 import {
   Address,
+  Device,
   DocumentReference,
   DocumentReferenceContent,
   HumanName,
   Identifier,
-  Organization as FhirOrganization,
+  Organization,
   Patient as PatientFHIR,
   Practitioner,
+  PractitionerRole,
   Reference,
+  RelatedPerson,
   Resource,
 } from "@medplum/fhirtypes";
 import {
@@ -30,14 +33,24 @@ import { metriportDataSourceExtension } from "../shared/extensions/metriport";
 dayjs.extend(isToday);
 
 export const MAX_FHIR_DOC_ID_LENGTH = 64;
-export const authorTypes = [
-  "Device",
-  "Organization",
-  "Patient",
-  "Practitioner",
-  "PractitionerRole",
-  "RelatedPerson",
-];
+
+type AuthorTypes =
+  | Device
+  | Organization
+  | PatientFHIR
+  | Practitioner
+  | PractitionerRole
+  | RelatedPerson;
+const authorTypesMap: Record<AuthorTypes["resourceType"], AuthorTypes["resourceType"]> = {
+  Device: "Device",
+  Organization: "Organization",
+  Patient: "Patient",
+  Practitioner: "Practitioner",
+  PractitionerRole: "PractitionerRole",
+  RelatedPerson: "RelatedPerson",
+};
+const authorTypes = Object.values(authorTypesMap);
+
 // HIEs probably don't have records before the year 1800 :)
 const earliestPossibleYear = 1800;
 
@@ -335,7 +348,7 @@ export function getAuthors(
   content: DocumentContent,
   contained: Resource[],
   docId: string
-): Reference<FhirOrganization | Practitioner>[] {
+): Reference<AuthorTypes>[] {
   const refs = (content.author ?? []).flatMap(author => {
     if (
       author.reference &&
@@ -354,8 +367,9 @@ export function getAuthors(
     return author.reference ?? [];
   });
 
+  const authorTypesAsStr = authorTypes.map(a => a.toString());
   const containedAuthors = contained
-    .filter(c => authorTypes.includes(c.resourceType))
+    .filter(c => authorTypesAsStr.includes(c.resourceType))
     .filter(r => r.id && refs.includes(r.id));
 
   return containedAuthors.map(a => ({

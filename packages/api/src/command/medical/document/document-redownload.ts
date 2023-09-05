@@ -26,7 +26,6 @@ import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
-import { getOrganizationOrFail } from "../organization/get-organization";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
@@ -113,7 +112,12 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
     if (!facilityId) throw new Error(`Patient ${patientId} is missing facilityId`);
 
     if (isReQuery(options)) {
-      await queryAndProcessDocuments({ patient, facilityId, override: isForceDownload(options) });
+      await queryAndProcessDocuments({
+        patient,
+        facilityId,
+        forceDownload: isForceDownload(options),
+        ignoreDocRefOnFHIRServer: true,
+      });
     } else {
       await processDocuments({ patient, docs, override: isForceDownload(options) });
     }
@@ -139,7 +143,6 @@ async function processDocuments({
     log(`Patient ${patientId} is already being processed, skipping ${docs.length} docs...`);
     return;
   }
-  const organization = await getOrganizationOrFail({ cxId });
 
   const docsAsCW: Document[] = await convertDocRefToCW(docs, override);
   if (docsAsCW.length !== docs.length) {
@@ -166,10 +169,9 @@ async function processDocuments({
 
     await downloadDocsAndUpsertFHIR({
       patient,
-      organization,
       facilityId,
       documents: docsAsCW,
-      override,
+      forceDownload: override,
     });
   } catch (error) {
     log(`Error processing docs: ${error}`);
@@ -277,6 +279,8 @@ async function convertDocRefToCW(
   return converted.flatMap(filterTruthy);
 }
 
+// TODO this should either be removed (and we don't convert doc refs from FHIR to CW), or we
+// should make this and caller better match the CW>FHIR conversion
 export const fhirContainedToCW = (contained: Resource): Contained | undefined => {
   const base = {
     id: contained.id,
@@ -292,6 +296,11 @@ export const fhirContainedToCW = (contained: Resource): Contained | undefined =>
         ...base,
         identifier: contained.identifier?.map(fhirIdentifierToCW),
         name: contained.name,
+      };
+    case "Practitioner":
+      return {
+        ...base,
+        identifier: contained.identifier?.map(fhirIdentifierToCW),
       };
     default:
       return undefined;
