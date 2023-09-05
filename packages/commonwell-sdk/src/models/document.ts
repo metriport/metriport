@@ -34,6 +34,7 @@ const codeableConceptSchema = z.object({
     .optional(),
   text: z.string().optional(),
 });
+export type CodeableConcept = z.infer<typeof codeableConceptSchema>;
 
 const containedAddress = addressSchema.partial({
   zip: true,
