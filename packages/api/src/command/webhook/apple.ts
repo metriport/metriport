@@ -1,4 +1,5 @@
 import { AppleWebhookPayload } from "../../mappings/apple";
+import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUserOrFail } from "../connected-user/get-connected-user";
@@ -27,10 +28,10 @@ export const processAppleData = async (
 
     await processRequest(webhookRequest, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
-  } catch (err) {
-    log(`Error on processAppleData: ${err}`);
-    capture.error(err, {
-      extra: { metriportUserId, data, context: `webhook.processAppleData`, err },
+  } catch (error) {
+    log(`Error on processAppleData: ${errorToString(error)}`);
+    capture.error(error, {
+      extra: { metriportUserId, data, context: `webhook.processAppleData`, error },
     });
   }
 };

@@ -33,8 +33,8 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
         // give it some time to prevent flooding the customer
         if (success) await Util.sleep(Math.random() * 200);
       }
-    } catch (err) {
-      capture.error(err, { extra: { context: `webhook.retryFailedRequests` } });
+    } catch (error) {
+      capture.error(error, { extra: { context: `webhook.retryFailedRequests`, error } });
     }
   };
   // intentionally asynchronous
