@@ -115,22 +115,22 @@ jobs:
   #       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   #       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  release:
-    uses: ./.github/workflows/_release.yml
-    needs: [widget, api, infra-api-lambdas, infra-widget]
-    # run even if one of the dependencies didn't
-    # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
-    # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
-    secrets: inherit
+  #   release:
+  #     uses: ./.github/workflows/_release.yml
+  #     needs: [widget, api, infra-api-lambdas, infra-widget]
+  #     # run even if one of the dependencies didn't
+  #     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
+  #     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
+  #     if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
+  #     secrets: inherit
 
   e2e-tests:
     uses: ./.github/workflows/_e2e-tests.yml
-    needs: release
+    # needs: release
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
+    # if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
     with:
       deploy_env: "staging"
       api_url: ${{ vars.API_URL_STAGING }}
