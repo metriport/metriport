@@ -19,7 +19,7 @@ import {
   validateLocalPatient,
 } from "./patient";
 import { createConsolidated } from "./consolidated";
-import { setupE2ETest, retryFunction, cleanUpE2ETest } from "./shared";
+import { setupE2ETest, retryFunction } from "./shared";
 import { Util } from "../../../../../shared/util";
 import { Config } from "../../../../../shared/config";
 
@@ -43,11 +43,8 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
     let facility: Facility;
     let patient: Patient;
 
-    // When set to false it will use already created account in staging
-    const isCreatingAccount = true;
-
     beforeAll(async () => {
-      const setup = await setupE2ETest(isCreatingAccount);
+      const setup = await setupE2ETest();
 
       account = setup.account;
       medicalApi = setup.apis.medicalApi;
@@ -55,7 +52,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       apiOSS = setup.apis.apiOSS;
     });
     afterAll(async () => {
-      await cleanUpE2ETest({ apiOSS, medicalApi, fhirApi }, account, isCreatingAccount);
+      // await cleanUpE2ETest({ apiOSS, medicalApi, fhirApi }, account, isCreatingAccount);
     });
 
     it("creates an organization", async () => {
