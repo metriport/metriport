@@ -51,14 +51,14 @@ export const validateFhirOrg = (org: FhirOrg, validateOrg?: OrganizationCreate |
 
   if (validateOrg) {
     expect(org.name).toBe(validateOrg.name);
-    expect(org.address?.[0].line).toBe(validateOrg.location.addressLine1);
+    expect(org.address?.[0].line?.[0]).toBe(validateOrg.location.addressLine1);
     expect(org.address?.[0].city).toBe(validateOrg.location.city);
     expect(org.address?.[0].state).toBe(validateOrg.location.state);
     expect(org.address?.[0].postalCode).toBe(validateOrg.location.zip);
     expect(org.address?.[0].country).toBe(validateOrg.location.country);
   } else {
     expect(org.name).toBeTruthy();
-    expect(org.address?.[0].line).toBeTruthy();
+    expect(org.address?.[0].line?.[0]).toBeTruthy();
     expect(org.address?.[0].city).toBeTruthy();
     expect(org.address?.[0].state).toBeTruthy();
     expect(org.address?.[0].postalCode).toBeTruthy();
