@@ -1,7 +1,7 @@
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { AxiosInstance } from "axios";
 import { FhirClient } from "../../../../../external/fhir/api/api";
-import { api as apiOSS, baseURL } from "../../../../__tests__/shared";
+import { apiOSS, baseURL } from "../../../../__tests__/shared";
 import { Account } from "./account";
 import { Util } from "../../../../../shared/util";
 import { getEnvVarOrFail } from "../../../../../shared/config";

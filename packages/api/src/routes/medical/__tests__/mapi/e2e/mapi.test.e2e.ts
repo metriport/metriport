@@ -154,11 +154,9 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       // Creating a CW patient is done in the background need to await so we dont delete it before it is created
       await Util.sleep(10000);
 
-      console.log("APIOSS", apiOSS);
       const localPatientResp = await apiOSS.get(
         `${PATIENT}/${patient.id}?cxId=${account.customer.id}`
       );
-      console.log("LOCALPATIENTRESP", localPatientResp);
       const cwPatientId = localPatientResp.data.data.externalData["COMMONWELL"].patientId;
 
       const cwPatient = await retryFunction<CWPatient | undefined>(

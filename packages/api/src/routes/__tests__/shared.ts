@@ -10,11 +10,18 @@ export const nanoid = customAlphabet("1234567890abcdef", 10);
 export const testApiKey = getEnvVarOrFail("TEST_API_KEY");
 
 export const baseURL = getEnvVarOrFail("API_URL");
+export const baseURLLb = getEnvVarOrFail("API_URL_LB");
 
 export const api = Axios.create({
   timeout: 10_000,
   baseURL: baseURL,
   headers: { "x-api-key": testApiKey, "Content-Type": "application/json" },
+});
+
+export const apiOSS = Axios.create({
+  timeout: 10_000,
+  baseURL: baseURLLb,
+  headers: { "Content-Type": "application/json" },
 });
 
 // TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
