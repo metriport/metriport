@@ -3,7 +3,7 @@ dotenv.config({ path: ".env.test" });
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Organization, Practitioner, Reference, Resource } from "@medplum/fhirtypes";
 import { Document } from "@metriport/commonwell-sdk";
-import { makeDocument } from "@metriport/commonwell-sdk/models/__tests__/document.test";
+import { makeDocument } from "@metriport/commonwell-sdk/models/__tests__/document";
 import { v4 as uuidv4 } from "uuid";
 import { getAuthors } from "../index";
 
