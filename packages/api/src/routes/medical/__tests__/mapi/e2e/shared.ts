@@ -2,14 +2,18 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { AxiosInstance } from "axios";
 import { FhirClient } from "../../../../../external/fhir/api/api";
 import { api as apiOSS, baseURL } from "../../../../__tests__/shared";
-import { makeFhirApi } from "../../../../../external/fhir/api/api-factory";
 import { Account } from "./account";
 import { Util } from "../../../../../shared/util";
 import { getEnvVarOrFail } from "../../../../../shared/config";
+import { MedplumClient } from "@medplum/core";
 
 export const ACCOUNT_PATH = "/internal/admin/cx-account";
 export const CUSTOMER_PATH = "/internal/customer";
 export const MAPI_ACCESS = "/internal/mapi-access";
+
+const testId = getEnvVarOrFail("TEST_ACC_ID");
+const testApiKey = getEnvVarOrFail("TEST_API_KEY");
+export const fhirHeaders = { headers: { "x-api-key": testApiKey } };
 
 export type Apis = {
   apiOSS: AxiosInstance;
@@ -48,10 +52,8 @@ export const setupE2ETest = async (): Promise<E2ETest> => {
   //   };
   // }
 
-  const testId = getEnvVarOrFail("TEST_ACC_ID");
-  const testApiKey = getEnvVarOrFail("TEST_API_KEY");
+  const fhirApi = new MedplumClient({ baseUrl: baseURL });
 
-  const fhirApi = makeFhirApi(testId);
   apiOSS.defaults.headers["x-api-key"] = testApiKey;
   const medicalApi = new MetriportMedicalApi(testApiKey, { baseAddress: baseURL });
   // TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER

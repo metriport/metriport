@@ -19,7 +19,7 @@ import {
   validateLocalPatient,
 } from "./patient";
 import { createConsolidated } from "./consolidated";
-import { setupE2ETest, retryFunction } from "./shared";
+import { setupE2ETest, retryFunction, fhirHeaders } from "./shared";
 import { Util } from "../../../../../shared/util";
 import { Config } from "../../../../../shared/config";
 
@@ -59,7 +59,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
     it("creates an organization", async () => {
       const org = await medicalApi.createOrganization(createOrg);
 
-      const fhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id);
+      const fhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id, fhirHeaders);
 
       const cwOrg = await retryFunction<CWOrganization | undefined>(
         async () => await cwCommands.organization.getOne(org.oid),
@@ -88,7 +88,11 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       const updatedOrg = await medicalApi.updateOrganization(updateOrg);
 
       await fhirApi.invalidateAll();
-      const fhirOrg: FhirOrg = await fhirApi.readResource(ResourceType.Organization, updatedOrg.id);
+      const fhirOrg: FhirOrg = await fhirApi.readResource(
+        ResourceType.Organization,
+        updatedOrg.id,
+        fhirHeaders
+      );
 
       const cwOrg: CWOrganization | undefined = await retryFunction<CWOrganization | undefined>(
         async () => await cwCommands.organization.getOne(updatedOrg.oid),
@@ -142,7 +146,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
 
       patient = await medicalApi.createPatient(createPatient, facility.id);
 
-      const fhirPatient = await fhirApi.readResource(ResourceType.Patient, patient.id);
+      const fhirPatient = await fhirApi.readResource(ResourceType.Patient, patient.id, fhirHeaders);
 
       validateLocalPatient(patient);
       validateFhirPatient(fhirPatient);
@@ -183,7 +187,11 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       patient = await medicalApi.updatePatient(updatePatient, facility.id);
 
       await fhirApi.invalidateAll();
-      const fhirPatient: FhirPatient = await fhirApi.readResource(ResourceType.Patient, patient.id);
+      const fhirPatient: FhirPatient = await fhirApi.readResource(
+        ResourceType.Patient,
+        patient.id,
+        fhirHeaders
+      );
 
       validateLocalPatient(patient);
       validateFhirPatient(fhirPatient);
@@ -241,8 +249,8 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       const docRefResource = consolidated.entry?.[1]?.resource;
 
       if (allergyResource && allergyResource.id && docRefResource && docRefResource.id) {
-        await fhirApi.deleteResource(allergyResource.resourceType, allergyResource.id);
-        await fhirApi.deleteResource(docRefResource.resourceType, docRefResource.id);
+        await fhirApi.deleteResource(allergyResource.resourceType, allergyResource.id, fhirHeaders);
+        await fhirApi.deleteResource(docRefResource.resourceType, docRefResource.id, fhirHeaders);
       }
 
       const count = await medicalApi.countPatientConsolidated(patient.id);
@@ -279,7 +287,11 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       await apiOSS.put(`${ORGANIZATION}/increment/${INCREMENT_ORG_ID}?cxId=${account.customer.id}`);
 
       await fhirApi.invalidateAll();
-      const fhirOrg = await fhirApi.searchResources(ResourceType.Organization, `_id=${org.id}`);
+      const fhirOrg = await fhirApi.searchResources(
+        ResourceType.Organization,
+        `_id=${org.id}`,
+        fhirHeaders
+      );
       const deleteOrg = await medicalApi.getOrganization();
 
       expect(fhirOrg.length).toBe(0);
