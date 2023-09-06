@@ -24,12 +24,11 @@ export function makeCommonWellAPI(orgName: string, orgOID: string): CommonWellAP
     return new CommonWellMock(orgName, orgOID);
   }
 
-  const isMemberMgmt = orgOID === Config.getMemberManagementOID();
-
-  if (isMemberMgmt) {
+  const isMemberAPI = orgOID === Config.getCWMemberOID();
+  if (isMemberAPI) {
     return new CommonWell(
-      Config.getMemberManagementCert(),
-      Config.getMemberManagementPrivateKey(),
+      Config.getCWMemberCertificate(),
+      Config.getCWMemberPrivateKey(),
       orgName,
       orgOID,
       apiMode
@@ -37,8 +36,8 @@ export function makeCommonWellAPI(orgName: string, orgOID: string): CommonWellAP
   }
 
   return new CommonWell(
-    Config.getMetriportCert(),
-    Config.getMetriportPrivateKey(),
+    Config.getCWOrgCertificate(),
+    Config.getCWOrgPrivateKey(),
     orgName,
     orgOID,
     apiMode
@@ -75,7 +74,7 @@ export const metriportQueryMeta: RequestMetadata = baseQueryMeta("Metriport");
 
 // CERTIFICATE
 
-const commonwellCertificate = Config.getMetriportCert();
+const commonwellCertificate = Config.getCWOrgCertificate();
 const commonwellCertificateContent = getCertificateContent(commonwellCertificate);
 
 export function getCertData() {
