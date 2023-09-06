@@ -134,7 +134,6 @@ jobs:
     with:
       deploy_env: "staging"
       api_url: ${{ vars.API_URL_STAGING }}
-      api_url_lb: ${{ vars.API_URL_LB_STAGING }}
       fhir_url: ${{ vars.FHIR_SERVER_URL_STAGING }}
       widget_url: ${{ vars.WIDGET_URL_STAGING }}
     secrets:

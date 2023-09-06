@@ -11,10 +11,6 @@ on:
         description: "the url for the oss api"
         required: true
         type: string
-      api_url_lb:
-        description: "the lb url for the oss api - internal routes"
-        required: true
-        type: string
       fhir_url:
         description: "the url for the fhir server"
         required: true
@@ -106,7 +102,6 @@ jobs:
           CW_MEMBER_OID: ${{ secrets.CW_MEMBER_OID }}
           CW_MEMBER_NAME: ${{ secrets.CW_MEMBER_NAME }}
           API_URL: ${{ inputs.api_url }}
-          API_URL_LB: ${{ inputs.api_url_lb }}
           WIDGET_URL: ${{ inputs.widget_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}
 

@@ -1,7 +1,6 @@
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { AxiosInstance } from "axios";
 import { FhirClient } from "../../../../../external/fhir/api/api";
-import { apiOSS, baseURL } from "../../../../__tests__/shared";
+import { baseURL } from "../../../../__tests__/shared";
 import { Account } from "./account";
 import { Util } from "../../../../../shared/util";
 import { getEnvVarOrFail } from "../../../../../shared/config";
@@ -16,7 +15,6 @@ const testApiKey = getEnvVarOrFail("TEST_API_KEY");
 export const fhirHeaders = { headers: { "x-api-key": testApiKey } };
 
 export type Apis = {
-  apiOSS: AxiosInstance;
   medicalApi: MetriportMedicalApi;
   fhirApi: FhirClient;
 };
@@ -59,7 +57,6 @@ export const setupE2ETest = async (): Promise<E2ETest> => {
 
   return {
     apis: {
-      apiOSS,
       medicalApi,
       fhirApi,
     },
