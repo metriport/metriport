@@ -3,6 +3,7 @@ import {
   DocumentReference,
   DocumentReferenceContent,
   Identifier,
+  Reference,
   Resource,
 } from "@medplum/fhirtypes";
 import {
@@ -89,6 +90,21 @@ export const reprocessDocuments = async ({
 
 const MISSING_ID = "missing-id";
 
+const getIdFromSubjectId = (subject: Reference | undefined): string | undefined => subject?.id;
+
+function getIdFromSubjectRef(subject: Reference | undefined): string | undefined {
+  if (subject?.reference) {
+    const reference = subject.reference;
+    if (reference.includes("/")) return subject.reference.split("/")[1];
+    if (reference.includes("#")) return subject.reference.split("#")[1];
+  }
+  return undefined;
+}
+
+function getPatientId(doc: DocumentReference): string | undefined {
+  return getIdFromSubjectId(doc.subject) ?? getIdFromSubjectRef(doc.subject);
+}
+
 async function downloadDocsAndUpsertFHIRWithDocRefs({
   cxId,
   documents,
@@ -99,7 +115,7 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
   options: Options[];
 }): Promise<void> {
   // Group docs by Patient
-  const docsByPatientId = groupBy(documents, d => d.subject?.id ?? MISSING_ID);
+  const docsByPatientId = groupBy(documents, d => getPatientId(d) ?? MISSING_ID);
 
   for (const [patientId, docs] of Object.entries(docsByPatientId)) {
     if (patientId === MISSING_ID) {
