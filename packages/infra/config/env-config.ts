@@ -61,8 +61,8 @@ export type EnvConfig = {
     TENOVI_AUTH_HEADER: string;
   };
   cwSecretNames: {
-    CW_PRIVATE_KEY: string;
-    CW_CERTIFICATE: string;
+    CW_ORG_PRIVATE_KEY: string;
+    CW_ORG_CERTIFICATE: string;
     CW_MEMBER_PRIVATE_KEY: string;
     CW_MEMBER_CERTIFICATE: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;

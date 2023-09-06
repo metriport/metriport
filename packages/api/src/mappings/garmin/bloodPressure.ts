@@ -6,7 +6,7 @@ import { DeepNonNullable, DeepRequired } from "ts-essentials";
 import { z } from "zod";
 import { garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
-import { toISODate, toISODateTime } from "../../shared/date";
+import { secondsToISODate, secondsToISODateTime } from "../../shared/date";
 
 export const mapToBiometricsFromBloodPressure = (
   items: GarminBloodPressureList
@@ -20,7 +20,7 @@ export const mapToBiometricsFromBloodPressure = (
       userAccessToken: uat,
     };
     // group by calendar date
-    const userDataByDate = groupBy(userData, v => toISODate(v.measurementTimeInSeconds));
+    const userDataByDate = groupBy(userData, v => secondsToISODate(v.measurementTimeInSeconds));
     const mappedItems: (UserData<Biometrics> | undefined)[] = Object.keys(userDataByDate).map(
       date => {
         const userDataOfDate: GarminBloodPressure[] = userDataByDate[date].filter(
@@ -81,7 +81,7 @@ export const mapToDiastolicSamples = (
   if (bp.length < 1) return undefined;
   return {
     samples: bp.map(v => ({
-      time: toISODateTime(v.measurementTimeInSeconds),
+      time: secondsToISODateTime(v.measurementTimeInSeconds),
       value: v.diastolic,
     })),
   };
@@ -99,7 +99,7 @@ export const mapToSystolicSamples = (
   if (bp.length < 1) return undefined;
   return {
     samples: bp.map(v => ({
-      time: toISODateTime(v.measurementTimeInSeconds),
+      time: secondsToISODateTime(v.measurementTimeInSeconds),
       value: v.systolic,
     })),
   };
@@ -115,7 +115,7 @@ export const mapToHeartRateSamples = (
   if (pulses.length < 1) return undefined;
   return {
     samples_bpm: pulses.map(v => ({
-      time: toISODateTime(v.measurementTimeInSeconds),
+      time: secondsToISODateTime(v.measurementTimeInSeconds),
       value: v.pulse,
     })),
   };

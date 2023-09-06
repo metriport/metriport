@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.test" });
-// Keep dotenv import and config before everything else
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import * as updateProviderDataFile from "../../command/connected-user/save-connected-user";

@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.test" });
-// Keep dotenv import and config before everything else
 import { DocRefMappingCreate } from "../../../../domain/medical/docref-mapping";
 import { MedicalDataSource } from "../../../../external";
 import { makeDocRefMappingModel } from "../../../../models/medical/__tests__/docref-mapping";

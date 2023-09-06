@@ -4,7 +4,7 @@ import { groupBy } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
-import { toISODateTime } from "../../shared/date";
+import { secondsToISODateTime } from "../../shared/date";
 
 export const mapToSleep = (sleepList: GarminSleepList): UserData<Sleep>[] => {
   const type = "sleep";
@@ -26,9 +26,9 @@ export const garminSleepToSleep = (gSleep: GarminSleep): Sleep => {
       source: PROVIDER_GARMIN,
     },
   };
-  res.start_time = toISODateTime(gSleep.startTimeInSeconds);
+  res.start_time = secondsToISODateTime(gSleep.startTimeInSeconds);
   if (gSleep.durationInSeconds != null) {
-    res.end_time = toISODateTime(gSleep.startTimeInSeconds + gSleep.durationInSeconds);
+    res.end_time = secondsToISODateTime(gSleep.startTimeInSeconds + gSleep.durationInSeconds);
   }
   res.durations = toDurations(gSleep);
   res.biometrics = toBiometrics(gSleep);

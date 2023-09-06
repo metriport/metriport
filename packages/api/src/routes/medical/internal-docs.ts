@@ -9,7 +9,7 @@ import {
   isDocumentQueryProgressEqual,
   updateDocQuery,
 } from "../../command/medical/document/document-query";
-import { reprocessDocuments } from "../../command/medical/document/document-redownload";
+import { options, reprocessDocuments } from "../../command/medical/document/document-redownload";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -21,7 +21,6 @@ import { makeS3Client } from "../../external/aws/s3";
 import { Config } from "../../shared/config";
 import { createS3FileName } from "../../shared/external";
 import { capture } from "../../shared/notifications";
-import { stringToBoolean } from "../../shared/types";
 import { Util } from "../../shared/util";
 import { uuidv7 } from "../../shared/uuid-v7";
 import { documentQueryProgressSchema } from "../schemas/internal";
@@ -34,6 +33,8 @@ const router = Router();
 const upload = multer();
 const s3client = makeS3Client();
 const bucketName = Config.getMedicalDocumentsBucketName();
+
+const reprocessOptionsSchema = z.enum(options).array().optional();
 
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/reprocess
@@ -48,8 +49,11 @@ const bucketName = Config.getMedicalDocumentsBucketName();
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.documentIds - Optional comma-separated list of metriport document
  *     IDs to re-download; if not set all documents of the customer will be re-downloaded;
- * @param req.query.override - Optional, defines whether we should re-download the
- *     documents from CommonWell, defaults to false.
+ * @param req.query.options - Optional, array with elements being one of:
+ *     - re-query-doc-refs: indicates we should re-query the document references, if not present
+ *       the API will use the existing doc refs on the FHIR server;
+ *     - force-download: whether we should re-download the documents from CommonWell, if not
+ *       present the API will not download them again if already present on S3.
  * @return 200
  */
 router.post(
@@ -60,13 +64,16 @@ router.post(
     const documentIds = documentIdsRaw
       ? stringListSchema.parse(documentIdsRaw.split(",").map(id => id.trim()))
       : [];
-    const override = stringToBoolean(getFrom("query").optional("override", req));
+    const optionsRaw = getFrom("query").optional("options", req);
+    const options = optionsRaw
+      ? reprocessOptionsSchema.parse(optionsRaw.split(",").map(id => id.trim()))
+      : [];
 
-    reprocessDocuments({ cxId, documentIds, override }).catch(err => {
+    reprocessDocuments({ cxId, documentIds, options }).catch(err => {
       console.log(`Error re-processing documents for cxId ${cxId}: `, err);
       capture.error(err);
     });
-    return res.json({ processing: true });
+    return res.json({ processing: true, options, documentIds, cxId });
   })
 );
 

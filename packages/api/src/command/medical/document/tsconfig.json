@@ -4,4 +4,5 @@
     "noUncheckedIndexedAccess": true,
   },
   "include": ["./**/*"],
+  "exclude": ["./**/*.test.ts"],
 }

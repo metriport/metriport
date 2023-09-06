@@ -3,5 +3,6 @@
   "compilerOptions": {
     "noUncheckedIndexedAccess": true,
   },
-  "include": ["./**/*", "../__tests__/external-ids.ts"],
+  "include": ["./**/*"],
+  "exclude": ["./**/*.test.ts"],
 }

@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.test" });
-// Keep dotenv import and config before everything else
 import NotFoundError from "../../../errors/not-found";
 import { uuidv7 } from "../../../shared/uuid-v7";
 import { processBinary, processDocReference } from "../cw-fhir-proxy";

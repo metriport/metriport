@@ -5,7 +5,7 @@ import { OID_PREFIX } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { makeCommonWellAPI, metriportQueryMeta } from "../api";
 
-const commonWell = makeCommonWellAPI(Config.getMetriportOrgName(), Config.getMemberManagementOID());
+const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
 
 /**
  * For E2E testing locally and staging.
