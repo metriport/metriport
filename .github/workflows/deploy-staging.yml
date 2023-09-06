@@ -141,7 +141,6 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TEST_API_KEY: ${{ secrets.TEST_API_KEY_STAGING }}
       TEST_ACC_ID: ${{ secrets.TEST_ACC_ID_STAGING }}
-      TEST_ORG_ID: ${{ secrets.TEST_ORG_ID_STAGING }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE_STAGING }}

@@ -1,7 +1,6 @@
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { FhirClient } from "../../../../../external/fhir/api/api";
 import { baseURL } from "../../../../__tests__/shared";
-import { Account } from "./account";
 import { Util } from "../../../../../shared/util";
 import { getEnvVarOrFail } from "../../../../../shared/config";
 import { MedplumClient } from "@medplum/core";
@@ -10,85 +9,23 @@ export const ACCOUNT_PATH = "/internal/admin/cx-account";
 export const CUSTOMER_PATH = "/internal/customer";
 export const MAPI_ACCESS = "/internal/mapi-access";
 
-const testId = getEnvVarOrFail("TEST_ACC_ID");
-const testApiKey = getEnvVarOrFail("TEST_API_KEY");
+export const testId = getEnvVarOrFail("TEST_ACC_ID");
+export const testApiKey = getEnvVarOrFail("TEST_API_KEY");
 export const fhirHeaders = { headers: { "x-api-key": testApiKey } };
+
+export const fhirApi = new MedplumClient({ baseUrl: baseURL });
+export const medicalApi = new MetriportMedicalApi(testApiKey, { baseAddress: baseURL });
+
+export enum ResourceType {
+  Organization = "Organization",
+  Patient = "Patient",
+  DocumentReference = "DocumentReference",
+}
 
 export type Apis = {
   medicalApi: MetriportMedicalApi;
   fhirApi: FhirClient;
 };
-
-export type E2ETest = {
-  apis: Apis;
-  account: Account;
-};
-
-export const setupE2ETest = async (): Promise<E2ETest> => {
-  // TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
-  // if (isCreatingAccount) {
-  //   const account = await apiInternal.post(ACCOUNT_PATH, testAccount);
-  //   const apiKey = await apiCognito.post(GENERATE_KEY, null, {
-  //     headers: {
-  //       Authorization: account.data.idToken,
-  //     },
-  //   });
-  //   apiOSS.defaults.headers["x-api-key"] = apiKey.data.key;
-
-  //   const medicalApi = new MetriportMedicalApi(apiKey.data.key, { baseAddress: baseURL });
-  //   const fhirApi = makeFhirApi(account.data.customer.id);
-
-  //   await apiOSS.post(`${MAPI_ACCESS}?cxId=${account.data.customer.id}`);
-
-  //   return {
-  //     apis: {
-  //       apiOSS,
-  //       medicalApi,
-  //       fhirApi,
-  //     },
-  //     account: account.data,
-  //   };
-  // }
-
-  const fhirApi = new MedplumClient({ baseUrl: baseURL });
-  const medicalApi = new MetriportMedicalApi(testApiKey, { baseAddress: baseURL });
-  // TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
-  // const customerResp = await apiInternal.get(`${ACCOUNT_PATH}?cxId=${testId}`);
-
-  return {
-    apis: {
-      medicalApi,
-      fhirApi,
-    },
-    account: {
-      customer: {
-        id: testId,
-        subscriptionStatus: "active",
-        stripeCxId: null,
-        firstName: null,
-        lastName: null,
-        email: null,
-        website: null,
-      },
-    },
-  };
-};
-
-// TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
-// export const cleanUpE2ETest = async (
-//   apis: Apis,
-//   account: Account,
-//   isCreatingAccount?: boolean
-// ): Promise<void> => {
-//   if (isCreatingAccount) {
-//     await apis.apiOSS.delete(`${MAPI_ACCESS}?cxId=${account.customer.id}`);
-//     await apiInternal.delete(`${ACCOUNT_PATH}?cxId=${account.customer.id}`, {
-//       headers: {
-//         Authorization: account.accessToken,
-//       },
-//     });
-//   }
-// };
 
 export const retryFunction = async <K>(
   fn: () => Promise<K>,

@@ -62,9 +62,9 @@ export class HapiFhirClient extends MedplumClient implements FhirClient {
         break;
       }
 
-      const array = bundle?.entry?.map(e => e.resource as ExtractResource<K>) ?? [];
+      const bundleResources = bundle?.entry?.map(e => e.resource as ExtractResource<K>) ?? [];
 
-      yield Object.assign(array, { bundle });
+      yield Object.assign(bundleResources, { bundle });
 
       const nextUrl = nextLink?.url ? new URL(nextLink?.url) : undefined;
       if (nextUrl) {

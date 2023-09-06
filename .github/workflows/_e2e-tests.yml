@@ -26,14 +26,12 @@ on:
         required: true
       TEST_API_KEY:
         required: true
-      TEST_ACC_ID:
-        required: true
-      TEST_ORG_ID:
-        required: false
       DOCKERHUB_USERNAME:
         required: true
       DOCKERHUB_TOKEN:
         required: true
+      TEST_ACC_ID:
+        required: false
       CW_CERTIFICATE:
         required: false
       CW_PRIVATE_KEY:
@@ -94,7 +92,6 @@ jobs:
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
           TEST_ACC_ID: ${{ secrets.TEST_ACC_ID }}
-          TEST_ORG_ID: ${{ secrets.TEST_ORG_ID }}
           CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE }}
           CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY }}
           CW_MEMBER_CERTIFICATE: ${{ secrets.CW_MEMBER_CERTIFICATE }}

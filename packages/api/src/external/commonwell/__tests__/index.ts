@@ -1,9 +1,5 @@
 import * as organization from "./organization";
-import * as patient from "./patient";
 
-const cwCommands = {
-  organization,
-  patient,
-};
+const cwCommands = { organization };
 
 export default cwCommands;

@@ -85,9 +85,6 @@ export function createAPIService(
           AWS_REGION: props.config.region,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
-
-          // TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
-          // INTERNAL_API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
           SYSTEM_ROOT_OID: props.config.systemRootOID,
           ...props.config.commonwell,

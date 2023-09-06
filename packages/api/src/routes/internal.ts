@@ -9,8 +9,6 @@ import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import docsRoutes from "./medical/internal-docs";
-import organizationRoutes from "./medical/internal-organization";
-import facilityRoutes from "./medical/internal-facility";
 import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom } from "./util";
@@ -19,8 +17,6 @@ const router = Router();
 
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
-router.use("/organization", organizationRoutes);
-router.use("/facility", facilityRoutes);
 router.use("/user", userRoutes);
 
 /** ---------------------------------------------------------------------------

@@ -1,5 +1,4 @@
 import { USState, Patient, PatientCreate } from "@metriport/api-sdk";
-import { Patient as CWPatient } from "@metriport/commonwell-sdk";
 import { Patient as FhirPatient } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
 
@@ -21,34 +20,44 @@ export const createPatient: PatientCreate = {
   },
 };
 
-export const validateLocalPatient = (patient: Patient) => {
+export const validateLocalPatient = (
+  patient: Patient,
+  validatePatient?: PatientCreate | Patient
+) => {
   expect(patient.id).toBeTruthy();
-  expect(patient.firstName).toBeTruthy();
-  expect(patient.lastName).toBeTruthy();
-  expect(patient.dob).toBeTruthy();
-  expect(patient.genderAtBirth).toBeTruthy();
-  expect(patient.contact).toBeTruthy();
+
+  if (validatePatient) {
+    expect(patient.firstName).toBe(validatePatient.firstName);
+    expect(patient.lastName).toBe(validatePatient.lastName);
+    expect(patient.dob).toBe(validatePatient.dob);
+    expect(patient.genderAtBirth).toBe(validatePatient.genderAtBirth);
+  } else {
+    expect(patient.firstName).toBeTruthy();
+    expect(patient.lastName).toBeTruthy();
+    expect(patient.dob).toBeTruthy();
+    expect(patient.genderAtBirth).toBeTruthy();
+  }
 };
 
-export const validateFhirPatient = (patient: FhirPatient) => {
+export const validateFhirPatient = (
+  patient: FhirPatient,
+  validatePatient?: PatientCreate | Patient
+) => {
   expect(patient.resourceType).toBeTruthy();
   expect(patient.resourceType).toBe("Patient");
   expect(patient.id).toBeTruthy();
   expect(patient.name).toBeTruthy();
   expect(patient.name?.length).toBe(1);
-  expect(patient.name?.[0].given).toBeTruthy();
-  expect(patient.name?.[0].family).toBeTruthy();
-  expect(patient.birthDate).toBeTruthy();
-  expect(patient.gender).toBeTruthy();
-};
 
-export const validateCWPatient = (patient: CWPatient | undefined) => {
-  expect(patient?.active).toBeTruthy();
-  expect(patient?.details.name).toBeTruthy();
-  expect(patient?.details.name?.length).toBe(1);
-  expect(patient?.details.name?.[0].given).toBeTruthy();
-  expect(patient?.details.name?.[0].family).toBeTruthy();
-  expect(patient?.details.birthDate).toBeTruthy();
-  expect(patient?.details.gender).toBeTruthy();
-  expect(patient?._links).toBeTruthy();
+  if (validatePatient) {
+    expect(patient.name?.[0].given).toBe(validatePatient.firstName);
+    expect(patient.name?.[0].family).toBe(validatePatient.lastName);
+    expect(patient.birthDate).toBe(validatePatient.dob);
+    expect(patient.gender).toBe(validatePatient.genderAtBirth);
+  } else {
+    expect(patient.name?.[0].given).toBeTruthy();
+    expect(patient.name?.[0].family).toBeTruthy();
+    expect(patient.birthDate).toBeTruthy();
+    expect(patient.gender).toBeTruthy();
+  }
 };
