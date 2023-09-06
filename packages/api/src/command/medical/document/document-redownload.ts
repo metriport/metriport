@@ -13,27 +13,36 @@ import {
 } from "@metriport/commonwell-sdk";
 import { difference, differenceBy, groupBy } from "lodash";
 import { DeepRequired } from "ts-essentials";
-import { downloadDocsAndUpsertFHIR } from "../../../external/commonwell/document/document-query";
+import {
+  downloadDocsAndUpsertFHIR,
+  queryAndProcessDocuments,
+} from "../../../external/commonwell/document/document-query";
 import { hasCommonwellContent, isCommonwellContent } from "../../../external/commonwell/extension";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { downloadedFromHIEs } from "../../../external/fhir/shared";
 import { isMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
+import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
-import { getOrganizationOrFail } from "../organization/get-organization";
+import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
-import { updateDocQuery } from "./document-query";
+
+export const options = ["re-query-doc-refs", "force-download"] as const;
+export type Options = (typeof options)[number];
+
+const isReQuery = (options: Options[]): boolean => options.includes("re-query-doc-refs");
+const isForceDownload = (options: Options[]): boolean => options.includes("force-download");
 
 export const reprocessDocuments = async ({
   cxId,
   documentIds,
-  override = false,
+  options = [],
 }: {
   cxId: string;
   documentIds: string[];
-  override?: boolean;
+  options?: Options[];
 }): Promise<void> => {
   const { log } = Util.out(`reprocessDocuments - cxId ${cxId}`);
   documentIds.length
@@ -47,10 +56,11 @@ export const reprocessDocuments = async ({
   });
   // Only use re-download docs we got from CommonWell
   const documentsFromHIEs = documentsFromFHIR.filter(downloadedFromHIEs);
-  // We can't override existing docs if we don't have CW's url for the Binary/attachment
-  const documentsFound = override
-    ? documentsFromHIEs.filter(hasCommonwellContent)
-    : documentsFromHIEs;
+  // We can't re-download existing docs if we don't have CW's url for the Binary/attachment
+  const documentsFound =
+    !isReQuery(options) && isForceDownload(options)
+      ? documentsFromHIEs.filter(hasCommonwellContent)
+      : documentsFromHIEs;
   const documents = documentIds.length
     ? documentsFound.filter(d => d.id && documentIds.includes(d.id))
     : documentsFound;
@@ -72,7 +82,7 @@ export const reprocessDocuments = async ({
   }
 
   // Re-download the documents, update them to S3, and re-convert them to FHIR if CCDA
-  await downloadDocsAndUpsertFHIRWithDocRefs({ cxId, documents: documentsWithPatientId, override });
+  await downloadDocsAndUpsertFHIRWithDocRefs({ cxId, documents: documentsWithPatientId, options });
 
   log(`Done.`);
 };
@@ -80,11 +90,11 @@ export const reprocessDocuments = async ({
 async function downloadDocsAndUpsertFHIRWithDocRefs({
   cxId,
   documents,
-  override,
+  options,
 }: {
   cxId: string;
   documents: DocumentReference[];
-  override: boolean;
+  options: Options[];
 }): Promise<void> {
   // Group docs by Patient
   const docsByPatientId = groupBy(
@@ -96,24 +106,36 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
         .flatMap(id => id ?? []) ?? []
   );
   for (const [patientId, docs] of Object.entries(docsByPatientId)) {
-    await processDocsOfPatient({ cxId, patientId, docs, override });
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+
+    const facilityId = patient.facilityIds[0];
+    if (!facilityId) throw new Error(`Patient ${patientId} is missing facilityId`);
+
+    if (isReQuery(options)) {
+      await queryAndProcessDocuments({
+        patient,
+        facilityId,
+        forceDownload: isForceDownload(options),
+        ignoreDocRefOnFHIRServer: true,
+      });
+    } else {
+      await processDocuments({ patient, docs, override: isForceDownload(options) });
+    }
   }
 }
 
-async function processDocsOfPatient({
-  cxId,
-  patientId,
+async function processDocuments({
+  patient,
   docs,
   override,
 }: {
-  cxId: string;
-  patientId: string;
+  patient: PatientModel;
   docs: DocumentReference[];
   override: boolean;
 }): Promise<void> {
-  const { log } = Util.out(`processDocsOfPatient - M patientId ${patientId}`);
+  const { cxId, id: patientId } = patient;
+  const { log } = Util.out(`processDocuments - M patientId ${patientId}`);
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
   if (
     patient.data.documentQueryProgress?.download?.status === "processing" ||
     patient.data.documentQueryProgress?.convert?.status === "processing"
@@ -121,7 +143,6 @@ async function processDocsOfPatient({
     log(`Patient ${patientId} is already being processed, skipping ${docs.length} docs...`);
     return;
   }
-  const organization = await getOrganizationOrFail({ cxId });
 
   const docsAsCW: Document[] = await convertDocRefToCW(docs, override);
   if (docsAsCW.length !== docs.length) {
@@ -140,7 +161,7 @@ async function processDocsOfPatient({
 
   try {
     log(`Processing ${docs.length} documents for patient ${patientId}...`);
-    await updateDocQuery({
+    await appendDocQueryProgress({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "processing" },
       reset: true,
@@ -148,16 +169,15 @@ async function processDocsOfPatient({
 
     await downloadDocsAndUpsertFHIR({
       patient,
-      organization,
       facilityId,
       documents: docsAsCW,
-      override,
+      forceDownload: override,
     });
   } catch (error) {
     log(`Error processing docs: ${error}`);
     capture.error(error, { extra: { context: `processDocsOfPatient`, error } });
   } finally {
-    await updateDocQuery({
+    await appendDocQueryProgress({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "completed" },
     });
@@ -259,6 +279,8 @@ async function convertDocRefToCW(
   return converted.flatMap(filterTruthy);
 }
 
+// TODO this should either be removed (and we don't convert doc refs from FHIR to CW), or we
+// should make this and caller better match the CW>FHIR conversion
 export const fhirContainedToCW = (contained: Resource): Contained | undefined => {
   const base = {
     id: contained.id,
@@ -274,6 +296,11 @@ export const fhirContainedToCW = (contained: Resource): Contained | undefined =>
         ...base,
         identifier: contained.identifier?.map(fhirIdentifierToCW),
         name: contained.name,
+      };
+    case "Practitioner":
+      return {
+        ...base,
+        identifier: contained.identifier?.map(fhirIdentifierToCW),
       };
     default:
       return undefined;

@@ -33,6 +33,7 @@ import { Patient } from "../../../models/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
+import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
@@ -64,16 +65,28 @@ const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
 const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
 
 /**
- * This is likely to be a long-running function
+ * Query CommonWell for DocumentReferences, download and convert documents to FHIR,
+ * and store the FHIR results (doc refs and resources from conversion) on the FHIR server.
+ *
+ * This is likely to be a long-running function, so it should likely be called asynchronously.
+ *
+ * @param patient - the patient to query for
+ * @param facilityId - the facility to query for
+ * @param forceDownload - whether to force download the documents from CW, even if they are already
+ * on S3 (optional) - see `downloadDocsAndUpsertFHIR()` for the default value
+ * @param ignoreDocRefOnFHIRServer - whether to ignore the doc refs on the FHIR server and re-query
+ * CW for them (optional) - see `downloadDocsAndUpsertFHIR()` for the default value
  */
 export async function queryAndProcessDocuments({
   patient,
   facilityId,
-  override,
+  forceDownload,
+  ignoreDocRefOnFHIRServer,
 }: {
   patient: Patient;
   facilityId: string;
-  override?: boolean;
+  forceDownload?: boolean;
+  ignoreDocRefOnFHIRServer?: boolean;
 }): Promise<number> {
   const { log } = Util.out(`CW queryDocuments - M patient ${patient.id}`);
 
@@ -94,10 +107,10 @@ export async function queryAndProcessDocuments({
 
       const fhirDocRefs = await downloadDocsAndUpsertFHIR({
         patient,
-        organization,
         facilityId,
         documents: cwDocuments,
-        override,
+        forceDownload,
+        ignoreDocRefOnFHIRServer,
       });
 
       reportDocQueryUsage(patient);
@@ -186,11 +199,11 @@ export async function internalGetDocuments({
       }
     }
   } catch (err) {
-    log(`Error querying docs: ${err}`);
+    log(`Error querying docs: ${errorToString(err)}`);
     capture.error(err, {
       extra: {
         context: `cw.queryDocuments`,
-        cwReference: commonWell.lastReferenceHeader,
+        cwReference: commonWell.lastReferenceHeader ?? "undefined",
         ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
       },
     });
@@ -352,22 +365,36 @@ function addMetriportDocRefId({ cxId, patientId }: { cxId: string; patientId: st
   };
 }
 
+/**
+ * Downloads documents from CommonWell DocumentReferences, storing them on S3. Additionally,
+ * converts them to FHIR resources if they're CCDA, stores the results on the FHIR server.
+ *
+ * @param patient - the patient to query for
+ * @param facilityId - the facility to determine the NPI to be used for the query @ CW
+ * @param documents - the CommonWell document references to download and convert
+ * @param forceDownload - whether to force download the documents from CW, even if they are already
+ * on S3 (optional) - defaults to `false`
+ * @param ignoreDocRefOnFHIRServer - whether to ignore the doc refs on the FHIR server and re-query
+ * CW for them (optional) - defaults to `false`
+ * @returns Document References as they were stored on the FHIR server
+ */
 export async function downloadDocsAndUpsertFHIR({
   patient,
-  organization,
   facilityId,
   documents,
-  override = false,
+  forceDownload = false,
+  ignoreDocRefOnFHIRServer = false,
 }: {
   patient: Patient;
-  organization: Organization;
   facilityId: string;
   documents: Document[];
-  override?: boolean;
+  forceDownload?: boolean;
+  ignoreDocRefOnFHIRServer?: boolean;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
-  override && log(`override=true, NOT checking whether docs exist`);
+  forceDownload && log(`override=true, NOT checking whether docs exist`);
 
+  const cxId = patient.cxId;
   const fhirApi = makeFhirApi(patient.cxId);
   const docsNewLocation: DocumentReference[] = [];
   let completedCount = 0;
@@ -388,13 +415,17 @@ export async function downloadDocsAndUpsertFHIR({
 
   // Get File info from S3 (or from memory, if override = true)
   const getFilesWithStorageInfo = async () =>
-    override
+    forceDownload
       ? await Promise.all(validDocs.map(convertToNonExistingS3Info(patient)))
       : await getS3Info(validDocs, patient);
 
   // Get all DocumentReferences for this patient + File info from S3
   const [foundOnFHIR, filesWithStorageInfo] = await Promise.all([
-    getAllPages(() => fhirApi.searchResourcePages("DocumentReference", `patient=${patient.id}`)),
+    ignoreDocRefOnFHIRServer
+      ? []
+      : getAllPages(() =>
+          fhirApi.searchResourcePages("DocumentReference", `patient=${patient.id}`)
+        ),
     getFilesWithStorageInfo(),
   ]);
 
@@ -536,7 +567,7 @@ export async function downloadDocsAndUpsertFHIR({
 
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
           try {
-            await upsertDocumentToFHIRServer(organization.cxId, FHIRDocRef);
+            await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
           } catch (error) {
             reportFHIRError({ patientId: patient.id, doc, error, log });
             errorReported = true;
@@ -605,7 +636,7 @@ export async function downloadDocsAndUpsertFHIR({
   });
   // send webhook to CXs when docs are done downloading
   processPatientDocumentRequest(
-    organization.cxId,
+    cxId,
     patient.id,
     "medical.document-download",
     MAPIWebhookStatus.completed,
@@ -617,7 +648,7 @@ export async function downloadDocsAndUpsertFHIR({
   const conversionStatusFromAppend = updatedPatient.data.documentQueryProgress?.convert?.status;
   if (conversionStatusFromAppend === "completed" || conversionStatusFromDB === "completed") {
     processPatientDocumentRequest(
-      organization.cxId,
+      cxId,
       patient.id,
       "medical.document-conversion",
       MAPIWebhookStatus.completed

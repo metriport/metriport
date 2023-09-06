@@ -1,17 +1,24 @@
 import {
   Address,
+  Device,
   DocumentReference,
   DocumentReferenceContent,
   HumanName,
   Identifier,
-  Organization as FhirOrganization,
+  Organization,
+  Patient as PatientFHIR,
+  Practitioner,
+  PractitionerRole,
   Reference,
+  RelatedPerson,
   Resource,
 } from "@medplum/fhirtypes";
 import {
   Contained,
+  DocumentContent,
   DocumentIdentifier as CWDocumentIdentifier,
   DocumentIdentifier,
+  GenderCodes,
   HumanName as CWHumanName,
 } from "@metriport/commonwell-sdk";
 import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
@@ -26,6 +33,23 @@ import { metriportDataSourceExtension } from "../shared/extensions/metriport";
 dayjs.extend(isToday);
 
 export const MAX_FHIR_DOC_ID_LENGTH = 64;
+
+type AuthorTypes =
+  | Device
+  | Organization
+  | PatientFHIR
+  | Practitioner
+  | PractitionerRole
+  | RelatedPerson;
+const authorTypesMap: Record<AuthorTypes["resourceType"], AuthorTypes["resourceType"]> = {
+  Device: "Device",
+  Organization: "Organization",
+  Patient: "Patient",
+  Practitioner: "Practitioner",
+  PractitionerRole: "PractitionerRole",
+  RelatedPerson: "RelatedPerson",
+};
+const authorTypes = Object.values(authorTypesMap);
 
 // HIEs probably don't have records before the year 1800 :)
 const earliestPossibleYear = 1800;
@@ -79,12 +103,8 @@ export const toFHIR = (
       ]
     : [];
 
-  const containedContent: Resource[] = [
-    {
-      resourceType: "Patient",
-      id: patient.id,
-    },
-  ];
+  // https://www.hl7.org/fhir/R4/domainresource-definitions.html#DomainResource.contained
+  const containedContent: Resource[] = [];
 
   const contained = doc.content?.contained;
   if (contained?.length) {
@@ -94,8 +114,11 @@ export const toFHIR = (
     });
   }
 
-  const authorOrganization: Reference<FhirOrganization> | undefined =
-    extractAuthorOrganization(containedContent);
+  const subject: Reference<PatientFHIR> = {
+    reference: `Patient/${patient.id}`,
+    type: "Patient",
+  };
+  const author = getAuthors(doc.content, containedContent, docId);
 
   return {
     id: docId,
@@ -109,11 +132,8 @@ export const toFHIR = (
     date: getBestDateFromCWDocRef(doc),
     status: "current",
     type: doc.content?.type,
-    subject: {
-      reference: `Patient/${patient.id}`,
-      type: "Patient",
-    },
-    author: authorOrganization ? [authorOrganization] : undefined,
+    subject,
+    author,
     // DEFAULT TO COMMONWELL FOR NOW
     custodian: {
       id: MedicalDataSourceOid.COMMONWELL,
@@ -318,19 +338,44 @@ function convertCWIdentifierToFHIR(
 }
 
 /**
- * Extracts the author organization from the contained resources.
+ * Get the authors from content that match the contained resources.
  *
+ * @param content CW DocumentContent containing the doc ref's data coming from CW.
  * @param contained FHIR-compliant resources built from CW resources.
- * @returns FHIR Reference to the author organization; otherwise undefined if a valid author organization cannot be determined.
+ * @returns FHIR References to be used as authors to the document reference.
  */
-function extractAuthorOrganization(contained: Resource[]): Reference<FhirOrganization> | undefined {
-  const org = contained.find(r => r.resourceType === "Organization");
-  if (org) {
-    return {
-      reference: `#${org.id}`,
-      type: "Organization",
-    };
-  }
+export function getAuthors(
+  content: DocumentContent,
+  contained: Resource[],
+  docId: string
+): Reference<AuthorTypes>[] {
+  const refs = (content.author ?? []).flatMap(author => {
+    if (
+      author.reference &&
+      typeof author.reference === "string" &&
+      author.reference.startsWith("#")
+    ) {
+      return author.reference.substring(1);
+    }
+    if (author.reference) {
+      // https://hl7.org/fhir/R4/references-definitions.html#Reference.reference
+      capture.message(`Found an author reference that is not internal`, {
+        extra: { author, docId, context: `toFHIR.getAuthors` },
+        level: "warning",
+      });
+    }
+    return author.reference ?? [];
+  });
+
+  const authorTypesAsStr = authorTypes.map(a => a.toString());
+  const containedAuthors = contained
+    .filter(c => authorTypesAsStr.includes(c.resourceType))
+    .filter(r => r.id && refs.includes(r.id));
+
+  return containedAuthors.map(a => ({
+    reference: `#${a.id}`,
+    type: a.resourceType,
+  }));
 }
 
 /**
@@ -387,14 +432,18 @@ function convertCWAdressToFHIR(address: Contained["address"] | undefined): Addre
  * @param genders CW gender code.
  * @returns FHIR-compliant gender string; otherwise undefined if a valid gender cannot be determined.
  */
-function convertCWGenderToFHIR(
-  genders: Gender[] | null | undefined
-): "male" | "female" | "other" | "unknown" | undefined {
-  if (genders) {
-    if (genders[0].code === "M") return "male";
-    else if (genders[0].code === "F") return "female";
-    else if (genders[0].code === "UN") return "other";
-    else if (genders[0].code === "UNK") return "unknown";
+function convertCWGenderToFHIR(genders: Gender[] | null | undefined): PatientFHIR["gender"] {
+  if (genders && genders[0]) {
+    switch (genders[0].code) {
+      case GenderCodes.M:
+        return "male";
+      case GenderCodes.F:
+        return "female";
+      case GenderCodes.UN:
+        return "other";
+      case GenderCodes.UNK:
+        return "unknown";
+    }
   }
   return undefined;
 }
