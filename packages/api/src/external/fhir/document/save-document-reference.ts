@@ -1,4 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { errorToString } from "../../../shared/log";
 import { makeFhirApi } from "../api/api-factory";
 
 export const upsertDocumentToFHIRServer = async (
@@ -12,7 +13,7 @@ export const upsertDocumentToFHIRServer = async (
       ...docRef,
     });
   } catch (err) {
-    console.log(`[upsertDocumentToFHIRServer] ${err}`);
+    console.log(`[upsertDocumentToFHIRServer] ${errorToString(err)}`);
     throw err;
   }
 };

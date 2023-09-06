@@ -1,5 +1,3 @@
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.test" });
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Observation } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
