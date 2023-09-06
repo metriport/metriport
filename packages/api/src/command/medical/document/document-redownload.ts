@@ -87,6 +87,8 @@ export const reprocessDocuments = async ({
   log(`Done.`);
 };
 
+const MISSING_ID = "missing-id";
+
 async function downloadDocsAndUpsertFHIRWithDocRefs({
   cxId,
   documents,
@@ -97,15 +99,16 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
   options: Options[];
 }): Promise<void> {
   // Group docs by Patient
-  const docsByPatientId = groupBy(
-    documents,
-    d =>
-      d.contained
-        ?.filter(c => c.resourceType === "Patient")
-        .map(c => c.id)
-        .flatMap(id => id ?? []) ?? []
-  );
+  const docsByPatientId = groupBy(documents, d => d.subject?.id ?? MISSING_ID);
+
   for (const [patientId, docs] of Object.entries(docsByPatientId)) {
+    if (patientId === MISSING_ID) {
+      const docIDs = docs.map(d => d.id);
+      const msg = "DocumentReferences with missing patient ID";
+      console.log(`${msg} (${docIDs.length}): ${docIDs.join(", ")}`);
+      capture.message(msg, { extra: { docIDs }, level: "warning" });
+      continue;
+    }
     const patient = await getPatientOrFail({ id: patientId, cxId });
 
     const facilityId = patient.facilityIds[0];
