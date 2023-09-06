@@ -53,8 +53,6 @@ export const setupE2ETest = async (): Promise<E2ETest> => {
   // }
 
   const fhirApi = new MedplumClient({ baseUrl: baseURL });
-
-  apiOSS.defaults.headers["x-api-key"] = testApiKey;
   const medicalApi = new MetriportMedicalApi(testApiKey, { baseAddress: baseURL });
   // TODO: #1022 - TO BE USED WHEN ABLE TO HIT INTERNAL IN GITHUB RUNNER
   // const customerResp = await apiInternal.get(`${ACCOUNT_PATH}?cxId=${testId}`);
