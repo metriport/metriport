@@ -17,8 +17,11 @@ export enum ConsumerHealthDataType {
 export type DAPIParams = {
   timezoneId?: string;
   accessToken?: string;
-  xTenoviApiKey?: string;
-  xTenoviClientName?: string;
+};
+
+export type RawParams = {
+  query: Record<string, string | string[] | undefined>;
+  headers: Record<string, string | string[] | undefined>;
 };
 
 export type ConsumerHealthDataTypeMap = {
@@ -34,7 +37,8 @@ export default abstract class Provider {
   async getActivityData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams: RawParams
   ): Promise<Activity> {
     throw new NotImplementedError();
   }
@@ -42,7 +46,8 @@ export default abstract class Provider {
   async getBodyData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams: RawParams
   ): Promise<Body> {
     throw new NotImplementedError();
   }
@@ -50,7 +55,8 @@ export default abstract class Provider {
   async getBiometricsData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams: RawParams
   ): Promise<Biometrics> {
     throw new NotImplementedError();
   }
@@ -58,7 +64,8 @@ export default abstract class Provider {
   async getNutritionData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams: RawParams
   ): Promise<Nutrition> {
     throw new NotImplementedError();
   }
@@ -66,7 +73,8 @@ export default abstract class Provider {
   async getSleepData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams: RawParams
   ): Promise<Sleep> {
     throw new NotImplementedError();
   }
@@ -74,7 +82,8 @@ export default abstract class Provider {
   async getUserData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams: RawParams
   ): Promise<User> {
     throw new NotImplementedError();
   }

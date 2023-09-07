@@ -33,3 +33,22 @@ To integrate with Tenovi, you will need to do the following for each of your use
 </Info>
 
 <img className="h-100" src="/images/tenovi-dashboard.png" />
+
+## REST Endpoints
+
+With Tenovi, we you can query for past user data using one of the following endpoints:
+
+- [getBodyData](/devices-api/api-reference/get-body-data)
+- [getBiometricsData](/devices-api/api-reference/get-biometrics-data)
+
+However, you will **need** to use the following headers (see image below for reference):
+
+<ParamField header="x-tenovi-api-key" type="string" required>
+  Your company's API key generated on Tenovi's Client Home page.
+</ParamField>
+
+<ParamField header="x-tenovi-client-name" type="string" required>
+  Your company's name, as displayed on Tenovi's Client Home page.
+</ParamField>
+
+<img className="h-100" src="/images/tenovi-client-home.png" />
