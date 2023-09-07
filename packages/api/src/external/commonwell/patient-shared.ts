@@ -187,7 +187,10 @@ export async function getPatientData(
   const { organization, facilities } = await getPatientWithDependencies(patient);
   const facility = facilities.find(f => f.id === facilityId);
   if (!facility) {
-    throw new BadRequestError(`Patient not associated with given facility`);
+    throw new BadRequestError(`Patient not associated with given facility`, undefined, {
+      patientId: patient.id,
+      facilityId,
+    });
   }
   return { organization, facility };
 }
