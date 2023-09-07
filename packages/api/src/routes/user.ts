@@ -13,7 +13,7 @@ import BadRequestError from "../errors/bad-request";
 import NotFoundError from "../errors/not-found";
 import { ConnectedUser } from "../models/connected-user";
 
-import { ConsumerHealthDataType, DAPIParams } from "../providers/provider";
+import { ConsumerHealthDataType, RawParams } from "../providers/provider";
 import { Tenovi } from "../providers/tenovi";
 import { Config } from "../shared/config";
 import {
@@ -25,7 +25,6 @@ import {
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
-import { getTenoviApiKeyFrom, getTenoviClientNameFrom } from "./schemas/tenovi-headers";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdOrFail, getFrom } from "./util";
 
@@ -179,11 +178,11 @@ async function revokeUserProviderAccess(
   } else if (providerNoAuth.success) {
     if (providerNoAuth.data === PROVIDER_TENOVI) {
       const tenovi = new Constants.noAuthProviders[PROVIDER_TENOVI]();
-      const extraParams: DAPIParams = {
-        xTenoviApiKey: getTenoviApiKeyFrom("headers", req).orFail(),
-        xTenoviClientName: getTenoviClientNameFrom("headers", req).orFail(),
+      const rawParams: RawParams = {
+        query: { ...(req.query as RawParams["query"]) },
+        headers: { ...(req.headers as RawParams["headers"]) },
       };
-      await tenovi.revokeProviderAccess(connectedUser, extraParams);
+      await tenovi.revokeProviderAccess(connectedUser, rawParams);
     } else {
       const noAuthProvider = new Constants.noAuthProviders[providerNoAuth.data]();
       await noAuthProvider.revokeProviderAccess(connectedUser);
@@ -321,17 +320,17 @@ router.get("/connect", async (req: Request, res: Response) => {
  * @param connectedUser The user to disconnect the device from
  * @param provider      The device provider
  * @param deviceId      The device to disconnect
- * @param extraParams   The extra parameters required to disconnect the device
+ * @param rawParams     The extra parameters required to disconnect the device
  */
 async function removeDevice(
   connectedUser: ConnectedUser,
   provider: string,
   deviceId: string,
-  extraParams: DAPIParams
+  rawParams: RawParams
 ) {
   if (provider === PROVIDER_TENOVI) {
     const tenovi = new Tenovi();
-    await tenovi.disconnectDevice(connectedUser, String(deviceId), true, extraParams);
+    await tenovi.disconnectDevice(connectedUser, String(deviceId), true, undefined, rawParams);
   } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
@@ -358,19 +357,12 @@ router.delete(
     const provider = getFrom("query").orFail("provider", req);
     const deviceId = getFrom("query").orFail("deviceId", req);
 
-    const extraParams: DAPIParams = {
-      xTenoviApiKey: getTenoviApiKeyFrom("headers", req).optional(),
-      xTenoviClientName: getTenoviClientNameFrom("headers", req).optional(),
+    const rawParams: RawParams = {
+      query: { ...(req.query as RawParams["query"]) },
+      headers: { ...(req.headers as RawParams["headers"]) },
     };
 
-    if (provider === PROVIDER_TENOVI) {
-      if (!extraParams.xTenoviApiKey) throw new BadRequestError("Missing x-tenovi-api-key header.");
-      if (!extraParams.xTenoviClientName) {
-        throw new BadRequestError("Missing x-tenovi-client header.");
-      }
-    }
-
-    await removeDevice(connectedUser, provider, deviceId, extraParams);
+    await removeDevice(connectedUser, provider, deviceId, rawParams);
     return res
       .status(status.OK)
       .json({ message: `Device ${deviceId} has been removed for user ${userId}.` });
