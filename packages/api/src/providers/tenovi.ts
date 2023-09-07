@@ -39,7 +39,6 @@ export function getTenoviHeaderOrFail(
 function validateTenoviHeader(tenoviHeader: string | string[]): string {
   if (tenoviHeader.includes(" ") || Array.isArray(tenoviHeader))
     throw new BadRequestError(`Invalid ${tenoviApiKeyPropName} header.`);
-  console.log("tenoviHeader validated:", tenoviHeader);
   return tenoviHeader;
 }
 
@@ -140,7 +139,9 @@ export class Tenovi extends Provider {
     if (!xTenoviClientName) throw new BadRequestError(`Missing ${tenoviApiKeyPropName} header.`);
 
     if (connectedDevices && connectedDevices.includes(deviceId)) {
-      const url = `${Tenovi.URL}/${Tenovi.API_PATH}/${xTenoviClientName}/hwi/unlink-gateway/${deviceId}/`;
+      const url = `${Tenovi.URL}/${Tenovi.API_PATH}/${encodeURIComponent(
+        xTenoviClientName
+      )}/hwi/unlink-gateway/${deviceId}/`;
 
       try {
         if (deviceId !== TENOVI_TEST_DEVICE_ID) {
@@ -217,9 +218,12 @@ export class Tenovi extends Provider {
     const startDate = dayjs(date).toISOString();
     const endDate = dayjs(date).add(1, "day").toISOString();
 
-    const patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+    let patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+    if (patientId) patientId = encodeURIComponent(patientId);
 
-    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/${xTenoviClientName}/hwi/patients/${patientId}/measurements/?metric__name=weight&timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
+    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/${encodeURIComponent(
+      xTenoviClientName
+    )}/hwi/patients/${patientId}/measurements/?metric__name=weight&timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
     const weightData = await this.fetchPatientData(patientMeasUrl, xTenoviApiKey);
 
     return mapToBody(date, weightData);
@@ -237,9 +241,12 @@ export class Tenovi extends Provider {
     const startDate = dayjs(date).toISOString();
     const endDate = dayjs(date).add(1, "day").toISOString();
 
-    const patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+    let patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+    if (patientId) patientId = encodeURIComponent(patientId);
 
-    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/${xTenoviClientName}/hwi/patients/${patientId}/measurements/?timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
+    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/${encodeURIComponent(
+      xTenoviClientName
+    )}/hwi/patients/${patientId}/measurements/?timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
     const biometricsData = await this.fetchPatientData(patientMeasUrl, xTenoviApiKey);
 
     return mapToBiometrics(date, biometricsData);
