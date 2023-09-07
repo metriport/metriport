@@ -177,14 +177,9 @@ async function revokeUserProviderAccess(
     const cxId = connectedUser.dataValues.cxId;
     if (token) await Constants.PROVIDER_OAUTH1_MAP[providerOAuth1.data].deregister([token], cxId);
   } else if (providerNoAuth.success) {
-    if (providerNoAuth.data === PROVIDER_TENOVI) {
-      const tenovi = new Constants.noAuthProviders[PROVIDER_TENOVI]();
-      const rawParams = getRawParams(req);
-      await tenovi.revokeProviderAccess(connectedUser, rawParams);
-    } else {
-      const noAuthProvider = new Constants.noAuthProviders[providerNoAuth.data]();
-      await noAuthProvider.revokeProviderAccess(connectedUser);
-    }
+    const rawParams = getRawParams(req);
+    const noAuthProvider = new Constants.noAuthProviders[providerNoAuth.data]();
+    await noAuthProvider.revokeProviderAccess(connectedUser, rawParams);
   } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
@@ -328,7 +323,7 @@ async function removeDevice(
 ) {
   if (provider === PROVIDER_TENOVI) {
     const tenovi = new Tenovi();
-    await tenovi.disconnectDevice(connectedUser, String(deviceId), true, undefined, rawParams);
+    await tenovi.disconnectDevice(connectedUser, String(deviceId), true, rawParams);
   } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
