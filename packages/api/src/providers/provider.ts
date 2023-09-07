@@ -38,7 +38,7 @@ export default abstract class Provider {
     connectedUser: ConnectedUser,
     date: string,
     params: DAPIParams,
-    rawParams: RawParams
+    rawParams?: RawParams
   ): Promise<Activity> {
     throw new NotImplementedError();
   }
@@ -47,7 +47,7 @@ export default abstract class Provider {
     connectedUser: ConnectedUser,
     date: string,
     params: DAPIParams,
-    rawParams: RawParams
+    rawParams?: RawParams
   ): Promise<Body> {
     throw new NotImplementedError();
   }
@@ -56,7 +56,7 @@ export default abstract class Provider {
     connectedUser: ConnectedUser,
     date: string,
     params: DAPIParams,
-    rawParams: RawParams
+    rawParams?: RawParams
   ): Promise<Biometrics> {
     throw new NotImplementedError();
   }
@@ -65,7 +65,7 @@ export default abstract class Provider {
     connectedUser: ConnectedUser,
     date: string,
     params: DAPIParams,
-    rawParams: RawParams
+    rawParams?: RawParams
   ): Promise<Nutrition> {
     throw new NotImplementedError();
   }
@@ -74,7 +74,7 @@ export default abstract class Provider {
     connectedUser: ConnectedUser,
     date: string,
     params: DAPIParams,
-    rawParams: RawParams
+    rawParams?: RawParams
   ): Promise<Sleep> {
     throw new NotImplementedError();
   }
@@ -83,7 +83,7 @@ export default abstract class Provider {
     connectedUser: ConnectedUser,
     date: string,
     params: DAPIParams,
-    rawParams: RawParams
+    rawParams?: RawParams
   ): Promise<User> {
     throw new NotImplementedError();
   }
