@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { randNumber } from "@ngneat/falso";
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.test" });
-// Keep dotenv import and config before everything else
 import { v4 as uuidv4 } from "uuid";
 import * as createTenant from "../../../../external/fhir/admin";
 import {

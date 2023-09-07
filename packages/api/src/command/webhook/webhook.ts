@@ -6,6 +6,7 @@ import WebhookError from "../../errors/webhook";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { analytics, EventTypes } from "../../shared/analytics";
+import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
@@ -31,7 +32,7 @@ async function missingWHSettings(
 ): Promise<boolean> {
   const product = getProductFromWebhookRequest(webhookRequest);
   const msg = `[${product}] Missing webhook config, skipping sending it`;
-  const loggableKey = webhookKey ? "<defined>" : null;
+  const loggableKey = webhookKey ? "<defined>" : "<not-defined>";
   log(msg + ` (url: ${webhookUrl}, key: ${loggableKey}`);
   capture.message(msg, {
     extra: {
@@ -40,6 +41,7 @@ async function missingWHSettings(
       webhookKey: loggableKey,
       context: `webhook.processRequest`,
     },
+    level: "info",
   });
   await updateWebhookRequestStatus({
     id: webhookRequest.id,
@@ -112,13 +114,14 @@ export const processRequest = async (
     return true;
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
-    capture.error(err, {
+  } catch (error: any) {
+    console.log(`Failed to process WH request: ${errorToString(error)}`);
+    capture.error(error, {
       extra: {
         webhookRequestId: webhookRequest.id,
         webhookUrl,
         context: `webhook.processRequest`,
-        cause: err.cause,
+        error,
       },
     });
     const status = "failure";
@@ -129,22 +132,23 @@ export const processRequest = async (
         status,
       });
     } catch (err2) {
-      console.log(`Failed to store failure state on WH log`, err2);
+      console.log(`Failed to store failure state on WH log: ${errorToString(err2)}`);
       capture.error(err2, {
         extra: {
           webhookRequestId: webhookRequest.id,
           webhookUrl,
           context: `webhook.processRequest.updateStatus.failed`,
+          error: err2,
         },
       });
     }
     sendAnalytics(status);
     let webhookStatusDetail;
-    if (err instanceof WebhookError) {
-      webhookStatusDetail = String(err.cause);
+    if (error instanceof WebhookError) {
+      webhookStatusDetail = String(error.cause);
     } else {
-      log(`Unexpected error testing webhook`, err);
-      webhookStatusDetail = `Internal error: ${err?.message}`;
+      log(`Unexpected error testing webhook`, error);
+      webhookStatusDetail = `Internal error: ${error.message}`;
     }
     try {
       // update the status of this webhook on the DB
@@ -154,12 +158,13 @@ export const processRequest = async (
         webhookStatusDetail,
       });
     } catch (err2) {
-      log(`Failed to store failure state on WH settings`, err2);
+      log(`Failed to store failure state on WH settings: ${errorToString(err2)}`);
       capture.error(err2, {
         extra: {
           webhookRequestId: webhookRequest.id,
           webhookUrl,
           context: `webhook.processRequest.updateStatus.details`,
+          error: err2,
         },
       });
     }

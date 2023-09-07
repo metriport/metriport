@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.test" });
-// Keep dotenv import and config before everything else
 import { PatientModel } from "../../../../models/medical/patient";
 import { makePatient, makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";

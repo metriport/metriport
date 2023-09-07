@@ -4,7 +4,7 @@ import { groupBy } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
-import { toISODate } from "../../shared/date";
+import { secondsToISODate } from "../../shared/date";
 
 export const mapToBody = (items: GarminBodyCompositionList): UserData<Body>[] => {
   const type = "body";
@@ -26,7 +26,7 @@ export const garminBodyCompositionToBody = (gBody: GarminBodyComposition): Body 
   const res: Body = {
     metadata: {
       // TODO https://github.com/metriport/metriport-internal/issues/166
-      date: toISODate(gBody.measurementTimeInSeconds),
+      date: secondsToISODate(gBody.measurementTimeInSeconds),
       source: PROVIDER_GARMIN,
     },
   };

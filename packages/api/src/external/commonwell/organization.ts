@@ -40,7 +40,7 @@ export async function organizationToCommonwell(
     homeCommunityId: cwId,
     patientIdAssignAuthority: cwId,
     displayName: org.data.name,
-    memberName: Config.getMetriportOrgName(),
+    memberName: Config.getCWMemberOrgName(),
     securityTokenKeyType: "BearerKey",
     isActive: true,
     gateways: [
@@ -64,10 +64,7 @@ export async function organizationToCommonwell(
 export const create = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW create - M oid ${org.oid}, id ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
-  const commonWell = makeCommonWellAPI(
-    Config.getMetriportOrgName(),
-    Config.getMemberManagementOID()
-  );
+  const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
     debug(`resp respCreate: ${JSON.stringify(respCreate, null, 2)}`);
@@ -96,10 +93,7 @@ export const create = async (org: Organization): Promise<void> => {
 export const update = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW update - M oid ${org.oid}, id ${org.id}`);
   const cwOrg = await organizationToCommonwell(org);
-  const commonWell = makeCommonWellAPI(
-    Config.getMetriportOrgName(),
-    Config.getMemberManagementOID()
-  );
+  const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
     debug(`resp respUpdate: `, () => JSON.stringify(respUpdate, null, 2));

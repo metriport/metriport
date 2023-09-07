@@ -1,6 +1,5 @@
 import { Biometrics, Body, ProviderSource, SourceType } from "@metriport/api-sdk";
 import convert from "convert-units";
-import stringify from "json-stringify-safe";
 import { Product } from "../../domain/product";
 import { TenoviMeasurement } from "../../mappings/tenovi";
 import {
@@ -16,6 +15,7 @@ import {
 import { tenoviMetricTypes } from "../../mappings/tenovi/constants";
 import { ConnectedUser } from "../../models/connected-user";
 import { analytics, EventTypes } from "../../shared/analytics";
+import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { formatNumber, getFloatValue } from "../../shared/numbers";
 import { getConnectedUsersByDeviceId } from "../connected-user/get-connected-user";
@@ -46,7 +46,7 @@ export const processMeasurementData = async (data: TenoviMeasurement): Promise<v
     const userData = mapData(data);
     createAndSendPayload(connectedUsers, userData);
   } catch (error) {
-    console.log(`Failed to process Tenovi WH - error: ${stringify(error)}`);
+    console.log(`Failed to process Tenovi WH - error: ${errorToString(error)}`);
     capture.error(error, {
       extra: { context: `webhook.processMeasurementData`, error, data },
     });
@@ -91,12 +91,15 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
     };
     payload.body = [body];
   } else if (!tenoviMetricTypes.includes(metric)) {
+    const msg = `Tenovi webhook sent a new metric type`;
+    console.log(`${msg} - ${metric}: ${JSON.stringify(data)}`);
     capture.message(`Tenovi webhook sent a new metric type`, {
       extra: {
         content: `webhook.tenovi.mapData`,
         data,
         metric,
       },
+      level: "warning",
     });
   }
 
@@ -142,9 +145,9 @@ async function createAndSendPayload(
         });
         reportDevicesUsage(cxId, [userId]);
       } catch (error) {
-        console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${stringify(error)}`);
+        console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${errorToString(error)}`);
         capture.error(error, {
-          extra: { user, context: `webhook.createAndSendPayload`, error, data },
+          extra: { user, context: `webhook.createAndSendPayload`, error, data, userId },
         });
       }
     })

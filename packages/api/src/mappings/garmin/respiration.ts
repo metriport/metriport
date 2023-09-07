@@ -4,7 +4,7 @@ import { groupBy } from "lodash";
 import { z } from "zod";
 import { garminMetaSchema, garminTypes, User, UserData } from ".";
 import { PROVIDER_GARMIN } from "../../shared/constants";
-import { toISODate } from "../../shared/date";
+import { secondsToISODate } from "../../shared/date";
 
 type BreathAndDate = { date: string; breath: { time: string; value: number } };
 
@@ -50,7 +50,7 @@ const toBreaths = (userData: GarminRespirationList): BreathAndDate[] => {
     const offsets = Object.keys(timeOffsetEpochToBreaths).map(Number);
     if (offsets.length < 1) return undefined;
     return offsets.map(offset => {
-      const date = toISODate(v.startTimeInSeconds);
+      const date = secondsToISODate(v.startTimeInSeconds);
       const time = dayjs.unix(v.startTimeInSeconds + offset).toISOString();
       const value = timeOffsetEpochToBreaths[offset];
       return { date, breath: { time, value } };

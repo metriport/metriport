@@ -174,24 +174,24 @@ export class Config {
     return getEnvVarOrFail("CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET");
   }
 
-  static getMetriportPrivateKey(): string {
-    return getEnvVarOrFail("CW_PRIVATE_KEY");
+  static getCWOrgPrivateKey(): string {
+    return getEnvVarOrFail("CW_ORG_PRIVATE_KEY");
   }
-  static getMetriportCert(): string {
-    return getEnvVarOrFail("CW_CERTIFICATE");
+  static getCWOrgCertificate(): string {
+    return getEnvVarOrFail("CW_ORG_CERTIFICATE");
   }
 
-  static getMemberManagementPrivateKey(): string {
+  static getCWMemberPrivateKey(): string {
     return getEnvVarOrFail("CW_MEMBER_PRIVATE_KEY");
   }
-  static getMemberManagementCert(): string {
+  static getCWMemberCertificate(): string {
     return getEnvVarOrFail("CW_MEMBER_CERTIFICATE");
   }
 
-  static getMetriportOrgName(): string {
+  static getCWMemberOrgName(): string {
     return getEnvVarOrFail("CW_MEMBER_NAME");
   }
-  static getMemberManagementOID(): string {
+  static getCWMemberOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
   }
 

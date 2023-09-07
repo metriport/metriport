@@ -3,6 +3,7 @@ import stringify from "json-stringify-safe";
 import { Product } from "../../domain/product";
 import { ConnectedUser } from "../../models/connected-user";
 import { ProviderOptions } from "../../shared/constants";
+import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../usage/report-usage";
@@ -76,11 +77,16 @@ export const sendProviderConnected = async (
     console.log(
       `Failed to send provider connected WH - provider: ${provider}, ` +
         `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequest)}` +
-        `error: ${error}`
+        `error: ${errorToString(error)}`
     );
     capture.error(error, {
-      extra: { connectedUser, provider, context: `webhook.sendProviderConnected`, error },
-      level: "error",
+      extra: {
+        userId: connectedUser.id,
+        provider,
+        deviceIds,
+        context: `webhook.sendProviderConnected`,
+        error,
+      },
     });
   }
 };
@@ -119,12 +125,11 @@ export const sendProviderDisconnected = async (
     );
     capture.error(error, {
       extra: {
-        connectedUser,
+        userId: connectedUser.id,
         providers: disconnectedProviders,
         context: `webhook.sendProviderDiconnected`,
         error,
       },
-      level: "error",
     });
   }
 };

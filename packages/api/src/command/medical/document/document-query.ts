@@ -64,7 +64,7 @@ export async function queryDocumentsAcrossHIEs({
     reset: true,
   });
 
-  getDocumentsFromCW({ patient, facilityId, override }).catch(emptyFunction);
+  getDocumentsFromCW({ patient, facilityId, forceDownload: override }).catch(emptyFunction);
 
   return createQueryResponse("processing", updatedPatient);
 }

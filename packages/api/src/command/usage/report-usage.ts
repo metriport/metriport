@@ -1,4 +1,5 @@
 import Axios from "axios";
+import stringify from "json-stringify-safe";
 import { Product } from "../../domain/product";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
@@ -18,7 +19,7 @@ export const reportUsage = ({ cxId, entityId, product }: ReportUsageCommand): vo
 
   // intentionally asynchronous
   axios.post(`${url}`, payload).catch(err => {
-    console.log(`Failed to report usage (${payload}): `, err.message);
+    console.log(`Failed to report usage (${stringify(payload)}) to server ${url}: `, err.message);
     capture.error(err, { extra: { payload, err } });
   });
 };

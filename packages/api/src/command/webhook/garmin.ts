@@ -5,6 +5,7 @@ import { getErrorMessage } from "../../errors";
 import { UserData } from "../../mappings/garmin";
 import { Settings } from "../../models/settings";
 import { analytics, EventTypes } from "../../shared/analytics";
+import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUsers } from "../connected-user/get-connected-user";
@@ -120,19 +121,19 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
             cxId,
             dataAndUserList.map(du => du.userId)
           );
-        } catch (err) {
-          const msg = getErrorMessage(err);
+        } catch (error) {
+          const msg = getErrorMessage(error);
           log(`Failed to process data of customer ${cxId}: ${msg}`);
-          capture.error(err, {
-            extra: { context: `webhook.processData.customer`, err },
+          capture.error(error, {
+            extra: { context: `webhook.processData.customer`, error, cxId },
           });
         }
       })
     );
-  } catch (err) {
-    log(`Error on processData: ${err}`);
-    capture.error(err, {
-      extra: { context: `webhook.processData.global`, err },
+  } catch (error) {
+    log(`Error on processData: ${errorToString(error)}`);
+    capture.error(error, {
+      extra: { context: `webhook.processData.global`, error },
     });
   }
 };
