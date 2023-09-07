@@ -5,6 +5,7 @@ import { getConnectedUserOrFail } from "../../command/connected-user/get-connect
 import { ConsumerHealthDataType, DAPIParams } from "../../providers/provider";
 import { Constants, ProviderOptions } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
+import { getTenoviApiKeyFrom, getTenoviClientNameFrom } from "../schemas/tenovi-headers";
 import { getTimezoneIdFrom } from "../schemas/timezone-id";
 import { getUserIdFrom } from "../schemas/user-id";
 import { getCxIdOrFail, getDateOrFail } from "../util";
@@ -20,7 +21,10 @@ export async function getProviderDataForType<T>(
   const date = getDateOrFail(req);
   const params: DAPIParams = {
     timezoneId: getTimezoneIdFrom("query", req).optional(),
+    xTenoviApiKey: getTenoviApiKeyFrom("headers", req).optional(),
+    xTenoviClientName: getTenoviClientNameFrom("headers", req).optional(),
   };
+
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
   if (!connectedUser.providerMap) return [];
 

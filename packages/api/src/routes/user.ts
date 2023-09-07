@@ -13,18 +13,19 @@ import BadRequestError from "../errors/bad-request";
 import NotFoundError from "../errors/not-found";
 import { ConnectedUser } from "../models/connected-user";
 
-import { ConsumerHealthDataType } from "../providers/provider";
+import { ConsumerHealthDataType, DAPIParams } from "../providers/provider";
 import { Tenovi } from "../providers/tenovi";
 import { Config } from "../shared/config";
 import {
   Constants,
-  PROVIDER_TENOVI,
   providerNoAuthSchema,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
+  PROVIDER_TENOVI,
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
+import { getTenoviApiKeyFrom, getTenoviClientNameFrom } from "./schemas/tenovi-headers";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdOrFail, getFrom } from "./util";
 
@@ -162,7 +163,8 @@ router.get(
 async function revokeUserProviderAccess(
   connectedUser: ConnectedUser,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  provider: any
+  provider: any,
+  req: Request
 ): Promise<void> {
   const providerOAuth2 = providerOAuth2OptionsSchema.safeParse(provider);
   const providerOAuth1 = providerOAuth1OptionsSchema.safeParse(provider);
@@ -175,8 +177,17 @@ async function revokeUserProviderAccess(
     const cxId = connectedUser.dataValues.cxId;
     if (token) await Constants.PROVIDER_OAUTH1_MAP[providerOAuth1.data].deregister([token], cxId);
   } else if (providerNoAuth.success) {
-    const noAuthProvider = new Constants.noAuthProviders[providerNoAuth.data]();
-    await noAuthProvider.revokeProviderAccess(connectedUser);
+    if (providerNoAuth.data === PROVIDER_TENOVI) {
+      const tenovi = new Constants.noAuthProviders[PROVIDER_TENOVI]();
+      const extraParams: DAPIParams = {
+        xTenoviApiKey: getTenoviApiKeyFrom("headers", req).orFail(),
+        xTenoviClientName: getTenoviClientNameFrom("headers", req).orFail(),
+      };
+      await tenovi.revokeProviderAccess(connectedUser, extraParams);
+    } else {
+      const noAuthProvider = new Constants.noAuthProviders[providerNoAuth.data]();
+      await noAuthProvider.revokeProviderAccess(connectedUser);
+    }
   } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
@@ -185,7 +196,7 @@ async function revokeUserProviderAccess(
 async function revokeToken(req: Request, res: Response, userId: string) {
   const cxId = getCxIdOrFail(req);
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
-  await revokeUserProviderAccess(connectedUser, req.query.provider);
+  await revokeUserProviderAccess(connectedUser, req.query.provider, req);
   return res
     .status(status.OK)
     .json({ message: `Access token for ${req.query.provider} has been revoked.` });
@@ -252,7 +263,7 @@ router.delete(
       const rejected: { provider: string; err: unknown }[] = [];
       await Promise.allSettled(
         connectedProviders.map(async provider => {
-          return revokeUserProviderAccess(connectedUser, provider).catch(err => {
+          return revokeUserProviderAccess(connectedUser, provider, req).catch(err => {
             rejected.push({ provider, err });
             throw err;
           });
@@ -310,11 +321,17 @@ router.get("/connect", async (req: Request, res: Response) => {
  * @param connectedUser The user to disconnect the device from
  * @param provider      The device provider
  * @param deviceId      The device to disconnect
+ * @param extraParams   The extra parameters required to disconnect the device
  */
-async function removeDevice(connectedUser: ConnectedUser, provider: string, deviceId: string) {
+async function removeDevice(
+  connectedUser: ConnectedUser,
+  provider: string,
+  deviceId: string,
+  extraParams: DAPIParams
+) {
   if (provider === PROVIDER_TENOVI) {
     const tenovi = new Tenovi();
-    await tenovi.disconnectDevice(connectedUser, String(deviceId));
+    await tenovi.disconnectDevice(connectedUser, String(deviceId), true, extraParams);
   } else {
     throw new BadRequestError(`Provider not supported: ${provider}`);
   }
@@ -341,7 +358,19 @@ router.delete(
     const provider = getFrom("query").orFail("provider", req);
     const deviceId = getFrom("query").orFail("deviceId", req);
 
-    await removeDevice(connectedUser, provider, deviceId);
+    const extraParams: DAPIParams = {
+      xTenoviApiKey: getTenoviApiKeyFrom("headers", req).optional(),
+      xTenoviClientName: getTenoviClientNameFrom("headers", req).optional(),
+    };
+
+    if (provider === PROVIDER_TENOVI) {
+      if (!extraParams.xTenoviApiKey) throw new BadRequestError("Missing x-tenovi-api-key header.");
+      if (!extraParams.xTenoviClientName) {
+        throw new BadRequestError("Missing x-tenovi-client header.");
+      }
+    }
+
+    await removeDevice(connectedUser, provider, deviceId, extraParams);
     return res
       .status(status.OK)
       .json({ message: `Device ${deviceId} has been removed for user ${userId}.` });
