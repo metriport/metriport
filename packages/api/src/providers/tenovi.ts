@@ -12,7 +12,8 @@ import { mapToBody } from "../mappings/tenovi/body";
 import { ConnectedUser } from "../models/connected-user";
 import { PROVIDER_TENOVI } from "../shared/constants";
 import { capture } from "../shared/notifications";
-import Provider, { ConsumerHealthDataType, DAPIParams, RawParams } from "./provider";
+import { RawParams } from "../shared/raw-params";
+import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
 
 export const TENOVI_DEFAULT_TOKEN_VALUE = "N/A";
 const TENOVI_TEST_DEVICE_ID = "12345678-abcd-1234-abcd-1234567890ab";

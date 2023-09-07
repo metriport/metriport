@@ -13,7 +13,7 @@ import BadRequestError from "../errors/bad-request";
 import NotFoundError from "../errors/not-found";
 import { ConnectedUser } from "../models/connected-user";
 
-import { ConsumerHealthDataType, RawParams } from "../providers/provider";
+import { ConsumerHealthDataType } from "../providers/provider";
 import { Tenovi } from "../providers/tenovi";
 import { Config } from "../shared/config";
 import {
@@ -24,6 +24,7 @@ import {
   PROVIDER_TENOVI,
 } from "../shared/constants";
 import { capture } from "../shared/notifications";
+import { getRawParams, RawParams } from "../shared/raw-params";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdOrFail, getFrom } from "./util";
@@ -178,10 +179,7 @@ async function revokeUserProviderAccess(
   } else if (providerNoAuth.success) {
     if (providerNoAuth.data === PROVIDER_TENOVI) {
       const tenovi = new Constants.noAuthProviders[PROVIDER_TENOVI]();
-      const rawParams: RawParams = {
-        query: { ...(req.query as RawParams["query"]) },
-        headers: { ...(req.headers as RawParams["headers"]) },
-      };
+      const rawParams = getRawParams(req);
       await tenovi.revokeProviderAccess(connectedUser, rawParams);
     } else {
       const noAuthProvider = new Constants.noAuthProviders[providerNoAuth.data]();
@@ -357,10 +355,7 @@ router.delete(
     const provider = getFrom("query").orFail("provider", req);
     const deviceId = getFrom("query").orFail("deviceId", req);
 
-    const rawParams: RawParams = {
-      query: { ...(req.query as RawParams["query"]) },
-      headers: { ...(req.headers as RawParams["headers"]) },
-    };
+    const rawParams = getRawParams(req);
 
     await removeDevice(connectedUser, provider, deviceId, rawParams);
     return res

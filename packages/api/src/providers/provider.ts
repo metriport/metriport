@@ -3,6 +3,7 @@ import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/a
 
 import NotImplementedError from "../errors/not-implemented";
 import { ConnectedUser } from "../models/connected-user";
+import { RawParams } from "../shared/raw-params";
 
 // represents each consumer health data endpoint
 export enum ConsumerHealthDataType {
@@ -17,11 +18,6 @@ export enum ConsumerHealthDataType {
 export type DAPIParams = {
   timezoneId?: string;
   accessToken?: string;
-};
-
-export type RawParams = {
-  query: Record<string, string | string[] | undefined>;
-  headers: Record<string, string | string[] | undefined>;
 };
 
 export type ConsumerHealthDataTypeMap = {

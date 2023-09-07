@@ -2,9 +2,10 @@ import { Metadata } from "@metriport/api-sdk/devices/models/common/metadata";
 import { Request } from "express";
 
 import { getConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
-import { ConsumerHealthDataType, DAPIParams, RawParams } from "../../providers/provider";
+import { ConsumerHealthDataType, DAPIParams } from "../../providers/provider";
 import { Constants, ProviderOptions } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
+import { getRawParams } from "../../shared/raw-params";
 import { getTimezoneIdFrom } from "../schemas/timezone-id";
 import { getUserIdFrom } from "../schemas/user-id";
 import { getCxIdOrFail, getDateOrFail } from "../util";
@@ -22,10 +23,7 @@ export async function getProviderDataForType<T>(
     timezoneId: getTimezoneIdFrom("query", req).optional(),
   };
 
-  const rawParams: RawParams = {
-    query: { ...(req.query as RawParams["query"]) },
-    headers: { ...(req.headers as RawParams["headers"]) },
-  };
+  const rawParams = getRawParams(req);
 
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
   if (!connectedUser.providerMap) return [];
