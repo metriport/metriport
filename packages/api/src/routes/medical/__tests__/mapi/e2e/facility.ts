@@ -16,12 +16,12 @@ export const createFacility: FacilityCreate = {
 
 export const validateFacility = (
   facility: Facility,
-  validateFacility?: FacilityCreate | Facility
+  facilityToCompare?: FacilityCreate | Facility
 ) => {
   expect(facility.id).toBeTruthy();
   expect(facility.address).toBeTruthy();
 
-  if (validateFacility) {
+  if (facilityToCompare) {
     expect(facility.npi).toBe(facility.npi);
     expect(facility.address.addressLine1).toBe(facility.address.addressLine1);
     expect(facility.address.city).toBe(facility.address.city);

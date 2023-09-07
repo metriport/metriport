@@ -22,15 +22,15 @@ export const createPatient: PatientCreate = {
 
 export const validateLocalPatient = (
   patient: Patient,
-  validatePatient?: PatientCreate | Patient
+  patientToCompare?: PatientCreate | Patient
 ) => {
   expect(patient.id).toBeTruthy();
 
-  if (validatePatient) {
-    expect(patient.firstName).toBe(validatePatient.firstName);
-    expect(patient.lastName).toBe(validatePatient.lastName);
-    expect(patient.dob).toBe(validatePatient.dob);
-    expect(patient.genderAtBirth).toBe(validatePatient.genderAtBirth);
+  if (patientToCompare) {
+    expect(patient.firstName).toBe(patientToCompare.firstName);
+    expect(patient.lastName).toBe(patientToCompare.lastName);
+    expect(patient.dob).toBe(patientToCompare.dob);
+    expect(patient.genderAtBirth).toBe(patientToCompare.genderAtBirth);
   } else {
     expect(patient.firstName).toBeTruthy();
     expect(patient.lastName).toBeTruthy();
@@ -41,7 +41,7 @@ export const validateLocalPatient = (
 
 export const validateFhirPatient = (
   patient: FhirPatient,
-  validatePatient?: PatientCreate | Patient
+  patientToCompare?: PatientCreate | Patient
 ) => {
   expect(patient.resourceType).toBeTruthy();
   expect(patient.resourceType).toBe("Patient");
@@ -49,11 +49,11 @@ export const validateFhirPatient = (
   expect(patient.name).toBeTruthy();
   expect(patient.name?.length).toBe(1);
 
-  if (validatePatient) {
-    expect(patient.name?.[0].given).toBe(validatePatient.firstName);
-    expect(patient.name?.[0].family).toBe(validatePatient.lastName);
-    expect(patient.birthDate).toBe(validatePatient.dob);
-    expect(patient.gender).toBe(validatePatient.genderAtBirth);
+  if (patientToCompare) {
+    expect(patient.name?.[0].given).toBe(patientToCompare.firstName);
+    expect(patient.name?.[0].family).toBe(patientToCompare.lastName);
+    expect(patient.birthDate).toBe(patientToCompare.dob);
+    expect(patient.gender).toBe(patientToCompare.genderAtBirth);
   } else {
     expect(patient.name?.[0].given).toBeTruthy();
     expect(patient.name?.[0].family).toBeTruthy();

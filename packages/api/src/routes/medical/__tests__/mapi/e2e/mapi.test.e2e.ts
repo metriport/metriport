@@ -10,7 +10,8 @@ import { validateCWOrg, validateFhirOrg, validateLocalOrg } from "./organization
 import { createFacility, validateFacility } from "./facility";
 import { createPatient, validateFhirPatient, validateLocalPatient } from "./patient";
 import { createConsolidated } from "./consolidated";
-import { retryFunction, fhirHeaders, ResourceType, fhirApi, medicalApi } from "./shared";
+import { fhirHeaders, ResourceType, fhirApi, medicalApi } from "./shared";
+import { retryFunction } from "../../../../../shared/retry";
 import { Util } from "../../../../../shared/util";
 import { Config } from "../../../../../shared/config";
 
@@ -27,54 +28,56 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
     it("gets an organization", async () => {
       const org = await medicalApi.getOrganization();
 
-      if (!org) {
-        throw new Error("Org not found");
+      expect(org).toBeTruthy();
+
+      if (org) {
+        const fhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id, fhirHeaders);
+
+        const cwOrg = await retryFunction<CWOrganization | undefined>(
+          async () => await cwCommands.organization.getOne(org.oid),
+          maxRetries,
+          3000
+        );
+
+        validateLocalOrg(org);
+        validateFhirOrg(fhirOrg, org);
+        validateCWOrg(cwOrg, org);
       }
-
-      const fhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id, fhirHeaders);
-
-      const cwOrg = await retryFunction<CWOrganization | undefined>(
-        async () => await cwCommands.organization.getOne(org.oid),
-        maxRetries
-      );
-
-      validateLocalOrg(org);
-      validateFhirOrg(fhirOrg, org);
-      validateCWOrg(cwOrg, org);
     });
 
     it("updates an organization", async () => {
       const org = await medicalApi.getOrganization();
 
-      if (!org) {
-        throw new Error("Org not found");
+      expect(org).toBeTruthy();
+
+      if (org) {
+        const newName = faker.word.noun();
+
+        const updateOrg: Organization = {
+          ...org,
+          name: newName,
+        };
+
+        const updatedOrg = await medicalApi.updateOrganization(updateOrg);
+
+        await fhirApi.invalidateAll();
+        const fhirOrg: FhirOrg = await fhirApi.readResource(
+          ResourceType.Organization,
+          updatedOrg.id,
+          fhirHeaders
+        );
+
+        const cwOrg: CWOrganization | undefined = await retryFunction<CWOrganization | undefined>(
+          async () => await cwCommands.organization.getOne(updatedOrg.oid),
+          maxRetries,
+          3000,
+          result => result?.name === newName
+        );
+
+        validateLocalOrg(updatedOrg, updateOrg);
+        validateFhirOrg(fhirOrg, updateOrg);
+        validateCWOrg(cwOrg, updateOrg);
       }
-
-      const newName = faker.word.noun();
-
-      const updateOrg: Organization = {
-        ...org,
-        name: newName,
-      };
-
-      const updatedOrg = await medicalApi.updateOrganization(updateOrg);
-
-      await fhirApi.invalidateAll();
-      const fhirOrg: FhirOrg = await fhirApi.readResource(
-        ResourceType.Organization,
-        updatedOrg.id,
-        fhirHeaders
-      );
-
-      const cwOrg: CWOrganization | undefined = await retryFunction<CWOrganization | undefined>(
-        async () => await cwCommands.organization.getOne(updatedOrg.oid),
-        maxRetries,
-        result => result?.name === newName
-      );
-
-      validateLocalOrg(updatedOrg, updateOrg);
-      validateFhirOrg(fhirOrg, updateOrg);
-      validateCWOrg(cwOrg, updateOrg);
     });
 
     it("create a facility", async () => {
@@ -104,12 +107,6 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
     });
 
     it("creates a patient", async () => {
-      const org = await medicalApi.getOrganization();
-
-      if (!org) {
-        throw new Error("Org not found");
-      }
-
       patient = await medicalApi.createPatient(createPatient, facility.id);
 
       const fhirPatient = await fhirApi.readResource(ResourceType.Patient, patient.id, fhirHeaders);
@@ -169,5 +166,9 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
 
       expect(count.total).toBe(0);
     });
+  });
+} else {
+  describe("Prod Tests", () => {
+    test.todo("This is a todo for prod tests so this file doesnt break");
   });
 }
