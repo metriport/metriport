@@ -59,11 +59,12 @@ function toTitleCase(str: string): string {
     .toLowerCase()
     .split(" ")
     .map(s => s.charAt(0).toUpperCase() + s.substring(1))
-    .join(" ");
+    .join(" ")
+    .trim();
 }
 
 function normalizeGender(gender: string): "M" | "F" {
-  const lowerGender = gender.toLowerCase();
+  const lowerGender = gender.toLowerCase().trim();
   if (lowerGender === "male" || lowerGender === "m") {
     return "M";
   } else if (lowerGender === "female" || lowerGender === "f") {
@@ -89,10 +90,7 @@ function normalizeEmail(email: string): string {
 }
 
 function normalizeState(state: string): USState {
-  if (
-    state.length === 2 &&
-    Object.values(states).includes(USState[state as keyof typeof USState])
-  ) {
+  if (Object.values(states).includes(USState[state as keyof typeof USState])) {
     return USState[state as keyof typeof USState];
   } else if (states[state]) {
     return states[state];
