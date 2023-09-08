@@ -154,6 +154,7 @@ const convertStoreAndReturnPdfDocUrl = async ({
     capture.error(error, {
       extra: { context: "convertStoreAndReturnPdfDocUrl", lambdaName, error },
     });
+    throw error;
   } finally {
     // Close the puppeteer browser
     if (browser !== null) {
