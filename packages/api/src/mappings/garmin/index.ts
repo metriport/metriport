@@ -97,8 +97,8 @@ export const garminTypes = {
   timeOffsetSleepRespiration: respirationMeasurements,
   timeOffsetSleepSpo2: spo2Measurements,
   overallSleepScore: z.object({
-    value: z.number(),
-    qualifierKey: z.string(),
+    value: z.number().nullish(),
+    qualifierKey: z.string().nullish(),
   }),
   //
   activeKilocalories: garminUnits.kilocalories,
