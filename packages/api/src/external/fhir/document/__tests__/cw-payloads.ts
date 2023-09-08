@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Document } from "@metriport/commonwell-sdk";
+import { Contained, Document } from "@metriport/commonwell-sdk";
 import { v4 as uuidv4 } from "uuid";
 import { makePeriod } from "../../shared/__tests__/date";
 
@@ -143,3 +143,16 @@ export const docRefsWithOneAuthorPointingToMultipleContained: Document[] = [
     },
   },
 ];
+
+export const docRefContainedPatientWithOrg: Contained = {
+  resourceType: "Practitioner",
+  id: "authRef16",
+  name: {
+    family: [faker.company.name()],
+    given: [""],
+    prefix: [""],
+  },
+  organization: {
+    reference: "#orgRef16",
+  },
+};

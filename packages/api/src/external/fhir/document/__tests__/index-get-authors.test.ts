@@ -27,7 +27,7 @@ const cwContainedToFHIR = (contained: CWContained[] | undefined | null): Resourc
   if (contained?.length) {
     contained.forEach(cwResource => {
       const fhirResource = convertToFHIRResource(cwResource, patientId);
-      if (fhirResource) containedContent.push(fhirResource);
+      if (fhirResource) containedContent.push(...fhirResource);
     });
   }
   return containedContent;

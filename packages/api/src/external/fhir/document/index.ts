@@ -106,7 +106,7 @@ export const toFHIR = (
   if (contained?.length) {
     contained.forEach(cwResource => {
       const fhirResource = convertToFHIRResource(cwResource, patient.id);
-      if (fhirResource) containedContent.push(fhirResource);
+      if (fhirResource) containedContent.push(...fhirResource);
     });
   }
 
@@ -205,48 +205,67 @@ export function idToFHIR(id: DocumentIdentifier): Identifier {
 export function convertToFHIRResource(
   resource: Contained,
   patientId: string
-): Resource | undefined {
+): Resource[] | undefined {
   if (resource.resourceType === "Patient" && resource.id && !resource.id.includes(patientId)) {
     capture.message(`Found a Patient resource with a different ID`, {
       extra: { context: `toFHIR.convertToFHIRResource`, resource, patientId, level: "warning" },
     });
-    return {
-      resourceType: "Patient",
-      id: resource.id,
-      address: convertCWAdressToFHIR(resource.address),
-      gender: convertCWGenderToFHIR(resource.gender?.coding),
-      identifier: convertCWIdentifierToFHIR(resource.identifier),
-      name: resource.name ? convertCWNameToHumanName(resource.name) : undefined,
-    };
+    return [
+      {
+        resourceType: "Patient",
+        id: resource.id,
+        address: convertCWAdressToFHIR(resource.address),
+        gender: convertCWGenderToFHIR(resource.gender?.coding),
+        identifier: convertCWIdentifierToFHIR(resource.identifier),
+        name: resource.name ? convertCWNameToHumanName(resource.name) : undefined,
+      },
+    ];
   } else if (resource.resourceType === "Organization" && resource.name) {
-    return {
-      resourceType: "Organization",
-      id: resource.id ?? undefined,
-      identifier: convertCWIdentifierToFHIR(resource.identifier),
-      name: convertCWNameToString(resource.name),
-      address: convertCWAdressToFHIR(resource.address),
-    };
+    return [
+      {
+        resourceType: "Organization",
+        id: resource.id ?? undefined,
+        identifier: convertCWIdentifierToFHIR(resource.identifier),
+        name: convertCWNameToString(resource.name),
+        address: convertCWAdressToFHIR(resource.address),
+      },
+    ];
   } else if (resource.resourceType === "Practitioner" && resource.name) {
-    return {
+    const practitioner: Resource = {
       resourceType: "Practitioner",
       id: resource.id ?? undefined,
       identifier: convertCWIdentifierToFHIR(resource.identifier),
       name: convertCWNameToHumanName(resource.name),
       gender: convertCWGenderToFHIR(resource.gender?.coding),
     };
-  } else {
-    capture.message(
-      `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`,
-      {
-        extra: {
-          context: `toFHIR.convertToFHIRResource`,
-          resourceType: resource.resourceType,
-          resource,
-          patientId,
-        },
-      }
-    );
+    const role: Resource | undefined =
+      resource.organization?.reference && resource.id
+        ? {
+            resourceType: "PractitionerRole",
+            organization: {
+              type: "Organization",
+              reference: resource.organization.reference,
+            },
+            practitioner: {
+              type: "Practitioner",
+              reference: `#${resource.id}`,
+            },
+          }
+        : undefined;
+    return [practitioner, ...(role ? [role] : [])];
   }
+  capture.message(
+    `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`,
+    {
+      extra: {
+        context: `toFHIR.convertToFHIRResource`,
+        resourceType: resource.resourceType,
+        resource,
+        patientId,
+      },
+    }
+  );
+  return undefined;
 }
 
 /**
