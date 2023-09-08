@@ -10,7 +10,7 @@ import { validateCWOrg, validateFhirOrg, validateLocalOrg } from "./organization
 import { createFacility, validateFacility } from "./facility";
 import { createPatient, validateFhirPatient, validateLocalPatient } from "./patient";
 import { createConsolidated } from "./consolidated";
-import { fhirHeaders, ResourceType, fhirApi, medicalApi } from "./shared";
+import { fhirHeaders, fhirApi, medicalApi } from "./shared";
 import { retryFunction } from "../../../../../shared/retry";
 import { Util } from "../../../../../shared/util";
 import { Config } from "../../../../../shared/config";
@@ -31,7 +31,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       expect(org).toBeTruthy();
 
       if (org) {
-        const fhirOrg = await fhirApi.readResource(ResourceType.Organization, org.id, fhirHeaders);
+        const fhirOrg = await fhirApi.readResource("Organization", org.id, fhirHeaders);
 
         const cwOrg = await retryFunction<CWOrganization | undefined>(
           async () => await cwCommands.organization.getOne(org.oid),
@@ -60,9 +60,9 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
 
         const updatedOrg = await medicalApi.updateOrganization(updateOrg);
 
-        await fhirApi.invalidateAll();
+        fhirApi.invalidateAll();
         const fhirOrg: FhirOrg = await fhirApi.readResource(
-          ResourceType.Organization,
+          "Organization",
           updatedOrg.id,
           fhirHeaders
         );
@@ -97,7 +97,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       facility = await medicalApi.updateFacility(updateFacility);
 
       validateFacility(facility, updateFacility);
-      expect(facility.name).toBe(newName);
+      expect(facility.name).toEqual(newName);
     });
 
     it("gets one facility", async () => {
@@ -109,10 +109,10 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
     it("creates a patient", async () => {
       patient = await medicalApi.createPatient(createPatient, facility.id);
 
-      const fhirPatient = await fhirApi.readResource(ResourceType.Patient, patient.id, fhirHeaders);
+      const fhirPatient = await fhirApi.readResource("Patient", patient.id, fhirHeaders);
 
       validateLocalPatient(patient);
-      validateFhirPatient(fhirPatient);
+      validateFhirPatient(fhirPatient, patient);
 
       // Creating a CW patient is done in the background need to await so we can query docs
       await Util.sleep(10000);
@@ -123,27 +123,30 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
       const consolidated = await medicalApi.createPatientConsolidated(patient.id, payload);
       const count = await medicalApi.countPatientConsolidated(patient.id);
 
-      expect(count.total).toBe(1);
+      expect(count.total).toEqual(payload.entry?.length);
       expect(consolidated).toBeTruthy();
     });
 
     it("triggers a document query for the created patient", async () => {
       const docQueryProgress = await medicalApi.startDocumentQuery(patient.id, facility.id);
       let status = await medicalApi.getDocumentQueryStatus(patient.id);
+      let retryLimit = 0;
 
       while (
-        status.download?.status === "processing" ||
-        (status.convert && status.convert?.status === "processing")
+        (status.download?.status === "processing" ||
+          (status.convert && status.convert?.status === "processing")) &&
+        retryLimit < maxRetries
       ) {
         await Util.sleep(5000);
         status = await medicalApi.getDocumentQueryStatus(patient.id);
+        retryLimit++;
       }
 
       const documents = await medicalApi.listDocuments(patient.id, facility.id);
 
       expect(docQueryProgress).toBeTruthy();
       expect(documents).toBeTruthy();
-      expect(documents.length).toBe(2);
+      expect(documents.length).toEqual(2);
     });
 
     it("deletes a patient's consolidated data", async () => {
@@ -164,7 +167,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
 
       const count = await medicalApi.countPatientConsolidated(patient.id);
 
-      expect(count.total).toBe(0);
+      expect(count.total).toEqual(0);
     });
   });
 } else {

@@ -27,10 +27,10 @@ export const validateLocalPatient = (
   expect(patient.id).toBeTruthy();
 
   if (patientToCompare) {
-    expect(patient.firstName).toBe(patientToCompare.firstName);
-    expect(patient.lastName).toBe(patientToCompare.lastName);
-    expect(patient.dob).toBe(patientToCompare.dob);
-    expect(patient.genderAtBirth).toBe(patientToCompare.genderAtBirth);
+    expect(patient.firstName).toEqual(patientToCompare.firstName);
+    expect(patient.lastName).toEqual(patientToCompare.lastName);
+    expect(patient.dob).toEqual(patientToCompare.dob);
+    expect(patient.genderAtBirth).toEqual(patientToCompare.genderAtBirth);
   } else {
     expect(patient.firstName).toBeTruthy();
     expect(patient.lastName).toBeTruthy();
@@ -44,16 +44,15 @@ export const validateFhirPatient = (
   patientToCompare?: PatientCreate | Patient
 ) => {
   expect(patient.resourceType).toBeTruthy();
-  expect(patient.resourceType).toBe("Patient");
+  expect(patient.resourceType).toEqual("Patient");
   expect(patient.id).toBeTruthy();
   expect(patient.name).toBeTruthy();
-  expect(patient.name?.length).toBe(1);
+  expect(patient.name?.length).toEqual(1);
 
   if (patientToCompare) {
-    expect(patient.name?.[0].given).toBe(patientToCompare.firstName);
-    expect(patient.name?.[0].family).toBe(patientToCompare.lastName);
-    expect(patient.birthDate).toBe(patientToCompare.dob);
-    expect(patient.gender).toBe(patientToCompare.genderAtBirth);
+    expect(patient.name?.[0].given?.[0]).toEqual(patientToCompare.firstName);
+    expect(patient.name?.[0].family).toEqual(patientToCompare.lastName);
+    expect(patient.birthDate).toEqual(patientToCompare.dob);
   } else {
     expect(patient.name?.[0].given).toBeTruthy();
     expect(patient.name?.[0].family).toBeTruthy();

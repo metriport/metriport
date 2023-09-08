@@ -24,13 +24,13 @@ export const validateLocalOrg = (
   expect(org.oid).toBeTruthy();
 
   if (orgToCompare) {
-    expect(org.type).toBe(orgToCompare.type);
-    expect(org.name).toBe(orgToCompare.name);
-    expect(org.location.addressLine1).toBe(orgToCompare.location.addressLine1);
-    expect(org.location.city).toBe(orgToCompare.location.city);
-    expect(org.location.state).toBe(orgToCompare.location.state);
-    expect(org.location.zip).toBe(orgToCompare.location.zip);
-    expect(org.location.country).toBe(orgToCompare.location.country);
+    expect(org.type).toEqual(orgToCompare.type);
+    expect(org.name).toEqual(orgToCompare.name);
+    expect(org.location.addressLine1).toEqual(orgToCompare.location.addressLine1);
+    expect(org.location.city).toEqual(orgToCompare.location.city);
+    expect(org.location.state).toEqual(orgToCompare.location.state);
+    expect(org.location.zip).toEqual(orgToCompare.location.zip);
+    expect(org.location.country).toEqual(orgToCompare.location.country);
   } else {
     expect(org.type).toBeTruthy();
     expect(org.name).toBeTruthy();
@@ -44,18 +44,18 @@ export const validateLocalOrg = (
 
 export const validateFhirOrg = (org: FhirOrg, orgToCompare?: OrganizationCreate | Organization) => {
   expect(org.resourceType).toBeTruthy();
-  expect(org.resourceType).toBe("Organization");
+  expect(org.resourceType).toEqual("Organization");
   expect(org.id).toBeTruthy();
   expect(org.address).toBeTruthy();
-  expect(org.address?.length).toBe(1);
+  expect(org.address?.length).toEqual(1);
 
   if (orgToCompare) {
-    expect(org.name).toBe(orgToCompare.name);
-    expect(org.address?.[0].line?.[0]).toBe(orgToCompare.location.addressLine1);
-    expect(org.address?.[0].city).toBe(orgToCompare.location.city);
-    expect(org.address?.[0].state).toBe(orgToCompare.location.state);
-    expect(org.address?.[0].postalCode).toBe(orgToCompare.location.zip);
-    expect(org.address?.[0].country).toBe(orgToCompare.location.country);
+    expect(org.name).toEqual(orgToCompare.name);
+    expect(org.address?.[0].line?.[0]).toEqual(orgToCompare.location.addressLine1);
+    expect(org.address?.[0].city).toEqual(orgToCompare.location.city);
+    expect(org.address?.[0].state).toEqual(orgToCompare.location.state);
+    expect(org.address?.[0].postalCode).toEqual(orgToCompare.location.zip);
+    expect(org.address?.[0].country).toEqual(orgToCompare.location.country);
   } else {
     expect(org.name).toBeTruthy();
     expect(org.address?.[0].line?.[0]).toBeTruthy();
@@ -72,18 +72,18 @@ export const validateCWOrg = (
 ) => {
   expect(org?.organizationId).toBeTruthy();
   expect(org?.locations).toBeTruthy();
-  expect(org?.locations?.length).toBe(1);
+  expect(org?.locations?.length).toEqual(1);
   expect(org?.technicalContacts).toBeTruthy();
   expect(org?.isActive).toBeTruthy();
   expect(org?._links).toBeTruthy();
 
   if (orgToCompare) {
-    expect(org?.name).toBe(orgToCompare.name);
-    expect(org?.locations?.[0].address1).toBe(orgToCompare.location.addressLine1);
-    expect(org?.locations?.[0].city).toBe(orgToCompare.location.city);
-    expect(org?.locations?.[0].state).toBe(orgToCompare.location.state);
-    expect(org?.locations?.[0].postalCode).toBe(orgToCompare.location.zip);
-    expect(org?.locations?.[0].country).toBe(orgToCompare.location.country);
+    expect(org?.name).toEqual(orgToCompare.name);
+    expect(org?.locations?.[0].address1).toEqual(orgToCompare.location.addressLine1);
+    expect(org?.locations?.[0].city).toEqual(orgToCompare.location.city);
+    expect(org?.locations?.[0].state).toEqual(orgToCompare.location.state);
+    expect(org?.locations?.[0].postalCode).toEqual(orgToCompare.location.zip);
+    expect(org?.locations?.[0].country).toEqual(orgToCompare.location.country);
   } else {
     expect(org?.name).toBeTruthy();
     expect(org?.locations?.[0].address1).toBeTruthy();

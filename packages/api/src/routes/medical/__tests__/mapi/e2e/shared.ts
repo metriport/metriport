@@ -15,12 +15,6 @@ export const fhirHeaders = { headers: { "x-api-key": testApiKey } };
 export const fhirApi = new MedplumClient({ baseUrl: baseURL });
 export const medicalApi = new MetriportMedicalApi(testApiKey, { baseAddress: baseURL });
 
-export enum ResourceType {
-  Organization = "Organization",
-  Patient = "Patient",
-  DocumentReference = "DocumentReference",
-}
-
 export type Apis = {
   medicalApi: MetriportMedicalApi;
   fhirApi: FhirClient;

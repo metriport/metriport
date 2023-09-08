@@ -22,14 +22,14 @@ export const validateFacility = (
   expect(facility.address).toBeTruthy();
 
   if (facilityToCompare) {
-    expect(facility.npi).toBe(facility.npi);
-    expect(facility.address.addressLine1).toBe(facility.address.addressLine1);
-    expect(facility.address.city).toBe(facility.address.city);
-    expect(facility.address.state).toBe(facility.address.state);
-    expect(facility.address.zip).toBe(facility.address.zip);
-    expect(facility.address.country).toBe(facility.address.country);
-    expect(facility.name).toBe(facility.name);
-    expect(facility.active).toBe(facility.active);
+    expect(facility.npi).toEqual(facility.npi);
+    expect(facility.address.addressLine1).toEqual(facility.address.addressLine1);
+    expect(facility.address.city).toEqual(facility.address.city);
+    expect(facility.address.state).toEqual(facility.address.state);
+    expect(facility.address.zip).toEqual(facility.address.zip);
+    expect(facility.address.country).toEqual(facility.address.country);
+    expect(facility.name).toEqual(facility.name);
+    expect(facility.active).toEqual(facility.active);
   } else {
     expect(facility.npi).toBeTruthy();
     expect(facility.address.addressLine1).toBeTruthy();

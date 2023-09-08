@@ -22,8 +22,8 @@
   "dependencies": {
     "@aws-lambda-powertools/parameters": "^1.8.0-beta",
     "@aws-sdk/client-secrets-manager": "^3.348.0",
-    "@medplum/core": "^2.0.24",
-    "@medplum/fhirtypes": "^2.0.24",
+    "@medplum/core": "^2.0.32",
+    "@medplum/fhirtypes": "^2.0.32",
     "@sentry/serverless": "^7.46.0",
     "aws-sdk": "^2.1248.0",
     "axios": "^1.4.0",
