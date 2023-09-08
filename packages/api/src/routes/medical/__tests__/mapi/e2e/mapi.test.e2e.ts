@@ -5,7 +5,7 @@ import { Organization, Facility, Patient } from "@metriport/api-sdk";
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { Organization as FhirOrg } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
-import cwCommands from "../../../../../external/commonwell/__tests__";
+import * as cwCommands from "../../../../../external/commonwell/__tests__";
 import { validateCWOrg, validateFhirOrg, validateLocalOrg } from "./organization";
 import { createFacility, validateFacility } from "./facility";
 import { createPatient, validateFhirPatient, validateLocalPatient } from "./patient";
