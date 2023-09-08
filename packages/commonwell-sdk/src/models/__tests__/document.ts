@@ -1,104 +1,109 @@
 import { faker } from "@faker-js/faker";
 import { DeepPartial } from "ts-essentials";
-import { CodeableConcept, Document, DocumentIdentifier } from "../document";
+import { CodeableConcept, Document, DocumentContent, DocumentIdentifier } from "../document";
 import { Period } from "../period";
 
 export function makeDocument(
-  params?: DeepPartial<Document> & {
-    content?: {
-      contained?: {
-        identifier?: DocumentIdentifier[];
-      }[];
-      masterIdentifier?: DocumentIdentifier;
-      identifier?: DocumentIdentifier[];
-      type?: CodeableConcept;
-      author?: { reference: string }[];
-      context?: {
-        event?: CodeableConcept[];
-        period?: Period;
-        facilityType?: CodeableConcept;
-      };
-    };
+  params?: Partial<Pick<Document, "id">> & {
+    content?: MakeDocumentContent;
   }
 ): Document {
   const id = params?.id ?? faker.string.uuid();
+  return {
+    id,
+    content: makeDocumentContent(params?.content),
+  };
+}
+
+type MakeDocumentContent = DeepPartial<DocumentContent> &
+  Partial<{
+    contained: {
+      identifier?: DocumentIdentifier[];
+    }[];
+    masterIdentifier: DocumentIdentifier;
+    identifier: DocumentIdentifier[];
+    type: CodeableConcept;
+    author: { reference: string }[];
+    context: {
+      event?: CodeableConcept[];
+      period?: Period;
+      facilityType?: CodeableConcept;
+    };
+  }>;
+export function makeDocumentContent(params?: MakeDocumentContent): DocumentContent {
   const containedOrgId = faker.string.nanoid();
   const containedPractionerId = faker.string.nanoid();
-  const content = params?.content;
   const from = faker.date.past({ years: 5 });
   const to = faker.date.between({ from, to: faker.date.recent() });
   return {
-    id,
-    content: {
-      resourceType: "DocumentReference",
-      contained: content?.contained ?? [
-        {
-          resourceType: "Organization",
-          id: containedOrgId,
-          identifier: [
-            {
-              value: faker.number.int({ min: 1000, max: 99999 }).toString(),
-            },
-          ],
-          name: faker.company.name(),
-        },
-        {
-          resourceType: "Practitioner",
-          id: containedPractionerId,
-          name: {
-            family: [faker.person.lastName()],
-            given: [faker.person.firstName()],
-            prefix: [""],
+    resourceType: "DocumentReference",
+    contained: params?.contained ?? [
+      {
+        resourceType: "Organization",
+        id: containedOrgId,
+        identifier: [
+          {
+            value: faker.number.int({ min: 1000, max: 99999 }).toString(),
           },
-          organization: {
-            reference: `#${containedOrgId}`,
-          },
+        ],
+        name: faker.company.name(),
+      },
+      {
+        resourceType: "Practitioner",
+        id: containedPractionerId,
+        name: {
+          family: [faker.person.lastName()],
+          given: [faker.person.firstName()],
+          prefix: [""],
         },
-      ],
-      masterIdentifier: content?.masterIdentifier ?? {
+        organization: {
+          reference: `#${containedOrgId}`,
+        },
+      },
+    ],
+    masterIdentifier: params?.masterIdentifier ?? {
+      system: "urn:ietf:rfc:3986",
+      value: faker.string.uuid(),
+    },
+    identifier: params?.identifier ?? [
+      {
+        use: "official",
         system: "urn:ietf:rfc:3986",
-        value: faker.string.uuid(),
+        value: `urn:uuid:${faker.string.uuid()}`,
       },
-      identifier: content?.identifier ?? [
+    ],
+    status: params?.status ?? "current",
+    type: params?.type ?? {
+      coding: [
         {
-          use: "official",
-          system: "urn:ietf:rfc:3986",
-          value: `urn:uuid:${faker.string.uuid()}`,
+          system: "http://loinc.org",
+          code: "34133-9",
+          display: "Summary of episode note",
         },
       ],
-      status: content?.status ?? "current",
-      type: content?.type ?? {
-        coding: [
-          {
-            system: "http://loinc.org",
-            code: "34133-9",
-            display: "Summary of episode note",
-          },
-        ],
-        text: "Summary of episode note",
+      text: "Summary of episode note",
+    },
+    subject: {
+      reference: params?.subject?.reference ?? `Patient/${faker.string.uuid()}`,
+    },
+    author: params?.author ?? [
+      {
+        reference: `Practitioner/${containedPractionerId}`,
       },
-      subject: {
-        reference: content?.subject?.reference ?? `Patient/${faker.string.uuid()}`,
-      },
-      author: content?.author ?? [
+    ],
+    indexed: params?.indexed ?? faker.date.past().toISOString(),
+    context: params?.context ?? {
+      event: [
         {
-          reference: `Practitioner/${containedPractionerId}`,
+          text: "Ambulatory",
         },
       ],
-      indexed: faker.date.past().toISOString(),
-      context: content?.context ?? {
-        event: [
-          {
-            text: "Ambulatory",
-          },
-        ],
-        period: {
-          start: from.toISOString(),
-          end: to.toISOString(),
-        },
-        facilityType: {
-          text: faker.company.name(),
-        },
+      period: {
+        start: from.toISOString(),
+        end: to.toISOString(),
+      },
+      facilityType: {
+        text: faker.company.name(),
       },
     },
   };

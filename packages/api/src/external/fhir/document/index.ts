@@ -56,22 +56,18 @@ const authorTypes = Object.values(authorTypesMap);
 // HIEs probably don't have records before the year 1800 :)
 const earliestPossibleYear = 1800;
 
-function getBestDateFromCWDocRef(doc: CWDocumentWithMetriportData): string {
-  const date = dayjs(doc.content?.indexed);
-
+export function getBestDateFromCWDocRef(content: DocumentContent): string {
+  const date = dayjs(content.indexed);
+  const period = content.context.period;
   // if the timestamp from CW for the indexed date is from today, this usually
   // means that the timestamp is auto-generated, and there may be a more accurate
   // timestamp in the doc ref.
-  if (date.isToday() && doc.content?.context?.period?.start) {
-    const newDate = dayjs(doc.content.context.period.start);
-
+  if (date.isToday() && (period?.start || period?.end)) {
+    const newDate = period.start ? dayjs(period.start) : dayjs(period.end);
     // this check is necessary to prevent using weird dates... seen stuff like
     // this before:  "period": { "start": "0001-01-01T00:00:00Z" }
-    if (newDate.year() >= earliestPossibleYear) {
-      return newDate.toISOString();
-    }
+    if (newDate.year() >= earliestPossibleYear) return newDate.toISOString();
   }
-
   return date.toISOString();
 }
 
@@ -80,24 +76,25 @@ export const toFHIR = (
   doc: CWDocumentWithMetriportData,
   patient: Patient
 ): DocumentReference => {
+  const content = doc.content;
   const baseAttachment = {
-    contentType: doc.content?.mimeType,
+    contentType: content.mimeType,
     fileName: doc.metriport.fileName, // no filename on CW doc refs
-    size: doc.metriport.fileSize != null ? doc.metriport.fileSize : doc.content?.size, // can't trust the file size from CW, use what we actually saved
-    creation: doc.content?.indexed,
-    format: doc.content?.format,
+    size: doc.metriport.fileSize != null ? doc.metriport.fileSize : content.size, // can't trust the file size from CW, use what we actually saved
+    creation: content.indexed,
+    format: content.format,
   };
 
-  const metriportContent = createDocReferenceContent({
+  const metriportFHIRContent = createDocReferenceContent({
     ...baseAttachment,
     location: doc.metriport.location,
     extension: [metriportDataSourceExtension],
   });
 
-  const cwContent = doc.content?.location
+  const cwFHIRContent = content.location
     ? createDocReferenceContent({
         ...baseAttachment,
-        location: doc.content.location,
+        location: content.location,
         extension: [cwExtension],
       })
     : undefined;
@@ -105,7 +102,7 @@ export const toFHIR = (
   // https://www.hl7.org/fhir/R4/domainresource-definitions.html#DomainResource.contained
   const containedContent: Resource[] = [];
 
-  const contained = doc.content?.contained;
+  const contained = content.contained;
   if (contained?.length) {
     contained.forEach(cwResource => {
       const fhirResource = convertToFHIRResource(cwResource, patient.id);
@@ -117,26 +114,27 @@ export const toFHIR = (
     reference: `Patient/${patient.id}`,
     type: "Patient",
   };
-  const author = getAuthors(doc.content, containedContent, docId);
+  const author = getAuthors(content, containedContent, docId);
+  const date = getBestDateFromCWDocRef(content);
 
   return {
     id: docId,
     resourceType: "DocumentReference",
     contained: containedContent,
     masterIdentifier: {
-      system: doc.content?.masterIdentifier?.system,
-      value: doc.content?.masterIdentifier?.value,
+      system: content.masterIdentifier?.system,
+      value: content.masterIdentifier?.value,
     },
-    identifier: doc.content?.identifier?.map(idToFHIR),
-    date: getBestDateFromCWDocRef(doc),
+    identifier: content.identifier?.map(idToFHIR),
+    date,
     status: "current",
-    type: doc.content?.type,
+    type: content.type,
     subject,
     author,
-    description: doc.content?.description,
-    content: [metriportContent, ...(cwContent ? [cwContent] : [])],
+    description: content.description,
+    content: [metriportFHIRContent, ...(cwFHIRContent ? [cwFHIRContent] : [])],
     extension: [cwExtension],
-    context: doc.content?.context,
+    context: content.context,
   };
 };
 

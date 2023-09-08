@@ -1,5 +1,3 @@
-import * as dotenv from "dotenv";
-dotenv.config({ path: ".env.test" });
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Organization, Practitioner, Reference, Resource } from "@medplum/fhirtypes";
 import { Contained as CWContained, Document as CWDocument } from "@metriport/commonwell-sdk";

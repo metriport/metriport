@@ -1,8 +1,15 @@
-import { makeDocument } from "@metriport/commonwell-sdk/models/__tests__/document";
+import { faker } from "@faker-js/faker";
+import { DocumentContent } from "@metriport/commonwell-sdk";
+import {
+  makeDocument,
+  makeDocumentContent,
+} from "@metriport/commonwell-sdk/models/__tests__/document";
+import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
 import { makePatient } from "../../../../models/medical/__tests__/patient";
 import { CWDocumentWithMetriportData } from "../../../commonwell/document/shared";
-import { toFHIR } from "../index";
+import { makePeriod } from "../../shared/__tests__/date";
+import { getBestDateFromCWDocRef, toFHIR } from "../index";
 
 beforeEach(() => {
   jest.restoreAllMocks();
@@ -33,5 +40,50 @@ describe("toFHIR", () => {
     for (const content of res.content!) {
       expect(content.format).toEqual({ code: expectedFormat });
     }
+  });
+});
+
+describe("getBestDateFromCWDocRef", () => {
+  it("returns indexed when indexed is not today", async () => {
+    const indexed = dayjs(faker.date.past()).toISOString();
+    const period = makePeriod();
+    const content: DocumentContent = makeDocumentContent({
+      indexed,
+      context: { period },
+    });
+    const res = getBestDateFromCWDocRef(content);
+    expect(res).toEqual(indexed);
+  });
+
+  it("returns start when present and indexed is today", async () => {
+    const indexed = dayjs().toISOString();
+    const period = makePeriod();
+    const content: DocumentContent = makeDocumentContent({
+      indexed,
+      context: { period },
+    });
+    const res = getBestDateFromCWDocRef(content);
+    expect(res).toEqual(period.start);
+  });
+
+  it("returns end when start not present and indexed is today", async () => {
+    const indexed = dayjs().toISOString();
+    const period = makePeriod();
+    const content: DocumentContent = makeDocumentContent({
+      indexed,
+      context: { period: { end: period.end } },
+    });
+    const res = getBestDateFromCWDocRef(content);
+    expect(res).toEqual(period.end);
+  });
+
+  it("returns indexed when no start or end and indexed is today", async () => {
+    const indexed = dayjs().toISOString();
+    const content: DocumentContent = makeDocumentContent({
+      indexed,
+      context: { period: undefined },
+    });
+    const res = getBestDateFromCWDocRef(content);
+    expect(res).toEqual(indexed);
   });
 });
