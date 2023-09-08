@@ -2,8 +2,9 @@ import Provider, { ConsumerHealthDataType } from "./provider";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { ConnectedUser } from "../models/connected-user";
 import { PROVIDER_APPLE } from "../shared/constants";
+import { NoAuth } from "./shared/noauth";
 
-export class Apple extends Provider {
+export class Apple extends Provider implements NoAuth {
   constructor() {
     super({
       // All disabled for synchronous mode

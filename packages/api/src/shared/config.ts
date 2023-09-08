@@ -119,10 +119,6 @@ export class Config {
     return getEnvVarOrFail("GOOGLE_CLIENT_SECRET");
   }
 
-  static getTenoviApiKey(): string {
-    return getEnvVarOrFail("TENOVI_API_KEY");
-  }
-
   static getWhoopClientId(): string {
     return getEnvVarOrFail("WHOOP_CLIENT_ID");
   }
