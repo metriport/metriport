@@ -24,7 +24,7 @@ import {
 import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
-import { MedicalDataSourceOid } from "../..";
+import { sortBy, uniqBy } from "lodash";
 import { joinName, Patient, splitName } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
@@ -82,6 +82,7 @@ export const toFHIR = (
     contentType: doc.content?.mimeType,
     size: doc.metriport.fileSize != null ? doc.metriport.fileSize : doc.content?.size, // can't trust the file size from CW, use what we actually saved
     creation: doc.content?.indexed,
+    format: doc.content?.format,
   };
 
   const metriportContent = createMetriportDocReferenceContent({
@@ -134,10 +135,6 @@ export const toFHIR = (
     type: doc.content?.type,
     subject,
     author,
-    // DEFAULT TO COMMONWELL FOR NOW
-    custodian: {
-      id: MedicalDataSourceOid.COMMONWELL,
-    },
     description: doc.content?.description,
     content: [...cwContent, metriportContent],
     extension: [cwExtension],
@@ -189,7 +186,10 @@ export function idToFHIR(id: DocumentIdentifier): Identifier {
  * @param patientId Patient ID that the document is associated with.
  * @returns FHIR Resource; otherwise sends a notification to Sentry if the resource type is not handled.
  */
-function convertToFHIRResource(resource: Contained, patientId: string): Resource | undefined {
+export function convertToFHIRResource(
+  resource: Contained,
+  patientId: string
+): Resource | undefined {
   if (resource.resourceType === "Patient" && resource.id && !resource.id.includes(patientId)) {
     capture.message(`Found a Patient resource with a different ID`, {
       extra: { context: `toFHIR.convertToFHIRResource`, resource, patientId, level: "warning" },
@@ -372,10 +372,14 @@ export function getAuthors(
     .filter(c => authorTypesAsStr.includes(c.resourceType))
     .filter(r => r.id && refs.includes(r.id));
 
-  return containedAuthors.map(a => ({
+  const authors = containedAuthors.map(a => ({
     reference: `#${a.id}`,
     type: a.resourceType,
   }));
+  return uniqBy(
+    sortBy(authors, a => a.type),
+    a => a.reference
+  );
 }
 
 /**
