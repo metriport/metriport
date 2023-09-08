@@ -97,7 +97,7 @@ function normalizeCity(city: string): string {
 }
 
 function normalizeEmail(email: string): string {
-  return email.toLowerCase();
+  return email.toLowerCase().trim();
 }
 
 function normalizeZip(zip: string): string {
