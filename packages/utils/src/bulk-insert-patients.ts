@@ -79,11 +79,12 @@ function normalizeName(name: string): string {
 }
 
 function normalizePhone(phone: string): string {
-  if (phone.length === 11 && phone[0] === "1") {
+  const trimmedPhone = phone.trim();
+  if (trimmedPhone.length === 11 && trimmedPhone[0] === "1") {
     // removes leading country code 1s
-    return phone.trim().substring(1);
-  } else if (phone.length === 10) {
-    return phone.trim();
+    return trimmedPhone.substring(1);
+  } else if (trimmedPhone.length === 10) {
+    return trimmedPhone.trim();
   }
   throw new Error(`Invalid phone ${phone}`);
 }
@@ -107,7 +108,7 @@ function normalizeZip(zip: string): string {
 function normalizeDate(date: string): string {
   const trimmedDate = date.trim();
   if (!dayjs(trimmedDate, "YYYY-MM-DD", true).isValid()) {
-    throw new Error(`Invalid state ${date}`);
+    throw new Error(`Invalid date ${date}`);
   }
   return trimmedDate;
 }
