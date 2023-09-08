@@ -1,8 +1,10 @@
 import {
   Address,
+  Coding,
   Device,
   DocumentReference,
   DocumentReferenceContent,
+  Extension,
   HumanName,
   Identifier,
   Organization,
@@ -80,29 +82,25 @@ export const toFHIR = (
 ): DocumentReference => {
   const baseAttachment = {
     contentType: doc.content?.mimeType,
+    fileName: doc.metriport.fileName, // no filename on CW doc refs
     size: doc.metriport.fileSize != null ? doc.metriport.fileSize : doc.content?.size, // can't trust the file size from CW, use what we actually saved
     creation: doc.content?.indexed,
     format: doc.content?.format,
   };
 
-  const metriportContent = createMetriportDocReferenceContent({
+  const metriportContent = createDocReferenceContent({
     ...baseAttachment,
-    fileName: doc.metriport.fileName,
     location: doc.metriport.location,
+    extension: [metriportDataSourceExtension],
   });
 
   const cwContent = doc.content?.location
-    ? [
-        {
-          attachment: {
-            ...baseAttachment,
-            title: doc.metriport.fileName, // no filename on CW doc refs
-            url: doc.content.location,
-          },
-          extension: [cwExtension],
-        },
-      ]
-    : [];
+    ? createDocReferenceContent({
+        ...baseAttachment,
+        location: doc.content.location,
+        extension: [cwExtension],
+      })
+    : undefined;
 
   // https://www.hl7.org/fhir/R4/domainresource-definitions.html#DomainResource.contained
   const containedContent: Resource[] = [];
@@ -136,24 +134,28 @@ export const toFHIR = (
     subject,
     author,
     description: doc.content?.description,
-    content: [...cwContent, metriportContent],
+    content: [metriportContent, ...(cwContent ? [cwContent] : [])],
     extension: [cwExtension],
     context: doc.content?.context,
   };
 };
 
-export function createMetriportDocReferenceContent({
+export function createDocReferenceContent({
   contentType,
   size,
   fileName,
   location,
   creation,
+  extension,
+  format,
 }: {
   contentType?: string;
   size?: number;
   fileName: string;
   location: string;
   creation: string;
+  extension: Extension[];
+  format?: string | string[];
 }): DocumentReferenceContent {
   const metriportContent: DocumentReferenceContent = {
     attachment: {
@@ -163,10 +165,26 @@ export function createMetriportDocReferenceContent({
       title: fileName,
       url: location,
     },
-    extension: [metriportDataSourceExtension],
+    format: getFormat(format),
+    extension,
   };
 
   return metriportContent;
+}
+
+function getFormat(format: string | string[] | undefined): Coding | undefined {
+  const code = getFormatCode(format);
+  if (!code) return undefined;
+  return { code };
+}
+function getFormatCode(format: string | string[] | undefined): string | undefined {
+  if (!format) return undefined;
+  if (typeof format === "string") return format;
+  if (format.length < 1) return undefined;
+  if (format.length > 1) {
+    capture.message(`Found multiple formats on a docRef`, { extra: { format } });
+  }
+  return format[0];
 }
 
 // TODO once we merge DocumentIdentifier with Identifier on CW SDK, let's move this to
