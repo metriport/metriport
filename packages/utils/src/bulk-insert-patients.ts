@@ -5,6 +5,7 @@ import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk"
 import csv from "csv-parser";
 import fs from "fs";
 import { getEnvVarOrFail } from "./shared/env";
+import dayjs from "dayjs";
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
@@ -77,6 +78,16 @@ function normalizeName(name: string): string {
   return toTitleCase(name);
 }
 
+function normalizePhone(phone: string): string {
+  if (phone.length === 11 && phone[0] === "1") {
+    // removes leading country code 1s
+    return phone.trim().substring(1);
+  } else if (phone.length === 10) {
+    return phone.trim();
+  }
+  throw new Error(`Invalid phone ${phone}`);
+}
+
 function normalizeAddressLine(addressLine: string): string {
   return toTitleCase(addressLine);
 }
@@ -87,6 +98,18 @@ function normalizeCity(city: string): string {
 
 function normalizeEmail(email: string): string {
   return email.toLowerCase();
+}
+
+function normalizeZip(zip: string): string {
+  return zip.trim();
+}
+
+function normalizeDate(date: string): string {
+  const trimmedDate = date.trim();
+  if (!dayjs(trimmedDate, "YYYY-MM-DD", true).isValid()) {
+    throw new Error(`Invalid state ${date}`);
+  }
+  return trimmedDate;
 }
 
 function normalizeState(state: string): USState {
@@ -113,16 +136,16 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   return {
     firstName: normalizeName(csvPatient.firstname),
     lastName: normalizeName(csvPatient.lastname),
-    dob: csvPatient.dob,
+    dob: normalizeDate(csvPatient.dob),
     genderAtBirth: normalizeGender(csvPatient.gender),
     address: {
       addressLine1: normalizeAddressLine(csvPatient.address1),
       city: normalizeCity(csvPatient.city),
       state: normalizeState(csvPatient.state),
-      zip: csvPatient.zip,
+      zip: normalizeZip(csvPatient.zip),
       country: "USA",
     },
-    contact: { phone: csvPatient.phone, email: normalizeEmail(csvPatient.email) },
+    contact: { phone: normalizePhone(csvPatient.phone), email: normalizeEmail(csvPatient.email) },
   };
 };
 
