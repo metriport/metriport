@@ -30,7 +30,7 @@ services:
       - TOKEN_TABLE_NAME=token
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
       - FHIR_CONVERTER_SERVER_URL=http://host.docker.internal:8777
-      - MEDICAL_DOCUMENTS_BUCKET_NAME=medical-documents-local
+      - MEDICAL_DOCUMENTS_BUCKET_NAME=medical-documents-staging
       - LOCAL_ACCOUNT_CXID=cdb678ab-07e3-42c5-93f5-5541cf1f15a8
     networks:
       - metriportNetwork

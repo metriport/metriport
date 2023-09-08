@@ -57,6 +57,7 @@ const convertCollectionBundleToTransactionBundle = ({
     }
 
     if (
+      resource.resourceType === "Agent" ||
       resource.resourceType === "AsyncJob" ||
       resource.resourceType === "AccessPolicy" ||
       resource.resourceType === "Binary" ||

@@ -172,6 +172,8 @@ jobs:
       fhir_url: ${{ vars.FHIR_SERVER_URL_PRODUCTION }}
       widget_url: ${{ vars.WIDGET_URL_PRODUCTION }}
     secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TEST_API_KEY: ${{ secrets.TEST_API_KEY_PRODUCTION }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
