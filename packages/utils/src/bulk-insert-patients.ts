@@ -9,7 +9,7 @@ import { getEnvVarOrFail } from "./shared/env";
 const apiKey = getEnvVarOrFail("API_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
-const delayTime = 3000;
+const delayTime = parseInt(getEnvVarOrFail("BULK_INSERT_DELAY_TIME") ?? 200);
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -21,7 +21,7 @@ async function main() {
 
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
-  fs.createReadStream("../insert-patients.csv")
+  fs.createReadStream("./bulk-insert-patients.csv")
     .pipe(csv())
     .on("data", async data => {
       const metriportPatient = mapCSVPatientToMetriportPatient(data);
@@ -54,38 +54,77 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(s => s.charAt(0).toUpperCase() + s.substring(1))
+    .join(" ");
+}
+
+function normalizeGender(gender: string): "M" | "F" {
+  const lowerGender = gender.toLowerCase();
+  if (lowerGender === "male" || lowerGender === "m") {
+    return "M";
+  } else if (lowerGender === "female" || lowerGender === "f") {
+    return "F";
+  }
+  throw new Error(`Invalid gender ${gender}`);
+}
+
+function normalizeName(name: string): string {
+  return toTitleCase(name);
+}
+
+function normalizeAddressLine(addressLine: string): string {
+  return toTitleCase(addressLine);
+}
+
+function normalizeCity(city: string): string {
+  return toTitleCase(city);
+}
+
+function normalizeEmail(email: string): string {
+  return email.toLowerCase();
+}
+
+function normalizeState(state: string): USState {
+  if (
+    state.length === 2 &&
+    Object.values(states).includes(USState[state as keyof typeof USState])
+  ) {
+    return USState[state as keyof typeof USState];
+  } else if (states[state]) {
+    return states[state];
+  }
+  throw new Error(`Invalid state ${state}`);
+}
+
 const mapCSVPatientToMetriportPatient = (csvPatient: {
   firstname: string;
   lastname: string;
-  patient_dob: string;
-  address1: string;
-  city: string;
-  state_name: string;
-  zipcode: string;
-  phone: string;
+  dob: string;
   gender: string;
+  zip: string;
+  city: string;
+  state: string;
+  address1: string;
+  phone: string;
+  email: string;
 }): PatientCreate | undefined => {
-  const validGender = csvPatient.gender === "Male" || csvPatient.gender === "Female";
-
-  if (!validGender) {
-    console.log("Invalid gender provided for patient: ", csvPatient);
-    return;
-  }
-
   return {
-    firstName: csvPatient.firstname,
-    lastName: csvPatient.lastname,
-    dob: csvPatient.patient_dob,
-    genderAtBirth: csvPatient.gender === "Female" ? "F" : "M",
+    firstName: normalizeName(csvPatient.firstname),
+    lastName: normalizeName(csvPatient.lastname),
+    dob: csvPatient.dob,
+    genderAtBirth: normalizeGender(csvPatient.gender),
     address: {
-      ...(csvPatient.address1 ? { addressLine1: csvPatient.address1 } : {}),
-      ...(csvPatient.city ? { city: csvPatient.city } : {}),
-      ...(csvPatient.state_name ? { state: states[csvPatient.state_name] } : {}),
-      zip: csvPatient.zipcode,
+      addressLine1: normalizeAddressLine(csvPatient.address1),
+      city: normalizeCity(csvPatient.city),
+      state: normalizeState(csvPatient.state),
+      zip: csvPatient.zip,
       country: "USA",
     },
-    personalIdentifiers: [],
-    ...(csvPatient.phone ? { contact: { phone: csvPatient.phone } } : {}),
+    contact: { phone: csvPatient.phone, email: normalizeEmail(csvPatient.email) },
   };
 };
 
