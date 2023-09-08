@@ -3,6 +3,7 @@ import { Activity, Biometrics, Body, Nutrition, Sleep, User } from "@metriport/a
 
 import NotImplementedError from "../errors/not-implemented";
 import { ConnectedUser } from "../models/connected-user";
+import { RawParams } from "../shared/raw-params";
 
 // represents each consumer health data endpoint
 export enum ConsumerHealthDataType {
@@ -32,7 +33,8 @@ export default abstract class Provider {
   async getActivityData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams?: RawParams
   ): Promise<Activity> {
     throw new NotImplementedError();
   }
@@ -40,7 +42,8 @@ export default abstract class Provider {
   async getBodyData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams?: RawParams
   ): Promise<Body> {
     throw new NotImplementedError();
   }
@@ -48,7 +51,8 @@ export default abstract class Provider {
   async getBiometricsData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams?: RawParams
   ): Promise<Biometrics> {
     throw new NotImplementedError();
   }
@@ -56,7 +60,8 @@ export default abstract class Provider {
   async getNutritionData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams?: RawParams
   ): Promise<Nutrition> {
     throw new NotImplementedError();
   }
@@ -64,7 +69,8 @@ export default abstract class Provider {
   async getSleepData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams?: RawParams
   ): Promise<Sleep> {
     throw new NotImplementedError();
   }
@@ -72,7 +78,8 @@ export default abstract class Provider {
   async getUserData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    params: DAPIParams,
+    rawParams?: RawParams
   ): Promise<User> {
     throw new NotImplementedError();
   }

@@ -2,26 +2,51 @@
 import { Biometrics, Body } from "@metriport/api-sdk";
 import axios from "axios";
 import dayjs from "dayjs";
+import stringify from "json-stringify-safe";
+import { updateProviderData } from "../command/connected-user/save-connected-user";
+import BadRequestError from "../errors/bad-request";
+import MetriportError from "../errors/metriport-error";
 import { TenoviMeasurementData, tenoviMeasurementDataSchema } from "../mappings/tenovi";
 import { mapToBiometrics } from "../mappings/tenovi/biometrics";
 import { mapToBody } from "../mappings/tenovi/body";
 import { ConnectedUser } from "../models/connected-user";
-import { Config } from "../shared/config";
-import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
-import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { PROVIDER_TENOVI } from "../shared/constants";
 import { capture } from "../shared/notifications";
-import stringify from "json-stringify-safe";
-import MetriportError from "../errors/metriport-error";
+import { RawParams } from "../shared/raw-params";
+import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
+import { NoAuth } from "./shared/noauth";
 
 export const TENOVI_DEFAULT_TOKEN_VALUE = "N/A";
 const TENOVI_TEST_DEVICE_ID = "12345678-abcd-1234-abcd-1234567890ab";
 
-export class Tenovi extends Provider {
-  static URL = "https://api2.tenovi.com";
-  static API_PATH = "clients/metriport";
+export type TenoviExtraParams = DAPIParams & {
+  xTenoviApiKey?: string;
+  xTenoviClientName?: string;
+};
 
-  private static apiKey = Config.getTenoviApiKey();
+export const tenoviApiKeyPropName = "x-tenovi-api-key";
+export const tenoviClientNamePropName = "x-tenovi-client-name";
+
+type TenoviHeaderPropName = typeof tenoviApiKeyPropName | typeof tenoviClientNamePropName;
+
+export function getTenoviHeaderOrFail(
+  propName: TenoviHeaderPropName,
+  rawParams: RawParams
+): string {
+  const tenoviHeader = rawParams.headers[propName];
+  if (!tenoviHeader) throw new BadRequestError(`Missing ${propName} header.`);
+  return validateAndEncodeTenoviHeader(tenoviHeader);
+}
+
+function validateAndEncodeTenoviHeader(tenoviHeader: string | string[]): string {
+  if (tenoviHeader.includes(" ") || Array.isArray(tenoviHeader))
+    throw new BadRequestError(`Invalid ${tenoviApiKeyPropName} header.`);
+  return encodeURIComponent(tenoviHeader);
+}
+
+export class Tenovi extends Provider implements NoAuth {
+  static URL = "https://api2.tenovi.com";
+  static API_PATH = "clients";
 
   constructor() {
     super({
@@ -39,14 +64,15 @@ export class Tenovi extends Provider {
    * Disconnects all connected devices from the user's Tenovi Gateway.
    * Removes Tenovi from the user's ProviderMap.
    *
-   * @param connectedUser The user to disconnect the device from
+   * @param connectedUser The user to disconnect the device from.
+   * @param rawParams     The raw request parameters.
    */
-  async revokeProviderAccess(connectedUser: ConnectedUser): Promise<void> {
+  async revokeProviderAccess(connectedUser: ConnectedUser, rawParams: RawParams): Promise<void> {
     const connectedDevices = connectedUser.providerMap?.tenovi?.connectedDeviceIds;
     if (connectedDevices && connectedDevices.length) {
       const res = await Promise.allSettled(
         connectedDevices.map(async deviceId => {
-          await this.disconnectDevice(connectedUser, deviceId, false);
+          await this.disconnectDevice(connectedUser, deviceId, false, rawParams);
         })
       );
 
@@ -67,7 +93,11 @@ export class Tenovi extends Provider {
       } catch (err) {
         console.log("Failed to remove Tenovi from ProviderMap", stringify(err));
         capture.error(err, {
-          extra: { context: "tenovi.revokeProviderAccess", err, user: connectedUser.dataValues },
+          extra: {
+            context: "tenovi.revokeProviderAccess",
+            err,
+            user: connectedUser.dataValues,
+          },
         });
         throw err;
       }
@@ -78,24 +108,29 @@ export class Tenovi extends Provider {
    * Disconnects the device from the user's Tenovi Gateway.
    * Optionally updates the user's connected devices list.
    *
-   * @param connectedUser The user to disconnect the device from
-   * @param deviceId      The device to disconnect
-   * @param updateUser    Whether to update the user's connected devices list
+   * @param connectedUser The user to disconnect the device from.
+   * @param deviceId      The device to disconnect.
+   * @param updateUser    Whether to update the user's connected devices list.
+   * @param rawParams     The raw request parameters.
    */
   async disconnectDevice(
     connectedUser: ConnectedUser,
     deviceId: string,
-    updateUser = true
+    updateUser: boolean,
+    rawParams: RawParams
   ): Promise<void> {
     const connectedDevices = connectedUser.providerMap?.tenovi?.connectedDeviceIds;
+    const xTenoviApiKey = getTenoviHeaderOrFail(tenoviApiKeyPropName, rawParams);
+    const xTenoviClientName = getTenoviHeaderOrFail(tenoviClientNamePropName, rawParams);
+
     if (connectedDevices && connectedDevices.includes(deviceId)) {
-      const url = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/unlink-gateway/${deviceId}/`;
+      const url = `${Tenovi.URL}/${Tenovi.API_PATH}/${xTenoviClientName}/hwi/unlink-gateway/${deviceId}/`;
 
       try {
         if (deviceId !== TENOVI_TEST_DEVICE_ID) {
           await axios.get(url, {
             headers: {
-              Authorization: `Api-Key ${Tenovi.apiKey}`,
+              Authorization: `Api-Key ${xTenoviApiKey}`,
             },
           });
         }
@@ -120,7 +155,13 @@ export class Tenovi extends Provider {
       } catch (err) {
         console.log("Failed to disconnect devices from Tenovi Gateway", stringify(err));
         capture.error(err, {
-          extra: { context: "tenovi.revokeProviderAccess", err, user: connectedUser.dataValues },
+          extra: {
+            context: "tenovi.revokeProviderAccess",
+            err,
+            deviceId,
+            user: connectedUser.dataValues,
+            cxName: xTenoviClientName,
+          },
         });
         throw err;
       }
@@ -132,16 +173,17 @@ export class Tenovi extends Provider {
           connectedDevices,
           user: connectedUser.dataValues,
           level: "info",
+          cxName: xTenoviClientName,
         },
       });
-      throw new Error(`Device ${deviceId} not found for this user.`);
+      throw new MetriportError("Device not found for this user.", undefined, { deviceId });
     }
   }
 
-  async fetchPatientData(url: string): Promise<TenoviMeasurementData> {
+  async fetchPatientData(url: string, xTenoviApiKey: string): Promise<TenoviMeasurementData> {
     const resp = await axios.get(url, {
       headers: {
-        Authorization: `Api-Key ${Tenovi.apiKey}`,
+        Authorization: `Api-Key ${xTenoviApiKey}`,
       },
     });
     return tenoviMeasurementDataSchema.parse(resp.data);
@@ -150,15 +192,20 @@ export class Tenovi extends Provider {
   override async getBodyData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    extraParams: DAPIParams,
+    rawParams: RawParams
   ): Promise<Body> {
+    const xTenoviApiKey = getTenoviHeaderOrFail(tenoviApiKeyPropName, rawParams);
+    const xTenoviClientName = getTenoviHeaderOrFail(tenoviClientNamePropName, rawParams);
+
     const startDate = dayjs(date).toISOString();
     const endDate = dayjs(date).add(1, "day").toISOString();
 
-    const patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+    let patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+    if (patientId) patientId = encodeURIComponent(patientId);
 
-    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/patients/${patientId}/measurements/?metric__name=weight&timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
-    const weightData = await this.fetchPatientData(patientMeasUrl);
+    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/${xTenoviClientName}/hwi/patients/${patientId}/measurements/?metric__name=weight&timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
+    const weightData = await this.fetchPatientData(patientMeasUrl, xTenoviApiKey);
 
     return mapToBody(date, weightData);
   }
@@ -166,16 +213,21 @@ export class Tenovi extends Provider {
   override async getBiometricsData(
     connectedUser: ConnectedUser,
     date: string,
-    extraParams: DAPIParams
+    extraParams: DAPIParams,
+    rawParams: RawParams
   ): Promise<Biometrics> {
+    const xTenoviApiKey = getTenoviHeaderOrFail(tenoviApiKeyPropName, rawParams);
+    const xTenoviClientName = getTenoviHeaderOrFail(tenoviClientNamePropName, rawParams);
+
     const startDate = dayjs(date).toISOString();
     const endDate = dayjs(date).add(1, "day").toISOString();
 
-    const patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+    let patientId = connectedUser.providerMap?.tenovi?.deviceUserId;
+    if (patientId) patientId = encodeURIComponent(patientId);
 
-    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/hwi/patients/${patientId}/measurements/?timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
-    const patientBiometricsData = await this.fetchPatientData(patientMeasUrl);
+    const patientMeasUrl = `${Tenovi.URL}/${Tenovi.API_PATH}/${xTenoviClientName}/hwi/patients/${patientId}/measurements/?timestamp__gte=${startDate}&timestamp__lt=${endDate}`;
+    const biometricsData = await this.fetchPatientData(patientMeasUrl, xTenoviApiKey);
 
-    return mapToBiometrics(date, patientBiometricsData);
+    return mapToBiometrics(date, biometricsData);
   }
 }
