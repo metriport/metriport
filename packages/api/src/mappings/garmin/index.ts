@@ -63,8 +63,8 @@ export const timeRange = z.object({
 });
 
 export const sleepLevelsSchema = z.object({
-  deep: z.array(timeRange),
-  light: z.array(timeRange),
+  deep: z.array(timeRange).nullish(),
+  light: z.array(timeRange).nullish(),
 });
 
 export const respirationMeasurements = z.record(garminUnits.timeKey, garminUnits.respiration);
