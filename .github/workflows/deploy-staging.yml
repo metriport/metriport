@@ -137,6 +137,15 @@ jobs:
       fhir_url: ${{ vars.FHIR_SERVER_URL_STAGING }}
       widget_url: ${{ vars.WIDGET_URL_STAGING }}
     secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TEST_API_KEY: ${{ secrets.TEST_API_KEY_STAGING }}
+      TEST_ACC_ID: ${{ secrets.TEST_ACC_ID_STAGING }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE_STAGING }}
+      CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY_STAGING }}
+      CW_MEMBER_CERTIFICATE: ${{ secrets.CW_MEMBER_CERTIFICATE_STAGING }}
+      CW_MEMBER_PRIVATE_KEY: ${{ secrets.CW_MEMBER_PRIVATE_KEY_STAGING }}
+      CW_MEMBER_NAME: ${{ secrets.CW_MEMBER_NAME_STAGING }}
+      CW_MEMBER_OID: ${{ secrets.CW_MEMBER_OID_STAGING }}
