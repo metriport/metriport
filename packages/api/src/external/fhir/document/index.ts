@@ -1,8 +1,10 @@
 import {
   Address,
+  Coding,
   Device,
   DocumentReference,
   DocumentReferenceContent,
+  Extension,
   HumanName,
   Identifier,
   Organization,
@@ -24,9 +26,11 @@ import {
 import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
-import { MedicalDataSourceOid } from "../..";
+import { sortBy, uniqBy } from "lodash";
+import MetriportError from "../../../errors/metriport-error";
 import { joinName, Patient, splitName } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
+import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
@@ -54,22 +58,18 @@ const authorTypes = Object.values(authorTypesMap);
 // HIEs probably don't have records before the year 1800 :)
 const earliestPossibleYear = 1800;
 
-function getBestDateFromCWDocRef(doc: CWDocumentWithMetriportData): string {
-  const date = dayjs(doc.content?.indexed);
-
+export function getBestDateFromCWDocRef(content: DocumentContent): string {
+  const date = dayjs(content.indexed);
+  const period = content.context.period;
   // if the timestamp from CW for the indexed date is from today, this usually
   // means that the timestamp is auto-generated, and there may be a more accurate
   // timestamp in the doc ref.
-  if (date.isToday() && doc.content?.context?.period?.start) {
-    const newDate = dayjs(doc.content.context.period.start);
-
+  if (date.isToday() && (period?.start || period?.end)) {
+    const newDate = period.start ? dayjs(period.start) : dayjs(period.end);
     // this check is necessary to prevent using weird dates... seen stuff like
     // this before:  "period": { "start": "0001-01-01T00:00:00Z" }
-    if (newDate.year() >= earliestPossibleYear) {
-      return newDate.toISOString();
-    }
+    if (newDate.year() >= earliestPossibleYear) return newDate.toISOString();
   }
-
   return date.toISOString();
 }
 
@@ -78,39 +78,37 @@ export const toFHIR = (
   doc: CWDocumentWithMetriportData,
   patient: Patient
 ): DocumentReference => {
+  const content = doc.content;
   const baseAttachment = {
-    contentType: doc.content?.mimeType,
-    size: doc.metriport.fileSize != null ? doc.metriport.fileSize : doc.content?.size, // can't trust the file size from CW, use what we actually saved
-    creation: doc.content?.indexed,
+    contentType: content.mimeType,
+    fileName: doc.metriport.fileName, // no filename on CW doc refs
+    size: doc.metriport.fileSize != null ? doc.metriport.fileSize : content.size, // can't trust the file size from CW, use what we actually saved
+    creation: content.indexed,
+    format: content.format,
   };
 
-  const metriportContent = createMetriportDocReferenceContent({
+  const metriportFHIRContent = createDocReferenceContent({
     ...baseAttachment,
-    fileName: doc.metriport.fileName,
     location: doc.metriport.location,
+    extension: [metriportDataSourceExtension],
   });
 
-  const cwContent = doc.content?.location
-    ? [
-        {
-          attachment: {
-            ...baseAttachment,
-            title: doc.metriport.fileName, // no filename on CW doc refs
-            url: doc.content.location,
-          },
-          extension: [cwExtension],
-        },
-      ]
-    : [];
+  const cwFHIRContent = content.location
+    ? createDocReferenceContent({
+        ...baseAttachment,
+        location: content.location,
+        extension: [cwExtension],
+      })
+    : undefined;
 
   // https://www.hl7.org/fhir/R4/domainresource-definitions.html#DomainResource.contained
   const containedContent: Resource[] = [];
 
-  const contained = doc.content?.contained;
+  const contained = content.contained;
   if (contained?.length) {
     contained.forEach(cwResource => {
-      const fhirResource = convertToFHIRResource(cwResource, patient.id);
-      if (fhirResource) containedContent.push(fhirResource);
+      const fhirResource = convertToFHIRResource(cwResource, patient.id, content.subject.reference);
+      if (fhirResource) containedContent.push(...fhirResource);
     });
   }
 
@@ -118,45 +116,46 @@ export const toFHIR = (
     reference: `Patient/${patient.id}`,
     type: "Patient",
   };
-  const author = getAuthors(doc.content, containedContent, docId);
+  const author = getAuthors(content, containedContent, docId);
+  const date = getBestDateFromCWDocRef(content);
 
   return {
     id: docId,
     resourceType: "DocumentReference",
     contained: containedContent,
     masterIdentifier: {
-      system: doc.content?.masterIdentifier?.system,
-      value: doc.content?.masterIdentifier?.value,
+      system: content.masterIdentifier?.system,
+      value: content.masterIdentifier?.value,
     },
-    identifier: doc.content?.identifier?.map(idToFHIR),
-    date: getBestDateFromCWDocRef(doc),
+    identifier: content.identifier?.map(idToFHIR),
+    date,
     status: "current",
-    type: doc.content?.type,
+    type: content.type,
     subject,
     author,
-    // DEFAULT TO COMMONWELL FOR NOW
-    custodian: {
-      id: MedicalDataSourceOid.COMMONWELL,
-    },
-    description: doc.content?.description,
-    content: [...cwContent, metriportContent],
+    description: content.description,
+    content: [metriportFHIRContent, ...(cwFHIRContent ? [cwFHIRContent] : [])],
     extension: [cwExtension],
-    context: doc.content?.context,
+    context: content.context,
   };
 };
 
-export function createMetriportDocReferenceContent({
+export function createDocReferenceContent({
   contentType,
   size,
   fileName,
   location,
   creation,
+  extension,
+  format,
 }: {
   contentType?: string;
   size?: number;
   fileName: string;
   location: string;
   creation: string;
+  extension: Extension[];
+  format?: string | string[];
 }): DocumentReferenceContent {
   const metriportContent: DocumentReferenceContent = {
     attachment: {
@@ -166,10 +165,26 @@ export function createMetriportDocReferenceContent({
       title: fileName,
       url: location,
     },
-    extension: [metriportDataSourceExtension],
+    format: getFormat(format),
+    extension,
   };
 
   return metriportContent;
+}
+
+function getFormat(format: string | string[] | undefined): Coding | undefined {
+  const code = getFormatCode(format);
+  if (!code) return undefined;
+  return { code };
+}
+function getFormatCode(format: string | string[] | undefined): string | undefined {
+  if (!format) return undefined;
+  if (typeof format === "string") return format;
+  if (format.length < 1) return undefined;
+  if (format.length > 1) {
+    capture.message(`Found multiple formats on a docRef`, { extra: { format } });
+  }
+  return format[0];
 }
 
 // TODO once we merge DocumentIdentifier with Identifier on CW SDK, let's move this to
@@ -187,50 +202,135 @@ export function idToFHIR(id: DocumentIdentifier): Identifier {
  *
  * @param resource CW Contained resource.
  * @param patientId Patient ID that the document is associated with.
+ * @param subjectRef The subject reference on the CW payload.
  * @returns FHIR Resource; otherwise sends a notification to Sentry if the resource type is not handled.
  */
-function convertToFHIRResource(resource: Contained, patientId: string): Resource | undefined {
-  if (resource.resourceType === "Patient" && resource.id && !resource.id.includes(patientId)) {
-    capture.message(`Found a Patient resource with a different ID`, {
+export function convertToFHIRResource(
+  resource: Contained,
+  patientId: string,
+  subjectRef: string
+): Resource[] | undefined {
+  const { log } = Util.out(`convertToFHIRResource - patient ${patientId}`);
+
+  if (resource.resourceType === "Patient") {
+    return containedPatientToFHIRResource(resource, patientId, subjectRef, log);
+  }
+  if (resource.resourceType === "Organization") {
+    return containedOrgToFHIRResource(resource, patientId, log);
+  }
+  if (resource.resourceType === "Practitioner") {
+    return containedPractitionerToFHIRResource(resource, patientId, log);
+  }
+  const msg = `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`;
+  log(`${msg}: ${JSON.stringify(resource)}`);
+  capture.message(msg, {
+    extra: {
+      context: `toFHIR.convertToFHIRResource`,
+      resource,
+      patientId,
+    },
+  });
+  return undefined;
+}
+
+export function containedPatientToFHIRResource(
+  resource: Contained, // it didn't work to set the type to Patient here: `& { resourceType: "Patient" }`
+  patientId: string,
+  cwSubjectRef: string,
+  log: (msg: string) => void
+): Resource[] | undefined {
+  if (resource.resourceType !== "Patient") {
+    const msg = "Contained resource is not a Patient";
+    log(`${msg} [containedPatientToFHIRResource] resource: - ${JSON.stringify(resource)}`);
+    throw new MetriportError(msg, undefined, { patientId });
+  }
+  if (!resource.name) {
+    log(`Patient with no name, skipping it: ${JSON.stringify(resource)}`);
+    return undefined;
+  }
+  // If the resource ID is the same as CW's subject, use the FHIR patient ID so we can "link" them later
+  const chosenResourceId =
+    resource.id && cwSubjectRef.includes(resource.id) ? patientId : resource.id ?? undefined;
+  if (chosenResourceId !== patientId) {
+    const msg = `Found a Patient resource with a different ID`;
+    log(`${msg}, chosenResourceId ${chosenResourceId}, resource: - ${JSON.stringify(resource)}`);
+    capture.message(msg, {
       extra: { context: `toFHIR.convertToFHIRResource`, resource, patientId, level: "warning" },
     });
-    return {
+  }
+  return [
+    {
       resourceType: "Patient",
-      id: resource.id,
+      id: chosenResourceId,
       address: convertCWAdressToFHIR(resource.address),
       gender: convertCWGenderToFHIR(resource.gender?.coding),
       identifier: convertCWIdentifierToFHIR(resource.identifier),
-      name: resource.name ? convertCWNameToHumanName(resource.name) : undefined,
-    };
-  } else if (resource.resourceType === "Organization" && resource.name) {
-    return {
+      name: convertCWNameToHumanName(resource.name),
+    },
+  ];
+}
+
+export function containedOrgToFHIRResource(
+  resource: Contained,
+  patientId: string,
+  log: (msg: string) => void
+): Resource[] | undefined {
+  if (resource.resourceType !== "Organization") {
+    const msg = "Contained resource is not a Organization";
+    log(`${msg} [containedOrgToFHIRResource] resource: - ${JSON.stringify(resource)}`);
+    throw new MetriportError(msg, undefined, { patientId });
+  }
+  if (!resource.name) {
+    log(`Organization with no name, skipping it: ${JSON.stringify(resource)}`);
+    return undefined;
+  }
+  return [
+    {
       resourceType: "Organization",
       id: resource.id ?? undefined,
       identifier: convertCWIdentifierToFHIR(resource.identifier),
       name: convertCWNameToString(resource.name),
       address: convertCWAdressToFHIR(resource.address),
-    };
-  } else if (resource.resourceType === "Practitioner" && resource.name) {
-    return {
-      resourceType: "Practitioner",
-      id: resource.id ?? undefined,
-      identifier: convertCWIdentifierToFHIR(resource.identifier),
-      name: convertCWNameToHumanName(resource.name),
-      gender: convertCWGenderToFHIR(resource.gender?.coding),
-    };
-  } else {
-    capture.message(
-      `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`,
-      {
-        extra: {
-          context: `toFHIR.convertToFHIRResource`,
-          resourceType: resource.resourceType,
-          resource,
-          patientId,
-        },
-      }
-    );
+    },
+  ];
+}
+
+export function containedPractitionerToFHIRResource(
+  resource: Contained,
+  patientId: string,
+  log: (msg: string) => void
+): Resource[] | undefined {
+  if (resource.resourceType !== "Practitioner") {
+    const msg = "Contained resource is not a Practitioner";
+    log(`${msg} [containedPractitionerToFHIRResource] resource: - ${JSON.stringify(resource)}`);
+    throw new MetriportError(msg, undefined, { patientId });
   }
+  if (!resource.name) {
+    log(`Practitioner with no name, skipping it: ${JSON.stringify(resource)}`);
+    return undefined;
+  }
+  const practitioner: Resource = {
+    resourceType: "Practitioner",
+    id: resource.id ?? undefined,
+    identifier: convertCWIdentifierToFHIR(resource.identifier),
+    name: convertCWNameToHumanName(resource.name),
+    gender: convertCWGenderToFHIR(resource.gender?.coding),
+  };
+  const role: Resource | undefined =
+    resource.organization?.reference && resource.id
+      ? {
+          resourceType: "PractitionerRole",
+          organization: {
+            type: "Organization",
+            reference: resource.organization.reference,
+          },
+          practitioner: {
+            type: "Practitioner",
+            reference: `#${resource.id}`,
+          },
+        }
+      : undefined;
+  return [practitioner, ...(role ? [role] : [])];
 }
 
 /**
@@ -269,8 +369,9 @@ function convertCWNameToString(name: string | CWHumanName | CWHumanName[]): stri
  * @returns FHIR-compliant HumanName[]; otherwise undefined if a valid name cannot be determined.
  */
 function convertCWNameToHumanName(
-  name: string | CWHumanName | CWHumanName[]
+  name: string | CWHumanName | CWHumanName[] | undefined | null
 ): HumanName[] | undefined {
+  if (!name) return undefined;
   if (typeof name === "string") {
     return [
       {
@@ -294,6 +395,7 @@ function convertCWNameToHumanName(
   } else if (typeof name === "object") {
     return getHumanNamesFromObject(name);
   }
+  return undefined;
 }
 
 /**
@@ -372,10 +474,14 @@ export function getAuthors(
     .filter(c => authorTypesAsStr.includes(c.resourceType))
     .filter(r => r.id && refs.includes(r.id));
 
-  return containedAuthors.map(a => ({
+  const authors = containedAuthors.map(a => ({
     reference: `#${a.id}`,
     type: a.resourceType,
   }));
+  return uniqBy(
+    sortBy(authors, a => a.type),
+    a => a.reference
+  );
 }
 
 /**
