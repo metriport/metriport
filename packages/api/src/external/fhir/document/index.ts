@@ -27,6 +27,7 @@ import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { sortBy, uniqBy } from "lodash";
+import MetriportError from "../../../errors/metriport-error";
 import { joinName, Patient, splitName } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -212,69 +213,13 @@ export function convertToFHIRResource(
   const { log } = Util.out(`convertToFHIRResource - patient ${patientId}`);
 
   if (resource.resourceType === "Patient") {
-    // If the resource ID is the same as CW's subject, use the FHIR patient ID so we can "link" them later
-    const chosenResourceId =
-      resource.id && subjectRef.includes(resource.id) ? patientId : resource.id ?? undefined;
-    if (chosenResourceId !== patientId) {
-      const msg = `Found a Patient resource with a different ID`;
-      log(`${msg}, chosenResourceId ${chosenResourceId}, resource: - ${JSON.stringify(resource)}`);
-      capture.message(msg, {
-        extra: { context: `toFHIR.convertToFHIRResource`, resource, patientId, level: "warning" },
-      });
-    }
-    return [
-      {
-        resourceType: "Patient",
-        id: chosenResourceId,
-        address: convertCWAdressToFHIR(resource.address),
-        gender: convertCWGenderToFHIR(resource.gender?.coding),
-        identifier: convertCWIdentifierToFHIR(resource.identifier),
-        name: convertCWNameToHumanName(resource.name),
-      },
-    ];
+    return containedPatientToFHIRResource(resource, patientId, subjectRef, log);
   }
   if (resource.resourceType === "Organization") {
-    if (!resource.name) {
-      log(`Organization with no name, skipping it: ${JSON.stringify(resource)}`);
-      return undefined;
-    }
-    return [
-      {
-        resourceType: "Organization",
-        id: resource.id ?? undefined,
-        identifier: convertCWIdentifierToFHIR(resource.identifier),
-        name: convertCWNameToString(resource.name),
-        address: convertCWAdressToFHIR(resource.address),
-      },
-    ];
+    return containedOrgToFHIRResource(resource, patientId, log);
   }
   if (resource.resourceType === "Practitioner") {
-    if (!resource.name) {
-      log(`Practitioner with no name, skipping it: ${JSON.stringify(resource)}`);
-      return undefined;
-    }
-    const practitioner: Resource = {
-      resourceType: "Practitioner",
-      id: resource.id ?? undefined,
-      identifier: convertCWIdentifierToFHIR(resource.identifier),
-      name: convertCWNameToHumanName(resource.name),
-      gender: convertCWGenderToFHIR(resource.gender?.coding),
-    };
-    const role: Resource | undefined =
-      resource.organization?.reference && resource.id
-        ? {
-            resourceType: "PractitionerRole",
-            organization: {
-              type: "Organization",
-              reference: resource.organization.reference,
-            },
-            practitioner: {
-              type: "Practitioner",
-              reference: `#${resource.id}`,
-            },
-          }
-        : undefined;
-    return [practitioner, ...(role ? [role] : [])];
+    return containedPractitionerToFHIRResource(resource, patientId, log);
   }
   const msg = `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`;
   log(`${msg}: ${JSON.stringify(resource)}`);
@@ -286,6 +231,106 @@ export function convertToFHIRResource(
     },
   });
   return undefined;
+}
+
+export function containedPatientToFHIRResource(
+  resource: Contained, // it didn't work to set the type to Patient here: `& { resourceType: "Patient" }`
+  patientId: string,
+  cwSubjectRef: string,
+  log: (msg: string) => void
+): Resource[] | undefined {
+  if (resource.resourceType !== "Patient") {
+    const msg = "Contained resource is not a Patient";
+    log(`${msg} [containedPatientToFHIRResource] resource: - ${JSON.stringify(resource)}`);
+    throw new MetriportError(msg, undefined, { patientId });
+  }
+  if (!resource.name) {
+    log(`Patient with no name, skipping it: ${JSON.stringify(resource)}`);
+    return undefined;
+  }
+  // If the resource ID is the same as CW's subject, use the FHIR patient ID so we can "link" them later
+  const chosenResourceId =
+    resource.id && cwSubjectRef.includes(resource.id) ? patientId : resource.id ?? undefined;
+  if (chosenResourceId !== patientId) {
+    const msg = `Found a Patient resource with a different ID`;
+    log(`${msg}, chosenResourceId ${chosenResourceId}, resource: - ${JSON.stringify(resource)}`);
+    capture.message(msg, {
+      extra: { context: `toFHIR.convertToFHIRResource`, resource, patientId, level: "warning" },
+    });
+  }
+  return [
+    {
+      resourceType: "Patient",
+      id: chosenResourceId,
+      address: convertCWAdressToFHIR(resource.address),
+      gender: convertCWGenderToFHIR(resource.gender?.coding),
+      identifier: convertCWIdentifierToFHIR(resource.identifier),
+      name: convertCWNameToHumanName(resource.name),
+    },
+  ];
+}
+
+export function containedOrgToFHIRResource(
+  resource: Contained,
+  patientId: string,
+  log: (msg: string) => void
+): Resource[] | undefined {
+  if (resource.resourceType !== "Organization") {
+    const msg = "Contained resource is not a Organization";
+    log(`${msg} [containedOrgToFHIRResource] resource: - ${JSON.stringify(resource)}`);
+    throw new MetriportError(msg, undefined, { patientId });
+  }
+  if (!resource.name) {
+    log(`Organization with no name, skipping it: ${JSON.stringify(resource)}`);
+    return undefined;
+  }
+  return [
+    {
+      resourceType: "Organization",
+      id: resource.id ?? undefined,
+      identifier: convertCWIdentifierToFHIR(resource.identifier),
+      name: convertCWNameToString(resource.name),
+      address: convertCWAdressToFHIR(resource.address),
+    },
+  ];
+}
+
+export function containedPractitionerToFHIRResource(
+  resource: Contained,
+  patientId: string,
+  log: (msg: string) => void
+): Resource[] | undefined {
+  if (resource.resourceType !== "Practitioner") {
+    const msg = "Contained resource is not a Practitioner";
+    log(`${msg} [containedPractitionerToFHIRResource] resource: - ${JSON.stringify(resource)}`);
+    throw new MetriportError(msg, undefined, { patientId });
+  }
+  if (!resource.name) {
+    log(`Practitioner with no name, skipping it: ${JSON.stringify(resource)}`);
+    return undefined;
+  }
+  const practitioner: Resource = {
+    resourceType: "Practitioner",
+    id: resource.id ?? undefined,
+    identifier: convertCWIdentifierToFHIR(resource.identifier),
+    name: convertCWNameToHumanName(resource.name),
+    gender: convertCWGenderToFHIR(resource.gender?.coding),
+  };
+  const role: Resource | undefined =
+    resource.organization?.reference && resource.id
+      ? {
+          resourceType: "PractitionerRole",
+          organization: {
+            type: "Organization",
+            reference: resource.organization.reference,
+          },
+          practitioner: {
+            type: "Practitioner",
+            reference: `#${resource.id}`,
+          },
+        }
+      : undefined;
+  return [practitioner, ...(role ? [role] : [])];
 }
 
 /**
