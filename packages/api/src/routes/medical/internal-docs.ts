@@ -68,8 +68,9 @@ router.post(
     const options = optionsRaw
       ? reprocessOptionsSchema.parse(optionsRaw.split(",").map(id => id.trim()))
       : [];
+    const requestId = uuidv7();
 
-    reprocessDocuments({ cxId, documentIds, options }).catch(err => {
+    reprocessDocuments({ cxId, documentIds, options, requestId }).catch(err => {
       console.log(`Error re-processing documents for cxId ${cxId}: `, err);
       capture.error(err);
     });
@@ -150,7 +151,7 @@ router.post(
       );
     }
 
-    return res.sendStatus(httpStatus.OK);
+    return res.sendStatus(httpStatus.OK).json({ queryId: docId });
   })
 );
 
