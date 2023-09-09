@@ -4,13 +4,14 @@ dotenv.config();
 import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
 import csv from "csv-parser";
 import fs from "fs";
-import { getEnvVarOrFail } from "./shared/env";
+import { getEnvVar, getEnvVarOrFail } from "./shared/env";
 import dayjs from "dayjs";
+import path from "path";
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
-const delayTime = parseInt(getEnvVarOrFail("BULK_INSERT_DELAY_TIME") ?? 200);
+const delayTime = parseInt(getEnvVar("BULK_INSERT_DELAY_TIME") ?? "200");
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -22,7 +23,7 @@ async function main() {
 
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
-  fs.createReadStream("./bulk-insert-patients.csv")
+  fs.createReadStream(path.join(__dirname, "bulk-insert-patients.csv"))
     .pipe(csv())
     .on("data", async data => {
       const metriportPatient = mapCSVPatientToMetriportPatient(data);
