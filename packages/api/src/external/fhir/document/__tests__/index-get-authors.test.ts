@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
 import { Organization, Practitioner, Reference, Resource } from "@medplum/fhirtypes";
-import { Contained as CWContained, Document as CWDocument } from "@metriport/commonwell-sdk";
+import { Document as CWDocument, DocumentContent } from "@metriport/commonwell-sdk";
 import { makeDocument } from "@metriport/commonwell-sdk/models/__tests__/document";
 import { v4 as uuidv4 } from "uuid";
 import { convertToFHIRResource, getAuthors } from "../index";
@@ -21,12 +20,12 @@ beforeEach(() => {
   docMock = makeDocument({ content: { author: cwContained } });
 });
 
-const cwContainedToFHIR = (contained: CWContained[] | undefined | null): Resource[] => {
+const cwContainedToFHIR = ({ contained, subject }: DocumentContent): Resource[] => {
   if (!contained) return [];
   const containedContent: Resource[] = [];
   if (contained?.length) {
     contained.forEach(cwResource => {
-      const fhirResource = convertToFHIRResource(cwResource, patientId);
+      const fhirResource = convertToFHIRResource(cwResource, patientId, subject.reference);
       if (fhirResource) containedContent.push(...fhirResource);
     });
   }
@@ -65,7 +64,7 @@ describe("getAuthors", () => {
     for (const [idx, docref] of Object.entries(docRefsWithOneAuthorPointingToMultipleContained)) {
       it(`when multiple contained w/ same ref - ${idx}`, async () => {
         const cwContent = docref.content;
-        const fhirContained = cwContainedToFHIR(cwContent.contained);
+        const fhirContained = cwContainedToFHIR(cwContent);
         const authorReference = cwContent.author?.[0].reference;
         expect(authorReference).toBeTruthy();
         console.log(`authorReference ${authorReference}`);

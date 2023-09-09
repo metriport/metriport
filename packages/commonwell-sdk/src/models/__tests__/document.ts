@@ -1,6 +1,13 @@
 import { faker } from "@faker-js/faker";
 import { DeepPartial } from "ts-essentials";
-import { CodeableConcept, Document, DocumentContent, DocumentIdentifier } from "../document";
+import { v4 as uuidv4 } from "uuid";
+import {
+  CodeableConcept,
+  Contained,
+  Document,
+  DocumentContent,
+  DocumentIdentifier,
+} from "../document";
 import { Period } from "../period";
 
 export function makeDocument(
@@ -30,6 +37,7 @@ type MakeDocumentContent = DeepPartial<DocumentContent> &
       facilityType?: CodeableConcept;
     };
   }>;
+
 export function makeDocumentContent(params?: MakeDocumentContent): DocumentContent {
   const containedOrgId = faker.string.nanoid();
   const containedPractionerId = faker.string.nanoid();
@@ -38,28 +46,11 @@ export function makeDocumentContent(params?: MakeDocumentContent): DocumentConte
   return {
     resourceType: "DocumentReference",
     contained: params?.contained ?? [
-      {
-        resourceType: "Organization",
-        id: containedOrgId,
-        identifier: [
-          {
-            value: faker.number.int({ min: 1000, max: 99999 }).toString(),
-          },
-        ],
-        name: faker.company.name(),
-      },
-      {
-        resourceType: "Practitioner",
+      makeContainedOrg({ id: containedOrgId }),
+      makeContainedPractitioner({
         id: containedPractionerId,
-        name: {
-          family: [faker.person.lastName()],
-          given: [faker.person.firstName()],
-          prefix: [""],
-        },
-        organization: {
-          reference: `#${containedOrgId}`,
-        },
-      },
+        organization: { reference: `#${containedOrgId}` },
+      }),
     ],
     masterIdentifier: params?.masterIdentifier ?? {
       system: "urn:ietf:rfc:3986",
@@ -105,6 +96,60 @@ export function makeDocumentContent(params?: MakeDocumentContent): DocumentConte
       facilityType: {
         text: faker.company.name(),
       },
+    },
+  };
+}
+
+export function makeContained(params?: Partial<Contained>): Contained {
+  const resourceType = faker.helpers.arrayElement(["Organization", "Practitioner", "Patinet"]);
+  if (resourceType === "Organization") return makeContainedOrg(params);
+  if (resourceType === "Practitioner") return makeContainedPractitioner(params);
+  return makeContainedPatient(params);
+}
+
+function makeContainedBase(params?: Partial<Contained>): Contained {
+  const containedId = faker.string.nanoid();
+  return {
+    id: params?.id ?? containedId,
+    identifier: params?.identifier ?? [
+      {
+        value: faker.number.int({ min: 1000, max: 99999 }).toString(),
+      },
+    ],
+  };
+}
+
+export function makeContainedOrg(params?: Partial<Contained>): Contained {
+  return {
+    ...makeContainedBase(params),
+    resourceType: params?.resourceType ?? "Organization",
+    name: params?.name ?? faker.company.name(),
+  };
+}
+
+export function makeContainedPractitioner(params?: Partial<Contained>): Contained {
+  return {
+    ...makeContainedBase(params),
+    resourceType: params?.resourceType ?? "Practitioner",
+    name: params?.name ?? {
+      family: [faker.person.lastName()],
+      given: [faker.person.firstName()],
+      prefix: [""],
+    },
+    organization: params?.organization ?? {
+      reference: `#${uuidv4()}`,
+    },
+  };
+}
+
+export function makeContainedPatient(params?: Partial<Contained>): Contained {
+  return {
+    ...makeContainedBase(params),
+    resourceType: params?.resourceType ?? "Patient",
+    name: params?.name ?? {
+      family: [faker.person.lastName()],
+      given: [faker.person.firstName()],
+      prefix: [""],
     },
   };
 }

@@ -29,6 +29,7 @@ import isToday from "dayjs/plugin/isToday";
 import { sortBy, uniqBy } from "lodash";
 import { joinName, Patient, splitName } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
+import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
@@ -105,7 +106,7 @@ export const toFHIR = (
   const contained = content.contained;
   if (contained?.length) {
     contained.forEach(cwResource => {
-      const fhirResource = convertToFHIRResource(cwResource, patient.id);
+      const fhirResource = convertToFHIRResource(cwResource, patient.id, content.subject.reference);
       if (fhirResource) containedContent.push(...fhirResource);
     });
   }
@@ -200,27 +201,43 @@ export function idToFHIR(id: DocumentIdentifier): Identifier {
  *
  * @param resource CW Contained resource.
  * @param patientId Patient ID that the document is associated with.
+ * @param subjectRef The subject reference on the CW payload.
  * @returns FHIR Resource; otherwise sends a notification to Sentry if the resource type is not handled.
  */
 export function convertToFHIRResource(
   resource: Contained,
-  patientId: string
+  patientId: string,
+  subjectRef: string
 ): Resource[] | undefined {
-  if (resource.resourceType === "Patient" && resource.id && !resource.id.includes(patientId)) {
-    capture.message(`Found a Patient resource with a different ID`, {
-      extra: { context: `toFHIR.convertToFHIRResource`, resource, patientId, level: "warning" },
-    });
+  const { log } = Util.out(`convertToFHIRResource - patient ${patientId}`);
+
+  if (resource.resourceType === "Patient") {
+    // If the resource ID is the same as CW's subject, use the FHIR patient ID so we can "link" them later
+    const chosenResourceId =
+      resource.id && subjectRef.includes(resource.id) ? patientId : resource.id ?? undefined;
+    if (chosenResourceId !== patientId) {
+      const msg = `Found a Patient resource with a different ID`;
+      log(`${msg}, chosenResourceId ${chosenResourceId}, resource: - ${JSON.stringify(resource)}`);
+      capture.message(msg, {
+        extra: { context: `toFHIR.convertToFHIRResource`, resource, patientId, level: "warning" },
+      });
+    }
     return [
       {
         resourceType: "Patient",
-        id: resource.id,
+        id: chosenResourceId,
         address: convertCWAdressToFHIR(resource.address),
         gender: convertCWGenderToFHIR(resource.gender?.coding),
         identifier: convertCWIdentifierToFHIR(resource.identifier),
-        name: resource.name ? convertCWNameToHumanName(resource.name) : undefined,
+        name: convertCWNameToHumanName(resource.name),
       },
     ];
-  } else if (resource.resourceType === "Organization" && resource.name) {
+  }
+  if (resource.resourceType === "Organization") {
+    if (!resource.name) {
+      log(`Organization with no name, skipping it: ${JSON.stringify(resource)}`);
+      return undefined;
+    }
     return [
       {
         resourceType: "Organization",
@@ -230,7 +247,12 @@ export function convertToFHIRResource(
         address: convertCWAdressToFHIR(resource.address),
       },
     ];
-  } else if (resource.resourceType === "Practitioner" && resource.name) {
+  }
+  if (resource.resourceType === "Practitioner") {
+    if (!resource.name) {
+      log(`Practitioner with no name, skipping it: ${JSON.stringify(resource)}`);
+      return undefined;
+    }
     const practitioner: Resource = {
       resourceType: "Practitioner",
       id: resource.id ?? undefined,
@@ -254,17 +276,15 @@ export function convertToFHIRResource(
         : undefined;
     return [practitioner, ...(role ? [role] : [])];
   }
-  capture.message(
-    `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`,
-    {
-      extra: {
-        context: `toFHIR.convertToFHIRResource`,
-        resourceType: resource.resourceType,
-        resource,
-        patientId,
-      },
-    }
-  );
+  const msg = `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`;
+  log(`${msg}: ${JSON.stringify(resource)}`);
+  capture.message(msg, {
+    extra: {
+      context: `toFHIR.convertToFHIRResource`,
+      resource,
+      patientId,
+    },
+  });
   return undefined;
 }
 
@@ -304,8 +324,9 @@ function convertCWNameToString(name: string | CWHumanName | CWHumanName[]): stri
  * @returns FHIR-compliant HumanName[]; otherwise undefined if a valid name cannot be determined.
  */
 function convertCWNameToHumanName(
-  name: string | CWHumanName | CWHumanName[]
+  name: string | CWHumanName | CWHumanName[] | undefined | null
 ): HumanName[] | undefined {
+  if (!name) return undefined;
   if (typeof name === "string") {
     return [
       {
@@ -329,6 +350,7 @@ function convertCWNameToHumanName(
   } else if (typeof name === "object") {
     return getHumanNamesFromObject(name);
   }
+  return undefined;
 }
 
 /**
