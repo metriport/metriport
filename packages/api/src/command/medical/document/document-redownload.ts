@@ -129,6 +129,11 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
     if (!facilityId) throw new Error(`Patient ${patientId} is missing facilityId`);
 
     if (isReQuery(options)) {
+      await appendDocQueryProgress({
+        patient: { id: patient.id, cxId: patient.cxId },
+        downloadProgress: { status: "processing" },
+        reset: true,
+      });
       await queryAndProcessDocuments({
         patient,
         facilityId,
