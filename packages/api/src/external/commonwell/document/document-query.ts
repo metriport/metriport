@@ -82,13 +82,16 @@ export async function queryAndProcessDocuments({
   facilityId,
   forceDownload,
   ignoreDocRefOnFHIRServer,
+  requestId,
 }: {
   patient: Patient;
   facilityId: string;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  requestId: string;
 }): Promise<number> {
-  const { log } = Util.out(`CW queryDocuments - M patient ${patient.id}`);
+  console.log("Request ID in query and process docs", requestId);
+  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
 
   const { organization, facility } = await getPatientData(patient, facilityId);
 
@@ -98,6 +101,7 @@ export async function queryAndProcessDocuments({
         organization,
         facility,
         patient,
+        requestId,
       });
       return documentsSandbox.length;
     } else {
@@ -111,6 +115,7 @@ export async function queryAndProcessDocuments({
         documents: cwDocuments,
         forceDownload,
         ignoreDocRefOnFHIRServer,
+        requestId,
       });
 
       reportDocQueryUsage(patient);
@@ -384,12 +389,14 @@ export async function downloadDocsAndUpsertFHIR({
   documents,
   forceDownload = false,
   ignoreDocRefOnFHIRServer = false,
+  requestId,
 }: {
   patient: Patient;
   facilityId: string;
   documents: Document[];
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  requestId: string;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
   forceDownload && log(`override=true, NOT checking whether docs exist`);
@@ -552,6 +559,7 @@ export async function downloadDocsAndUpsertFHIR({
                 document: doc,
                 s3FileName: file.key,
                 s3BucketName: file.bucket,
+                requestId,
               });
             } catch (err) {
               // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function

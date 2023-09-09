@@ -32,11 +32,13 @@ const randomDates = [
 export async function sandboxGetDocRefsAndUpsert({
   organization,
   patient,
+  requestId,
 }: {
   organization: Organization;
   patient: Patient;
   facility: Facility;
   override?: boolean;
+  requestId: string;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
 
@@ -94,6 +96,7 @@ export async function sandboxGetDocRefsAndUpsert({
         },
         s3FileName: entry.s3Info.key,
         s3BucketName: entry.s3Info.bucket,
+        requestId,
       });
 
       const contained = entry.docRef.contained ?? [];
