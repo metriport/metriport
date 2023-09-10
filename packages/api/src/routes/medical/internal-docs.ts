@@ -149,7 +149,7 @@ router.post(
       );
     }
 
-    return res.sendStatus(httpStatus.OK).json({ queryId: docId });
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
