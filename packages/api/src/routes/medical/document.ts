@@ -71,9 +71,12 @@ router.get(
     const patientId = getFromQueryOrFail("patientId", req);
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const requestId = uuidv7();
-    return res
-      .status(OK)
-      .json({ documentQueryProgress: patient.data.documentQueryProgress, requestId });
+    const docQueryProgress = patient.data.documentQueryProgress;
+    return res.status(OK).json({
+      download: docQueryProgress?.download,
+      convert: docQueryProgress?.convert,
+      requestId,
+    });
   })
 );
 
@@ -105,7 +108,7 @@ router.post(
       requestId,
     });
 
-    return res.status(OK).json({ docQueryProgress, requestId });
+    return res.status(OK).json({ download: docQueryProgress.download, requestId });
   })
 );
 
