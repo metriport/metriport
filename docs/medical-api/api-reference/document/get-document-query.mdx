@@ -4,14 +4,13 @@ description: "Returns the document query status for the specified patient."
 api: "GET /medical/v1/document/query"
 ---
 
-Returns the document query status for the specified patient. Can be used in to check the progress
-when the final status of the document query is taking longer than expected.
+Returns the document query status and a request ID for the specified patient - use this to check the progress of the document query.
 
 See more on [Start Document Query](/medical-api/api-reference/document/start-document-query).
 
 <Tip>
-  To get updates about the document query progress, including download and conversion status,
-  check out our [webhooks guide](/medical-api/more-info/webhooks).
+  To get updates about the document query progress, including download and conversion status, check
+  out our [webhooks guide](/medical-api/more-info/webhooks).
 </Tip>
 
 ## Query Params
@@ -37,9 +36,10 @@ See more on [Start Document Query](/medical-api/api-reference/document/start-doc
     "total": 20,
     "successful": 15,
     "errors": 1
-  }
+  },
+  "requestId": "018a80c4-292a-7486-a223-6dcbc636c44c"
 }
-````
+```
 
 <ResponseExample>
 ```javascript Metriport SDK
@@ -48,8 +48,9 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
 const status = await api.getDocumentQueryStatus(
-  "2.16.840.1.113883.3.666.5.2004.4.2005"
+"2.16.840.1.113883.3.666.5.2004.4.2005"
 );
 
-````
+```
 </ResponseExample>
+```

@@ -380,7 +380,7 @@ export class MetriportMedicalApi {
    *
    * @param patientId Patient ID for which to retrieve document metadata.
    * @param facilityId The facility providing the NPI to support this operation.
-   * @return The document query progress & status indicating whether its being executed or not.
+   * @return The document query ID, progress & status indicating whether its being executed or not.
    */
   async startDocumentQuery(patientId: string, facilityId: string): Promise<DocumentQuery> {
     const resp = await this.api.post(`${DOCUMENT_URL}/query`, null, {
@@ -397,7 +397,7 @@ export class MetriportMedicalApi {
    * Returns the document query status for the specified patient.
    *
    * @param patientId Patient ID for which to retrieve document query status.
-   * @return The document query progress & status indicating whether its being executed or not.
+   * @return The document query ID, progress & status indicating whether its being executed or not.
    */
   async getDocumentQueryStatus(patientId: string): Promise<DocumentQuery> {
     const resp = await this.api.get(`${DOCUMENT_URL}/query`, {

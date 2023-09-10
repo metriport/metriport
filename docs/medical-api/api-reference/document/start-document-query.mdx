@@ -16,8 +16,8 @@ incremented. Once all documents have been converted it too will be marked as `co
 If there's no document to be converted, the total will be set to zero and the status to `completed`.
 
 <Tip>
-  To get updates about the document query progress, including download and conversion status,
-  check out our [webhooks guide](/medical-api/more-info/webhooks).
+  To get updates about the document query progress, including download and conversion status, check
+  out our [webhooks guide](/medical-api/more-info/webhooks).
 </Tip>
 
 <Warning>
@@ -39,14 +39,16 @@ If there's no document to be converted, the total will be set to zero and the st
 ## Response
 
 <Snippet file="document-progress-download.mdx" />
+<Snippet file="request-id.mdx" />
 
 ```json
 {
   "download": {
     "status": "processing"
-  }
+  },
+  "requestId": "018a80c4-292a-7486-a223-6dcbc636c44c"
 }
-````
+```
 
 <ResponseExample>
 ```javascript Metriport SDK
@@ -55,9 +57,10 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
 const status = await api.startDocumentQuery(
-  "2.16.840.1.113883.3.666.5.2004.4.2005",
-  "2.16.840.1.113883.3.666.123",
+"2.16.840.1.113883.3.666.5.2004.4.2005",
+"2.16.840.1.113883.3.666.123",
 );
 
-````
+```
 </ResponseExample>
+```
