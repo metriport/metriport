@@ -95,7 +95,6 @@ router.post(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
     const requestId = uuidv7();
-    console.log("Request ID in route", requestId);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
