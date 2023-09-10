@@ -551,7 +551,6 @@ export async function downloadDocsAndUpsertFHIR({
             },
           };
 
-          console.log("FILE IS NEW", file.isNew);
           if (file.isNew) {
             try {
               await convertCDAToFHIR({
