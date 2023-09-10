@@ -43,7 +43,6 @@ export async function queryDocumentsAcrossHIEs({
   override?: boolean;
   requestId: string;
 }): Promise<DocumentQueryProgress> {
-  console.log("Request Id in queryDocumentsAcross", requestId);
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
