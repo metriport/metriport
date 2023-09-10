@@ -137,6 +137,7 @@ export async function queryAndProcessDocuments({
     capture.error(err, {
       extra: {
         context: `cw.queryDocuments`,
+        requestId,
         ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
       },
     });
@@ -397,7 +398,9 @@ export async function downloadDocsAndUpsertFHIR({
   ignoreDocRefOnFHIRServer?: boolean;
   requestId: string;
 }): Promise<DocumentReference[]> {
-  const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
+  const { log } = Util.out(
+    `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
+  );
   forceDownload && log(`override=true, NOT checking whether docs exist`);
 
   const cxId = patient.cxId;
@@ -537,6 +540,7 @@ export async function downloadDocsAndUpsertFHIR({
                 patientId: patient.id,
                 documentReference: doc,
                 isZeroLength,
+                requestId,
               },
             });
             errorReported = true;
@@ -595,6 +599,7 @@ export async function downloadDocsAndUpsertFHIR({
                 context: `cw.downloadDocsAndUpsertFHIR`,
                 patientId: patient.id,
                 document: doc,
+                requestId,
               },
             });
           }
@@ -612,7 +617,7 @@ export async function downloadDocsAndUpsertFHIR({
             });
           } catch (err) {
             capture.error(err, {
-              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient },
+              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId },
             });
           }
         }
