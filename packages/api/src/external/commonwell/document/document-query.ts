@@ -90,7 +90,6 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   requestId: string;
 }): Promise<number> {
-  console.log("Request ID in query and process docs", requestId);
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
 
   const { organization, facility } = await getPatientData(patient, facilityId);
@@ -552,6 +551,7 @@ export async function downloadDocsAndUpsertFHIR({
             },
           };
 
+          console.log("FILE IS NEW", file.isNew);
           if (file.isNew) {
             try {
               await convertCDAToFHIR({
