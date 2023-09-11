@@ -54,6 +54,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     facilityNPI: string;
   }) => {
     const { document, fileInfo, orgName, orgOid, facilityNPI } = req;
+    console.log(document);
     console.log(`Running with document: ${document.id}`);
 
     const { writeStream, promise } = uploadStream(

@@ -488,7 +488,7 @@ export async function downloadDocsAndUpsertFHIR({
                     FunctionName: Config.getDocumentDownloaderLambdaName() ?? "",
                     InvocationType: "RequestResponse",
                     Payload: JSON.stringify({
-                      doc,
+                      document: doc,
                       fileInfo,
                       orgName: organization.data.name,
                       orgOid: organization.oid,
