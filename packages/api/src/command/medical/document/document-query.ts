@@ -53,8 +53,11 @@ export async function queryDocumentsAcrossHIEs({
     patient.data.documentQueryProgress?.convert?.status === "processing"
   ) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
+    console.log("docQueryProgress.requestId", patient.data.documentQueryProgress.requestId);
     return createQueryResponse("processing", patient, patient.data.documentQueryProgress.requestId);
   }
+
+  console.log("Patient details", JSON.stringify(patient, null, 2));
 
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return createQueryResponse("failed");
@@ -65,6 +68,7 @@ export async function queryDocumentsAcrossHIEs({
   const updatedPatient = await updateDocQuery({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "processing" },
+    requestId,
     reset: true,
   });
 
@@ -93,11 +97,16 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
+  requestId: string;
 };
 
 type UpdateDocQueryParams =
   | (SetDocQueryProgress & { convertResult?: never })
-  | (UpdateResult & { downloadProgress?: never; convertProgress?: never; reset?: never });
+  | (UpdateResult & {
+      downloadProgress?: never;
+      convertProgress?: never;
+      reset?: never;
+    });
 
 /**
  * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
