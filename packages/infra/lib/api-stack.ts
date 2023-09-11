@@ -903,12 +903,6 @@ export class APIStack extends Stack {
       alarmAction,
     } = ownProps;
 
-    const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
-      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      code: lambda.Code.fromAsset("../lambdas/layers/chromium"),
-      description: "Adds chromium to the lambda",
-    });
-
     const documentDownloaderLambda = createLambda({
       stack: this,
       name: "DocumentDownloader",
@@ -923,7 +917,7 @@ export class APIStack extends Stack {
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [...lambdaLayers, chromiumLayer],
+      layers: lambdaLayers,
       memory: 512,
       timeout: Duration.minutes(5),
       vpc,
