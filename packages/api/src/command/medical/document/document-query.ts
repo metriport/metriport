@@ -57,7 +57,7 @@ export async function queryDocumentsAcrossHIEs({
     return createQueryResponse("processing", patient, patient.data.documentQueryProgress.requestId);
   }
 
-  console.log("Patient details", JSON.stringify(patient, null, 2));
+  console.log("Patient details", JSON.stringify(patient));
 
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return createQueryResponse("failed");
@@ -97,7 +97,6 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
-  requestId?: string;
 };
 
 type UpdateDocQueryParams =
@@ -106,6 +105,7 @@ type UpdateDocQueryParams =
       downloadProgress?: never;
       convertProgress?: never;
       reset?: never;
+      requestId?: never;
     });
 
 /**
