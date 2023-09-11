@@ -7,7 +7,6 @@ import {
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import BadRequestError from "../errors/bad-request";
 import { OrganizationModel } from "../models/medical/organization";
-import { uuidv7 } from "../shared/uuid-v7";
 import userRoutes from "./devices/internal-user";
 import docsRoutes from "./medical/internal-docs";
 import patientRoutes from "./medical/internal-patient";
@@ -77,7 +76,6 @@ router.post(
     const allCustomers = getFrom("query").optional("allCustomers", req) === "true";
     const createIfNotExists = getFrom("query").optional("createIfNotExists", req) === "true";
     const triggerDocQuery = getFrom("query").optional("triggerDocQuery", req) === "true";
-    const requestId = uuidv7();
 
     if (cxId && allCustomers) {
       throw new BadRequestError("Either cxId or allCustomers must be provided, not both");
@@ -103,11 +101,10 @@ router.post(
         cxId: org.cxId,
         createIfNotExists,
         triggerDocQuery,
-        requestId,
       });
       result[org.cxId] = orgRes;
     }
-    return res.json({ result, requestId });
+    return res.json({ result });
   })
 );
 
