@@ -25,6 +25,7 @@ import { isMetriportContent } from "../../../external/fhir/shared/extensions/met
 import { getAllPages } from "../../../external/fhir/shared/paginated";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
+import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
@@ -196,8 +197,10 @@ async function processDocuments({
       forceDownload: override,
     });
   } catch (error) {
-    log(`Error processing docs: ${error}`);
-    capture.error(error, { extra: { context: `processDocsOfPatient`, error } });
+    log(`Error processing docs: ${errorToString(error)}`);
+    capture.error(error, {
+      extra: { context: `processDocsOfPatient`, error, patientId: patient.id },
+    });
   } finally {
     await appendDocQueryProgress({
       patient: { id: patientId, cxId },
