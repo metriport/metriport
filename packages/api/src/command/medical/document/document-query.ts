@@ -104,7 +104,7 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
-  requestId: string;
+  requestId?: string | undefined | null;
 };
 
 type UpdateDocQueryParams =
@@ -119,6 +119,7 @@ type UpdateDocQueryParams =
  * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
  */
 export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Patient> {
+  console.log("Params", JSON.stringify(params));
   if (params.convertResult) {
     return updateConversionProgress(params);
   }
