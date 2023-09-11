@@ -72,6 +72,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const uploadResult = await promise;
 
+    console.log("INITIAL DOWNLOAD", uploadResult);
+
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
 
     const downloadedDocument = await downloadDocumentFromS3({ fileName: uploadResult.Key });
