@@ -72,14 +72,16 @@ export async function queryDocumentsAcrossHIEs({
     emptyFunction
   );
 
-  return createQueryResponse("processing", updatedPatient);
+  return createQueryResponse("processing", updatedPatient, requestId);
 }
 
 export const createQueryResponse = (
   status: DocumentQueryStatus,
-  patient?: Patient
+  patient?: Patient,
+  requestId?: string
 ): DocumentQueryProgress => {
   return {
+    requestId,
     download: {
       status,
       ...patient?.data.documentQueryProgress?.download,
