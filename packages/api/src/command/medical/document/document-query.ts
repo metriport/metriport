@@ -45,8 +45,6 @@ export async function queryDocumentsAcrossHIEs({
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  console.log("PATIENT RETRIEVED", JSON.stringify(patient));
-  console.log("AND ESP PAT DATA", JSON.stringify(patient.data));
 
   const reqId = patient.data.documentQueryProgress?.requestId;
   const requestId = reqId ?? uuidv7();
@@ -76,7 +74,7 @@ export async function queryDocumentsAcrossHIEs({
     reset: true,
   });
 
-  console.log("PATIENT UPD", updatedPatient);
+  console.log("PATIENT UPD", JSON.stringify(updatedPatient));
 
   getDocumentsFromCW({
     patient,
@@ -151,18 +149,12 @@ export const updateConversionProgress = async ({
       requestId,
     });
 
-    console.log("DocQueryProgress UPD", requestId, documentQueryProgress);
-
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
         documentQueryProgress,
       },
-      // dataValues: {
-      //   ...existingPatient.data,
-      //   documentQueryProgress,
-      // },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
