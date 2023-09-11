@@ -9,11 +9,9 @@ import {
 import { chunk, partition } from "lodash";
 import {
   getDocToFileFunction,
-  getFileInfoFromS3,
   getS3Info,
   getUrl,
   S3Info,
-  uploadStream,
 } from "../../../command/medical/document/document-query-storage-info";
 import {
   MAPIWebhookStatus,
