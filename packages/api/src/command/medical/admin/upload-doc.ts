@@ -64,6 +64,12 @@ export async function createAndUploadDocReference({
       {
         resourceType: "Practitioner",
         id: practitionerRef,
+        name: [
+          {
+            family: `Last ${practitionerId}`,
+            given: [`First ${practitionerId}`],
+          },
+        ],
       },
     ],
     masterIdentifier: {
