@@ -22,12 +22,16 @@ export type ConvertResult = (typeof convertResult)[number];
 export const calculateConversionProgress = ({
   patient,
   convertResult,
+  requestId,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
+  requestId?: string | null | undefined;
 } & {
   patient: Pick<Patient, "data" | "id">;
+  requestId?: string | null | undefined;
 }): DocumentQueryProgress => {
+  console.log("Made it to append doc query", requestId);
   const docQueryProgress = patient.data.documentQueryProgress ?? {};
 
   const totalToConvert = docQueryProgress?.convert?.total ?? 0;
@@ -46,6 +50,8 @@ export const calculateConversionProgress = ({
     successful,
     errors,
   };
+
+  docQueryProgress.requestId = requestId ?? undefined;
 
   return docQueryProgress;
 };

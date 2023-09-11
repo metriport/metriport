@@ -61,14 +61,13 @@ export async function queryDocumentsAcrossHIEs({
     return createQueryResponse("processing", patient, patient.data.documentQueryProgress.requestId);
   }
 
-  console.log("Patient details", JSON.stringify(patient, null, 2));
-
   const externalData = patient.data.externalData?.COMMONWELL;
   if (!externalData) return createQueryResponse("failed");
 
   const cwData = externalData as PatientDataCommonwell;
   if (!cwData.patientId) return createQueryResponse("failed");
 
+  console.log("Patient details", JSON.stringify(patient));
   const updatedPatient = await updateDocQuery({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "processing" },
@@ -129,6 +128,7 @@ export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Pati
 export const updateConversionProgress = async ({
   patient,
   convertResult,
+  requestId,
 }: UpdateResult): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -145,6 +145,7 @@ export const updateConversionProgress = async ({
     const documentQueryProgress = calculateConversionProgress({
       patient: existingPatient,
       convertResult,
+      requestId,
     });
 
     const updatedPatient = {
