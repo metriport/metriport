@@ -42,19 +42,25 @@ export async function queryDocumentsAcrossHIEs({
   facilityId: string;
   override?: boolean;
 }): Promise<DocumentQueryProgress> {
-  const requestId = uuidv7();
-  const { log } = Util.out(
-    `queryDocumentsAcrossHIEs - requestId ${requestId}, M patient ${patientId}`
-  );
+  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
+  console.log("PATIENT RETRIEVED", JSON.stringify(patient));
+  console.log("AND ESP PAT DATA", JSON.stringify(patient.data));
+
+  const reqId = patient.data.documentQueryProgress?.requestId;
+  const requestId = reqId ?? uuidv7();
+  console.log("reqId", reqId, "requestId", requestId);
   if (
     patient.data.documentQueryProgress?.download?.status === "processing" ||
     patient.data.documentQueryProgress?.convert?.status === "processing"
   ) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
-    console.log("docQueryProgress.requestId", patient.data.documentQueryProgress.requestId);
-    return createQueryResponse("processing", patient, patient.data.documentQueryProgress.requestId);
+    console.log(
+      "ALREADY PROCESSING. docQueryProgress.requestId",
+      patient.data.documentQueryProgress.requestId
+    );
+    return createQueryResponse("processing", patient);
   }
 
   const externalData = patient.data.externalData?.COMMONWELL;
@@ -63,7 +69,6 @@ export async function queryDocumentsAcrossHIEs({
   const cwData = externalData as PatientDataCommonwell;
   if (!cwData.patientId) return createQueryResponse("failed");
 
-  console.log("Patient details", JSON.stringify(patient));
   const updatedPatient = await updateDocQuery({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "processing" },
@@ -71,30 +76,25 @@ export async function queryDocumentsAcrossHIEs({
     reset: true,
   });
 
-  console.log("UPD PAT", JSON.stringify(updatedPatient));
+  console.log("PATIENT UPD", updatedPatient);
 
-  getDocumentsFromCW({ patient, facilityId, forceDownload: override, requestId }).catch(
-    emptyFunction
-  );
+  getDocumentsFromCW({
+    patient,
+    facilityId,
+    forceDownload: override,
+    requestId,
+  }).catch(emptyFunction);
 
-  const queryResp = createQueryResponse("processing", updatedPatient, requestId);
+  const queryResp = createQueryResponse("processing", updatedPatient);
   console.log("Query Resp", JSON.stringify(queryResp));
   return queryResp;
 }
 
 export const createQueryResponse = (
   status: DocumentQueryStatus,
-  patient?: Patient,
-  requestId?: string
+  patient?: Patient
 ): DocumentQueryProgress => {
-  console.log("Create query Patient", JSON.stringify(patient));
-  console.log("Create query Patient data", JSON.stringify(patient?.data));
-  console.log(
-    "Create query Patient data docquery",
-    JSON.stringify(patient?.data.documentQueryProgress)
-  );
   return {
-    requestId,
     download: {
       status,
       ...patient?.data.documentQueryProgress?.download,
@@ -151,12 +151,18 @@ export const updateConversionProgress = async ({
       requestId,
     });
 
+    console.log("DocQueryProgress UPD", requestId, documentQueryProgress);
+
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
         documentQueryProgress,
       },
+      // dataValues: {
+      //   ...existingPatient.data,
+      //   documentQueryProgress,
+      // },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
