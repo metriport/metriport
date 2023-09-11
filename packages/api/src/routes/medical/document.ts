@@ -10,7 +10,6 @@ import { getDocuments } from "../../external/fhir/document/get-documents";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { stringToBoolean } from "../../shared/types";
-import { uuidv7 } from "../../shared/uuid-v7";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
@@ -70,11 +69,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
     const patient = await getPatientOrFail({ cxId, id: patientId });
-    // const requestId = uuidv7();
-    const docQueryProgress = patient.data.documentQueryProgress;
-    return res.status(OK).json({
-      ...docQueryProgress,
-    });
+    return res.status(OK).json(patient.data.documentQueryProgress);
   })
 );
 
@@ -95,17 +90,15 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFromQueryOrFail("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
-    const requestId = uuidv7();
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
       override,
-      requestId,
     });
 
-    return res.status(OK).json({ requestId, ...docQueryProgress });
+    return res.status(OK).json(docQueryProgress);
   })
 );
 
