@@ -465,7 +465,7 @@ export async function downloadDocsAndUpsertFHIR({
     convertibleDocCount,
     requestId
   );
-  console.log("afterInitPatientDocQuery", patientWithInitDocQuery);
+  console.log("afterInitPatientDocQuery", JSON.stringify(patientWithInitDocQuery));
 
   // split the list in chunks
   const chunks = chunk(docsToDownload, DOC_DOWNLOAD_CHUNK_SIZE);

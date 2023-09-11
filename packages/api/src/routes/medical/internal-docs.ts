@@ -99,12 +99,14 @@ router.post(
 
     // START TODO 785 remove this once we're confident with the flow
     const patientPre = await getPatientOrFail({ id: patientId, cxId });
-    log(`Status pre-update: ${JSON.stringify(patientPre.data.documentQueryProgress)}`);
+    const docQueryProgress = patientPre.data.documentQueryProgress;
+    log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
     // END TODO 785
 
     let expectedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       convertResult,
+      requestId: docQueryProgress?.requestId,
     });
 
     // START TODO 785 remove this once we're confident with the flow
@@ -113,21 +115,19 @@ router.post(
     let verifiedSuccess = false;
     while (curAttempt++ < maxAttempts) {
       const patientPost = await getPatientOrFail({ id: patientId, cxId });
-      log(
-        `[attempt ${curAttempt}] Status post-update: ${JSON.stringify(
-          patientPost.data.documentQueryProgress
-        )}`
-      );
+      const postDocQueryProgress = patientPost.data.documentQueryProgress;
+      log(`[attempt ${curAttempt}] Status post-update: ${JSON.stringify(postDocQueryProgress)}`);
       if (
         !isDocumentQueryProgressEqual(
           expectedPatient.data.documentQueryProgress,
-          patientPost.data.documentQueryProgress
+          postDocQueryProgress
         )
       ) {
         log(`[attempt ${curAttempt}] Status post-update not expected... trying to update again`);
         expectedPatient = await updateDocQuery({
           patient: { id: patientId, cxId },
           convertResult,
+          requestId: postDocQueryProgress?.requestId,
         });
       } else {
         log(`[attempt ${curAttempt}] Status post-update is as expected!`);
@@ -171,15 +171,17 @@ router.post(
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
     }
     const patient = await getPatientOrFail({ cxId, id: patientId });
+    const patientDocQueryProgress = patient.data.documentQueryProgress;
     console.log(
       `Updating patient ${patientId}'s docQueryProgress ` +
-        `from ${JSON.stringify(patient.data.documentQueryProgress)} ` +
+        `from ${JSON.stringify(patientDocQueryProgress)} ` +
         `to ${JSON.stringify(docQueryProgress)}`
     );
     const updatedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       downloadProgress,
       convertProgress,
+      requestId: patientDocQueryProgress?.requestId,
     });
 
     return res.json(updatedPatient.data.documentQueryProgress);
