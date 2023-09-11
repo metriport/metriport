@@ -42,10 +42,7 @@ export async function queryDocumentsAcrossHIEs({
   facilityId: string;
   override?: boolean;
 }): Promise<DocumentQueryProgress> {
-  const requestId = uuidv7();
-  const { log } = Util.out(
-    `queryDocumentsAcrossHIEs - requestId ${requestId}, M patient ${patientId}`
-  );
+  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const docQueryProgress = patient.data.documentQueryProgress;
@@ -56,8 +53,11 @@ export async function queryDocumentsAcrossHIEs({
     docQueryProgress?.convert?.status === "processing"
   ) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
-    console.log("docQueryProgress.requestId", patient.data.documentQueryProgress.requestId);
-    return createQueryResponse("processing", patient, patient.data.documentQueryProgress.requestId);
+    console.log(
+      "ALREADY PROCESSING. docQueryProgress.requestId",
+      patient.data.documentQueryProgress.requestId
+    );
+    return createQueryResponse("processing", patient);
   }
 
   const externalData = patient.data.externalData?.COMMONWELL;
@@ -66,7 +66,6 @@ export async function queryDocumentsAcrossHIEs({
   const cwData = externalData as PatientDataCommonwell;
   if (!cwData.patientId) return createQueryResponse("failed");
 
-  console.log("Patient details", JSON.stringify(patient));
   const updatedPatient = await updateDocQuery({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "processing" },
@@ -81,6 +80,10 @@ export async function queryDocumentsAcrossHIEs({
     requestId,
   }).catch(emptyFunction);
 
+  getDocumentsFromCW({ patient, facilityId, forceDownload: override, requestId }).catch(
+    emptyFunction
+  );
+
   const queryResp = createQueryResponse("processing", updatedPatient, requestId);
   console.log("Query Resp", JSON.stringify(queryResp));
   return queryResp;
@@ -88,17 +91,9 @@ export async function queryDocumentsAcrossHIEs({
 
 export const createQueryResponse = (
   status: DocumentQueryStatus,
-  patient?: Patient,
-  requestId?: string
+  patient?: Patient
 ): DocumentQueryProgress => {
-  console.log("Create query Patient", JSON.stringify(patient));
-  console.log("Create query Patient data", JSON.stringify(patient?.data));
-  console.log(
-    "Create query Patient data docquery",
-    JSON.stringify(patient?.data.documentQueryProgress)
-  );
   return {
-    requestId,
     download: {
       status,
       ...patient?.data.documentQueryProgress?.download,
@@ -155,12 +150,18 @@ export const updateConversionProgress = async ({
       requestId,
     });
 
+    console.log("DocQueryProgress UPD", requestId, documentQueryProgress);
+
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
         documentQueryProgress,
       },
+      // dataValues: {
+      //   ...existingPatient.data,
+      //   documentQueryProgress,
+      // },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
