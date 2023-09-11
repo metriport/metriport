@@ -36,14 +36,13 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   override,
-  requestId,
 }: {
   cxId: string;
   patientId: string;
   facilityId: string;
   override?: boolean;
-  requestId: string;
 }): Promise<DocumentQueryProgress> {
+  const requestId = uuidv7();
   const { log } = Util.out(
     `queryDocumentsAcrossHIEs - requestId ${requestId}, M patient ${patientId}`
   );
@@ -82,7 +81,9 @@ export async function queryDocumentsAcrossHIEs({
     requestId,
   }).catch(emptyFunction);
 
-  return createQueryResponse("processing", updatedPatient, requestId);
+  const queryResp = createQueryResponse("processing", updatedPatient, requestId);
+  console.log("Query Resp", JSON.stringify(queryResp));
+  return queryResp;
 }
 
 export const createQueryResponse = (
@@ -90,6 +91,12 @@ export const createQueryResponse = (
   patient?: Patient,
   requestId?: string
 ): DocumentQueryProgress => {
+  console.log("Create query Patient", JSON.stringify(patient));
+  console.log("Create query Patient data", JSON.stringify(patient?.data));
+  console.log(
+    "Create query Patient data docquery",
+    JSON.stringify(patient?.data.documentQueryProgress)
+  );
   return {
     requestId,
     download: {
