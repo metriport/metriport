@@ -20,12 +20,30 @@ on:
         required: true
         type: string
     secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
       TEST_API_KEY:
         required: true
       DOCKERHUB_USERNAME:
         required: true
       DOCKERHUB_TOKEN:
         required: true
+      TEST_ACC_ID:
+        required: false
+      CW_CERTIFICATE:
+        required: false
+      CW_PRIVATE_KEY:
+        required: false
+      CW_MEMBER_CERTIFICATE:
+        required: false
+      CW_MEMBER_PRIVATE_KEY:
+        required: false
+      CW_MEMBER_OID:
+        required: false
+      CW_MEMBER_NAME:
+        required: false
 
 jobs:
   test:
@@ -62,11 +80,24 @@ jobs:
         run: npm run build:cloud
         working-directory: "./"
 
+      - name: Setup AWS CLI
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+        working-directory: "./"
+
       - name: Run Tests
         run: npm run test:e2e
         working-directory: "./"
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
+          TEST_ACC_ID: ${{ secrets.TEST_ACC_ID }}
+          CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE }}
+          CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY }}
+          CW_MEMBER_CERTIFICATE: ${{ secrets.CW_MEMBER_CERTIFICATE }}
+          CW_MEMBER_PRIVATE_KEY: ${{ secrets.CW_MEMBER_PRIVATE_KEY }}
+          CW_MEMBER_OID: ${{ secrets.CW_MEMBER_OID }}
+          CW_MEMBER_NAME: ${{ secrets.CW_MEMBER_NAME }}
           API_URL: ${{ inputs.api_url }}
           WIDGET_URL: ${{ inputs.widget_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}

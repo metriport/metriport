@@ -1,4 +1,4 @@
-import { MedplumClient, QueryTypes, ReadablePromise } from "@medplum/core";
+import { MedplumClient, QueryTypes, ReadablePromise, ResourceArray } from "@medplum/core";
 import { Bundle, BundleLink, ExtractResource, ResourceType } from "@medplum/fhirtypes";
 import { Config } from "../../../shared/config";
 import { FhirAdminClient, FhirClient } from "./api";
@@ -47,7 +47,7 @@ export class HapiFhirClient extends MedplumClient implements FhirClient {
   override async *searchResourcePages<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes
-  ): AsyncGenerator<ExtractResource<K>[]> {
+  ): AsyncGenerator<ResourceArray<ExtractResource<K>>> {
     if (!HapiFhirClient.fhirServerUrl) return;
     let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
     let isNext = false;
@@ -62,7 +62,10 @@ export class HapiFhirClient extends MedplumClient implements FhirClient {
         break;
       }
 
-      yield bundle?.entry?.map(e => e.resource as ExtractResource<K>) ?? [];
+      const bundleResources = bundle?.entry?.map(e => e.resource as ExtractResource<K>) ?? [];
+
+      yield Object.assign(bundleResources, { bundle });
+
       const nextUrl = nextLink?.url ? new URL(nextLink?.url) : undefined;
       if (nextUrl) {
         // modify url to point to internal FHIR URL

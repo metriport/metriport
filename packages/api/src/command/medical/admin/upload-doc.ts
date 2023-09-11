@@ -1,10 +1,11 @@
-import dayjs from "dayjs";
 import { DocumentReference } from "@medplum/fhirtypes";
+import dayjs from "dayjs";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { createDocReferenceContent } from "../../../external/fhir/document";
+import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
+import { Config } from "../../../shared/config";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { getPatientOrFail } from "../patient/get-patient";
-import { Config } from "../../../shared/config";
-import { createMetriportDocReferenceContent } from "../../../external/fhir/document";
 
 const apiUrl = Config.getApiUrl();
 const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
@@ -37,12 +38,13 @@ export async function createAndUploadDocReference({
 
   const now = dayjs();
 
-  const metriportContent = createMetriportDocReferenceContent({
+  const metriportContent = createDocReferenceContent({
     contentType: file.mimetype,
     size: file.size,
     creation: now.format(),
     fileName: file.originalname,
     location: `${docContributionUrl}?fileName=${file.originalname}`,
+    extension: [metriportDataSourceExtension],
   });
 
   // WHEN OPENING THIS FOR CX'S NEED TO UPDATE THE CONTENT

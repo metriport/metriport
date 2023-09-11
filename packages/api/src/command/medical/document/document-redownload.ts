@@ -3,6 +3,7 @@ import {
   DocumentReference,
   DocumentReferenceContent,
   Identifier,
+  Reference,
   Resource,
 } from "@medplum/fhirtypes";
 import {
@@ -11,7 +12,7 @@ import {
   DocumentContent,
   DocumentIdentifier,
 } from "@metriport/commonwell-sdk";
-import { difference, differenceBy, groupBy } from "lodash";
+import { difference, groupBy } from "lodash";
 import { DeepRequired } from "ts-essentials";
 import {
   downloadDocsAndUpsertFHIR,
@@ -21,6 +22,7 @@ import { hasCommonwellContent, isCommonwellContent } from "../../../external/com
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { downloadedFromHIEs } from "../../../external/fhir/shared";
 import { isMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
+import { getAllPages } from "../../../external/fhir/shared/paginated";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
@@ -51,9 +53,11 @@ export const reprocessDocuments = async ({
 
   // Get documents from FHIR
   const fhir = makeFhirApi(cxId);
-  const documentsFromFHIR = await fhir.searchResources("DocumentReference", {
-    _id: documentIds.join(","),
-  });
+  const documentsFromFHIR = await getAllPages(() =>
+    fhir.searchResourcePages("DocumentReference", {
+      _id: documentIds.join(","),
+    })
+  );
   // Only use re-download docs we got from CommonWell
   const documentsFromHIEs = documentsFromFHIR.filter(downloadedFromHIEs);
   // We can't re-download existing docs if we don't have CW's url for the Binary/attachment
@@ -64,28 +68,40 @@ export const reprocessDocuments = async ({
   const documents = documentIds.length
     ? documentsFound.filter(d => d.id && documentIds.includes(d.id))
     : documentsFound;
-  log(`Found ${documents.length} documents`);
-
-  // Filter out those with enough data
-  const documentsWithPatientId = documents.filter(d =>
-    d.contained?.some(c => c.resourceType === "Patient")
+  log(
+    `Got ${documentsFromFHIR.length} documentsFromFHIR, ` +
+      `${documentsFromHIEs.length} documentsFromHIEs, ` +
+      `${documentsFound.length} documentsFound, ` +
+      `${documents.length} to process`
   );
-  const docsNotEnoughData = differenceBy(documents, documentsWithPatientId, "id");
-  if (docsNotEnoughData.length > 0) {
-    log(`...of which, ${docsNotEnoughData.length} don't have enough data and are being skipped`);
-  } else {
-    log(`...and all have enough data! :goodnews:`);
-  }
-  if (documentsWithPatientId.length === 0) {
+
+  if (documents.length === 0) {
     log(`No documents to process, exiting...`);
     return;
   }
 
   // Re-download the documents, update them to S3, and re-convert them to FHIR if CCDA
-  await downloadDocsAndUpsertFHIRWithDocRefs({ cxId, documents: documentsWithPatientId, options });
+  await downloadDocsAndUpsertFHIRWithDocRefs({ cxId, documents, options });
 
   log(`Done.`);
 };
+
+const MISSING_ID = "missing-id";
+
+const getIdFromSubjectId = (subject: Reference | undefined): string | undefined => subject?.id;
+
+function getIdFromSubjectRef(subject: Reference | undefined): string | undefined {
+  if (subject?.reference) {
+    const reference = subject.reference;
+    if (reference.includes("/")) return subject.reference.split("/")[1];
+    if (reference.includes("#")) return subject.reference.split("#")[1];
+  }
+  return undefined;
+}
+
+function getPatientId(doc: DocumentReference): string | undefined {
+  return getIdFromSubjectId(doc.subject) ?? getIdFromSubjectRef(doc.subject);
+}
 
 async function downloadDocsAndUpsertFHIRWithDocRefs({
   cxId,
@@ -97,21 +113,27 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
   options: Options[];
 }): Promise<void> {
   // Group docs by Patient
-  const docsByPatientId = groupBy(
-    documents,
-    d =>
-      d.contained
-        ?.filter(c => c.resourceType === "Patient")
-        .map(c => c.id)
-        .flatMap(id => id ?? []) ?? []
-  );
+  const docsByPatientId = groupBy(documents, d => getPatientId(d) ?? MISSING_ID);
+
   for (const [patientId, docs] of Object.entries(docsByPatientId)) {
+    if (patientId === MISSING_ID) {
+      const docIDs = docs.map(d => d.id);
+      const msg = "DocumentReferences with missing patient ID";
+      console.log(`${msg} (${docIDs.length}): ${docIDs.join(", ")}`);
+      capture.message(msg, { extra: { docIDs }, level: "warning" });
+      continue;
+    }
     const patient = await getPatientOrFail({ id: patientId, cxId });
 
     const facilityId = patient.facilityIds[0];
     if (!facilityId) throw new Error(`Patient ${patientId} is missing facilityId`);
 
     if (isReQuery(options)) {
+      await appendDocQueryProgress({
+        patient: { id: patient.id, cxId: patient.cxId },
+        downloadProgress: { status: "processing" },
+        reset: true,
+      });
       await queryAndProcessDocuments({
         patient,
         facilityId,

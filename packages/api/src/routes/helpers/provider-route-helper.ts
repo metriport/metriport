@@ -5,6 +5,7 @@ import { getConnectedUserOrFail } from "../../command/connected-user/get-connect
 import { ConsumerHealthDataType, DAPIParams } from "../../providers/provider";
 import { Constants, ProviderOptions } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
+import { getRawParams } from "../../shared/raw-params";
 import { getTimezoneIdFrom } from "../schemas/timezone-id";
 import { getUserIdFrom } from "../schemas/user-id";
 import { getCxIdOrFail, getDateOrFail } from "../util";
@@ -21,6 +22,9 @@ export async function getProviderDataForType<T>(
   const params: DAPIParams = {
     timezoneId: getTimezoneIdFrom("query", req).optional(),
   };
+
+  const rawParams = getRawParams(req);
+
   const connectedUser = await getConnectedUserOrFail({ id: userId, cxId });
   if (!connectedUser.providerMap) return [];
 
@@ -36,7 +40,8 @@ export async function getProviderDataForType<T>(
           Constants.PROVIDER_MAP[providerName][`get${type}Data`](
             connectedUser,
             date,
-            params
+            params,
+            rawParams
           ) as Promise<T>
         ).catch(error => {
           console.error(String(error));
