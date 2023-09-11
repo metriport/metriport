@@ -53,10 +53,6 @@ export async function queryDocumentsAcrossHIEs({
     docQueryProgress?.convert?.status === "processing"
   ) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
-    console.log(
-      "ALREADY PROCESSING. docQueryProgress.requestId",
-      patient.data.documentQueryProgress.requestId
-    );
     return createQueryResponse("processing", patient);
   }
 
