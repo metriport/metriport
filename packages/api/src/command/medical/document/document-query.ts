@@ -45,19 +45,14 @@ export async function queryDocumentsAcrossHIEs({
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
+  const docQueryProgress = patient.data.documentQueryProgress;
+  const requestId = getOrGenerateRequestId(docQueryProgress);
 
-  const reqId = patient.data.documentQueryProgress?.requestId;
-  const requestId = reqId ?? uuidv7();
-  console.log("reqId", reqId, "requestId", requestId);
   if (
-    patient.data.documentQueryProgress?.download?.status === "processing" ||
-    patient.data.documentQueryProgress?.convert?.status === "processing"
+    docQueryProgress?.download?.status === "processing" ||
+    docQueryProgress?.convert?.status === "processing"
   ) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
-    console.log(
-      "ALREADY PROCESSING. docQueryProgress.requestId",
-      patient.data.documentQueryProgress.requestId
-    );
     return createQueryResponse("processing", patient);
   }
 
@@ -189,3 +184,34 @@ export const updateConversionProgress = async ({
     return updatedPatient;
   });
 };
+
+/**
+ * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.
+ *
+ * @param docQueryProgress Progress of the previous query
+ * @returns uuidv7 string ID for the request
+ */
+function getOrGenerateRequestId(docQueryProgress: DocumentQueryProgress | undefined): string {
+  if (!docQueryProgress) {
+    console.log("SCENARIO 1");
+    return uuidv7();
+  }
+
+  const finishedDownload = docQueryProgress.download?.status === "completed";
+  const finishedConversion = docQueryProgress.convert?.status ?? undefined;
+  console.log("DL", finishedDownload, "CV", finishedConversion);
+
+  if (
+    (!finishedConversion && finishedDownload) ||
+    (finishedConversion === "completed" && finishedDownload)
+  ) {
+    console.log("SCENARIO 2");
+    return uuidv7();
+  } else if (docQueryProgress.requestId) {
+    console.log("SCENARIO 3");
+    return docQueryProgress.requestId;
+  }
+
+  console.log("SCENARIO 4");
+  return uuidv7();
+}
