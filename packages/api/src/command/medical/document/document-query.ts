@@ -72,6 +72,8 @@ export async function queryDocumentsAcrossHIEs({
     reset: true,
   });
 
+  console.log("UPD PAT", JSON.stringify(updatedPatient));
+
   getDocumentsFromCW({ patient, facilityId, forceDownload: override, requestId }).catch(
     emptyFunction
   );
@@ -97,6 +99,7 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
+  requestId?: string | undefined | null;
 };
 
 type UpdateDocQueryParams =
@@ -105,13 +108,13 @@ type UpdateDocQueryParams =
       downloadProgress?: never;
       convertProgress?: never;
       reset?: never;
-      requestId?: never;
     });
 
 /**
  * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
  */
 export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Patient> {
+  console.log("Params", JSON.stringify(params));
   if (params.convertResult) {
     return updateConversionProgress(params);
   }
