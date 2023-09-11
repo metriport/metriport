@@ -363,7 +363,7 @@ export class APIStack extends Stack {
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
-    medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+    medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
