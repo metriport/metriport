@@ -150,18 +150,12 @@ export const updateConversionProgress = async ({
       requestId,
     });
 
-    console.log("DocQueryProgress UPD", requestId, documentQueryProgress);
-
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
         documentQueryProgress,
       },
-      // dataValues: {
-      //   ...existingPatient.data,
-      //   documentQueryProgress,
-      // },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
