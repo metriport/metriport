@@ -73,9 +73,8 @@ router.get(
     const requestId = uuidv7();
     const docQueryProgress = patient.data.documentQueryProgress;
     return res.status(OK).json({
-      download: docQueryProgress?.download,
-      convert: docQueryProgress?.convert,
       requestId,
+      ...docQueryProgress,
     });
   })
 );
@@ -107,7 +106,7 @@ router.post(
       requestId,
     });
 
-    return res.status(OK).json({ download: docQueryProgress.download, requestId });
+    return res.status(OK).json({ requestId, ...docQueryProgress });
   })
 );
 
