@@ -97,7 +97,7 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
-  requestId: string;
+  requestId?: string;
 };
 
 type UpdateDocQueryParams =
