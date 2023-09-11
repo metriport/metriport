@@ -33,6 +33,7 @@ export async function appendDocQueryProgress({
   convertProgress,
   convertibleDownloadErrors,
   reset,
+  requestId,
 }: SetDocQueryProgress): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
@@ -67,6 +68,8 @@ export async function appendDocQueryProgress({
     } else if (convertProgress === null) {
       documentQueryProgress.convert = undefined;
     }
+
+    documentQueryProgress.requestId = requestId ?? undefined;
 
     const convert = documentQueryProgress.convert;
     if (convert && convertibleDownloadErrors != null && convertibleDownloadErrors > 0) {
