@@ -5,6 +5,7 @@ import {
   APIMode,
   PurposeOfUse,
 } from "@metriport/commonwell-sdk";
+import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import * as stream from "stream";
 import { PassThrough } from "stream";
@@ -19,8 +20,8 @@ capture.init();
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const cwOrgCertificate = getEnvOrFail("CW_ORG_CERTIFICATE");
-const cwOrgKey = getEnvOrFail("CW_ORG_PRIVATE_KEY");
+const cwOrgCertificateSecret = getEnvOrFail("CW_ORG_CERTIFICATE");
+const cwOrgPrivateKeySecret = getEnvOrFail("CW_ORG_PRIVATE_KEY");
 const envType = getEnvOrFail("ENV_TYPE");
 
 const apiMode = envType === "production" ? APIMode.production : APIMode.integration;
@@ -54,8 +55,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     facilityNPI: string;
   }) => {
     const { document, fileInfo, orgName, orgOid, facilityNPI } = req;
-    console.log(document);
-    console.log(`Running with document: ${document.id}`);
+
+    const cwOrgCertificate: string = (await getSecret(cwOrgCertificateSecret)) as string;
+    if (!cwOrgCertificate) {
+      throw new Error(`Config error - CW_ORG_CERTIFICATE doesn't exist`);
+    }
+
+    const cwOrgPrivateKey: string = (await getSecret(cwOrgPrivateKeySecret)) as string;
+    if (!cwOrgPrivateKey) {
+      throw new Error(`Config error - CW_ORG_CERTIFICATE doesn't exist`);
+    }
 
     const { writeStream, promise } = uploadStream(
       fileInfo.fileName,
@@ -64,6 +73,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     );
 
     await downloadDocumentFromCW({
+      orgCertificate: cwOrgCertificate,
+      orgPrivateKey: cwOrgPrivateKey,
       orgName,
       orgOid,
       facilityNPI,
@@ -157,24 +168,33 @@ function uploadStream(s3FileName: string, s3FileLocation: string, contentType?: 
   };
 }
 
-export function makeCommonWellAPI(orgName: string, orgOID: string): CommonWellAPI {
+export function makeCommonWellAPI(
+  cwOrgCertificate: string,
+  cwOrgKey: string,
+  orgName: string,
+  orgOID: string
+): CommonWellAPI {
   return new CommonWell(cwOrgCertificate, cwOrgKey, orgName, orgOID, apiMode);
 }
 
 async function downloadDocumentFromCW({
+  orgCertificate,
+  orgPrivateKey,
   orgName,
   orgOid,
   facilityNPI,
   location,
   stream,
 }: {
+  orgCertificate: string;
+  orgPrivateKey: string;
   orgName: string;
   orgOid: string;
   facilityNPI: string;
   location: string;
   stream: stream.Writable;
 }): Promise<void> {
-  const commonWell = makeCommonWellAPI(orgName, oid(orgOid));
+  const commonWell = makeCommonWellAPI(orgCertificate, orgPrivateKey, orgName, oid(orgOid));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
   try {

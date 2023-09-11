@@ -906,7 +906,7 @@ export class APIStack extends Stack {
     const documentDownloaderLambda = createLambda({
       stack: this,
       name: "DocumentDownloader",
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_18_X,
       entry: "document-downloader",
       envVars: {
         ENV_TYPE: envType,
