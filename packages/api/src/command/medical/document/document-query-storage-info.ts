@@ -1,5 +1,4 @@
 import { Document } from "@metriport/commonwell-sdk";
-import { PassThrough } from "stream";
 import { makeS3Client } from "../../../external/aws/s3";
 import {
   DocumentWithMetriportId,
