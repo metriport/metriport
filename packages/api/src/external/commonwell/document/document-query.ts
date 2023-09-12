@@ -483,27 +483,12 @@ export async function downloadDocsAndUpsertFHIR({
                 );
                 const facilityNPI = facility.data["npi"] as string; // TODO #414 move
 
-                const lambdaResult = await lambdaClient
-                  .invoke({
-                    FunctionName: Config.getDocumentDownloaderLambdaName() ?? "",
-                    InvocationType: "RequestResponse",
-                    Payload: JSON.stringify({
-                      document: doc,
-                      fileInfo,
-                      orgName: organization.data.name,
-                      orgOid: organization.oid,
-                      facilityNPI,
-                    }),
-                  })
-                  .promise();
-
-                if (lambdaResult.StatusCode !== 200) throw new Error("Lambda invocation failed");
-
-                if (lambdaResult.Payload === undefined) throw new Error("Payload is undefined");
-
-                const newFile = JSON.parse(lambdaResult.Payload.toString());
-
-                console.log("NEW FILES", newFile);
+                const newFile = triggerDownloadDocument({
+                  doc,
+                  fileInfo,
+                  organization,
+                  facilityNPI,
+                });
 
                 return newFile;
               };
@@ -547,8 +532,6 @@ export async function downloadDocsAndUpsertFHIR({
             throw error;
           }
 
-          const docRefs: DocumentReference[] = [];
-
           const docWithFile: CWDocumentWithMetriportData = {
             ...doc,
             metriport: {
@@ -590,9 +573,7 @@ export async function downloadDocsAndUpsertFHIR({
 
           completedCount++;
 
-          docRefs.push(FHIRDocRef);
-
-          return docRefs;
+          return FHIRDocRef;
         } catch (error) {
           errorCount++;
           if (isConvertibleDoc) errorCountConvertible++;
@@ -679,6 +660,40 @@ export async function downloadDocsAndUpsertFHIR({
   }
 
   return docsNewLocation;
+}
+
+async function triggerDownloadDocument({
+  doc,
+  fileInfo,
+  organization,
+  facilityNPI,
+}: {
+  doc: DocumentWithMetriportId;
+  fileInfo: S3Info;
+  organization: Organization;
+  facilityNPI: string;
+}) {
+  const lambdaResult = await lambdaClient
+    .invoke({
+      FunctionName: Config.getDocumentDownloaderLambdaName() ?? "",
+      InvocationType: "RequestResponse",
+      Payload: JSON.stringify({
+        document: doc,
+        fileInfo,
+        orgName: organization.data.name,
+        orgOid: organization.oid,
+        facilityNPI,
+      }),
+    })
+    .promise();
+
+  if (lambdaResult.StatusCode !== 200) throw new Error("Lambda invocation failed");
+
+  if (lambdaResult.Payload === undefined) throw new Error("Payload is undefined");
+
+  const newFile = JSON.parse(lambdaResult.Payload.toString());
+
+  return newFile;
 }
 
 async function sleepBetweenChunks(): Promise<void> {

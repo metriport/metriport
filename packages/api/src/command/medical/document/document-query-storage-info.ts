@@ -89,21 +89,6 @@ export async function getS3Info(
   return successful;
 }
 
-export function uploadStream(s3FileName: string, s3FileLocation: string, contentType?: string) {
-  const pass = new PassThrough();
-  return {
-    writeStream: pass,
-    promise: s3Client
-      .upload({
-        Bucket: s3FileLocation,
-        Key: s3FileName,
-        Body: pass,
-        ContentType: contentType ? contentType : "text/xml",
-      })
-      .promise(),
-  };
-}
-
 export async function getFileInfoFromS3(
   key: string,
   bucket: string
