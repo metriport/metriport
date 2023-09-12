@@ -106,7 +106,6 @@ router.post(
     let expectedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       convertResult,
-      requestId: docQueryProgress?.requestId,
     });
 
     // START TODO 785 remove this once we're confident with the flow
@@ -127,7 +126,6 @@ router.post(
         expectedPatient = await updateDocQuery({
           patient: { id: patientId, cxId },
           convertResult,
-          requestId: postDocQueryProgress?.requestId,
         });
       } else {
         log(`[attempt ${curAttempt}] Status post-update is as expected!`);
