@@ -15,6 +15,7 @@ export type CWDocumentWithMetriportData = DocumentWithMetriportId & {
     fileName: string;
     location: string;
     fileSize: number | undefined;
+    fileContentType: string | undefined;
   };
 };
 

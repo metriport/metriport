@@ -90,13 +90,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const downloadedDocument = await downloadDocumentFromS3({ fileName: uploadResult.Key });
 
-    const { size } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
+    const { size, contentType } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
 
     const originalXml = {
       bucket: uploadResult.Bucket,
       key: uploadResult.Key,
       location: uploadResult.Location,
       size,
+      contentType,
       isNew: true,
       isOriginal: true,
     };
@@ -139,6 +140,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
           key: b64Upload.Key,
           location: b64Upload.Location,
           size: b64FileInfo.size,
+          contentType: b64FileInfo.contentType,
           isNew: true,
         };
       } else {
@@ -264,7 +266,10 @@ const downloadDocumentFromS3 = async ({
 export async function getFileInfoFromS3(
   key: string,
   bucket: string
-): Promise<{ exists: true; size: number } | { exists: false; size?: never }> {
+): Promise<
+  | { exists: true; size: number; contentType: string }
+  | { exists: false; size?: never; contentType?: never }
+> {
   try {
     const head = await s3client
       .headObject({
@@ -272,7 +277,7 @@ export async function getFileInfoFromS3(
         Key: key,
       })
       .promise();
-    return { exists: true, size: head.ContentLength ?? 0 };
+    return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
   } catch (err) {
     return { exists: false };
   }

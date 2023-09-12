@@ -20,6 +20,7 @@ export type S3Info = {
   fileSize: number | undefined;
   fileName: string;
   fileLocation: string;
+  fileContentType: string | undefined;
 };
 
 type SimpleFile = {
@@ -53,14 +54,16 @@ export async function getS3Info(
       .map(async (filePromise: Promise<SimpleFile>): Promise<S3Info> => {
         const file = await filePromise;
         try {
-          const { exists: fileExists, size: fileSize } = await getFileInfoFromS3(
-            file.fileName,
-            file.fileLocation
-          );
+          const {
+            exists: fileExists,
+            size: fileSize,
+            contentType: fileContentType,
+          } = await getFileInfoFromS3(file.fileName, file.fileLocation);
           return {
             docId: file.docId,
             fileExists,
             fileSize,
+            fileContentType,
             fileName: file.fileName,
             fileLocation: file.fileLocation,
           };
@@ -104,7 +107,10 @@ export function uploadStream(s3FileName: string, s3FileLocation: string, content
 export async function getFileInfoFromS3(
   key: string,
   bucket: string
-): Promise<{ exists: true; size: number } | { exists: false; size?: never }> {
+): Promise<
+  | { exists: true; size: number; contentType: string }
+  | { exists: false; size?: never; contentType?: never }
+> {
   try {
     const head = await s3Client
       .headObject({
@@ -112,7 +118,7 @@ export async function getFileInfoFromS3(
         Key: key,
       })
       .promise();
-    return { exists: true, size: head.ContentLength ?? 0 };
+    return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
   } catch (err) {
     return { exists: false };
   }

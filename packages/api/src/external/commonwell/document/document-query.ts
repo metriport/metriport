@@ -345,6 +345,7 @@ function convertToNonExistingS3Info(
       ...simpleFile,
       fileExists: false,
       fileSize: undefined,
+      fileContentType: undefined,
     };
   };
 }
@@ -464,6 +465,7 @@ export async function downloadDocsAndUpsertFHIR({
             bucket: string;
             key: string;
             location: string;
+            contentType: string | undefined;
             size: number | undefined;
             isNew: boolean;
           }>;
@@ -515,6 +517,7 @@ export async function downloadDocsAndUpsertFHIR({
                   bucket: fileInfo.fileLocation,
                   key: fileInfo.fileName,
                   location: s3Location,
+                  contentType: fileInfo.fileContentType,
                   size: fileInfo.fileSize,
                   isNew: false,
                 };
@@ -552,6 +555,7 @@ export async function downloadDocsAndUpsertFHIR({
               fileName: file.key,
               location: file.location,
               fileSize: file.size,
+              fileContentType: file.contentType,
             },
           };
 

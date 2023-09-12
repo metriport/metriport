@@ -80,7 +80,7 @@ export const toFHIR = (
 ): DocumentReference => {
   const content = doc.content;
   const baseAttachment = {
-    contentType: content.mimeType,
+    contentType: doc.metriport.fileContentType,
     fileName: doc.metriport.fileName, // no filename on CW doc refs
     size: doc.metriport.fileSize != null ? doc.metriport.fileSize : content.size, // can't trust the file size from CW, use what we actually saved
     creation: content.indexed,
