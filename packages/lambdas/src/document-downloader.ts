@@ -98,6 +98,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       location: uploadResult.Location,
       size,
       isNew: true,
+      isOriginal: true,
     };
 
     if (downloadedDocument.data && downloadedDocument.contentType === "application/xml") {
@@ -106,8 +107,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       if (containsB64) {
         const { newXML, b64 } = removeAndReturnB64FromXML(downloadedDocument.data);
 
-        // for testing
-        const newFileName = fileInfo.fileName.concat("-inside.pdf");
+        const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
 
         const b64Buff = Buffer.from(b64, "base64");
 
@@ -134,21 +134,18 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
         originalXml.size = newXmlFileInfo.size;
 
-        return [
-          originalXml,
-          {
-            bucket: b64Upload.Bucket,
-            key: b64Upload.Key,
-            location: b64Upload.Location,
-            size: b64FileInfo.size,
-            isNew: true,
-          },
-        ];
+        return {
+          bucket: b64Upload.Bucket,
+          key: b64Upload.Key,
+          location: b64Upload.Location,
+          size: b64FileInfo.size,
+          isNew: true,
+        };
       } else {
-        return [originalXml];
+        return originalXml;
       }
     } else {
-      return [originalXml];
+      return originalXml;
     }
   }
 );

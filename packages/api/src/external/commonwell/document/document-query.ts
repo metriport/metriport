@@ -460,16 +460,14 @@ export async function downloadDocsAndUpsertFHIR({
             throw new MetriportError("Missing file info", undefined, { docId: doc.id });
           }
 
-          let uploadToS3: () => Promise<
-            Array<{
-              bucket: string;
-              key: string;
-              location: string;
-              size: number | undefined;
-              isNew: boolean;
-            }>
-          >;
-          let files: Awaited<ReturnType<typeof uploadToS3>>;
+          let uploadToS3: () => Promise<{
+            bucket: string;
+            key: string;
+            location: string;
+            size: number | undefined;
+            isNew: boolean;
+          }>;
+          let file: Awaited<ReturnType<typeof uploadToS3>>;
 
           try {
             // add some randomness to avoid overloading the servers
@@ -501,11 +499,11 @@ export async function downloadDocsAndUpsertFHIR({
 
                 if (lambdaResult.Payload === undefined) throw new Error("Payload is undefined");
 
-                const newFiles = JSON.parse(lambdaResult.Payload.toString());
+                const newFile = JSON.parse(lambdaResult.Payload.toString());
 
-                console.log("NEW FILES", newFiles);
+                console.log("NEW FILES", newFile);
 
-                return newFiles;
+                return newFile;
               };
             } else {
               // Get info from existing S3 file
@@ -513,18 +511,16 @@ export async function downloadDocsAndUpsertFHIR({
                 const signedUrl = getUrl(fileInfo.fileName, fileInfo.fileLocation);
                 const url = new URL(signedUrl);
                 const s3Location = url.origin + url.pathname;
-                return [
-                  {
-                    bucket: fileInfo.fileLocation,
-                    key: fileInfo.fileName,
-                    location: s3Location,
-                    size: fileInfo.fileSize,
-                    isNew: false,
-                  },
-                ];
+                return {
+                  bucket: fileInfo.fileLocation,
+                  key: fileInfo.fileName,
+                  location: s3Location,
+                  size: fileInfo.fileSize,
+                  isNew: false,
+                };
               };
             }
-            files = await uploadToS3();
+            file = await uploadToS3();
           } catch (error) {
             const isZeroLength = doc.content.size === 0;
             if (isZeroLength && error instanceof NotFoundError) {
@@ -550,49 +546,47 @@ export async function downloadDocsAndUpsertFHIR({
 
           const docRefs: DocumentReference[] = [];
 
-          for (const file of files) {
-            const docWithFile: CWDocumentWithMetriportData = {
-              ...doc,
-              metriport: {
-                fileName: file.key,
-                location: file.location,
-                fileSize: file.size,
-              },
-            };
+          const docWithFile: CWDocumentWithMetriportData = {
+            ...doc,
+            metriport: {
+              fileName: file.key,
+              location: file.location,
+              fileSize: file.size,
+            },
+          };
 
-            if (file.isNew) {
-              try {
-                await convertCDAToFHIR({
-                  patient,
-                  document: doc,
-                  s3FileName: file.key,
-                  s3BucketName: file.bucket,
-                });
-              } catch (err) {
-                // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function
-                log(
-                  `Error triggering conversion of doc ${doc.id}, just increasing errorCountConvertible - ${err}`
-                );
-                errorCountConvertible++;
-              }
-            } else {
-              // count this doc as an error so we can decrement the total to be converted in the query status
+          if (file.isNew) {
+            try {
+              await convertCDAToFHIR({
+                patient,
+                document: doc,
+                s3FileName: file.key,
+                s3BucketName: file.bucket,
+              });
+            } catch (err) {
+              // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function
+              log(
+                `Error triggering conversion of doc ${doc.id}, just increasing errorCountConvertible - ${err}`
+              );
               errorCountConvertible++;
             }
-
-            const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
-            try {
-              await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
-            } catch (error) {
-              reportFHIRError({ patientId: patient.id, doc, error, log });
-              errorReported = true;
-              throw error;
-            }
-
-            completedCount++;
-
-            docRefs.push(FHIRDocRef);
+          } else {
+            // count this doc as an error so we can decrement the total to be converted in the query status
+            errorCountConvertible++;
           }
+
+          const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
+          try {
+            await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
+          } catch (error) {
+            reportFHIRError({ patientId: patient.id, doc, error, log });
+            errorReported = true;
+            throw error;
+          }
+
+          completedCount++;
+
+          docRefs.push(FHIRDocRef);
 
           return docRefs;
         } catch (error) {
