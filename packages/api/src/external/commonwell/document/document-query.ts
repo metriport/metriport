@@ -624,9 +624,9 @@ export async function downloadDocsAndUpsertFHIR({
       })
     );
 
-    const docGroupLocations: DocumentReference[] = s3Refs
-      .flat()
-      .flatMap(ref => (ref.status === "fulfilled" && ref.value ? ref.value : []));
+    const docGroupLocations: DocumentReference[] = s3Refs.flatMap(ref =>
+      ref.status === "fulfilled" && ref.value ? ref.value : []
+    );
     docsNewLocation.push(...docGroupLocations);
 
     // take some time to avoid throttling other servers
