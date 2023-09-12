@@ -69,8 +69,6 @@ export async function queryDocumentsAcrossHIEs({
     reset: true,
   });
 
-  console.log("PATIENT UPD", JSON.stringify(updatedPatient));
-
   getDocumentsFromCW({
     patient,
     facilityId,
@@ -78,9 +76,7 @@ export async function queryDocumentsAcrossHIEs({
     requestId,
   }).catch(emptyFunction);
 
-  const queryResp = createQueryResponse("processing", updatedPatient);
-  console.log("Query Resp", JSON.stringify(queryResp));
-  return queryResp;
+  return createQueryResponse("processing", updatedPatient);
 }
 
 export const createQueryResponse = (
@@ -114,7 +110,6 @@ type UpdateDocQueryParams =
  * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
  */
 export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Patient> {
-  console.log("Params", JSON.stringify(params));
   if (params.convertResult) {
     return updateConversionProgress(params);
   }
@@ -192,26 +187,18 @@ export const updateConversionProgress = async ({
  * @returns uuidv7 string ID for the request
  */
 function getOrGenerateRequestId(docQueryProgress: DocumentQueryProgress | undefined): string {
-  if (!docQueryProgress) {
-    console.log("SCENARIO 1");
-    return uuidv7();
-  }
+  if (!docQueryProgress) return uuidv7();
 
   const finishedDownload = docQueryProgress.download?.status === "completed";
   const finishedConversion = docQueryProgress.convert?.status ?? undefined;
-  console.log("DL", finishedDownload, "CV", finishedConversion);
 
   if (
     (!finishedConversion && finishedDownload) ||
     (finishedConversion === "completed" && finishedDownload)
   ) {
-    console.log("SCENARIO 2");
     return uuidv7();
   } else if (docQueryProgress.requestId) {
-    console.log("SCENARIO 3");
     return docQueryProgress.requestId;
   }
-
-  console.log("SCENARIO 4");
   return uuidv7();
 }

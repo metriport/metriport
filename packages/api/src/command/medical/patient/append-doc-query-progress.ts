@@ -70,7 +70,6 @@ export async function appendDocQueryProgress({
     }
 
     documentQueryProgress.requestId = requestId ?? undefined;
-    console.log("docQueryProgresss request id added", documentQueryProgress.requestId);
 
     const convert = documentQueryProgress.convert;
     if (convert && convertibleDownloadErrors != null && convertibleDownloadErrors > 0) {
