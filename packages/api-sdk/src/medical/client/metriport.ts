@@ -5,13 +5,14 @@ import {
   BASE_ADDRESS,
   BASE_ADDRESS_SANDBOX,
   DEFAULT_AXIOS_TIMEOUT_MILLIS,
+  optionalDateToISOString,
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
-  documentListSchema,
   DocumentQuery,
   documentQuerySchema,
-  DocumentReference,
+  ListDocumentFilters,
+  ListDocumentResult,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -361,18 +362,34 @@ export class MetriportMedicalApi {
    * Returns document references for the given patient across HIEs.
    *
    * @param patientId Patient ID for which to retrieve document metadata.
-   * @param facilityId The facility providing the NPI to support this operation.
-   * @return The list of available document references.
+   * @param filters.dateFrom Optional start date that docs will be filtered by (inclusive).
+   *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
+   * @param filters.dateTo Optional end date that docs will be filtered by (inclusive).
+   *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
+   * @param filters.organization Optional name of the contained Organization to filter document
+   *    references by (partial match and case insentitive).
+   * @param filters.practitioner Optional name of the contained Practitioner to filter document
+   *    references by (partial match and case insentitive).
+   * @return The list of document references.
    */
-  async listDocuments(patientId: string, facilityId: string): Promise<DocumentReference[]> {
+  async listDocuments(
+    patientId: string,
+    { dateFrom, dateTo, organization, practitioner }: ListDocumentFilters = {}
+  ): Promise<ListDocumentResult> {
+    const parsedDateFrom = optionalDateToISOString(dateFrom);
+    const parsedDateTo = optionalDateToISOString(dateTo);
+
     const resp = await this.api.get(`${DOCUMENT_URL}`, {
       params: {
         patientId,
-        facilityId,
+        dateFrom: parsedDateFrom,
+        dateTo: parsedDateTo,
+        organization,
+        practitioner,
       },
     });
-    if (!resp.data) return [];
-    return documentListSchema.parse(resp.data).documents;
+    if (!resp.data) return { documents: [] };
+    return resp.data;
   }
 
   /**

@@ -34,8 +34,12 @@ export const secondsToISODateTime = (unixTime: number): string => {
 };
 
 export function parseISODate(date?: string): string | undefined {
-  if (date && !dayjs(date, ISO_DATE, true).isValid()) {
+  if (date && !isValidISODate(date)) {
     throw new BadRequestError(`Date must be in format ${ISO_DATE} - got ${date}`);
   }
   return date;
+}
+
+export function isValidISODate(date: string): boolean {
+  return dayjs(date, ISO_DATE, true).isValid();
 }

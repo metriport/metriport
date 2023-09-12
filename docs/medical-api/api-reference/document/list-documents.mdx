@@ -5,7 +5,7 @@ api: "GET /medical/v1/document"
 ---
 
 This endpoint returns the document references available at Metriport which are associated with the
-given Patient.
+given Patient and match the provided filters, if any.
 
 To start a new document
 query, see the [Start Document Query endpoint](/medical-api/api-reference/document/start-document-query).
@@ -16,51 +16,138 @@ query, see the [Start Document Query endpoint](/medical-api/api-reference/docume
   The ID of the Patient for which to list available Documents.
 </ParamField>
 
-<ParamField query="facilityId" type="string" required>
-  The ID of the Facility where the patient is receiving care.
-</ParamField>
-
 <ParamField query="dateFrom" type="string" optional>
-  The start date (inclusive) for which to filter returned document references - formatted
-  `YYYY-MM-DD` as per ISO 8601. If not provided, no start date filter will be applied.
+  The start date (inclusive) for which to filter document references - formatted `YYYY-MM-DD` as per
+  ISO 8601. If not provided, no start date filter will be applied.
 </ParamField>
 
 <ParamField query="dateTo" type="string" optional>
-  The end date (inclusive) for which to filter returned document references - formatted `YYYY-MM-DD`
-  as per ISO 8601. If not provided, no end date filter will be applied.
+  The end date (inclusive) for which to filter document references - formatted `YYYY-MM-DD` as per
+  ISO 8601. If not provided, no end date filter will be applied.
+</ParamField>
+
+<ParamField query="organization" type="string" optional>
+  The name of the contained Organization to filter document references. Partial match and case
+  insentitive. If not provided, no Organization filter will be applied.
+</ParamField>
+
+<ParamField query="practitioner" type="string" optional>
+  The name of the contained Practitioner to filter document references. Partial match and case
+  insentitive. If not provided, no Practitioner filter will be applied.
 </ParamField>
 
 ## Response
 
-An array of objects describing the Documents that can be retrieved for the Patient.
+An array of the [DocumentReference](/medical-api/fhir/resources/documentreference) available for the
+Patient matching the provided filters, if any.
 
 <ResponseField name="documents" type="DocumentReference[]" required>
-  <Expandable title="DocumentReference properties">
-    <Snippet file="document-reference-response.mdx" />
-  </Expandable>
+  See FHIR [DocumentReference](/medical-api/fhir/resources/documentreference).
 </ResponseField>
 
 ```json
 {
   "documents": [
     {
-      "id": "1.2.543.1.34.1.34.134",
-      "fileName": "CCDA_Diag.xml",
-      "location": "https://fhir.metriport.com/oauth/fhir/Binary/2.16.840.1.113883.3.777.666.5.700009.969696",
-      "description": "Patient Diagnoses",
+      "resourceType": "DocumentReference",
+      "id": "018a875a-3181-74e8-8aa4-40c59ed7e1b2",
+      "meta": {
+        "versionId": "1",
+        "lastUpdated": "2023-09-01T14:31:57.025+00:00",
+        "source": "#vK8lyyAta8eKkbPO"
+      },
+      "contained": [
+        {
+          "resourceType": "Organization",
+          "id": "org522",
+          "name": "Hospital 522"
+        },
+        {
+          "resourceType": "Practitioner",
+          "id": "auth925",
+          "name": [
+            {
+              "text": "John Snow",
+              "family": "Snow",
+              "given": ["John"]
+            }
+          ]
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+          "valueCoding": {
+            "system": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+            "code": "METRIPORT"
+          }
+        }
+      ],
+      "masterIdentifier": {
+        "system": "urn:ietf:rfc:3986",
+        "value": "018a875a-3181-74e8-8aa4-40c59ed7e1b2"
+      },
+      "identifier": [
+        {
+          "use": "official",
+          "system": "urn:ietf:rfc:3986",
+          "value": "018a875a-3181-74e8-8aa4-40c59ed7e1b2"
+        }
+      ],
       "status": "current",
-      "indexed": "2019-09-07T15:50:00.000Z",
-      "mimeType": "application/xml",
-      "size": "17344007",
       "type": {
         "coding": [
           {
-            "system": "http://snomed.info/sct",
-            "code": "62479008",
-            "display": "Diagnoses"
+            "system": "http://loinc.org/",
+            "code": "34133-9",
+            "display": "Summarization of episode note"
           }
-        ],
-        "text": "Diagnoses"
+        ]
+      },
+      "subject": {
+        "reference": "Patient/018a5164-c0ac-79e2-99cc-9cf951c26d94",
+        "type": "Patient"
+      },
+      "date": "2023-08-15T03:05:58.090Z",
+      "author": [
+        {
+          "reference": "#org522",
+          "type": "Organization"
+        }
+      ],
+      "description": "C-CDA R2.1 Patient Record",
+      "content": [
+        {
+          "extension": [
+            {
+              "url": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+              "valueCoding": {
+                "system": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+                "code": "METRIPORT"
+              }
+            }
+          ],
+          "attachment": {
+            "contentType": "application/pdf",
+            "url": "http://api.metriport.com/doc-contribution/commonwell/?fileName=965f9957-34ac-442b-9a17-fa09c76c16da/018a5164-c0ac-79e2-99cc-9cf951c26d94/965f9957-34ac-442b-9a17-fa09c76c16da_018a5164-c0ac-79e2-99cc-9cf951c26d94_018a875a-3181-74e8-8aa4-40c59ed7e1b2",
+            "size": 1080416,
+            "title": "965f9957-34ac-442b-9a17-fa09c76c16da/018a5164-c0ac-79e2-99cc-9cf951c26d94/965f9957-34ac-442b-9a17-fa09c76c16da_018a5164-c0ac-79e2-99cc-9cf951c26d94_018a875a-3181-74e8-8aa4-40c59ed7e1b2",
+            "creation": "2023-08-14T22:05:58-05:00"
+          },
+          "format": {
+            "code": "urn:ihe:pcc:xphr:2007"
+          }
+        }
+      ],
+      "context": {
+        "period": {
+          "start": "2023-08-15T02:05:58.090Z",
+          "end": "2023-08-15T03:05:58.090Z"
+        },
+        "sourcePatientInfo": {
+          "reference": "Patient/018a5164-c0ac-79e2-99cc-9cf951c26d94",
+          "type": "Patient"
+        }
       }
     }
   ]
@@ -72,11 +159,16 @@ An array of objects describing the Documents that can be retrieved for the Patie
 ```javascript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const documents = await metriportClient.listDocuments(
+const { documents } = await metriport.listDocuments(
   "2.16.840.1.113883.3.666.777",
-  "2.16.840.1.113883.3.666.5.2004.4.2005"
+  {
+    dateFrom: "2023-08-01",
+    dateTo: "2023-08-31",
+    organization: "<org-name>",
+    practitioner: "<practitioner-name>",
+  }
 );
 ```
 

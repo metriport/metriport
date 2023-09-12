@@ -1,4 +1,4 @@
-import { ResourceType } from "@medplum/fhirtypes";
+import { HumanName, ResourceType } from "@medplum/fhirtypes";
 import {
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
@@ -37,4 +37,16 @@ export function getPatientFilter({
 
 export function fullDateQueryForResource(fullDateQuery: string, resource: ResourceType): string {
   return resourceSupportsDateQuery(resource) ? fullDateQuery : "";
+}
+
+export function nameContains(value: string, { caseSensitive = false } = {}) {
+  return (name: HumanName | undefined) => {
+    if (!name) return false;
+    const valueToSearch = caseSensitive ? value : value.toLowerCase();
+    return (
+      name.family?.toLocaleLowerCase().includes(valueToSearch) ||
+      name.given?.find(given => given.toLocaleLowerCase().includes(valueToSearch)) ||
+      name.text?.toLocaleLowerCase().includes(valueToSearch)
+    );
+  };
 }
