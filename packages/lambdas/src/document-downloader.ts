@@ -84,8 +84,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const uploadResult = await promise;
 
-    console.log("INITIAL DOWNLOAD", uploadResult);
-
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
 
     const downloadedDocument = await downloadDocumentFromS3({ fileName: uploadResult.Key });
@@ -134,6 +132,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         const newXmlFileInfo = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
 
         originalXml.size = newXmlFileInfo.size;
+
+        const msg = `Multiple files created due to b64 in xml`;
+
+        capture.message(msg, {
+          extra: {
+            context: `documentDownloader.extractB64FromXML`,
+            b64FileName: b64Upload.Key,
+            xmlFileName: uploadResult.Key,
+          },
+        });
 
         return {
           bucket: b64Upload.Bucket,
