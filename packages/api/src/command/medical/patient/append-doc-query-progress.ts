@@ -6,17 +6,16 @@ import { getPatientOrFail } from "./get-patient";
 export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
   convertibleDownloadErrors?: number;
+  requestId?: string | undefined;
 } & (
   | {
       downloadProgress?: Progress | undefined | null;
       convertProgress?: Progress | undefined | null;
-      requestId?: string | undefined;
       reset?: false | undefined;
     }
   | {
       downloadProgress: Progress;
       convertProgress?: never;
-      requestId?: string | undefined;
       reset?: true;
     }
 );
@@ -69,7 +68,7 @@ export async function appendDocQueryProgress({
       documentQueryProgress.convert = undefined;
     }
 
-    documentQueryProgress.requestId = requestId ?? undefined;
+    documentQueryProgress.requestId = requestId;
 
     const convert = documentQueryProgress.convert;
     if (convert && convertibleDownloadErrors != null && convertibleDownloadErrors > 0) {

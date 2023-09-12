@@ -104,7 +104,7 @@ router.post(
       });
       result[org.cxId] = orgRes;
     }
-    return res.json({ result });
+    return res.json(result);
   })
 );
 

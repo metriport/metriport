@@ -95,7 +95,6 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
-  requestId?: string | undefined | null;
 };
 
 type UpdateDocQueryParams =
@@ -119,7 +118,6 @@ export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Pati
 export const updateConversionProgress = async ({
   patient,
   convertResult,
-  requestId,
 }: UpdateResult): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -136,7 +134,6 @@ export const updateConversionProgress = async ({
     const documentQueryProgress = calculateConversionProgress({
       patient: existingPatient,
       convertResult,
-      requestId,
     });
 
     const updatedPatient = {
@@ -189,13 +186,10 @@ export const updateConversionProgress = async ({
 function getOrGenerateRequestId(docQueryProgress: DocumentQueryProgress | undefined): string {
   if (!docQueryProgress) return uuidv7();
 
-  const finishedDownload = docQueryProgress.download?.status === "completed";
-  const finishedConversion = docQueryProgress.convert?.status ?? undefined;
+  const isDownloadFinished = docQueryProgress.download?.status === "completed";
+  const conversionStatus = docQueryProgress.convert?.status ?? undefined;
 
-  if (
-    (!finishedConversion && finishedDownload) ||
-    (finishedConversion === "completed" && finishedDownload)
-  ) {
+  if (isDownloadFinished && (!conversionStatus || conversionStatus === "completed")) {
     return uuidv7();
   } else if (docQueryProgress.requestId) {
     return docQueryProgress.requestId;
