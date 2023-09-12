@@ -133,6 +133,7 @@ export async function queryAndProcessDocuments({
     await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
+      requestId,
     });
     capture.error(err, {
       extra: {
@@ -405,8 +406,6 @@ export async function downloadDocsAndUpsertFHIR({
   );
   forceDownload && log(`override=true, NOT checking whether docs exist`);
 
-  console.log("PATIENT IN downloadDocsAndUpsertFHIR", JSON.stringify(patient));
-
   const cxId = patient.cxId;
   const fhirApi = makeFhirApi(patient.cxId);
   const docsNewLocation: DocumentReference[] = [];
@@ -458,14 +457,7 @@ export async function downloadDocsAndUpsertFHIR({
 
   const convertibleDocCount = docsToDownload.filter(isConvertible).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
-  console.log("Initiating patientDocQuery");
-  const patientWithInitDocQuery = await initPatientDocQuery(
-    patient,
-    docsToDownload.length,
-    convertibleDocCount,
-    requestId
-  );
-  console.log("afterInitPatientDocQuery", JSON.stringify(patientWithInitDocQuery));
+  await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
   // split the list in chunks
   const chunks = chunk(docsToDownload, DOC_DOWNLOAD_CHUNK_SIZE);
