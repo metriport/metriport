@@ -221,7 +221,7 @@ export class Config {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
   }
 
-  static getDocumentDownloaderLambdaName(): string | undefined {
-    return getEnvVar("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
+  static getDocumentDownloaderLambdaName(): string {
+    return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
 }

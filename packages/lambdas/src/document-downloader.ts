@@ -1,9 +1,11 @@
 import {
-  Document,
   CommonWell,
   CommonWellAPI,
   APIMode,
   PurposeOfUse,
+  CommonwellError,
+  RequestMetadata,
+  // organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
@@ -31,12 +33,11 @@ const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
 
-type DocumentWithOriginalIdAndContent = Document & {
-  originalId: string;
-  content: { location: string };
+type Document = {
+  id: string;
+  mimeType: string;
+  location: string;
 };
-
-export type ContentMimeType = Pick<Document["content"], "mimeType">;
 
 export type S3Info = {
   docId: string;
@@ -48,13 +49,13 @@ export type S3Info = {
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: {
-    document: DocumentWithOriginalIdAndContent;
+    document: Document;
     fileInfo: S3Info;
     orgName: string;
     orgOid: string;
-    facilityNPI: string;
+    npi: string;
   }) => {
-    const { document, fileInfo, orgName, orgOid, facilityNPI } = req;
+    const { document, fileInfo, orgName, orgOid, npi } = req;
 
     const cwOrgCertificate: string = (await getSecret(cwOrgCertificateSecret)) as string;
     if (!cwOrgCertificate) {
@@ -63,30 +64,31 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const cwOrgPrivateKey: string = (await getSecret(cwOrgPrivateKeySecret)) as string;
     if (!cwOrgPrivateKey) {
-      throw new Error(`Config error - CW_ORG_CERTIFICATE doesn't exist`);
+      throw new Error(`Config error - CW_ORG_PRIVATE_KEY doesn't exist`);
     }
 
-    const { writeStream, promise } = uploadStream(
-      fileInfo.fileName,
-      fileInfo.fileLocation,
-      document.content.mimeType
-    );
+    const pass = new PassThrough();
+
+    const downloadedDocument = await streamToString(pass);
 
     await downloadDocumentFromCW({
       orgCertificate: cwOrgCertificate,
       orgPrivateKey: cwOrgPrivateKey,
       orgName,
       orgOid,
-      facilityNPI,
-      location: document.content.location,
-      stream: writeStream,
+      npi,
+      location: document.location,
+      stream: pass,
     });
 
-    const uploadResult = await promise;
+    const uploadResult = await uploadDocumentToS3(
+      downloadedDocument,
+      fileInfo.fileName,
+      fileInfo.fileLocation,
+      document.mimeType
+    );
 
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
-
-    const downloadedDocument = await downloadDocumentFromS3({ fileName: uploadResult.Key });
 
     const { size, contentType } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
 
@@ -100,11 +102,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       isOriginal: true,
     };
 
-    if (downloadedDocument.data && downloadedDocument.contentType === "application/xml") {
-      const containsB64 = downloadedDocument.data.includes("nonXMLBody");
+    if (downloadedDocument && document.mimeType === "application/xml") {
+      const containsB64 = downloadedDocument.includes("nonXMLBody");
 
       if (containsB64) {
-        const { newXML, b64 } = removeAndReturnB64FromXML(downloadedDocument.data);
+        const { newXML, b64 } = removeAndReturnB64FromXML(downloadedDocument);
 
         const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
 
@@ -160,19 +162,21 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   }
 );
 
-function uploadStream(s3FileName: string, s3FileLocation: string, contentType?: string) {
-  const pass = new PassThrough();
-  return {
-    writeStream: pass,
-    promise: s3client
-      .upload({
-        Bucket: s3FileLocation,
-        Key: s3FileName,
-        Body: pass,
-        ContentType: contentType ? contentType : "text/xml",
-      })
-      .promise(),
-  };
+async function uploadDocumentToS3(
+  document: string,
+  s3FileName: string,
+  s3FileLocation: string,
+  contentType?: string
+) {
+  const uploadedResult = await s3client
+    .upload({
+      Bucket: s3FileLocation,
+      Key: s3FileName,
+      Body: document,
+      ContentType: contentType ? contentType : "text/xml",
+    })
+    .promise();
+  return uploadedResult;
 }
 
 export function makeCommonWellAPI(
@@ -189,7 +193,7 @@ async function downloadDocumentFromCW({
   orgPrivateKey,
   orgName,
   orgOid,
-  facilityNPI,
+  npi,
   location,
   stream,
 }: {
@@ -197,32 +201,39 @@ async function downloadDocumentFromCW({
   orgPrivateKey: string;
   orgName: string;
   orgOid: string;
-  facilityNPI: string;
+  npi: string;
   location: string;
   stream: stream.Writable;
 }): Promise<void> {
   const commonWell = makeCommonWellAPI(orgCertificate, orgPrivateKey, orgName, oid(orgOid));
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+  const queryMeta = organizationQueryMeta(orgName, { npi: npi });
 
   try {
     await commonWell.retrieveDocument(queryMeta, location, stream);
   } catch (err) {
+    const additionalInfo = {
+      cwReferenceHeader: commonWell.lastReferenceHeader,
+      documentLocation: location,
+    };
+
     capture.error(err, {
-      extra: { context: "documentDownloadLambdaDownloadDocumentFromCW", lambdaName, err },
+      extra: {
+        context: "documentDownloadLambdaDownloadDocumentFromCW",
+        lambdaName,
+        err,
+        additionalInfo,
+      },
     });
+
+    if (err instanceof CommonwellError && err.cause?.response?.status === 404) {
+      throw new Error("CW - Document not found", err);
+    }
+    throw new Error(`CW - Error downloading document`);
   }
 }
 
 function oid(id: string): string {
   return `${OID_PREFIX}${id}`;
-}
-
-export interface RequestMetadata {
-  role: string;
-  subjectId: string;
-  purposeOfUse: PurposeOfUse;
-  npi?: string;
-  payloadHash?: string;
 }
 
 export type OrgRequestMetadataCreate = Omit<
@@ -251,26 +262,6 @@ const baseQueryMeta = (orgName: string) => ({
   subjectId: `${orgName} System User`,
 });
 
-const downloadDocumentFromS3 = async ({
-  fileName,
-}: {
-  fileName: string;
-}): Promise<{ data: string | undefined; contentType: string | undefined }> => {
-  const file = await s3client
-    .getObject({
-      Bucket: bucketName,
-      Key: fileName,
-    })
-    .promise();
-
-  const data = file.Body?.toString("utf-8");
-
-  return {
-    data,
-    contentType: file.ContentType,
-  };
-};
-
 export async function getFileInfoFromS3(
   key: string,
   bucket: string
@@ -289,6 +280,16 @@ export async function getFileInfoFromS3(
   } catch (err) {
     return { exists: false };
   }
+}
+
+function streamToString(stream: stream.Readable): Promise<string> {
+  const chunks: Buffer[] = [];
+
+  return new Promise((resolve, reject) => {
+    stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
+    stream.on("error", err => reject(err));
+    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+  });
 }
 
 function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: string } {

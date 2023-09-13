@@ -92,7 +92,7 @@ export async function getFileInfoFromS3(
   key: string,
   bucket: string
 ): Promise<
-  | { exists: true; size: number; contentType: string }
+  | { exists: true; size: number; contentType: string | undefined }
   | { exists: false; size?: never; contentType?: never }
 > {
   try {
@@ -102,7 +102,11 @@ export async function getFileInfoFromS3(
         Key: key,
       })
       .promise();
-    return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
+    return {
+      exists: true,
+      size: head.ContentLength ?? 0,
+      contentType: head.ContentType ?? undefined,
+    };
   } catch (err) {
     return { exists: false };
   }

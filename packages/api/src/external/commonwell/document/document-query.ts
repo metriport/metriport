@@ -5,6 +5,7 @@ import {
   documentReferenceResourceType,
   OperationOutcome,
   operationOutcomeResourceType,
+  organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { chunk, partition } from "lodash";
 import {
@@ -42,7 +43,7 @@ import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 import { makeLambdaClient } from "../../../external/aws/lambda";
@@ -461,14 +462,7 @@ export async function downloadDocsAndUpsertFHIR({
             throw new MetriportError("Missing file info", undefined, { docId: doc.id });
           }
 
-          let uploadToS3: () => Promise<{
-            bucket: string;
-            key: string;
-            location: string;
-            contentType: string | undefined;
-            size: number | undefined;
-            isNew: boolean;
-          }>;
+          let uploadToS3: () => Promise<File>;
           let file: Awaited<ReturnType<typeof uploadToS3>>;
 
           try {
@@ -662,6 +656,15 @@ export async function downloadDocsAndUpsertFHIR({
   return docsNewLocation;
 }
 
+type File = {
+  bucket: string;
+  key: string;
+  location: string;
+  contentType: string | undefined;
+  size: number | undefined;
+  isNew: boolean;
+};
+
 async function triggerDownloadDocument({
   doc,
   fileInfo,
@@ -672,24 +675,32 @@ async function triggerDownloadDocument({
   fileInfo: S3Info;
   organization: Organization;
   facilityNPI: string;
-}) {
+}): Promise<File> {
+  const lambdaName = Config.getDocumentDownloaderLambdaName();
+  const payload = {
+    document: {
+      id: doc.id,
+      mimeType: doc.content.mimeType,
+      location: doc.content.location,
+    },
+    fileInfo,
+    orgName: organization.data.name,
+    orgOid: organization.oid,
+    npi: facilityNPI,
+  };
   const lambdaResult = await lambdaClient
     .invoke({
-      FunctionName: Config.getDocumentDownloaderLambdaName() ?? "",
+      FunctionName: lambdaName,
       InvocationType: "RequestResponse",
-      Payload: JSON.stringify({
-        document: doc,
-        fileInfo,
-        orgName: organization.data.name,
-        orgOid: organization.oid,
-        facilityNPI,
-      }),
+      Payload: JSON.stringify(payload),
     })
     .promise();
 
-  if (lambdaResult.StatusCode !== 200) throw new Error("Lambda invocation failed");
+  if (lambdaResult.StatusCode !== 200)
+    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName, docId: doc.id });
 
-  if (lambdaResult.Payload === undefined) throw new Error("Payload is undefined");
+  if (lambdaResult.Payload === undefined)
+    throw new MetriportError("Payload is undefined", undefined, { lambdaName, docId: doc.id });
 
   const newFile = JSON.parse(lambdaResult.Payload.toString());
 
