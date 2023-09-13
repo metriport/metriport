@@ -2,10 +2,8 @@ import {
   CommonWell,
   CommonWellAPI,
   APIMode,
-  PurposeOfUse,
   CommonwellError,
-  RequestMetadata,
-  // organizationQueryMeta,
+  organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
@@ -14,12 +12,14 @@ import { PassThrough } from "stream";
 import AWS from "aws-sdk";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
+import { S3Utils } from "./shared/s3";
 
 // Keep this as early on the file as possible
 capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
+const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const cwOrgCertificateSecret = getEnvOrFail("CW_ORG_CERTIFICATE");
@@ -32,6 +32,8 @@ export const OID_PREFIX = "urn:oid:";
 const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
+
+const s3Utils = new S3Utils(region);
 
 type Document = {
   id: string;
@@ -54,8 +56,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     orgName: string;
     orgOid: string;
     npi: string;
-  }) => {
-    const { document, fileInfo, orgName, orgOid, npi } = req;
+    cxId: string;
+  }): Promise<{
+    bucket: string;
+    key: string;
+    location: string;
+    contentType: string | undefined;
+    size: number | undefined;
+    isNew: boolean;
+  }> => {
+    const { document, fileInfo, orgName, orgOid, npi, cxId } = req;
 
     const cwOrgCertificate: string = (await getSecret(cwOrgCertificateSecret)) as string;
     if (!cwOrgCertificate) {
@@ -90,7 +100,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
 
-    const { size, contentType } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
+    const { size, contentType } = await s3Utils.getFileInfoFromS3(
+      uploadResult.Key,
+      uploadResult.Bucket
+    );
 
     const originalXml = {
       bucket: uploadResult.Bucket,
@@ -99,7 +112,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       size,
       contentType,
       isNew: true,
-      isOriginal: true,
     };
 
     if (downloadedDocument && document.mimeType === "application/xml") {
@@ -112,26 +124,29 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
         const b64Buff = Buffer.from(b64, "base64");
 
-        const b64Upload = await s3client
-          .upload({
-            Bucket: bucketName,
-            Key: newFileName,
-            Body: b64Buff,
-            ContentType: "application/pdf",
-          })
-          .promise();
+        const [b64Upload] = await Promise.all([
+          await s3client
+            .upload({
+              Bucket: bucketName,
+              Key: newFileName,
+              Body: b64Buff,
+              ContentType: "application/pdf",
+            })
+            .promise(),
+          await s3client
+            .putObject({
+              Bucket: bucketName,
+              Key: fileInfo.fileName,
+              Body: newXML,
+              ContentType: "application/xml",
+            })
+            .promise(),
+        ]);
 
-        await s3client
-          .putObject({
-            Bucket: bucketName,
-            Key: fileInfo.fileName,
-            Body: newXML,
-            ContentType: "application/xml",
-          })
-          .promise();
-
-        const b64FileInfo = await getFileInfoFromS3(b64Upload.Key, b64Upload.Bucket);
-        const newXmlFileInfo = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
+        const [b64FileInfo, newXmlFileInfo] = await Promise.all([
+          await s3Utils.getFileInfoFromS3(b64Upload.Key, b64Upload.Bucket),
+          await s3Utils.getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket),
+        ]);
 
         originalXml.size = newXmlFileInfo.size;
 
@@ -142,6 +157,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
             context: `documentDownloader.extractB64FromXML`,
             b64FileName: b64Upload.Key,
             xmlFileName: uploadResult.Key,
+            orgName,
+            cxId,
           },
         });
 
@@ -235,32 +252,6 @@ async function downloadDocumentFromCW({
 function oid(id: string): string {
   return `${OID_PREFIX}${id}`;
 }
-
-export type OrgRequestMetadataCreate = Omit<
-  RequestMetadata,
-  "npi" | "role" | "purposeOfUse" | "subjectId"
-> &
-  Required<Pick<RequestMetadata, "npi">> &
-  Partial<Pick<RequestMetadata, "role" | "purposeOfUse">>;
-
-export function organizationQueryMeta(
-  orgName: string,
-  meta: OrgRequestMetadataCreate
-): RequestMetadata {
-  const base = baseQueryMeta(orgName);
-  return {
-    subjectId: base.subjectId,
-    role: meta.role ?? base.role,
-    purposeOfUse: meta.purposeOfUse ?? base.purposeOfUse,
-    npi: meta.npi,
-  };
-}
-
-const baseQueryMeta = (orgName: string) => ({
-  purposeOfUse: PurposeOfUse.TREATMENT,
-  role: "ict",
-  subjectId: `${orgName} System User`,
-});
 
 export async function getFileInfoFromS3(
   key: string,
