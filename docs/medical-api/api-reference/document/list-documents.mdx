@@ -26,14 +26,8 @@ query, see the [Start Document Query endpoint](/medical-api/api-reference/docume
   ISO 8601. If not provided, no end date filter will be applied.
 </ParamField>
 
-<ParamField query="organization" type="string" optional>
-  The name of the contained Organization to filter document references. Partial match and case
-  insentitive. If not provided, no Organization filter will be applied.
-</ParamField>
-
-<ParamField query="practitioner" type="string" optional>
-  The name of the contained Practitioner to filter document references. Partial match and case
-  insentitive. If not provided, no Practitioner filter will be applied.
+<ParamField query="content" type="string" optional>
+  Value to search on the document reference (partial match and case insentitive, minimum 3 chars).
 </ParamField>
 
 ## Response
@@ -166,8 +160,7 @@ const { documents } = await metriport.listDocuments(
   {
     dateFrom: "2023-08-01",
     dateTo: "2023-08-31",
-    organization: "<org-name>",
-    practitioner: "<practitioner-name>",
+    content: "john",
   }
 );
 ```

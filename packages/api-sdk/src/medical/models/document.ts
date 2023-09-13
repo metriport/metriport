@@ -21,8 +21,7 @@ export type DocumentQuery = z.infer<typeof documentQuerySchema>;
 export type ListDocumentFilters = {
   dateFrom?: string | Date;
   dateTo?: string | Date;
-  organization?: string;
-  practitioner?: string;
+  content?: string;
 };
 
 export type ListDocumentResult = {

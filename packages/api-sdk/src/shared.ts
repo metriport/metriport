@@ -27,7 +27,8 @@ export const defaultNameString = defaultString.min(1);
 export function optionalDateToISOString(
   date: string | Date | undefined | null
 ): string | undefined {
-  return date && typeof date !== "string" ? dayjs(date).format(ISO_DATE) : date ?? undefined;
+  const preConversion = date && typeof date !== "string" ? dayjs(date).format(ISO_DATE) : date;
+  return preConversion ?? undefined;
 }
 
 export const getEnvVar = (varName: string): string | undefined => process.env[varName];

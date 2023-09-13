@@ -18,8 +18,7 @@ const router = Router();
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
   dateTo: optionalDateSchema,
-  organization: z.string().nullish(),
-  practitioner: z.string().nullish(),
+  content: z.string().min(3).nullish(),
 });
 
 /** ---------------------------------------------------------------------------
@@ -32,8 +31,8 @@ const getDocSchema = z.object({
  * @param req.query.dateTo Optional end date that docs will be filtered by (inclusive).
  * @param req.query.organization Optional name of the contained Organization to filter docs
  *    by (partial match and case insentitive).
- * @param req.query.practitioner Optional name of the contained Practitioner to filter docs
- *    by (partial match and case insentitive).
+ * @param req.query.content Optional value to search on the document reference
+ *    (partial match and case insentitive, minimum 3 chars).
  * @return The available documents, including query status and progress - as applicable.
  */
 router.get(
@@ -41,7 +40,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const { dateFrom, dateTo, organization, practitioner } = getDocSchema.parse(req.query);
+    const { dateFrom, dateTo, content } = getDocSchema.parse(req.query);
 
     // Confirm the CX can access this patient
     await getPatientOrFail({ cxId, id: patientId });
@@ -50,8 +49,7 @@ router.get(
       cxId,
       patientId,
       dateRange: { from: dateFrom ?? undefined, to: dateTo ?? undefined },
-      organizationName: organization ? organization : undefined,
-      practitionerName: practitioner ? practitioner : undefined,
+      contentFilter: content ?? undefined,
     });
 
     return res.status(OK).json({ documents });

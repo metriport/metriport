@@ -4,20 +4,17 @@ import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeFhirApi } from "../api/api-factory";
 import { isoDateRangeToFHIRDateQuery } from "../shared";
 import { isMetriportExtension } from "../shared/extensions/metriport";
-import { containedHasNames } from "./filter";
 
 export const getDocuments = async ({
   cxId,
   patientId,
   dateRange: { from, to } = {},
-  organizationName,
-  practitionerName,
+  contentFilter,
 }: {
   cxId: string;
   patientId: string;
   dateRange?: { from?: string; to?: string };
-  organizationName?: string;
-  practitionerName?: string;
+  contentFilter?: string;
 }): Promise<DocumentReference[] | undefined> => {
   const api = makeFhirApi(cxId);
   const docs: DocumentReference[] = [];
@@ -37,11 +34,11 @@ export const getDocuments = async ({
     capture.message(msg, { extra: { patientId, error }, level: "error" });
     throw error;
   }
-  const checkNames = containedHasNames({ organizationName, practitionerName });
-  const result =
-    organizationName || practitionerName
-      ? docs.filter(d => checkExtensions(d) && checkNames(d))
-      : docs.filter(d => checkExtensions(d));
+  const checkContent = (d: DocumentReference) =>
+    contentFilter ? JSON.stringify(d).toLocaleLowerCase().includes(contentFilter) : true;
+
+  const result = docs.filter(d => checkExtensions(d) && checkContent(d));
+
   return result;
 };
 

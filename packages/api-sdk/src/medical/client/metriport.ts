@@ -366,15 +366,13 @@ export class MetriportMedicalApi {
    *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
    * @param filters.dateTo Optional end date that docs will be filtered by (inclusive).
    *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
-   * @param filters.organization Optional name of the contained Organization to filter document
-   *    references by (partial match and case insentitive).
-   * @param filters.practitioner Optional name of the contained Practitioner to filter document
-   *    references by (partial match and case insentitive).
+   * @param filters.content Optional value to search on the document reference
+   *    (partial match and case insentitive, minimum 3 chars).
    * @return The list of document references.
    */
   async listDocuments(
     patientId: string,
-    { dateFrom, dateTo, organization, practitioner }: ListDocumentFilters = {}
+    { dateFrom, dateTo, content }: ListDocumentFilters = {}
   ): Promise<ListDocumentResult> {
     const parsedDateFrom = optionalDateToISOString(dateFrom);
     const parsedDateTo = optionalDateToISOString(dateTo);
@@ -384,8 +382,7 @@ export class MetriportMedicalApi {
         patientId,
         dateFrom: parsedDateFrom,
         dateTo: parsedDateTo,
-        organization,
-        practitioner,
+        content,
       },
     });
     if (!resp.data) return { documents: [] };

@@ -82,48 +82,36 @@ describe("listDocuments", () => {
     expect(documents.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("returns documents filtering by Org", async () => {
+  it("returns documents filtering by content", async () => {
     const filters = {
-      organization: "org",
+      content: "org",
     };
     const { documents } = await metriport.listDocuments(patientId, filters);
     expect(documents).toBeTruthy();
     expect(documents.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("does not return documents filtering by unknown Org", async () => {
+  it("does not return documents filtering by unknown content", async () => {
     const filters = {
-      organization: uuidv4(),
+      content: uuidv4(),
     };
     const { documents } = await metriport.listDocuments(patientId, filters);
     expect(documents).toBeTruthy();
     expect(documents.length).toEqual(0);
   });
 
-  it("returns documents filtering by Practitioner", async () => {
+  it("fails if content filter is less than 3 chars", async () => {
     const filters = {
-      practitioner: "john",
+      content: "jo",
     };
-    const { documents } = await metriport.listDocuments(patientId, filters);
-    expect(documents).toBeTruthy();
-    expect(documents.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("does not return documents filtering by unknown Practitioner", async () => {
-    const filters = {
-      practitioner: uuidv4(),
-    };
-    const { documents } = await metriport.listDocuments(patientId, filters);
-    expect(documents).toBeTruthy();
-    expect(documents.length).toEqual(0);
+    await expect(metriport.listDocuments(patientId, filters)).rejects.toThrow();
   });
 
   it("returns documents when all filters are combined", async () => {
     const filters = {
       dateFrom: dayjs().subtract(10, "years").format(ISO_DATE),
       dateTo: dayjs().add(1, "day").format(ISO_DATE),
-      organization: "org",
-      practitioner: "john",
+      content: "org",
     };
     const { documents } = await metriport.listDocuments(patientId, filters);
     expect(documents).toBeTruthy();
@@ -134,8 +122,7 @@ describe("listDocuments", () => {
     const filters = {
       dateFrom: dayjs().subtract(10, "years").format(ISO_DATE),
       dateTo: dayjs().add(1, "day").format(ISO_DATE),
-      organization: "org",
-      practitioner: "john",
+      content: "john",
     };
     const { documents } = await metriport.listDocuments(patientId, filters);
     expect(documents).toBeTruthy();
