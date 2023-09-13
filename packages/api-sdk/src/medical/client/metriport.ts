@@ -9,8 +9,10 @@ import {
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
+  documentListSchema,
   DocumentQuery,
   documentQuerySchema,
+  DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
 } from "../models/document";
@@ -387,6 +389,40 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) return { documents: [] };
     return resp.data;
+  }
+
+  /**
+   * @deprecated Use listDocuments() instead.
+   *
+   * Returns document references for the given patient across HIEs, in the DTO format.
+   *
+   * @param patientId Patient ID for which to retrieve document metadata.
+   * @param filters.dateFrom Optional start date that docs will be filtered by (inclusive).
+   *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
+   * @param filters.dateTo Optional end date that docs will be filtered by (inclusive).
+   *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
+   * @param filters.content Optional value to search on the document reference
+   *    (partial match and case insentitive, minimum 3 chars).
+   * @return The list of document references.
+   */
+  async listDocumentsAsDTO(
+    patientId: string,
+    { dateFrom, dateTo, content }: ListDocumentFilters = {}
+  ): Promise<DocumentReference[]> {
+    const parsedDateFrom = optionalDateToISOString(dateFrom);
+    const parsedDateTo = optionalDateToISOString(dateTo);
+
+    const resp = await this.api.get(`${DOCUMENT_URL}`, {
+      params: {
+        patientId,
+        dateFrom: parsedDateFrom,
+        dateTo: parsedDateTo,
+        content,
+        output: "dto",
+      },
+    });
+    if (!resp.data) return [];
+    return documentListSchema.parse(resp.data).documents;
   }
 
   /**

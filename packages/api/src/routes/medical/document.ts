@@ -9,6 +9,7 @@ import ForbiddenError from "../../errors/forbidden";
 import { getDocuments } from "../../external/fhir/document/get-documents";
 import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
+import { sanitize } from "../helpers/string";
 import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
@@ -53,7 +54,7 @@ router.get(
       cxId,
       patientId,
       dateRange: { from: dateFrom ?? undefined, to: dateTo ?? undefined },
-      contentFilter: content ?? undefined,
+      contentFilter: content ? sanitize(content) : undefined,
     });
 
     return res.status(OK).json({ documents: output === "dto" ? toDTO(documents) : documents });

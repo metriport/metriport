@@ -155,4 +155,18 @@ describe("listDocuments", () => {
     }).length;
     expect(docsWithValidExtensions).toEqual(documents.length);
   });
+
+  it("returns documents as DTO", async () => {
+    const documents = await metriport.listDocumentsAsDTO(patientId);
+    expect(documents).toBeTruthy();
+    expect(documents.length).toBeGreaterThanOrEqual(1);
+    const doc = documents[0];
+    expect(doc.id).toBeTruthy();
+    expect(doc.description).toBeTruthy();
+    expect(doc.fileName).toBeTruthy();
+    expect(doc.type).toBeTruthy();
+    expect(doc.status).toBeTruthy();
+    expect(doc.mimeType).toBeTruthy();
+    expect(doc.size).toBeTruthy();
+  });
 });
