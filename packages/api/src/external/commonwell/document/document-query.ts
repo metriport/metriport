@@ -1,6 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import {
-  CommonwellError,
   Document,
   documentReferenceResourceType,
   OperationOutcome,
@@ -118,8 +117,8 @@ export async function queryAndProcessDocuments({
       log(`Finished processing ${fhirDocRefs.length} documents.`);
       return fhirDocRefs.length;
     }
-  } catch (err) {
-    console.log(`Error: ${err}`);
+  } catch (error) {
+    console.log(`Error: ${errorToString(error)}`);
     processPatientDocumentRequest(
       organization.cxId,
       patient.id,
@@ -130,13 +129,17 @@ export async function queryAndProcessDocuments({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
     });
-    capture.error(err, {
+    capture.error(error, {
       extra: {
-        context: `cw.queryDocuments`,
-        ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
+        context: `cw.queryAndProcessDocuments`,
+        error,
+        patientId: patient.id,
+        facilityId,
+        forceDownload,
+        ignoreDocRefOnFHIRServer,
       },
     });
-    throw err;
+    throw error;
   }
 }
 
@@ -183,31 +186,19 @@ export async function internalGetDocuments({
 
   const docs: Document[] = [];
   const cwErrs: OperationOutcome[] = [];
-  try {
-    const queryStart = Date.now();
-    const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
-    reportDocQueryMetric(queryStart);
-    log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
+  const queryStart = Date.now();
+  const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
+  reportDocQueryMetric(queryStart);
+  log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
 
-    for (const item of queryResponse.entry) {
-      if (item.content?.resourceType === documentReferenceResourceType) {
-        docs.push(item as Document);
-      } else if (item.content?.resourceType === operationOutcomeResourceType) {
-        cwErrs.push(item as OperationOutcome);
-      } else {
-        log(`Unexpected resource type: ${item.content?.resourceType}`);
-      }
+  for (const item of queryResponse.entry) {
+    if (item.content?.resourceType === documentReferenceResourceType) {
+      docs.push(item as Document);
+    } else if (item.content?.resourceType === operationOutcomeResourceType) {
+      cwErrs.push(item as OperationOutcome);
+    } else {
+      log(`Unexpected resource type: ${item.content?.resourceType}`);
     }
-  } catch (err) {
-    log(`Error querying docs: ${errorToString(err)}`);
-    capture.error(err, {
-      extra: {
-        context: `cw.queryDocuments`,
-        cwReference: commonWell.lastReferenceHeader ?? "undefined",
-        ...(err instanceof CommonwellError ? err.additionalInfo : undefined),
-      },
-    });
-    throw err;
   }
 
   if (cwErrs.length > 0) {
@@ -531,6 +522,7 @@ export async function downloadDocsAndUpsertFHIR({
                 patientId: patient.id,
                 documentReference: doc,
                 isZeroLength,
+                error,
               },
             });
             errorReported = true;

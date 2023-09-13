@@ -6,3 +6,7 @@ export function getFloatValue(value: string | number): number {
 export function formatNumber(num: number): number {
   return Math.floor(num * 100) / 100;
 }
+
+export function randomInt(maxDigits = 2): number {
+  return Math.floor(Math.random() * Math.pow(10, maxDigits));
+}
