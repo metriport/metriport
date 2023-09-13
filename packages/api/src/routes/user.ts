@@ -69,14 +69,13 @@ async function listConnectedUsers(req: Request): Promise<ConnectedUserInfo[]> {
   const results = await getConnectedUsers({ cxId });
   const connectedUsers = await Promise.all(
     results.map(async user => {
-      const connectedUser = await getConnectedUserOrFail({ id: user.id, cxId });
       let connectedProviders;
       const userInfo: ConnectedUserInfo = {
         metriportUserId: user.id,
         appUserId: user.cxUserId,
       };
-      if (connectedUser.providerMap) {
-        connectedProviders = Object.keys(connectedUser.providerMap).map((key: string) => {
+      if (user.providerMap) {
+        connectedProviders = Object.keys(user.providerMap).map((key: string) => {
           return key;
         });
         userInfo.connectedProviders = connectedProviders;
