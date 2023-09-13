@@ -96,7 +96,6 @@ export function organizationQueryMeta(
     Partial<Pick<RequestMetadata, "role" | "purposeOfUse">>
 ): RequestMetadata {
   const base = baseQueryMeta(orgName);
-
   return {
     subjectId: base.subjectId,
     role: meta.role ?? base.role,
