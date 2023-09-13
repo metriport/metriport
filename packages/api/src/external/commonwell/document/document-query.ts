@@ -473,6 +473,7 @@ export async function downloadDocsAndUpsertFHIR({
                   fileInfo,
                   organization,
                   facilityNPI,
+                  cxId,
                 });
 
                 return newFile;
@@ -662,11 +663,13 @@ async function triggerDownloadDocument({
   fileInfo,
   organization,
   facilityNPI,
+  cxId,
 }: {
   doc: DocumentWithMetriportId;
   fileInfo: S3Info;
   organization: Organization;
   facilityNPI: string;
+  cxId: string;
 }): Promise<File> {
   const lambdaName = Config.getDocumentDownloaderLambdaName();
   const payload = {
@@ -679,6 +682,7 @@ async function triggerDownloadDocument({
     orgName: organization.data.name,
     orgOid: organization.oid,
     npi: facilityNPI,
+    cxId,
   };
   const lambdaResult = await lambdaClient
     .invoke({

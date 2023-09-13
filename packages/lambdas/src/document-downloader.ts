@@ -79,7 +79,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const pass = new PassThrough();
 
-    const downloadedDocument = await s3Utils.streamToString(pass);
+    let downloadedDocument = "";
+
+    pass.on("data", chunk => {
+      downloadedDocument += chunk;
+    });
+
+    pass.on("end", () => {
+      console.log("Finished downloading document");
+    });
 
     await downloadDocumentFromCW({
       orgCertificate: cwOrgCertificate,
