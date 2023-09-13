@@ -80,7 +80,7 @@ export async function queryDocumentsAcrossHIEs({
     emptyFunction
   );
 
-  const queryResp = createQueryResponse("processing", updatedPatient, requestId);
+  const queryResp = createQueryResponse("processing", updatedPatient);
   console.log("Query Resp", JSON.stringify(queryResp));
   return queryResp;
 }
@@ -101,7 +101,6 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
-  requestId?: string | undefined | null;
 };
 
 type UpdateDocQueryParams =
@@ -116,7 +115,6 @@ type UpdateDocQueryParams =
  * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
  */
 export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Patient> {
-  console.log("Params", JSON.stringify(params));
   if (params.convertResult) {
     return updateConversionProgress(params);
   }
@@ -126,7 +124,6 @@ export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Pati
 export const updateConversionProgress = async ({
   patient,
   convertResult,
-  requestId,
 }: UpdateResult): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -143,7 +140,6 @@ export const updateConversionProgress = async ({
     const documentQueryProgress = calculateConversionProgress({
       patient: existingPatient,
       convertResult,
-      requestId,
     });
 
     const updatedPatient = {
