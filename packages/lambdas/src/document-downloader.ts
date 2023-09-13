@@ -79,7 +79,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const pass = new PassThrough();
 
-    const downloadedDocument = await streamToString(pass);
+    const downloadedDocument = await s3Utils.streamToString(pass);
 
     await downloadDocumentFromCW({
       orgCertificate: cwOrgCertificate,
@@ -271,16 +271,6 @@ export async function getFileInfoFromS3(
   } catch (err) {
     return { exists: false };
   }
-}
-
-function streamToString(stream: stream.Readable): Promise<string> {
-  const chunks: Buffer[] = [];
-
-  return new Promise((resolve, reject) => {
-    stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
-    stream.on("error", err => reject(err));
-    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-  });
 }
 
 function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: string } {
