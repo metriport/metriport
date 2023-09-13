@@ -11,6 +11,7 @@ import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
 import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
+import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
 
 const router = Router();
@@ -19,6 +20,7 @@ const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
   dateTo: optionalDateSchema,
   content: z.string().min(3).nullish(),
+  output: z.enum(["fhir", "dto"]).nullish(),
 });
 
 /** ---------------------------------------------------------------------------
@@ -33,6 +35,8 @@ const getDocSchema = z.object({
  *    by (partial match and case insentitive).
  * @param req.query.content Optional value to search on the document reference
  *    (partial match and case insentitive, minimum 3 chars).
+ * @param req.query.output Optional value indicating the output format, fhir or dto.
+ *    (default: fhir)
  * @return The available documents, including query status and progress - as applicable.
  */
 router.get(
@@ -40,7 +44,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const { dateFrom, dateTo, content } = getDocSchema.parse(req.query);
+    const { dateFrom, dateTo, content, output } = getDocSchema.parse(req.query);
 
     // Confirm the CX can access this patient
     await getPatientOrFail({ cxId, id: patientId });
@@ -52,7 +56,7 @@ router.get(
       contentFilter: content ?? undefined,
     });
 
-    return res.status(OK).json({ documents });
+    return res.status(OK).json({ documents: output === "dto" ? toDTO(documents) : documents });
   })
 );
 
