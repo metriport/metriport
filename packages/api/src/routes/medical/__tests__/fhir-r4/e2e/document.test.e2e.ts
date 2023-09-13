@@ -82,7 +82,8 @@ function validateDocument(body: any) {
   expect(body.id).toBe(document.id);
   expect(body.identifier).toBeTruthy();
   expect(body.identifier.length).toBeTruthy();
-  expect(body.identifier[0]).toEqual(document.identifier[0]);
+  expect(document.identifier?.length).toBeTruthy();
+  expect(body.identifier[0]).toEqual(document.identifier?.[0]);
   // Could validate more data here
 }
 

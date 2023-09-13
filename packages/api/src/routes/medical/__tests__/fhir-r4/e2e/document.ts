@@ -1,8 +1,13 @@
+import { faker } from "@faker-js/faker";
+import { DocumentReference } from "@medplum/fhirtypes";
+import { randomInt } from "../../../../../shared/numbers";
+import { baseURL, nanoid } from "../../../../__tests__/shared";
 import { makeBinary } from "./binary";
 import { makePatient } from "./patient";
-import { baseURL, nanoid } from "../../../../__tests__/shared";
 
 const defaultId = "2.16.840.1.113883.3.9621.5." + nanoid();
+
+const smallId = () => String(randomInt(3)).padStart(3, "0");
 
 export const makeDocument = ({
   id,
@@ -12,9 +17,12 @@ export const makeDocument = ({
   id?: string;
   patient?: ReturnType<typeof makePatient>;
   binary?: ReturnType<typeof makeBinary>;
-}) => {
+} = {}): DocumentReference => {
   const _patient = patient ?? makePatient();
   const _binary = binary ?? makeBinary();
+  const practitionerId = smallId();
+  const practitionerRef = `auth${practitionerId}`;
+
   return {
     resourceType: "DocumentReference",
     id: id ?? defaultId,
@@ -25,8 +33,8 @@ export const makeDocument = ({
         name: "Metriport 2004",
       },
       {
-        resourceType: "Patient",
-        id: _patient.id,
+        resourceType: "Practitioner",
+        id: `auth${practitionerId}`,
       },
     ],
     masterIdentifier: {
@@ -41,6 +49,13 @@ export const makeDocument = ({
       },
     ],
     status: "current",
+    extension: [
+      {
+        valueCoding: {
+          code: "METRIPORT",
+        },
+      },
+    ],
     type: {
       coding: [
         {
@@ -56,8 +71,8 @@ export const makeDocument = ({
     },
     author: [
       {
-        reference: "#2.16.840.1.113883.3.9621.5.2004",
-        type: "Organization",
+        reference: practitionerRef,
+        type: "Practitioner",
       },
     ],
     description: "Summarization Of Episode Notes - provided by Metriport",
@@ -66,7 +81,15 @@ export const makeDocument = ({
         attachment: {
           contentType: "application/json",
           url: `${baseURL}/fhir/R4/Binary/${_binary.id}`,
+          title: faker.lorem.sentence(),
         },
+        extension: [
+          {
+            valueCoding: {
+              code: "METRIPORT",
+            },
+          },
+        ],
       },
     ],
     context: {

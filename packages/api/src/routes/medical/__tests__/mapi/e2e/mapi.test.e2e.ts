@@ -19,159 +19,158 @@ const maxRetries = 4;
 
 jest.setTimeout(30000);
 
-// NEVER TO BE RUN IN PRODUCTION
-if (Config.isStaging() || !Config.isCloudEnv()) {
-  describe("MAPI E2E Tests", () => {
-    let facility: Facility;
-    let patient: Patient;
+describe("MAPI E2E Tests", () => {
+  // NEVER TO BE RUN IN PRODUCTION
+  if (Config.isProdEnv()) {
+    test.skip("This is a todo for prod tests so this file doesnt break");
+    return;
+  }
 
-    it("gets an organization", async () => {
-      const org = await medicalApi.getOrganization();
+  let facility: Facility;
+  let patient: Patient;
 
-      expect(org).toBeTruthy();
+  it("gets an organization", async () => {
+    const org = await medicalApi.getOrganization();
 
-      if (org) {
-        const fhirOrg = await fhirApi.readResource("Organization", org.id, fhirHeaders);
+    expect(org).toBeTruthy();
 
-        const cwOrg = await retryFunction<CWOrganization | undefined>(
-          async () => await cwCommands.organization.getOne(org.oid),
-          maxRetries,
-          3000
-        );
+    if (org) {
+      const fhirOrg = await fhirApi.readResource("Organization", org.id, fhirHeaders);
 
-        validateLocalOrg(org);
-        validateFhirOrg(fhirOrg, org);
-        validateCWOrg(cwOrg, org);
-      }
-    });
+      const cwOrg = await retryFunction<CWOrganization | undefined>(
+        async () => await cwCommands.organization.getOne(org.oid),
+        maxRetries,
+        3000
+      );
 
-    it("updates an organization", async () => {
-      const org = await medicalApi.getOrganization();
+      validateLocalOrg(org);
+      validateFhirOrg(fhirOrg, org);
+      validateCWOrg(cwOrg, org);
+    }
+  });
 
-      expect(org).toBeTruthy();
+  it("updates an organization", async () => {
+    const org = await medicalApi.getOrganization();
 
-      if (org) {
-        const newName = faker.word.noun();
+    expect(org).toBeTruthy();
 
-        const updateOrg: Organization = {
-          ...org,
-          name: newName,
-        };
-
-        const updatedOrg = await medicalApi.updateOrganization(updateOrg);
-
-        fhirApi.invalidateAll();
-        const fhirOrg: FhirOrg = await fhirApi.readResource(
-          "Organization",
-          updatedOrg.id,
-          fhirHeaders
-        );
-
-        const cwOrg: CWOrganization | undefined = await retryFunction<CWOrganization | undefined>(
-          async () => await cwCommands.organization.getOne(updatedOrg.oid),
-          maxRetries,
-          3000,
-          result => result?.name === newName
-        );
-
-        validateLocalOrg(updatedOrg, updateOrg);
-        validateFhirOrg(fhirOrg, updateOrg);
-        validateCWOrg(cwOrg, updateOrg);
-      }
-    });
-
-    it("create a facility", async () => {
-      facility = await medicalApi.createFacility(createFacility);
-
-      validateFacility(facility);
-    });
-
-    it("updates a facility", async () => {
+    if (org) {
       const newName = faker.word.noun();
 
-      const updateFacility: Facility = {
-        ...facility,
+      const updateOrg: Organization = {
+        ...org,
         name: newName,
       };
 
-      facility = await medicalApi.updateFacility(updateFacility);
+      const updatedOrg = await medicalApi.updateOrganization(updateOrg);
 
-      validateFacility(facility, updateFacility);
-      expect(facility.name).toEqual(newName);
-    });
+      fhirApi.invalidateAll();
+      const fhirOrg: FhirOrg = await fhirApi.readResource(
+        "Organization",
+        updatedOrg.id,
+        fhirHeaders
+      );
 
-    it("gets one facility", async () => {
-      const getFacility = await medicalApi.getFacility(facility.id);
+      const cwOrg: CWOrganization | undefined = await retryFunction<CWOrganization | undefined>(
+        async () => await cwCommands.organization.getOne(updatedOrg.oid),
+        maxRetries,
+        3000,
+        result => result?.name === newName
+      );
 
-      validateFacility(getFacility);
-    });
+      validateLocalOrg(updatedOrg, updateOrg);
+      validateFhirOrg(fhirOrg, updateOrg);
+      validateCWOrg(cwOrg, updateOrg);
+    }
+  });
 
-    it("creates a patient", async () => {
-      patient = await medicalApi.createPatient(createPatient, facility.id);
+  it("create a facility", async () => {
+    facility = await medicalApi.createFacility(createFacility);
 
-      const fhirPatient = await fhirApi.readResource("Patient", patient.id, fhirHeaders);
+    validateFacility(facility);
+  });
 
-      validateLocalPatient(patient);
-      validateFhirPatient(fhirPatient, patient);
+  it("updates a facility", async () => {
+    const newName = faker.word.noun();
 
-      // Creating a CW patient is done in the background need to await so we can query docs
-      await Util.sleep(10000);
-    });
+    const updateFacility: Facility = {
+      ...facility,
+      name: newName,
+    };
 
-    it("creates consolidated data for patient", async () => {
-      const payload = createConsolidated(patient.id);
-      const consolidated = await medicalApi.createPatientConsolidated(patient.id, payload);
-      const count = await medicalApi.countPatientConsolidated(patient.id);
+    facility = await medicalApi.updateFacility(updateFacility);
 
-      expect(count.total).toEqual(payload.entry?.length);
-      expect(consolidated).toBeTruthy();
-    });
+    validateFacility(facility, updateFacility);
+    expect(facility.name).toEqual(newName);
+  });
 
-    it("triggers a document query for the created patient", async () => {
-      const docQueryProgress = await medicalApi.startDocumentQuery(patient.id, facility.id);
-      let status = await medicalApi.getDocumentQueryStatus(patient.id);
-      let retryLimit = 0;
+  it("gets one facility", async () => {
+    const getFacility = await medicalApi.getFacility(facility.id);
 
-      while (
-        (status.download?.status === "processing" ||
-          (status.convert && status.convert?.status === "processing")) &&
-        retryLimit < maxRetries
-      ) {
-        await Util.sleep(5000);
-        status = await medicalApi.getDocumentQueryStatus(patient.id);
-        retryLimit++;
-      }
+    validateFacility(getFacility);
+  });
 
-      const { documents } = await medicalApi.listDocuments(patient.id);
+  it("creates a patient", async () => {
+    patient = await medicalApi.createPatient(createPatient, facility.id);
 
-      expect(docQueryProgress).toBeTruthy();
-      expect(documents).toBeTruthy();
-      expect(documents.length).toEqual(2);
-    });
+    const fhirPatient = await fhirApi.readResource("Patient", patient.id, fhirHeaders);
 
-    it("deletes a patient's consolidated data", async () => {
-      // when moved to internal will updated
-      const consolidated = await medicalApi.getPatientConsolidated(patient.id);
+    validateLocalPatient(patient);
+    validateFhirPatient(fhirPatient, patient);
 
-      if (consolidated && consolidated.entry) {
-        for (const docEntry of consolidated.entry) {
-          if (docEntry.resource && docEntry.resource.id) {
-            await fhirApi.deleteResource(
-              docEntry.resource.resourceType,
-              docEntry.resource.id,
-              fhirHeaders
-            );
-          }
+    // Creating a CW patient is done in the background need to await so we can query docs
+    await Util.sleep(10000);
+  });
+
+  it("creates consolidated data for patient", async () => {
+    const payload = createConsolidated(patient.id);
+    const consolidated = await medicalApi.createPatientConsolidated(patient.id, payload);
+    const count = await medicalApi.countPatientConsolidated(patient.id);
+
+    expect(count.total).toEqual(payload.entry?.length);
+    expect(consolidated).toBeTruthy();
+  });
+
+  it("triggers a document query for the created patient", async () => {
+    const docQueryProgress = await medicalApi.startDocumentQuery(patient.id, facility.id);
+    let status = await medicalApi.getDocumentQueryStatus(patient.id);
+    let retryLimit = 0;
+
+    while (
+      (status.download?.status === "processing" ||
+        (status.convert && status.convert?.status === "processing")) &&
+      retryLimit < maxRetries
+    ) {
+      await Util.sleep(5000);
+      status = await medicalApi.getDocumentQueryStatus(patient.id);
+      retryLimit++;
+    }
+
+    const { documents } = await medicalApi.listDocuments(patient.id);
+
+    expect(docQueryProgress).toBeTruthy();
+    expect(documents).toBeTruthy();
+    expect(documents.length).toEqual(2);
+  });
+
+  it("deletes a patient's consolidated data", async () => {
+    // when moved to internal will updated
+    const consolidated = await medicalApi.getPatientConsolidated(patient.id);
+
+    if (consolidated && consolidated.entry) {
+      for (const docEntry of consolidated.entry) {
+        if (docEntry.resource && docEntry.resource.id) {
+          await fhirApi.deleteResource(
+            docEntry.resource.resourceType,
+            docEntry.resource.id,
+            fhirHeaders
+          );
         }
       }
+    }
 
-      const count = await medicalApi.countPatientConsolidated(patient.id);
+    const count = await medicalApi.countPatientConsolidated(patient.id);
 
-      expect(count.total).toEqual(0);
-    });
+    expect(count.total).toEqual(0);
   });
-} else {
-  describe("Prod Tests", () => {
-    test.todo("This is a todo for prod tests so this file doesnt break");
-  });
-}
+});

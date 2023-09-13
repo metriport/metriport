@@ -14,6 +14,7 @@ import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
+import { makeDocument } from "./__tests__/fhir-r4/e2e/document";
 
 const router = Router();
 
@@ -57,6 +58,12 @@ router.get(
       contentFilter: content ? sanitize(content) : undefined,
     });
 
+    // TODO remove this
+    // TODO remove this
+    // TODO remove this
+    for (let i = 0; i < 20; i++) {
+      documents?.push(makeDocument());
+    }
     return res.status(OK).json({ documents: output === "dto" ? toDTO(documents) : documents });
   })
 );

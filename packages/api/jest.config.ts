@@ -1,7 +1,6 @@
 import * as path from "path";
 import type { JestConfigWithTsJest } from "ts-jest";
-
-const isE2E = process.env.E2E === "true";
+import { isE2E } from "./src/__tests__/shared";
 
 process.env.ENV_TYPE = "development";
 
@@ -14,7 +13,7 @@ const config: JestConfigWithTsJest = {
   testEnvironment: "node",
   verbose: true,
   testPathIgnorePatterns: ["/node_modules/", "/dist/"],
-  testMatch: isE2E
+  testMatch: isE2E()
     ? ["**/__tests__/**/(*.)+(spec|test).e2e.[jt]s?(x)"]
     : ["**/__tests__/**/(*.)+(spec|test).[jt]s?(x)"],
   setupFilesAfterEnv: ["./src/__tests__/env-setup.ts"],
