@@ -82,11 +82,7 @@ router.post(
     }
 
     if (cxId) {
-      const result = await populateFhirServer({
-        cxId,
-        createIfNotExists,
-        triggerDocQuery,
-      });
+      const result = await populateFhirServer({ cxId, createIfNotExists, triggerDocQuery });
       return res.json({ [cxId]: result });
     }
 
@@ -104,7 +100,7 @@ router.post(
       });
       result[org.cxId] = orgRes;
     }
-    return res.json({ result });
+    return res.json(result);
   })
 );
 

@@ -169,17 +169,11 @@ router.post(
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
     }
     const patient = await getPatientOrFail({ cxId, id: patientId });
-    const patientDocQueryProgress = patient.data.documentQueryProgress;
-    console.log(
-      `Updating patient ${patientId}'s docQueryProgress ` +
-        `from ${JSON.stringify(patientDocQueryProgress)} ` +
-        `to ${JSON.stringify(docQueryProgress)}`
-    );
     const updatedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       downloadProgress,
       convertProgress,
-      requestId: patientDocQueryProgress?.requestId,
+      requestId: patient.data.documentQueryProgress?.requestId,
     });
 
     return res.json(updatedPatient.data.documentQueryProgress);

@@ -397,8 +397,6 @@ export async function downloadDocsAndUpsertFHIR({
   );
   forceDownload && log(`override=true, NOT checking whether docs exist`);
 
-  console.log("PATIENT IN downloadDocsAndUpsertFHIR", JSON.stringify(patient));
-
   const cxId = patient.cxId;
   const fhirApi = makeFhirApi(patient.cxId);
   const docsNewLocation: DocumentReference[] = [];
