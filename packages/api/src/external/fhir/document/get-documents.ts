@@ -1,7 +1,9 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { capture } from "../../../shared/notifications";
+import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeFhirApi } from "../api/api-factory";
 import { isoDateRangeToFHIRDateQuery } from "../shared";
+import { isMetriportExtension } from "../shared/extensions/metriport";
 import { containedHasNames } from "./filter";
 
 export const getDocuments = async ({
@@ -35,9 +37,19 @@ export const getDocuments = async ({
     capture.message(msg, { extra: { patientId, error }, level: "error" });
     throw error;
   }
+  const checkNames = containedHasNames({ organizationName, practitionerName });
   const result =
     organizationName || practitionerName
-      ? docs.filter(containedHasNames({ organizationName, practitionerName }))
-      : docs;
+      ? docs.filter(d => checkExtensions(d) && checkNames(d))
+      : docs.filter(d => checkExtensions(d));
   return result;
 };
+
+function checkExtensions(doc: DocumentReference) {
+  const extensions = doc.extension;
+  if (!extensions) return false;
+  const metriport = extensions.find(isMetriportExtension);
+  const cw = extensions.find(isCommonwellExtension);
+  if (!metriport && !cw) return false;
+  return true;
+}
