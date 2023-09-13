@@ -52,6 +52,7 @@ export async function sandboxGetDocRefsAndUpsert({
       downloadProgress: {
         status: "completed",
       },
+      requestId,
     });
     return [];
   }
@@ -82,6 +83,7 @@ export async function sandboxGetDocRefsAndUpsert({
           },
         }
       : undefined),
+    requestId,
   });
 
   for (const entry of entries) {
@@ -130,6 +132,7 @@ export async function sandboxGetDocRefsAndUpsert({
       successful: entries.length,
     },
     convertProgress: undefined,
+    requestId,
   });
 
   const result = entries.map(d => d.docRef);

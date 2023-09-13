@@ -69,8 +69,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
     const patient = await getPatientOrFail({ cxId, id: patientId });
-    const docQueryProgress = patient.data.documentQueryProgress;
-    return res.status(OK).json(docQueryProgress);
+    return res.status(OK).json(patient.data.documentQueryProgress);
   })
 );
 

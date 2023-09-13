@@ -76,13 +76,7 @@ export async function queryDocumentsAcrossHIEs({
     requestId,
   }).catch(emptyFunction);
 
-  getDocumentsFromCW({ patient, facilityId, forceDownload: override, requestId }).catch(
-    emptyFunction
-  );
-
-  const queryResp = createQueryResponse("processing", updatedPatient);
-  console.log("Query Resp", JSON.stringify(queryResp));
-  return queryResp;
+  return createQueryResponse("processing", updatedPatient);
 }
 
 export const createQueryResponse = (

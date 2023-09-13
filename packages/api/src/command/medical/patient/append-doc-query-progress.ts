@@ -11,13 +11,11 @@ export type SetDocQueryProgress = {
   | {
       downloadProgress?: Progress | undefined | null;
       convertProgress?: Progress | undefined | null;
-      requestId?: string | undefined;
       reset?: false | undefined;
     }
   | {
       downloadProgress: Progress;
       convertProgress?: never;
-      requestId?: string | undefined;
       reset?: true;
     }
 );
