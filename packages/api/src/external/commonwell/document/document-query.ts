@@ -667,10 +667,11 @@ async function jitterSingleDownload(): Promise<void> {
   );
 }
 
-function reportDocQueryUsage(patient: Patient): void {
+function reportDocQueryUsage(patient: Patient, docQuery = true): void {
   reportUsage({
     cxId: patient.cxId,
     entityId: patient.id,
     product: Product.medical,
+    docQuery,
   });
 }
