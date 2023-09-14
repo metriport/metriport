@@ -39,6 +39,7 @@ export const progressSchema = z.object({
 export const documentQuerySchema = z.object({
   download: progressSchema.optional(),
   convert: progressSchema.optional(),
+  requestId: z.string().optional(),
 });
 
 export type DocumentQuery = z.infer<typeof documentQuerySchema>;

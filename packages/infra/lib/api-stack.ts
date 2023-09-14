@@ -238,6 +238,18 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
+    const documentDownloaderLambda = this.setupDocumentDownloader({
+      lambdaLayers,
+      vpc: this.vpc,
+      secrets,
+      cwOrgCertificate: props.config.cwSecretNames.CW_ORG_CERTIFICATE,
+      cwOrgPrivateKey: props.config.cwSecretNames.CW_ORG_PRIVATE_KEY,
+      bucketName: props.config.medicalDocumentsBucketName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
@@ -260,7 +272,8 @@ export class APIStack extends Stack {
       fhirConverterQueue.queueUrl,
       fhirConverter ? `http://${fhirConverter.address}` : undefined,
       sidechainFHIRConverterQueue?.queueUrl,
-      cdaToVisualizationLambda
+      cdaToVisualizationLambda,
+      documentDownloaderLambda
     );
 
     // Access grant for Aurora DB
@@ -350,6 +363,7 @@ export class APIStack extends Stack {
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+    medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
@@ -864,6 +878,66 @@ export class APIStack extends Stack {
     });
 
     return cdaToVisualizationLambda;
+  }
+
+  private setupDocumentDownloader(ownProps: {
+    lambdaLayers: lambda.ILayerVersion[];
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    cwOrgCertificate: string;
+    cwOrgPrivateKey: string;
+    bucketName: string | undefined;
+    envType: string;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      secrets,
+      cwOrgCertificate,
+      cwOrgPrivateKey,
+      bucketName,
+      sentryDsn,
+      envType,
+      alarmAction,
+    } = ownProps;
+
+    const documentDownloaderLambda = createLambda({
+      stack: this,
+      name: "DocumentDownloader",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "document-downloader",
+      envVars: {
+        ENV_TYPE: envType,
+        CW_ORG_CERTIFICATE: cwOrgCertificate,
+        CW_ORG_PRIVATE_KEY: cwOrgPrivateKey,
+        ...(bucketName && {
+          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+        }),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: lambdaLayers,
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    // granting secrets read access to lambda
+    const cwOrgCertificateKey = "CW_ORG_CERTIFICATE";
+    if (!secrets[cwOrgCertificateKey]) {
+      throw new Error(`${cwOrgCertificateKey} is not defined in config`);
+    }
+    secrets[cwOrgCertificateKey].grantRead(documentDownloaderLambda);
+
+    const cwOrgPrivateKeyKey = "CW_ORG_PRIVATE_KEY";
+    if (!secrets[cwOrgPrivateKeyKey]) {
+      throw new Error(`${cwOrgPrivateKeyKey} is not defined in config`);
+    }
+    secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
+
+    return documentDownloaderLambda;
   }
 
   private setupCWDocContribution(ownProps: {

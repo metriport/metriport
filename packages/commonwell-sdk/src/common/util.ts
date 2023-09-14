@@ -3,6 +3,8 @@ import { StrongId } from "../models/identifier";
 import { Organization } from "../models/organization";
 import { Patient } from "../models/patient";
 import { Person, PersonSearchResp } from "../models/person";
+import { PurposeOfUse } from "../models/purpose-of-use";
+import { RequestMetadata } from "../client/commonwell";
 
 /**
  * Returns the ID of a person.
@@ -86,3 +88,24 @@ export function getDemographics(personRelated: Person[] | PersonSearchResp): Dem
   }
   return personRelated._embedded.person.map(p => p.details);
 }
+
+export function organizationQueryMeta(
+  orgName: string,
+  meta: Omit<RequestMetadata, "npi" | "role" | "purposeOfUse" | "subjectId"> &
+    Required<Pick<RequestMetadata, "npi">> &
+    Partial<Pick<RequestMetadata, "role" | "purposeOfUse">>
+): RequestMetadata {
+  const base = baseQueryMeta(orgName);
+  return {
+    subjectId: base.subjectId,
+    role: meta.role ?? base.role,
+    purposeOfUse: meta.purposeOfUse ?? base.purposeOfUse,
+    npi: meta.npi,
+  };
+}
+
+export const baseQueryMeta = (orgName: string) => ({
+  purposeOfUse: PurposeOfUse.TREATMENT,
+  role: "ict",
+  subjectId: `${orgName} System User`,
+});

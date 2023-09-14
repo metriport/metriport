@@ -4,15 +4,14 @@ import {
   documentReferenceResourceType,
   OperationOutcome,
   operationOutcomeResourceType,
+  organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { chunk, partition } from "lodash";
 import {
   getDocToFileFunction,
-  getFileInfoFromS3,
   getS3Info,
   getUrl,
   S3Info,
-  uploadStream,
 } from "../../../command/medical/document/document-query-storage-info";
 import {
   MAPIWebhookStatus,
@@ -43,10 +42,10 @@ import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
-import { downloadDocument as downloadDocumentFromCW } from "./document-download";
+import { makeLambdaClient } from "../../../external/aws/lambda";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
   CWDocumentWithMetriportData,
@@ -62,6 +61,8 @@ const DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT = 10; // 1-100% of max delay
 
 const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
 const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
+
+const lambdaClient = makeLambdaClient();
 
 /**
  * Query CommonWell for DocumentReferences, download and convert documents to FHIR,
@@ -81,13 +82,15 @@ export async function queryAndProcessDocuments({
   facilityId,
   forceDownload,
   ignoreDocRefOnFHIRServer,
+  requestId,
 }: {
   patient: Patient;
   facilityId: string;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  requestId: string;
 }): Promise<number> {
-  const { log } = Util.out(`CW queryDocuments - M patient ${patient.id}`);
+  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
 
   const { organization, facility } = await getPatientData(patient, facilityId);
 
@@ -97,6 +100,7 @@ export async function queryAndProcessDocuments({
         organization,
         facility,
         patient,
+        requestId,
       });
       return documentsSandbox.length;
     } else {
@@ -110,9 +114,16 @@ export async function queryAndProcessDocuments({
         documents: cwDocuments,
         forceDownload,
         ignoreDocRefOnFHIRServer,
+        requestId,
       });
 
-      reportDocQueryUsage(patient);
+      if (
+        fhirDocRefs.length &&
+        forceDownload === undefined &&
+        ignoreDocRefOnFHIRServer === undefined
+      ) {
+        reportDocQueryUsage(patient);
+      }
 
       log(`Finished processing ${fhirDocRefs.length} documents.`);
       return fhirDocRefs.length;
@@ -128,6 +139,7 @@ export async function queryAndProcessDocuments({
     await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
+      requestId,
     });
     capture.error(error, {
       extra: {
@@ -136,6 +148,7 @@ export async function queryAndProcessDocuments({
         patientId: patient.id,
         facilityId,
         forceDownload,
+        requestId,
         ignoreDocRefOnFHIRServer,
       },
     });
@@ -299,7 +312,8 @@ function reportFHIRError({
 async function initPatientDocQuery(
   patient: Patient,
   totalDocs: number,
-  convertibleDocs: number
+  convertibleDocs: number,
+  requestId: string
 ): Promise<Patient> {
   return appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
@@ -311,6 +325,7 @@ async function initPatientDocQuery(
       status: "processing",
       total: convertibleDocs,
     },
+    requestId,
   });
 }
 
@@ -336,6 +351,7 @@ function convertToNonExistingS3Info(
       ...simpleFile,
       fileExists: false,
       fileSize: undefined,
+      fileContentType: undefined,
     };
   };
 }
@@ -375,14 +391,18 @@ export async function downloadDocsAndUpsertFHIR({
   documents,
   forceDownload = false,
   ignoreDocRefOnFHIRServer = false,
+  requestId,
 }: {
   patient: Patient;
   facilityId: string;
   documents: Document[];
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  requestId: string;
 }): Promise<DocumentReference[]> {
-  const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
+  const { log } = Util.out(
+    `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
+  );
   forceDownload && log(`override=true, NOT checking whether docs exist`);
 
   const cxId = patient.cxId;
@@ -436,7 +456,7 @@ export async function downloadDocsAndUpsertFHIR({
 
   const convertibleDocCount = docsToDownload.filter(isConvertible).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
-  await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount);
+  await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
   // split the list in chunks
   const chunks = chunk(docsToDownload, DOC_DOWNLOAD_CHUNK_SIZE);
@@ -451,13 +471,7 @@ export async function downloadDocsAndUpsertFHIR({
             throw new MetriportError("Missing file info", undefined, { docId: doc.id });
           }
 
-          let uploadToS3: () => Promise<{
-            bucket: string;
-            key: string;
-            location: string;
-            size: number | undefined;
-            isNew: boolean;
-          }>;
+          let uploadToS3: () => Promise<File>;
           let file: Awaited<ReturnType<typeof uploadToS3>>;
 
           try {
@@ -465,29 +479,22 @@ export async function downloadDocsAndUpsertFHIR({
             await jitterSingleDownload();
 
             if (!fileInfo.fileExists) {
-              // Download from CW and upload to S3
               uploadToS3 = async () => {
-                const { writeStream, promise } = uploadStream(
-                  fileInfo.fileName,
-                  fileInfo.fileLocation,
-                  doc.content.mimeType
+                const { organization, facility } = await getPatientData(
+                  { id: patient.id, cxId },
+                  facilityId
                 );
-                await downloadDocumentFromCW({
-                  cxId: patient.cxId,
-                  patientId: patient.id,
-                  facilityId: facilityId,
-                  location: doc.content.location,
-                  stream: writeStream,
+                const facilityNPI = facility.data["npi"] as string; // TODO #414 move
+
+                const newFile = triggerDownloadDocument({
+                  doc,
+                  fileInfo,
+                  organization,
+                  facilityNPI,
+                  cxId,
                 });
-                const uploadResult = await promise;
-                const { size } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
-                return {
-                  bucket: uploadResult.Bucket,
-                  key: uploadResult.Key,
-                  location: uploadResult.Location,
-                  size,
-                  isNew: true,
-                };
+
+                return newFile;
               };
             } else {
               // Get info from existing S3 file
@@ -499,6 +506,7 @@ export async function downloadDocsAndUpsertFHIR({
                   bucket: fileInfo.fileLocation,
                   key: fileInfo.fileName,
                   location: s3Location,
+                  contentType: fileInfo.fileContentType,
                   size: fileInfo.fileSize,
                   isNew: false,
                 };
@@ -522,18 +530,21 @@ export async function downloadDocsAndUpsertFHIR({
                 patientId: patient.id,
                 documentReference: doc,
                 isZeroLength,
+                requestId,
                 error,
               },
             });
             errorReported = true;
             throw error;
           }
+
           const docWithFile: CWDocumentWithMetriportData = {
             ...doc,
             metriport: {
               fileName: file.key,
               location: file.location,
               fileSize: file.size,
+              fileContentType: file.contentType,
             },
           };
 
@@ -544,6 +555,7 @@ export async function downloadDocsAndUpsertFHIR({
                 document: doc,
                 s3FileName: file.key,
                 s3BucketName: file.bucket,
+                requestId,
               });
             } catch (err) {
               // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function
@@ -580,6 +592,7 @@ export async function downloadDocsAndUpsertFHIR({
                 context: `cw.downloadDocsAndUpsertFHIR`,
                 patientId: patient.id,
                 document: doc,
+                requestId,
               },
             });
           }
@@ -594,10 +607,11 @@ export async function downloadDocsAndUpsertFHIR({
                 successful: completedCount,
                 errors: errorCount,
               },
+              requestId,
             });
           } catch (err) {
             capture.error(err, {
-              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient },
+              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId },
             });
           }
         }
@@ -625,6 +639,7 @@ export async function downloadDocsAndUpsertFHIR({
         }
       : undefined),
     convertibleDownloadErrors: errorCountConvertible,
+    requestId,
   });
   // send webhook to CXs when docs are done downloading
   processPatientDocumentRequest(
@@ -657,6 +672,60 @@ export async function downloadDocsAndUpsertFHIR({
   return docsNewLocation;
 }
 
+type File = {
+  bucket: string;
+  key: string;
+  location: string;
+  contentType: string | undefined;
+  size: number | undefined;
+  isNew: boolean;
+};
+
+async function triggerDownloadDocument({
+  doc,
+  fileInfo,
+  organization,
+  facilityNPI,
+  cxId,
+}: {
+  doc: DocumentWithMetriportId;
+  fileInfo: S3Info;
+  organization: Organization;
+  facilityNPI: string;
+  cxId: string;
+}): Promise<File> {
+  const lambdaName = Config.getDocumentDownloaderLambdaName();
+  const payload = {
+    document: {
+      id: doc.id,
+      mimeType: doc.content.mimeType,
+      location: doc.content.location,
+    },
+    fileInfo,
+    orgName: organization.data.name,
+    orgOid: organization.oid,
+    npi: facilityNPI,
+    cxId,
+  };
+  const lambdaResult = await lambdaClient
+    .invoke({
+      FunctionName: lambdaName,
+      InvocationType: "RequestResponse",
+      Payload: JSON.stringify(payload),
+    })
+    .promise();
+
+  if (lambdaResult.StatusCode !== 200)
+    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName, docId: doc.id });
+
+  if (lambdaResult.Payload === undefined)
+    throw new MetriportError("Payload is undefined", undefined, { lambdaName, docId: doc.id });
+
+  const newFile = JSON.parse(lambdaResult.Payload.toString());
+
+  return newFile;
+}
+
 async function sleepBetweenChunks(): Promise<void> {
   return Util.sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
 }
@@ -667,10 +736,11 @@ async function jitterSingleDownload(): Promise<void> {
   );
 }
 
-function reportDocQueryUsage(patient: Patient): void {
+function reportDocQueryUsage(patient: Patient, docQuery = true): void {
   reportUsage({
     cxId: patient.cxId,
     entityId: patient.id,
     product: Product.medical,
+    docQuery,
   });
 }

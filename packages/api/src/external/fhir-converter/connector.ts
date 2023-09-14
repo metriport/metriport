@@ -12,6 +12,7 @@ export type FHIRConverterRequest = {
   template: string;
   unusedSegments: string;
   invalidAccess: string;
+  requestId?: string;
 };
 
 export interface FHIRConverterConnector {

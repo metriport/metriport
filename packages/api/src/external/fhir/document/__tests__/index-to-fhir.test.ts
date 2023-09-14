@@ -26,6 +26,7 @@ describe("toFHIR", () => {
         fileName: "test.pdf",
         location: "https://test.com",
         fileSize: 100,
+        fileContentType: "application/pdf",
       },
       content: {
         ...cwDoc.content,

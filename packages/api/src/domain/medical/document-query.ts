@@ -13,6 +13,7 @@ export type Progress = {
 export type DocumentQueryProgress = {
   download?: Progress;
   convert?: Progress;
+  requestId?: string;
 };
 
 export const convertResult = ["success", "failed"] as const;

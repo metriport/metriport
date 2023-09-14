@@ -1,9 +1,9 @@
-import { CommonwellError } from "@metriport/commonwell-sdk";
+import { CommonwellError, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import * as stream from "stream";
 import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
 import { oid } from "../../../shared/oid";
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { makeCommonWellAPI } from "../api";
 import { getPatientData } from "../patient-shared";
 
 export async function downloadDocument({
