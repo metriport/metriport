@@ -117,7 +117,13 @@ export async function queryAndProcessDocuments({
         requestId,
       });
 
-      reportDocQueryUsage(patient);
+      if (
+        fhirDocRefs.length &&
+        forceDownload === undefined &&
+        ignoreDocRefOnFHIRServer === undefined
+      ) {
+        reportDocQueryUsage(patient);
+      }
 
       log(`Finished processing ${fhirDocRefs.length} documents.`);
       return fhirDocRefs.length;
@@ -730,10 +736,11 @@ async function jitterSingleDownload(): Promise<void> {
   );
 }
 
-function reportDocQueryUsage(patient: Patient): void {
+function reportDocQueryUsage(patient: Patient, docQuery = true): void {
   reportUsage({
     cxId: patient.cxId,
     entityId: patient.id,
     product: Product.medical,
+    docQuery,
   });
 }
