@@ -11,6 +11,8 @@ export {
   getPersonId,
   getPersonIdFromSearchByPatientDemo,
   getPersonIdFromUrl,
+  organizationQueryMeta,
+  baseQueryMeta,
 } from "./common/util";
 export { validateNPI } from "./common/validate-npi";
 export { Address, AddressUseCodes } from "./models/address";

@@ -1,8 +1,8 @@
-import { CommonWellAPI, RequestMetadata } from "@metriport/commonwell-sdk";
+import { CommonWellAPI, RequestMetadata, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import { Patient } from "../../../models/medical/patient";
 import { oid } from "../../../shared/oid";
 import { MedicalDataSource } from "../../index";
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { makeCommonWellAPI } from "../api";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 
 export type CWAccess =
