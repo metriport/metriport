@@ -1,3 +1,3 @@
 export function sanitize(str: string): string {
-  return str.trim();
+  return str.toLocaleLowerCase().trim();
 }
