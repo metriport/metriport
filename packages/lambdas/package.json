@@ -24,6 +24,7 @@
     "@aws-sdk/client-secrets-manager": "^3.348.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
+    "@metriport/commonwell-sdk": "^4.7.4-alpha.1",
     "@sentry/serverless": "^7.46.0",
     "aws-sdk": "^2.1248.0",
     "axios": "^1.4.0",

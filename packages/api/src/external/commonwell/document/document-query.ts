@@ -4,15 +4,14 @@ import {
   documentReferenceResourceType,
   OperationOutcome,
   operationOutcomeResourceType,
+  organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { chunk, partition } from "lodash";
 import {
   getDocToFileFunction,
-  getFileInfoFromS3,
   getS3Info,
   getUrl,
   S3Info,
-  uploadStream,
 } from "../../../command/medical/document/document-query-storage-info";
 import {
   MAPIWebhookStatus,
@@ -43,10 +42,10 @@ import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
-import { downloadDocument as downloadDocumentFromCW } from "./document-download";
+import { makeLambdaClient } from "../../../external/aws/lambda";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
   CWDocumentWithMetriportData,
@@ -62,6 +61,8 @@ const DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT = 10; // 1-100% of max delay
 
 const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
 const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
+
+const lambdaClient = makeLambdaClient();
 
 /**
  * Query CommonWell for DocumentReferences, download and convert documents to FHIR,
@@ -336,6 +337,7 @@ function convertToNonExistingS3Info(
       ...simpleFile,
       fileExists: false,
       fileSize: undefined,
+      fileContentType: undefined,
     };
   };
 }
@@ -451,13 +453,7 @@ export async function downloadDocsAndUpsertFHIR({
             throw new MetriportError("Missing file info", undefined, { docId: doc.id });
           }
 
-          let uploadToS3: () => Promise<{
-            bucket: string;
-            key: string;
-            location: string;
-            size: number | undefined;
-            isNew: boolean;
-          }>;
+          let uploadToS3: () => Promise<File>;
           let file: Awaited<ReturnType<typeof uploadToS3>>;
 
           try {
@@ -465,29 +461,22 @@ export async function downloadDocsAndUpsertFHIR({
             await jitterSingleDownload();
 
             if (!fileInfo.fileExists) {
-              // Download from CW and upload to S3
               uploadToS3 = async () => {
-                const { writeStream, promise } = uploadStream(
-                  fileInfo.fileName,
-                  fileInfo.fileLocation,
-                  doc.content.mimeType
+                const { organization, facility } = await getPatientData(
+                  { id: patient.id, cxId },
+                  facilityId
                 );
-                await downloadDocumentFromCW({
-                  cxId: patient.cxId,
-                  patientId: patient.id,
-                  facilityId: facilityId,
-                  location: doc.content.location,
-                  stream: writeStream,
+                const facilityNPI = facility.data["npi"] as string; // TODO #414 move
+
+                const newFile = triggerDownloadDocument({
+                  doc,
+                  fileInfo,
+                  organization,
+                  facilityNPI,
+                  cxId,
                 });
-                const uploadResult = await promise;
-                const { size } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
-                return {
-                  bucket: uploadResult.Bucket,
-                  key: uploadResult.Key,
-                  location: uploadResult.Location,
-                  size,
-                  isNew: true,
-                };
+
+                return newFile;
               };
             } else {
               // Get info from existing S3 file
@@ -499,6 +488,7 @@ export async function downloadDocsAndUpsertFHIR({
                   bucket: fileInfo.fileLocation,
                   key: fileInfo.fileName,
                   location: s3Location,
+                  contentType: fileInfo.fileContentType,
                   size: fileInfo.fileSize,
                   isNew: false,
                 };
@@ -528,12 +518,14 @@ export async function downloadDocsAndUpsertFHIR({
             errorReported = true;
             throw error;
           }
+
           const docWithFile: CWDocumentWithMetriportData = {
             ...doc,
             metriport: {
               fileName: file.key,
               location: file.location,
               fileSize: file.size,
+              fileContentType: file.contentType,
             },
           };
 
@@ -655,6 +647,60 @@ export async function downloadDocsAndUpsertFHIR({
   }
 
   return docsNewLocation;
+}
+
+type File = {
+  bucket: string;
+  key: string;
+  location: string;
+  contentType: string | undefined;
+  size: number | undefined;
+  isNew: boolean;
+};
+
+async function triggerDownloadDocument({
+  doc,
+  fileInfo,
+  organization,
+  facilityNPI,
+  cxId,
+}: {
+  doc: DocumentWithMetriportId;
+  fileInfo: S3Info;
+  organization: Organization;
+  facilityNPI: string;
+  cxId: string;
+}): Promise<File> {
+  const lambdaName = Config.getDocumentDownloaderLambdaName();
+  const payload = {
+    document: {
+      id: doc.id,
+      mimeType: doc.content.mimeType,
+      location: doc.content.location,
+    },
+    fileInfo,
+    orgName: organization.data.name,
+    orgOid: organization.oid,
+    npi: facilityNPI,
+    cxId,
+  };
+  const lambdaResult = await lambdaClient
+    .invoke({
+      FunctionName: lambdaName,
+      InvocationType: "RequestResponse",
+      Payload: JSON.stringify(payload),
+    })
+    .promise();
+
+  if (lambdaResult.StatusCode !== 200)
+    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName, docId: doc.id });
+
+  if (lambdaResult.Payload === undefined)
+    throw new MetriportError("Payload is undefined", undefined, { lambdaName, docId: doc.id });
+
+  const newFile = JSON.parse(lambdaResult.Payload.toString());
+
+  return newFile;
 }
 
 async function sleepBetweenChunks(): Promise<void> {
