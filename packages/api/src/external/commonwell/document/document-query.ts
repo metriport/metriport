@@ -82,13 +82,15 @@ export async function queryAndProcessDocuments({
   facilityId,
   forceDownload,
   ignoreDocRefOnFHIRServer,
+  requestId,
 }: {
   patient: Patient;
   facilityId: string;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  requestId: string;
 }): Promise<number> {
-  const { log } = Util.out(`CW queryDocuments - M patient ${patient.id}`);
+  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
 
   const { organization, facility } = await getPatientData(patient, facilityId);
 
@@ -98,6 +100,7 @@ export async function queryAndProcessDocuments({
         organization,
         facility,
         patient,
+        requestId,
       });
       return documentsSandbox.length;
     } else {
@@ -111,6 +114,7 @@ export async function queryAndProcessDocuments({
         documents: cwDocuments,
         forceDownload,
         ignoreDocRefOnFHIRServer,
+        requestId,
       });
 
       reportDocQueryUsage(patient);
@@ -129,6 +133,7 @@ export async function queryAndProcessDocuments({
     await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
+      requestId,
     });
     capture.error(error, {
       extra: {
@@ -137,6 +142,7 @@ export async function queryAndProcessDocuments({
         patientId: patient.id,
         facilityId,
         forceDownload,
+        requestId,
         ignoreDocRefOnFHIRServer,
       },
     });
@@ -300,7 +306,8 @@ function reportFHIRError({
 async function initPatientDocQuery(
   patient: Patient,
   totalDocs: number,
-  convertibleDocs: number
+  convertibleDocs: number,
+  requestId: string
 ): Promise<Patient> {
   return appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
@@ -312,6 +319,7 @@ async function initPatientDocQuery(
       status: "processing",
       total: convertibleDocs,
     },
+    requestId,
   });
 }
 
@@ -377,14 +385,18 @@ export async function downloadDocsAndUpsertFHIR({
   documents,
   forceDownload = false,
   ignoreDocRefOnFHIRServer = false,
+  requestId,
 }: {
   patient: Patient;
   facilityId: string;
   documents: Document[];
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  requestId: string;
 }): Promise<DocumentReference[]> {
-  const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
+  const { log } = Util.out(
+    `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
+  );
   forceDownload && log(`override=true, NOT checking whether docs exist`);
 
   const cxId = patient.cxId;
@@ -438,7 +450,7 @@ export async function downloadDocsAndUpsertFHIR({
 
   const convertibleDocCount = docsToDownload.filter(isConvertible).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
-  await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount);
+  await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
   // split the list in chunks
   const chunks = chunk(docsToDownload, DOC_DOWNLOAD_CHUNK_SIZE);
@@ -512,6 +524,7 @@ export async function downloadDocsAndUpsertFHIR({
                 patientId: patient.id,
                 documentReference: doc,
                 isZeroLength,
+                requestId,
                 error,
               },
             });
@@ -536,6 +549,7 @@ export async function downloadDocsAndUpsertFHIR({
                 document: doc,
                 s3FileName: file.key,
                 s3BucketName: file.bucket,
+                requestId,
               });
             } catch (err) {
               // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function
@@ -572,6 +586,7 @@ export async function downloadDocsAndUpsertFHIR({
                 context: `cw.downloadDocsAndUpsertFHIR`,
                 patientId: patient.id,
                 document: doc,
+                requestId,
               },
             });
           }
@@ -586,10 +601,11 @@ export async function downloadDocsAndUpsertFHIR({
                 successful: completedCount,
                 errors: errorCount,
               },
+              requestId,
             });
           } catch (err) {
             capture.error(err, {
-              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient },
+              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId },
             });
           }
         }
@@ -617,6 +633,7 @@ export async function downloadDocsAndUpsertFHIR({
         }
       : undefined),
     convertibleDownloadErrors: errorCountConvertible,
+    requestId,
   });
   // send webhook to CXs when docs are done downloading
   processPatientDocumentRequest(

@@ -5,7 +5,7 @@ import { makeS3Client } from "../../aws/s3";
 import { FHIRServerConnector, FHIRServerRequest } from "./connector";
 
 export class FHIRServerConnectorHTTP implements FHIRServerConnector {
-  async upsertBatch({ cxId, patientId, payload }: FHIRServerRequest): Promise<void> {
+  async upsertBatch({ cxId, patientId, payload, requestId }: FHIRServerRequest): Promise<void> {
     const serverUrl = Config.getFHIRServerUrlOrFail();
 
     // Gotta download the contents from S3 since the payload is just a reference to the actual file
@@ -16,7 +16,9 @@ export class FHIRServerConnectorHTTP implements FHIRServerConnector {
     const s3FileName = payloadJson.s3FileName;
     if (!s3FileName) throw new Error(`Missing s3FileName in payload: ${payload}`);
 
-    const { log } = Util.out(`upsertBatch, patientId ${patientId}, s3FileName ${s3FileName}`);
+    const { log } = Util.out(
+      `upsertBatch, patientId ${patientId}, requestId ${requestId}, s3FileName ${s3FileName}`
+    );
 
     log(`Downloading from ${s3BucketName}...`);
     const obj = await s3
