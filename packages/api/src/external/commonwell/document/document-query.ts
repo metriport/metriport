@@ -112,7 +112,13 @@ export async function queryAndProcessDocuments({
         ignoreDocRefOnFHIRServer,
       });
 
-      if (fhirDocRefs.length) reportDocQueryUsage(patient);
+      if (
+        fhirDocRefs.length &&
+        forceDownload === undefined &&
+        ignoreDocRefOnFHIRServer === undefined
+      ) {
+        reportDocQueryUsage(patient);
+      }
 
       log(`Finished processing ${fhirDocRefs.length} documents.`);
       return fhirDocRefs.length;
