@@ -114,11 +114,13 @@ function normalizeDate(date: string): string {
   return trimmedDate;
 }
 
-function normalizeState(state: string): USState {
+function normalizeState(state: string): USState | string {
   if (Object.values(states).includes(USState[state as keyof typeof USState])) {
     return USState[state as keyof typeof USState];
   } else if (states[state]) {
     return states[state];
+  } else if (state === "DC") {
+    return state;
   }
   throw new Error(`Invalid state ${state}`);
 }
@@ -132,6 +134,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   city: string;
   state: string;
   address1: string;
+  address2: string;
   phone: string;
   email: string;
 }): PatientCreate | undefined => {
@@ -142,6 +145,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
     genderAtBirth: normalizeGender(csvPatient.gender),
     address: {
       addressLine1: normalizeAddressLine(csvPatient.address1),
+      addressLine2: normalizeAddressLine(csvPatient.address2),
       city: normalizeCity(csvPatient.city),
       state: normalizeState(csvPatient.state),
       zip: normalizeZip(csvPatient.zip),

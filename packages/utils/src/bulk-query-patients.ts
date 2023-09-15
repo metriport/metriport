@@ -15,7 +15,7 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 
 // query stuff
 const delayTime = parseInt(getEnvVar("BULK_QUERY_DELAY_TIME") ?? "5000");
-const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "25");
+const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "6");
 const patientChunkDelayJitterMs = parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER_MS") ?? "1000");
 const queryPollDurationMs = 10_000;
 const maxQueryDurationMs = 71_000; // CW has a 70s timeout, so this is the maximum duration any doc query can take
@@ -69,7 +69,6 @@ async function queryDocsForPatient(patient: Patient) {
           (docQueryStatus.convert && docQueryStatus.convert.status === "completed"))
       ) {
         queryComplete = true;
-        docCount = docQueryStatus.download.successful;
         break;
       }
       await sleep(queryPollDurationMs);
@@ -82,6 +81,9 @@ async function queryDocsForPatient(patient: Patient) {
     status = "completed";
     // get count of resulting FHIR resources
     fhirResourceCounts = await metriportAPI.countPatientConsolidated(patient.id);
+    // get total doc refs for the patient
+    const docRefs = await metriportAPI.listDocuments(patient.id, patient.facilityIds[0]);
+    docCount = docRefs.length;
     for (const val of Object.values(fhirResourceCounts.resources)) {
       fhirResourceCount += val;
     }
@@ -93,8 +95,8 @@ async function queryDocsForPatient(patient: Patient) {
     csvName,
     `${patient.id},${patient.firstName},${
       patient.lastName
-    },${state},${docQueryAttempts},${docCount},${fhirResourceCounts},${replaceAll(
-      JSON.stringify(fhirResourceCount),
+    },${state},${docQueryAttempts},${docCount},${fhirResourceCount},${replaceAll(
+      JSON.stringify(fhirResourceCounts),
       ",",
       " "
     )},${status}\n`
@@ -106,6 +108,9 @@ async function main() {
   initCsv();
   console.log(`>>> Getting all patients for facility ${facilityId}...`);
   const patients = await metriportAPI.listPatients(facilityId);
+  for (const patient of patients) {
+    console.log(patient.id);
+  }
   console.log(`>>> Found ${patients.length} patients`);
   for (let i = 0; i < patients.length; i += patientChunkSize) {
     const chunk = patients.slice(i, i + patientChunkSize);
