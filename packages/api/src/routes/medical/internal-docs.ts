@@ -194,18 +194,24 @@ router.post(
   })
 );
 
+const uploadDocSchema = z.object({
+  description: z.string().optional(),
+  orgName: z.string().optional(),
+  practitionerName: z.string().optional(),
+});
+
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/upload
  *
  * Upload doc for a patient.
- * 
- * Originally on packages/api/src/routes/internal.ts
  *
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient ID.
  * @param req.file - The file to be stored.
- * @param req.body.metadata - The metadata for the file.
-
+ * @param req.body.description - The description of the file.
+ * @param req.body.orgName - The name of the contained Organization
+ * @param req.body.practitionerName - The name of the contained Practitioner
+ *
  * @return 200 Indicating the file was successfully uploaded.
  */
 router.post(
@@ -232,7 +238,11 @@ router.post(
       })
       .promise();
 
-    const metadata = JSON.parse(req.body.metadata);
+    const metadata = uploadDocSchema.parse({
+      description: req.body.description,
+      orgName: req.body.orgName,
+      practitionerName: req.body.practitionerName,
+    });
 
     const docRef = await createAndUploadDocReference({
       cxId,

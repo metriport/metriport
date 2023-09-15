@@ -23,14 +23,16 @@ export async function createAndUploadDocReference({
   patientId,
   docId,
   file,
-  metadata,
+  metadata = {},
 }: {
   cxId: string;
   patientId: string;
   docId: string;
   file: Express.Multer.File;
-  metadata: {
-    description: string;
+  metadata?: {
+    description?: string;
+    orgName?: string;
+    practitionerName?: string;
   };
 }): Promise<DocumentReference> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -40,7 +42,7 @@ export async function createAndUploadDocReference({
   const orgId = smallId();
   const orgRef = `org${orgId}`;
   const practitionerId = smallId();
-  const practitionerRef = `org${practitionerId}`;
+  const practitionerRef = `auth${practitionerId}`;
 
   const metriportContent = createDocReferenceContent({
     contentType: file.mimetype,
@@ -59,7 +61,7 @@ export async function createAndUploadDocReference({
       {
         resourceType: "Organization",
         id: orgRef,
-        name: `Hospital ${orgRef}`,
+        name: metadata.orgName ?? `Hospital ${orgRef}`,
       },
       {
         resourceType: "Practitioner",
@@ -68,6 +70,7 @@ export async function createAndUploadDocReference({
           {
             family: `Last ${practitionerId}`,
             given: [`First ${practitionerId}`],
+            text: metadata.practitionerName ?? undefined,
           },
         ],
       },

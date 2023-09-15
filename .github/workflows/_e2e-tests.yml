@@ -19,6 +19,10 @@ on:
         description: "the url for the connect widget"
         required: true
         type: string
+      test_patient_id:
+        description: "the ID of a test patient for e2e tests"
+        required: false
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -92,6 +96,7 @@ jobs:
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
           TEST_ACC_ID: ${{ secrets.TEST_ACC_ID }}
+          TEST_PATIENT_ID: ${{ inputs.test_patient_id }}
           CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE }}
           CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY }}
           CW_MEMBER_CERTIFICATE: ${{ secrets.CW_MEMBER_CERTIFICATE }}

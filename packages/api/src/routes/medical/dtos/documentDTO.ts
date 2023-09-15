@@ -6,7 +6,6 @@ import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
 export type DocumentReferenceDTO = {
   id: string;
   fileName: string;
-  location: string;
   description: string | undefined;
   status: string | undefined;
   indexed: string | undefined; // ISO-8601
@@ -34,7 +33,6 @@ export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceD
             id: doc.id,
             description: doc.description,
             fileName: content.attachment.title,
-            location: content.attachment.url,
             type: codeableToDTO(doc.type),
             status: doc.status,
             indexed: content.attachment.creation,

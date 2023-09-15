@@ -136,6 +136,7 @@ jobs:
       api_url: ${{ vars.API_URL_STAGING }}
       fhir_url: ${{ vars.FHIR_SERVER_URL_STAGING }}
       widget_url: ${{ vars.WIDGET_URL_STAGING }}
+      test_patient_id: ${{ vars.TEST_PATIENT_ID }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
