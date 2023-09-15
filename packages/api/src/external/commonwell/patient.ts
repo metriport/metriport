@@ -6,6 +6,7 @@ import {
   RequestMetadata,
   StrongId,
   getIdTrailingSlash,
+  organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { MedicalDataSource } from "..";
 import { Facility } from "../../models/medical/facility";
@@ -15,7 +16,7 @@ import { capture } from "../../shared/notifications";
 import { oid } from "../../shared/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
-import { makeCommonWellAPI, organizationQueryMeta } from "./api";
+import { makeCommonWellAPI } from "./api";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { setCommonwellId } from "./patient-external-data";

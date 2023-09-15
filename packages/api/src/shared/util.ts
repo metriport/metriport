@@ -14,6 +14,9 @@ export interface MinMaxItem {
   max_item: number;
 }
 
+/**
+ * @deprecated Let's move these to individual functions on the respective files on this folder
+ */
 export class Util {
   static isTokenExpired(expires_at: number): boolean {
     const bufferSeconds = 600;

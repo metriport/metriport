@@ -12,6 +12,7 @@ const config: Config.InitialOptions = {
   testMatch: isE2E
     ? ["**/__tests__/**/(*.)+(spec|test).e2e.[jt]s?(x)"]
     : ["**/__tests__/**/(*.)+(spec|test).[jt]s?(x)"],
+  setupFilesAfterEnv: ["./src/__tests__/env-setup.ts"],
 };
 
 export default config;

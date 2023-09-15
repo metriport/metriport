@@ -3,6 +3,7 @@ export type SidechainFHIRConverterRequest = {
   patientId: string;
   documentId: string;
   payload: string;
+  requestId?: string;
 };
 
 export interface SidechainFHIRConverterConnector {

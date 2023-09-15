@@ -5,6 +5,7 @@ import {
   BASE_ADDRESS,
   BASE_ADDRESS_SANDBOX,
   DEFAULT_AXIOS_TIMEOUT_MILLIS,
+  optionalDateToISOString,
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
@@ -12,6 +13,8 @@ import {
   DocumentQuery,
   documentQuerySchema,
   DocumentReference,
+  ListDocumentFilters,
+  ListDocumentResult,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -361,14 +364,61 @@ export class MetriportMedicalApi {
    * Returns document references for the given patient across HIEs.
    *
    * @param patientId Patient ID for which to retrieve document metadata.
-   * @param facilityId The facility providing the NPI to support this operation.
-   * @return The list of available document references.
+   * @param filters.dateFrom Optional start date that docs will be filtered by (inclusive).
+   *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
+   * @param filters.dateTo Optional end date that docs will be filtered by (inclusive).
+   *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
+   * @param filters.content Optional value to search on the document reference
+   *    (partial match and case insentitive, minimum 3 chars).
+   * @return The list of document references.
    */
-  async listDocuments(patientId: string, facilityId: string): Promise<DocumentReference[]> {
+  async listDocuments(
+    patientId: string,
+    { dateFrom, dateTo, content }: ListDocumentFilters = {}
+  ): Promise<ListDocumentResult> {
+    const parsedDateFrom = optionalDateToISOString(dateFrom);
+    const parsedDateTo = optionalDateToISOString(dateTo);
+
     const resp = await this.api.get(`${DOCUMENT_URL}`, {
       params: {
         patientId,
-        facilityId,
+        dateFrom: parsedDateFrom,
+        dateTo: parsedDateTo,
+        content,
+      },
+    });
+    if (!resp.data) return { documents: [] };
+    return resp.data;
+  }
+
+  /**
+   * @deprecated Use listDocuments() instead.
+   *
+   * Returns document references for the given patient across HIEs, in the DTO format.
+   *
+   * @param patientId Patient ID for which to retrieve document metadata.
+   * @param filters.dateFrom Optional start date that docs will be filtered by (inclusive).
+   *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
+   * @param filters.dateTo Optional end date that docs will be filtered by (inclusive).
+   *    If the type is Date, its assumed UTC. If the type is string, its assumed to be ISO 8601 (Date only).
+   * @param filters.content Optional value to search on the document reference
+   *    (partial match and case insentitive, minimum 3 chars).
+   * @return The list of document references.
+   */
+  async listDocumentsAsDTO(
+    patientId: string,
+    { dateFrom, dateTo, content }: ListDocumentFilters = {}
+  ): Promise<DocumentReference[]> {
+    const parsedDateFrom = optionalDateToISOString(dateFrom);
+    const parsedDateTo = optionalDateToISOString(dateTo);
+
+    const resp = await this.api.get(`${DOCUMENT_URL}`, {
+      params: {
+        patientId,
+        dateFrom: parsedDateFrom,
+        dateTo: parsedDateTo,
+        content,
+        output: "dto",
       },
     });
     if (!resp.data) return [];
@@ -380,7 +430,7 @@ export class MetriportMedicalApi {
    *
    * @param patientId Patient ID for which to retrieve document metadata.
    * @param facilityId The facility providing the NPI to support this operation.
-   * @return The document query progress & status indicating whether its being executed or not.
+   * @return The document query request ID, progress & status indicating whether its being executed or not.
    */
   async startDocumentQuery(patientId: string, facilityId: string): Promise<DocumentQuery> {
     const resp = await this.api.post(`${DOCUMENT_URL}/query`, null, {
@@ -397,7 +447,7 @@ export class MetriportMedicalApi {
    * Returns the document query status for the specified patient.
    *
    * @param patientId Patient ID for which to retrieve document query status.
-   * @return The document query progress & status indicating whether its being executed or not.
+   * @return The document query request ID, progress & status indicating whether its being executed or not.
    */
   async getDocumentQueryStatus(patientId: string): Promise<DocumentQuery> {
     const resp = await this.api.get(`${DOCUMENT_URL}/query`, {

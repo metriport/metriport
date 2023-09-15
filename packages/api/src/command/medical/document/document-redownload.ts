@@ -25,6 +25,7 @@ import { isMetriportContent } from "../../../external/fhir/shared/extensions/met
 import { getAllPages } from "../../../external/fhir/shared/paginated";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
+import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
@@ -41,10 +42,12 @@ export const reprocessDocuments = async ({
   cxId,
   documentIds,
   options = [],
+  requestId,
 }: {
   cxId: string;
   documentIds: string[];
   options?: Options[];
+  requestId: string;
 }): Promise<void> => {
   const { log } = Util.out(`reprocessDocuments - cxId ${cxId}`);
   documentIds.length
@@ -81,7 +84,12 @@ export const reprocessDocuments = async ({
   }
 
   // Re-download the documents, update them to S3, and re-convert them to FHIR if CCDA
-  await downloadDocsAndUpsertFHIRWithDocRefs({ cxId, documents, options });
+  await downloadDocsAndUpsertFHIRWithDocRefs({
+    cxId,
+    documents,
+    options,
+    requestId,
+  });
 
   log(`Done.`);
 };
@@ -107,10 +115,12 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
   cxId,
   documents,
   options,
+  requestId,
 }: {
   cxId: string;
   documents: DocumentReference[];
   options: Options[];
+  requestId: string;
 }): Promise<void> {
   // Group docs by Patient
   const docsByPatientId = groupBy(documents, d => getPatientId(d) ?? MISSING_ID);
@@ -139,9 +149,10 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
         facilityId,
         forceDownload: isForceDownload(options),
         ignoreDocRefOnFHIRServer: true,
+        requestId,
       });
     } else {
-      await processDocuments({ patient, docs, override: isForceDownload(options) });
+      await processDocuments({ patient, docs, override: isForceDownload(options), requestId });
     }
   }
 }
@@ -150,10 +161,12 @@ async function processDocuments({
   patient,
   docs,
   override,
+  requestId,
 }: {
   patient: PatientModel;
   docs: DocumentReference[];
   override: boolean;
+  requestId: string;
 }): Promise<void> {
   const { cxId, id: patientId } = patient;
   const { log } = Util.out(`processDocuments - M patientId ${patientId}`);
@@ -194,10 +207,13 @@ async function processDocuments({
       facilityId,
       documents: docsAsCW,
       forceDownload: override,
+      requestId,
     });
   } catch (error) {
-    log(`Error processing docs: ${error}`);
-    capture.error(error, { extra: { context: `processDocsOfPatient`, error } });
+    log(`Error processing docs: ${errorToString(error)}`);
+    capture.error(error, {
+      extra: { context: `processDocsOfPatient`, error, patientId: patient.id },
+    });
   } finally {
     await appendDocQueryProgress({
       patient: { id: patientId, cxId },

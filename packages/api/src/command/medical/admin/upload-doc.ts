@@ -1,14 +1,16 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { createDocReferenceContent } from "../../../external/fhir/document";
+import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
-import { getOrganizationOrFail } from "../organization/get-organization";
+import { randomInt } from "../../../shared/numbers";
 import { getPatientOrFail } from "../patient/get-patient";
 
 const apiUrl = Config.getApiUrl();
 const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
+
+const smallId = () => String(randomInt(3)).padStart(3, "0");
 
 /**
  * ADMIN LOGIC
@@ -21,45 +23,56 @@ export async function createAndUploadDocReference({
   patientId,
   docId,
   file,
-  metadata,
+  metadata = {},
 }: {
   cxId: string;
   patientId: string;
   docId: string;
   file: Express.Multer.File;
-  metadata: {
-    description: string;
+  metadata?: {
+    description?: string;
+    orgName?: string;
+    practitionerName?: string;
   };
 }): Promise<DocumentReference> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const organization = await getOrganizationOrFail({ cxId });
 
   const fhirApi = makeFhirApi(cxId);
-
-  const now = dayjs();
+  const refDate = dayjs();
+  const orgId = smallId();
+  const orgRef = `org${orgId}`;
+  const practitionerId = smallId();
+  const practitionerRef = `auth${practitionerId}`;
 
   const metriportContent = createDocReferenceContent({
     contentType: file.mimetype,
     size: file.size,
-    creation: now.format(),
+    creation: refDate.format(),
     fileName: file.originalname,
     location: `${docContributionUrl}?fileName=${file.originalname}`,
     extension: [metriportDataSourceExtension],
+    format: "urn:ihe:pcc:xphr:2007",
   });
 
   // WHEN OPENING THIS FOR CX'S NEED TO UPDATE THE CONTENT
-  const data: DocumentReference = {
-    resourceType: "DocumentReference",
+  const data: DocumentReference = getFHIRDocRef(patient.id, {
     id: docId,
     contained: [
       {
         resourceType: "Organization",
-        id: organization.id,
-        name: organization.data.name,
+        id: orgRef,
+        name: metadata.orgName ?? `Hospital ${orgRef}`,
       },
       {
-        resourceType: "Patient",
-        id: patient.id,
+        resourceType: "Practitioner",
+        id: practitionerRef,
+        name: [
+          {
+            family: `Last ${practitionerId}`,
+            given: [`First ${practitionerId}`],
+            text: metadata.practitionerName ?? undefined,
+          },
+        ],
       },
     ],
     masterIdentifier: {
@@ -73,6 +86,7 @@ export async function createAndUploadDocReference({
         value: docId,
       },
     ],
+    date: refDate.toISOString(),
     status: "current",
     type: {
       coding: [
@@ -83,29 +97,26 @@ export async function createAndUploadDocReference({
         },
       ],
     },
-    subject: {
-      reference: `Patient/${patient.id}`,
-      type: "Patient",
-    },
     author: [
       {
-        reference: `#${organization.id}`,
+        reference: `#${orgRef}`,
         type: "Organization",
       },
     ],
+    extension: [metriportDataSourceExtension],
     description: metadata.description,
     content: [metriportContent],
     context: {
       period: {
-        start: now.format(),
-        end: now.add(1, "hour").format(),
+        start: refDate.subtract(1, "hour").toISOString(),
+        end: refDate.toISOString(),
       },
       sourcePatientInfo: {
-        reference: `#${patient.id}`,
+        reference: `Patient/${patient.id}`,
         type: "Patient",
       },
     },
-  };
+  });
 
   await fhirApi.updateResource(data);
 
