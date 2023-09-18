@@ -77,17 +77,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       throw new Error(`Config error - CW_ORG_PRIVATE_KEY doesn't exist`);
     }
 
-    const pass = new PassThrough();
-
-    let downloadedDocument = "";
-
-    pass.on("data", chunk => {
-      downloadedDocument += chunk;
-    });
-
-    pass.on("end", () => {
-      console.log("Finished downloading document");
-    });
+    const { writeStream, promise } = uploadStream(
+      fileInfo.fileName,
+      fileInfo.fileLocation,
+      document.mimeType
+    );
 
     await downloadDocumentFromCW({
       orgCertificate: cwOrgCertificate,
@@ -96,22 +90,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       orgOid,
       npi,
       location: document.location,
-      stream: pass,
+      stream: writeStream,
     });
 
-    const uploadResult = await uploadDocumentToS3(
-      downloadedDocument,
-      fileInfo.fileName,
-      fileInfo.fileLocation,
-      document.mimeType
-    );
+    const uploadResult = await promise;
 
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
 
-    const { size, contentType } = await s3Utils.getFileInfoFromS3(
-      uploadResult.Key,
-      uploadResult.Bucket
-    );
+    const downloadedDocument = await downloadDocumentFromS3({ fileName: uploadResult.Key });
+
+    const { size, contentType } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
 
     const originalXml = {
       bucket: uploadResult.Bucket,
@@ -122,11 +110,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       isNew: true,
     };
 
-    if (downloadedDocument && document.mimeType === "application/xml") {
-      const containsB64 = downloadedDocument.includes("nonXMLBody");
+    if (downloadedDocument.data && document.mimeType === "application/xml") {
+      const containsB64 = downloadedDocument.data.includes("nonXMLBody");
 
       if (containsB64) {
-        const { newXML, b64 } = removeAndReturnB64FromXML(downloadedDocument);
+        const { newXML, b64 } = removeAndReturnB64FromXML(downloadedDocument.data);
 
         const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
 
@@ -187,21 +175,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   }
 );
 
-async function uploadDocumentToS3(
-  document: string,
-  s3FileName: string,
-  s3FileLocation: string,
-  contentType?: string
-) {
-  const uploadedResult = await s3client
-    .upload({
-      Bucket: s3FileLocation,
-      Key: s3FileName,
-      Body: document,
-      ContentType: contentType ? contentType : "text/xml",
-    })
-    .promise();
-  return uploadedResult;
+function uploadStream(s3FileName: string, s3FileLocation: string, contentType?: string) {
+  const pass = new PassThrough();
+  return {
+    writeStream: pass,
+    promise: s3client
+      .upload({
+        Bucket: s3FileLocation,
+        Key: s3FileName,
+        Body: pass,
+        ContentType: contentType ? contentType : "text/xml",
+      })
+      .promise(),
+  };
 }
 
 export function makeCommonWellAPI(
@@ -260,6 +246,26 @@ async function downloadDocumentFromCW({
 function oid(id: string): string {
   return `${OID_PREFIX}${id}`;
 }
+
+const downloadDocumentFromS3 = async ({
+  fileName,
+}: {
+  fileName: string;
+}): Promise<{ data: string | undefined; contentType: string | undefined }> => {
+  const file = await s3client
+    .getObject({
+      Bucket: bucketName,
+      Key: fileName,
+    })
+    .promise();
+
+  const data = file.Body?.toString("utf-8");
+
+  return {
+    data,
+    contentType: file.ContentType,
+  };
+};
 
 export async function getFileInfoFromS3(
   key: string,
