@@ -183,7 +183,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   }
 );
 
-function uploadDocumentToS3(s3FileName: string, s3FileLocation: string, contentType?: string) {
+export function uploadDocumentToS3(
+  s3FileName: string,
+  s3FileLocation: string,
+  contentType?: string
+) {
   const pass = new PassThrough();
   return {
     writeStream: pass,
@@ -207,7 +211,7 @@ export function makeCommonWellAPI(
   return new CommonWell(cwOrgCertificate, cwOrgKey, orgName, orgOID, apiMode);
 }
 
-async function downloadDocumentFromCW({
+export async function downloadDocumentFromCW({
   orgCertificate,
   orgPrivateKey,
   orgName,
@@ -255,26 +259,6 @@ function oid(id: string): string {
   return `${OID_PREFIX}${id}`;
 }
 
-const downloadDocumentFromS3 = async ({
-  fileName,
-}: {
-  fileName: string;
-}): Promise<{ data: string | undefined; contentType: string | undefined }> => {
-  const file = await s3client
-    .getObject({
-      Bucket: bucketName,
-      Key: fileName,
-    })
-    .promise();
-
-  const data = file.Body?.toString("utf-8");
-
-  return {
-    data,
-    contentType: file.ContentType,
-  };
-};
-
 export async function getFileInfoFromS3(
   key: string,
   bucket: string
@@ -295,7 +279,7 @@ export async function getFileInfoFromS3(
   }
 }
 
-function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: string } {
+export function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: string } {
   const openingTag = "<text";
   const closingTag = "</text>";
   const startIndex = htmlString.indexOf(openingTag);
@@ -303,7 +287,7 @@ function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: s
   const textTag = htmlString.substring(startIndex, endIndex + closingTag.length);
 
   const newXML = htmlString.replace(textTag, "");
-  const b64 = removeHTMLTags(textTag);
+  const b64 = removeHTMLTags(textTag).trim();
 
   return {
     newXML,
