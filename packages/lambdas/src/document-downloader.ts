@@ -83,6 +83,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       document.mimeType
     );
 
+    let downloadedDocument = "";
+
+    writeStream.on("data", chunk => {
+      downloadedDocument += chunk;
+    });
+
+    writeStream.on("end", () => {
+      console.log("Finished downloading document");
+    });
+
     await downloadDocumentFromCW({
       orgCertificate: cwOrgCertificate,
       orgPrivateKey: cwOrgPrivateKey,
@@ -97,8 +107,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
 
-    const downloadedDocument = await downloadDocumentFromS3({ fileName: uploadResult.Key });
-
     const { size, contentType } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
 
     const originalXml = {
@@ -110,11 +118,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       isNew: true,
     };
 
-    if (downloadedDocument.data && document.mimeType === "application/xml") {
-      const containsB64 = downloadedDocument.data.includes("nonXMLBody");
+    if (downloadedDocument && document.mimeType === "application/xml") {
+      const containsB64 = downloadedDocument.includes("nonXMLBody");
 
       if (containsB64) {
-        const { newXML, b64 } = removeAndReturnB64FromXML(downloadedDocument.data);
+        const { newXML, b64 } = removeAndReturnB64FromXML(downloadedDocument);
 
         const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
 
