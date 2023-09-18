@@ -77,7 +77,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       throw new Error(`Config error - CW_ORG_PRIVATE_KEY doesn't exist`);
     }
 
-    const { writeStream, promise } = uploadStream(
+    const { writeStream, promise } = uploadDocumentToS3(
       fileInfo.fileName,
       fileInfo.fileLocation,
       document.mimeType
@@ -183,7 +183,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   }
 );
 
-function uploadStream(s3FileName: string, s3FileLocation: string, contentType?: string) {
+function uploadDocumentToS3(s3FileName: string, s3FileLocation: string, contentType?: string) {
   const pass = new PassThrough();
   return {
     writeStream: pass,
