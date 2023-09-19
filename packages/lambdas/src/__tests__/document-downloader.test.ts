@@ -1,7 +1,3 @@
-import * as dotenv from "dotenv";
-dotenv.config();
-// Keep dotenv import and config before everything else
-
 import {
   downloadDocumentFromCW,
   uploadDocumentToS3,
