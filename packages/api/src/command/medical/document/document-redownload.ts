@@ -142,6 +142,7 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
         facilityId,
         forceDownload: isForceDownload(options),
         ignoreDocRefOnFHIRServer: true,
+        ignoreFhirConversion: isIgnoreFhirConversion(options),
       });
     } else {
       await processDocuments({

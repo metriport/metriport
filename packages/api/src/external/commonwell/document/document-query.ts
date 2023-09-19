@@ -82,11 +82,13 @@ export async function queryAndProcessDocuments({
   facilityId,
   forceDownload,
   ignoreDocRefOnFHIRServer,
+  ignoreFhirConversion,
 }: {
   patient: Patient;
   facilityId: string;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  ignoreFhirConversion?: boolean;
 }): Promise<number> {
   const { log } = Util.out(`CW queryDocuments - M patient ${patient.id}`);
 
@@ -111,6 +113,7 @@ export async function queryAndProcessDocuments({
         documents: cwDocuments,
         forceDownload,
         ignoreDocRefOnFHIRServer,
+        ignoreFhirConversion,
       });
 
       reportDocQueryUsage(patient);
