@@ -23,3 +23,20 @@ export const defaultDateString = defaultString.refine(v => dayjs(v, ISO_DATE, tr
   message: `Date must be a valid ISO 8601 date formatted ${ISO_DATE}. Example: 2023-03-15`,
 });
 export const defaultNameString = defaultString.min(1);
+
+export function optionalDateToISOString(
+  date: string | Date | undefined | null
+): string | undefined {
+  const preConversion = date && typeof date !== "string" ? dayjs(date).format(ISO_DATE) : date;
+  return preConversion ?? undefined;
+}
+
+export const getEnvVar = (varName: string): string | undefined => process.env[varName];
+
+export const getEnvVarOrFail = (varName: string): string => {
+  const value = getEnvVar(varName);
+  if (!value || value.trim().length < 1) {
+    throw new Error(`Missing ${varName} env var`);
+  }
+  return value;
+};

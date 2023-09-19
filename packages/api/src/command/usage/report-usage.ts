@@ -10,12 +10,13 @@ export type ReportUsageCommand = {
   cxId: string;
   entityId: string;
   product: Product;
+  docQuery?: boolean;
 };
 
-export const reportUsage = ({ cxId, entityId, product }: ReportUsageCommand): void => {
+export const reportUsage = ({ cxId, entityId, product, docQuery }: ReportUsageCommand): void => {
   const url = Config.getUsageUrl();
   if (!url) return;
-  const payload = { cxId, entityId, apiType: product };
+  const payload = { cxId, entityId, apiType: product, docQuery };
 
   // intentionally asynchronous
   axios.post(`${url}`, payload).catch(err => {

@@ -3,6 +3,7 @@ export type FHIRServerRequest = {
   patientId: string;
   documentId: string;
   payload: string;
+  requestId?: string;
 };
 
 export interface FHIRServerConnector {
