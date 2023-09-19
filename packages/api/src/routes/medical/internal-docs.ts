@@ -54,6 +54,8 @@ const reprocessOptionsSchema = z.enum(options).array().optional();
  *       the API will use the existing doc refs on the FHIR server;
  *     - force-download: whether we should re-download the documents from CommonWell, if not
  *       present the API will not download them again if already present on S3.
+ *     - ignore-fhir-conversion-and-upsert: whether we should not-convert the documents to FHIR and store the reference, if not
+ *      present the API will convert and store the new reference.
  * @return 200
  */
 router.post(
@@ -204,6 +206,8 @@ const uploadDocSchema = z.object({
  * POST /internal/docs/upload
  *
  * Upload doc for a patient.
+ *
+ * Originally on packages/api/src/routes/internal.ts
  *
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient ID.

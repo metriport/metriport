@@ -82,12 +82,14 @@ export async function queryAndProcessDocuments({
   facilityId,
   forceDownload,
   ignoreDocRefOnFHIRServer,
+  ignoreFhirConversionAndUpsert,
   requestId,
 }: {
   patient: Patient;
   facilityId: string;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<number> {
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
@@ -114,6 +116,7 @@ export async function queryAndProcessDocuments({
         documents: cwDocuments,
         forceDownload,
         ignoreDocRefOnFHIRServer,
+        ignoreFhirConversionAndUpsert,
         requestId,
       });
 
@@ -391,6 +394,7 @@ export async function downloadDocsAndUpsertFHIR({
   documents,
   forceDownload = false,
   ignoreDocRefOnFHIRServer = false,
+  ignoreFhirConversionAndUpsert = false,
   requestId,
 }: {
   patient: Patient;
@@ -398,6 +402,7 @@ export async function downloadDocsAndUpsertFHIR({
   documents: Document[];
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(
@@ -548,7 +553,7 @@ export async function downloadDocsAndUpsertFHIR({
             },
           };
 
-          if (file.isNew) {
+          if (file.isNew && !ignoreFhirConversionAndUpsert) {
             try {
               await convertCDAToFHIR({
                 patient,
@@ -570,12 +575,15 @@ export async function downloadDocsAndUpsertFHIR({
           }
 
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
-          try {
-            await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
-          } catch (error) {
-            reportFHIRError({ patientId: patient.id, doc, error, log });
-            errorReported = true;
-            throw error;
+
+          if (!ignoreFhirConversionAndUpsert) {
+            try {
+              await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
+            } catch (error) {
+              reportFHIRError({ patientId: patient.id, doc, error, log });
+              errorReported = true;
+              throw error;
+            }
           }
 
           completedCount++;

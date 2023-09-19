@@ -32,11 +32,17 @@ import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
-export const options = ["re-query-doc-refs", "force-download"] as const;
+export const options = [
+  "re-query-doc-refs",
+  "force-download",
+  "ignore-fhir-conversion-and-upsert",
+] as const;
 export type Options = (typeof options)[number];
 
 const isReQuery = (options: Options[]): boolean => options.includes("re-query-doc-refs");
 const isForceDownload = (options: Options[]): boolean => options.includes("force-download");
+const isIgnoreFhirConversionAndUpsert = (options: Options[]): boolean =>
+  options.includes("ignore-fhir-conversion-and-upsert");
 
 export const reprocessDocuments = async ({
   cxId,
@@ -149,10 +155,17 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
         facilityId,
         forceDownload: isForceDownload(options),
         ignoreDocRefOnFHIRServer: true,
+        ignoreFhirConversionAndUpsert: isIgnoreFhirConversionAndUpsert(options),
         requestId,
       });
     } else {
-      await processDocuments({ patient, docs, override: isForceDownload(options), requestId });
+      await processDocuments({
+        patient,
+        docs,
+        override: isForceDownload(options),
+        ignoreFhirConversionAndUpsert: isIgnoreFhirConversionAndUpsert(options),
+        requestId,
+      });
     }
   }
 }
@@ -161,11 +174,13 @@ async function processDocuments({
   patient,
   docs,
   override,
+  ignoreFhirConversionAndUpsert,
   requestId,
 }: {
   patient: PatientModel;
   docs: DocumentReference[];
   override: boolean;
+  ignoreFhirConversionAndUpsert: boolean;
   requestId: string;
 }): Promise<void> {
   const { cxId, id: patientId } = patient;
@@ -207,6 +222,7 @@ async function processDocuments({
       facilityId,
       documents: docsAsCW,
       forceDownload: override,
+      ignoreFhirConversionAndUpsert,
       requestId,
     });
   } catch (error) {
