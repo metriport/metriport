@@ -22,87 +22,86 @@ type SimpleOrg = {
   States: string[];
 };
 
-const patientIdsArr: string[] = [];
+const patientIdsArr: Patient[] = [];
 const cqOrgsList = fs.readFileSync("./cq-org-list.json", "utf8");
-const orgOid = "";
+const orgOid = "2.16.840.1.113883.3.9621.5.102";
 const cookie = "";
 
 async function main() {
-  let patientIds: string[] = [];
+  let patients: Patient[] = [];
 
-  if (patientIds.length === 0) {
+  if (patients.length === 0) {
     const facilities = await metriportAPI.listFacilities();
 
     for (const facility of facilities) {
-      const patients = await metriportAPI.listPatients(facility.id);
+      const patientsList = await metriportAPI.listPatients(facility.id);
 
-      patients.forEach(patient => {
-        patientIds.push(patient.id);
+      patientsList.forEach(patient => {
+        patients.push(patient);
       });
     }
   } else {
-    patientIds = patientIdsArr;
+    patients = patientIdsArr;
   }
 
-  for (const patientId of patientIds) {
-    const patient = await metriportAPI.getPatient(patientId);
-    const cqOrgsToLink = getCQOrgsToLink(patient);
+  const orgs: SimpleOrg[] = JSON.parse(cqOrgsList);
 
-    const chunks = chunk(cqOrgsToLink, CQ_ORG_CHUNK_SIZE);
+  const chunks = chunk(orgs, CQ_ORG_CHUNK_SIZE);
 
-    for (const orgChunk of chunks) {
-      const orgIds = orgChunk.map(org => org.Id);
+  for (const orgChunk of chunks) {
+    const orgIds = orgChunk.map(org => org.Id);
 
-      await axios.post(
-        `https://portal.commonwellalliance.org/Organization/${orgOid}/IncludeList`,
-        {
-          LocalOrganizationid: orgOid,
-          IncludedOrganizationIdList: orgIds,
+    await axios.post(
+      `https://portal.commonwellalliance.org/Organization/${orgOid}/IncludeList`,
+      {
+        LocalOrganizationid: orgOid,
+        IncludedOrganizationIdList: orgIds,
+      },
+      {
+        headers: {
+          Cookie: cookie,
         },
-        {
-          headers: {
-            Cookie: cookie,
-          },
-        }
-      );
+      }
+    );
 
-      await metriportAPI.updatePatient(patient, patient.facilityIds[0]);
+    const patientsToUpdate = getPatientsToUpdate(patients, orgChunk);
 
-      await sleep(10000);
-    }
+    await Promise.all(
+      patientsToUpdate.map(async patient => {
+        await metriportAPI.updatePatient(patient, patient.facilityIds[0]);
+      })
+    );
+
+    await sleep(10000);
   }
 }
 
-const getCQOrgsToLink = (patient: Patient): SimpleOrg[] => {
-  const orgs: SimpleOrg[] = JSON.parse(cqOrgsList);
+const getPatientsToUpdate = (patients: Patient[], orgs: SimpleOrg[]): Patient[] => {
+  const orgStates = orgs.map(org => org.States);
 
-  let patientStates: string[] = [];
+  const filteredPatients = patients.filter(patient => {
+    let patientStates: string[] = [];
 
-  if (Array.isArray(patient.address)) {
-    const patientWithValidStates = patient.address.reduce((acc: string[], address) => {
-      if (address.state) {
-        return [...acc, address.state];
-      }
+    if (Array.isArray(patient.address)) {
+      const patientWithValidStates = patient.address.reduce((acc: string[], address) => {
+        if (address.state) {
+          return [...acc, address.state];
+        }
 
-      return acc;
-    }, []);
+        return acc;
+      }, []);
 
-    patientStates = patientWithValidStates;
-  } else {
-    if (patient.address.state) patientStates = [patient.address.state];
-  }
+      patientStates = patientWithValidStates;
+    } else {
+      if (patient.address.state) patientStates = [patient.address.state];
+    }
 
-  const cqOrgs = orgs.filter(org => {
-    const orgStates = org.States.map(state => state.toLowerCase());
-
-    return patientStates.some(state => {
-      if (state) {
-        return orgStates.includes(state.toLowerCase());
-      }
+    return orgStates.some(states => {
+      return states.some(state => patientStates.includes(state));
     });
   });
 
-  return cqOrgs;
+  return filteredPatients;
 };
 
 main();

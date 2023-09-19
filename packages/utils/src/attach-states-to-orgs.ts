@@ -23,6 +23,7 @@ type Orgs = {
 };
 
 const orgsList = fs.readFileSync("./orgs-list.json", "utf8");
+const apiKey = "";
 
 async function main() {
   const orgs: Orgs = JSON.parse(orgsList);
@@ -32,7 +33,7 @@ async function main() {
   for (const org of orgs.AllCareQualityOrganizations) {
     for (const simpleOrg of org.Organizations) {
       try {
-        const url = `https://wpapi.sequoiaproject.org/fhir-stu3/1.0.0/Organization?_format=json&apikey=7sWkoiMqhCxR-eFJ9wQHXrmaPzfAgSTvE8YU2Gy4jbcLZNpduK&_name:contains=${simpleOrg.Name}&_radius=30&_sort=orgname&_active=true`;
+        const url = `https://wpapi.sequoiaproject.org/fhir-stu3/1.0.0/Organization?_format=json&apikey=${apiKey}&_name:contains=${simpleOrg.Name}&_radius=30&_sort=orgname&_active=true`;
 
         const response = await axios.get(url);
 
