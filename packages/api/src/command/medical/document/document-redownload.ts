@@ -32,11 +32,13 @@ import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
-export const options = ["re-query-doc-refs", "force-download"] as const;
+export const options = ["re-query-doc-refs", "force-download", "ignore-fhir-conversion"] as const;
 export type Options = (typeof options)[number];
 
 const isReQuery = (options: Options[]): boolean => options.includes("re-query-doc-refs");
 const isForceDownload = (options: Options[]): boolean => options.includes("force-download");
+const isIgnoreFhirConversion = (options: Options[]): boolean =>
+  options.includes("ignore-fhir-conversion");
 
 export const reprocessDocuments = async ({
   cxId,
@@ -142,7 +144,12 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
         ignoreDocRefOnFHIRServer: true,
       });
     } else {
-      await processDocuments({ patient, docs, override: isForceDownload(options) });
+      await processDocuments({
+        patient,
+        docs,
+        override: isForceDownload(options),
+        ignoreFhirConversion: isIgnoreFhirConversion(options),
+      });
     }
   }
 }
@@ -151,10 +158,12 @@ async function processDocuments({
   patient,
   docs,
   override,
+  ignoreFhirConversion,
 }: {
   patient: PatientModel;
   docs: DocumentReference[];
   override: boolean;
+  ignoreFhirConversion: boolean;
 }): Promise<void> {
   const { cxId, id: patientId } = patient;
   const { log } = Util.out(`processDocuments - M patientId ${patientId}`);
@@ -195,6 +204,7 @@ async function processDocuments({
       facilityId,
       documents: docsAsCW,
       forceDownload: override,
+      ignoreFhirConversion,
     });
   } catch (error) {
     log(`Error processing docs: ${errorToString(error)}`);

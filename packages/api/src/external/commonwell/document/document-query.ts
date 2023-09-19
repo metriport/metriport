@@ -377,12 +377,14 @@ export async function downloadDocsAndUpsertFHIR({
   documents,
   forceDownload = false,
   ignoreDocRefOnFHIRServer = false,
+  ignoreFhirConversion = false,
 }: {
   patient: Patient;
   facilityId: string;
   documents: Document[];
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
+  ignoreFhirConversion?: boolean;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`CW downloadDocsAndUpsertFHIR - M patient ${patient.id}`);
   forceDownload && log(`override=true, NOT checking whether docs exist`);
@@ -529,7 +531,7 @@ export async function downloadDocsAndUpsertFHIR({
             },
           };
 
-          if (file.isNew) {
+          if (file.isNew && !ignoreFhirConversion) {
             try {
               await convertCDAToFHIR({
                 patient,
@@ -550,12 +552,15 @@ export async function downloadDocsAndUpsertFHIR({
           }
 
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
-          try {
-            await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
-          } catch (error) {
-            reportFHIRError({ patientId: patient.id, doc, error, log });
-            errorReported = true;
-            throw error;
+
+          if (!ignoreFhirConversion) {
+            try {
+              await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
+            } catch (error) {
+              reportFHIRError({ patientId: patient.id, doc, error, log });
+              errorReported = true;
+              throw error;
+            }
           }
 
           completedCount++;
