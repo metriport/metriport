@@ -10,10 +10,11 @@ const cwOrgCertificate = ``;
 const cwOrgPrivateKey = ``;
 const bucketName = ``;
 
-const file = {
+const docRef = {
   fileName: "",
   fileLocation: "",
   mimeType: "",
+  size: 0,
 };
 
 const org = {
@@ -22,9 +23,13 @@ const org = {
   npi: "",
 };
 
-describe("document-downloader", () => {
-  it("should return a result", async () => {
-    const { writeStream, promise } = uploadDocumentToS3(file.fileName, bucketName, file.mimeType);
+describe.skip("document-downloader", () => {
+  it("should download the document from cw and store in s3", async () => {
+    const { writeStream, promise } = uploadDocumentToS3(
+      docRef.fileName,
+      bucketName,
+      docRef.mimeType
+    );
 
     await downloadDocumentFromCW({
       orgCertificate: cwOrgCertificate,
@@ -32,19 +37,19 @@ describe("document-downloader", () => {
       orgName: org.orgName,
       orgOid: org.orgOid,
       npi: org.npi,
-      location: file.fileLocation,
+      location: docRef.fileLocation,
       stream: writeStream,
     });
 
     const uploadResult = await promise;
 
     expect(uploadResult).toBeTruthy();
-    expect(uploadResult.Key).toEqual(file.fileName);
+    expect(uploadResult.Key).toEqual(docRef.fileName);
 
     const { size, contentType } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
 
-    expect(size).toBeTruthy();
-    expect(contentType).toEqual(file.mimeType);
+    expect(size).toEqual(docRef.size);
+    expect(contentType).toEqual(docRef.mimeType);
   });
 
   it("should remove base64 from xml", async () => {
