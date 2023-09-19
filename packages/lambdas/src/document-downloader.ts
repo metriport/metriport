@@ -77,15 +77,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       throw new Error(`Config error - CW_ORG_PRIVATE_KEY doesn't exist`);
     }
 
-    const pass = new PassThrough();
+    const { writeStream, promise } = uploadDocumentToS3(
+      fileInfo.fileName,
+      fileInfo.fileLocation,
+      document.mimeType
+    );
 
     let downloadedDocument = "";
 
-    pass.on("data", chunk => {
+    writeStream.on("data", chunk => {
       downloadedDocument += chunk;
     });
 
-    pass.on("end", () => {
+    writeStream.on("end", () => {
       console.log("Finished downloading document");
     });
 
@@ -96,22 +100,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       orgOid,
       npi,
       location: document.location,
-      stream: pass,
+      stream: writeStream,
     });
 
-    const uploadResult = await uploadDocumentToS3(
-      downloadedDocument,
-      fileInfo.fileName,
-      fileInfo.fileLocation,
-      document.mimeType
-    );
+    const uploadResult = await promise;
 
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
 
-    const { size, contentType } = await s3Utils.getFileInfoFromS3(
-      uploadResult.Key,
-      uploadResult.Bucket
-    );
+    const { size, contentType } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
 
     const originalXml = {
       bucket: uploadResult.Bucket,
@@ -187,21 +183,23 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   }
 );
 
-async function uploadDocumentToS3(
-  document: string,
+export function uploadDocumentToS3(
   s3FileName: string,
   s3FileLocation: string,
   contentType?: string
 ) {
-  const uploadedResult = await s3client
-    .upload({
-      Bucket: s3FileLocation,
-      Key: s3FileName,
-      Body: document,
-      ContentType: contentType ? contentType : "text/xml",
-    })
-    .promise();
-  return uploadedResult;
+  const pass = new PassThrough();
+  return {
+    writeStream: pass,
+    promise: s3client
+      .upload({
+        Bucket: s3FileLocation,
+        Key: s3FileName,
+        Body: pass,
+        ContentType: contentType ? contentType : "text/xml",
+      })
+      .promise(),
+  };
 }
 
 export function makeCommonWellAPI(
@@ -213,7 +211,7 @@ export function makeCommonWellAPI(
   return new CommonWell(cwOrgCertificate, cwOrgKey, orgName, orgOID, apiMode);
 }
 
-async function downloadDocumentFromCW({
+export async function downloadDocumentFromCW({
   orgCertificate,
   orgPrivateKey,
   orgName,
@@ -281,7 +279,7 @@ export async function getFileInfoFromS3(
   }
 }
 
-function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: string } {
+export function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: string } {
   const openingTag = "<text";
   const closingTag = "</text>";
   const startIndex = htmlString.indexOf(openingTag);
@@ -289,7 +287,7 @@ function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: s
   const textTag = htmlString.substring(startIndex, endIndex + closingTag.length);
 
   const newXML = htmlString.replace(textTag, "");
-  const b64 = removeHTMLTags(textTag);
+  const b64 = removeHTMLTags(textTag).trim();
 
   return {
     newXML,
