@@ -32,13 +32,17 @@ import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
-export const options = ["re-query-doc-refs", "force-download", "ignore-fhir-conversion"] as const;
+export const options = [
+  "re-query-doc-refs",
+  "force-download",
+  "ignore-fhir-conversion-and-upsert",
+] as const;
 export type Options = (typeof options)[number];
 
 const isReQuery = (options: Options[]): boolean => options.includes("re-query-doc-refs");
 const isForceDownload = (options: Options[]): boolean => options.includes("force-download");
-const isIgnoreFhirConversion = (options: Options[]): boolean =>
-  options.includes("ignore-fhir-conversion");
+const isIgnoreFhirConversionAndUpsert = (options: Options[]): boolean =>
+  options.includes("ignore-fhir-conversion-and-upsert");
 
 export const reprocessDocuments = async ({
   cxId,
@@ -151,7 +155,7 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
         facilityId,
         forceDownload: isForceDownload(options),
         ignoreDocRefOnFHIRServer: true,
-        ignoreFhirConversion: isIgnoreFhirConversion(options),
+        ignoreFhirConversionAndUpsert: isIgnoreFhirConversionAndUpsert(options),
         requestId,
       });
     } else {
@@ -159,7 +163,7 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
         patient,
         docs,
         override: isForceDownload(options),
-        ignoreFhirConversion: isIgnoreFhirConversion(options),
+        ignoreFhirConversionAndUpsert: isIgnoreFhirConversionAndUpsert(options),
         requestId,
       });
     }
@@ -170,13 +174,13 @@ async function processDocuments({
   patient,
   docs,
   override,
-  ignoreFhirConversion,
+  ignoreFhirConversionAndUpsert,
   requestId,
 }: {
   patient: PatientModel;
   docs: DocumentReference[];
   override: boolean;
-  ignoreFhirConversion: boolean;
+  ignoreFhirConversionAndUpsert: boolean;
   requestId: string;
 }): Promise<void> {
   const { cxId, id: patientId } = patient;
@@ -218,7 +222,7 @@ async function processDocuments({
       facilityId,
       documents: docsAsCW,
       forceDownload: override,
-      ignoreFhirConversion,
+      ignoreFhirConversionAndUpsert,
       requestId,
     });
   } catch (error) {

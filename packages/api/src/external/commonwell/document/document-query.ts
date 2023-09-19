@@ -82,14 +82,14 @@ export async function queryAndProcessDocuments({
   facilityId,
   forceDownload,
   ignoreDocRefOnFHIRServer,
-  ignoreFhirConversion,
+  ignoreFhirConversionAndUpsert,
   requestId,
 }: {
   patient: Patient;
   facilityId: string;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
-  ignoreFhirConversion?: boolean;
+  ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<number> {
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
@@ -116,7 +116,7 @@ export async function queryAndProcessDocuments({
         documents: cwDocuments,
         forceDownload,
         ignoreDocRefOnFHIRServer,
-        ignoreFhirConversion,
+        ignoreFhirConversionAndUpsert,
         requestId,
       });
 
@@ -394,7 +394,7 @@ export async function downloadDocsAndUpsertFHIR({
   documents,
   forceDownload = false,
   ignoreDocRefOnFHIRServer = false,
-  ignoreFhirConversion = false,
+  ignoreFhirConversionAndUpsert = false,
   requestId,
 }: {
   patient: Patient;
@@ -402,7 +402,7 @@ export async function downloadDocsAndUpsertFHIR({
   documents: Document[];
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
-  ignoreFhirConversion?: boolean;
+  ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(
@@ -553,7 +553,7 @@ export async function downloadDocsAndUpsertFHIR({
             },
           };
 
-          if (file.isNew && !ignoreFhirConversion) {
+          if (file.isNew && !ignoreFhirConversionAndUpsert) {
             try {
               await convertCDAToFHIR({
                 patient,
@@ -576,7 +576,7 @@ export async function downloadDocsAndUpsertFHIR({
 
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
 
-          if (!ignoreFhirConversion) {
+          if (!ignoreFhirConversionAndUpsert) {
             try {
               await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
             } catch (error) {
