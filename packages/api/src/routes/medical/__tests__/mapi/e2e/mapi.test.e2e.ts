@@ -20,7 +20,7 @@ const maxRetries = 4;
 jest.setTimeout(30000);
 
 // NEVER TO BE RUN IN PRODUCTION
-if (Config.isStaging() || !Config.isCloudEnv()) {
+if (Config.isStaging() || Config.isDev()) {
   describe("MAPI E2E Tests", () => {
     let facility: Facility;
     let patient: Patient;
