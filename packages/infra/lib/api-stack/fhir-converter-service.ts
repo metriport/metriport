@@ -7,11 +7,11 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
-import { getConfig } from "./shared/config";
-import { vCPU } from "./shared/fargate";
-import { MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
-import { isProd } from "./shared/util";
+import { EnvConfig } from "../../config/env-config";
+import { getConfig } from "../shared/config";
+import { vCPU } from "../shared/fargate";
+import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { isProd } from "../shared/util";
 
 export function settings() {
   const config = getConfig();
