@@ -13,11 +13,11 @@ import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
-import { DnsZones } from "./shared/dns";
-import { Secrets } from "./shared/secrets";
-import { provideAccessToQueue } from "./shared/sqs";
-import { isProd } from "./shared/util";
+import { EnvConfig } from "../../config/env-config";
+import { DnsZones } from "../shared/dns";
+import { Secrets } from "../shared/secrets";
+import { provideAccessToQueue } from "../shared/sqs";
+import { isProd } from "../shared/util";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
