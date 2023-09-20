@@ -27,6 +27,7 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import OpenSearchConstruct from "./shared/open-search";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
@@ -177,6 +178,16 @@ export class APIStack extends Stack {
       dynamoSidechainKeysConstructName,
       slackNotification?.alarmAction
     );
+
+    //-------------------------------------------
+    // OpenSearch Domains
+    //-------------------------------------------
+    new OpenSearchConstruct(this, "ApiOpenSearchDomains", {
+      // const openSearch = new OpenSearchConstruct(this, "ApiOpenSearchDomains", {
+      env: props.env,
+      config: props.config,
+      vpc: this.vpc,
+    });
 
     //-------------------------------------------
     // FHIR Converter Service
