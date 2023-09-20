@@ -32,6 +32,9 @@ export class Config {
   static isStaging(): boolean {
     return Config.getEnvType() === this.STAGING_ENV;
   }
+  static isDev(): boolean {
+    return Config.getEnvType() === this.DEV_ENV;
+  }
 
   static getVersion(): string | undefined {
     return getEnvVar("METRIPORT_VERSION");
