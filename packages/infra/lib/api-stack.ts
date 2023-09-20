@@ -879,6 +879,11 @@ export class APIStack extends Stack {
     return cdaToVisualizationLambda;
   }
 
+  /**
+   * We are intentionally not setting an alarm action for this lambda, as many issues
+   * may be caused outside of our system. To eliminate noise, we will not alarm on this
+   * lambda.
+   */
   private setupDocumentDownloader(ownProps: {
     lambdaLayers: lambda.ILayerVersion[];
     vpc: ec2.IVpc;
