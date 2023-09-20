@@ -247,7 +247,6 @@ export class APIStack extends Stack {
       bucketName: props.config.medicalDocumentsBucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     //-------------------------------------------
@@ -880,6 +879,11 @@ export class APIStack extends Stack {
     return cdaToVisualizationLambda;
   }
 
+  /**
+   * We are intentionally not setting an alarm action for this lambda, as many issues
+   * may be caused outside of our system. To eliminate noise, we will not alarm on this
+   * lambda.
+   */
   private setupDocumentDownloader(ownProps: {
     lambdaLayers: lambda.ILayerVersion[];
     vpc: ec2.IVpc;
@@ -889,7 +893,6 @@ export class APIStack extends Stack {
     bucketName: string | undefined;
     envType: string;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }): Lambda {
     const {
       lambdaLayers,
@@ -900,7 +903,6 @@ export class APIStack extends Stack {
       bucketName,
       sentryDsn,
       envType,
-      alarmAction,
     } = ownProps;
 
     const documentDownloaderLambda = createLambda({
@@ -921,7 +923,6 @@ export class APIStack extends Stack {
       memory: 512,
       timeout: Duration.minutes(5),
       vpc,
-      alarmSnsAction: alarmAction,
     });
 
     // granting secrets read access to lambda
