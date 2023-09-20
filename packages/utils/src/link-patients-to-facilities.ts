@@ -24,8 +24,12 @@ type SimpleOrg = {
 
 const patientIdsArr: Patient[] = [];
 const cqOrgsList = fs.readFileSync("./cq-org-list.json", "utf8");
-const orgOid = "2.16.840.1.113883.3.9621.5.102";
+const basePortalUrl = "https://portal.commonwellalliance.org";
+const orgOid = "";
 const cookie = "";
+
+// If it fails, change the index to the last one that was successful
+const downloadProgressIndex = 45;
 
 async function main() {
   let patients: Patient[] = [];
@@ -48,26 +52,41 @@ async function main() {
 
   const chunks = chunk(orgs, CQ_ORG_CHUNK_SIZE);
 
+  chunks.splice(0, downloadProgressIndex);
+
   for (const [i, orgChunk] of chunks.entries()) {
     const orgIds = orgChunk.map(org => org.Id);
 
     console.log("ORG CHUNK", i + 1, chunks.length);
 
     try {
-      await axios.post(
-        `https://portal.commonwellalliance.org/Organization/${orgOid}/IncludeList`,
+      const resp = await axios.post(
+        `${basePortalUrl}/Organization/${orgOid}/IncludeList`,
         {
           LocalOrganizationid: orgOid,
           IncludedOrganizationIdList: orgIds,
         },
         {
+          timeout: 60000,
           headers: {
             Cookie: cookie,
+            "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
+            Accept: "application/json, text/plain, */*",
+            Origin: `${basePortalUrl}`,
+            Referer: `${basePortalUrl}/Organization/${orgOid}/IncludeList/Edit`,
           },
         }
       );
+
+      if (resp.data["SelectedOrganizationList"]) {
+        console.log("RESPONSE", JSON.stringify(resp.data["SelectedOrganizationList"], null, 2));
+      } else {
+        throw new Error(`Bad resp`);
+      }
     } catch (error) {
-      console.log("ERROR", error);
+      console.log(`ERROR - stopped at org chunk ${i + downloadProgressIndex}`, error);
+      throw error;
     }
 
     const patientsToUpdate = getPatientsToUpdate(patients, orgChunk);
@@ -79,8 +98,6 @@ async function main() {
     );
 
     patients = newPatients;
-
-    console.log("UPDATED PATIENTS", patientsToUpdate.length);
 
     await sleep(10000);
   }
