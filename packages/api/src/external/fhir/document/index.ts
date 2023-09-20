@@ -282,15 +282,17 @@ export function convertToFHIRResource(
   if (resource.resourceType === "Practitioner") {
     return containedPractitionerToFHIRResource(resource, patientId, log);
   }
-  const msg = `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`;
-  log(`${msg}: ${JSON.stringify(resource)}`);
-  capture.message(msg, {
-    extra: {
-      context: `toFHIR.convertToFHIRResource`,
-      resource,
-      patientId,
-    },
-  });
+  if (resource.resourceType) {
+    const msg = `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`;
+    log(`${msg}: ${JSON.stringify(resource)}`);
+    capture.message(msg, {
+      extra: {
+        context: `toFHIR.convertToFHIRResource`,
+        resource,
+        patientId,
+      },
+    });
+  }
   return undefined;
 }
 
