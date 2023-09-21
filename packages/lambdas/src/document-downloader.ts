@@ -118,7 +118,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       isNew: true,
     };
 
-    if (downloadedDocument && document.mimeType === "application/xml") {
+    if (
+      downloadedDocument &&
+      (document.mimeType === "application/xml" || document.mimeType === "text/xml")
+    ) {
       const containsB64 = downloadedDocument.includes("nonXMLBody");
 
       if (containsB64) {
