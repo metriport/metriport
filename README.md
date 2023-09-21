@@ -41,9 +41,14 @@
 
 ## **Overview**
 
-<div align="center">
-   <img width="50%" alt="open source healthcare data platform" src="./assets/graphic.svg">
-</div>
+<div>
+    <a href="https://www.loom.com/share/c5c049d2f0444e1ea8e075640077a77f">
+      <p>Check out our platform demo:</p>
+    </a>
+    <a href="https://www.loom.com/share/c5c049d2f0444e1ea8e075640077a77f">
+      <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/c5c049d2f0444e1ea8e075640077a77f-with-play.gif">
+    </a>
+  </div>
 
 ## **Security and Privacy**
 
