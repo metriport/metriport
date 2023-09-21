@@ -4,7 +4,8 @@
   </a>
 
   <p align="center">
-    Metriport helps digital health companies access and manage health and medical data, through a single open source API.
+    Metriport helps healthcare organizations access comprehensive patient medical data, through an
+    open-source universal API.
     <br />
     <a href="https://metriport.com" target="_blank"><strong>Learn more »</strong></a>
     <br />
@@ -41,7 +42,7 @@
 ## **Overview**
 
 <div align="center">
-   <img width="50%" alt="wearables" src="./assets/wearables.svg">
+   <img width="50%" alt="open source healthcare data platform" src="./assets/graphic.svg">
 </div>
 
 ## **Security and Privacy**
@@ -55,7 +56,7 @@ Metriport is SOC 2 and HIPAA compliant. [Click here](https://metriport.com/secur
   <img src="./assets/hipaa-vanta.png" width="20%" />
 </p>
 
-### **Health Devices API**
+<!-- ### **Health Devices API**
 
 Our [Health Devices API](https://metriport.com/devices), allows you to gain access to your users’ health data from various wearables, RPM devices, and mHealth sources through a single standardized API.
 
@@ -71,21 +72,33 @@ Out of the box, our Health Devices API supports the following integrations:
 - Apple Health
 - Google Fit
 
-...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself.
+...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself. -->
+
+### **Medical API**
 
 <div align="center">
-   <img width="50%" alt="wearables" src="./assets/graphic.svg">
+   <img width="90%" alt="open source healthcare data api" src="./assets/medical-api.png">
 </div>
 
-### **Medical API (Coming Soon)**
+Our [Medical API](https://www.metriport.com/medical) brings you data from the largest clinical data networks in the country - one open-source API, 300+ million patients.
 
-Open-source with native FHIR support. More info on our Medical API here: https://metriport.com/medical/
+Metriport ensures clinical accuracy and completeness of medical information, with HL7 FHIR, C-CDA, and PDF formats supported. Through standardizing, de-duplicating, consolidating, and hydrating data with medical code crosswalking, Metriport delivers rich and comprehensive patient data at the point-of-care.
+
+### **Medical Dashboard**
+
+<div align="center">
+   <img width="90%" alt="open source healthcare data dashboard" src="./assets/medical-dashboard.png">
+</div>
+
+Our [Medical Dashboard](https://www.metriport.com/dashboard) enables providers to streamline their patient record retrieval process. Get up and running within minutes, accessing the largest health information networks in the country through a user-friendly interface.
+
+Tools like our FHIR explorer and PDF converter help you make sense of the data you need to make relevant care decisions and improve patient outcomes.
 
 ## **Getting Started**
 
 Check out the links below to get started with Metriport in minutes!
 
-### **[Quickstart Guide](https://docs.metriport.com/getting-started/introduction) 🚀**
+### **[Quickstart Guide](https://docs.metriport.com/medical-api/getting-started/quickstart) 🚀**
 
 ### **[Developer Dashboard](https://dash.metriport.com/) 💻**
 
@@ -101,7 +114,7 @@ Backend for the Metriport API.
 - URL: [https://api.metriport.com/](https://api.metriport.com/)
 - Sandbox URL: [https://api.sandbox.metriport.com/](https://api.sandbox.metriport.com/)
 
-### **Connect Widget**
+<!-- ### **Connect Widget**
 
 Pre-built app that you can embed your own app! Use it to allow your users to authenticate with various data sources, allowing you to pull their health data from those sources.
 
@@ -110,7 +123,7 @@ Pre-built app that you can embed your own app! Use it to allow your users to aut
 </div>
 
 - Dir: [`/connect-widget`](/connect-widget)
-- URL: [https://connect.metriport.com/](https://connect.metriport.com/?token=demo)
+- URL: [https://connect.metriport.com/](https://connect.metriport.com/?token=demo) -->
 
 ### **Infrastructure as Code**
 
@@ -137,7 +150,7 @@ Our npm packages are available in [`/packages`](/packages):
 - [CommonWell JWT Maker](/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
 - [CommonWell SDK](/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
 
-#### **iOS**
+<!-- #### **iOS**
 
 Our iOS packages are available in our [`iOS repo`](https://github.com/metriport/metriport-ios-sdk):
 
@@ -147,7 +160,7 @@ Our iOS packages are available in our [`iOS repo`](https://github.com/metriport/
 
 Some example projects that serve as examples for how to integrate with Metriport on various platforms - such as iOS and Android.
 
-- Dir: [`/examples`](/examples)
+- Dir: [`/examples`](/examples) -->
 
 ---
 
@@ -221,7 +234,7 @@ Accepted types:
 Scope is optional, and we can use one of these, or empty (no scope):
 
 - api
-- widget
+<!-- - widget -->
 - infra
 
 The footer should have the ticket number supporting the commit:
@@ -252,7 +265,7 @@ Commitizen will retry the last commit message you prepared previously. More abou
 
 First, create a local environment file to define your developer keys, and local dev URLs:
 
-```shell
+<!-- ```shell
 $ touch packages/api/.env
 $ echo "LOCAL_ACCOUNT_CXID=<YOUR-TESTING-ACCOUNT-ID>" >> packages/api/.env
 $ echo "API_URL=http://localhost:8080" >> packages/api/.env
@@ -274,6 +287,13 @@ $ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> packages/api/.env
 $ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> packages/api/.env
 $ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
 $ echo "FHIR_SERVER_URL=<FHIR-SERVER-URL>" >> packages/api/.env # optional
+``` -->
+
+```shell
+$ touch packages/api/.env
+$ echo "LOCAL_ACCOUNT_CXID=<YOUR-TESTING-ACCOUNT-ID>" >> packages/api/.env
+$ echo "API_URL=http://localhost:8080" >> packages/api/.env
+$ echo "FHIR_SERVER_URL=<FHIR-SERVER-URL>" >> packages/api/.env # optional
 ```
 
 Additionally, define your System Root [OID](https://en.wikipedia.org/wiki/Object_identifier). This will be the base identifier to represent your system in any medical data you create - such as organizations, facilities, patients, and etc.
@@ -286,7 +306,7 @@ By default, OIDs in Metriport are managed according to the [recommended standard
 $ echo "SYSTEM_ROOT_OID=<YOUR-OID>" >> packages/api/.env
 ```
 
-These envs are specific to Commonwell and are necessary in sending requests to their platform.
+These envs are specific to CommonWell and are necessary in sending requests to their platform.
 
 ```shell
 $ echo "CW_TECHNICAL_CONTACT_NAME=<YOUR-SECRET>" >> packages/api/.env
@@ -430,7 +450,7 @@ $ docker-compose -f docker-compose.dev.yml down
 
 To debug the backend, you can attach a debugger to the running Docker container by launching the `Docker: Attach to Node` configuration in VS Code. Note that this will support hot reloads 🔥🔥!
 
-### **Connect Widget**
+<!-- ### **Connect Widget**
 
 To run the Connect Widget:
 
@@ -445,7 +465,7 @@ $ npm run start # available on port 3001 by default
 $ npm run start -w connect-widget
 ```
 
-To debug the Connect Widget, you can run a Chrome window by launching the `Run Chrome` configuration in VS Code.
+To debug the Connect Widget, you can run a Chrome window by launching the `Run Chrome` configuration in VS Code. -->
 
 ### Utils
 
@@ -538,7 +558,7 @@ where:
 
 After deployment, the API will be available at the configured subdomain + domain.
 
-5. Finally, to self-host the Connect widget, run the following:
+<!-- 5. Finally, to self-host the Connect widget, run the following:
 
 ```shell
 $ ./packages/scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
@@ -551,7 +571,7 @@ the environment variables `S3_BUCKET` and `CF_DISTRIB_ID`.
 
 ```shell
 $ S3_BUCKET=xxx CF_DISTRIB_ID=xxx ./packages/scripts/deploy-widget.sh
-```
+``` -->
 
 Note: if you need help with the `deploy-infra.sh` script at any time, you can run:
 
