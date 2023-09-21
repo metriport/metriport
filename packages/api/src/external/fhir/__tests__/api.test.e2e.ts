@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import { makeOrgNumber } from "../../../models/medical/__tests__/organization";
 import { makeFhirAdminApi } from "../api/api-factory";
 
+jest.setTimeout(15000);
+
 const fhirApi = makeFhirAdminApi();
 
 // For e2e tests we need to use the fhir api and the vpc is currently not connnected

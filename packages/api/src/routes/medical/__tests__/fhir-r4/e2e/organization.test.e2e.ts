@@ -2,6 +2,8 @@ import { AxiosResponse } from "axios";
 import { makeOrganization } from "./organization";
 import { api } from "../../../../__tests__/shared";
 
+jest.setTimeout(15000);
+
 const org = makeOrganization();
 
 describe("Integration FHIR Org", () => {

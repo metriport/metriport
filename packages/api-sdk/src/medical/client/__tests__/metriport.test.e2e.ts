@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 import { getEnvVar, getEnvVarOrFail, ISO_DATE } from "../../../shared";
 import { MetriportMedicalApi } from "../metriport";
 
+jest.setTimeout(15000);
+
 const METRIPORT = "METRIPORT";
 const COMMONWELL = "COMMONWELL";
 

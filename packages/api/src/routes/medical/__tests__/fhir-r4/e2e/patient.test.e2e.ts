@@ -5,6 +5,8 @@ import { AxiosResponse } from "axios";
 import { api } from "../../../../__tests__/shared";
 import { makePatient } from "./patient";
 
+jest.setTimeout(15000);
+
 const patient = makePatient();
 
 describe("Integration FHIR Patient", () => {

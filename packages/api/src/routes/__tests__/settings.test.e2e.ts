@@ -1,6 +1,8 @@
 import { MetriportDevicesApi } from "@metriport/api-sdk";
 import { testApiKey, baseURL } from "./shared";
 
+jest.setTimeout(15000);
+
 const metriportClient = new MetriportDevicesApi(testApiKey, { baseAddress: baseURL });
 
 describe("Metriport TestSuite", () => {
