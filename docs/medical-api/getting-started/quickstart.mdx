@@ -3,10 +3,8 @@ title: "Medical API"
 description: "Follow this guide to get started accessing your patients' medical data."
 ---
 
-<img className="h-40" src="/images/medical.svg" />
-
 <Warning>
-  Access to our Medical API will require you to make requests on behalf of an entity with an [NPI
+  Access to our Medical API will require you to make requests on behalf of a covered entity with an [NPI
   number](https://www.cms.gov/Regulations-and-Guidance/Administrative-Simplification/NationalProvIdentStand)
   for a valid
   [Treatment](https://www.hhs.gov/hipaa/for-professionals/privacy/guidance/disclosures-treatment-payment-health-care-operations/index.html)
@@ -25,6 +23,14 @@ Getting started with our Medical API is pretty easy, you'll just need take the f
 6. [Create Facilities and Patients](#6-create-facilities-and-patients).
 7. [Get Patient Medical Documents](#7-get-patient-medical-documents).
 8. [Get Patient FHIR Resources](#8-get-patient-fhir-resources). 🎉🎉🎉
+
+Feel free to check this demo video out before getting started to get a high level overview of the platform:
+
+<iframe
+  src="https://www.loom.com/embed/c5c049d2f0444e1ea8e075640077a77f?sid=3127991f-f492-4b1c-9a18-39bf6f63a8b6"
+  width="100%"
+  height="450px"
+></iframe>
 
 Let's get into it! 🤘
 
@@ -227,10 +233,10 @@ As we query for Documents we will automatically convert XML C-CDA docs into FHIR
 After the conversion from CDA to FHIR, we will store the resulting FHIR resources and make them available to be queried.
 This will allow you to get the necessary data you might need to better understand and treat your Patients.
 
-To learn more on how to obtain a Patient's resources, please see the [Start Consolidated 
+To learn more on how to obtain a Patient's resources, please see the [Start Consolidated
 Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) endpoint.
 
-We also provide the ability to add any FHIR resources to a Patient with our [Create Patient's Consolidated 
+We also provide the ability to add any FHIR resources to a Patient with our [Create Patient's Consolidated
 Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
 
 ## Wrapping up
