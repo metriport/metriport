@@ -17,7 +17,7 @@ function settings() {
   const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
   return {
     connectorName: "SidechainFHIRConverter",
-    lambdaMemory: 512,
+    lambdaMemory: 1024,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
