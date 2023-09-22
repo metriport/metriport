@@ -34,7 +34,7 @@ export type SQSParameters =
 export async function sendMessageToQueue(
   queueUrl: string,
   messageBody: string,
-  sqsParams: SQSParameters
+  sqsParams: SQSParameters = {}
 ): Promise<void> {
   const {
     messageGroupId,
