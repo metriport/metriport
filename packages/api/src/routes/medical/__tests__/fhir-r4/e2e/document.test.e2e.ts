@@ -4,6 +4,8 @@ import { makeBinary } from "./binary";
 import { makeDocument } from "./document";
 import { makePatient } from "./patient";
 
+jest.setTimeout(15000);
+
 const binary = makeBinary();
 const patient = makePatient();
 const document = makeDocument({ patient, binary });

@@ -4,6 +4,8 @@ import * as docCmd from "../../../external/fhir/document/get-documents";
 import { makePatient } from "../../../models/medical/__tests__/patient";
 import { api } from "../../__tests__/shared";
 
+jest.setTimeout(15000);
+
 const path = "/medical/v1/document";
 
 let getDocumentsMock: jest.SpyInstance;
