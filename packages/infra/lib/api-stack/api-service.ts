@@ -24,6 +24,7 @@ interface ApiServiceProps extends StackProps {
   version: string | undefined;
 }
 
+// TODO move these parameters to object properties
 export function createAPIService(
   stack: Construct,
   props: ApiServiceProps,
@@ -40,7 +41,8 @@ export function createAPIService(
   sidechainFHIRConverterQueue: IQueue | undefined,
   sidechainFHIRConverterDLQ: IQueue | undefined,
   cdaToVisualizationLambda: ILambda,
-  documentDownloaderLambda: ILambda
+  documentDownloaderLambda: ILambda,
+  searchIngestionQueueUrl: string | undefined
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -122,6 +124,9 @@ export function createAPIService(
           }),
           ...(sidechainFHIRConverterDLQ && {
             SIDECHAIN_FHIR_CONVERTER_DLQ_URL: sidechainFHIRConverterDLQ.queueUrl,
+          }),
+          ...(searchIngestionQueueUrl && {
+            SEARCH_INGESTION_QUEUE_URL: searchIngestionQueueUrl,
           }),
         },
       },

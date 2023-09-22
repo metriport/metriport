@@ -2,12 +2,13 @@ import { Document } from "@metriport/commonwell-sdk";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
+import { sandboxSleepTime } from "../commonwell/document/shared";
 import { makeFHIRServerConnector } from "../fhir/connector/connector-factory";
 import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extension";
+import { makeSearchConnector } from "../opensearch/connector-factory";
 import { sidechainConvertCDAToFHIR } from "../sidechain-fhir-converter/converter";
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";
-import { sandboxSleepTime } from "../commonwell/document/shared";
 
 const connector = makeFHIRConverterConnector();
 const templateExt = "hbs";
@@ -75,6 +76,17 @@ export async function convertCDAToFHIR(params: {
       payload: JSON.stringify({ s3FileName: jsonFileName, s3BucketName }),
       requestId,
     });
+
+    // ingest the document into OpenSearch
+    const openSearch = makeSearchConnector();
+    await openSearch.ingest({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      s3FileName,
+      s3BucketName,
+      requestId,
+    });
+
     return;
   }
 
