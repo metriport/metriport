@@ -2,11 +2,11 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { Config } from "../../shared/config";
 import { sendMessageToQueue } from "../aws/sqs";
-import { IngestRequest, SearchConnector } from "./connector";
+import { FileSearchConnector, IngestRequest } from "./file-search-connector";
 
 dayjs.extend(utc);
 
-export class SearchConnectorCloud implements SearchConnector {
+export class FileSearchConnectorCloud extends FileSearchConnector {
   async ingest({
     cxId,
     patientId,
