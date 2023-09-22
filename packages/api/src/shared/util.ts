@@ -77,22 +77,22 @@ export class Util {
   };
 
   static log =
-    (prefix: string) =>
+    (prefix: string, suffix?: string) =>
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     (msg: string, ...optionalParams: any[]): void =>
       optionalParams
-        ? console.log(`[${prefix}] ${msg}`, ...optionalParams)
-        : console.log(`[${prefix}] ${msg}`);
+        ? console.log(`[${prefix}] ${msg}`, ...[...optionalParams, ...([suffix] ?? [])])
+        : console.log(`[${prefix}] ${msg} - ${suffix}`);
 
   static debug =
-    (prefix: string) =>
+    (prefix: string, suffix?: string) =>
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     (msg: string, ...optionalParams: any[]): void =>
-      debug(`[${prefix}] ${msg}`, ...optionalParams);
+      debug(`[${prefix}] ${msg}`, ...[...optionalParams, ...([suffix] ?? [])]);
 
-  static out = (prefix: string) => ({
-    log: Util.log(prefix),
-    debug: Util.debug(prefix),
+  static out = (prefix: string, suffix?: string) => ({
+    log: Util.log(prefix, suffix),
+    debug: Util.debug(prefix, suffix),
   });
 
   static sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));

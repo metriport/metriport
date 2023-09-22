@@ -227,4 +227,14 @@ export class Config {
   static getDocumentDownloaderLambdaName(): string {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
+
+  static getSearchIngestionQueueUrl(): string {
+    return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
+  }
+  static getSearchEndpoint(): string | undefined {
+    return getEnvVar("SEARCH_ENDPOINT");
+  }
+  static getSearchPassword(): string | undefined {
+    return getEnvVar("SEARCH_PASSWORD");
+  }
 }
