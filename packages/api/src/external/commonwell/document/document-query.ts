@@ -25,6 +25,7 @@ import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
 import { MedicalDataSource } from "../../../external";
+import { makeLambdaClient } from "../../../external/aws/lambda";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
@@ -42,10 +43,10 @@ import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
+import { makeSearchConnector } from "../../opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
-import { makeLambdaClient } from "../../../external/aws/lambda";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
   CWDocumentWithMetriportData,
@@ -574,6 +575,9 @@ export async function downloadDocsAndUpsertFHIR({
             errorCountConvertible++;
           }
 
+          // ingest the document into OpenSearch
+          await ingestIntoSearchEngine(patient, file, requestId);
+
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
 
           if (!ignoreFhirConversionAndUpsert) {
@@ -742,6 +746,37 @@ async function jitterSingleDownload(): Promise<void> {
     DOC_DOWNLOAD_JITTER_DELAY_MAX_MS,
     DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT / 100
   );
+}
+
+async function ingestIntoSearchEngine(
+  patient: Patient,
+  file: File,
+  requestId: string
+): Promise<void> {
+  const openSearch = makeSearchConnector();
+  if (!openSearch.isIngestible(file)) {
+    console.log(`Skipping ingestion of doc ${file.key} into OpenSearch: not ingestible`);
+    return;
+  }
+  try {
+    await openSearch.ingest({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      s3FileName: file.key,
+      s3BucketName: file.bucket,
+      requestId,
+    });
+  } catch (err) {
+    console.log(`Error ingesting doc ${file.key} into OpenSearch: ${errorToString(err)}`);
+    capture.error(err, {
+      extra: {
+        context: `ingestIntoSearchEngine`,
+        patientId: patient.id,
+        file,
+        requestId,
+      },
+    });
+  }
 }
 
 function reportDocQueryUsage(patient: Patient, docQuery = true): void {
