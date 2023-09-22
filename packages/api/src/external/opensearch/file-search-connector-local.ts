@@ -2,13 +2,13 @@ import { Client } from "@opensearch-project/opensearch";
 import { Config } from "../../shared/config";
 import { Util } from "../../shared/util";
 import { makeS3Client } from "../aws/s3";
-import { IngestRequest, SearchConnector } from "./connector";
+import { FileSearchConnector, IngestRequest } from "./file-search-connector";
 
 const s3 = makeS3Client();
 const endpoint = Config.getSearchEndpoint();
 const password = Config.getSearchPassword() ?? "";
 
-export class SearchConnectorLocal implements SearchConnector {
+export class FileSearchConnectorLocal extends FileSearchConnector {
   async ingest({ cxId, patientId, s3FileName, s3BucketName }: IngestRequest): Promise<void> {
     const { debug: log } = Util.out(`ingest - ${cxId} - ${patientId}`, `- fileName: ${s3FileName}`);
 
