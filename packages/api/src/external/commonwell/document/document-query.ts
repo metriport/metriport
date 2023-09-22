@@ -355,7 +355,10 @@ function convertToNonExistingS3Info(
       ...simpleFile,
       fileExists: false,
       fileSize: undefined,
-      fileContentType: undefined,
+      // TODO 1050  Make sure we can set this
+      // TODO 1050  Make sure we can set this
+      // TODO 1050  Make sure we can set this
+      fileContentType: doc.content.mimeType,
     };
   };
 }
