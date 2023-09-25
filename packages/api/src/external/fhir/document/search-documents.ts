@@ -6,7 +6,7 @@ import { makeFhirApi } from "../api/api-factory";
 import { isoDateRangeToFHIRDateQuery } from "../shared";
 import { isMetriportExtension } from "../shared/extensions/metriport";
 
-export const getDocuments = async ({
+export const searchDocuments = async ({
   cxId,
   patientId,
   dateRange: { from, to } = {},
