@@ -1192,7 +1192,7 @@ export class APIStack extends Stack {
 
     const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
     const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
-      threshold: 10000, // IOPs per second
+      threshold: 100000, // IOPs per second
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });

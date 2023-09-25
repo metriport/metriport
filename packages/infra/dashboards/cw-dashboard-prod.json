@@ -326,8 +326,8 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 5000 for 1 datapoints within 5 minutes",
-                            "value": 5000,
+                            "label": "VolumeWriteIOPs >= 100000 for 1 datapoints within 5 minutes",
+                            "value": 100000,
                             "yAxis": "right"
                         }
                     ]
@@ -389,8 +389,8 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 5000 for 1 datapoints within 5 minutes",
-                            "value": 5000,
+                            "label": "VolumeWriteIOPs >= 100000 for 1 datapoints within 5 minutes",
+                            "value": 100000,
                             "yAxis": "right"
                         }
                     ]
