@@ -3,8 +3,6 @@ import { MetriportDevicesApi } from "@metriport/api-sdk";
 import { v4 as uuidv4 } from "uuid";
 import { getTestConfig } from "./shared";
 
-jest.setTimeout(15000);
-
 const widgetUrl = getTestConfig().widgetUrl;
 const apiUrl = getTestConfig().apiUrl;
 const testApiKey = getTestConfig().testApiKey;
