@@ -4,13 +4,14 @@ dotenv.config();
 import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
 import csv from "csv-parser";
 import fs from "fs";
-import { getEnvVarOrFail } from "./shared/env";
+import { getEnvVar, getEnvVarOrFail } from "./shared/env";
 import dayjs from "dayjs";
+import path from "path";
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
-const delayTime = parseInt(getEnvVarOrFail("BULK_INSERT_DELAY_TIME") ?? 200);
+const delayTime = parseInt(getEnvVar("BULK_INSERT_DELAY_TIME") ?? "200");
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -22,7 +23,7 @@ async function main() {
 
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
-  fs.createReadStream("./bulk-insert-patients.csv")
+  fs.createReadStream(path.join(__dirname, "bulk-insert-patients.csv"))
     .pipe(csv())
     .on("data", async data => {
       const metriportPatient = mapCSVPatientToMetriportPatient(data);
@@ -113,11 +114,13 @@ function normalizeDate(date: string): string {
   return trimmedDate;
 }
 
-function normalizeState(state: string): USState {
+function normalizeState(state: string): USState | string {
   if (Object.values(states).includes(USState[state as keyof typeof USState])) {
     return USState[state as keyof typeof USState];
   } else if (states[state]) {
     return states[state];
+  } else if (state === "DC") {
+    return state;
   }
   throw new Error(`Invalid state ${state}`);
 }
@@ -131,6 +134,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   city: string;
   state: string;
   address1: string;
+  address2: string;
   phone: string;
   email: string;
 }): PatientCreate | undefined => {
@@ -141,6 +145,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
     genderAtBirth: normalizeGender(csvPatient.gender),
     address: {
       addressLine1: normalizeAddressLine(csvPatient.address1),
+      addressLine2: normalizeAddressLine(csvPatient.address2),
       city: normalizeCity(csvPatient.city),
       state: normalizeState(csvPatient.state),
       zip: normalizeZip(csvPatient.zip),
