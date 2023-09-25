@@ -6,7 +6,7 @@ import { downloadDocument } from "../../command/medical/document/document-downlo
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
-import { getDocuments } from "../../external/fhir/document/get-documents";
+import { searchDocuments } from "../../external/fhir/document/search-documents";
 import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
 import { sanitize } from "../helpers/string";
@@ -50,7 +50,7 @@ router.get(
     // Confirm the CX can access this patient
     await getPatientOrFail({ cxId, id: patientId });
 
-    const documents = await getDocuments({
+    const documents = await searchDocuments({
       cxId,
       patientId,
       dateRange: { from: dateFrom ?? undefined, to: dateTo ?? undefined },
