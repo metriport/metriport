@@ -32,6 +32,9 @@ export class Config {
   static isStaging(): boolean {
     return Config.getEnvType() === this.STAGING_ENV;
   }
+  static isDev(): boolean {
+    return Config.getEnvType() === this.DEV_ENV;
+  }
 
   static getVersion(): string | undefined {
     return getEnvVar("METRIPORT_VERSION");
@@ -219,5 +222,9 @@ export class Config {
 
   static getConvertDocLambdaName(): string | undefined {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
+  }
+
+  static getDocumentDownloaderLambdaName(): string {
+    return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
 }

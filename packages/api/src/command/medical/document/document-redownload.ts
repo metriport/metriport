@@ -12,7 +12,7 @@ import {
   DocumentContent,
   DocumentIdentifier,
 } from "@metriport/commonwell-sdk";
-import { difference, differenceBy, groupBy } from "lodash";
+import { difference, groupBy } from "lodash";
 import { DeepRequired } from "ts-essentials";
 import {
   downloadDocsAndUpsertFHIR,
@@ -22,28 +22,38 @@ import { hasCommonwellContent, isCommonwellContent } from "../../../external/com
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { downloadedFromHIEs } from "../../../external/fhir/shared";
 import { isMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
+import { getAllPages } from "../../../external/fhir/shared/paginated";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
+import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
-export const options = ["re-query-doc-refs", "force-download"] as const;
+export const options = [
+  "re-query-doc-refs",
+  "force-download",
+  "ignore-fhir-conversion-and-upsert",
+] as const;
 export type Options = (typeof options)[number];
 
 const isReQuery = (options: Options[]): boolean => options.includes("re-query-doc-refs");
 const isForceDownload = (options: Options[]): boolean => options.includes("force-download");
+const isIgnoreFhirConversionAndUpsert = (options: Options[]): boolean =>
+  options.includes("ignore-fhir-conversion-and-upsert");
 
 export const reprocessDocuments = async ({
   cxId,
   documentIds,
   options = [],
+  requestId,
 }: {
   cxId: string;
   documentIds: string[];
   options?: Options[];
+  requestId: string;
 }): Promise<void> => {
   const { log } = Util.out(`reprocessDocuments - cxId ${cxId}`);
   documentIds.length
@@ -52,9 +62,11 @@ export const reprocessDocuments = async ({
 
   // Get documents from FHIR
   const fhir = makeFhirApi(cxId);
-  const documentsFromFHIR = await fhir.searchResources("DocumentReference", {
-    _id: documentIds.join(","),
-  });
+  const documentsFromFHIR = await getAllPages(() =>
+    fhir.searchResourcePages("DocumentReference", {
+      _id: documentIds.join(","),
+    })
+  );
   // Only use re-download docs we got from CommonWell
   const documentsFromHIEs = documentsFromFHIR.filter(downloadedFromHIEs);
   // We can't re-download existing docs if we don't have CW's url for the Binary/attachment
@@ -65,25 +77,25 @@ export const reprocessDocuments = async ({
   const documents = documentIds.length
     ? documentsFound.filter(d => d.id && documentIds.includes(d.id))
     : documentsFound;
-  log(`Found ${documents.length} documents`);
-
-  // Filter out those with enough data
-  const documentsWithPatientId = documents.filter(d =>
-    d.contained?.some(c => c.resourceType === "Patient")
+  log(
+    `Got ${documentsFromFHIR.length} documentsFromFHIR, ` +
+      `${documentsFromHIEs.length} documentsFromHIEs, ` +
+      `${documentsFound.length} documentsFound, ` +
+      `${documents.length} to process`
   );
-  const docsNotEnoughData = differenceBy(documents, documentsWithPatientId, "id");
-  if (docsNotEnoughData.length > 0) {
-    log(`...of which, ${docsNotEnoughData.length} don't have enough data and are being skipped`);
-  } else {
-    log(`...and all have enough data! :goodnews:`);
-  }
-  if (documentsWithPatientId.length === 0) {
+
+  if (documents.length === 0) {
     log(`No documents to process, exiting...`);
     return;
   }
 
   // Re-download the documents, update them to S3, and re-convert them to FHIR if CCDA
-  await downloadDocsAndUpsertFHIRWithDocRefs({ cxId, documents: documentsWithPatientId, options });
+  await downloadDocsAndUpsertFHIRWithDocRefs({
+    cxId,
+    documents,
+    options,
+    requestId,
+  });
 
   log(`Done.`);
 };
@@ -109,10 +121,12 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
   cxId,
   documents,
   options,
+  requestId,
 }: {
   cxId: string;
   documents: DocumentReference[];
   options: Options[];
+  requestId: string;
 }): Promise<void> {
   // Group docs by Patient
   const docsByPatientId = groupBy(documents, d => getPatientId(d) ?? MISSING_ID);
@@ -131,14 +145,27 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
     if (!facilityId) throw new Error(`Patient ${patientId} is missing facilityId`);
 
     if (isReQuery(options)) {
+      await appendDocQueryProgress({
+        patient: { id: patient.id, cxId: patient.cxId },
+        downloadProgress: { status: "processing" },
+        reset: true,
+      });
       await queryAndProcessDocuments({
         patient,
         facilityId,
         forceDownload: isForceDownload(options),
         ignoreDocRefOnFHIRServer: true,
+        ignoreFhirConversionAndUpsert: isIgnoreFhirConversionAndUpsert(options),
+        requestId,
       });
     } else {
-      await processDocuments({ patient, docs, override: isForceDownload(options) });
+      await processDocuments({
+        patient,
+        docs,
+        override: isForceDownload(options),
+        ignoreFhirConversionAndUpsert: isIgnoreFhirConversionAndUpsert(options),
+        requestId,
+      });
     }
   }
 }
@@ -147,10 +174,14 @@ async function processDocuments({
   patient,
   docs,
   override,
+  ignoreFhirConversionAndUpsert,
+  requestId,
 }: {
   patient: PatientModel;
   docs: DocumentReference[];
   override: boolean;
+  ignoreFhirConversionAndUpsert: boolean;
+  requestId: string;
 }): Promise<void> {
   const { cxId, id: patientId } = patient;
   const { log } = Util.out(`processDocuments - M patientId ${patientId}`);
@@ -191,10 +222,14 @@ async function processDocuments({
       facilityId,
       documents: docsAsCW,
       forceDownload: override,
+      ignoreFhirConversionAndUpsert,
+      requestId,
     });
   } catch (error) {
-    log(`Error processing docs: ${error}`);
-    capture.error(error, { extra: { context: `processDocsOfPatient`, error } });
+    log(`Error processing docs: ${errorToString(error)}`);
+    capture.error(error, {
+      extra: { context: `processDocsOfPatient`, error, patientId: patient.id },
+    });
   } finally {
     await appendDocQueryProgress({
       patient: { id: patientId, cxId },

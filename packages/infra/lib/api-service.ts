@@ -36,7 +36,8 @@ export function createAPIService(
   fhirConverterQueueUrl: string | undefined,
   fhirConverterServiceUrl: string | undefined,
   sidechainFHIRConverterQueueUrl: string | undefined,
-  cdaToVisualizationLambda: ILambda
+  cdaToVisualizationLambda: ILambda,
+  documentDownloaderLambda: ILambda
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -100,6 +101,7 @@ export function createAPIService(
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
+          DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
           ...(fhirServerUrl && {
             FHIR_SERVER_URL: fhirServerUrl,
           }),
@@ -139,6 +141,7 @@ export function createAPIService(
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
+  documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // CloudWatch Alarms and Notifications
 
   // Allow the service to publish metrics to cloudwatch

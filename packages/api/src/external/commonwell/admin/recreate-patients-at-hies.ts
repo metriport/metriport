@@ -1,10 +1,11 @@
+import { organizationQueryMeta } from "@metriport/commonwell-sdk";
 import { groupBy } from "lodash";
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { MedicalDataSource } from "../../index";
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { makeCommonWellAPI } from "../api";
 import { create } from "../patient";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
 

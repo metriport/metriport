@@ -1,4 +1,5 @@
-import { makeCommonWellAPI, organizationQueryMeta } from "../api";
+import { organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { makeCommonWellAPI } from "../api";
 import { oid } from "../../../shared/oid";
 import { setCommonwellId } from "../patient-external-data";
 import { patientWithCWData } from "./shared";

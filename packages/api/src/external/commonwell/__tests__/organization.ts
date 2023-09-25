@@ -5,12 +5,11 @@ import { OID_PREFIX } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { makeCommonWellAPI, metriportQueryMeta } from "../api";
 
-const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
-
 /**
  * For E2E testing locally and staging.
  */
 export const getOne = async (orgOid: string): Promise<CWOrganization | undefined> => {
+  const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   const { log, debug } = Util.out(`CW get - id ${orgOid}`);
   const cwId = OID_PREFIX.concat(orgOid);
   try {

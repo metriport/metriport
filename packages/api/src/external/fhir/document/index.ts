@@ -76,11 +76,11 @@ export function getBestDateFromCWDocRef(content: DocumentContent): string {
 export const toFHIR = (
   docId: string,
   doc: CWDocumentWithMetriportData,
-  patient: Patient
+  patient: Pick<Patient, "id">
 ): DocumentReference => {
   const content = doc.content;
   const baseAttachment = {
-    contentType: content.mimeType,
+    contentType: doc.metriport.fileContentType,
     fileName: doc.metriport.fileName, // no filename on CW doc refs
     size: doc.metriport.fileSize != null ? doc.metriport.fileSize : content.size, // can't trust the file size from CW, use what we actually saved
     creation: content.indexed,
@@ -112,16 +112,12 @@ export const toFHIR = (
     });
   }
 
-  const subject: Reference<PatientFHIR> = {
-    reference: `Patient/${patient.id}`,
-    type: "Patient",
-  };
   const author = getAuthors(content, containedContent, docId);
   const date = getBestDateFromCWDocRef(content);
+  const status = cwStatusToFHIR(content.status);
 
-  return {
+  return getFHIRDocRef(patient.id, {
     id: docId,
-    resourceType: "DocumentReference",
     contained: containedContent,
     masterIdentifier: {
       system: content.masterIdentifier?.system,
@@ -129,16 +125,81 @@ export const toFHIR = (
     },
     identifier: content.identifier?.map(idToFHIR),
     date,
-    status: "current",
+    status,
     type: content.type,
-    subject,
     author,
     description: content.description,
     content: [metriportFHIRContent, ...(cwFHIRContent ? [cwFHIRContent] : [])],
     extension: [cwExtension],
     context: content.context,
-  };
+  });
 };
+
+export function getFHIRDocRef(
+  patientId: string,
+  {
+    id,
+    contained,
+    masterIdentifier,
+    identifier,
+    date,
+    status,
+    type,
+    author,
+    description,
+    content,
+    extension,
+    context,
+  }: {
+    id: string;
+    contained: Resource[];
+    masterIdentifier: Identifier;
+    identifier?: Identifier[];
+    date: string;
+    status: DocumentReference["status"];
+    type: DocumentReference["type"];
+    author: Reference<AuthorTypes>[];
+    description?: string;
+    content: [DocumentReferenceContent, ...DocumentReferenceContent[]];
+    extension: [Extension, ...Extension[]];
+    context: DocumentReference["context"];
+  }
+): DocumentReference {
+  const subject: Reference<PatientFHIR> = {
+    reference: `Patient/${patientId}`,
+    type: "Patient",
+  };
+
+  return {
+    id,
+    resourceType: "DocumentReference",
+    contained,
+    masterIdentifier,
+    identifier,
+    date,
+    status,
+    type,
+    subject,
+    author,
+    description,
+    content,
+    extension,
+    context,
+  };
+}
+
+export function cwStatusToFHIR(status: DocumentContent["status"]): DocumentReference["status"] {
+  switch (status) {
+    case "current":
+      return "current";
+    case "entered in error":
+      return "entered-in-error";
+    case "superceded":
+      return "superseded";
+    default:
+      return undefined;
+  }
+}
 
 export function createDocReferenceContent({
   contentType,
@@ -157,7 +218,7 @@ export function createDocReferenceContent({
   extension: Extension[];
   format?: string | string[];
 }): DocumentReferenceContent {
-  const metriportContent: DocumentReferenceContent = {
+  const content: DocumentReferenceContent = {
     attachment: {
       contentType,
       size,
@@ -169,7 +230,7 @@ export function createDocReferenceContent({
     extension,
   };
 
-  return metriportContent;
+  return content;
 }
 
 function getFormat(format: string | string[] | undefined): Coding | undefined {
@@ -221,15 +282,17 @@ export function convertToFHIRResource(
   if (resource.resourceType === "Practitioner") {
     return containedPractitionerToFHIRResource(resource, patientId, log);
   }
-  const msg = `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`;
-  log(`${msg}: ${JSON.stringify(resource)}`);
-  capture.message(msg, {
-    extra: {
-      context: `toFHIR.convertToFHIRResource`,
-      resource,
-      patientId,
-    },
-  });
+  if (resource.resourceType) {
+    const msg = `New Resource type on toFHIR conversion - might need to handle in CW doc ref mapping`;
+    log(`${msg}: ${JSON.stringify(resource)}`);
+    capture.message(msg, {
+      extra: {
+        context: `toFHIR.convertToFHIRResource`,
+        resource,
+        patientId,
+      },
+    });
+  }
   return undefined;
 }
 

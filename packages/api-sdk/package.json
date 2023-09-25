@@ -1,6 +1,6 @@
 {
   "name": "@metriport/api-sdk",
-  "version": "6.4.2",
+  "version": "7.0.1",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -44,7 +44,8 @@
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
-    "test": "jest --runInBand --detectOpenHandles --passWithNoTests"
+    "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
+    "test:e2e": "E2E=true jest --runInBand --detectOpenHandles"
   },
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
@@ -55,9 +56,10 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "^4.7.2",
+    "@metriport/commonwell-sdk": "^4.8.0",
     "axios": "^1.3.4",
     "dayjs": "^1.11.7",
+    "dotenv": "^16.3.1",
     "zod": "^3.22.1"
   },
   "devDependencies": {

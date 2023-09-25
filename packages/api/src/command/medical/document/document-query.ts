@@ -10,6 +10,7 @@ import { PatientDataCommonwell } from "../../../external/commonwell/patient-shar
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { emptyFunction, Util } from "../../../shared/util";
+import { uuidv7 } from "../../../shared/uuid-v7";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
@@ -44,9 +45,12 @@ export async function queryDocumentsAcrossHIEs({
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
+  const docQueryProgress = patient.data.documentQueryProgress;
+  const requestId = getOrGenerateRequestId(docQueryProgress);
+
   if (
-    patient.data.documentQueryProgress?.download?.status === "processing" ||
-    patient.data.documentQueryProgress?.convert?.status === "processing"
+    docQueryProgress?.download?.status === "processing" ||
+    docQueryProgress?.convert?.status === "processing"
   ) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
@@ -61,10 +65,16 @@ export async function queryDocumentsAcrossHIEs({
   const updatedPatient = await updateDocQuery({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "processing" },
+    requestId,
     reset: true,
   });
 
-  getDocumentsFromCW({ patient, facilityId, forceDownload: override }).catch(emptyFunction);
+  getDocumentsFromCW({
+    patient,
+    facilityId,
+    forceDownload: override,
+    requestId,
+  }).catch(emptyFunction);
 
   return createQueryResponse("processing", updatedPatient);
 }
@@ -89,7 +99,11 @@ type UpdateResult = {
 
 type UpdateDocQueryParams =
   | (SetDocQueryProgress & { convertResult?: never })
-  | (UpdateResult & { downloadProgress?: never; convertProgress?: never; reset?: never });
+  | (UpdateResult & {
+      downloadProgress?: never;
+      convertProgress?: never;
+      reset?: never;
+    });
 
 /**
  * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
@@ -162,3 +176,23 @@ export const updateConversionProgress = async ({
     return updatedPatient;
   });
 };
+
+/**
+ * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.
+ *
+ * @param docQueryProgress Progress of the previous query
+ * @returns uuidv7 string ID for the request
+ */
+function getOrGenerateRequestId(docQueryProgress: DocumentQueryProgress | undefined): string {
+  if (!docQueryProgress) return uuidv7();
+
+  const isDownloadFinished = docQueryProgress.download?.status === "completed";
+  const conversionStatus = docQueryProgress.convert?.status ?? undefined;
+
+  if (isDownloadFinished && (!conversionStatus || conversionStatus === "completed")) {
+    return uuidv7();
+  } else if (docQueryProgress.requestId) {
+    return docQueryProgress.requestId;
+  }
+  return uuidv7();
+}

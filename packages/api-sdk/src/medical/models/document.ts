@@ -1,9 +1,9 @@
+import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
 import { z } from "zod";
 
 export const documentReferenceSchema = z.object({
   id: z.string(),
   fileName: z.string(),
-  location: z.string(),
   description: z.string().optional(),
   status: z.string().optional(),
   indexed: z.string().optional(), // ISO-8601
@@ -39,6 +39,7 @@ export const progressSchema = z.object({
 export const documentQuerySchema = z.object({
   download: progressSchema.optional(),
   convert: progressSchema.optional(),
+  requestId: z.string().optional(),
 });
 
 export type DocumentQuery = z.infer<typeof documentQuerySchema>;
@@ -47,3 +48,13 @@ export const documentListSchema = z.object({
   documents: z.array(documentReferenceSchema),
 });
 export type DocumentList = z.infer<typeof documentListSchema>;
+
+export type ListDocumentFilters = {
+  dateFrom?: string | Date;
+  dateTo?: string | Date;
+  content?: string;
+};
+
+export type ListDocumentResult = {
+  documents: FHIRDocumentReference[];
+};

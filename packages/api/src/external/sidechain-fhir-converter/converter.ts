@@ -9,12 +9,14 @@ export async function sidechainConvertCDAToFHIR(params: {
   document: { id: string; mimeType?: string };
   s3FileName: string;
   s3BucketName: string;
+  requestId: string;
 }): Promise<void> {
   const {
     patient,
     document: { id: documentId },
     s3FileName,
     s3BucketName,
+    requestId,
   } = params;
   // Build an extension to be added to all resources created by this conversion
   // so we can get the original doc ref from the resource
@@ -25,6 +27,7 @@ export async function sidechainConvertCDAToFHIR(params: {
       patientId: patient.id,
       documentId: documentId,
       payload: JSON.stringify({ s3FileName, s3BucketName, documentExtension }),
+      requestId,
     });
   } catch (error) {
     console.log(

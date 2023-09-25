@@ -32,11 +32,13 @@ const randomDates = [
 export async function sandboxGetDocRefsAndUpsert({
   organization,
   patient,
+  requestId,
 }: {
   organization: Organization;
   patient: Patient;
   facility: Facility;
   override?: boolean;
+  requestId: string;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
 
@@ -50,6 +52,7 @@ export async function sandboxGetDocRefsAndUpsert({
       downloadProgress: {
         status: "completed",
       },
+      requestId,
     });
     return [];
   }
@@ -80,6 +83,7 @@ export async function sandboxGetDocRefsAndUpsert({
           },
         }
       : undefined),
+    requestId,
   });
 
   for (const entry of entries) {
@@ -94,6 +98,7 @@ export async function sandboxGetDocRefsAndUpsert({
         },
         s3FileName: entry.s3Info.key,
         s3BucketName: entry.s3Info.bucket,
+        requestId,
       });
 
       const contained = entry.docRef.contained ?? [];
@@ -127,6 +132,7 @@ export async function sandboxGetDocRefsAndUpsert({
       successful: entries.length,
     },
     convertProgress: undefined,
+    requestId,
   });
 
   const result = entries.map(d => d.docRef);

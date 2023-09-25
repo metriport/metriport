@@ -46,6 +46,7 @@ export async function convertCDAToFHIR(params: {
   template?: FHIRConverterCDATemplate;
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
+  requestId: string;
 }): Promise<boolean> {
   const {
     patient,
@@ -55,8 +56,11 @@ export async function convertCDAToFHIR(params: {
     template = FHIRConverterCDATemplate.ccd,
     keepUnusedSegments = false,
     keepInvalidAccess = false,
+    requestId,
   } = params;
-  const { log } = Util.out(`convertCDAToFHIR, patientId ${patient.id}, docId ${document.id}`);
+  const { log } = Util.out(
+    `convertCDAToFHIR, patientId ${patient.id}, requestId ${requestId}, docId ${document.id}`
+  );
 
   // make sure the doc is XML/CDA before attempting to convert
   if (isConvertible(document)) {
@@ -72,6 +76,7 @@ export async function convertCDAToFHIR(params: {
         patientId: patient.id,
         documentId: document.id,
         payload: JSON.stringify({ s3FileName: jsonFileName, s3BucketName }),
+        requestId,
       });
       return true;
     }
@@ -89,6 +94,7 @@ export async function convertCDAToFHIR(params: {
         template: `${template}.${templateExt}`,
         unusedSegments: `${keepUnusedSegments}`,
         invalidAccess: `${keepInvalidAccess}`,
+        requestId,
       });
     } catch (error) {
       log(`Error requesting CDA to FHIR conversion: ${error}`, params);
@@ -104,6 +110,7 @@ export async function convertCDAToFHIR(params: {
       document: params.document,
       s3FileName,
       s3BucketName,
+      requestId,
     });
 
     return true;

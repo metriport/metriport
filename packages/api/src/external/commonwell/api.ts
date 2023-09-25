@@ -3,8 +3,8 @@ import {
   CertificatePurpose,
   CommonWell,
   CommonWellAPI,
-  PurposeOfUse,
   RequestMetadata,
+  baseQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
@@ -42,32 +42,6 @@ export function makeCommonWellAPI(orgName: string, orgOID: string): CommonWellAP
     orgOID,
     apiMode
   );
-}
-
-const baseQueryMeta = (orgName: string) => ({
-  purposeOfUse: PurposeOfUse.TREATMENT,
-  role: "ict",
-  subjectId: `${orgName} System User`,
-});
-
-export type OrgRequestMetadataCreate = Omit<
-  RequestMetadata,
-  "npi" | "role" | "purposeOfUse" | "subjectId"
-> &
-  Required<Pick<RequestMetadata, "npi">> &
-  Partial<Pick<RequestMetadata, "role" | "purposeOfUse">>;
-
-export function organizationQueryMeta(
-  orgName: string,
-  meta: OrgRequestMetadataCreate
-): RequestMetadata {
-  const base = baseQueryMeta(orgName);
-  return {
-    subjectId: base.subjectId,
-    role: meta.role ?? base.role,
-    purposeOfUse: meta.purposeOfUse ?? base.purposeOfUse,
-    npi: meta.npi,
-  };
 }
 
 export const metriportQueryMeta: RequestMetadata = baseQueryMeta("Metriport");

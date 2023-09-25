@@ -1,26 +1,26 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { Organization, Facility, Patient } from "@metriport/api-sdk";
-import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
-import { Organization as FhirOrg } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
+import { Organization as FhirOrg } from "@medplum/fhirtypes";
+import { Facility, Organization, Patient } from "@metriport/api-sdk";
+import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import * as cwCommands from "../../../../../external/commonwell/__tests__";
-import { validateCWOrg, validateFhirOrg, validateLocalOrg } from "./organization";
-import { createFacility, validateFacility } from "./facility";
-import { createPatient, validateFhirPatient, validateLocalPatient } from "./patient";
-import { createConsolidated } from "./consolidated";
-import { fhirHeaders, fhirApi, medicalApi } from "./shared";
+import { Config } from "../../../../../shared/config";
 import { retryFunction } from "../../../../../shared/retry";
 import { Util } from "../../../../../shared/util";
-import { Config } from "../../../../../shared/config";
+import { createConsolidated } from "./consolidated";
+import { createFacility, validateFacility } from "./facility";
+import { validateCWOrg, validateFhirOrg, validateLocalOrg } from "./organization";
+import { createPatient, validateFhirPatient, validateLocalPatient } from "./patient";
+import { fhirApi, fhirHeaders, medicalApi } from "./shared";
 
 const maxRetries = 4;
 
 jest.setTimeout(30000);
 
 // NEVER TO BE RUN IN PRODUCTION
-if (Config.isStaging() || !Config.isCloudEnv()) {
+if (Config.isStaging() || Config.isDev()) {
   describe("MAPI E2E Tests", () => {
     let facility: Facility;
     let patient: Patient;
@@ -142,7 +142,7 @@ if (Config.isStaging() || !Config.isCloudEnv()) {
         retryLimit++;
       }
 
-      const documents = await medicalApi.listDocuments(patient.id, facility.id);
+      const { documents } = await medicalApi.listDocuments(patient.id);
 
       expect(docQueryProgress).toBeTruthy();
       expect(documents).toBeTruthy();

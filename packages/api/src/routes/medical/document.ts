@@ -1,20 +1,28 @@
-import dayjs from "dayjs";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { OK } from "http-status";
+import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import { getDocuments } from "../../external/fhir/document/get-documents";
 import { Config } from "../../shared/config";
-import { parseISODate } from "../../shared/date";
 import { stringToBoolean } from "../../shared/types";
+import { sanitize } from "../helpers/string";
+import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
 
 const router = Router();
+
+const getDocSchema = z.object({
+  dateFrom: optionalDateSchema,
+  dateTo: optionalDateSchema,
+  content: z.string().min(3).nullish(),
+  output: z.enum(["fhir", "dto"]).nullish(),
+});
 
 /** ---------------------------------------------------------------------------
  * GET /document
@@ -24,6 +32,12 @@ const router = Router();
  * @param req.query.patientId Patient ID for which to list documents.
  * @param req.query.dateFrom Optional start date that docs will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that docs will be filtered by (inclusive).
+ * @param req.query.organization Optional name of the contained Organization to filter docs
+ *    by (partial match and case insentitive).
+ * @param req.query.content Optional value to search on the document reference
+ *    (partial match and case insentitive, minimum 3 chars).
+ * @param req.query.output Optional value indicating the output format, fhir or dto.
+ *    (default: fhir)
  * @return The available documents, including query status and progress - as applicable.
  */
 router.get(
@@ -31,27 +45,19 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
-    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const { dateFrom, dateTo, content, output } = getDocSchema.parse(req.query);
 
     // Confirm the CX can access this patient
     await getPatientOrFail({ cxId, id: patientId });
 
-    const documents = await getDocuments({ cxId, patientId });
-    const documentsDTO = toDTO(documents).flatMap(doc => {
-      if (!doc.indexed) return doc;
-      if (
-        (!dateFrom || dayjs(dateFrom).isBefore(doc.indexed)) &&
-        (!dateTo || dayjs(dateTo).isAfter(doc.indexed))
-      ) {
-        return doc;
-      }
-      return [];
+    const documents = await getDocuments({
+      cxId,
+      patientId,
+      dateRange: { from: dateFrom ?? undefined, to: dateTo ?? undefined },
+      contentFilter: content ? sanitize(content) : undefined,
     });
 
-    return res.status(OK).json({
-      documents: documentsDTO,
-    });
+    return res.status(OK).json({ documents: output === "dto" ? toDTO(documents) : documents });
   })
 );
 

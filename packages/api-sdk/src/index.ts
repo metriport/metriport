@@ -25,14 +25,12 @@ export {
   personalIdentifierSchema,
 } from "./medical/models/demographics";
 export {
-  DocumentList,
-  documentListSchema,
   DocumentQuery,
   documentQuerySchema,
   DocumentQueryStatus,
   documentQueryStatusSchema,
-  DocumentReference,
-  documentReferenceSchema,
+  ListDocumentFilters,
+  ListDocumentResult,
 } from "./medical/models/document";
 export {
   Facility,
