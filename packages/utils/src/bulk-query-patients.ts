@@ -1,3 +1,7 @@
+/**
+ * This script kicks off document queries in bulk for the configured cx.
+ */
+
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
@@ -43,10 +47,10 @@ function sleep(ms: number) {
 async function queryDocsForPatient(patient: Patient) {
   let docQueryAttempts = 0;
   let docCount = 0;
-  let fhirResourceCount = 0;
+  let totalFhirResourceCount = 0;
   let status: "completed" | "docs-not-found" = "docs-not-found";
   let queryComplete = false;
-  let fhirResourceCounts: ConsolidatedCountResponse = {
+  let fhirResourceTypesToCounts: ConsolidatedCountResponse = {
     filter: { resources: "" },
     resources: {},
     total: 0,
@@ -80,12 +84,12 @@ async function queryDocsForPatient(patient: Patient) {
   if (queryComplete) {
     status = "completed";
     // get count of resulting FHIR resources
-    fhirResourceCounts = await metriportAPI.countPatientConsolidated(patient.id);
+    fhirResourceTypesToCounts = await metriportAPI.countPatientConsolidated(patient.id);
     // get total doc refs for the patient
-    const docRefs = await metriportAPI.listDocuments(patient.id, patient.facilityIds[0]);
-    docCount = docRefs.length;
-    for (const val of Object.values(fhirResourceCounts.resources)) {
-      fhirResourceCount += val;
+    const docRefs = await metriportAPI.listDocuments(patient.id);
+    docCount = docRefs.documents.length;
+    for (const val of Object.values(fhirResourceTypesToCounts.resources)) {
+      totalFhirResourceCount += val;
     }
   }
 
@@ -95,8 +99,8 @@ async function queryDocsForPatient(patient: Patient) {
     csvName,
     `${patient.id},${patient.firstName},${
       patient.lastName
-    },${state},${docQueryAttempts},${docCount},${fhirResourceCount},${replaceAll(
-      JSON.stringify(fhirResourceCounts),
+    },${state},${docQueryAttempts},${docCount},${totalFhirResourceCount},${replaceAll(
+      JSON.stringify(fhirResourceTypesToCounts),
       ",",
       " "
     )},${status}\n`
@@ -121,6 +125,7 @@ async function main() {
     }
     await Promise.allSettled(docQueries);
 
+    console.log(`>>> Progress: ${i + 1}/${patients.length} patient doc queries complete`);
     console.log(`>>> Sleeping for ${delayTime} ms before the next chunk...`);
     await new Promise(f => setTimeout(f, delayTime));
   }
