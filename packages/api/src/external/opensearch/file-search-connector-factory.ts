@@ -39,5 +39,6 @@ export function makeSearchServiceQuery(): OpenSearchFileSearcher {
     indexName,
     username,
     password,
+    queueUrl: Config.getSearchIngestionQueueUrl(),
   });
 }
