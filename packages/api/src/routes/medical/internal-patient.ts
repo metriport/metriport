@@ -23,6 +23,17 @@ import { linkCreateSchema } from "./schemas/link";
 
 const router = Router();
 
+async function updateInFHIRAndCW(
+  patientUpdate: PatientUpdateCmd,
+  facilityId: string
+): Promise<void> {
+  const updatedPatient = await updatePatient(patientUpdate);
+  // Intentionally asynchronous - it takes too long to perform
+  cwCommands.patient
+    .update(updatedPatient, facilityId)
+    .catch(processAsyncError(`cw.patient.update`));
+}
+
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/update-all
  *
@@ -32,15 +43,17 @@ const router = Router();
  *
  *
  * @param req.query.cxId The customer ID.
- * @return 200 OK
+ * @return count of update failues, 0 if all successful
  */
 router.post(
   "/update-all",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilities = await getFacilities({ cxId });
+    let failedUpdateCount = 0;
     for (const facility of facilities) {
       const patients = await getPatients({ cxId, facilityId: facility.id });
+      const patientUpdates = [];
       for (const patient of patients) {
         const patientUpdate: PatientUpdateCmd = {
           id: patient.id,
@@ -53,14 +66,16 @@ router.post(
           contact: patient.data.contact,
           personalIdentifiers: patient.data.personalIdentifiers,
         };
-        const updatedPatient = await updatePatient(patientUpdate);
-        // Intentionally asynchronous - it takes too long to perform
-        cwCommands.patient
-          .update(updatedPatient, facility.id)
-          .catch(processAsyncError(`cw.patient.update`));
+        patientUpdates.push(updateInFHIRAndCW(patientUpdate, facility.id));
+      }
+      const result = await Promise.allSettled(patientUpdates);
+      for (const patientUpdate of result) {
+        if (patientUpdate.status === "rejected") {
+          failedUpdateCount++;
+        }
       }
     }
-    return res.sendStatus(status.OK);
+    return res.status(status.OK).json({ failedUpdateCount });
   })
 );
 
