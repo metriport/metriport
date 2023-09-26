@@ -594,9 +594,6 @@ export async function downloadDocsAndUpsertFHIR({
             }
           }
 
-          // ingest the document into OpenSearch
-          await ingestIntoSearchEngine(patient, file, requestId);
-
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
 
           if (shouldUpsertFHIR) {
