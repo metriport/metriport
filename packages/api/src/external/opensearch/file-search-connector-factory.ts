@@ -1,9 +1,37 @@
+import {
+  FileSearchConnector,
+  FileSearchConnectorDirect,
+  FileSearchConnectorSQS,
+} from "@metriport/core/opensearch";
 import { Config } from "../../shared/config";
-import { FileSearchConnector } from "./file-search-connector";
-import { FileSearchConnectorCloud } from "./file-search-connector-cloud";
-import { FileSearchConnectorLocal } from "./file-search-connector-local";
 
 export function makeSearchConnector(): FileSearchConnector {
-  if (Config.isDev()) return new FileSearchConnectorLocal();
-  return new FileSearchConnectorCloud();
+  const region = Config.getAWSRegion();
+  if (!region) throw new Error(`AWS region is required`);
+  const endpoint = Config.getSearchEndpoint();
+  if (!endpoint) throw new Error(`Endpoint is required`);
+  // TODO 1050 make these dynamic
+  // TODO 1050 make these dynamic
+  // TODO 1050 make these dynamic
+  // TODO 1050 make these dynamic
+  const indexName = "ccda-index";
+  const username = "admin";
+  const password = Config.getSearchPassword() ?? "";
+  if (Config.isDev()) {
+    return new FileSearchConnectorDirect({
+      region,
+      endpoint,
+      indexName,
+      username,
+      password,
+    });
+  }
+  return new FileSearchConnectorSQS({
+    region,
+    endpoint,
+    indexName,
+    username,
+    password,
+    queueUrl: Config.getSearchIngestionQueueUrl(),
+  });
 }

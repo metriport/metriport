@@ -12,7 +12,7 @@ let getDocumentsMock: jest.SpyInstance;
 let getPatientOrFailMock: jest.SpyInstance;
 beforeEach(() => {
   jest.restoreAllMocks();
-  getDocumentsMock = jest.spyOn(docCmd, "getDocuments");
+  getDocumentsMock = jest.spyOn(docCmd, "searchDocuments");
   getPatientOrFailMock = jest.spyOn(patientCmd, "getPatientOrFail");
 });
 

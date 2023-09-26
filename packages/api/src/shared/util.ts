@@ -76,6 +76,9 @@ export class Util {
     return undefined;
   };
 
+  /**
+   * @deprecated Use @metriport/core instead
+   */
   static log =
     (prefix: string, suffix?: string) =>
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,13 +86,17 @@ export class Util {
       optionalParams
         ? console.log(`[${prefix}] ${msg}`, ...[...optionalParams, ...([suffix] ?? [])])
         : console.log(`[${prefix}] ${msg} - ${suffix}`);
-
+  /**
+   * @deprecated Use @metriport/core instead
+   */
   static debug =
     (prefix: string, suffix?: string) =>
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     (msg: string, ...optionalParams: any[]): void =>
       debug(`[${prefix}] ${msg}`, ...[...optionalParams, ...([suffix] ?? [])]);
-
+  /**
+   * @deprecated Use @metriport/core instead
+   */
   static out = (prefix: string, suffix?: string) => ({
     log: Util.log(prefix, suffix),
     debug: Util.debug(prefix, suffix),
