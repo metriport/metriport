@@ -1183,7 +1183,7 @@ export class APIStack extends Stack {
 
     const readIOPsMetric = dbCluster.metricVolumeReadIOPs();
     const rIOPSAlarm = readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
-      threshold: 20000, // IOPs per second
+      threshold: 20_000, // IOPs per second
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
@@ -1192,7 +1192,7 @@ export class APIStack extends Stack {
 
     const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
     const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
-      threshold: 10000, // IOPs per second
+      threshold: 10_000, // IOPs per second
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
@@ -1210,7 +1210,7 @@ export class APIStack extends Stack {
       this,
       `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`,
       {
-        threshold: 10000, // units per second
+        threshold: 10_000, // units per second
         evaluationPeriods: 1,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
@@ -1223,7 +1223,7 @@ export class APIStack extends Stack {
       this,
       `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`,
       {
-        threshold: 10000, // units per second
+        threshold: 10_000, // units per second
         evaluationPeriods: 1,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
