@@ -39,7 +39,7 @@ import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
-import { toFHIR as toFHIRDocRef } from "../../fhir/document";
+import { DocumentReferenceWithId, toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
@@ -595,14 +595,19 @@ export async function downloadDocsAndUpsertFHIR({
             }
           }
 
-          // ingest the document into OpenSearch
-          await ingestIntoSearchEngine(patient, file, requestId);
-
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
 
           if (!ignoreFhirConversionAndUpsert) {
             try {
+              // TODO 1050 If we keep this, make them run in parallel
+              // TODO 1050 If we keep this, make them run in parallel
+              // TODO 1050 If we keep this, make them run in parallel
+              // TODO 1050 If we keep this, make them run in parallel
+              // TODO 1050 If we keep this, make them run in parallel
+              // TODO 1050 If we keep this, make them run in parallel
               await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
+              // ingest the document into OpenSearch
+              await ingestIntoSearchEngine(patient, FHIRDocRef, file, requestId);
             } catch (error) {
               reportFHIRError({ patientId: patient.id, doc, error, log });
               errorReported = true;
@@ -772,6 +777,7 @@ async function jitterSingleDownload(): Promise<void> {
 
 async function ingestIntoSearchEngine(
   patient: Patient,
+  fhirDoc: DocumentReferenceWithId,
   file: File,
   requestId: string
 ): Promise<void> {
@@ -784,6 +790,7 @@ async function ingestIntoSearchEngine(
     await openSearch.ingest({
       cxId: patient.cxId,
       patientId: patient.id,
+      entryId: fhirDoc.id,
       s3FileName: file.key,
       s3BucketName: file.bucket,
       requestId,

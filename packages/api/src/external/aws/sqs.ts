@@ -9,15 +9,24 @@ const sleepTimeBetweenCountsInMs = 1_000;
 const sqsConfig = {
   awsRegion: Config.getAWSRegion(),
 };
+/**
+ * @deprecated Use @metriport/core/aws instead
+ */
 export const sqs = new SQS({
   apiVersion: "2012-11-05",
   region: sqsConfig.awsRegion,
 });
 
+/**
+ * @deprecated Use @metriport/core/aws instead
+ */
 export type SQSMessageAttributes = Record<string, string> & {
   cxId?: string;
 };
-export type SendMessageSQSParameters =
+/**
+ * @deprecated Use @metriport/core/aws instead
+ */
+export type SQSParameters =
   | {
       fifo?: never | false;
       messageGroupId?: never;
@@ -35,10 +44,13 @@ export type SendMessageSQSParameters =
       delaySeconds?: number;
     };
 
+/**
+ * @deprecated Use @metriport/core/aws instead
+ */
 export async function sendMessageToQueue(
   queueUrl: string,
   messageBody: string,
-  sqsParams: SendMessageSQSParameters = {}
+  sqsParams: SQSParameters = {}
 ): Promise<PromiseResult<SQS.SendMessageResult, AWSError>> {
   const {
     messageGroupId,
