@@ -27,6 +27,9 @@
       "path": "./packages/connect-widget/tsconfig.ref.json"
     },
     {
+      "path": "./packages/core/tsconfig.ref.json"
+    },
+    {
       "path": "./packages/infra/tsconfig.ref.json"
     },
     {

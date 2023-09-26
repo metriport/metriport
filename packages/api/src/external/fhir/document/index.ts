@@ -38,6 +38,8 @@ dayjs.extend(isToday);
 
 export const MAX_FHIR_DOC_ID_LENGTH = 64;
 
+export type DocumentReferenceWithId = DocumentReference & Required<Pick<DocumentReference, "id">>;
+
 type AuthorTypes =
   | Device
   | Organization
@@ -77,7 +79,7 @@ export const toFHIR = (
   docId: string,
   doc: CWDocumentWithMetriportData,
   patient: Pick<Patient, "id">
-): DocumentReference => {
+): DocumentReferenceWithId => {
   const content = doc.content;
   const baseAttachment = {
     contentType: doc.metriport.fileContentType,
@@ -164,7 +166,7 @@ export function getFHIRDocRef(
     extension: [Extension, ...Extension[]];
     context: DocumentReference["context"];
   }
-): DocumentReference {
+): DocumentReferenceWithId {
   const subject: Reference<PatientFHIR> = {
     reference: `Patient/${patientId}`,
     type: "Patient",
