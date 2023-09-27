@@ -5,6 +5,7 @@ import {
   DocumentQueryStatus,
   Progress,
 } from "../../../domain/medical/document-query";
+import BadRequestError from "../../../errors/bad-request";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { Patient, PatientModel } from "../../../models/medical/patient";
@@ -45,6 +46,12 @@ export async function queryDocumentsAcrossHIEs({
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
+  if (!isPatientAssociatedWithFacility(patient, facilityId)) {
+    throw new BadRequestError(`Patient not associated with given facility`, undefined, {
+      patientId: patient.id,
+      facilityId,
+    });
+  }
   const docQueryProgress = patient.data.documentQueryProgress;
   const requestId = getOrGenerateRequestId(docQueryProgress);
 
@@ -195,4 +202,16 @@ function getOrGenerateRequestId(docQueryProgress: DocumentQueryProgress | undefi
     return docQueryProgress.requestId;
   }
   return uuidv7();
+}
+
+/**
+ * Checks if the patient's list of associated facility IDs contains the facility ID parameter passed by the user.
+ *
+ * @param patient The patient for which to check the association with a facility
+ * @param facilityId The ID of the facility passed in by the user
+ * @returns a boolean indicating whether this patient is associated with this facility ID
+ */
+function isPatientAssociatedWithFacility(patient: Patient, facilityId: string): boolean {
+  if (patient.facilityIds.includes(facilityId)) return true;
+  return false;
 }
