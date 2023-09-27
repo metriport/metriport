@@ -1,10 +1,10 @@
+import { Operator } from "@medplum/core";
 import {
   DocumentReference,
   OperationOutcomeIssue,
   ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
-import { Operator } from "@medplum/core";
 
 export function operationOutcomeIssueToString(i: OperationOutcomeIssue): string {
   return i.diagnostics ?? i.details?.text ?? i.code ?? "Unknown error";
@@ -26,13 +26,33 @@ export function isoDateRangeToFHIRDateQuery(dateFrom?: string, dateTo?: string):
   const fhirDateQueryBase = "date=";
   let fhirDateQuery = `${fhirDateQueryBase}`;
   if (!dateFrom && !dateTo) return "";
-  if (dateFrom) fhirDateQuery += `${Operator.GREATER_THAN_OR_EQUALS}${dateFrom}`;
+  if (dateFrom) {
+    fhirDateQuery += isoDateToFHIRDateQueryFrom(dateFrom);
+  }
   if (dateTo) {
-    fhirDateQuery += `${dateFrom ? `&${fhirDateQueryBase}` : ""}${
-      Operator.LESS_THAN_OR_EQUALS
-    }${dateTo}`;
+    fhirDateQuery += (dateFrom ? `&${fhirDateQueryBase}` : "") + isoDateToFHIRDateQueryTo(dateTo);
   }
   return fhirDateQuery;
+}
+
+/**
+ * Different from `isoDateRangeToFHIRDateQuery`, this only returns the value,
+ * not the whole query param name + value. The return of this function is to
+ * be used as value of URLSearchParams.append().
+ */
+export function isoDateToFHIRDateQueryFrom(dateFrom?: string): string {
+  if (!dateFrom) return "";
+  return `${Operator.GREATER_THAN_OR_EQUALS}${dateFrom}`;
+}
+
+/**
+ * Different from `isoDateRangeToFHIRDateQuery`, this only returns the value,
+ * not the whole query param name + value. The return of this function is to
+ * be used as value of URLSearchParams.append().
+ */
+export function isoDateToFHIRDateQueryTo(dateTo?: string): string {
+  if (!dateTo) return "";
+  return `${Operator.LESS_THAN_OR_EQUALS}${dateTo}`;
 }
 
 const resourcesSupportingDateQueriesMap: { [k in MedplumResourceType]?: boolean } = {

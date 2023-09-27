@@ -5,7 +5,7 @@ import duration from "dayjs/plugin/duration";
 dayjs.extend(duration);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 
-export function makeS3Client(region: string) {
+export function makeS3Client(region: string): AWS.S3 {
   return new AWS.S3({ signatureVersion: "v4", region });
 }
 

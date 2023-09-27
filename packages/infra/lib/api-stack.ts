@@ -206,7 +206,13 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // OPEN SEARCH Domains
     //-------------------------------------------
-    const { queue: ccdaSearchQueue } = ccdaSearch.setup({
+    const {
+      queue: ccdaSearchQueue,
+      searchDomain: ccdaSearchDomain,
+      searchDomainUserName: ccdaSearchUserName,
+      searchDomainSecretName: ccdaSearchSecretName,
+      indexName: ccdaSearchIndexName,
+    } = ccdaSearch.setup({
       stack: this,
       vpc: this.vpc,
       ccdaS3Bucket: medicalDocumentsBucket,
@@ -261,6 +267,8 @@ export class APIStack extends Stack {
       fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
       lambdaLayers,
       alarmSnsAction: slackNotification?.alarmAction,
+      searchIndexName: ccdaSearchIndexName,
+      searchQueue: ccdaSearchQueue,
     });
 
     const cdaToVisualizationLambda = this.setupCdaToVisualization({
@@ -310,7 +318,10 @@ export class APIStack extends Stack {
       sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
-      ccdaSearchQueue.queueUrl
+      ccdaSearchQueue.queueUrl,
+      ccdaSearchDomain.domainEndpoint,
+      { userName: ccdaSearchUserName, secretName: ccdaSearchSecretName },
+      ccdaSearchIndexName
     );
 
     // Access grant for Aurora DB

@@ -5,7 +5,7 @@ import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnv, getEnvOrFail } from "./shared/env";
-import { isBadGateway, isTimeout } from "./shared/http";
+import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
@@ -491,7 +491,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           ? Number(message.attributes?.ApproximateReceiveCount)
           : undefined;
         const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = isTimeout(err) || isBadGateway(err);
+        const isRetryError = isAxiosTimeout(err) || isAxiosBadGateway(err);
         if (isRetryError && isWithinRetryRange) {
           const details = `${err.code}/${err.response?.status}`;
           console.log(

@@ -1,12 +1,11 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { Config } from "../../../shared/config";
-import { capture } from "../../../shared/notifications";
 import { isCommonwellExtension } from "../../commonwell/extension";
-import { makeFhirApi } from "../api/api-factory";
-import { isoDateRangeToFHIRDateQuery } from "../shared";
+import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
 import { isMetriportExtension } from "../shared/extensions/metriport";
+import { getDocuments } from "./get-documents";
 
-export const searchDocuments = async ({
+export async function searchDocuments({
   cxId,
   patientId,
   dateRange: { from, to } = {},
@@ -16,32 +15,28 @@ export const searchDocuments = async ({
   patientId: string;
   dateRange?: { from?: string; to?: string };
   contentFilter?: string;
-}): Promise<DocumentReference[] | undefined> => {
-  const api = makeFhirApi(cxId);
-  const docs: DocumentReference[] = [];
-  try {
-    const patientFilter = `patient=${patientId}`;
-    const fhirDateFilter = isoDateRangeToFHIRDateQuery(from, to);
-    const dateFilter = fhirDateFilter ? `&${fhirDateFilter}` : "";
-    for await (const page of api.searchResourcePages(
-      "DocumentReference",
-      `${patientFilter}${dateFilter}`
-    )) {
-      docs.push(...page);
-    }
-  } catch (error) {
-    const msg = `Error getting documents from FHIR server`;
-    console.log(`${msg} - patientId: ${patientId}, error: ${error}`);
-    capture.message(msg, { extra: { patientId, error }, level: "error" });
-    throw error;
-  }
-  const checkContent = (d: DocumentReference) =>
-    contentFilter ? JSON.stringify(d).toLocaleLowerCase().includes(contentFilter) : true;
+}): Promise<DocumentReference[]> {
+  const fhirDocs = await getDocuments({ cxId, patientId, from, to });
 
-  const result = docs.filter(d => checkExtensions(d) && checkContent(d));
+  const docs = await Promise.allSettled([
+    searchDocumentsRaw(fhirDocs, contentFilter),
+    searchDocumentsParsed(fhirDocs, contentFilter),
+  ]);
+
+  const result = [...docs.flatMap(d => (d.status === "fulfilled" ? d.value : []))];
 
   return result;
-};
+}
+
+async function searchDocumentsParsed(
+  docs: DocumentReference[],
+  contentFilter?: string
+): Promise<DocumentReference[]> {
+  const checkContent = (d: DocumentReference) =>
+    contentFilter ? JSON.stringify(d).toLocaleLowerCase().includes(contentFilter) : true;
+  const result = docs.filter(d => checkExtensions(d) && checkContent(d));
+  return result;
+}
 
 function checkExtensions(doc: DocumentReference) {
   // skip this check for sandbox as we don't have extensions in the sandbox doc refs
@@ -53,4 +48,17 @@ function checkExtensions(doc: DocumentReference) {
   const cw = extensions.find(isCommonwellExtension);
   if (!metriport && !cw) return false;
   return true;
+}
+
+async function searchDocumentsRaw(
+  docs: DocumentReference[],
+  contentFilter?: string
+): Promise<DocumentReference[]> {
+  if (!contentFilter) return [];
+  const searchService = makeSearchServiceQuery();
+  const searchResult = await searchService.search({ query: contentFilter });
+  const searchResultIds = searchResult.map(r => r.entryId);
+  // only return documents that match both the search result and the documents we got from the FHIR server (using date filter)
+  const result = docs.filter(d => d.id && searchResultIds.includes(d.id));
+  return result;
 }

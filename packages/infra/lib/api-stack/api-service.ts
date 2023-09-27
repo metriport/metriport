@@ -42,7 +42,10 @@ export function createAPIService(
   sidechainFHIRConverterDLQ: IQueue | undefined,
   cdaToVisualizationLambda: ILambda,
   documentDownloaderLambda: ILambda,
-  searchIngestionQueueUrl: string | undefined
+  searchIngestionQueueUrl: string,
+  searchEndpoint: string,
+  searchAuth: { userName: string; secretName: string },
+  searchIndexName: string
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -65,6 +68,12 @@ export function createAPIService(
     props.config.connectWidgetUrl != undefined
       ? props.config.connectWidgetUrl
       : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
+
+  const searchPassword = secret.Secret.fromSecretNameV2(
+    stack,
+    "APISearchSecret",
+    searchAuth.secretName
+  );
 
   // Run some servers on fargate containers
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
@@ -125,9 +134,11 @@ export function createAPIService(
           ...(sidechainFHIRConverterDLQ && {
             SIDECHAIN_FHIR_CONVERTER_DLQ_URL: sidechainFHIRConverterDLQ.queueUrl,
           }),
-          ...(searchIngestionQueueUrl && {
-            SEARCH_INGESTION_QUEUE_URL: searchIngestionQueueUrl,
-          }),
+          SEARCH_INGESTION_QUEUE_URL: searchIngestionQueueUrl,
+          SEARCH_ENDPOINT: searchEndpoint,
+          SEARCH_USERNAME: searchAuth.userName,
+          SEARCH_PASSWORD: searchPassword.secretValue.toString(),
+          SEARCH_INDEX: searchIndexName,
         },
       },
       memoryLimitMiB: isProd(props.config) ? 4096 : 2048,

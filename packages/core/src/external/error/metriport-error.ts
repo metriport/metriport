@@ -1,13 +1,10 @@
 import status from "http-status";
 
-/**
- * @deprecated Use @metriport/core/error instead
- */
-export default class MetriportError extends Error {
+export class MetriportError extends Error {
   status: number = status.INTERNAL_SERVER_ERROR;
   constructor(
     message: string,
-    cause?: unknown,
+    readonly cause?: unknown,
     readonly additionalInfo?: Record<string, string | undefined | null>
   ) {
     super(message);
