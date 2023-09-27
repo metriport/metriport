@@ -31,6 +31,7 @@ export function settings() {
         volumeSize: 10,
         volumeType: EbsDeviceVolumeType.GENERAL_PURPOSE_SSD_GP3,
       },
+      indexName: "ccda-files",
     },
     connectorName: "CCDAOpenSearch",
     lambda: {
@@ -65,11 +66,18 @@ export function setup({
   ccdaS3Bucket: s3.IBucket;
   lambdaLayers: ILayerVersion[];
   alarmSnsAction?: SnsAction;
-}): { queue: IQueue; lambda: IFunction; searchDomain: IDomain } {
+}): {
+  queue: IQueue;
+  lambda: IFunction;
+  searchDomain: IDomain;
+  searchDomainUserName: string;
+  searchDomainSecretName: string;
+  indexName: string;
+} {
   const config = getConfig();
   const {
     connectorName,
-    openSearch: { capacity, ebs },
+    openSearch: { capacity, ebs, indexName },
     lambda: { memory, timeout, batchSize, maxConcurrency },
     sqs: { maxReceiveCount, visibilityTimeout, delayWhenRetrying },
   } = settings();
@@ -113,9 +121,9 @@ export function setup({
       QUEUE_URL: queue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
       SEARCH_HOST: openSearch.domain.domainEndpoint,
-      SEARCH_USER: openSearch.creds.user,
+      SEARCH_USER: openSearch.creds.username,
       SEARCH_SECRET_NAME: openSearch.creds.secretName,
-      SEARCH_INDEX_NAME: "ccda-files",
+      SEARCH_INDEX_NAME: indexName,
     },
     timeout,
     alarmSnsAction,
@@ -133,5 +141,12 @@ export function setup({
   provideAccessToQueue({ accessType: "both", queue, resource: lambda });
   provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: lambda });
 
-  return { queue, lambda, searchDomain: openSearch.domain };
+  return {
+    queue,
+    lambda,
+    searchDomain: openSearch.domain,
+    searchDomainUserName: openSearch.creds.username,
+    searchDomainSecretName: openSearch.creds.secretName,
+    indexName,
+  };
 }
