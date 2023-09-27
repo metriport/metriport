@@ -39,11 +39,10 @@ import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
-import { DocumentReferenceWithId, toFHIR as toFHIRDocRef } from "../../fhir/document";
+import { toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
-import { makeSearchConnector } from "../../opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
@@ -582,15 +581,7 @@ export async function downloadDocsAndUpsertFHIR({
 
           if (!ignoreFhirConversionAndUpsert) {
             try {
-              // TODO 1050 If we keep this, make them run in parallel
-              // TODO 1050 If we keep this, make them run in parallel
-              // TODO 1050 If we keep this, make them run in parallel
-              // TODO 1050 If we keep this, make them run in parallel
-              // TODO 1050 If we keep this, make them run in parallel
-              // TODO 1050 If we keep this, make them run in parallel
               await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
-              // ingest the document into OpenSearch
-              await ingestIntoSearchEngine(patient, FHIRDocRef, file, requestId);
             } catch (error) {
               reportFHIRError({ patientId: patient.id, doc, error, log });
               errorReported = true;
@@ -754,39 +745,6 @@ async function jitterSingleDownload(): Promise<void> {
     DOC_DOWNLOAD_JITTER_DELAY_MAX_MS,
     DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT / 100
   );
-}
-
-async function ingestIntoSearchEngine(
-  patient: Patient,
-  fhirDoc: DocumentReferenceWithId,
-  file: File,
-  requestId: string
-): Promise<void> {
-  const openSearch = makeSearchConnector();
-  if (!openSearch.isIngestible(file)) {
-    console.log(`Skipping ingestion of doc ${file.key} into OpenSearch: not ingestible`);
-    return;
-  }
-  try {
-    await openSearch.ingest({
-      cxId: patient.cxId,
-      patientId: patient.id,
-      entryId: fhirDoc.id,
-      s3FileName: file.key,
-      s3BucketName: file.bucket,
-      requestId,
-    });
-  } catch (err) {
-    console.log(`Error ingesting doc ${file.key} into OpenSearch: ${errorToString(err)}`);
-    capture.error(err, {
-      extra: {
-        context: `ingestIntoSearchEngine`,
-        patientId: patient.id,
-        file,
-        requestId,
-      },
-    });
-  }
 }
 
 function reportDocQueryUsage(patient: Patient, docQuery = true): void {

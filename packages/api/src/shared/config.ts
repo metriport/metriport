@@ -231,10 +231,16 @@ export class Config {
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
-  static getSearchEndpoint(): string | undefined {
-    return getEnvVar("SEARCH_ENDPOINT");
+  static getSearchEndpoint(): string {
+    return getEnvVarOrFail("SEARCH_ENDPOINT");
   }
-  static getSearchPassword(): string | undefined {
-    return getEnvVar("SEARCH_PASSWORD");
+  static getSearchUsername(): string {
+    return getEnvVarOrFail("SEARCH_USERNAME");
+  }
+  static getSearchPassword(): string {
+    return getEnvVarOrFail("SEARCH_PASSWORD");
+  }
+  static getSearchIndexName(): string {
+    return getEnvVarOrFail("SEARCH_INDEX");
   }
 }

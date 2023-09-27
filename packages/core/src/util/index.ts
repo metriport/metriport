@@ -1,2 +1,4 @@
-export * as log from "./log";
-export * as envVar from "./env-var";
+export * from "./base64";
+export * from "./env-var";
+export * from "./log";
+export * from "./xml";

@@ -1,9 +1,31 @@
 import { Client } from "@opensearch-project/opensearch";
+import { IndexFields } from ".";
 import { out } from "../../util/log";
 import { makeS3Client } from "../aws/s3";
-import { FileSearchConnector, IndexFields, IngestRequest } from "./file-search-connector";
+import {
+  IngestRequest,
+  OpenSearchFileIngestor,
+  OpenSearchFileIngestorConfig,
+} from "./file-ingestor";
 
-export class FileSearchConnectorDirect extends FileSearchConnector {
+export type OpenSearchFileIngestorDirectConfig = OpenSearchFileIngestorConfig & {
+  endpoint: string;
+  username: string;
+  password: string;
+};
+
+export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
+  private readonly endpoint: string;
+  private readonly username: string;
+  private readonly password: string;
+
+  constructor(config: OpenSearchFileIngestorDirectConfig) {
+    super(config);
+    this.endpoint = config.endpoint;
+    this.username = config.username;
+    this.password = config.password;
+  }
+
   async ingest({
     cxId,
     patientId,
@@ -12,6 +34,7 @@ export class FileSearchConnectorDirect extends FileSearchConnector {
     s3BucketName,
   }: IngestRequest): Promise<void> {
     const { debug: log } = out(`ingest - ${cxId} - ${patientId}`, `- fileName: ${s3FileName}`);
+
     const data = await this.getFileContents(s3FileName, s3BucketName, log);
     if (!data) {
       log(`Empty data reading file from S3, skipping search ingestion...`);
@@ -69,11 +92,10 @@ export class FileSearchConnectorDirect extends FileSearchConnector {
       content: string;
     },
     log = console.log
-  ) {
-    const username = "admin";
-    const auth = { username, password: this.config.password };
+  ): Promise<void> {
     const { indexName } = this.config;
-    const client = new Client({ node: this.config.endpoint, auth });
+    const auth = { username: this.username, password: this.password };
+    const client = new Client({ node: this.endpoint, auth });
 
     // create index if it doesn't already exist
     const indexExists = Boolean((await client.indices.exists({ index: indexName })).body);

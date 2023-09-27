@@ -1,24 +1,21 @@
 import {
-  FileSearchConnector,
-  FileSearchConnectorDirect,
-  FileSearchConnectorSQS,
+  OpenSearchFileIngestor,
+  OpenSearchFileIngestorDirect,
+  OpenSearchFileIngestorSQS,
+  OpenSearchFileSearcher,
+  OpenSearchFileSearcherDirect,
 } from "@metriport/core/opensearch";
 import { Config } from "../../shared/config";
 
-export function makeSearchConnector(): FileSearchConnector {
+export function makeSearchServiceIngest(): OpenSearchFileIngestor {
   const region = Config.getAWSRegion();
   if (!region) throw new Error(`AWS region is required`);
   const endpoint = Config.getSearchEndpoint();
-  if (!endpoint) throw new Error(`Endpoint is required`);
-  // TODO 1050 make these dynamic
-  // TODO 1050 make these dynamic
-  // TODO 1050 make these dynamic
-  // TODO 1050 make these dynamic
-  const indexName = "ccda-index";
-  const username = "admin";
-  const password = Config.getSearchPassword() ?? "";
+  const indexName = Config.getSearchIndexName();
+  const username = Config.getSearchUsername();
+  const password = Config.getSearchPassword();
   if (Config.isDev()) {
-    return new FileSearchConnectorDirect({
+    return new OpenSearchFileIngestorDirect({
       region,
       endpoint,
       indexName,
@@ -26,12 +23,25 @@ export function makeSearchConnector(): FileSearchConnector {
       password,
     });
   }
-  return new FileSearchConnectorSQS({
+  return new OpenSearchFileIngestorSQS({
+    region,
+    indexName,
+    queueUrl: Config.getSearchIngestionQueueUrl(),
+  });
+}
+
+export function makeSearchServiceQuery(): OpenSearchFileSearcher {
+  const region = Config.getAWSRegion();
+  if (!region) throw new Error(`AWS region is required`);
+  const endpoint = Config.getSearchEndpoint();
+  const indexName = Config.getSearchIndexName();
+  const username = Config.getSearchUsername();
+  const password = Config.getSearchPassword();
+  return new OpenSearchFileSearcherDirect({
     region,
     endpoint,
     indexName,
     username,
     password,
-    queueUrl: Config.getSearchIngestionQueueUrl(),
   });
 }
