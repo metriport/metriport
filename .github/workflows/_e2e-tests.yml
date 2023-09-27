@@ -23,6 +23,7 @@ on:
         description: "the ID of a test patient for e2e tests"
         required: false
         type: string
+
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -106,6 +107,7 @@ jobs:
           API_URL: ${{ inputs.api_url }}
           WIDGET_URL: ${{ inputs.widget_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}
+          ENV_TYPE: ${{ inputs.deploy_env }}
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
