@@ -14,6 +14,7 @@ import { emptyFunction, Util } from "../../../shared/util";
 import { uuidv7 } from "../../../shared/uuid-v7";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
+import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -202,16 +203,4 @@ function getOrGenerateRequestId(docQueryProgress: DocumentQueryProgress | undefi
     return docQueryProgress.requestId;
   }
   return uuidv7();
-}
-
-/**
- * Checks if the patient's list of associated facility IDs contains the facility ID parameter passed by the user.
- *
- * @param patient The patient for which to check the association with a facility
- * @param facilityId The ID of the facility passed in by the user
- * @returns a boolean indicating whether this patient is associated with this facility ID
- */
-function isPatientAssociatedWithFacility(patient: Patient, facilityId: string): boolean {
-  if (patient.facilityIds.includes(facilityId)) return true;
-  return false;
 }
