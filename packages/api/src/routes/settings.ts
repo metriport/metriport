@@ -7,10 +7,50 @@ import { getSettings, getSettingsOrFail } from "../command/settings/getSettings"
 import { updateSettings } from "../command/settings/updateSettings";
 import { countFailedAndProcessingRequests } from "../command/webhook/count-failed";
 import { retryFailedRequests } from "../command/webhook/retry-failed";
+import BadRequestError from "../errors/bad-request";
 import { Settings } from "../models/settings";
 import { asyncHandler, getCxIdOrFail } from "./util";
 
 const router = Router();
+const webhookURLBlacklist = [
+  "127.0.0.1",
+  "127.1",
+  "127.000.000.1",
+  "localhost",
+  "127.0.0.2",
+  "0x7f.0x0.0x0.0x1",
+  "0177.0.0.01",
+  "01111111000000000000000000000001",
+  "01111111.00000000.00000000.00000001",
+  "2130706433",
+  "017700000001",
+  "%6c%6f%63%61%6c%68%6f%73%74",
+  "0177.0.0.0x1",
+  "169.254.169.254",
+  "169.254.169.254/latest/meta-data/iam/security-credentials/",
+  "169.254.169.254/latest/meta-data/hostname",
+  "fuf.me",
+  "localtest.me",
+  "ulh.us",
+  "127-0-0-1.org.uk",
+  "ratchetlocal.com",
+  "smackaho.st",
+  "42foo.com",
+  "vcap.me",
+  "beweb.com",
+  "yoogle.com",
+  "ortkut.com",
+  "feacebook.com",
+  "lvh.me",
+  "127.127.127.127",
+  "127.0.0.0",
+  "1.1.1.1 &@2.2.2.2# @3.3.3.3",
+  "urllib: 3.3.3.3",
+  "0", // limitation: cx can't use 0 in their wh url - chances of this happening is low, but erring on the side of security here
+  "[::]",
+  "0000",
+  "/internal", // limitation: cx can't use this route in their wh url - chances of this happening is low, but erring on the side of security here
+];
 
 class SettingsDTO {
   public constructor(
@@ -87,6 +127,13 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
     const { webhookUrl } = updateSettingsSchema.parse(req.body);
+    if (webhookUrl) {
+      for (const blacklistedStr of webhookURLBlacklist) {
+        if (webhookUrl.includes(blacklistedStr)) {
+          throw new BadRequestError(`Invalid URL`);
+        }
+      }
+    }
     const settings = await updateSettings({
       id,
       webhookUrl: webhookUrl ?? undefined,
