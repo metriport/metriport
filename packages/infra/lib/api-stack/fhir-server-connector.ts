@@ -4,7 +4,7 @@ import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { Queue } from "aws-cdk-lib/aws-sqs";
+import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
@@ -45,6 +45,8 @@ export function createConnector({
   fhirConverterBucket,
   lambdaLayers,
   alarmSnsAction,
+  searchIndexName,
+  searchQueue,
 }: {
   envType: EnvType;
   stack: Construct;
@@ -52,6 +54,8 @@ export function createConnector({
   fhirConverterBucket: s3.IBucket;
   lambdaLayers: ILayerVersion[];
   alarmSnsAction?: SnsAction;
+  searchIndexName: string;
+  searchQueue: IQueue;
 }): Queue | undefined {
   const config = getConfig();
   const fhirServerUrl = config.fhirServerUrl;
@@ -106,12 +110,10 @@ export function createConnector({
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       QUEUE_URL: queue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
-      ...(fhirServerUrl && {
-        FHIR_SERVER_URL: config.fhirServerUrl,
-      }),
-      ...(apiURL && {
-        API_URL: config.loadBalancerDnsName,
-      }),
+      FHIR_SERVER_URL: fhirServerUrl,
+      API_URL: apiURL,
+      SEARCH_QUEUE_URL: searchQueue.queueUrl,
+      SEARCH_INDEX_NAME: searchIndexName,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
@@ -128,6 +130,7 @@ export function createConnector({
   );
   provideAccessToQueue({ accessType: "both", queue, resource: sqsToFhirLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: sqsToFhirLambda });
+  provideAccessToQueue({ accessType: "send", queue: searchQueue, resource: sqsToFhirLambda });
 
   return queue;
 }

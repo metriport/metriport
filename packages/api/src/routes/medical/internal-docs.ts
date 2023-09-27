@@ -67,6 +67,9 @@ router.post(
       ? stringListSchema.parse(documentIdsRaw.split(",").map(id => id.trim()))
       : [];
     const optionsRaw = getFrom("query").optional("options", req);
+    if (typeof optionsRaw !== "string") {
+      throw new BadRequestError(`options must be a string, with comma-separated values`);
+    }
     const options = optionsRaw
       ? reprocessOptionsSchema.parse(optionsRaw.split(",").map(id => id.trim()))
       : [];
@@ -93,11 +96,12 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const status = getFrom("query").orFail("status", req);
+    const details = getFrom("query").optional("details", req);
     const docId = getFrom("query").optional("jobId", req);
     const convertResult = convertResultSchema.parse(status);
     const { log } = Util.out(`Doc conversion status - patient ${patientId}`);
 
-    log(`Converted document ${docId} with status ${convertResult}`);
+    log(`Converted document ${docId} with status ${convertResult}, details: ${details}`);
 
     // START TODO 785 remove this once we're confident with the flow
     const patientPre = await getPatientOrFail({ id: patientId, cxId });

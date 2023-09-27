@@ -22,7 +22,7 @@ export interface OpenSearchConstructProps {
 
 export default class OpenSearchConstruct extends Construct {
   public readonly domain: IDomain;
-  public readonly creds: { user: string; secretName: string };
+  public readonly creds: { username: string; secretName: string };
 
   constructor(scope: Construct, id: string, props: OpenSearchConstructProps) {
     super(scope, `${id}Construct`);
@@ -35,7 +35,7 @@ export default class OpenSearchConstruct extends Construct {
       generateSecretString: { includeSpace: false },
     });
     this.creds = {
-      user: masterUserName,
+      username: masterUserName,
       secretName,
     };
 
