@@ -45,7 +45,11 @@ async function main() {
       ...v.demographics,
       address: v.demographics.address.map(a => ({
         ...a,
+        addressLine1: a.addressLine1 ?? "",
         addressLine2: a.addressLine2 ?? "",
+        city: a.city ?? "",
+        state: a.state ?? "",
+        zip: a.zip ?? "",
         country: a.country ?? "USA",
       })),
     };

@@ -31,12 +31,8 @@ import {
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
-import {
-  patientCreateSchema,
-  patientUpdateSchema,
-  schemaCreateToPatient,
-  schemaUpdateToPatient,
-} from "./schemas/patient";
+import { schemaCreateToPatient, schemaUpdateToPatient } from "./schemas/patient";
+import { patientCreateSchema, patientUpdateSchema } from "@metriport/api-sdk";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
