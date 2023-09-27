@@ -46,6 +46,7 @@ const webhookURLBlacklist = [
   "127.0.0.0",
   "1.1.1.1 &@2.2.2.2# @3.3.3.3",
   "urllib: 3.3.3.3",
+  "amazonaws.com",
   "0", // limitation: cx can't use 0 in their wh url - chances of this happening is low, but erring on the side of security here
   "[::]",
   "0000",
