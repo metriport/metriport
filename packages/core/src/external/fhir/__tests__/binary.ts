@@ -1,5 +1,5 @@
 import { Binary } from "@medplum/fhirtypes";
-import { nanoid } from "../../../../__tests__/shared";
+import { v4 as uuidv4 } from "uuid";
 
 const makeData = () =>
   JSON.stringify({
@@ -8,9 +8,7 @@ const makeData = () =>
     prop3: "value of prop3",
   });
 
-const defaultId = "2.16.840.1.113883.3.9621.666." + nanoid();
-
-export const makeBinary = ({ id, data } = { id: defaultId, data: makeData() }): Binary => ({
+export const makeBinary = ({ id, data } = { id: uuidv4(), data: makeData() }): Binary => ({
   resourceType: "Binary",
   id,
   contentType: "application/json",

@@ -30,7 +30,7 @@
     "@sentry/serverless": "^7.46.0",
     "aws-sdk": "^2.1248.0",
     "axios": "^1.4.0",
-    "http-status": "^1.6.2",
+    "http-status": "^1.7.0",
     "nanoid": "^3.3.6",
     "node-fetch": "^2.6.12",
     "puppeteer-core": "18.0.5",

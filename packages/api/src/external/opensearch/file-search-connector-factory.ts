@@ -1,10 +1,8 @@
-import {
-  OpenSearchFileIngestor,
-  OpenSearchFileIngestorDirect,
-  OpenSearchFileIngestorSQS,
-  OpenSearchFileSearcher,
-  OpenSearchFileSearcherDirect,
-} from "@metriport/core/opensearch";
+import { OpenSearchFileIngestor } from "@metriport/core/external/opensearch/file-ingestor";
+import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
+import { OpenSearchFileIngestorSQS } from "@metriport/core/external/opensearch/file-ingestor-sqs";
+import { OpenSearchFileSearcher } from "@metriport/core/external/opensearch/file-searcher";
+import { OpenSearchFileSearcherDirect } from "@metriport/core/external/opensearch/file-searcher-direct";
 import { Config } from "../../shared/config";
 
 export function makeSearchServiceIngest(): OpenSearchFileIngestor {

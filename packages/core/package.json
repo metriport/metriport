@@ -10,30 +10,26 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./aws": "./dist/external/aws/index.js",
-    "./error": "./dist/external/error/index.js",
-    "./opensearch": "./dist/external/opensearch/index.js",
-    "./util": "./dist/util/index.js"
+    "./external/*": "./dist/external/*.js",
+    "./util/*": "./dist/util/*.js"
   },
   "typesVersions": {
     "*": {
       "/": [
         "dist/index.d.ts"
       ],
-      "aws": [
-        "dist/external/aws/index.d.ts"
+      "external/*": [
+        "dist/external/*"
       ],
-      "error": [
-        "dist/external/error/index.d.ts"
-      ],
-      "opensearch": [
-        "dist/external/opensearch/index.d.ts"
-      ],
-      "util": [
-        "dist/util/index.d.ts"
+      "util/*": [
+        "dist/util/*"
       ]
     }
   },
+  "files": [
+    "dist",
+    "package.json"
+  ],
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
     "tsc": "tsc",
@@ -50,10 +46,12 @@
   "dependencies": {
     "@opensearch-project/opensearch": "^2.3.1",
     "aws-sdk": "^2.1243.0",
-    "dayjs": "^1.11.9"
+    "dayjs": "^1.11.9",
+    "http-status": "^1.7.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
+    "@medplum/fhirtypes": "^2.0.32",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jest": "29.5.3",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
