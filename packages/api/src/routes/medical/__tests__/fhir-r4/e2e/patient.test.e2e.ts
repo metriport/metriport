@@ -1,9 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
+import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { AxiosResponse } from "axios";
 import { api } from "../../../../__tests__/shared";
-import { makePatient } from "./patient";
 
 jest.setTimeout(15000);
 
@@ -25,6 +25,9 @@ describe("Integration FHIR Patient", () => {
   });
 
   test("search patient by name", async () => {
+    if (!patient.name || patient.name.length < 1) throw new Error("Patient must have a name");
+    if (!patient.name[0].given || patient.name[0].given.length < 1)
+      throw new Error("Patient must have a given name");
     const res = await api.get(`/fhir/R4/Patient/?name=${patient.name[0].given[0]}`);
     expect(res.status).toBe(200);
     const body = res.data;
@@ -67,7 +70,8 @@ function validatePatient(body: any) {
   expect(body.id).toBeTruthy();
   expect(body.id).toBe(patient.id);
   expect(body.identifier).toBeTruthy();
-  expect(body.identifier.length).toBeTruthy();
+  expect(body.identifier.length).toBeGreaterThan(0);
+  if (!patient.identifier) throw new Error("Patient must have an identifier");
   expect(body.identifier[0]).toEqual(patient.identifier[0]);
   // Could validate more data here
 }

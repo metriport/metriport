@@ -129,6 +129,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
         const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
 
+        // TODO use core's base64 functions
         const b64Buff = Buffer.from(b64, "base64");
 
         const [b64Upload] = await Promise.all([

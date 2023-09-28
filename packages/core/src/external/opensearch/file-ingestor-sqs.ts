@@ -1,7 +1,7 @@
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { out } from "../../util";
+import { out } from "../../util/log";
 import * as xml from "../../util/xml";
 import { makeS3Client } from "../aws";
 import { SQSClient } from "../aws/sqs";

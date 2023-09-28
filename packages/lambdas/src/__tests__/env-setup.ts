@@ -1,6 +1,4 @@
-import * as dotenv from "dotenv";
-import path from "path";
-const cwd = process.cwd();
-const paths = [cwd, ...(cwd.includes("packages") ? [] : ["packages", "lambdas"])];
-dotenv.config({ path: path.resolve(...paths, ".env.test") });
-// Keep dotenv import and config before everything else
+// Only global env vars, declare specific env vars in each test file
+process.env.AWS_LAMBDA_FUNCTION_NAME = "xxx";
+process.env.AWS_REGION = "xxx";
+process.env.METRICS_NAMESPACE = "xxx";
