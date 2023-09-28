@@ -1,4 +1,4 @@
-import { PatientCreate, PatientUpdate } from "@metriport/api-sdk";
+import { PatientCreate, patientCreateSchema } from "@metriport/api-sdk";
 import { z } from "zod";
 import { driversLicenseType, generalTypes } from "../../../models/medical/patient";
 import { USState } from "../../../shared/geographic-locations";
@@ -35,6 +35,8 @@ export const personalIdentifierSchema = basePersonalIdentifierSchema.merge(
 // TODO #369 reenable this when we manage to work with diff systems @ CW
 // .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
+export const patientUpdateSchema = patientCreateSchema;
+export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 
 export function schemaCreateToPatient(input: PatientCreate, cxId: string) {
   return {
