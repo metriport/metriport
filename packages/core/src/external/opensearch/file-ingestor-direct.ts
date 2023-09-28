@@ -26,6 +26,7 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     this.password = config.password;
   }
 
+  // TODO split into 2: one that gets the actual content, another (class?) that gets form S3 and ingests w/ content
   async ingest({
     cxId,
     patientId,

@@ -1,0 +1,8 @@
+{
+  // don't worry about strictness while in development
+  "extends": "./tsconfig",
+  "compilerOptions": {
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  }
+}

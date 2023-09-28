@@ -1,5 +1,5 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { OpenSearchFileIngestorDirect } from "@metriport/core/opensearch";
+import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";

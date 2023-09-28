@@ -1,8 +1,8 @@
 import { MedplumClient } from "@medplum/core";
 import { Bundle, DocumentReference, Resource } from "@medplum/fhirtypes";
-import { MetriportError } from "@metriport/core/error";
-import { OpenSearchFileIngestorSQS } from "@metriport/core/opensearch";
-import { base64ToString } from "@metriport/core/util";
+import { OpenSearchFileIngestorSQS } from "@metriport/core/external/opensearch/file-ingestor-sqs";
+import { base64ToString } from "@metriport/core/util/base64";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import { uuid4 } from "@sentry/utils";
 import { SQSEvent } from "aws-lambda";
@@ -342,7 +342,7 @@ function processFHIRResponse(
   }
 }
 
-async function ingestBase64Attachments(
+export async function ingestBase64Attachments(
   {
     cxId,
     patientId,
@@ -392,7 +392,7 @@ async function ingestBase64Attachments(
       content: contentToIngest,
       s3FileName,
       s3BucketName,
-      requestId: jobId,
+      ...(jobId ? { requestId: jobId } : {}),
     });
   }
 }
