@@ -51,36 +51,41 @@ jobs:
       # check commits' messages to make sure they follow Conventional Commits
       - uses: wagoid/commitlint-github-action@v5
 
+      # run even when treat-as-package is false b/c of inter-package dependencies
       - name: Install on root
-        if: ${{ inputs.treat-as-package == true }}
         run: |
           pwd
           npm run install-deps
         working-directory: "./" # from root bc package-lock.json is there
-      - name: Install on sub-folder/package
-        if: ${{ inputs.treat-as-package == false }}
-        run: |
-          pwd
-          npm ci --ignore-scripts --no-fund
-        working-directory: ${{ inputs.path }}
 
       - name: Run Linter
         run: npm run lint
         working-directory: ${{ inputs.path }}
       # move to an external file so both this and deploy can use this logic
 
+      # run even when treat-as-package is false b/c of inter-package dependencies
       - name: Build/compile on root
-        if: ${{ inputs.treat-as-package == true && inputs.build_env == 'production' }}
+        if: ${{ inputs.build_env == 'production' }}
         run: |
           pwd
           npm run build:cloud
         # build from root because of dependencies
         working-directory: "./"
+      # run even when treat-as-package is false b/c of inter-package dependencies
       - name: Build/compile on root STAGING
-        if: ${{ inputs.treat-as-package == true && inputs.build_env == 'staging' }}
+        if: ${{ inputs.build_env == 'staging' }}
         run: |
           pwd
           npm run build:staging
+        working-directory: "./"
+      # build commonly used packages
+      - name: Build/compile common dependencies
+        if: ${{ inputs.treat-as-package == false }}
+        run: |
+          pwd
+          npm run build:cloud -w packages/core
+          npm run build:cloud -w packages/commonwell-sdk
+          npm run build:cloud -w packages/api-sdk
         working-directory: "./"
       - name: Build/compile on sub-folder/package
         if: ${{ inputs.treat-as-package == false }}
