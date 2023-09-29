@@ -1,3 +1,4 @@
+import { patientCreateSchema } from "@metriport/api-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -7,7 +8,7 @@ import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -32,7 +33,6 @@ import {
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
-  patientCreateSchema,
   patientUpdateSchema,
   schemaCreateToPatient,
   schemaUpdateToPatient,
