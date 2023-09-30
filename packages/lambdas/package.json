@@ -25,7 +25,7 @@
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
     "@metriport/core": "file:packages/core",
-    "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
+    "@metriport/commonwell-sdk": "^4.8.0",
     "@opensearch-project/opensearch": "^2.3.1",
     "@sentry/serverless": "^7.46.0",
     "aws-sdk": "^2.1248.0",

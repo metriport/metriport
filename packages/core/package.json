@@ -1,13 +1,18 @@
 {
   "name": "@metriport/core",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Metriport Core SDK for sharing logic across packages",
+  "version": "0.0.0",
+  "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
   "exports": {
     ".": "./dist/index.js",
     "./external/*": "./dist/external/*.js",
@@ -26,10 +31,6 @@
       ]
     }
   },
-  "files": [
-    "dist",
-    "package.json"
-  ],
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
     "tsc": "tsc",
