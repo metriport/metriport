@@ -252,8 +252,6 @@ export class APIStack extends Stack {
       fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
       lambdaLayers,
       alarmSnsAction: slackNotification?.alarmAction,
-      searchIndexName: ccdaSearchIndexName,
-      searchQueue: ccdaSearchQueue,
     });
 
     const cdaToVisualizationLambda = this.setupCdaToVisualization({

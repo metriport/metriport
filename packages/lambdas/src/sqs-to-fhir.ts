@@ -1,13 +1,10 @@
 import { MedplumClient } from "@medplum/core";
-import { Bundle, DocumentReference, Resource } from "@medplum/fhirtypes";
-import { OpenSearchFileIngestorSQS } from "@metriport/core/external/opensearch/file-ingestor-sqs";
-import { base64ToString } from "@metriport/core/util/base64";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import { uuid4 } from "@sentry/utils";
 import { SQSEvent } from "aws-lambda";
 import fetch from "node-fetch";
-import { DeepUndefinable } from "ts-essentials";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
@@ -32,9 +29,6 @@ const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS")
 const sourceQueueURL = getEnvOrFail("QUEUE_URL");
 const dlqURL = getEnvOrFail("DLQ_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
-
-const searchQueueUrl = getEnvOrFail("SEARCH_QUEUE_URL");
-const searchIndexName = getEnvOrFail("SEARCH_INDEX_NAME");
 
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const maxRetries = 10;
@@ -145,53 +139,36 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
         log(`Sending payload to FHIRServer...`);
         let response: Bundle<Resource> | undefined;
-        const populateFHIRServer = async () => {
-          const upsertStart = Date.now();
-          const fhirApi = new MedplumClient({
-            fetch,
-            baseUrl: fhirServerUrl,
-            fhirUrlPath: `fhir/${cxId}`,
-          });
-          let count = 0;
-          let retry = true;
-          while (retry) {
-            count++;
-            response = await fhirApi.executeBatch(payload);
-            const errors = getErrorsFromReponse(response);
-            if (errors.length <= 0) break;
-            retry = count < maxRetries;
-            log(`Got ${errors.length} errors from FHIR, ${retry ? "" : "NOT "}trying again...`);
-            if (!retry) {
-              throw new MetriportError(`Too many errors from FHIR`, undefined, {
-                count: count.toString(),
-                maxRetries: maxRetries.toString(),
-              });
-            }
+        const upsertStart = Date.now();
+        const fhirApi = new MedplumClient({
+          fetch,
+          baseUrl: fhirServerUrl,
+          fhirUrlPath: `fhir/${cxId}`,
+        });
+        let count = 0;
+        let retry = true;
+        while (retry) {
+          count++;
+          response = await fhirApi.executeBatch(payload);
+          const errors = getErrorsFromReponse(response);
+          if (errors.length <= 0) break;
+          retry = count < maxRetries;
+          log(`Got ${errors.length} errors from FHIR, ${retry ? "" : "NOT "}trying again...`);
+          if (!retry) {
+            throw new MetriportError(`Too many errors from FHIR`, undefined, {
+              count: count.toString(),
+              maxRetries: maxRetries.toString(),
+            });
           }
-          metrics.errorCount = {
-            count,
-            timestamp: new Date(),
-          };
-          metrics.upsert = {
-            duration: Date.now() - upsertStart,
-            timestamp: new Date(),
-          };
+        }
+        metrics.errorCount = {
+          count,
+          timestamp: new Date(),
         };
-
-        const result = await Promise.allSettled([
-          populateFHIRServer(),
-          ingestBase64Attachments(
-            {
-              cxId,
-              patientId,
-              fhirDoc: payload,
-              s3BucketName,
-              s3FileName,
-              jobId,
-            },
-            log
-          ),
-        ]);
+        metrics.upsert = {
+          duration: Date.now() - upsertStart,
+          timestamp: new Date(),
+        };
 
         if (jobStartedAt) {
           metrics.job = {
@@ -203,44 +180,32 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         processFHIRResponse(response, event, log);
 
         await cloudWatchUtils.reportMetrics(metrics);
-        const fhirResult = result[0];
-        const ingestionResult = result[1];
-        const fhirUpsertSuccess = fhirResult.status === "fulfilled";
-        const ingestionSuccess = ingestionResult.status === "fulfilled";
-        const status = fhirUpsertSuccess && ingestionSuccess ? "success" : "failed";
-        const fhirDetails = !fhirUpsertSuccess
-          ? `FHIR Upsert failed: ${fhirResult.reason}`
-          : undefined;
-        const ingestionDetails = !ingestionSuccess
-          ? `Search ingestion failed: ${ingestionResult.reason}`
-          : undefined;
-        const details =
-          fhirDetails && ingestionDetails
-            ? `${fhirDetails}; ${ingestionDetails}`
-            : fhirDetails ?? ingestionDetails;
-        await ossApi.notifyApi({ cxId, patientId, status, details, jobId }, log);
+        await ossApi.notifyApi({ cxId, patientId, status: "success", jobId }, log);
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
+      } catch (error: any) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount
           ? Number(message.attributes?.ApproximateReceiveCount)
           : undefined;
         const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = isAxiosTimeout(err) || isAxiosBadGateway(err);
-        if (!(err instanceof MetriportError) && isRetryError && isWithinRetryRange) {
+        const isRetryError = isAxiosTimeout(error) || isAxiosBadGateway(error);
+        if (!(error instanceof MetriportError) && isRetryError && isWithinRetryRange) {
           console.log(`Timed out, reenqueue (${count} of ${maxTimeoutRetries}): `, message);
           capture.message("Sending to FHIR server timed out", {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await sqsUtils.reEnqueue(message);
         } else {
-          console.log(`Error processing message: ${JSON.stringify(message)}; \n${err}: ${err}`);
-          capture.error(err, {
-            extra: { message, context: lambdaName, retryCount: count },
+          console.log(`Error processing message: ${JSON.stringify(message)}; \n${error.message}`);
+          capture.error(error, {
+            extra: { message, context: lambdaName, retryCount: count, error },
           });
           await sqsUtils.sendToDLQ(message);
 
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
+          await ossApi.notifyApi(
+            { cxId, patientId, status: "failed", details: error.message, jobId },
+            log
+          );
         }
       }
     }
@@ -340,67 +305,4 @@ function processFHIRResponse(
       level: "error",
     });
   }
-}
-
-export async function ingestBase64Attachments(
-  {
-    cxId,
-    patientId,
-    fhirDoc,
-    s3BucketName,
-    s3FileName,
-    jobId,
-  }: {
-    cxId: string;
-    patientId: string;
-    // using DeepUndefinable b/c we're actually getting `any` from loading the bundle from S3
-    fhirDoc: DeepUndefinable<Bundle<Resource>>;
-    s3BucketName: string;
-    s3FileName: string;
-    jobId?: string;
-  },
-  log = console.log
-): Promise<void> {
-  const docRefs = (fhirDoc.entry ?? []).flatMap(e =>
-    e.resource?.resourceType === "DocumentReference" ? e.resource : []
-  );
-  if (!docRefs.length) {
-    log(`No DocumentReference, skipping ingestion`);
-    return;
-  }
-
-  const searchService = new OpenSearchFileIngestorSQS({
-    region,
-    queueUrl: searchQueueUrl,
-    indexName: searchIndexName,
-  });
-
-  // get the doc refs with base64 attachments
-  const docRefsWithBase64Attachment = docRefs.map(getBase64Attachment);
-  for (const { docId, attachmentData: base64Attachments } of docRefsWithBase64Attachment) {
-    if (!docId) {
-      log(`No docId, skipping ingestion - JSON: ${JSON.stringify(fhirDoc)}`);
-      continue;
-    }
-
-    const contentToIngest = base64Attachments.map(base64ToString);
-
-    await searchService.storeAndIngest({
-      cxId,
-      patientId,
-      entryId: docId,
-      content: contentToIngest,
-      s3FileName,
-      s3BucketName,
-      ...(jobId ? { requestId: jobId } : {}),
-    });
-  }
-}
-
-function getBase64Attachment(doc: DeepUndefinable<DocumentReference>): {
-  docId: string | undefined;
-  attachmentData: string[];
-} {
-  const attachmentData = (doc.content ?? []).flatMap(c => c.attachment?.data ?? []);
-  return { docId: doc.id, attachmentData };
 }
