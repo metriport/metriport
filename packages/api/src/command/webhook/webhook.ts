@@ -186,6 +186,7 @@ export const sendPayload = async (
         "user-agent": "Metriport API",
       },
       timeout,
+      maxRedirects: 0, // disable redirects to prevent SSRF
     });
     return res.data;
   } catch (err) {
