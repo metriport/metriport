@@ -1,7 +1,12 @@
 import { SQS } from "aws-sdk";
 import { uniqBy } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
-import { attributesToSend, getMessagesFromQueue, sqs } from "../../../external/aws/sqs";
+import {
+  attributesToSend,
+  getMessageCountFromQueue,
+  getMessagesFromQueue,
+  sqs,
+} from "../../../external/aws/sqs";
 import { Config } from "../../../shared/config";
 import { uuidv4 } from "../../../shared/uuid-v7";
 
@@ -52,16 +57,28 @@ async function redriveSQSUnique({
     convertedMaxNumberOfMessages,
     systemMaxNumberOfMessages
   );
+
+  const messageCount = await getMessageCountFromQueue(sourceQueueUrl);
+  console.log(`>>> Message count: ${messageCount}`);
+  const numberOfParallelRequests = Math.floor(messageCount / maxNumberOfMessagesPerQuery);
+
   console.log(`>>> Getting messages from source queue...`);
-  const messages = await getMessagesFromQueue(sourceQueueUrl, {
-    maxNumberOfMessagesPerQuery,
-    maxNumberOfMessages: actualMaxNumberOfMessages,
-    poolUntilEmpty: true,
-  });
-  console.log(`>>> Messages from source queue:`);
-  messages.forEach(message => {
-    console.log("... ", message.Body);
-  });
+  const messages: SQS.Message[] = [];
+  await Promise.allSettled(
+    [...Array(numberOfParallelRequests).keys()].map(async () => {
+      const messagesOfRequest = await getMessagesFromQueue(sourceQueueUrl, {
+        maxNumberOfMessagesPerQuery,
+        maxNumberOfMessages: actualMaxNumberOfMessages,
+        poolUntilEmpty: true,
+      });
+      messages.push(...messagesOfRequest);
+    })
+  );
+
+  // console.log(`>>> Messages from source queue:`);
+  // messages.forEach(message => {
+  //   console.log("... ", message.Body);
+  // });
 
   const uniqueMessages = uniqBy(messages, contentComparator);
   console.log(`>>> Unique messages:`);

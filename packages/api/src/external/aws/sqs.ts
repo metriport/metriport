@@ -157,7 +157,7 @@ async function _getMessagesFromQueue(
   const messages = resultReceive.Messages ?? [];
   const result = [...rollingResult, ...messages];
 
-  if (removeMessages) await deleteMessagesFromQueue(queueUrl, messagesToDelete(messages));
+  if (removeMessages) await deleteMessagesFromQueue(queueUrl, toDeleteFormat(messages));
 
   if (poolUntilEmpty) {
     const updatedTotal = await getMessageCountFromQueue(queueUrl);
@@ -181,7 +181,7 @@ export async function getMessageCountFromQueue(queueUrl: string): Promise<number
   return total;
 }
 
-function messagesToDelete(messages: SQS.Message[]): MessageToDelete[] {
+function toDeleteFormat(messages: SQS.Message[]): MessageToDelete[] {
   return messages.flatMap(m => {
     if (!m.MessageId || !m.ReceiptHandle) return [];
     return {
