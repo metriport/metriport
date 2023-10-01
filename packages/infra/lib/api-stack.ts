@@ -270,7 +270,8 @@ export class APIStack extends Stack {
       fhirServerQueue?.queueUrl,
       fhirConverterQueue.queueUrl,
       fhirConverter ? `http://${fhirConverter.address}` : undefined,
-      sidechainFHIRConverterQueue?.queueUrl,
+      sidechainFHIRConverterQueue,
+      sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
       documentDownloaderLambda
     );
@@ -337,11 +338,6 @@ export class APIStack extends Stack {
       : undefined;
 
     // sidechain FHIR converter
-    provideAccessToQueue({
-      accessType: "send",
-      queue: sidechainFHIRConverterQueue,
-      resource: apiService.service.taskDefinition.taskRole,
-    });
     const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
       ? sidechainFHIRConverterConnector.createLambda({
           envType: props.config.environmentType,

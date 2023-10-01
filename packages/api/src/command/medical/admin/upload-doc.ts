@@ -13,11 +13,11 @@ const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
 const smallId = () => String(randomInt(3)).padStart(3, "0");
 
 /**
- * ADMIN LOGIC
+ * ADMIN LOGIC - not to be used by other endpoints/services.
+ *
  * This function is to be able to create a document reference
  * and upload it to the FHIR server with the purpose of testing.
  */
-
 export async function createAndUploadDocReference({
   cxId,
   patientId,
