@@ -1,6 +1,7 @@
 import { SQSMessageAttributes, SQSRecord } from "aws-lambda";
 import * as AWS from "aws-sdk";
 import { SQS } from "aws-sdk";
+import { MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
 import { capture } from "./capture";
 
 export class SQSUtils {
@@ -70,7 +71,7 @@ export class SQSUtils {
     }
   }
 
-  attributesToSend(inboundMessageAttribs: SQSMessageAttributes) {
+  attributesToSend(inboundMessageAttribs: SQSMessageAttributes): MessageBodyAttributeMap {
     let res = {};
     for (const [key, value] of Object.entries(inboundMessageAttribs)) {
       res = {
@@ -81,7 +82,7 @@ export class SQSUtils {
     return res;
   }
 
-  singleAttributeToSend(key: string, value: string | undefined) {
+  singleAttributeToSend(key: string, value: string | undefined): MessageBodyAttributeMap {
     return {
       [key]: {
         DataType: "String",

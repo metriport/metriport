@@ -345,14 +345,7 @@ async function postToSidechainConverter(payload: unknown, patientId: string, log
         "SenderId": "AROAWX27OVJFOXNNHQRAU:FHIRConverter_Retry_Lambda",
         "ApproximateFirstReceiveTimestamp": "1684700300546"
     },
-    "messageAttributes": {
-      cxId: {
-        stringValue: '7006E0FB-33C8-42F4-B675-A3FD05717446',
-        stringListValues: [],
-        binaryListValues: [],
-        dataType: 'String'
-      }
-    },
+    "messageAttributes": ...,
     "md5OfBody": "543u5y34ui53uih543uh5ui4",
     "eventSource": "aws:sqs",
     "eventSourceARN": "arn:aws:sqs:<region>:<acc>>:<queue-name>",
