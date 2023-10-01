@@ -162,6 +162,20 @@ export class APIStack extends Stack {
       dynamoConstructName,
       slackNotification?.alarmAction
     );
+    // table for sidechain FHIR converter key management
+    const dynamoSidechainKeysConstructName = "SidechainFHIRConverterKeys";
+    const dynamoDBSidechainKeysTable = new dynamodb.Table(this, dynamoSidechainKeysConstructName, {
+      partitionKey: { name: "key", type: dynamodb.AttributeType.STRING },
+      replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
+      replicationTimeout: Duration.hours(3),
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      pointInTimeRecovery: true,
+    });
+    this.addDynamoPerformanceAlarms(
+      dynamoDBSidechainKeysTable,
+      dynamoSidechainKeysConstructName,
+      slackNotification?.alarmAction
+    );
 
     //-------------------------------------------
     // FHIR Converter Service
@@ -350,6 +364,7 @@ export class APIStack extends Stack {
           fhirConverterBucket: sidechainFHIRConverterBucket,
           apiServiceDnsAddress: apiLoadBalancerAddress,
           alarmSnsAction: slackNotification?.alarmAction,
+          dynamoDBSidechainKeysTable,
         })
       : undefined;
 

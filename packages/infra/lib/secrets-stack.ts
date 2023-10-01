@@ -47,12 +47,5 @@ export class SecretsStack extends Stack {
         logSecretInfo(this, secret, secretName);
       }
     }
-
-    if (props.config.sidechainFHIRConverter) {
-      for (const secretName of Object.values(props.config.sidechainFHIRConverter.secretNames)) {
-        const secret = makeSecret(secretName);
-        logSecretInfo(this, secret, secretName);
-      }
-    }
   }
 }
