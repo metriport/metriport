@@ -2,8 +2,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
-import { Progress } from "../../../domain/medical/document-query";
-import { Patient, PatientModel } from "../../../models/medical/patient";
+import { DocumentQueryProgress, Progress } from "../../../domain/medical/document-query";
+import { Patient, PatientCreate, PatientData, PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 
@@ -81,6 +81,21 @@ export async function getPatientsToUpdate(
     instance: new PatientModel(),
   })) as Patient[];
 
+  if (!patientsWithDocQueriesInProgress) {
+    capture.message("patientsWithDocQueriesInProgress is undefined/null", {
+      extra: { patientsWithDocQueriesInProgress, propertyName, query },
+      level: "warning",
+    });
+    return [];
+  }
+  if (!Array.isArray(patientsWithDocQueriesInProgress)) {
+    capture.message("patientsWithDocQueriesInProgress is not an array", {
+      extra: { patientsWithDocQueriesInProgress, propertyName, query },
+      level: "warning",
+    });
+    return [];
+  }
+
   // 'updatedAt' is not being set by sequelize, so we need to set it manually
   patientsWithDocQueriesInProgress.forEach(patient => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,27 +106,29 @@ export async function getPatientsToUpdate(
 }
 
 function getQuery(
-  propertyName: "convert" | "download",
+  propertyName: keyof Pick<DocumentQueryProgress, "convert" | "download">,
   maxTime: duration.Duration,
   patientIds: string[] = []
 ): string {
-  // START - Literally just making sure we bring our attention to this query if we change something with the patient model
-  // so we update the query as well
-  const voidPatient = { data: {} } as PatientModel;
-  const c: Progress = voidPatient.data.documentQueryProgress?.convert ?? ({} as Progress);
-  [c?.status, c?.total, c?.successful, c?.errors];
-  const d: Progress = voidPatient.data.documentQueryProgress?.download ?? ({} as Progress);
-  [d?.status, d?.total, d?.successful, d?.errors];
+  // START - Workaround to force a compilation error if we change something on the model, since we're
+  // using raw SQL here.
+  const data: keyof Pick<PatientCreate, "data"> = "data";
+  const documentQueryProgress: keyof Pick<PatientData, "documentQueryProgress"> =
+    "documentQueryProgress";
+  const status: keyof Pick<Progress, "status"> = "status";
+  const total: keyof Pick<Progress, "total"> = "total";
+  const successful: keyof Pick<Progress, "successful"> = "successful";
+  const errors: keyof Pick<Progress, "errors"> = "errors";
   // END
 
-  const property = `data->'documentQueryProgress'->'${propertyName}'`;
+  const property = `${data}->'${documentQueryProgress}'->'${propertyName}'`;
   const baseQuery =
     `select * from patient ` +
-    `where ${property}->>'status' = 'processing' ` +
+    `where ${property}->>'${status}' = 'processing' ` +
     `and ( ` +
-    `  (${property}->'total')::int <= ( ` +
-    `    (${property}->'successful')::int + ` +
-    `    (${property}->'errors')::int ` +
+    `  (${property}->'${total}')::int <= ( ` +
+    `    (${property}->'${successful}')::int + ` +
+    `    (${property}->'${errors}')::int ` +
     `  ) ` +
     `  or ` +
     `  updated_at < '${dayjs().subtract(maxTime.asSeconds(), "second").toISOString()}' ` +
