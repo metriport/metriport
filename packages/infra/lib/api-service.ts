@@ -11,10 +11,12 @@ import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { DnsZones } from "./shared/dns";
 import { Secrets } from "./shared/secrets";
+import { provideAccessToQueue } from "./shared/sqs";
 import { isProd } from "./shared/util";
 
 interface ApiServiceProps extends StackProps {
@@ -35,7 +37,8 @@ export function createAPIService(
   fhirServerQueueUrl: string | undefined,
   fhirConverterQueueUrl: string | undefined,
   fhirConverterServiceUrl: string | undefined,
-  sidechainFHIRConverterQueueUrl: string | undefined,
+  sidechainFHIRConverterQueue: IQueue | undefined,
+  sidechainFHIRConverterDLQ: IQueue | undefined,
   cdaToVisualizationLambda: ILambda,
   documentDownloaderLambda: ILambda
 ): {
@@ -114,8 +117,11 @@ export function createAPIService(
           ...(fhirConverterServiceUrl && {
             FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
           }),
-          ...(sidechainFHIRConverterQueueUrl && {
-            SIDECHAIN_FHIR_CONVERTER_QUEUE_URL: sidechainFHIRConverterQueueUrl,
+          ...(sidechainFHIRConverterQueue && {
+            SIDECHAIN_FHIR_CONVERTER_QUEUE_URL: sidechainFHIRConverterQueue.queueUrl,
+          }),
+          ...(sidechainFHIRConverterDLQ && {
+            SIDECHAIN_FHIR_CONVERTER_DLQ_URL: sidechainFHIRConverterDLQ.queueUrl,
           }),
         },
       },
@@ -140,8 +146,21 @@ export function createAPIService(
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+
+  sidechainFHIRConverterQueue &&
+    provideAccessToQueue({
+      accessType: "send",
+      queue: sidechainFHIRConverterQueue,
+      resource: fargateService.service.taskDefinition.taskRole,
+    });
+  sidechainFHIRConverterDLQ &&
+    provideAccessToQueue({
+      accessType: "both",
+      queue: sidechainFHIRConverterDLQ,
+      resource: fargateService.service.taskDefinition.taskRole,
+    });
+
   // CloudWatch Alarms and Notifications
 
   // Allow the service to publish metrics to cloudwatch
