@@ -156,7 +156,7 @@ export function createAPIService(
     });
   sidechainFHIRConverterDLQ &&
     provideAccessToQueue({
-      accessType: "send",
+      accessType: "both",
       queue: sidechainFHIRConverterDLQ,
       resource: fargateService.service.taskDefinition.taskRole,
     });
