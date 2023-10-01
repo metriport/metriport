@@ -60,7 +60,7 @@ async function redriveSQSUnique({
 
   const messageCount = await getMessageCountFromQueue(sourceQueueUrl);
   console.log(`>>> Message count: ${messageCount}`);
-  const numberOfParallelRequests = Math.floor(messageCount / maxNumberOfMessagesPerQuery);
+  const numberOfParallelRequests = Math.ceil(messageCount / maxNumberOfMessagesPerQuery);
 
   console.log(`>>> Getting messages from source queue...`);
   const messages: SQS.Message[] = [];

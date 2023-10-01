@@ -2,6 +2,9 @@ import { AWSError, SQS } from "aws-sdk";
 import { MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { Config } from "../../shared/config";
+import { Util } from "../../shared/util";
+
+const sleepTimeBetweenCountsInMs = 1_000;
 
 const sqsConfig = {
   awsRegion: Config.getAWSRegion(),
@@ -160,7 +163,11 @@ async function _getMessagesFromQueue(
   if (removeMessages) await deleteMessagesFromQueue(queueUrl, toDeleteFormat(messages));
 
   if (poolUntilEmpty) {
-    const updatedTotal = await getMessageCountFromQueue(queueUrl);
+    // SQS is a distributed system and the consensus about the message count take some time to be reached.
+    const preUpdatedTotal1 = await getMessageCountFromQueue(queueUrl);
+    await Util.sleep(sleepTimeBetweenCountsInMs);
+    const preUpdatedTotal2 = await getMessageCountFromQueue(queueUrl);
+    const updatedTotal = Math.max(preUpdatedTotal1, preUpdatedTotal2);
     if (updatedTotal <= 0) return result;
     return _getMessagesFromQueue(queueUrl, sqsParams, result);
   }
