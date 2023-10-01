@@ -1,5 +1,5 @@
 import { SQS } from "aws-sdk";
-import { uniqBy } from "lodash";
+import { uniq, uniqBy } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
 import {
   attributesToSend,
@@ -64,7 +64,7 @@ async function redriveSQSUnique({
 
   console.log(`>>> Getting messages from source queue...`);
   const messages: SQS.Message[] = [];
-  await Promise.allSettled(
+  const res = await Promise.allSettled(
     [...Array(numberOfParallelRequests).keys()].map(async () => {
       const messagesOfRequest = await getMessagesFromQueue(sourceQueueUrl, {
         maxNumberOfMessagesPerQuery,
@@ -74,11 +74,26 @@ async function redriveSQSUnique({
       messages.push(...messagesOfRequest);
     })
   );
+  const failed = res.flatMap(r => (r.status === "rejected" ? String(r.reason) : []));
+  if (failed.length) {
+    const succeeded = res.filter(r => r.status === "fulfilled");
+    const uniqueMsgs = uniq(failed);
+    console.log(
+      `>>> Failed to get messages from SQS (total errors ${failed.length}, ` +
+        `unique errors ${uniqueMsgs.length}, succeeded ${succeeded.length}): ` +
+        `${uniqueMsgs.join("; ")}`
+    );
+  }
 
   // console.log(`>>> Messages from source queue:`);
   // messages.forEach(message => {
   //   console.log("... ", message.Body);
   // });
+
+  if (!messages || !messages.length) {
+    console.log(`>>> No messages to send`);
+    return { originalCount: messages.length, uniqueCount: -1 };
+  }
 
   const uniqueMessages = uniqBy(messages, contentComparator);
   console.log(`>>> Unique messages:`);
