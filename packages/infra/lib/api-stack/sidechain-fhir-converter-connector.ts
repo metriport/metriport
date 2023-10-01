@@ -10,7 +10,6 @@ import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { METRICS_NAMESPACE, getConfig } from "../shared/config";
 import { MAXIMUM_LAMBDA_TIMEOUT, createLambda as defaultCreateLambda } from "../shared/lambda";
-import { Secrets, buildSecrets } from "../shared/secrets";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { FHIRConnector } from "./fhir-converter-connector";
 
@@ -146,19 +145,11 @@ export function createLambda({
       SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST: sidechainUrlBlacklist,
       SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE: sidechainWordsToRemove,
       SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME: dynamoDBSidechainKeysTable.tableName,
-      ...config.sidechainFHIRConverter.secretNames,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
     runtime: Runtime.NODEJS_18_X,
   });
-
-  // grant lambda read access to all configured secrets
-  const secrets: Secrets = {};
-  buildSecrets(secrets, stack, config.sidechainFHIRConverter.secretNames);
-  for (const secret of Object.values(secrets)) {
-    secret.grantRead(conversionLambda);
-  }
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
 
