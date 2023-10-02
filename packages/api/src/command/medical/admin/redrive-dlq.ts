@@ -85,11 +85,6 @@ async function redriveSQSUnique({
     );
   }
 
-  // console.log(`>>> Messages from source queue:`);
-  // messages.forEach(message => {
-  //   console.log("... ", message.Body);
-  // });
-
   if (!messages || !messages.length) {
     console.log(`>>> No messages to send`);
     return { originalCount: messages.length, uniqueCount: -1 };

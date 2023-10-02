@@ -69,7 +69,6 @@ async function main() {
       const s3FileName = item.s3FileName;
       const cxId = s3FileName.split("/")[0];
       const patientId = s3FileName.split("/")[1];
-      // console.log(`...cxId=${cxId}, patientId=${patientId}, fileName=${s3FileName}`);
       return {
         Id: uuidv4(),
         MessageBody: JSON.stringify(item),
