@@ -65,11 +65,6 @@ const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
   }
 };
 export const initDDBDev = async (): Promise<AWS.DynamoDB.DocumentClient> => {
-  AWS.config.update({
-    region: "us-west-1",
-    accessKeyId: "xxxx",
-    secretAccessKey: "xxxx",
-  });
   const doc = new AWS.DynamoDB.DocumentClient({
     apiVersion: "2012-08-10",
     endpoint: process.env.DYNAMODB_ENDPOINT,
