@@ -87,7 +87,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       };
       await cloudWatchUtils.reportMemoryUsage();
 
-      log(`Metrics: ${metrics}`);
+      log(`Metrics: ${JSON.stringify(metrics)}`);
       await cloudWatchUtils.reportMetrics(metrics);
     } catch (error) {
       console.log(`Error processing message: ${JSON.stringify(message)};\n${error}`);

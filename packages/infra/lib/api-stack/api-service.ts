@@ -69,7 +69,7 @@ export function createAPIService(
       ? props.config.connectWidgetUrl
       : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
-  const searchPassword = secret.Secret.fromSecretNameV2(
+  const searchPasswordSecret = secret.Secret.fromSecretNameV2(
     stack,
     "APISearchSecret",
     searchAuth.secretName
@@ -91,6 +91,7 @@ export function createAPIService(
         containerName: "API-Server",
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
+          SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchPasswordSecret),
           ...secrets,
         },
         environment: {
@@ -137,7 +138,6 @@ export function createAPIService(
           SEARCH_INGESTION_QUEUE_URL: searchIngestionQueueUrl,
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
-          SEARCH_PASSWORD: searchPassword.secretValue.toString(),
           SEARCH_INDEX: searchIndexName,
         },
       },

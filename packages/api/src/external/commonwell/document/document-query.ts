@@ -357,7 +357,6 @@ function convertToNonExistingS3Info(
       ...simpleFile,
       fileExists: false,
       fileSize: undefined,
-      fileContentType: undefined,
     };
   };
 }
@@ -420,6 +419,7 @@ export async function downloadDocsAndUpsertFHIR({
   let errorCount = 0;
   let errorCountConvertible = 0;
   let increaseCountConvertible = 0;
+  const shouldUpsertFHIR = !ignoreFhirConversionAndUpsert;
 
   const docsWithMetriportId = await Promise.all(
     documents.map(
@@ -596,7 +596,7 @@ export async function downloadDocsAndUpsertFHIR({
 
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
 
-          if (!ignoreFhirConversionAndUpsert) {
+          if (shouldUpsertFHIR) {
             const [fhir, search] = await Promise.allSettled([
               upsertDocumentToFHIRServer(cxId, FHIRDocRef).catch(error => {
                 const context = "upsertDocumentToFHIRServer";

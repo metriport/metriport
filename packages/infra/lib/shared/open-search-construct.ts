@@ -27,7 +27,8 @@ export default class OpenSearchConstruct extends Construct {
   constructor(scope: Construct, id: string, props: OpenSearchConstructProps) {
     super(scope, `${id}Construct`);
 
-    const { vpc, region, capacity, ebs, encryptionAtRest = true } = props;
+    const { vpc, capacity, ebs, encryptionAtRest = true } = props;
+    const dataNodesCount = capacity.dataNodes ?? 1;
 
     const secretName = "OpenSearchSecretName";
     const credsSecret = new secret.Secret(this, secretName, {
@@ -44,6 +45,17 @@ export default class OpenSearchConstruct extends Construct {
       vpc,
     });
 
+    const zoneAwareness =
+      dataNodesCount < 1
+        ? undefined
+        : dataNodesCount === 1
+        ? { enabled: false }
+        : {
+            enabled: true,
+            availabilityZoneCount: Math.min(dataNodesCount, 3),
+          };
+    if (!zoneAwareness) throw new Error(`Invalid data nodes count: ${dataNodesCount}`);
+
     const domainName = `${id}-domain`.toLowerCase();
     this.domain = new Domain(this, domainName, {
       domainName,
@@ -55,28 +67,11 @@ export default class OpenSearchConstruct extends Construct {
       vpc,
       vpcSubnets: [
         {
-          // Had issues setting this up, this + zoneAwareness did the trick. The error was:
-          // "Invalid request provided: You must specify exactly one subnet. (Service: OpenSearch, Status Code: 400..."
-          // subnets: [vpc.privateSubnets[0]!],
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          // subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-          // TODO 1050 try to solve this
-          // TODO 1050 try to solve this
-          // TODO 1050 try to solve this
-          // TODO 1050 try to solve this
-          // TODO 1050 try to solve this
-          // TODO 1050 try to solve this
-          // TODO 1050 try to solve this
-          // TODO 1050 try to solve this
-          // TODO 1050 try to solve this
-          availabilityZones: [`${region}a`],
-          // availabilityZones: vpc.availabilityZones.slice(0, capacity.dataNodes),
-          onePerAz: true,
+          subnets: vpc.privateSubnets.slice(0, dataNodesCount),
+          availabilityZones: vpc.availabilityZones.slice(0, dataNodesCount),
         },
       ],
-      zoneAwareness: {
-        enabled: false,
-      },
+      zoneAwareness,
       securityGroups: [osSg],
       encryptionAtRest: {
         enabled: encryptionAtRest,

@@ -9,13 +9,29 @@ import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
-import OpenSearchConstruct from "../shared/open-search-construct";
+import OpenSearchConstruct, { OpenSearchConstructProps } from "../shared/open-search-construct";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
-import { isProd, isSandbox } from "../shared/util";
 
-export function settings() {
-  const config = getConfig();
-  const isLarge = isProd(config) || isSandbox(config);
+export function settings(): {
+  openSearch: Omit<OpenSearchConstructProps, "region" | "vpc"> & { indexName: string };
+  connectorName: string;
+  lambda: {
+    memory: number;
+    batchSize: number;
+    maxConcurrency: number;
+    timeout: Duration;
+  };
+  sqs: {
+    maxReceiveCount: number;
+    visibilityTimeout: Duration;
+    delayWhenRetrying: Duration;
+  };
+} {
+  // TODO 1050 once this works well in staging, we can attempt a smaller/cheaper setup for it, but first validate
+  // the prod one, so we don't test prod only when releasing there.
+  // const config = getConfig();
+  // const isLarge = isProd(config) || isSandbox(config);
+  const isLarge = true;
   // How long can the lambda run for, max is 900 seconds (15 minutes)
   const timeout = Duration.minutes(5);
   return {
@@ -24,13 +40,15 @@ export function settings() {
       capacity: {
         dataNodes: isLarge ? 2 : 1,
         dataNodeInstanceType: isLarge ? "t3.small.search" : "t3.small.search",
-        masterNodes: isLarge ? 3 : undefined, // when not large this is done by data nodes
-        masterNodeInstanceType: isLarge ? "t3.small.search" : undefined,
+        masterNodes: isLarge ? undefined : undefined, // odd number, 3+; when not set this is done by data nodes
+        masterNodeInstanceType: isLarge ? undefined : undefined,
+        warmNodes: 0,
       },
       ebs: {
-        volumeSize: 10,
+        volumeSize: 100, // in GB
         volumeType: EbsDeviceVolumeType.GENERAL_PURPOSE_SSD_GP3,
       },
+      encryptionAtRest: true,
       indexName: "ccda-files",
     },
     connectorName: "CCDAOpenSearch",
@@ -77,7 +95,7 @@ export function setup({
   const config = getConfig();
   const {
     connectorName,
-    openSearch: { capacity, ebs, indexName },
+    openSearch: openSearchConfig,
     lambda: { memory, timeout, batchSize, maxConcurrency },
     sqs: { maxReceiveCount, visibilityTimeout, delayWhenRetrying },
   } = settings();
@@ -85,8 +103,7 @@ export function setup({
   const openSearch = new OpenSearchConstruct(stack, connectorName, {
     region: config.region,
     vpc,
-    capacity,
-    ebs,
+    ...openSearchConfig,
   });
 
   // setup queue and lambda to process the ccda files
@@ -123,7 +140,7 @@ export function setup({
       SEARCH_HOST: openSearch.domain.domainEndpoint,
       SEARCH_USER: openSearch.creds.username,
       SEARCH_SECRET_NAME: openSearch.creds.secretName,
-      SEARCH_INDEX_NAME: indexName,
+      SEARCH_INDEX_NAME: openSearchConfig.indexName,
     },
     timeout,
     alarmSnsAction,
@@ -147,6 +164,6 @@ export function setup({
     searchDomain: openSearch.domain,
     searchDomainUserName: openSearch.creds.username,
     searchDomainSecretName: openSearch.creds.secretName,
-    indexName,
+    indexName: openSearchConfig.indexName,
   };
 }

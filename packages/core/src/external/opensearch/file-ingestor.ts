@@ -16,10 +16,13 @@ export abstract class OpenSearchFileIngestor {
 
   abstract ingest(req: IngestRequest): Promise<void>;
 
-  isIngestible(file: { contentType?: string }) {
+  isIngestible(file: { contentType?: string; key: string }) {
     const ingestibleTypes = ["xml", "text", "txt", "html", "htm", "ascii"];
-    return ingestibleTypes.some(
-      contentType => file.contentType && file.contentType.toLowerCase().includes(contentType)
-    );
+    if (file.contentType) {
+      return ingestibleTypes.some(
+        contentType => file.contentType && file.contentType.toLowerCase().includes(contentType)
+      );
+    }
+    return ingestibleTypes.some(contentType => file.key.toLowerCase().endsWith(`.${contentType}`));
   }
 }

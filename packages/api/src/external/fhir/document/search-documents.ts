@@ -1,5 +1,7 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { uniqBy } from "lodash";
 import { Config } from "../../../shared/config";
+import { capture } from "../../../shared/notifications";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
 import { isMetriportExtension } from "../shared/extensions/metriport";
@@ -23,9 +25,13 @@ export async function searchDocuments({
     searchDocumentsParsed(fhirDocs, contentFilter),
   ]);
 
-  const result = [...docs.flatMap(d => (d.status === "fulfilled" ? d.value : []))];
+  const success = [...docs.flatMap(d => (d.status === "fulfilled" ? d.value : []))];
+  const failure = [...docs.flatMap(d => (d.status === "rejected" ? d.reason : []))];
+  console.log(`[searchDocuments] Failure searching: ${failure.join("; ")}`);
+  capture.message(`Failure searching`, { extra: { failures: failure.join("; ") } });
 
-  return result;
+  const unique = uniqBy(success, "id");
+  return unique;
 }
 
 async function searchDocumentsParsed(
