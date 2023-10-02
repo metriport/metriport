@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
+import { peekIntoSidechainDLQ } from "../command/medical/admin/peek-dlq";
 import {
   populateFhirServer,
   PopulateFhirServerResponse,
@@ -120,6 +121,20 @@ router.post(
     const maxNumberOfMessages = maxNumberOfMessagesRaw ? parseInt(maxNumberOfMessagesRaw) : -1;
 
     const result = await redriveSidechainDLQ(maxNumberOfMessages);
+    return res.json(result);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/peek-sidechain-dlq
+ *
+ * Read the first 10 messages from the sidechain DLQ without removing them, and return a link
+ * to download the files they point to.
+ */
+router.post(
+  "/peek-sidechain-dlq",
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await peekIntoSidechainDLQ();
     return res.json(result);
   })
 );
