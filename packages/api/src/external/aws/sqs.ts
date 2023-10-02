@@ -114,6 +114,7 @@ export async function peekMessagesFromQueue(
     ...sqsParams,
     removeMessages: false,
     poolUntilEmpty: false,
+    visibilityTimeout: 1, // we don't want to leave them "in flight" after we peek into them
   });
 }
 
