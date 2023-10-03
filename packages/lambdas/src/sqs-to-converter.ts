@@ -76,7 +76,8 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
   const keysTableItems = await docClient
     .scan({
       TableName: sidechainKeysTableName,
-      FilterExpression: "attribute_exists(status) AND (status = :active OR status = :rateLimit)",
+      FilterExpression:
+        "attribute_exists(keyStatus) AND (keyStatus = :active OR keyStatus = :rateLimit)",
       ExpressionAttributeValues: {
         ":active": sidechainKeysStatus.active,
         ":rateLimit": sidechainKeysStatus.rateLimit,
@@ -90,35 +91,35 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
   let activeKey: string | undefined = undefined;
   const keysToUpdate: string[] = [];
   for (const keyItem of keysTableItems.Items) {
-    if (!keyItem.status || !keyItem.key) {
+    if (!keyItem.keyStatus || !keyItem.apiKey) {
       throw new Error(`Keys found in sidechain keys table not in expected format`);
     }
 
-    if (keyItem.status === sidechainKeysStatus.active.toString()) {
+    if (keyItem.keyStatus === sidechainKeysStatus.active.toString()) {
       if (!activeKey) {
         // pick the first active API key
-        activeKey = keyItem.key;
+        activeKey = keyItem.apiKey;
       }
     } else if (
-      keyItem.status === sidechainKeysStatus.rateLimit.toString() &&
+      keyItem.keyStatus === sidechainKeysStatus.rateLimit.toString() &&
       keyItem.rateLimitDate &&
       dayjs().isAfter(keyItem.rateLimitDate, "month")
     ) {
       // this key should have its rate limit reset by now
-      keysToUpdate.push(keyItem.key);
+      keysToUpdate.push(keyItem.apiKey);
       if (!activeKey) {
-        activeKey = keyItem.key;
+        activeKey = keyItem.apiKey;
       }
     }
   }
 
-  const newKeyItemPutRequests = keysToUpdate.map(key => {
+  const newKeyItemPutRequests = keysToUpdate.map(apiKey => {
     return {
       PutRequest: {
         Item: {
           TableName: sidechainKeysTableName,
-          key,
-          status: sidechainKeysStatus.active,
+          apiKey,
+          keyStatus: sidechainKeysStatus.active,
         },
       },
     };
@@ -138,7 +139,7 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
   return activeKey;
 }
 
-async function markSidechainConverterKeyAsRateLimited(key: string): Promise<void> {
+async function markSidechainConverterKeyAsRateLimited(apiKey: string): Promise<void> {
   if (!sidechainKeysTableName) {
     throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
   }
@@ -151,15 +152,15 @@ async function markSidechainConverterKeyAsRateLimited(key: string): Promise<void
     .put({
       TableName: sidechainKeysTableName,
       Item: {
-        key,
-        status: sidechainKeysStatus.rateLimit.toString(),
+        apiKey,
+        keyStatus: sidechainKeysStatus.rateLimit.toString(),
         rateLimitDate: dayjs().format("YYYY-MM-DD"),
       },
     })
     .promise();
 }
 
-async function markSidechainConverterKeyAsRevoked(key: string): Promise<void> {
+async function markSidechainConverterKeyAsRevoked(apiKey: string): Promise<void> {
   if (!sidechainKeysTableName) {
     throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
   }
@@ -172,8 +173,8 @@ async function markSidechainConverterKeyAsRevoked(key: string): Promise<void> {
     .put({
       TableName: sidechainKeysTableName,
       Item: {
-        key,
-        status: sidechainKeysStatus.revoked.toString(),
+        apiKey,
+        keyStatus: sidechainKeysStatus.revoked.toString(),
       },
     })
     .promise();
