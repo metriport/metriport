@@ -3,13 +3,13 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { ILayerVersion, Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { METRICS_NAMESPACE, getConfig } from "../shared/config";
 import { MAXIMUM_LAMBDA_TIMEOUT, createLambda as defaultCreateLambda } from "../shared/lambda";
-import { Secrets, buildSecrets } from "../shared/secrets";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { FHIRConnector } from "./fhir-converter-connector";
 
@@ -89,6 +89,7 @@ export function createLambda({
   fhirConverterBucket,
   apiServiceDnsAddress,
   alarmSnsAction,
+  dynamoDBSidechainKeysTable,
 }: {
   envType: EnvType;
   stack: Construct;
@@ -100,6 +101,7 @@ export function createLambda({
   fhirConverterBucket: s3.IBucket;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
+  dynamoDBSidechainKeysTable: dynamodb.Table;
 }): Lambda {
   const config = getConfig();
   const {
@@ -142,21 +144,15 @@ export function createLambda({
       SIDECHAIN_FHIR_CONVERTER_URL: sidechainFHIRConverterUrl,
       SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST: sidechainUrlBlacklist,
       SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE: sidechainWordsToRemove,
-      ...config.sidechainFHIRConverter.secretNames,
+      SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME: dynamoDBSidechainKeysTable.tableName,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
     runtime: Runtime.NODEJS_18_X,
   });
 
-  // grant lambda read access to all configured secrets
-  const secrets: Secrets = {};
-  buildSecrets(secrets, stack, config.sidechainFHIRConverter.secretNames);
-  for (const secret of Object.values(secrets)) {
-    secret.grantRead(conversionLambda);
-  }
-
   fhirConverterBucket.grantReadWrite(conversionLambda);
+  dynamoDBSidechainKeysTable.grantReadWriteData(conversionLambda);
 
   conversionLambda.addEventSource(
     new SqsEventSource(sourceQueue, {
