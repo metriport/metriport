@@ -116,6 +116,7 @@ const convertStoreAndReturnPdfDocUrl = async ({
       parseInt(cdaToVisTimeoutInMillis) - GRACEFUL_SHUTDOWN_ALLOWANCE_MS;
     // Defines browser
     browser = await puppeteer.launch({
+      pipe: true,
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath,
