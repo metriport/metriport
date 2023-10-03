@@ -78,8 +78,8 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
       TableName: sidechainKeysTableName,
       FilterExpression: "attribute_exists(status) AND (status = :active OR status = :rateLimit)",
       ExpressionAttributeValues: {
-        ":active": sidechainKeysStatus.active.toString(),
-        ":rateLimit": sidechainKeysStatus.rateLimit.toString(),
+        ":active": sidechainKeysStatus.active,
+        ":rateLimit": sidechainKeysStatus.rateLimit,
       },
     })
     .promise();
@@ -118,7 +118,7 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
         Item: {
           TableName: sidechainKeysTableName,
           key,
-          status: sidechainKeysStatus.active.toString(),
+          status: sidechainKeysStatus.active,
         },
       },
     };
