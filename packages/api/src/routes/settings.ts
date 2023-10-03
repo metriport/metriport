@@ -12,7 +12,7 @@ import { Settings } from "../models/settings";
 import { asyncHandler, getCxIdOrFail } from "./util";
 
 const router = Router();
-const webhookURLBlacklist = [
+const webhookURLIncludeBlacklist = [
   "127.0.0.1",
   "127.1",
   "127.000.000.1",
@@ -47,11 +47,11 @@ const webhookURLBlacklist = [
   "1.1.1.1 &@2.2.2.2# @3.3.3.3",
   "urllib: 3.3.3.3",
   "amazonaws.com",
-  "0", // limitation: cx can't use 0 in their wh url - chances of this happening is low, but erring on the side of security here
   "[::]",
   "0000",
   "/internal", // limitation: cx can't use this route in their wh url - chances of this happening is low, but erring on the side of security here
 ];
+const webhookURLExactBlacklist = ["0"];
 
 class SettingsDTO {
   public constructor(
@@ -129,11 +129,12 @@ router.post(
     const id = getCxIdOrFail(req);
     const { webhookUrl } = updateSettingsSchema.parse(req.body);
     if (webhookUrl) {
-      for (const blacklistedStr of webhookURLBlacklist) {
+      for (const blacklistedStr of webhookURLIncludeBlacklist) {
         if (webhookUrl.includes(blacklistedStr)) {
           throw new BadRequestError(`Invalid URL`);
         }
       }
+      if (webhookURLExactBlacklist.includes(webhookUrl)) throw new BadRequestError(`Invalid URL`);
     }
     const settings = await updateSettings({
       id,
