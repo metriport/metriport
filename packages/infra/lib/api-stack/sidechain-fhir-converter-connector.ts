@@ -152,6 +152,7 @@ export function createLambda({
   });
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
+  dynamoDBSidechainKeysTable.grantReadWriteData(conversionLambda);
 
   conversionLambda.addEventSource(
     new SqsEventSource(sourceQueue, {

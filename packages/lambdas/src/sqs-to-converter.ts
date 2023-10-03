@@ -42,7 +42,6 @@ enum sidechainKeysStatus {
   rateLimit = "rate-limit",
   revoked = "revoked",
 }
-
 const baseReplaceUrl = "https://public.metriport.com";
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const MAX_SIDECHAIN_ATTEMPTS = 5;
@@ -69,7 +68,6 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
   if (!sidechainKeysTableName) {
     throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
   }
-
   const docClient = new DynamoDB.DocumentClient({
     apiVersion: "2012-08-10",
   });
@@ -87,18 +85,15 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
     .promise();
 
   if (!keysTableItems.Items) {
-    throw new Error(`Programming error - no keys found in table ${sidechainKeysTableName}`);
+    throw new Error(`No keys found in sidechain keys table`);
   }
-  let activeKey = "";
+  let activeKey: string | undefined = undefined;
   const keysToUpdate: string[] = [];
   for (const keyItem of keysTableItems.Items) {
     if (!keyItem.status || !keyItem.key) {
-      throw new Error(
-        `Programming error - keys found in table ${sidechainKeysTableName} are not the expected format`
-      );
+      throw new Error(`Keys found in sidechain keys table not in expected format`);
     }
-    const rateLimitDate = keyItem.rateLimitDate ? dayjs(keyItem.rateLimitDate) : undefined;
-    const now = dayjs();
+
     if (keyItem.status === sidechainKeysStatus.active.toString()) {
       if (!activeKey) {
         // pick the first active API key
@@ -106,9 +101,8 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
       }
     } else if (
       keyItem.status === sidechainKeysStatus.rateLimit.toString() &&
-      rateLimitDate &&
-      now.isAfter(rateLimitDate) &&
-      now.month() > rateLimitDate.month()
+      keyItem.rateLimitDate &&
+      dayjs().isAfter(keyItem.rateLimitDate, "month")
     ) {
       // this key should have its rate limit reset by now
       keysToUpdate.push(keyItem.key);
@@ -139,7 +133,8 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
       })
       .promise();
   }
-
+  if (!activeKey)
+    throw new Error(`No active key found in sidechain keys table - can't do conversion`);
   return activeKey;
 }
 
