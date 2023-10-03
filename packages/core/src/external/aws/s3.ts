@@ -20,7 +20,7 @@ export async function getSignedUrl({
   durationSeconds?: number;
   awsRegion: string;
 }): Promise<string> {
-  return makeS3Client(awsRegion).getSignedUrl("getObject", {
+  return makeS3Client(awsRegion).getSignedUrlPromise("getObject", {
     Bucket: bucketName,
     Key: fileName,
     Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,

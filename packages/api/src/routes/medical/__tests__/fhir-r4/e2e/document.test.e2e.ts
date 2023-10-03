@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { makeBinary } from "@metriport/core/dist/external/fhir/__tests__/binary";
-import { makeDocumentReference } from "@metriport/core/dist/external/fhir/__tests__/document-reference";
-import { makePatient } from "@metriport/core/dist/external/fhir/__tests__/patient";
+import { makeBinary } from "@metriport/core/external/fhir/__tests__/binary";
+import { makeDocumentReference } from "@metriport/core/external/fhir/__tests__/document-reference";
+import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { AxiosResponse } from "axios";
 import { api } from "../../../../__tests__/shared";
 

@@ -7,7 +7,6 @@ import { Config } from "../../shared/config";
 
 export function makeSearchServiceIngest(): OpenSearchFileIngestor {
   const region = Config.getAWSRegion();
-  if (!region) throw new Error(`AWS region is required`);
   const endpoint = Config.getSearchEndpoint();
   const indexName = Config.getSearchIndexName();
   const username = Config.getSearchUsername();
@@ -30,7 +29,6 @@ export function makeSearchServiceIngest(): OpenSearchFileIngestor {
 
 export function makeSearchServiceQuery(): OpenSearchFileSearcher {
   const region = Config.getAWSRegion();
-  if (!region) throw new Error(`AWS region is required`);
   const endpoint = Config.getSearchEndpoint();
   const indexName = Config.getSearchIndexName();
   const username = Config.getSearchUsername();
