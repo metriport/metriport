@@ -751,23 +751,6 @@ async function triggerDownloadDocument({
   return newFile;
 }
 
-// const isHandlingDocCount = ({
-//   isNew,
-//   flagDisableConversion,
-//   isDocConvertible,
-//   isConvertCDA,
-// }: {
-//   isNew?: boolean;
-//   flagDisableConversion?: boolean;
-//   isDocConvertible?: boolean;
-//   isConvertCDA?: boolean;
-// }): boolean => {
-//   if (isNew) return true;
-//   if (flagDisableConversion) return false;
-//   if (isDocConvertible && isConvertCDA) return true;
-//   return false;
-// };
-
 const fileIsConvertible = (f: File) => isConvertible(f.contentType);
 
 async function sleepBetweenChunks(): Promise<void> {
