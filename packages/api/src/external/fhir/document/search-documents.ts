@@ -27,8 +27,10 @@ export async function searchDocuments({
 
   const success = [...docs.flatMap(d => (d.status === "fulfilled" ? d.value : []))];
   const failure = [...docs.flatMap(d => (d.status === "rejected" ? d.reason : []))];
-  console.log(`[searchDocuments] Failure searching: ${failure.join("; ")}`);
-  capture.message(`Failure searching`, { extra: { failures: failure.join("; ") } });
+  if (failure.length) {
+    console.log(`[searchDocuments] Failure searching: ${failure.join("; ")}`);
+    capture.message(`Failure searching`, { extra: { failures: failure.join("; ") } });
+  }
 
   const unique = uniqBy(success, "id");
   return unique;

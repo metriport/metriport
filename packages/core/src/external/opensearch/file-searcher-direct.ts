@@ -53,6 +53,7 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
   }
 
   private mapResult(input: OpenSearchResponse): SearchResult[] {
+    if (!input.hits || !input.hits.hits) return [];
     return input.hits.hits.map(hit => {
       return {
         entryId: hit._id,

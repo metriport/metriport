@@ -24,7 +24,7 @@ export type OpenSearchResponseHit = {
 // https://github.com/opensearch-project/opensearch-js/issues/269
 export type OpenSearchResponse = {
   hits: {
-    hits: OpenSearchResponseHit[];
+    hits?: OpenSearchResponseHit[];
   };
 };
 
