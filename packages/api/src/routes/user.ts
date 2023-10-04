@@ -194,7 +194,7 @@ async function revokeToken(req: Request, res: Response, userId: string) {
 }
 
 /** ---------------------------------------------------------------------------------------
- * DELETE /user/revoke
+ * DELETE /user/:userId/revoke
 *
 * Revoke access to a provider
 *
