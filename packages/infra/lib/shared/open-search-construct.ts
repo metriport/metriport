@@ -11,6 +11,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 
 const masterUserName = "admin";
+const MAX_AVAILABILITY_ZONES = 3;
 
 export interface OpenSearchConstructProps {
   region: string;
@@ -30,7 +31,7 @@ export default class OpenSearchConstruct extends Construct {
     const { vpc, capacity, ebs, encryptionAtRest = true } = props;
     const dataNodesCount = capacity.dataNodes ?? 1;
 
-    const secretName = "OpenSearchSecretName";
+    const secretName = `${id}SecretName`;
     const credsSecret = new secret.Secret(this, secretName, {
       secretName,
       generateSecretString: { includeSpace: false },
@@ -52,7 +53,7 @@ export default class OpenSearchConstruct extends Construct {
         ? { enabled: false }
         : {
             enabled: true,
-            availabilityZoneCount: Math.min(dataNodesCount, 3),
+            availabilityZoneCount: Math.min(dataNodesCount, MAX_AVAILABILITY_ZONES),
           };
     if (!zoneAwareness) throw new Error(`Invalid data nodes count: ${dataNodesCount}`);
 
