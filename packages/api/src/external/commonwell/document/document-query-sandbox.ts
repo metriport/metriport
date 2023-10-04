@@ -66,7 +66,7 @@ export async function sandboxGetDocRefsAndUpsert({
         content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
       };
     })
-    .filter(doc => isConvertible(doc.content.mimeType)).length;
+    .filter(doc => isConvertible(doc.content?.mimeType)).length;
 
   // set initial download/convert totals
   await appendDocQueryProgress({
