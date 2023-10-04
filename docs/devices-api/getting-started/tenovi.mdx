@@ -36,6 +36,8 @@ To integrate with Tenovi, you will need to do the following for each of your use
 
 ## REST Endpoints
 
+<Warning>To use any of these endpoints, you will **need** to use the [headers](#headers).</Warning>
+
 With Tenovi, you can query for past user data using one of the following endpoints:
 
 - [getBodyData](/devices-api/api-reference/get-body-data)
@@ -48,8 +50,6 @@ You can revoke user's access to Tenovi with the following endpoint:
 You can disconnect a single device from the user using the following endpoint:
 
 - [disconnectDevice](/devices-api/api-reference/user/disconnect-device)
-
-<Warning>To use any of these endpoints, you will **need** to use the [headers](#headers).</Warning>
 
 ## Headers
 
@@ -76,7 +76,7 @@ If you would like to reassign a device from one patient to another, please follo
 
 2. Use the [disconnectDevice](/devices-api/api-reference/user/disconnect-device) or [revokeProviderAccess](/devices-api/api-reference/user/revoke-provider-access) endpoint to disconnect the currently-connected user from the device. This step also deactivates the device, preventing it from sending any further webhooks.
 
-3. On the same page from step #1, click the Patient ID you would like to remove. Verify you clicked the ID of the patient that will **no longer** use this device. Press Remove Patient and confirm the action by clicking "OK".
+3. On the same page from step #1, click the Patient ID you would like to remove. Verify you clicked the ID of the patient that will **no longer** use this device. Press "Remove Patient" and confirm the action by clicking "OK".
 
 4. Press the resulting "N/A" field under the Patient ID, and fill out the information for the new patient.
 
