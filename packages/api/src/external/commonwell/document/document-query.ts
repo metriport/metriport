@@ -753,7 +753,7 @@ async function triggerDownloadDocument({
   return newFile;
 }
 
-const fileIsConvertible = (f: File) => f && isConvertible(f.contentType);
+const fileIsConvertible = (f: File) => isConvertible(f.contentType);
 
 async function sleepBetweenChunks(): Promise<void> {
   return Util.sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
