@@ -461,7 +461,7 @@ export async function downloadDocsAndUpsertFHIR({
   const fileInfoByDocId = (docId: string) => filesWithStorageInfo.find(f => f.docId === docId);
 
   const convertibleDocCount = docsToDownload.filter(doc =>
-    isConvertible(doc.content.mimeType)
+    isConvertible(doc.content?.mimeType)
   ).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
   await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
@@ -474,12 +474,12 @@ export async function downloadDocsAndUpsertFHIR({
         let errorReported = false;
         let uploadToS3: () => Promise<File>;
         let file: Awaited<ReturnType<typeof uploadToS3>> | undefined = undefined;
-        const isConvertibleDoc = isConvertible(doc.content.mimeType);
+        const isConvertibleDoc = isConvertible(doc.content?.mimeType);
 
         try {
           const fileInfo = fileInfoByDocId(doc.id);
           if (!fileInfo) {
-            if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) errorCountConvertible++;
+            if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) increaseCountConvertible--;
             throw new MetriportError("Missing file info", undefined, { docId: doc.id });
           }
 
@@ -568,7 +568,7 @@ export async function downloadDocsAndUpsertFHIR({
           };
 
           if (!shouldConvertCDA && isConvertibleDoc) {
-            errorCountConvertible++;
+            increaseCountConvertible--;
           } else if (shouldConvertCDA && !isConvertibleDoc) {
             increaseCountConvertible++;
           }

@@ -79,8 +79,8 @@ export async function appendDocQueryProgress({
       convert.status = getStatusFromProgress(convert);
     }
 
-    if (convert && increaseCountConvertible != null && increaseCountConvertible > 0) {
-      convert.total = (convert.total ?? 0) + increaseCountConvertible;
+    if (convert && increaseCountConvertible != null && increaseCountConvertible !== 0) {
+      convert.total = Math.min(0, (convert.total ?? 0) + increaseCountConvertible);
     }
 
     const updatedPatient = {
