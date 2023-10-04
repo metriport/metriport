@@ -416,6 +416,7 @@ export async function downloadDocsAndUpsertFHIR({
   let completedCount = 0;
   let errorCount = 0;
   let errorCountConvertible = 0;
+  let increaseCountConvertible = 0;
 
   const docsWithMetriportId = await Promise.all(
     documents.map(
@@ -459,7 +460,9 @@ export async function downloadDocsAndUpsertFHIR({
 
   const fileInfoByDocId = (docId: string) => filesWithStorageInfo.find(f => f.docId === docId);
 
-  const convertibleDocCount = docsToDownload.filter(isConvertible).length;
+  const convertibleDocCount = docsToDownload.filter(doc =>
+    isConvertible(doc.content?.mimeType)
+  ).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
   await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
@@ -469,15 +472,16 @@ export async function downloadDocsAndUpsertFHIR({
     const s3Refs = await Promise.allSettled(
       docChunk.map(async doc => {
         let errorReported = false;
-        const isConvertibleDoc = isConvertible(doc);
+        let uploadToS3: () => Promise<File>;
+        let file: Awaited<ReturnType<typeof uploadToS3>> | undefined = undefined;
+        const isConvertibleDoc = isConvertible(doc.content?.mimeType);
+
         try {
           const fileInfo = fileInfoByDocId(doc.id);
           if (!fileInfo) {
+            if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) increaseCountConvertible--;
             throw new MetriportError("Missing file info", undefined, { docId: doc.id });
           }
-
-          let uploadToS3: () => Promise<File>;
-          let file: Awaited<ReturnType<typeof uploadToS3>>;
 
           try {
             // add some randomness to avoid overloading the servers
@@ -519,6 +523,8 @@ export async function downloadDocsAndUpsertFHIR({
             }
             file = await uploadToS3();
           } catch (error) {
+            if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) errorCountConvertible++;
+
             const isZeroLength = doc.content.size === 0;
             if (isZeroLength && error instanceof NotFoundError) {
               // we don't want to report errors when the file was originally flagged as empty
@@ -543,6 +549,14 @@ export async function downloadDocsAndUpsertFHIR({
             throw error;
           }
 
+          // If an xml document contained b64 data, we will parse, convert and store it in s3 as the default downloaded document.
+          // Because of this the document content type may not match the s3 file content type hence this check.
+          // This will prevent us from converting non xml documents to FHIR.
+          const isFileConvertible = fileIsConvertible(file);
+
+          const shouldConvertCDA =
+            file.isNew && !ignoreFhirConversionAndUpsert && isFileConvertible;
+
           const docWithFile: CWDocumentWithMetriportData = {
             ...doc,
             metriport: {
@@ -553,7 +567,13 @@ export async function downloadDocsAndUpsertFHIR({
             },
           };
 
-          if (file.isNew && !ignoreFhirConversionAndUpsert) {
+          if (!shouldConvertCDA && isConvertibleDoc) {
+            increaseCountConvertible--;
+          } else if (shouldConvertCDA && !isConvertibleDoc) {
+            increaseCountConvertible++;
+          }
+
+          if (shouldConvertCDA) {
             try {
               await convertCDAToFHIR({
                 patient,
@@ -569,9 +589,6 @@ export async function downloadDocsAndUpsertFHIR({
               );
               errorCountConvertible++;
             }
-          } else {
-            // count this doc as an error so we can decrement the total to be converted in the query status
-            errorCountConvertible++;
           }
 
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
@@ -591,7 +608,6 @@ export async function downloadDocsAndUpsertFHIR({
           return FHIRDocRef;
         } catch (error) {
           errorCount++;
-          if (isConvertibleDoc) errorCountConvertible++;
 
           log(`Error processing doc: ${error}`, doc);
           if (!errorReported) {
@@ -647,6 +663,7 @@ export async function downloadDocsAndUpsertFHIR({
         }
       : undefined),
     convertibleDownloadErrors: errorCountConvertible,
+    increaseCountConvertible,
     requestId,
   });
   // send webhook to CXs when docs are done downloading
@@ -733,6 +750,8 @@ async function triggerDownloadDocument({
 
   return newFile;
 }
+
+const fileIsConvertible = (f: File) => isConvertible(f.contentType);
 
 async function sleepBetweenChunks(): Promise<void> {
   return Util.sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
