@@ -473,6 +473,7 @@ export async function downloadDocsAndUpsertFHIR({
         let errorReported = false;
         let uploadToS3: () => Promise<File>;
         let file: Awaited<ReturnType<typeof uploadToS3>> | undefined = undefined;
+        const isConvertibleDoc = isConvertible(doc.content.mimeType);
 
         try {
           const fileInfo = fileInfoByDocId(doc.id);
@@ -576,8 +577,10 @@ export async function downloadDocsAndUpsertFHIR({
                 log(
                   `Error triggering conversion of doc ${doc.id}, just increasing errorCountConvertible - ${err}`
                 );
-                errorCountConvertible++;
               }
+            } else if (isConvertibleDoc) {
+              // where if doc was convertible but file is not then remove one from the initial count
+              errorCountConvertible++;
             }
           } else {
             // count this doc as an error so we can decrement the total to be converted in the query status
@@ -606,7 +609,6 @@ export async function downloadDocsAndUpsertFHIR({
             const isFileConvertible = fileIsConvertible(file);
             if (isFileConvertible) errorCountConvertible++;
           } else {
-            const isConvertibleDoc = isConvertible(doc.content.mimeType);
             if (isConvertibleDoc) errorCountConvertible++;
           }
 
