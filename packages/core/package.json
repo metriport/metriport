@@ -1,0 +1,68 @@
+{
+  "name": "@metriport/core",
+  "version": "1.0.0-alpha.0",
+  "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
+  "author": "Metriport Inc. <contact@metriport.com>",
+  "homepage": "https://metriport.com/",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./external/*": "./dist/external/*.js",
+    "./util/*": "./dist/util/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "/": [
+        "dist/index.d.ts"
+      ],
+      "external/*": [
+        "dist/external/*"
+      ],
+      "util/*": [
+        "dist/util/*"
+      ]
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
+    "tsc": "tsc",
+    "watch": "tsc --watch",
+    "build": "tsc -p .",
+    "build:cloud": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
+    "test:e2e": "E2E=true jest --runInBand --detectOpenHandles"
+  },
+  "dependencies": {
+    "@opensearch-project/opensearch": "^2.3.1",
+    "aws-sdk": "^2.1243.0",
+    "dayjs": "^1.11.9",
+    "http-status": "^1.7.0"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.0.2",
+    "@medplum/fhirtypes": "^2.0.32",
+    "@tsconfig/recommended": "^1.0.2",
+    "@types/jest": "29.5.3",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.6.0",
+    "jest": "^29.5.0",
+    "prettier": "^2.8.3",
+    "ts-essentials": "^9.3.1",
+    "ts-jest": "29.1.1",
+    "typescript": "^4.9.5"
+  }
+}

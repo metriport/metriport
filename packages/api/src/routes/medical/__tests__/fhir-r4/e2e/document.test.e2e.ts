@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { makeBinary } from "@metriport/core/external/fhir/__tests__/binary";
+import { makeDocumentReference } from "@metriport/core/external/fhir/__tests__/document-reference";
+import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { AxiosResponse } from "axios";
 import { api } from "../../../../__tests__/shared";
-import { makeBinary } from "./binary";
-import { makeDocument } from "./document";
-import { makePatient } from "./patient";
 
 jest.setTimeout(15000);
 
 const binary = makeBinary();
 const patient = makePatient();
-const document = makeDocument({ patient, binary });
+const document = makeDocumentReference({ patient, binary });
 
 describe("Integration FHIR Document", () => {
   test("Binary upload", async () => {
@@ -84,7 +85,7 @@ function validateDocument(body: any) {
   expect(body.id).toBe(document.id);
   expect(body.identifier).toBeTruthy();
   expect(body.identifier.length).toBeTruthy();
-  expect(body.identifier[0]).toEqual(document.identifier[0]);
+  expect(body.identifier[0]).toEqual(document.identifier![0]);
   // Could validate more data here
 }
 

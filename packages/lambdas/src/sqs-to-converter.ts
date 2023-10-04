@@ -1,18 +1,18 @@
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
+import { DynamoDB } from "aws-sdk";
 import axios from "axios";
+import dayjs from "dayjs";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnv, getEnvOrFail } from "./shared/env";
-import { isBadGateway, isTimeout } from "./shared/http";
+import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
 import { sleep } from "./shared/sleep";
 import { SQSUtils } from "./shared/sqs";
-import { DynamoDB } from "aws-sdk";
-import dayjs from "dayjs";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -491,7 +491,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           ? Number(message.attributes?.ApproximateReceiveCount)
           : undefined;
         const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = isTimeout(err) || isBadGateway(err);
+        const isRetryError = isAxiosTimeout(err) || isAxiosBadGateway(err);
         if (isRetryError && isWithinRetryRange) {
           const details = `${err.code}/${err.response?.status}`;
           console.log(
@@ -504,6 +504,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           await sqsUtils.reEnqueue(message);
         } else {
           console.log(`Error processing message: ${JSON.stringify(message)}; \n${err}: ${err}`);
+          // Axios error response
+          if (err.response) {
+            const resp = err.response;
+            const responseData = resp.data ? JSON.stringify(resp.data) : "undefined";
+            console.log(`Response body: ${responseData}`);
+          }
           capture.error(err, {
             extra: { message, context: lambdaName, retryCount: count },
           });

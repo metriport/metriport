@@ -567,14 +567,16 @@
                     [ "AWS/SQS", "NumberOfMessagesReceived", "QueueName", "FHIRConverterQueue", { "region": "us-west-1" } ],
                     [ "...", "FHIRServerDLQ", { "yAxis": "right", "region": "us-west-1" } ],
                     [ "...", "FHIRServerQueue", { "region": "us-west-1" } ],
-                    [ "...", "FHIRConverterDLQ", { "yAxis": "right", "region": "us-west-1" } ]
+                    [ "...", "FHIRConverterDLQ", { "yAxis": "right", "region": "us-west-1" } ],
+                    [ "...", "SidechainFHIRConverterQueue" ],
+                    [ "...", "SidechainFHIRConverterDLQ", { "yAxis": "right" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-west-1",
-                "stat": "SampleCount",
+                "stat": "Sum",
                 "period": 60,
-                "title": "FHIR Queues"
+                "title": "FHIR Queues - Messages Received"
             }
         },
         {
@@ -610,18 +612,68 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/Lambda", "Duration", "FunctionName", "FHIRConverterLambda", { "region": "us-west-1" } ],
+                    [ "AWS/Lambda", "Duration", "FunctionName", "APIServiceGenerateKeyLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "APIServicePostConfirmationLambdaLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "APIServiceRevokeKeyLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "APIServiceStripeLambdaLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "CdaToVisualizationLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
                     [ "...", "FHIRServerLambda", { "region": "us-west-1" } ],
-                    [ "...", "APIInfrastructureStack-WithingsLambda05A37121-TpGQkJmxVpmJ", { "region": "us-west-1" } ],
-                    [ "...", "StagingAPIServiceInfrastr-StagingAPIServicePreSign-z4EFxuKA5ago", { "region": "us-west-1" } ],
-                    [ "...", "APIServiceInfrastructureS-APIServiceStripeLambdaA5-H3GLBntxQ3oT", { "region": "us-west-1" } ]
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "FitbitAuthLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "GarminLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "ScheduledDocumentQueryCheckerLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "SidechainFHIRConverterLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "TokenAuthLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", "WithingsLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-west-1",
                 "title": "Lambdas Duration",
                 "stat": "Average",
-                "period": 300
+                "period": 300,
+                "yAxis": {
+                    "left": {
+                        "label": "millis",
+                        "showUnits": false
+                    },
+                    "right": {
+                        "label": "millis",
+                        "showUnits": false
+                    }
+                }
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 46,
+            "x": 14,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "fhir-server" ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "FHIR DB - Connections",
+                "liveData": false
             }
         }
     ]

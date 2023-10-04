@@ -76,23 +76,30 @@ export class Util {
     return undefined;
   };
 
+  /**
+   * @deprecated Use @metriport/core instead
+   */
   static log =
-    (prefix: string) =>
+    (prefix: string, suffix?: string) =>
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     (msg: string, ...optionalParams: any[]): void =>
       optionalParams
-        ? console.log(`[${prefix}] ${msg}`, ...optionalParams)
-        : console.log(`[${prefix}] ${msg}`);
-
+        ? console.log(`[${prefix}] ${msg}`, ...[...optionalParams, ...([suffix] ?? [])])
+        : console.log(`[${prefix}] ${msg} - ${suffix}`);
+  /**
+   * @deprecated Use @metriport/core instead
+   */
   static debug =
-    (prefix: string) =>
+    (prefix: string, suffix?: string) =>
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     (msg: string, ...optionalParams: any[]): void =>
-      debug(`[${prefix}] ${msg}`, ...optionalParams);
-
-  static out = (prefix: string) => ({
-    log: Util.log(prefix),
-    debug: Util.debug(prefix),
+      debug(`[${prefix}] ${msg}`, ...[...optionalParams, ...([suffix] ?? [])]);
+  /**
+   * @deprecated Use @metriport/core instead
+   */
+  static out = (prefix: string, suffix?: string) => ({
+    log: Util.log(prefix, suffix),
+    debug: Util.debug(prefix, suffix),
   });
 
   static sleep = (timeInMs: number) => new Promise(resolve => setTimeout(resolve, timeInMs));

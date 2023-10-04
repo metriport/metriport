@@ -40,8 +40,8 @@ export class Config {
     return getEnvVar("METRIPORT_VERSION");
   }
 
-  static getAWSRegion(): string | undefined {
-    return getEnvVar("AWS_REGION");
+  static getAWSRegion(): string {
+    return getEnvVarOrFail("AWS_REGION");
   }
 
   static getSlackAlertUrl(): string | undefined {
@@ -229,5 +229,21 @@ export class Config {
 
   static getDocumentDownloaderLambdaName(): string {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
+  }
+
+  static getSearchIngestionQueueUrl(): string {
+    return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
+  }
+  static getSearchEndpoint(): string {
+    return getEnvVarOrFail("SEARCH_ENDPOINT");
+  }
+  static getSearchUsername(): string {
+    return getEnvVarOrFail("SEARCH_USERNAME");
+  }
+  static getSearchPassword(): string {
+    return getEnvVarOrFail("SEARCH_PASSWORD");
+  }
+  static getSearchIndexName(): string {
+    return getEnvVarOrFail("SEARCH_INDEX");
   }
 }

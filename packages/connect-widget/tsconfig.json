@@ -12,5 +12,5 @@
     // END
   },
   "include": ["src"],
-  "exclude": ["build", "node_modules"]
+  "exclude": ["build", "node_modules", "**/__tests__"]
 }

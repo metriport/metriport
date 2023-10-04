@@ -1,23 +1,25 @@
+import { DocumentReference } from "@medplum/fhirtypes";
+import { v4 as uuidv4 } from "uuid";
 import { makeBinary } from "./binary";
 import { makePatient } from "./patient";
-import { baseURL, nanoid } from "../../../../__tests__/shared";
 
-const defaultId = "2.16.840.1.113883.3.9621.5." + nanoid();
-
-export const makeDocument = ({
+// TODO make this dynamic
+export const makeDocumentReference = ({
   id,
   patient,
   binary,
+  baseURL,
 }: {
   id?: string;
   patient?: ReturnType<typeof makePatient>;
   binary?: ReturnType<typeof makeBinary>;
-}) => {
+  baseURL?: string;
+} = {}): DocumentReference => {
   const _patient = patient ?? makePatient();
   const _binary = binary ?? makeBinary();
   return {
     resourceType: "DocumentReference",
-    id: id ?? defaultId,
+    id: id ?? uuidv4(),
     contained: [
       {
         resourceType: "Organization",
@@ -65,7 +67,7 @@ export const makeDocument = ({
       {
         attachment: {
           contentType: "application/json",
-          url: `${baseURL}/fhir/R4/Binary/${_binary.id}`,
+          url: `${baseURL ?? "http://localhost:8080"}/fhir/R4/Binary/${_binary.id}`,
         },
       },
     ],

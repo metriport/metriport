@@ -1,56 +1,53 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
-import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeFhirApi } from "../api/api-factory";
-import { isoDateRangeToFHIRDateQuery } from "../shared";
-import { isMetriportExtension } from "../shared/extensions/metriport";
+import { isoDateToFHIRDateQueryFrom, isoDateToFHIRDateQueryTo } from "../shared";
 
-export const getDocuments = async ({
+export async function getDocuments({
   cxId,
   patientId,
-  dateRange: { from, to } = {},
-  contentFilter,
+  from,
+  to,
+  documentIds,
 }: {
   cxId: string;
   patientId: string;
-  dateRange?: { from?: string; to?: string };
-  contentFilter?: string;
-}): Promise<DocumentReference[] | undefined> => {
-  const api = makeFhirApi(cxId);
-  const docs: DocumentReference[] = [];
+  from?: string;
+  to?: string;
+  documentIds?: string[];
+}): Promise<DocumentReference[]> {
   try {
-    const patientFilter = `patient=${patientId}`;
-    const fhirDateFilter = isoDateRangeToFHIRDateQuery(from, to);
-    const dateFilter = fhirDateFilter ? `&${fhirDateFilter}` : "";
-    for await (const page of api.searchResourcePages(
-      "DocumentReference",
-      `${patientFilter}${dateFilter}`
-    )) {
+    const api = makeFhirApi(cxId);
+    const filtersAsStr = getFilters({ patientId, documentIds, from, to });
+    const docs: DocumentReference[] = [];
+    for await (const page of api.searchResourcePages("DocumentReference", filtersAsStr)) {
       docs.push(...page);
     }
+    return docs;
   } catch (error) {
     const msg = `Error getting documents from FHIR server`;
     console.log(`${msg} - patientId: ${patientId}, error: ${error}`);
     capture.message(msg, { extra: { patientId, error }, level: "error" });
     throw error;
   }
-  const checkContent = (d: DocumentReference) =>
-    contentFilter ? JSON.stringify(d).toLocaleLowerCase().includes(contentFilter) : true;
+}
 
-  const result = docs.filter(d => checkExtensions(d) && checkContent(d));
-
-  return result;
-};
-
-function checkExtensions(doc: DocumentReference) {
-  // skip this check for sandbox as we don't have extensions in the sandbox doc refs
-  // to be removed in #895
-  if (Config.isSandbox()) return true;
-  const extensions = doc.extension;
-  if (!extensions) return false;
-  const metriport = extensions.find(isMetriportExtension);
-  const cw = extensions.find(isCommonwellExtension);
-  if (!metriport && !cw) return false;
-  return true;
+export function getFilters({
+  patientId,
+  documentIds = [],
+  from,
+  to,
+}: {
+  patientId?: string;
+  documentIds?: string[];
+  from?: string;
+  to?: string;
+} = {}) {
+  const filters = new URLSearchParams();
+  patientId && filters.append("patient", patientId);
+  documentIds.length && filters.append(`_ids`, documentIds.join(","));
+  from && filters.append("date", isoDateToFHIRDateQueryFrom(from));
+  to && filters.append("date", isoDateToFHIRDateQueryTo(to));
+  const filtersAsStr = filters.toString();
+  return filtersAsStr;
 }
