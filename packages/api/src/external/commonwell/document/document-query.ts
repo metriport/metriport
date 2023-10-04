@@ -543,6 +543,15 @@ export async function downloadDocsAndUpsertFHIR({
             throw error;
           }
 
+          // If an xml document contained b64 data, we will parse, convert and store it in s3 as the default downloaded document.
+          // Because of this the document content type may not match the s3 file content type hence this check.
+          // This will prevent us from converting non xml documents to FHIR.
+          const fileIsConvertible =
+            file.contentType === "application/xml" || file.contentType === "text/xml";
+
+          const shouldConvertCDA =
+            file.isNew && fileIsConvertible && !ignoreFhirConversionAndUpsert;
+
           const docWithFile: CWDocumentWithMetriportData = {
             ...doc,
             metriport: {
@@ -553,13 +562,7 @@ export async function downloadDocsAndUpsertFHIR({
             },
           };
 
-          // If an xml document contained b64 data, we will parse, convert and store it in s3 as the default downloaded document.
-          // Because of this the document content type may not match the s3 file content type hence this check.
-          // This will prevent us from converting non xml documents to FHIR.
-          const fileIsConvertible =
-            file.contentType === "application/xml" || file.contentType === "text/xml";
-
-          if (file.isNew && fileIsConvertible && !ignoreFhirConversionAndUpsert) {
+          if (shouldConvertCDA) {
             try {
               await convertCDAToFHIR({
                 patient,
