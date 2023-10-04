@@ -31,3 +31,21 @@ api: "DELETE /user/:userId/device"
   "message": "Device 12345678-abcd-1234-abcd-1234567890ab has been removed for user 66d4f01f-6ebe-44f8-8bbc-15a65adbe8c2."
 }
 ```
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportDevicesApi, ProviderSource } from "@metriport/api-sdk";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+
+await metriportClient.disconnectDevice(
+  "metriportUserId",
+  ProviderSource.tenovi,
+  deviceId,
+  "your_tenovi_api_key",
+  "your_tenovi_client_name"
+);
+```
+
+</ResponseExample>

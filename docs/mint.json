@@ -373,6 +373,7 @@
                 "devices-api/api-reference/user/create-connect-token",
                 "devices-api/api-reference/user/get-connected-providers",
                 "devices-api/api-reference/user/revoke-provider-access",
+                "devices-api/api-reference/user/disconnect-device",
                 "devices-api/api-reference/user/delete-user"
               ]
             },
