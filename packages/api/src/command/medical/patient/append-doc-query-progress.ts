@@ -6,6 +6,7 @@ import { getPatientOrFail } from "./get-patient";
 export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
   convertibleDownloadErrors?: number;
+  increaseCountConvertible?: number;
   requestId?: string | undefined;
 } & (
   | {
@@ -31,6 +32,7 @@ export async function appendDocQueryProgress({
   downloadProgress,
   convertProgress,
   convertibleDownloadErrors,
+  increaseCountConvertible,
   reset,
   requestId,
 }: SetDocQueryProgress): Promise<Patient> {
@@ -75,6 +77,10 @@ export async function appendDocQueryProgress({
       convert.total = Math.max((convert.total ?? 0) - convertibleDownloadErrors, 0);
       // since we updated the total above, we should update the status as well
       convert.status = getStatusFromProgress(convert);
+    }
+
+    if (convert && increaseCountConvertible != null && increaseCountConvertible > 0) {
+      convert.total = (convert.total ?? 0) + increaseCountConvertible;
     }
 
     const updatedPatient = {
