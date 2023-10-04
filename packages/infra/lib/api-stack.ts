@@ -32,6 +32,7 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
+const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -863,11 +864,12 @@ export class APIStack extends Stack {
         ...(bucketName && {
           MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
         }),
+        CDA_TO_VIS_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [...lambdaLayers, chromiumLayer],
       memory: 512,
-      timeout: Duration.minutes(15),
+      timeout: CDA_TO_VIS_TIMEOUT,
       vpc,
       alarmSnsAction: alarmAction,
     });

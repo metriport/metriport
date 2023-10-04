@@ -18,7 +18,8 @@ capture.init();
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-
+const cdaToVisTimeoutInMillis = getEnvOrFail("CDA_TO_VIS_TIMEOUT_MS");
+const GRACEFUL_SHUTDOWN_ALLOWANCE_MS = 3_000;
 const SIGNED_URL_DURATION_SECONDS = 60;
 
 const s3client = new AWS.S3({
@@ -111,12 +112,16 @@ const convertStoreAndReturnPdfDocUrl = async ({
   let browser: puppeteer.Browser | null = null;
 
   try {
+    const puppeteerTimeoutInMillis =
+      parseInt(cdaToVisTimeoutInMillis) - GRACEFUL_SHUTDOWN_ALLOWANCE_MS;
     // Defines browser
     browser = await puppeteer.launch({
+      pipe: true,
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath,
       headless: chromium.headless,
+      timeout: puppeteerTimeoutInMillis,
     });
 
     // Defines page
