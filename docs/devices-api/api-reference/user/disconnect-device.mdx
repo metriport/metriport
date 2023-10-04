@@ -1,0 +1,51 @@
+---
+title: "Disconnect Device"
+description: "Disconnects the user from the given device. Currently, only supports Tenovi."
+api: "DELETE /user/:userId/device"
+---
+
+## Path Params
+
+<ParamField path="userId" type="string" required>
+  The Metriport user ID to disconnect device for.
+</ParamField>
+
+## Query Params
+
+<ParamField query="provider" type="string" required>
+  The device provider you would like to disconnect a device from, i.e. `tenovi`.
+</ParamField>
+
+<ParamField query="deviceId" type="string" required>
+  The ID of the device you would like to disconnect.
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string" required>
+  Feedback on successful device disconnection.
+</ResponseField>
+
+```json
+{
+  "message": "Device 12345678-abcd-1234-abcd-1234567890ab has been removed for user 66d4f01f-6ebe-44f8-8bbc-15a65adbe8c2."
+}
+```
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportDevicesApi, ProviderSource } from "@metriport/api-sdk";
+
+const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
+
+await metriportClient.disconnectDevice(
+  "metriportUserId",
+  ProviderSource.tenovi,
+  deviceId,
+  "your_tenovi_api_key",
+  "your_tenovi_client_name"
+);
+```
+
+</ResponseExample>
