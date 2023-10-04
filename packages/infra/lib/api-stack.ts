@@ -316,7 +316,7 @@ export class APIStack extends Stack {
       sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
-      ccdaSearchQueue.queueUrl,
+      ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secretName: ccdaSearchSecretName },
       ccdaSearchIndexName

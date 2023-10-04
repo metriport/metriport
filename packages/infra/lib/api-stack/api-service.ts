@@ -42,7 +42,7 @@ export function createAPIService(
   sidechainFHIRConverterDLQ: IQueue | undefined,
   cdaToVisualizationLambda: ILambda,
   documentDownloaderLambda: ILambda,
-  searchIngestionQueueUrl: string,
+  searchIngestionQueue: IQueue,
   searchEndpoint: string,
   searchAuth: { userName: string; secretName: string },
   searchIndexName: string
@@ -135,7 +135,7 @@ export function createAPIService(
           ...(sidechainFHIRConverterDLQ && {
             SIDECHAIN_FHIR_CONVERTER_DLQ_URL: sidechainFHIRConverterDLQ.queueUrl,
           }),
-          SEARCH_INGESTION_QUEUE_URL: searchIngestionQueueUrl,
+          SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
@@ -176,6 +176,11 @@ export function createAPIService(
       queue: sidechainFHIRConverterDLQ,
       resource: fargateService.service.taskDefinition.taskRole,
     });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: searchIngestionQueue,
+    resource: fargateService.service.taskDefinition.taskRole,
+  });
 
   // CloudWatch Alarms and Notifications
 
