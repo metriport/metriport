@@ -166,7 +166,7 @@ export class APIStack extends Stack {
     // table for sidechain FHIR converter key management
     const dynamoSidechainKeysConstructName = "SidechainFHIRConverterKeys";
     const dynamoDBSidechainKeysTable = new dynamodb.Table(this, dynamoSidechainKeysConstructName, {
-      partitionKey: { name: "key", type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: "apiKey", type: dynamodb.AttributeType.STRING },
       replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
       replicationTimeout: Duration.hours(3),
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
