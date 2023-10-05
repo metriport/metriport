@@ -22,7 +22,7 @@ import { Config } from "../../shared/config";
 import { createS3FileName } from "../../shared/external";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { uuidv7 } from "../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";

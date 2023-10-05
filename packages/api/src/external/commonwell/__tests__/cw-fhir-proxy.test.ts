@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import NotFoundError from "../../../errors/not-found";
-import { uuidv7 } from "../../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { processBinary, processDocReference } from "../cw-fhir-proxy";
 import * as helper from "../cw-fhir-proxy-helpers";
 

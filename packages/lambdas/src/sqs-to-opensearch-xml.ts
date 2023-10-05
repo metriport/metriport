@@ -1,5 +1,6 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
+import { FileIngestorSQSPayload } from "@metriport/core/external/opensearch/file-ingestor-sqs";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -28,15 +29,7 @@ const indexName = getEnvOrFail("SEARCH_INDEX_NAME");
 const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 
-type EventBody = {
-  cxId: string;
-  patientId: string;
-  entryId: string;
-  s3FileName: string;
-  s3BucketName: string;
-  requestId: string;
-  startedAt: string;
-};
+type EventBody = FileIngestorSQSPayload;
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   // Process messages from SQS
