@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
-import { MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
+import { MetriportMedicalApi, PatientCreate, PatientDTO } from "@metriport/api-sdk";
 import * as AWS from "aws-sdk";
 import axios from "axios";
 import { seedData } from "../../../api/src/shared/sandbox/sandbox-seed-data";
@@ -60,7 +60,9 @@ async function main() {
     return { patient, docs };
   });
   for (const patient of patients) {
-    let currentPatient = facilityPatients.find(p => p.firstName === patient.patient.firstName);
+    let currentPatient: PatientDTO | undefined = facilityPatients.find(
+      p => p.firstName === patient.patient.firstName
+    );
 
     if (!currentPatient) {
       currentPatient = await metriportAPI.createPatient(patient.patient, facilityId);
