@@ -3,7 +3,7 @@ dotenv.config();
 
 import { faker } from "@faker-js/faker";
 import { Organization as FhirOrg } from "@medplum/fhirtypes";
-import { Facility, Organization, Patient } from "@metriport/api-sdk";
+import { Facility, Organization, PatientDTO } from "@metriport/api-sdk";
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import * as cwCommands from "../../../../../external/commonwell/__tests__";
 import { Config } from "../../../../../shared/config";
@@ -23,7 +23,7 @@ jest.setTimeout(30000);
 if (Config.isStaging() || Config.isDev()) {
   describe("MAPI E2E Tests", () => {
     let facility: Facility;
-    let patient: Patient;
+    let patient: PatientDTO;
 
     it("gets an organization", async () => {
       const org = await medicalApi.getOrganization();
