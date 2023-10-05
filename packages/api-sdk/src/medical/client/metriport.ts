@@ -22,11 +22,12 @@ import { Organization, OrganizationCreate, organizationSchema } from "../models/
 import {
   Patient,
   PatientCreate,
-  patientListSchema,
   patientSchema,
   PatientUpdate,
   QueryStatus,
 } from "../models/patient";
+
+import { PatientDTO } from "../models/patientDTO";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
@@ -206,10 +207,10 @@ export class MetriportMedicalApi {
    * @param id The ID of the patient to be returned.
    * @return The patients.
    */
-  async getPatient(id: string): Promise<Patient> {
+  async getPatient(id: string): Promise<PatientDTO> {
     const resp = await this.api.get(`${PATIENT_URL}/${id}`);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return patientSchema.parse(resp.data);
+    return resp.data as PatientDTO;
   }
 
   /**
@@ -352,12 +353,12 @@ export class MetriportMedicalApi {
    * @param facilityId The ID of the facility.
    * @return The list of patients.
    */
-  async listPatients(facilityId: string): Promise<Patient[]> {
+  async listPatients(facilityId: string): Promise<PatientDTO[]> {
     const resp = await this.api.get(`${PATIENT_URL}`, {
       params: { facilityId },
     });
     if (!resp.data) [];
-    return patientListSchema.parse(resp.data).patients;
+    return resp.data.patients as PatientDTO[];
   }
 
   /**
