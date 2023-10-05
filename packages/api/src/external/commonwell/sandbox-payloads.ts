@@ -2,7 +2,7 @@ import * as nanoid from "nanoid";
 import { Patient } from "@metriport/commonwell-sdk";
 import { driversLicenseURIs } from "../../shared/oid";
 import { DocumentQueryResponse } from "@metriport/commonwell-sdk";
-import { uuidv7 } from "../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 const cwURL = "https://sandbox.rest.api.commonwellalliance.org";
 const cwLabel = "abcd123-1234-dedee-asd9-cnil132uil3n";

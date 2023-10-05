@@ -2,6 +2,7 @@ import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { out } from "../../util/log";
+import { uuidv4 } from "../../util/uuid-v7";
 import * as xml from "../../util/xml";
 import { makeS3Client } from "../aws";
 import { SQSClient } from "../aws/sqs";
@@ -18,6 +19,8 @@ export type OpenSearchFileIngestorSQSConfig = OpenSearchFileIngestorConfig & {
 };
 
 export type StoreAndIngestRequest = IngestRequest & { content: string | string[] };
+
+export type FileIngestorSQSPayload = IngestRequest & { startedAt: string };
 
 const entryName = "entry";
 const entryListName = "entries";
@@ -41,17 +44,19 @@ export class OpenSearchFileIngestorSQS extends OpenSearchFileIngestor {
   async ingest({
     cxId,
     patientId,
+    entryId,
     s3FileName,
     s3BucketName,
     requestId,
   }: IngestRequest): Promise<void> {
     const queueUrl = this.queueUrl;
-    const payload = {
+    const payload: FileIngestorSQSPayload = {
       cxId,
       patientId,
+      entryId,
       s3FileName,
       s3BucketName,
-      requestId,
+      requestId: requestId ?? uuidv4(),
       startedAt: dayjs.utc().toISOString(),
     };
     await this.sqsClient.sendMessageToQueue(queueUrl, JSON.stringify(payload));
