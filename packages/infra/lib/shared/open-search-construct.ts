@@ -8,6 +8,7 @@ import {
   IDomain,
 } from "aws-cdk-lib/aws-opensearchservice";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 
 const masterUserName = "admin";
@@ -23,7 +24,7 @@ export interface OpenSearchConstructProps {
 
 export default class OpenSearchConstruct extends Construct {
   public readonly domain: IDomain;
-  public readonly creds: { username: string; secretName: string };
+  public readonly creds: { username: string; secret: ISecret };
 
   constructor(scope: Construct, id: string, props: OpenSearchConstructProps) {
     super(scope, `${id}Construct`);
@@ -38,7 +39,7 @@ export default class OpenSearchConstruct extends Construct {
     });
     this.creds = {
       username: masterUserName,
-      secretName,
+      secret: credsSecret,
     };
 
     const osSg = new ec2.SecurityGroup(this, `${id}-sg`, {

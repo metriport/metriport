@@ -139,7 +139,7 @@ export function setup({
       DLQ_URL: dlq.queue.queueUrl,
       SEARCH_HOST: openSearch.domain.domainEndpoint,
       SEARCH_USER: openSearch.creds.username,
-      SEARCH_SECRET_NAME: openSearch.creds.secretName,
+      SEARCH_SECRET_NAME: openSearch.creds.secret.secretName,
       SEARCH_INDEX_NAME: openSearchConfig.indexName,
     },
     timeout,
@@ -157,13 +157,14 @@ export function setup({
   );
   provideAccessToQueue({ accessType: "both", queue, resource: lambda });
   provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: lambda });
+  openSearch.creds.secret.grantRead(lambda);
 
   return {
     queue,
     lambda,
     searchDomain: openSearch.domain,
     searchDomainUserName: openSearch.creds.username,
-    searchDomainSecretName: openSearch.creds.secretName,
+    searchDomainSecretName: openSearch.creds.secret.secretName,
     indexName: openSearchConfig.indexName,
   };
 }
