@@ -210,7 +210,7 @@ export class APIStack extends Stack {
       queue: ccdaSearchQueue,
       searchDomain: ccdaSearchDomain,
       searchDomainUserName: ccdaSearchUserName,
-      searchDomainSecretName: ccdaSearchSecretName,
+      searchDomainSecret: ccdaSearchSecret,
       indexName: ccdaSearchIndexName,
     } = ccdaSearch.setup({
       stack: this,
@@ -318,7 +318,7 @@ export class APIStack extends Stack {
       documentDownloaderLambda,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
-      { userName: ccdaSearchUserName, secretName: ccdaSearchSecretName },
+      { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
       ccdaSearchIndexName
     );
 

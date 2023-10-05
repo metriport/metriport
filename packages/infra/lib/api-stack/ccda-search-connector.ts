@@ -5,6 +5,7 @@ import { IFunction, ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { IDomain } from "aws-cdk-lib/aws-opensearchservice";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
@@ -89,7 +90,7 @@ export function setup({
   lambda: IFunction;
   searchDomain: IDomain;
   searchDomainUserName: string;
-  searchDomainSecretName: string;
+  searchDomainSecret: ISecret;
   indexName: string;
 } {
   const config = getConfig();
@@ -164,7 +165,7 @@ export function setup({
     lambda,
     searchDomain: openSearch.domain,
     searchDomainUserName: openSearch.creds.username,
-    searchDomainSecretName: openSearch.creds.secret.secretName,
+    searchDomainSecret: openSearch.creds.secret,
     indexName: openSearchConfig.indexName,
   };
 }

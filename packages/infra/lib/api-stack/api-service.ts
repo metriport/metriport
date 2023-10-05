@@ -11,6 +11,7 @@ import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
@@ -44,7 +45,7 @@ export function createAPIService(
   documentDownloaderLambda: ILambda,
   searchIngestionQueue: IQueue,
   searchEndpoint: string,
-  searchAuth: { userName: string; secretName: string },
+  searchAuth: { userName: string; secret: ISecret },
   searchIndexName: string
 ): {
   cluster: ecs.Cluster;
@@ -69,12 +70,6 @@ export function createAPIService(
       ? props.config.connectWidgetUrl
       : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
-  const searchPasswordSecret = secret.Secret.fromSecretNameV2(
-    stack,
-    "APISearchSecret",
-    searchAuth.secretName
-  );
-
   // Run some servers on fargate containers
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
     stack,
@@ -91,7 +86,7 @@ export function createAPIService(
         containerName: "API-Server",
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
-          SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchPasswordSecret),
+          SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
           ...secrets,
         },
         environment: {
@@ -176,11 +171,14 @@ export function createAPIService(
       queue: sidechainFHIRConverterDLQ,
       resource: fargateService.service.taskDefinition.taskRole,
     });
+
+  // Allow access to search services/infra
   provideAccessToQueue({
     accessType: "send",
     queue: searchIngestionQueue,
-    resource: fargateService.service.taskDefinition.taskRole,
+    resource: fargateService.taskDefinition.taskRole,
   });
+  searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
 
   // CloudWatch Alarms and Notifications
 
