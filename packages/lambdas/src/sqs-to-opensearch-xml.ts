@@ -48,7 +48,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   }
   const openSearch = new OpenSearchFileIngestorDirect({
     region,
-    endpoint: host,
+    endpoint: "https://" + host,
     indexName,
     username,
     password,

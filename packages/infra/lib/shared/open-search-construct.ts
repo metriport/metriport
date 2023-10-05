@@ -47,6 +47,8 @@ export default class OpenSearchConstruct extends Construct {
       vpc,
     });
 
+    osSg.addIngressRule(ec2.Peer.ipv4(vpc.vpcCidrBlock), ec2.Port.allTraffic());
+
     const zoneAwareness =
       dataNodesCount < 1
         ? undefined
