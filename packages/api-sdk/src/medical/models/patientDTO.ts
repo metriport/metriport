@@ -1,25 +1,43 @@
-import { z } from "zod";
-import { baseUpdateSchema } from "./common/base-update";
-import { defaultDateString, defaultNameString } from "../../shared";
-import { contactSchema, genderAtBirthSchema, personalIdentifierSchema } from "./demographics";
-import { addressSchemaDTO } from "./common/address";
+export type PatientDTO = {
+  id: string;
+  eTag: string | undefined;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  genderAtBirth: string;
+  personalIdentifiers: PersonalIdentifier | undefined;
+  facilityIds: string[];
+  address: Address | Address[];
+  contact: Contact | Contact[] | undefined;
+};
 
-const demographicsSchema = z.object({
-  firstName: defaultNameString,
-  lastName: defaultNameString,
-  dob: defaultDateString,
-  genderAtBirth: genderAtBirthSchema,
-  personalIdentifiers: z.array(personalIdentifierSchema).optional(),
-  address: z.array(addressSchemaDTO).or(addressSchemaDTO),
-  contact: z.array(contactSchema).optional().or(contactSchema.optional()),
-});
+type Address = {
+  addressLine1: string | undefined;
+  addressLine2: string | undefined;
+  city: string | undefined;
+  state: string | undefined;
+  zip: string;
+  country: string;
+};
 
-export const dtoGetPatientSchema = demographicsSchema.merge(baseUpdateSchema).extend({
-  facilityIds: z.array(z.string()),
-});
+type PersonalIdentifier = {
+  value: string;
+  period:
+    | {
+        start: string;
+        end: string | undefined;
+      }
+    | {
+        start: string;
+        end: string | undefined;
+      }
+    | undefined;
+  assigner: string | undefined;
+  type: string | undefined;
+  state: string | undefined;
+};
 
-export const dtoListPatientSchema = z.object({
-  patients: z.array(dtoGetPatientSchema),
-});
-
-export type PatientDTO = z.infer<typeof dtoGetPatientSchema>;
+type Contact = {
+  phone: string | undefined;
+  email: string | undefined;
+};
