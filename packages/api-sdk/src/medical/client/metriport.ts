@@ -193,12 +193,12 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation.
    * @return The newly created patient.
    */
-  async createPatient(data: PatientCreate, facilityId: string): Promise<Patient> {
+  async createPatient(data: PatientCreate, facilityId: string): Promise<PatientDTO> {
     const resp = await this.api.post(`${PATIENT_URL}`, data, {
       params: { facilityId },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return patientSchema.parse(resp.data);
+    return resp.data as PatientDTO;
   }
 
   /**
