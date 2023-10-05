@@ -39,6 +39,7 @@ services:
       - "9229:9229"
     volumes:
       - ./src:/usr/src/app/packages/api/src
+      - ../core/dist:/usr/src/app/packages/core/dist
       - ../api-sdk/dist:/usr/src/app/packages/api-sdk/dist
       - ../commonwell-sdk/dist:/usr/src/app/packages/commonwell-sdk/dist
     extra_hosts:

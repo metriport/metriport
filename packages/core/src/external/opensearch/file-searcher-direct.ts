@@ -19,17 +19,26 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
 
   async search(req: SearchRequest): Promise<SearchResult[]> {
     const { indexName, endpoint, username, password } = this.config;
+    const { cxId, patientId, query } = req;
 
     const auth = { username, password };
     const client = new Client({ node: endpoint, auth });
 
     console.log(`Searching on index ${indexName}...`);
-    const query = {
+    const queryPayload = {
       query: {
-        query_string: {
-          query: req.query,
-          fields: [contentFieldName],
-          analyze_wildcard: true,
+        bool: {
+          must: [
+            {
+              query_string: {
+                query,
+                fields: ["content"],
+                analyze_wildcard: true,
+              },
+            },
+            { match: { cxId } },
+            { match: { patientId } },
+          ],
         },
       },
     };
@@ -37,7 +46,7 @@ export class OpenSearchFileSearcherDirect implements OpenSearchFileSearcher {
       await client.search(
         {
           index: indexName,
-          body: query,
+          body: queryPayload,
         },
         {
           querystring: {
