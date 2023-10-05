@@ -29,7 +29,7 @@ export function makeSearchServiceIngest(): OpenSearchFileIngestor {
 
 export function makeSearchServiceQuery(): OpenSearchFileSearcher {
   const region = Config.getAWSRegion();
-  const endpoint = Config.getSearchEndpoint();
+  const endpoint = "https://" + Config.getSearchEndpoint();
   const indexName = Config.getSearchIndexName();
   const username = Config.getSearchUsername();
   const password = Config.getSearchPassword();
