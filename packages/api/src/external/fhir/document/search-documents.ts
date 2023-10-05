@@ -21,8 +21,8 @@ export async function searchDocuments({
   const fhirDocs = await getDocuments({ cxId, patientId, from, to });
 
   const docs = await Promise.allSettled([
-    searchDocumentsRaw(fhirDocs, contentFilter),
-    searchDocumentsParsed(fhirDocs, contentFilter),
+    searchOnCCDAFiles(fhirDocs, cxId, patientId, contentFilter),
+    searchOnDocumentReferences(fhirDocs, contentFilter),
   ]);
 
   const success = [...docs.flatMap(d => (d.status === "fulfilled" ? d.value : []))];
@@ -36,7 +36,7 @@ export async function searchDocuments({
   return unique;
 }
 
-async function searchDocumentsParsed(
+async function searchOnDocumentReferences(
   docs: DocumentReference[],
   contentFilter?: string
 ): Promise<DocumentReference[]> {
@@ -58,13 +58,15 @@ function checkExtensions(doc: DocumentReference) {
   return true;
 }
 
-async function searchDocumentsRaw(
+async function searchOnCCDAFiles(
   docs: DocumentReference[],
+  cxId: string,
+  patientId: string,
   contentFilter?: string
 ): Promise<DocumentReference[]> {
   if (!contentFilter) return [];
   const searchService = makeSearchServiceQuery();
-  const searchResult = await searchService.search({ query: contentFilter });
+  const searchResult = await searchService.search({ query: contentFilter, cxId, patientId });
   const searchResultIds = searchResult.map(r => r.entryId);
   // only return documents that match both the search result and the documents we got from the FHIR server (using date filter)
   const result = docs.filter(d => d.id && searchResultIds.includes(d.id));
