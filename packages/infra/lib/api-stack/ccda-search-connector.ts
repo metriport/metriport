@@ -5,6 +5,7 @@ import { IFunction, ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { IDomain } from "aws-cdk-lib/aws-opensearchservice";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
@@ -89,7 +90,7 @@ export function setup({
   lambda: IFunction;
   searchDomain: IDomain;
   searchDomainUserName: string;
-  searchDomainSecretName: string;
+  searchDomainSecret: ISecret;
   indexName: string;
 } {
   const config = getConfig();
@@ -139,7 +140,7 @@ export function setup({
       DLQ_URL: dlq.queue.queueUrl,
       SEARCH_HOST: openSearch.domain.domainEndpoint,
       SEARCH_USER: openSearch.creds.username,
-      SEARCH_SECRET_NAME: openSearch.creds.secretName,
+      SEARCH_SECRET_NAME: openSearch.creds.secret.secretName,
       SEARCH_INDEX_NAME: openSearchConfig.indexName,
     },
     timeout,
@@ -157,13 +158,14 @@ export function setup({
   );
   provideAccessToQueue({ accessType: "both", queue, resource: lambda });
   provideAccessToQueue({ accessType: "send", queue: dlq.queue, resource: lambda });
+  openSearch.creds.secret.grantRead(lambda);
 
   return {
     queue,
     lambda,
     searchDomain: openSearch.domain,
     searchDomainUserName: openSearch.creds.username,
-    searchDomainSecretName: openSearch.creds.secretName,
+    searchDomainSecret: openSearch.creds.secret,
     indexName: openSearchConfig.indexName,
   };
 }
