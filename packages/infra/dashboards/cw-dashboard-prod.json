@@ -326,8 +326,8 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 10_000 for 1 datapoints within 5 minutes",
-                            "value": 10000,
+                            "label": "VolumeWriteIOPs >= 5000 for 1 datapoints within 5 minutes",
+                            "value": 5000,
                             "yAxis": "right"
                         }
                     ]
@@ -389,8 +389,8 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 100_000 for 1 datapoints within 5 minutes",
-                            "value": 100000,
+                            "label": "VolumeWriteIOPs >= 5000 for 1 datapoints within 5 minutes",
+                            "value": 5000,
                             "yAxis": "right"
                         }
                     ]
@@ -674,6 +674,25 @@
                 "period": 60,
                 "title": "FHIR DB - Connections",
                 "liveData": false
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 93,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "Metriport", "API Success", { "label": "2xx" } ],
+                    [ ".", "API Failures", { "label": "3xx | 4xx | 5xx" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Sum",
+                "period": 300,
+                "title": "API Responses"
             }
         }
     ]
