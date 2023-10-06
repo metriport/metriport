@@ -24,7 +24,7 @@
     "@aws-sdk/client-secrets-manager": "^3.348.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/core": "^1.0.1-alpha.0",
+    "@metriport/core": "^1.0.1",
     "@metriport/commonwell-sdk": "^4.8.0",
     "@opensearch-project/opensearch": "^2.3.1",
     "@sentry/serverless": "^7.46.0",
