@@ -33,7 +33,7 @@ type PersonalIdentifier = {
       }
     | undefined;
   assigner?: string;
-  type?: "driversLicense";
+  type: "driversLicense";
   state: string;
 };
 
