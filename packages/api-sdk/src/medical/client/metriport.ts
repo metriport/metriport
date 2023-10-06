@@ -357,7 +357,7 @@ export class MetriportMedicalApi {
     const resp = await this.api.get(`${PATIENT_URL}`, {
       params: { facilityId },
     });
-    if (!resp.data) [];
+    if (!resp.data) return [];
     return resp.data.patients as PatientDTO[];
   }
 

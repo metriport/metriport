@@ -4,18 +4,24 @@ dotenv.config();
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "../../shared/env";
 
+const apiUrl = getEnvVarOrFail("API_URL");
 const apiToken = getEnvVarOrFail("API_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
+const patientId = getEnvVarOrFail("PATIENT_ID");
 
 async function main() {
   const metriport = new MetriportMedicalApi(apiToken, {
-    baseAddress: "http://0.0.0.0:8080",
+    baseAddress: apiUrl,
   });
 
   try {
+    console.log(`Calling getPatient...`);
+    const singlePatient = await metriport.getPatient(patientId);
+    console.log(`Single patient: ${JSON.stringify(singlePatient, null, 2)}`);
+
     console.log(`Calling listPatients...`);
-    const deprecated = await metriport.listPatients(facilityId);
-    console.log(`Result: ${JSON.stringify(deprecated, null, 2)}`);
+    const allPatients = await metriport.listPatients(facilityId);
+    console.log(`All patients in a given facility: ${JSON.stringify(allPatients, null, 2)}`);
   } catch (error) {
     console.log(`error: `, error);
   }
