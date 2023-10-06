@@ -1,21 +1,21 @@
 export type PatientDTO = {
   id: string;
-  eTag?: string | undefined;
+  eTag?: string;
   firstName: string;
   lastName: string;
   dob: string;
-  genderAtBirth: string;
-  personalIdentifiers?: PersonalIdentifier | undefined;
+  genderAtBirth: "M" | "F";
+  personalIdentifiers?: PersonalIdentifier[];
   facilityIds: string[];
   address: Address | Address[];
-  contact?: Contact | Contact[] | undefined;
+  contact?: Contact | Contact[];
 };
 
 type Address = {
-  addressLine1?: string | undefined;
-  addressLine2?: string | undefined;
-  city?: string | undefined;
-  state?: string | undefined;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
   zip: string;
   country: string;
 };
@@ -25,16 +25,16 @@ type PersonalIdentifier = {
   period:
     | {
         start: string;
-        end?: string | undefined;
+        end?: string;
       }
     | {
-        start?: string | undefined;
+        start?: string;
         end: string;
       }
     | undefined;
-  assigner?: string | undefined;
-  type?: string | undefined;
-  state?: string | undefined;
+  assigner?: string;
+  type?: "driversLicense";
+  state: string;
 };
 
 type Contact = {
