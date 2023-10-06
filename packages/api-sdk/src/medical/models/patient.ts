@@ -6,6 +6,7 @@ export const patientCreateSchema = demographicsSchema;
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
 
 export const lenientPatientCreateSchema = lenientDemographicsSchema;
+export type LenientPatientCreate = z.infer<typeof lenientPatientCreateSchema>;
 
 export const patientUpdateSchema = patientCreateSchema.merge(baseUpdateSchema);
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
