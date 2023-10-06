@@ -106,12 +106,8 @@ export function createConnector({
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       QUEUE_URL: queue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,
-      ...(fhirServerUrl && {
-        FHIR_SERVER_URL: config.fhirServerUrl,
-      }),
-      ...(apiURL && {
-        API_URL: config.loadBalancerDnsName,
-      }),
+      FHIR_SERVER_URL: fhirServerUrl,
+      API_URL: apiURL,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,

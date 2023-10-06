@@ -1,5 +1,6 @@
 import { MedplumClient } from "@medplum/core";
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import { uuid4 } from "@sentry/utils";
 import { SQSEvent } from "aws-lambda";
@@ -7,7 +8,7 @@ import fetch from "node-fetch";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
-import { isBadGateway, isTimeout } from "./shared/http";
+import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
@@ -90,6 +91,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         },
       });
     }
+
     console.log(`Processing ${records.length} records...`);
     for (const [i, message] of records.entries()) {
       // Process one record from the SQS message
@@ -110,7 +112,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         const { s3BucketName, s3FileName } = parseBody(message.body);
         const metrics: Metrics = {};
 
-        await cloudWatchUtils.reportMemoryUsage();
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
@@ -119,9 +120,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           timestamp: new Date(),
         };
 
-        await cloudWatchUtils.reportMemoryUsage();
         log(`Converting payload to JSON, length ${payloadRaw.length}`);
-        let payload;
+        let payload: any; // eslint-disable-line @typescript-eslint/no-explicit-any
         if (isSandbox) {
           const idsReplaced = replaceIds(payloadRaw);
           log(`IDs replaced, length: ${idsReplaced.length}`);
@@ -132,16 +132,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           payload = JSON.parse(payloadRaw);
         }
 
-        await cloudWatchUtils.reportMemoryUsage();
-        log(`Sending payload to FHIRServer...`);
-        const upsertStart = Date.now();
+        // light validation to make sure it's a bundle
+        if (payload.resourceType !== "Bundle") {
+          throw new Error(`Not a FHIR Bundle`);
+        }
 
+        log(`Sending payload to FHIRServer...`);
+        let response: Bundle<Resource> | undefined;
+        const upsertStart = Date.now();
         const fhirApi = new MedplumClient({
           fetch,
           baseUrl: fhirServerUrl,
           fhirUrlPath: `fhir/${cxId}`,
         });
-        let response;
         let count = 0;
         let retry = true;
         while (retry) {
@@ -151,16 +154,22 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           if (errors.length <= 0) break;
           retry = count < maxRetries;
           log(`Got ${errors.length} errors from FHIR, ${retry ? "" : "NOT "}trying again...`);
+          if (!retry) {
+            throw new MetriportError(`Too many errors from FHIR`, undefined, {
+              count: count.toString(),
+              maxRetries: maxRetries.toString(),
+            });
+          }
         }
         metrics.errorCount = {
           count,
           timestamp: new Date(),
         };
-
         metrics.upsert = {
           duration: Date.now() - upsertStart,
           timestamp: new Date(),
         };
+
         if (jobStartedAt) {
           metrics.job = {
             duration: Date.now() - new Date(jobStartedAt).getTime(),
@@ -168,34 +177,35 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           };
         }
 
-        processResponse(response, event, log);
+        processFHIRResponse(response, event, log);
 
-        await cloudWatchUtils.reportMemoryUsage();
         await cloudWatchUtils.reportMetrics(metrics);
-
         await ossApi.notifyApi({ cxId, patientId, status: "success", jobId }, log);
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
+      } catch (error: any) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount
           ? Number(message.attributes?.ApproximateReceiveCount)
           : undefined;
         const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = isTimeout(err) || isBadGateway(err);
-        if (isRetryError && isWithinRetryRange) {
+        const isRetryError = isAxiosTimeout(error) || isAxiosBadGateway(error);
+        if (!(error instanceof MetriportError) && isRetryError && isWithinRetryRange) {
           console.log(`Timed out, reenqueue (${count} of ${maxTimeoutRetries}): `, message);
           capture.message("Sending to FHIR server timed out", {
             extra: { message, context: lambdaName, retryCount: count },
           });
           await sqsUtils.reEnqueue(message);
         } else {
-          console.log(`Error processing message: ${JSON.stringify(message)}; \n${err}: ${err}`);
-          capture.error(err, {
-            extra: { message, context: lambdaName, retryCount: count },
+          console.log(`Error processing message: ${JSON.stringify(message)}; \n${error.message}`);
+          capture.error(error, {
+            extra: { message, context: lambdaName, retryCount: count, error },
           });
           await sqsUtils.sendToDLQ(message);
 
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
+          await ossApi.notifyApi(
+            { cxId, patientId, status: "failed", details: error.message, jobId },
+            log
+          );
         }
       }
     }
@@ -203,7 +213,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   } catch (err) {
     console.log(`Error processing event: ${JSON.stringify(event)}; ${err}`);
     capture.error(err, {
-      extra: { event, context: lambdaName, additional: "outer catch" },
+      extra: {
+        event,
+        context: lambdaName,
+        additional: "outer catch",
+        notes:
+          "This means the API was notified about the failure, the patient's doc query is " +
+          "likely not to get completed - needs manual intervention!",
+      },
     });
     throw err;
   }
@@ -265,7 +282,11 @@ function getErrorsFromReponse(response?: Bundle<Resource>) {
   return errors;
 }
 
-function processResponse(response: Bundle<Resource> | undefined, event: SQSEvent, log: Log) {
+function processFHIRResponse(
+  response: Bundle<Resource> | undefined,
+  event: SQSEvent,
+  log: Log
+): void {
   const entries = response?.entry ? response.entry : [];
   const errors = getErrorsFromReponse(response);
   const countError = errors.length;

@@ -10,7 +10,7 @@ import { Patient } from "../../../models/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
-import { uuidv7 } from "../../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { getFileExtension, sandboxSleepTime } from "./shared";
@@ -66,7 +66,7 @@ export async function sandboxGetDocRefsAndUpsert({
         content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
       };
     })
-    .filter(isConvertible).length;
+    .filter(doc => isConvertible(doc.content?.mimeType)).length;
 
   // set initial download/convert totals
   await appendDocQueryProgress({

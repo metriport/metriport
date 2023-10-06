@@ -3,7 +3,7 @@ import * as sdk from "@metriport/commonwell-sdk";
 import * as nanoid from "nanoid";
 import * as stream from "stream";
 import NotImplementedError from "../../errors/not-implemented";
-import { uuidv7 } from "../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   createDocument,
   createPatient,

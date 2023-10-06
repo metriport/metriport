@@ -1,5 +1,5 @@
 import { FacilityData, FacilityModel } from "../../../models/medical/facility";
-import { uuidv7 } from "../../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 export const createFacility = async ({
   cxId,

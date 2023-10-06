@@ -131,3 +131,5 @@ dist
 .pnp.*
 
 metriport-api.tar.gz
+
+*.pem

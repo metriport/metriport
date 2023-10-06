@@ -25,6 +25,7 @@ import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
 import { MedicalDataSource } from "../../../external";
+import { makeLambdaClient } from "../../../external/aws/lambda";
 import { Facility } from "../../../models/medical/facility";
 import { Organization } from "../../../models/medical/organization";
 import { Patient } from "../../../models/medical/patient";
@@ -38,14 +39,14 @@ import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
-import { toFHIR as toFHIRDocRef } from "../../fhir/document";
+import { DocumentReferenceWithId, toFHIR as toFHIRDocRef } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
+import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
-import { makeLambdaClient } from "../../../external/aws/lambda";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
   CWDocumentWithMetriportData,
@@ -278,16 +279,18 @@ function reportFHIRError({
   patientId,
   doc,
   error,
+  context,
   log,
 }: {
   patientId: string;
   doc: Document;
   error: unknown;
+  context: string;
   log: ReturnType<typeof Util.out>["log"];
 }) {
-  const errorTitle = `CDA>FHIR ${ConversionError.prefix}`;
+  const errorTitle = `CDA>FHIR ${context}`;
   const extra = {
-    context: `cw.getDocuments.convertToFHIR`,
+    context: `cw.document-query.` + context,
     patientId: patientId,
     documentReference: doc,
     originalError: error,
@@ -354,7 +357,6 @@ function convertToNonExistingS3Info(
       ...simpleFile,
       fileExists: false,
       fileSize: undefined,
-      fileContentType: undefined,
     };
   };
 }
@@ -416,6 +418,8 @@ export async function downloadDocsAndUpsertFHIR({
   let completedCount = 0;
   let errorCount = 0;
   let errorCountConvertible = 0;
+  let increaseCountConvertible = 0;
+  const shouldUpsertFHIR = !ignoreFhirConversionAndUpsert;
 
   const docsWithMetriportId = await Promise.all(
     documents.map(
@@ -459,7 +463,9 @@ export async function downloadDocsAndUpsertFHIR({
 
   const fileInfoByDocId = (docId: string) => filesWithStorageInfo.find(f => f.docId === docId);
 
-  const convertibleDocCount = docsToDownload.filter(isConvertible).length;
+  const convertibleDocCount = docsToDownload.filter(doc =>
+    isConvertible(doc.content?.mimeType)
+  ).length;
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
   await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
@@ -469,15 +475,16 @@ export async function downloadDocsAndUpsertFHIR({
     const s3Refs = await Promise.allSettled(
       docChunk.map(async doc => {
         let errorReported = false;
-        const isConvertibleDoc = isConvertible(doc);
+        let uploadToS3: () => Promise<File>;
+        let file: Awaited<ReturnType<typeof uploadToS3>> | undefined = undefined;
+        const isConvertibleDoc = isConvertible(doc.content?.mimeType);
+
         try {
           const fileInfo = fileInfoByDocId(doc.id);
           if (!fileInfo) {
+            if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) increaseCountConvertible--;
             throw new MetriportError("Missing file info", undefined, { docId: doc.id });
           }
-
-          let uploadToS3: () => Promise<File>;
-          let file: Awaited<ReturnType<typeof uploadToS3>>;
 
           try {
             // add some randomness to avoid overloading the servers
@@ -519,6 +526,8 @@ export async function downloadDocsAndUpsertFHIR({
             }
             file = await uploadToS3();
           } catch (error) {
+            if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) errorCountConvertible++;
+
             const isZeroLength = doc.content.size === 0;
             if (isZeroLength && error instanceof NotFoundError) {
               // we don't want to report errors when the file was originally flagged as empty
@@ -543,6 +552,14 @@ export async function downloadDocsAndUpsertFHIR({
             throw error;
           }
 
+          // If an xml document contained b64 data, we will parse, convert and store it in s3 as the default downloaded document.
+          // Because of this the document content type may not match the s3 file content type hence this check.
+          // This will prevent us from converting non xml documents to FHIR.
+          const isFileConvertible = fileIsConvertible(file);
+
+          const shouldConvertCDA =
+            file.isNew && !ignoreFhirConversionAndUpsert && isFileConvertible;
+
           const docWithFile: CWDocumentWithMetriportData = {
             ...doc,
             metriport: {
@@ -553,7 +570,13 @@ export async function downloadDocsAndUpsertFHIR({
             },
           };
 
-          if (file.isNew && !ignoreFhirConversionAndUpsert) {
+          if (!shouldConvertCDA && isConvertibleDoc) {
+            increaseCountConvertible--;
+          } else if (shouldConvertCDA && !isConvertibleDoc) {
+            increaseCountConvertible++;
+          }
+
+          if (shouldConvertCDA) {
             try {
               await convertCDAToFHIR({
                 patient,
@@ -569,21 +592,26 @@ export async function downloadDocsAndUpsertFHIR({
               );
               errorCountConvertible++;
             }
-          } else {
-            // count this doc as an error so we can decrement the total to be converted in the query status
-            errorCountConvertible++;
           }
 
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
 
-          if (!ignoreFhirConversionAndUpsert) {
-            try {
-              await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
-            } catch (error) {
-              reportFHIRError({ patientId: patient.id, doc, error, log });
-              errorReported = true;
-              throw error;
-            }
+          if (shouldUpsertFHIR) {
+            const [fhir, search] = await Promise.allSettled([
+              upsertDocumentToFHIRServer(cxId, FHIRDocRef).catch(error => {
+                const context = "upsertDocumentToFHIRServer";
+                reportFHIRError({ patientId: patient.id, doc, error, context, log });
+                errorReported = true;
+                throw error;
+              }),
+              ingestIntoSearchEngine(patient, FHIRDocRef, file, requestId).catch(error => {
+                const context = "ingestIntoSearchEngine";
+                reportFHIRError({ patientId: patient.id, doc, error, context, log });
+                errorReported = true;
+                throw error;
+              }),
+            ]);
+            processFhirAndSearchResponse(patient, doc, fhir, search);
           }
 
           completedCount++;
@@ -591,7 +619,6 @@ export async function downloadDocsAndUpsertFHIR({
           return FHIRDocRef;
         } catch (error) {
           errorCount++;
-          if (isConvertibleDoc) errorCountConvertible++;
 
           log(`Error processing doc: ${error}`, doc);
           if (!errorReported) {
@@ -647,6 +674,7 @@ export async function downloadDocsAndUpsertFHIR({
         }
       : undefined),
     convertibleDownloadErrors: errorCountConvertible,
+    increaseCountConvertible,
     requestId,
   });
   // send webhook to CXs when docs are done downloading
@@ -678,6 +706,33 @@ export async function downloadDocsAndUpsertFHIR({
   }
 
   return docsNewLocation;
+}
+
+function processFhirAndSearchResponse(
+  patient: Patient,
+  doc: DocumentWithLocation,
+  fhir: PromiseSettledResult<void>,
+  search: PromiseSettledResult<void>
+): void {
+  const base = { patientId: patient.id, docId: doc.id };
+  if (fhir.status === "rejected" && search.status === "rejected") {
+    throw new MetriportError("Error both upserting to FHIR and ingesting to search", undefined, {
+      ...base,
+      failed: fhir.reason + "; " + search.reason,
+    });
+  }
+  if (fhir.status === "rejected") {
+    throw new MetriportError("Error upserting to FHIR", undefined, {
+      ...base,
+      failed: fhir.reason,
+    });
+  }
+  if (search.status === "rejected") {
+    throw new MetriportError("Error ingesting to search", undefined, {
+      ...base,
+      failed: search.reason,
+    });
+  }
 }
 
 type File = {
@@ -734,6 +789,8 @@ async function triggerDownloadDocument({
   return newFile;
 }
 
+const fileIsConvertible = (f: File) => isConvertible(f.contentType);
+
 async function sleepBetweenChunks(): Promise<void> {
   return Util.sleepRandom(DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS, DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT / 100);
 }
@@ -742,6 +799,39 @@ async function jitterSingleDownload(): Promise<void> {
     DOC_DOWNLOAD_JITTER_DELAY_MAX_MS,
     DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT / 100
   );
+}
+
+async function ingestIntoSearchEngine(
+  patient: Patient,
+  fhirDoc: DocumentReferenceWithId,
+  file: File,
+  requestId: string
+): Promise<void> {
+  const openSearch = makeSearchServiceIngest();
+  if (!openSearch.isIngestible(file)) {
+    console.log(`Skipping ingestion of doc ${file.key} into OpenSearch: not ingestible`);
+    return;
+  }
+  try {
+    await openSearch.ingest({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      entryId: fhirDoc.id,
+      s3FileName: file.key,
+      s3BucketName: file.bucket,
+      requestId,
+    });
+  } catch (err) {
+    console.log(`Error ingesting doc ${file.key} into OpenSearch: ${errorToString(err)}`);
+    capture.error(err, {
+      extra: {
+        context: `ingestIntoSearchEngine`,
+        patientId: patient.id,
+        file,
+        requestId,
+      },
+    });
+  }
 }
 
 function reportDocQueryUsage(patient: Patient, docQuery = true): void {

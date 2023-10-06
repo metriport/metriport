@@ -4,12 +4,13 @@ import {
   getFileInfoFromS3,
   removeAndReturnB64FromXML,
 } from "../document-downloader";
+import { getEnvOrFail } from "../shared/env";
 
-// TO BE RUN LOCALLY NOT IN CI/CD
-const cwOrgCertificate = ``;
-const cwOrgPrivateKey = ``;
-const bucketName = ``;
+const cwOrgCertificate = getEnvOrFail("CW_ORG_CERTIFICATE");
+const cwOrgPrivateKey = getEnvOrFail("CW_ORG_PRIVATE_KEY");
+const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
+// TODO move these to .env so we don't need to update the test file to run it
 const docRef = {
   fileName: "",
   fileLocation: "",
@@ -17,12 +18,14 @@ const docRef = {
   size: 0,
 };
 
+// TODO move these to .env so we don't need to update the test file to run it
 const org = {
   orgName: "",
   orgOid: "",
   npi: "",
 };
 
+// TO BE RUN LOCALLY NOT IN CI/CD
 describe.skip("document-downloader", () => {
   it("should download the document from cw and store in s3", async () => {
     const { writeStream, promise } = uploadDocumentToS3(

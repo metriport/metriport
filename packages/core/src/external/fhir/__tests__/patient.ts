@@ -1,8 +1,11 @@
+import { Patient } from "@medplum/fhirtypes";
 import { randFirstName, randLastName, randNumber, randPhoneNumber, randUuid } from "@ngneat/falso";
 
 const defaultId = randUuid();
 
-export const makePatient = (id = defaultId) => ({
+export type PatientWithId = Omit<Patient, "id"> & Required<Pick<Patient, "id">>;
+
+export const makePatient = (id = defaultId): PatientWithId => ({
   resourceType: "Patient",
   id,
   extension: [
@@ -82,7 +85,7 @@ export const makePatient = (id = defaultId) => ({
         text: "Driver's License",
       },
       system: "urn:oid:2.16.840.1.113883.4.3.49",
-      value: randNumber({ min: 10_000, max: 99_999 }),
+      value: randNumber({ min: 10_000, max: 99_999 }).toString(),
     },
   ],
   name: [

@@ -3,7 +3,7 @@ import { DocRefMappingCreate } from "../../../../domain/medical/docref-mapping";
 import { MedicalDataSource } from "../../../../external";
 import { makeDocRefMappingModel } from "../../../../models/medical/__tests__/docref-mapping";
 import { DocRefMappingModel } from "../../../../models/medical/docref-mapping";
-import { uuidv7 } from "../../../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { externalDocRefIds } from "../../__tests__/external-ids";
 import { getOrCreateDocRefMapping } from "../get-docref-mapping";
 

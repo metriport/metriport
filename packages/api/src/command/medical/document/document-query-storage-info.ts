@@ -26,6 +26,7 @@ type SimpleFile = {
   docId: string;
   fileName: string;
   fileLocation: string;
+  fileContentType: string | undefined;
 };
 
 export function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
@@ -34,7 +35,12 @@ export function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
     const extension = getFileExtension(doc.content?.mimeType);
     const docName = extension ? `${doc.id}${extension}` : doc.id;
     const fileName = createS3FileName(patient.cxId, patient.id, docName);
-    return { docId: doc.id, fileName, fileLocation: s3BucketName };
+    return {
+      docId: doc.id,
+      fileName,
+      fileLocation: s3BucketName,
+      fileContentType: doc.content?.mimeType,
+    };
   };
 }
 

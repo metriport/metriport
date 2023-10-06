@@ -35,5 +35,5 @@
     "strict": true
   },
   "include": ["./src"],
-  "exclude": ["lib", "node_modules"]
+  "exclude": ["lib", "node_modules", "**/__tests__"]
 }

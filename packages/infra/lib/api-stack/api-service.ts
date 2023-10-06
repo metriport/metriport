@@ -11,19 +11,21 @@ import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
-import { DnsZones } from "./shared/dns";
-import { Secrets } from "./shared/secrets";
-import { provideAccessToQueue } from "./shared/sqs";
-import { isProd } from "./shared/util";
+import { EnvConfig } from "../../config/env-config";
+import { DnsZones } from "../shared/dns";
+import { Secrets } from "../shared/secrets";
+import { provideAccessToQueue } from "../shared/sqs";
+import { isProd } from "../shared/util";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
 }
 
+// TODO move these parameters to object properties
 export function createAPIService(
   stack: Construct,
   props: ApiServiceProps,
@@ -40,7 +42,11 @@ export function createAPIService(
   sidechainFHIRConverterQueue: IQueue | undefined,
   sidechainFHIRConverterDLQ: IQueue | undefined,
   cdaToVisualizationLambda: ILambda,
-  documentDownloaderLambda: ILambda
+  documentDownloaderLambda: ILambda,
+  searchIngestionQueue: IQueue,
+  searchEndpoint: string,
+  searchAuth: { userName: string; secret: ISecret },
+  searchIndexName: string
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -80,6 +86,7 @@ export function createAPIService(
         containerName: "API-Server",
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
+          SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
           ...secrets,
         },
         environment: {
@@ -123,6 +130,10 @@ export function createAPIService(
           ...(sidechainFHIRConverterDLQ && {
             SIDECHAIN_FHIR_CONVERTER_DLQ_URL: sidechainFHIRConverterDLQ.queueUrl,
           }),
+          SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
+          SEARCH_ENDPOINT: searchEndpoint,
+          SEARCH_USERNAME: searchAuth.userName,
+          SEARCH_INDEX: searchIndexName,
         },
       },
       memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
@@ -160,6 +171,14 @@ export function createAPIService(
       queue: sidechainFHIRConverterDLQ,
       resource: fargateService.service.taskDefinition.taskRole,
     });
+
+  // Allow access to search services/infra
+  provideAccessToQueue({
+    accessType: "send",
+    queue: searchIngestionQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
 
   // CloudWatch Alarms and Notifications
 

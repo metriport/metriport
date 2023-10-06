@@ -11,7 +11,7 @@ import { PatientDataCommonwell } from "../../../external/commonwell/patient-shar
 import { Patient, PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { emptyFunction, Util } from "../../../shared/util";
-import { uuidv7 } from "../../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";

@@ -69,6 +69,7 @@ async function forwardCallToServer(event: APIGatewayEvent) {
 function verifyRequest(event: APIGatewayEvent, body: string, secret: string) {
   const signingKey = secret + "&";
   const hash = createHmac("sha1", signingKey).update(body).digest();
+  // TODO use core's base64 functions
   const encodedHash = Buffer.from(hash).toString("base64");
 
   if (encodedHash === event.headers["X-Fitbit-Signature"]) return true;

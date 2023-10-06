@@ -80,7 +80,7 @@ export type EnvConfig = {
     url: string;
     urlBlacklist: string; // comma-separated list of URLs to be replaced, case sensitive
     wordsToRemove: string; // comma-separated list of words to be removed, case insensitive
-    secretNames: {
+    secretNames?: {
       SIDECHAIN_FHIR_CONVERTER_KEYS: string;
     };
   };

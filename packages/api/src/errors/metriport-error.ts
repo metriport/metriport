@@ -1,5 +1,8 @@
 import status from "http-status";
 
+/**
+ * @deprecated Use @metriport/core/error instead
+ */
 export default class MetriportError extends Error {
   status: number = status.INTERNAL_SERVER_ERROR;
   constructor(

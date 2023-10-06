@@ -19,15 +19,16 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
-import { AlarmSlackBot } from "./alarm-slack-chatbot";
-import { createAPIService } from "./api-service";
+import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
+import { createAPIService } from "./api-stack/api-service";
+import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
+import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
-import { createFHIRConverterService } from "./fhir-converter-service";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
-import { Secrets, getSecrets } from "./shared/secrets";
+import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
@@ -164,6 +165,32 @@ export class APIStack extends Stack {
       dynamoConstructName,
       slackNotification?.alarmAction
     );
+    // table for sidechain FHIR converter key management
+    const dynamoSidechainKeysConstructName = "SidechainFHIRConverterKeys";
+    let dynamoDBSidechainKeysTable: dynamodb.Table | undefined = undefined;
+    if (!isSandbox(props.config)) {
+      dynamoDBSidechainKeysTable = new dynamodb.Table(this, dynamoSidechainKeysConstructName, {
+        partitionKey: { name: "apiKey", type: dynamodb.AttributeType.STRING },
+        replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
+        replicationTimeout: Duration.hours(3),
+        encryption: dynamodb.TableEncryption.AWS_MANAGED,
+        pointInTimeRecovery: true,
+      });
+      this.addDynamoPerformanceAlarms(
+        dynamoDBSidechainKeysTable,
+        dynamoSidechainKeysConstructName,
+        slackNotification?.alarmAction
+      );
+    }
+
+    //-------------------------------------------
+    // S3 bucket for Medical Documents
+    //-------------------------------------------
+    const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
+      bucketName: props.config.medicalDocumentsBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
 
     //-------------------------------------------
     // FHIR Converter Service
@@ -179,6 +206,23 @@ export class APIStack extends Stack {
     }
 
     const lambdaLayers = setupLambdasLayers(this);
+
+    //-------------------------------------------
+    // OPEN SEARCH Domains
+    //-------------------------------------------
+    const {
+      queue: ccdaSearchQueue,
+      searchDomain: ccdaSearchDomain,
+      searchDomainUserName: ccdaSearchUserName,
+      searchDomainSecret: ccdaSearchSecret,
+      indexName: ccdaSearchIndexName,
+    } = ccdaSearch.setup({
+      stack: this,
+      vpc: this.vpc,
+      ccdaS3Bucket: medicalDocumentsBucket,
+      lambdaLayers,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
 
     //-------------------------------------------
     // FHIR CONNECTORS, initalize
@@ -234,7 +278,7 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       bucketName: isSandbox(props.config)
         ? props.config.sandboxSeedDataBucketName
-        : props.config.medicalDocumentsBucketName,
+        : medicalDocumentsBucket.bucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
@@ -246,7 +290,7 @@ export class APIStack extends Stack {
       secrets,
       cwOrgCertificate: props.config.cwSecretNames.CW_ORG_CERTIFICATE,
       cwOrgPrivateKey: props.config.cwSecretNames.CW_ORG_PRIVATE_KEY,
-      bucketName: props.config.medicalDocumentsBucketName,
+      bucketName: medicalDocumentsBucket.bucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
     });
@@ -275,7 +319,11 @@ export class APIStack extends Stack {
       sidechainFHIRConverterQueue,
       sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
-      documentDownloaderLambda
+      documentDownloaderLambda,
+      ccdaSearchQueue,
+      ccdaSearchDomain.domainEndpoint,
+      { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
+      ccdaSearchIndexName
     );
 
     // Access grant for Aurora DB
@@ -297,16 +345,6 @@ export class APIStack extends Stack {
       },
       integrationHttpMethod: "ANY",
       uri: `http://${apiLoadBalancerAddress}/{proxy}`,
-    });
-
-    //-------------------------------------------
-    // S3 bucket for Medical Documents
-    //-------------------------------------------
-
-    const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
-      bucketName: props.config.medicalDocumentsBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
     //-------------------------------------------
@@ -352,6 +390,7 @@ export class APIStack extends Stack {
           fhirConverterBucket: sidechainFHIRConverterBucket,
           apiServiceDnsAddress: apiLoadBalancerAddress,
           alarmSnsAction: slackNotification?.alarmAction,
+          dynamoDBSidechainKeysTable,
         })
       : undefined;
 

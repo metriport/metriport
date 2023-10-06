@@ -4,7 +4,7 @@ import { createTenantIfNotExists } from "../../../external/fhir/admin";
 import { OrganizationData, OrganizationModel } from "../../../models/medical/organization";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import { uuidv7 } from "../../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { createOrganizationId } from "../customer-sequence/create-id";
 import { getOrganization } from "./get-organization";
 

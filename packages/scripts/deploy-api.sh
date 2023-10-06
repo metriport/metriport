@@ -45,6 +45,8 @@ tar \
   -czf ${API_TARBALL} \
   package.json \
   package-lock.json \
+  packages/core/package.json \
+  packages/core/dist \
   packages/api-sdk/package.json \
   packages/api-sdk/dist \
   packages/commonwell-sdk/package.json \

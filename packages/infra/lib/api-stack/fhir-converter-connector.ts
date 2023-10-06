@@ -7,7 +7,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { settings as settingsFhirConverter } from "../fhir-converter-service";
+import { settings as settingsFhirConverter } from "./fhir-converter-service";
 import { METRICS_NAMESPACE, getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";

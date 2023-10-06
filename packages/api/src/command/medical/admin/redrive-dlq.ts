@@ -8,7 +8,7 @@ import {
   sqs,
 } from "../../../external/aws/sqs";
 import { Config } from "../../../shared/config";
-import { uuidv4 } from "../../../shared/uuid-v7";
+import { uuidv4 } from "@metriport/core/util/uuid-v7";
 
 const dlqUrl = Config.getSidechainFHIRConverterDQLURL();
 const regularUrl = Config.getSidechainFHIRConverterQueueURL();

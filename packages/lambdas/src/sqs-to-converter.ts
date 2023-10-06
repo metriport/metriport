@@ -1,12 +1,13 @@
-import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
+import { DynamoDB } from "aws-sdk";
 import axios from "axios";
+import dayjs from "dayjs";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnv, getEnvOrFail } from "./shared/env";
-import { isBadGateway, isTimeout } from "./shared/http";
+import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
@@ -33,10 +34,14 @@ const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME")
 const sidechainFHIRConverterUrl = getEnv("SIDECHAIN_FHIR_CONVERTER_URL");
 const sidechainFHIRConverterUrlBlacklist = getEnv("SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST");
 const sidechainWordsToRemove = getEnv("SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE");
-const sidechainFHIRConverterKeysSecretName = isSidechainConnector()
-  ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS")
+const sidechainKeysTableName = isSidechainConnector()
+  ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME")
   : undefined;
-
+enum sidechainKeysStatus {
+  active = "active",
+  rateLimit = "rate-limit",
+  revoked = "revoked",
+}
 const baseReplaceUrl = "https://public.metriport.com";
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const MAX_SIDECHAIN_ATTEMPTS = 5;
@@ -59,24 +64,120 @@ function isSidechainConnector() {
   return sidechainFHIRConverterUrl ? true : false;
 }
 
-async function getSidechainConverterAPIKey(): Promise<string> {
-  if (!sidechainFHIRConverterKeysSecretName) {
-    throw new Error(`Programming error - sidechainFHIRConverterKeys is not set`);
+async function getAndUpdateSidechainConverterKeys(): Promise<string> {
+  if (!sidechainKeysTableName) {
+    throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
+  }
+  const docClient = new DynamoDB.DocumentClient({
+    apiVersion: "2012-08-10",
+  });
+
+  // get all keys that haven't been revoked
+  const keysTableItems = await docClient
+    .scan({
+      TableName: sidechainKeysTableName,
+      FilterExpression:
+        "attribute_exists(keyStatus) AND (keyStatus = :active OR keyStatus = :rateLimit)",
+      ExpressionAttributeValues: {
+        ":active": sidechainKeysStatus.active,
+        ":rateLimit": sidechainKeysStatus.rateLimit,
+      },
+    })
+    .promise();
+
+  if (!keysTableItems.Items) {
+    throw new Error(`No keys found in sidechain keys table`);
+  }
+  let activeKey: string | undefined = undefined;
+  const keysToUpdate: string[] = [];
+  for (const keyItem of keysTableItems.Items) {
+    if (!keyItem.keyStatus || !keyItem.apiKey) {
+      throw new Error(`Keys found in sidechain keys table not in expected format`);
+    }
+
+    if (keyItem.keyStatus === sidechainKeysStatus.active.toString()) {
+      if (!activeKey) {
+        // pick the first active API key
+        activeKey = keyItem.apiKey;
+      }
+    } else if (
+      keyItem.keyStatus === sidechainKeysStatus.rateLimit.toString() &&
+      keyItem.rateLimitDate &&
+      dayjs().isAfter(keyItem.rateLimitDate, "month")
+    ) {
+      // this key should have its rate limit reset by now
+      keysToUpdate.push(keyItem.apiKey);
+      if (!activeKey) {
+        activeKey = keyItem.apiKey;
+      }
+    }
   }
 
-  const secret = await getSecret(sidechainFHIRConverterKeysSecretName);
-  if (!secret) {
-    throw new Error(`Config error - sidechainFHIRConverterKeysSecret doesn't exist`);
+  const newKeyItemPutRequests = keysToUpdate.map(apiKey => {
+    return {
+      PutRequest: {
+        Item: {
+          TableName: sidechainKeysTableName,
+          apiKey,
+          keyStatus: sidechainKeysStatus.active,
+        },
+      },
+    };
+  });
+
+  if (newKeyItemPutRequests.length > 0) {
+    await docClient
+      .batchWrite({
+        RequestItems: {
+          [sidechainKeysTableName]: newKeyItemPutRequests,
+        },
+      })
+      .promise();
+  }
+  if (!activeKey)
+    throw new Error(`No active key found in sidechain keys table - can't do conversion`);
+  return activeKey;
+}
+
+async function markSidechainConverterKeyAsRateLimited(apiKey: string): Promise<void> {
+  if (!sidechainKeysTableName) {
+    throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
   }
 
-  const keys = String(secret).split(",");
-  if (keys.length < 1) {
-    throw new Error(
-      `Config error - sidechainFHIRConverterKeysSecret needs to be a comma separated string of keys`
-    );
+  const docClient = new DynamoDB.DocumentClient({
+    apiVersion: "2012-08-10",
+  });
+
+  await docClient
+    .put({
+      TableName: sidechainKeysTableName,
+      Item: {
+        apiKey,
+        keyStatus: sidechainKeysStatus.rateLimit.toString(),
+        rateLimitDate: dayjs().format("YYYY-MM-DD"),
+      },
+    })
+    .promise();
+}
+
+async function markSidechainConverterKeyAsRevoked(apiKey: string): Promise<void> {
+  if (!sidechainKeysTableName) {
+    throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
   }
-  // pick a key at random
-  return keys[Math.floor(Math.random() * keys.length)];
+
+  const docClient = new DynamoDB.DocumentClient({
+    apiVersion: "2012-08-10",
+  });
+
+  await docClient
+    .put({
+      TableName: sidechainKeysTableName,
+      Item: {
+        apiKey,
+        keyStatus: sidechainKeysStatus.revoked.toString(),
+      },
+    })
+    .promise();
 }
 
 function postProcessSidechainFHIRBundle(
@@ -188,7 +289,7 @@ async function postToSidechainConverter(payload: unknown, patientId: string, log
   let timeBetweenAttemptsMillis = SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS;
   let apiKey: string;
   while (attempt++ < MAX_SIDECHAIN_ATTEMPTS) {
-    apiKey = await getSidechainConverterAPIKey();
+    apiKey = await getAndUpdateSidechainConverterKeys();
     log(`(${attempt}) Calling sidechain converter on url ${sidechainUrl}`);
     try {
       const res = await fhirConverter.post(sidechainUrl, payload, {
@@ -212,6 +313,11 @@ async function postToSidechainConverter(payload: unknown, patientId: string, log
         };
         log(msg, extra);
         capture.message(msg, { extra, level: "info" });
+        if (error.response.status === 429) {
+          await markSidechainConverterKeyAsRateLimited(apiKey);
+        } else {
+          await markSidechainConverterKeyAsRevoked(apiKey);
+        }
         await sleep(timeBetweenAttemptsMillis);
         timeBetweenAttemptsMillis *= 2;
       } else {
@@ -385,7 +491,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           ? Number(message.attributes?.ApproximateReceiveCount)
           : undefined;
         const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = isTimeout(err) || isBadGateway(err);
+        const isRetryError = isAxiosTimeout(err) || isAxiosBadGateway(err);
         if (isRetryError && isWithinRetryRange) {
           const details = `${err.code}/${err.response?.status}`;
           console.log(
@@ -398,6 +504,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           await sqsUtils.reEnqueue(message);
         } else {
           console.log(`Error processing message: ${JSON.stringify(message)}; \n${err}: ${err}`);
+          // Axios error response
+          if (err.response) {
+            const resp = err.response;
+            const responseData = resp.data ? JSON.stringify(resp.data) : "undefined";
+            console.log(`Response body: ${responseData}`);
+          }
           capture.error(err, {
             extra: { message, context: lambdaName, retryCount: count },
           });

@@ -2,10 +2,16 @@ import AWS from "aws-sdk";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 
+/**
+ * @deprecated Move this to @metriport/core/aws
+ */
 export const METRICS_NAMESPACE = "Metriport";
 
 const cw = new AWS.CloudWatch({ apiVersion: "2010-08-01", region: Config.getAWSRegion() });
 
+/**
+ * @deprecated Move this to @metriport/core/aws
+ */
 export type Metric = {
   name: string;
   unit: "Milliseconds";
@@ -14,6 +20,9 @@ export type Metric = {
   additionalDimension?: string;
 };
 
+/**
+ * @deprecated Move this to @metriport/core/aws
+ */
 export function reportMetric(metric: Metric) {
   try {
     const metricBase = {

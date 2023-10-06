@@ -1,6 +1,6 @@
 import { DataTypes, QueryInterface, Transaction } from "sequelize";
 import type { Migration } from "..";
-import { uuidv7 } from "../../shared/uuid-v7";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 const tableName = "facility";
 
