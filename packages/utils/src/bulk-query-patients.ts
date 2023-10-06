@@ -5,7 +5,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { ConsolidatedCountResponse, MetriportMedicalApi, Patient } from "@metriport/api-sdk";
+import { ConsolidatedCountResponse, MetriportMedicalApi, PatientDTO } from "@metriport/api-sdk";
 import fs from "fs";
 import { getEnvVar, getEnvVarOrFail } from "./shared/env";
 
@@ -44,7 +44,7 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function queryDocsForPatient(patient: Patient) {
+async function queryDocsForPatient(patient: PatientDTO) {
   let docQueryAttempts = 0;
   let docCount = 0;
   let totalFhirResourceCount = 0;
