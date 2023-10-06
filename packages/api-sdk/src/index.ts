@@ -52,6 +52,7 @@ export {
   Patient,
   PatientCreate,
   patientCreateSchema,
+  lenientPatientCreateSchema,
   patientListSchema,
   patientSchema,
   PatientUpdate,
