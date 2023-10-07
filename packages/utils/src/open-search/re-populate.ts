@@ -55,7 +55,6 @@ async function getDocRefs(
   // Doing in sequence to avoid hammering down the FHIR server
   const docRefs: Dictionary<Dictionary<DocumentReference[]>> = {};
   for (const cxId of cxIdsToProcess) {
-    console.log(`Getting documents for cxId: ${cxId}`);
     const cxDocRefs = await getDocRefsFromCx(cxId);
     const docRefsByPatient = groupBy(cxDocRefs, patientIdFromDocRef);
     docRefs[cxId] = docRefsByPatient;
@@ -128,6 +127,7 @@ async function main() {
     indexName: openSearchIndexName,
     username: openSearchUsername,
     password: openSearchPassword,
+    settings: { logLevel: "none" },
   });
 
   // Flatten to process them all in parallel
@@ -186,8 +186,17 @@ async function main() {
           s3FileName,
           s3BucketName,
         };
-        await searchService.ingest(payload);
-        totalDocCount++;
+        try {
+          await searchService.ingest(payload);
+          totalDocCount++;
+          console.log(`...docs done: ${String(totalDocCount).padStart(7, " ")}`);
+        } catch (error) {
+          console.log(
+            `Error ingesting doc ${docId} for cxId ${cxId} and patient ${patientId}, ` +
+              `file ${s3FileName}: ${error}`
+          );
+          return;
+        }
       })
     );
   }
@@ -200,6 +209,7 @@ async function main() {
     throw error;
   }
 
+  console.log(`Done.`);
   console.log(``);
   console.log(`Ingested ${totalDocCount} documents in ${Date.now() - startTimestamp} milliseconds`);
 }
