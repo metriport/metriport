@@ -3,14 +3,14 @@ import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 
 /**
- * @deprecated Move this to @metriport/core/aws
+ * @deprecated Move this to @metriport/core
  */
 export const METRICS_NAMESPACE = "Metriport";
 
 const cw = new AWS.CloudWatch({ apiVersion: "2010-08-01", region: Config.getAWSRegion() });
 
 /**
- * @deprecated Move this to @metriport/core/aws
+ * @deprecated Move this to @metriport/core
  */
 export type Metric = {
   name: string;
@@ -21,7 +21,7 @@ export type Metric = {
 };
 
 /**
- * @deprecated Move this to @metriport/core/aws
+ * @deprecated Move this to @metriport/core
  */
 export function reportMetric(metric: Metric) {
   try {

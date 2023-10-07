@@ -675,6 +675,25 @@
                 "title": "FHIR DB - Connections",
                 "liveData": false
             }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 93,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "Metriport", "API Success", { "label": "2xx" } ],
+                    [ ".", "API Failures", { "label": "3xx | 4xx | 5xx" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Sum",
+                "period": 300,
+                "title": "API Responses"
+            }
         }
     ]
 }

@@ -2,14 +2,15 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
 import { v4 as uuidv4 } from "uuid";
-import { makeOrgNumber } from "../../../models/medical/__tests__/organization";
-import { makeFhirAdminApi } from "../api/api-factory";
+import { makeOrgNumber } from "../../../../domain/__tests__/organization";
+import { getEnvVarOrFail } from "../../../../util/env-var";
+import { makeFhirAdminApi } from "../api-factory";
 
 jest.setTimeout(15000);
 
-const fhirApi = makeFhirAdminApi();
+const fhirApi = makeFhirAdminApi(getEnvVarOrFail("FHIR_SERVER_URL"));
 
-// For e2e tests we need to use the fhir api and the vpc is currently not connnected
+// For e2e tests we need to use the fhir api and the vpn is currently not connnected
 // For reference https://github.com/metriport/metriport/pull/751#discussion_r1289443897
 describe.skip("Integration FHIR Client", () => {
   describe("tenant", () => {

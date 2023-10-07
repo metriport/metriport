@@ -34,19 +34,19 @@ export function settings(): {
   // const isLarge = isProd(config) || isSandbox(config);
   const isLarge = true;
   // How long can the lambda run for, max is 900 seconds (15 minutes)
-  const timeout = Duration.minutes(5);
+  const timeout = Duration.minutes(1);
   return {
     // https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html
     openSearch: {
       capacity: {
-        dataNodes: isLarge ? 2 : 1,
-        dataNodeInstanceType: isLarge ? "t3.small.search" : "t3.small.search",
+        dataNodes: isLarge ? 3 : 1,
+        dataNodeInstanceType: isLarge ? "m6g.large.search" : "t3.small.search",
         masterNodes: isLarge ? undefined : undefined, // odd number, 3+; when not set this is done by data nodes
         masterNodeInstanceType: isLarge ? undefined : undefined,
         warmNodes: 0,
       },
       ebs: {
-        volumeSize: 100, // in GB
+        volumeSize: 50, // in GB, total is times amount of data nodes
         volumeType: EbsDeviceVolumeType.GENERAL_PURPOSE_SSD_GP3,
       },
       encryptionAtRest: true,
@@ -58,13 +58,13 @@ export function settings(): {
       // Number of messages the lambda pull from SQS at once
       batchSize: 1,
       // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-      maxConcurrency: isLarge ? 4 : 2,
+      maxConcurrency: isLarge ? 10 : 4,
       // How long can the lambda run for, max is 900 seconds (15 minutes)
       timeout,
     },
     sqs: {
       // Number of times we want to retry a message, this includes throttles!
-      maxReceiveCount: 5,
+      maxReceiveCount: 2,
       // How long messages should be invisible for other consumers, based on the lambda timeout
       // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
       visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),

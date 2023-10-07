@@ -1,6 +1,6 @@
 import {
   downloadDocumentFromCW,
-  uploadDocumentToS3,
+  getUploadStreamToS3,
   getFileInfoFromS3,
   removeAndReturnB64FromXML,
 } from "../document-downloader";
@@ -28,7 +28,7 @@ const org = {
 // TO BE RUN LOCALLY NOT IN CI/CD
 describe.skip("document-downloader", () => {
   it("should download the document from cw and store in s3", async () => {
-    const { writeStream, promise } = uploadDocumentToS3(
+    const { writeStream, promise } = getUploadStreamToS3(
       docRef.fileName,
       bucketName,
       docRef.mimeType
