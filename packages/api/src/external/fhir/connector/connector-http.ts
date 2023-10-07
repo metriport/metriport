@@ -6,7 +6,7 @@ import { FHIRServerConnector, FHIRServerRequest } from "./connector";
 
 export class FHIRServerConnectorHTTP implements FHIRServerConnector {
   async upsertBatch({ cxId, patientId, payload, requestId }: FHIRServerRequest): Promise<void> {
-    const serverUrl = Config.getFHIRServerUrlOrFail();
+    const serverUrl = Config.getFHIRServerUrl();
 
     // Gotta download the contents from S3 since the payload is just a reference to the actual file
     const s3 = makeS3Client();

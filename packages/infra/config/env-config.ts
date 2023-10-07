@@ -21,7 +21,7 @@ export type EnvConfig = {
   dbUsername: string;
   loadBalancerDnsName?: string;
   usageReportUrl?: string;
-  fhirServerUrl?: string;
+  fhirServerUrl: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
   medicalDocumentsBucketName: string;

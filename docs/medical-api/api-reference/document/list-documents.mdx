@@ -27,7 +27,21 @@ query, see the [Start Document Query endpoint](/medical-api/api-reference/docume
 </ParamField>
 
 <ParamField query="content" type="string" optional>
-  Value to search on the document reference (partial match and case insentitive, minimum 3 chars).
+  Value to search on the document reference (minimum 3 chars). For more details see the "search syntax" section
+  below.
+  
+  <Expandable title="Search syntax">
+    - search terms are separated by spaces;
+    - star (`*`) allows to search using “contains” (`pat*` will return docs with `patient` and `paternity`);
+    - double quotes (`"`) group words into a single term (to add double quotes as part of the content, escape
+    them with \ like so: \" );
+    - to exclude a term, add the minus sign (`-`) in front of it (`fox -brown` will return docs with `fox` but
+    without `brown` on it);
+    - to require a term, add the plus sign (`+`) in front of it (`fox +brown` will docs with `fox` and `brown`
+    but also those with `brown` but no `fox`);
+    - by default terms are considered as either (or);
+    - to make terms to require all entries (and), append the plus sign (`+`) in front of every term.
+  </Expandable>
 </ParamField>
 
 ## Response
