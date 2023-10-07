@@ -1,5 +1,5 @@
-import type { Config } from "@jest/types";
 import * as path from "path";
+import type { JestConfigWithTsJest } from "ts-jest";
 
 const isE2E = process.env.E2E === "true";
 
@@ -9,7 +9,7 @@ const cwd = process.cwd();
 const paths = [cwd, ...(cwd.includes("packages") ? [] : ["packages", "lambdas"])];
 const tsconfig = path.resolve(...paths, "tsconfig.dev.json");
 
-const config: Config.InitialOptions = {
+const config: JestConfigWithTsJest = {
   preset: "ts-jest",
   testEnvironment: "node",
   verbose: true,

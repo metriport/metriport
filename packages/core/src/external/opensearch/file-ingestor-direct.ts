@@ -110,7 +110,7 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
       };
       const body = { mappings: { properties: indexProperties } };
       const createResult = (await client.indices.create({ index: indexName, body })).body;
-      log(`Created index ${indexName}: ${JSON.stringify(createResult.body)}`);
+      log(`Created index ${indexName}: ${JSON.stringify(createResult)}`);
     }
 
     // add a document to the index
@@ -122,10 +122,10 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     };
 
     log(`Ingesting file ${s3FileName} into index ${indexName}...`);
-    const response = await client.index({
+    const response = await client.update({
       index: indexName,
       id: entryId,
-      body: document,
+      body: { doc: document, doc_as_upsert: true },
     });
     log(`Successfully ingested it, response: ${JSON.stringify(response.body)}`);
   }

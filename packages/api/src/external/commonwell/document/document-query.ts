@@ -597,21 +597,16 @@ export async function downloadDocsAndUpsertFHIR({
           const FHIRDocRef = toFHIRDocRef(doc.id, docWithFile, patient);
 
           if (shouldUpsertFHIR) {
-            const [fhir, search] = await Promise.allSettled([
-              upsertDocumentToFHIRServer(cxId, FHIRDocRef).catch(error => {
+            const [fhir] = await Promise.allSettled([
+              upsertDocumentToFHIRServer(cxId, FHIRDocRef, log).catch(error => {
                 const context = "upsertDocumentToFHIRServer";
                 reportFHIRError({ patientId: patient.id, doc, error, context, log });
                 errorReported = true;
                 throw error;
               }),
-              ingestIntoSearchEngine(patient, FHIRDocRef, file, requestId).catch(error => {
-                const context = "ingestIntoSearchEngine";
-                reportFHIRError({ patientId: patient.id, doc, error, context, log });
-                errorReported = true;
-                throw error;
-              }),
+              ingestIntoSearchEngine(patient, FHIRDocRef, file, requestId, log),
             ]);
-            processFhirAndSearchResponse(patient, doc, fhir, search);
+            processFhirAndSearchResponse(patient, doc, fhir);
           }
 
           completedCount++;
@@ -711,26 +706,13 @@ export async function downloadDocsAndUpsertFHIR({
 function processFhirAndSearchResponse(
   patient: Patient,
   doc: DocumentWithLocation,
-  fhir: PromiseSettledResult<void>,
-  search: PromiseSettledResult<void>
+  fhir: PromiseSettledResult<void>
 ): void {
   const base = { patientId: patient.id, docId: doc.id };
-  if (fhir.status === "rejected" && search.status === "rejected") {
-    throw new MetriportError("Error both upserting to FHIR and ingesting to search", undefined, {
-      ...base,
-      failed: fhir.reason + "; " + search.reason,
-    });
-  }
   if (fhir.status === "rejected") {
     throw new MetriportError("Error upserting to FHIR", undefined, {
       ...base,
       failed: fhir.reason,
-    });
-  }
-  if (search.status === "rejected") {
-    throw new MetriportError("Error ingesting to search", undefined, {
-      ...base,
-      failed: search.reason,
     });
   }
 }
@@ -805,11 +787,14 @@ async function ingestIntoSearchEngine(
   patient: Patient,
   fhirDoc: DocumentReferenceWithId,
   file: File,
-  requestId: string
+  requestId: string,
+  log = console.log
 ): Promise<void> {
   const openSearch = makeSearchServiceIngest();
   if (!openSearch.isIngestible(file)) {
-    console.log(`Skipping ingestion of doc ${file.key} into OpenSearch: not ingestible`);
+    log(
+      `Skipping ingestion of doc ${fhirDoc.id} / file ${file.key} into OpenSearch: not ingestible`
+    );
     return;
   }
   try {
@@ -821,16 +806,22 @@ async function ingestIntoSearchEngine(
       s3BucketName: file.bucket,
       requestId,
     });
-  } catch (err) {
-    console.log(`Error ingesting doc ${file.key} into OpenSearch: ${errorToString(err)}`);
-    capture.error(err, {
+  } catch (error) {
+    log(
+      `Error ingesting doc ${fhirDoc.id} / file ${file.key} into OpenSearch: ${errorToString(
+        error
+      )}`
+    );
+    capture.error(error, {
       extra: {
         context: `ingestIntoSearchEngine`,
         patientId: patient.id,
         file,
         requestId,
+        error,
       },
     });
+    // intentionally not throwing here, we don't want to fail b/c of search ingestion
   }
 }
 

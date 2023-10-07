@@ -140,13 +140,8 @@ export class Config {
     return getEnvVar("USAGE_URL");
   }
 
-  static getFHIRServerUrl(): string | undefined {
-    return getEnvVar("FHIR_SERVER_URL");
-  }
-  static getFHIRServerUrlOrFail(): string {
-    const url = Config.getFHIRServerUrl();
-    if (!url) throw new Error(`Missing FHIR_SERVER_URL env var, env: ${Config.getEnvType()}`);
-    return url;
+  static getFHIRServerUrl(): string {
+    return getEnvVarOrFail("FHIR_SERVER_URL");
   }
 
   static getFHIRServerQueueURL(): string {
