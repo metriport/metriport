@@ -31,6 +31,8 @@ export default class OpenSearchConstruct extends Construct {
 
     const { vpc, capacity, ebs, encryptionAtRest = true } = props;
     const dataNodesCount = capacity.dataNodes ?? 1;
+    const subnetsCount = vpc.privateSubnets.length;
+    const azCount = Math.min(subnetsCount, dataNodesCount);
 
     const secretName = `${id}SecretName`;
     const credsSecret = new secret.Secret(this, secretName, {
@@ -50,15 +52,15 @@ export default class OpenSearchConstruct extends Construct {
     osSg.addIngressRule(ec2.Peer.ipv4(vpc.vpcCidrBlock), ec2.Port.allTraffic());
 
     const zoneAwareness =
-      dataNodesCount < 1
+      azCount < 1
         ? undefined
-        : dataNodesCount === 1
+        : azCount === 1
         ? { enabled: false }
         : {
             enabled: true,
-            availabilityZoneCount: Math.min(dataNodesCount, MAX_AVAILABILITY_ZONES),
+            availabilityZoneCount: Math.min(azCount, MAX_AVAILABILITY_ZONES),
           };
-    if (!zoneAwareness) throw new Error(`Invalid data nodes count: ${dataNodesCount}`);
+    if (!zoneAwareness) throw new Error(`Invalid AZ count: ${azCount}`);
 
     const domainName = `${id}-domain`.toLowerCase();
     this.domain = new Domain(this, domainName, {
@@ -71,8 +73,8 @@ export default class OpenSearchConstruct extends Construct {
       vpc,
       vpcSubnets: [
         {
-          subnets: vpc.privateSubnets.slice(0, dataNodesCount),
-          availabilityZones: vpc.availabilityZones.slice(0, dataNodesCount),
+          subnets: vpc.privateSubnets.slice(0, azCount),
+          availabilityZones: vpc.availabilityZones.slice(0, azCount),
         },
       ],
       zoneAwareness,

@@ -25,6 +25,7 @@ To enable this integration approach with Metriport:
 General requirements for the endpoint:
 
 1. Public endpoint accessible from the internet;
+1. Does not do an HTTP redirect (redirects will not be followed);
 1. Accepts a `POST` HTTP request;
 1. Verifies requests by comparing the HTTP header `x-webhook-key` with the webhook key;
 1. Accepts and responds to a [`ping` message](#the-ping-message);
