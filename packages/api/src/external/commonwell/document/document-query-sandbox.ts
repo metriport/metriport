@@ -1,4 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -10,7 +11,6 @@ import { Patient } from "../../../models/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { getFileExtension, sandboxSleepTime } from "./shared";
@@ -60,13 +60,15 @@ export async function sandboxGetDocRefsAndUpsert({
   const entries = patientData.docRefs;
   log(`Got ${entries.length} doc refs`);
 
-  const convertibleDocCount = patientData.docRefs
+  const convertibleDocs = patientData.docRefs
     .map(entry => {
       return {
+        ...entry,
         content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
       };
     })
-    .filter(doc => isConvertible(doc.content?.mimeType)).length;
+    .filter(doc => isConvertible(doc.content?.mimeType));
+  const convertibleDocCount = convertibleDocs.length;
 
   // set initial download/convert totals
   await appendDocQueryProgress({
@@ -86,7 +88,7 @@ export async function sandboxGetDocRefsAndUpsert({
     requestId,
   });
 
-  for (const entry of entries) {
+  for (const entry of convertibleDocs) {
     const prevDocId = entry.docRef.id;
     entry.docRef.id = uuidv7();
     try {
