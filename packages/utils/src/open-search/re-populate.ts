@@ -36,22 +36,27 @@ const METRIPORT = "METRIPORT";
 const COMMONWELL = "COMMONWELL";
 const NO_PATIENT_ID = "na";
 
+const filtersToApply = new URLSearchParams();
+patientIds.length && filtersToApply.append("patient", patientIds.join(","));
+docRefIds.length && filtersToApply.append(`_id`, docRefIds.join(","));
+// minimize the amount of data to only what we need
+filtersToApply.append(`_elements`, ["id", "subject", "content", "extension"].join(","));
+const filters = filtersToApply.toString();
+
 async function getCxIds(): Promise<string[]> {
   const fhirApi = makeFhirAdminApi(fhirBaseUrl);
   return fhirApi.listTenants();
 }
 
 async function getDocRefs(
-  cxIds: string[] = [],
-  patientIds: string[] = [],
-  docRefIds: string[] = []
+  cxIds: string[] = []
 ): Promise<Dictionary<Dictionary<DocumentReference[]>>> {
   const cxIdsToProcess = cxIds.length ? cxIds : await getCxIds();
   // Doing in sequence to avoid hammering down the FHIR server
   const docRefs: Dictionary<Dictionary<DocumentReference[]>> = {};
   for (const cxId of cxIdsToProcess) {
     console.log(`Getting documents for cxId: ${cxId}`);
-    const cxDocRefs = await getDocRefsFromCx(cxId, patientIds, docRefIds);
+    const cxDocRefs = await getDocRefsFromCx(cxId);
     const docRefsByPatient = groupBy(cxDocRefs, patientIdFromDocRef);
     docRefs[cxId] = docRefsByPatient;
     console.log(`Got ${cxDocRefs.length} documents for cxId: ${cxId}`);
@@ -63,21 +68,11 @@ function patientIdFromDocRef(docRef: DocumentReference): string {
   return docRef.subject?.reference?.split("/")[1] ?? NO_PATIENT_ID;
 }
 
-async function getDocRefsFromCx(
-  cxId: string,
-  patientIds: string[] = [],
-  docRefIds: string[] = []
-): Promise<DocumentReference[]> {
+async function getDocRefsFromCx(cxId: string): Promise<DocumentReference[]> {
   try {
     const fhirApi = makeFhirApi(cxId, fhirBaseUrl);
-    const filters = new URLSearchParams();
-    patientIds.length && filters.append("patient", patientIds.join(","));
-    docRefIds.length && filters.append(`_id`, docRefIds.join(","));
-    console.log(`patientIds: ${patientIds.join(", ")}`);
-    console.log(`docRefIds: ${docRefIds.join(", ")}`);
-    console.log(`Filters: ${filters.toString()}`);
     const docs: DocumentReference[] = [];
-    for await (const page of fhirApi.searchResourcePages("DocumentReference", filters.toString())) {
+    for await (const page of fhirApi.searchResourcePages("DocumentReference", filters)) {
       docs.push(...page);
     }
     const docsFromCW = docs.filter(isFromCommonWell);
@@ -139,7 +134,7 @@ async function main() {
   const toProcess: { cxId: string; patientId: string; docId: string; s3FileName: string }[] = [];
 
   console.log(`Getting doc refs...`);
-  const patientsAndDocRefsByCustomer = await getDocRefs(cxIds, patientIds, docRefIds);
+  const patientsAndDocRefsByCustomer = await getDocRefs(cxIds);
 
   console.log(`Done, processing data...`);
   const customers = Object.keys(patientsAndDocRefsByCustomer);
@@ -149,6 +144,12 @@ async function main() {
 
     for (const patientId of patients) {
       const docRefs = docRefsByPatient[patientId];
+      if (patientId === NO_PATIENT_ID) {
+        console.log(
+          `Got ${docRefs.length} documents for cxId: ${cxId} with no patient ID, skipping those...`
+        );
+        continue;
+      }
 
       for (const docRef of docRefs) {
         const docId = docRef.id;
