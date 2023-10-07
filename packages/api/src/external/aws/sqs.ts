@@ -10,7 +10,7 @@ const sqsConfig = {
   awsRegion: Config.getAWSRegion(),
 };
 /**
- * @deprecated Use @metriport/core/aws instead
+ * @deprecated Use @metriport/core instead
  */
 export const sqs = new SQS({
   apiVersion: "2012-11-05",
@@ -18,13 +18,13 @@ export const sqs = new SQS({
 });
 
 /**
- * @deprecated Use @metriport/core/aws instead
+ * @deprecated Use @metriport/core instead
  */
 export type SQSMessageAttributes = Record<string, string> & {
   cxId?: string;
 };
 /**
- * @deprecated Use @metriport/core/aws instead
+ * @deprecated Use @metriport/core instead
  */
 export type SQSParameters =
   | {
@@ -45,7 +45,7 @@ export type SQSParameters =
     };
 
 /**
- * @deprecated Use @metriport/core/aws instead
+ * @deprecated Use @metriport/core instead
  */
 export async function sendMessageToQueue(
   queueUrl: string,

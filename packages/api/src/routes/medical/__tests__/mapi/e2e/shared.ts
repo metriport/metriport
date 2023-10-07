@@ -1,5 +1,5 @@
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { FhirClient } from "../../../../../external/fhir/api/api";
+import { FhirClient } from "@metriport/core/external/fhir/api/api";
 import { baseURL } from "../../../../__tests__/shared";
 import { getEnvVarOrFail } from "../../../../../shared/config";
 import { MedplumClient } from "@medplum/core";

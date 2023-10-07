@@ -1,10 +1,10 @@
-import type { Config } from "@jest/types";
+import type { JestConfigWithTsJest } from "ts-jest";
 
 const isE2E = process.env.E2E === "true";
 
 process.env.ENV_TYPE = "development";
 
-const config: Config.InitialOptions = {
+const config: JestConfigWithTsJest = {
   preset: "ts-jest",
   testEnvironment: "node",
   verbose: true,
@@ -12,6 +12,7 @@ const config: Config.InitialOptions = {
   testMatch: isE2E
     ? ["**/__tests__/**/(*.)+(spec|test).e2e.[jt]s?(x)"]
     : ["**/__tests__/**/(*.)+(spec|test).[jt]s?(x)"],
+  setupFilesAfterEnv: ["./src/__tests__/env-setup.ts"],
 };
 
 export default config;

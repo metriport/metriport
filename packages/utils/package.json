@@ -23,6 +23,7 @@
     "@aws-sdk/client-cognito-identity-provider": "^3.301.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
+    "@metriport/core": "file:packages/core",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@opensearch-project/opensearch": "^2.3.1",
     "aws-sdk": "2.1243",

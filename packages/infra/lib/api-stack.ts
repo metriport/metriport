@@ -652,7 +652,7 @@ export class APIStack extends Stack {
       layers: lambdaLayers,
       vpc: this.vpc,
       subnets: this.vpc.privateSubnets,
-      entry: "../lambdas/tester/index.js",
+      entry: "tester",
       envVars: {
         ENV_TYPE: envType,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),

@@ -8,22 +8,31 @@ import {
   OpenSearchFileIngestorConfig,
 } from "./file-ingestor";
 
+export type OpenSearchFileIngestorDirectSettings = {
+  logLevel?: "info" | "debug" | "none";
+};
+
 export type OpenSearchFileIngestorDirectConfig = OpenSearchFileIngestorConfig & {
   endpoint: string;
   username: string;
   password: string;
+  settings?: OpenSearchFileIngestorDirectSettings;
 };
 
 export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
   private readonly endpoint: string;
   private readonly username: string;
   private readonly password: string;
+  private readonly settings: OpenSearchFileIngestorDirectSettings;
 
   constructor(config: OpenSearchFileIngestorDirectConfig) {
     super(config);
     this.endpoint = config.endpoint;
     this.username = config.username;
     this.password = config.password;
+    this.settings = {
+      logLevel: config.settings?.logLevel ?? "none",
+    };
   }
 
   // TODO split into 2: one that gets the actual content, another (class?) that gets form S3 and ingests w/ content
@@ -34,7 +43,8 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     s3FileName,
     s3BucketName,
   }: IngestRequest): Promise<void> {
-    const { debug: log } = out(`ingest - ${cxId} - ${patientId}`, `- fileName: ${s3FileName}`);
+    const defaultLogger = out(`ingest - ${cxId} - ${patientId}`, `- fileName: ${s3FileName}`);
+    const log = this.getLog(defaultLogger);
 
     const data = await this.getFileContents(s3FileName, s3BucketName, log);
     if (!data) {
@@ -110,7 +120,7 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
       };
       const body = { mappings: { properties: indexProperties } };
       const createResult = (await client.indices.create({ index: indexName, body })).body;
-      log(`Created index ${indexName}: ${JSON.stringify(createResult.body)}`);
+      log(`Created index ${indexName}: ${JSON.stringify(createResult)}`);
     }
 
     // add a document to the index
@@ -122,11 +132,17 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     };
 
     log(`Ingesting file ${s3FileName} into index ${indexName}...`);
-    const response = await client.index({
+    const response = await client.update({
       index: indexName,
       id: entryId,
-      body: document,
+      body: { doc: document, doc_as_upsert: true },
     });
     log(`Successfully ingested it, response: ${JSON.stringify(response.body)}`);
+  }
+
+  private getLog(defaultLogger: ReturnType<typeof out>): typeof console.log {
+    if (this.settings.logLevel === "none") return () => {}; //eslint-disable-line @typescript-eslint/no-empty-function
+    if (this.settings.logLevel === "debug") return defaultLogger.debug;
+    return defaultLogger.log;
   }
 }

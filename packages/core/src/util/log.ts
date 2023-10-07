@@ -6,6 +6,7 @@ export function log(prefix: string, suffix?: string) {
       : console.log(`[${prefix}] ${msg} - ${suffix}`);
 }
 
+// TODO: implement environment-based debug - see package/api/src/shared/log.ts
 export function debug(prefix: string, suffix?: string) {
   return log(prefix, suffix);
 }
