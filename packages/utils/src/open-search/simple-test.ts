@@ -1,5 +1,9 @@
 import { Client } from "@opensearch-project/opensearch";
 
+/**
+ * Test script to perform simple operations on OpenSearch.
+ */
+
 const username = "admin";
 const password = "admin";
 const host = "localhost:9200";

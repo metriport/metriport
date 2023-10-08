@@ -32,6 +32,7 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
+// TODO Comment to trigger a deploy, remove it when you see this
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -652,7 +653,7 @@ export class APIStack extends Stack {
       layers: lambdaLayers,
       vpc: this.vpc,
       subnets: this.vpc.privateSubnets,
-      entry: "../lambdas/tester/index.js",
+      entry: "tester",
       envVars: {
         ENV_TYPE: envType,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),

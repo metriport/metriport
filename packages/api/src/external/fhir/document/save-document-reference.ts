@@ -4,7 +4,8 @@ import { makeFhirApi } from "../api/api-factory";
 
 export const upsertDocumentToFHIRServer = async (
   cxId: string,
-  docRef: DocumentReference
+  docRef: DocumentReference,
+  log = console.log
 ): Promise<void> => {
   const fhir = makeFhirApi(cxId);
   try {
@@ -13,7 +14,7 @@ export const upsertDocumentToFHIRServer = async (
       ...docRef,
     });
   } catch (err) {
-    console.log(`[upsertDocumentToFHIRServer] ${errorToString(err)}`);
+    log(`Error upserting the doc ref on FHIR server: ${docRef.id} - ${errorToString(err)}`);
     throw err;
   }
 };

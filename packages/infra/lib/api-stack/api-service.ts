@@ -35,7 +35,7 @@ export function createAPIService(
   dynamoDBTokenTable: dynamodb.Table,
   alarmAction: SnsAction | undefined,
   dnsZones: DnsZones,
-  fhirServerUrl: string | undefined,
+  fhirServerUrl: string,
   fhirServerQueueUrl: string | undefined,
   fhirConverterQueueUrl: string | undefined,
   fhirConverterServiceUrl: string | undefined,
@@ -112,9 +112,7 @@ export function createAPIService(
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          ...(fhirServerUrl && {
-            FHIR_SERVER_URL: fhirServerUrl,
-          }),
+          FHIR_SERVER_URL: fhirServerUrl,
           ...(fhirServerQueueUrl && {
             FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
           }),

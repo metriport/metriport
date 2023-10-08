@@ -6,6 +6,7 @@ import stringify from "json-stringify-safe";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import BadRequestError from "../errors/bad-request";
 import MetriportError from "../errors/metriport-error";
+import NotFoundError from "../errors/not-found";
 import { TenoviMeasurementData, tenoviMeasurementDataSchema } from "../mappings/tenovi";
 import { mapToBiometrics } from "../mappings/tenovi/biometrics";
 import { mapToBody } from "../mappings/tenovi/body";
@@ -176,7 +177,7 @@ export class Tenovi extends Provider implements NoAuth {
           cxName: xTenoviClientName,
         },
       });
-      throw new MetriportError("Device not found for this user.", undefined, { deviceId });
+      throw new NotFoundError("Device not found for this user.", undefined, { deviceId });
     }
   }
 

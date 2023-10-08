@@ -1,21 +1,20 @@
 import { MedplumClient, QueryTypes, ReadablePromise, ResourceArray } from "@medplum/core";
 import { Bundle, BundleLink, ExtractResource, ResourceType } from "@medplum/fhirtypes";
-import { Config } from "../../../shared/config";
 import { FhirAdminClient, FhirClient } from "./api";
 
 export const DEFAULT_TENANT = "DEFAULT";
+
 /**
  * Don't use this class directly. Use the factory function `makeFhirApi()` instead.
  */
 export class HapiFhirClient extends MedplumClient implements FhirClient {
-  // Don't send undefined otherwise it'll point to Medplum's server
-  static fhirServerUrl = Config.getFHIRServerUrl() ?? "http://0.0.0.0";
   /**
    * Creates a new FHIR client configured to access a specific tenant's data.
    *
-   * @param tenantId
+   * @param tenantId the customer ID, used to determine the tenant on HAPI (data isolation per cx)
+   * @param baseUrl the base URL of the server, don't send `undefined` otherwise it'll point to Medplum's server
    */
-  constructor(tenantId: string, baseUrl = HapiFhirClient.fhirServerUrl) {
+  constructor(tenantId: string, baseUrl: string) {
     super({ baseUrl, fhirUrlPath: `fhir/${tenantId}` });
   }
 
@@ -48,7 +47,6 @@ export class HapiFhirClient extends MedplumClient implements FhirClient {
     resourceType: K,
     query?: QueryTypes
   ): AsyncGenerator<ResourceArray<ExtractResource<K>>> {
-    if (!HapiFhirClient.fhirServerUrl) return;
     let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
     let isNext = false;
 
@@ -69,7 +67,7 @@ export class HapiFhirClient extends MedplumClient implements FhirClient {
       const nextUrl = nextLink?.url ? new URL(nextLink?.url) : undefined;
       if (nextUrl) {
         // modify url to point to internal FHIR URL
-        let newUrl = nextUrl.href.replace(nextUrl.origin, HapiFhirClient.fhirServerUrl);
+        let newUrl = nextUrl.href.replace(nextUrl.origin, this.getBaseUrl());
         newUrl = newUrl.replace("/oauth", "");
         url = new URL(newUrl);
         isNext = true;
@@ -87,8 +85,8 @@ export class HapiFhirAdminClient extends HapiFhirClient implements FhirAdminClie
   /**
    * Creates a new FHIR client setup for administration/management purposes.
    */
-  constructor() {
-    super(DEFAULT_TENANT);
+  constructor(baseUrl: string) {
+    super(DEFAULT_TENANT, baseUrl);
   }
 
   private readonly baseHAPIPayload = { resourceType: "Parameters" };
