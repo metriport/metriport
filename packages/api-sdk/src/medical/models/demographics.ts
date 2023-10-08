@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { addressSchema, lenientAddressSchema } from "./common/address";
+import { addressSchema } from "./common/address";
 import { usStateSchema } from "./common/us-data";
 import {
   defaultDateString,
@@ -58,16 +58,6 @@ export const demographicsSchema = z.object({
   genderAtBirth: genderAtBirthSchema,
   personalIdentifiers: z.array(personalIdentifierSchema).optional(),
   address: z.array(addressSchema).or(addressSchema),
-  contact: z.array(contactSchema).optional().or(contactSchema.optional()),
-});
-
-export const lenientDemographicsSchema = z.object({
-  firstName: defaultNameString,
-  lastName: defaultNameString,
-  dob: defaultDateString,
-  genderAtBirth: genderAtBirthSchema,
-  personalIdentifiers: z.array(personalIdentifierSchema).optional(),
-  address: z.array(lenientAddressSchema).or(lenientAddressSchema),
   contact: z.array(contactSchema).optional().or(contactSchema.optional()),
 });
 
