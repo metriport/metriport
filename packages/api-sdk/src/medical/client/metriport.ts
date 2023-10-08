@@ -9,23 +9,17 @@ import {
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
-  documentListSchema,
   DocumentQuery,
-  documentQuerySchema,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
+  documentListSchema,
+  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
-import {
-  Patient,
-  PatientCreate,
-  patientSchema,
-  PatientUpdate,
-  QueryStatus,
-} from "../models/patient";
+import { PatientCreate, PatientUpdate, QueryStatus } from "../models/patient";
 
 import { PatientDTO } from "../models/patientDTO";
 
@@ -220,7 +214,7 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation.
    * @return The updated patient.
    */
-  async updatePatient(patient: PatientUpdate, facilityId: string): Promise<Patient> {
+  async updatePatient(patient: PatientUpdate, facilityId: string): Promise<PatientDTO> {
     type FieldsToOmit = "id";
     const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...patient,
@@ -231,7 +225,7 @@ export class MetriportMedicalApi {
       headers: { ...getETagHeader(patient) },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return patientSchema.parse(resp.data);
+    return resp.data as PatientDTO;
   }
 
   // TODO #870 remove this
