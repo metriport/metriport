@@ -22,7 +22,7 @@ type Address = {
 
 type PersonalIdentifier = {
   value: string;
-  period:
+  period?:
     | {
         start: string;
         end?: string;
@@ -30,8 +30,7 @@ type PersonalIdentifier = {
     | {
         start?: string;
         end: string;
-      }
-    | undefined;
+      };
   assigner?: string;
   type: "driversLicense";
   state: string;
