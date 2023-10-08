@@ -39,10 +39,11 @@ export function settings(): {
     // https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html
     openSearch: {
       capacity: {
-        dataNodes: isLarge ? 3 : 1,
+        dataNodes: isLarge ? 2 : 1,
         dataNodeInstanceType: isLarge ? "m6g.large.search" : "t3.small.search",
-        masterNodes: isLarge ? undefined : undefined, // odd number, 3+; when not set this is done by data nodes
-        masterNodeInstanceType: isLarge ? undefined : undefined,
+        masterNodes: isLarge ? 3 : undefined, // odd number, 3+; when not set this is done by data nodes
+        // https://docs.aws.amazon.com/opensearch-service/latest/developerguide/managedomains-dedicatedmasternodes.html#dedicatedmasternodes-instance
+        masterNodeInstanceType: isLarge ? "m6g.large.search" : undefined,
         warmNodes: 0,
       },
       ebs: {
