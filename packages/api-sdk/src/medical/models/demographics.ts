@@ -26,7 +26,7 @@ const basePersonalIdentifierSchema = z.object({
 });
 
 export const driverLicenseIdentifierSchema = z.object({
-  type: z.literal("driversLicense"),
+  type: z.literal("driversLicense"), // If another type is added, the UI forms for patient creation/updates will need to be updated to support these types
   state: usStateSchema,
 });
 
@@ -60,4 +60,5 @@ export const demographicsSchema = z.object({
   address: z.array(addressSchema).or(addressSchema),
   contact: z.array(contactSchema).optional().or(contactSchema.optional()),
 });
+
 export type Demographics = z.infer<typeof demographicsSchema>;

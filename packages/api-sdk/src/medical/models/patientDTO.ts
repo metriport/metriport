@@ -1,3 +1,5 @@
+import { USState } from "../..";
+
 export type PatientDTO = {
   id: string;
   eTag?: string;
@@ -22,7 +24,7 @@ type Address = {
 
 type PersonalIdentifier = {
   value: string;
-  period:
+  period?:
     | {
         start: string;
         end?: string;
@@ -30,11 +32,10 @@ type PersonalIdentifier = {
     | {
         start?: string;
         end: string;
-      }
-    | undefined;
+      };
   assigner?: string;
   type: "driversLicense";
-  state: string;
+  state: keyof typeof USState;
 };
 
 type Contact = {
