@@ -283,7 +283,7 @@ function postProcessSidechainFHIRBundle(
   return JSON.parse(fhirBundleStr);
 }
 
-async function postToSidechainConverter(payload: unknown, patientId: string, log: Log) {
+async function postToSidechainConverter(payload: string, patientId: string, log: Log) {
   const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
   let attempt = 0;
   let timeBetweenAttemptsMillis = SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS;
@@ -431,6 +431,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         const conversionStart = Date.now();
         let conversionResult: FHIRBundle;
         if (isSidechainConnector()) {
+          if (!payloadRaw.length) throw new Error(`Xml document is empty`);
           const res = await postToSidechainConverter(payloadRaw, patientId, log);
           conversionResult = res.data;
         } else {
