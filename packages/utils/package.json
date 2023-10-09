@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.4.2",
+  "version": "1.4.4",
   "description": "",
   "main": "mock-webhook.js",
   "private": true,
@@ -23,7 +23,6 @@
     "@aws-sdk/client-cognito-identity-provider": "^3.301.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/core": "file:packages/core",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/core": "file:packages/core",
     "@opensearch-project/opensearch": "^2.3.1",
