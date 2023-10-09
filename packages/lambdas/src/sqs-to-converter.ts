@@ -427,11 +427,20 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           timestamp: new Date(),
         };
 
+        if (!payloadRaw.trim().length) {
+          capture.message("XML document is empty", {
+            extra: { context: lambdaName, fileName: s3FileName },
+          });
+
+          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
+
+          return;
+        }
+
         await cloudWatchUtils.reportMemoryUsage();
         const conversionStart = Date.now();
         let conversionResult: FHIRBundle;
         if (isSidechainConnector()) {
-          if (!payloadRaw.length) throw new Error(`Xml document is empty`);
           const res = await postToSidechainConverter(payloadRaw, patientId, log);
           conversionResult = res.data;
         } else {
