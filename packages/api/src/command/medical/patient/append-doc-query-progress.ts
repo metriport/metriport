@@ -80,7 +80,9 @@ export async function appendDocQueryProgress({
     }
 
     if (convert && increaseCountConvertible != null && increaseCountConvertible !== 0) {
-      convert.total = Math.min(0, (convert.total ?? 0) + increaseCountConvertible);
+      convert.total = Math.max(0, (convert.total ?? 0) + increaseCountConvertible);
+
+      convert.status = getStatusFromProgress(convert);
     }
 
     const updatedPatient = {
