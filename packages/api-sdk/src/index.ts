@@ -57,3 +57,4 @@ export {
   PatientUpdate,
   patientUpdateSchema,
 } from "./medical/models/patient";
+export { PatientDTO } from "./medical/models/patientDTO";

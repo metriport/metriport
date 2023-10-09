@@ -1,4 +1,4 @@
-import { USState, Patient, PatientCreate } from "@metriport/api-sdk";
+import { USState, PatientCreate, PatientDTO } from "@metriport/api-sdk";
 import { Patient as FhirPatient } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
 
@@ -21,8 +21,8 @@ export const createPatient: PatientCreate = {
 };
 
 export const validateLocalPatient = (
-  patient: Patient,
-  patientToCompare?: PatientCreate | Patient
+  patient: PatientDTO,
+  patientToCompare?: PatientCreate | PatientDTO
 ) => {
   expect(patient.id).toBeTruthy();
 
@@ -41,7 +41,7 @@ export const validateLocalPatient = (
 
 export const validateFhirPatient = (
   patient: FhirPatient,
-  patientToCompare?: PatientCreate | Patient
+  patientToCompare?: PatientCreate | PatientDTO
 ) => {
   expect(patient.resourceType).toBeTruthy();
   expect(patient.resourceType).toEqual("Patient");

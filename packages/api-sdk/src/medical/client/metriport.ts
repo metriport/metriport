@@ -9,24 +9,19 @@ import {
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
-  documentListSchema,
   DocumentQuery,
-  documentQuerySchema,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
+  documentListSchema,
+  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
-import {
-  Patient,
-  PatientCreate,
-  patientListSchema,
-  patientSchema,
-  PatientUpdate,
-  QueryStatus,
-} from "../models/patient";
+import { PatientCreate, PatientUpdate, QueryStatus } from "../models/patient";
+
+import { PatientDTO } from "../models/patientDTO";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
@@ -192,12 +187,12 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation.
    * @return The newly created patient.
    */
-  async createPatient(data: PatientCreate, facilityId: string): Promise<Patient> {
+  async createPatient(data: PatientCreate, facilityId: string): Promise<PatientDTO> {
     const resp = await this.api.post(`${PATIENT_URL}`, data, {
       params: { facilityId },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return patientSchema.parse(resp.data);
+    return resp.data as PatientDTO;
   }
 
   /**
@@ -206,10 +201,10 @@ export class MetriportMedicalApi {
    * @param id The ID of the patient to be returned.
    * @return The patients.
    */
-  async getPatient(id: string): Promise<Patient> {
+  async getPatient(id: string): Promise<PatientDTO> {
     const resp = await this.api.get(`${PATIENT_URL}/${id}`);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return patientSchema.parse(resp.data);
+    return resp.data as PatientDTO;
   }
 
   /**
@@ -219,7 +214,7 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation.
    * @return The updated patient.
    */
-  async updatePatient(patient: PatientUpdate, facilityId: string): Promise<Patient> {
+  async updatePatient(patient: PatientUpdate, facilityId: string): Promise<PatientDTO> {
     type FieldsToOmit = "id";
     const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...patient,
@@ -230,7 +225,7 @@ export class MetriportMedicalApi {
       headers: { ...getETagHeader(patient) },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return patientSchema.parse(resp.data);
+    return resp.data as PatientDTO;
   }
 
   // TODO #870 remove this
@@ -352,12 +347,12 @@ export class MetriportMedicalApi {
    * @param facilityId The ID of the facility.
    * @return The list of patients.
    */
-  async listPatients(facilityId: string): Promise<Patient[]> {
+  async listPatients(facilityId: string): Promise<PatientDTO[]> {
     const resp = await this.api.get(`${PATIENT_URL}`, {
       params: { facilityId },
     });
-    if (!resp.data) [];
-    return patientListSchema.parse(resp.data).patients;
+    if (!resp.data) return [];
+    return resp.data.patients as PatientDTO[];
   }
 
   /**
