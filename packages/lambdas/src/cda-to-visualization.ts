@@ -127,6 +127,8 @@ const convertStoreAndReturnPdfDocUrl = async ({
     // Defines page
     const page = await browser.newPage();
 
+    await page.setDefaultNavigationTimeout(0);
+
     await page.setContent(convertDoc);
 
     // Wait 2.5 seconds
