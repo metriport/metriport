@@ -5,6 +5,13 @@ import { Sample } from "@metriport/api-sdk/devices/models/common/sample";
 import { getFloatValue, formatNumber } from "../../shared/numbers";
 import convert from "convert-units";
 
+/**
+ * Maps the Tenovi data to the Body model
+ *
+ * @param date Date of the data
+ * @param tenoviWeight Tenovi weight data
+ * @returns
+ */
 export const mapToBody = (date: string, tenoviWeight: TenoviMeasurementData): Body => {
   const body: Body = {
     metadata: {
