@@ -47,6 +47,9 @@ export class APIStack extends Stack {
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
 
+    const awsAccount = props.env?.account;
+    if (!awsAccount) throw new Error("Missing AWS account");
+
     //-------------------------------------------
     // Secrets
     //-------------------------------------------
@@ -218,6 +221,7 @@ export class APIStack extends Stack {
       indexName: ccdaSearchIndexName,
     } = ccdaSearch.setup({
       stack: this,
+      awsAccount,
       vpc: this.vpc,
       ccdaS3Bucket: medicalDocumentsBucket,
       lambdaLayers,
