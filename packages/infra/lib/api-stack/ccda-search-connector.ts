@@ -15,7 +15,9 @@ import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shar
 import { isProd, isSandbox } from "../shared/util";
 
 export function settings(): {
-  openSearch: Omit<OpenSearchConstructProps, "region" | "vpc"> & { indexName: string };
+  openSearch: Omit<OpenSearchConstructProps, "region" | "vpc" | "awsAccount"> & {
+    indexName: string;
+  };
   connectorName: string;
   lambda: {
     memory: number;
@@ -76,12 +78,14 @@ export function settings(): {
 
 export function setup({
   stack,
+  awsAccount,
   vpc,
   ccdaS3Bucket,
   lambdaLayers,
   alarmSnsAction,
 }: {
   stack: Construct;
+  awsAccount: string;
   vpc: IVpc;
   ccdaS3Bucket: s3.IBucket;
   lambdaLayers: ILayerVersion[];
@@ -103,6 +107,7 @@ export function setup({
   } = settings();
 
   const openSearch = new OpenSearchConstruct(stack, connectorName, {
+    awsAccount,
     region: config.region,
     vpc,
     ...openSearchConfig,

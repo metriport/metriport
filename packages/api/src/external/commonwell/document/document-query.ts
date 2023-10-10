@@ -469,6 +469,7 @@ export async function downloadDocsAndUpsertFHIR({
   log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
   await initPatientDocQuery(patient, docsToDownload.length, convertibleDocCount, requestId);
 
+  // TODO move to executeAsynchronously() from core
   // split the list in chunks
   const chunks = chunk(docsToDownload, DOC_DOWNLOAD_CHUNK_SIZE);
   for (const docChunk of chunks) {
@@ -791,7 +792,7 @@ async function ingestIntoSearchEngine(
   log = console.log
 ): Promise<void> {
   const openSearch = makeSearchServiceIngest();
-  if (!openSearch.isIngestible(file)) {
+  if (!openSearch.isIngestible({ contentType: file.contentType, fileName: file.key })) {
     log(
       `Skipping ingestion of doc ${fhirDoc.id} / file ${file.key} into OpenSearch: not ingestible`
     );

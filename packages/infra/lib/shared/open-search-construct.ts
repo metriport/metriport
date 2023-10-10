@@ -1,5 +1,6 @@
 import { CfnOutput, RemovalPolicy } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
 import {
   CapacityConfig,
   Domain,
@@ -15,6 +16,7 @@ const masterUserName = "admin";
 const MAX_AVAILABILITY_ZONES = 3;
 
 export interface OpenSearchConstructProps {
+  awsAccount: string;
   region: string;
   vpc: ec2.IVpc;
   capacity: CapacityConfig;
@@ -63,6 +65,15 @@ export default class OpenSearchConstruct extends Construct {
     if (!zoneAwareness) throw new Error(`Invalid AZ count: ${azCount}`);
 
     const domainName = `${id}-domain`.toLowerCase();
+
+    const accessPolicy: iam.PolicyStatement = new iam.PolicyStatement();
+    accessPolicy.addAnyPrincipal();
+    accessPolicy.addResources(
+      `arn:aws:es:${props.region}:${props.awsAccount}:domain/${domainName}/*`
+    );
+    accessPolicy.addActions("es:*");
+    accessPolicy.effect = iam.Effect.ALLOW;
+
     this.domain = new Domain(this, domainName, {
       domainName,
       version: EngineVersion.OPENSEARCH_2_5,
@@ -88,6 +99,7 @@ export default class OpenSearchConstruct extends Construct {
         masterUserName,
         masterUserPassword: credsSecret.secretValue,
       },
+      accessPolicies: [accessPolicy],
       logging: {
         slowSearchLogEnabled: true,
         slowIndexLogEnabled: true,
