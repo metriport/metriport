@@ -429,7 +429,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
         if (!payloadRaw.trim().length) {
           capture.message("XML document is empty", {
-            extra: { context: lambdaName, fileName: s3FileName },
+            extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
           });
 
           await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
