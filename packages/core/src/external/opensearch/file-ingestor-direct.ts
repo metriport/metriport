@@ -9,10 +9,13 @@ import {
   OpenSearchFileIngestor,
   OpenSearchFileIngestorConfig,
 } from "./file-ingestor";
+import { stopWords } from "./cda";
 
 dayjs.extend(duration);
 
 const DEFAULT_INGESTION_TIMEOUT = dayjs.duration(10, "minutes").asMilliseconds();
+const regexString = `</?(${stopWords.map(w => w.toLowerCase()).join("|")}).*?>`;
+const regexRemoveMarkdown = new RegExp(regexString, "g");
 
 export type OpenSearchFileIngestorDirectSettings = {
   logLevel?: "info" | "debug" | "none";
@@ -70,7 +73,7 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     );
   }
 
-  private async getFileContents(s3FileName: string, s3BucketName: string, log = console.log) {
+  protected async getFileContents(s3FileName: string, s3BucketName: string, log = console.log) {
     const s3 = makeS3Client(this.config.region);
     log(`Downloading from ${s3BucketName}...`);
     const obj = await s3
@@ -84,18 +87,24 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
 
   // IMPORTANT: keep this in sync w/ the Lambda's sqs-to-opensearch-xml.ts version of it.
   // Ideally we would use the same code the Lambda does, but since the cost/benefit doesn't seeem to be worth it.
-  private cleanUpContents(contents: string, log = console.log) {
+  protected cleanUpContents(contents: string, log = console.log) {
     log(`Cleaning up file contents...`);
     const result = contents
       .trim()
       .toLowerCase()
-      .replace(/"/g, "'")
-      .replace(/<.+?>/g, " ") // remove all XML-like tags
-      .replace(/(\s\s+)|(\n\n)|(\n)|(\t)|(\r)/g, " ");
+      .replace(regexRemoveMarkdown, " ")
+      // formatting chars found in some XMLs
+      .replace(/(__+|--+)/g, " ")
+      // all opening markup tags w/o attributes + closing markup tags + attribute names + leftover closing tags
+      .replace(/(<\w+|<\/\w+>|(\w|:)+=|\/>)/g, " ")
+      // quotes, newlines, tabs, carriage returns
+      .replace(/"|'|(\n\n)|(\n)|(\t)|(\r)/g, " ")
+      // lastly, merge multiple spaces into one
+      .replace(/(\s\s+)/g, " ");
     return result;
   }
 
-  private async sendToOpenSearch(
+  protected async sendToOpenSearch(
     {
       cxId,
       patientId,
