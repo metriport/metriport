@@ -283,7 +283,7 @@ function postProcessSidechainFHIRBundle(
   return JSON.parse(fhirBundleStr);
 }
 
-async function postToSidechainConverter(payload: unknown, patientId: string, log: Log) {
+async function postToSidechainConverter(payload: string, patientId: string, log: Log) {
   const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
   let attempt = 0;
   let timeBetweenAttemptsMillis = SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS;
@@ -426,6 +426,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           duration: Date.now() - downloadStart,
           timestamp: new Date(),
         };
+
+        if (!payloadRaw.trim().length) {
+          capture.message("XML document is empty", {
+            extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
+          });
+
+          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
+
+          return;
+        }
 
         await cloudWatchUtils.reportMemoryUsage();
         const conversionStart = Date.now();
