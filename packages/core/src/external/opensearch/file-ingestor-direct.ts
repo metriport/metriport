@@ -1,4 +1,6 @@
 import { Client } from "@opensearch-project/opensearch";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { IndexFields } from ".";
 import { out } from "../../util/log";
 import { makeS3Client } from "../aws/s3";
@@ -7,6 +9,10 @@ import {
   OpenSearchFileIngestor,
   OpenSearchFileIngestorConfig,
 } from "./file-ingestor";
+
+dayjs.extend(duration);
+
+const DEFAULT_INGESTION_TIMEOUT = dayjs.duration(10, "minutes").asMilliseconds();
 
 export type OpenSearchFileIngestorDirectSettings = {
   logLevel?: "info" | "debug" | "none";
@@ -84,6 +90,7 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
       .trim()
       .toLowerCase()
       .replace(/"/g, "'")
+      .replace(/<.+?>/g, " ") // remove all XML-like tags
       .replace(/(\s\s+)|(\n\n)|(\n)|(\t)|(\r)/g, " ");
     return result;
   }
@@ -95,12 +102,14 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
       entryId,
       s3FileName,
       content,
+      requestTimeout,
     }: {
       cxId: string;
       patientId: string;
       entryId: string;
       s3FileName: string;
       content: string;
+      requestTimeout?: number;
     },
     log = console.log
   ): Promise<void> {
@@ -132,11 +141,14 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     };
 
     log(`Ingesting file ${s3FileName} into index ${indexName}...`);
-    const response = await client.update({
-      index: indexName,
-      id: entryId,
-      body: { doc: document, doc_as_upsert: true },
-    });
+    const response = await client.update(
+      {
+        index: indexName,
+        id: entryId,
+        body: { doc: document, doc_as_upsert: true },
+      },
+      { requestTimeout: requestTimeout ?? DEFAULT_INGESTION_TIMEOUT }
+    );
     log(`Successfully ingested it, response: ${JSON.stringify(response.body)}`);
   }
 
