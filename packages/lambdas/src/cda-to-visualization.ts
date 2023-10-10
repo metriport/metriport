@@ -127,6 +127,8 @@ const convertStoreAndReturnPdfDocUrl = async ({
     // Defines page
     const page = await browser.newPage();
 
+    await page.setDefaultNavigationTimeout(puppeteerTimeoutInMillis);
+
     await page.setContent(convertDoc);
 
     // Wait 2.5 seconds
@@ -137,6 +139,7 @@ const convertStoreAndReturnPdfDocUrl = async ({
       path: pdfFilepath,
       printBackground: true,
       format: "A4",
+      timeout: puppeteerTimeoutInMillis,
       margin: {
         top: "20px",
         left: "20px",
