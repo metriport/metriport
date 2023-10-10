@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { OK } from "http-status";
+import httpStatus, { OK } from "http-status";
 import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
@@ -14,8 +14,18 @@ import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import multer from "multer";
+import { createAndUploadDocReference } from "../../command/medical/admin/upload-doc";
+import BadRequestError from "../../errors/bad-request";
+import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { createS3FileName } from "../../shared/external";
 
 const router = Router();
+const upload = multer();
+const region = Config.getAWSRegion();
+const s3client = makeS3Client(region);
+const bucketName = Config.getMedicalDocumentsBucketName();
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
@@ -58,6 +68,72 @@ router.get(
     });
 
     return res.status(OK).json({ documents: output === "dto" ? toDTO(documents) : documents });
+  })
+);
+
+const uploadDocSchema = z.object({
+  description: z.string().optional(),
+  organizationName: z.string().optional(),
+  practitionerName: z.string().optional(),
+});
+
+/** ---------------------------------------------------------------------------
+ * POST /document
+ *
+ * Uploads a document for a given patient.
+ *
+ * @param req.query.patientId - The patient ID.
+ * @param req.file - The file to be stored.
+ * @param req.body.description - The description of the file.
+ * @param req.body.organizationName - The name of the contained Organization
+ * @param req.body.practitionerName - The name of the contained Practitioner
+ *
+ * @return Document Reference.
+ */
+router.post(
+  "/",
+  upload.single("file"),
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const file = req.file;
+
+    if (!file) {
+      throw new BadRequestError("File must be provided.");
+    }
+
+    const docRefId = uuidv7();
+    const fileName = createS3FileName(cxId, patientId, docRefId);
+
+    await s3client
+      .upload({
+        Bucket: bucketName,
+        Key: fileName,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      })
+      .promise();
+
+    const metadata = uploadDocSchema.parse({
+      description: req.body.description,
+      orgName: req.body.organizationName,
+      practitionerName: req.body.practitionerName,
+    });
+
+    console.log("FileName:", fileName, "metadata:", metadata);
+
+    const docRef = await createAndUploadDocReference({
+      cxId,
+      patientId,
+      docId: docRefId,
+      file: {
+        ...file,
+        originalname: fileName,
+      },
+      metadata,
+    });
+
+    return res.status(httpStatus.OK).json(docRef);
   })
 );
 

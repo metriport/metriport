@@ -1,0 +1,158 @@
+---
+title: "Upload Document"
+description: "Uploads a patient document to the server."
+api: "POST /medical/v1/document/"
+---
+
+This endpoint uploads the specified file to our servers and returns a FHIR Document Reference.
+
+## Query Params
+
+<ParamField query="patientId" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Body Fields
+
+<ParamField body="file" type="File" required>
+  The file that you would like to upload.
+</ParamField>
+
+<ParamField body="organizationName" type="string">
+  The name of the organization that created this file.
+</ParamField>
+
+<ParamField body="practitionerName" type="string">
+  The name of the practitioner who created this file.
+</ParamField>
+
+<ParamField body="description" type="string">
+  The brief description of the file.
+</ParamField>
+
+## Response
+
+A [DocumentReference](/medical-api/fhir/resources/documentreference) to the file you uploaded.
+
+```json
+{
+  "resourceType": "DocumentReference",
+  "id": "018a875a-3181-74e8-8aa4-40c59ed7e1b2",
+  "meta": {
+    "versionId": "1",
+    "lastUpdated": "2023-09-01T14:31:57.025+00:00",
+    "source": "#vK8lyyAta8eKkbPO"
+  },
+  "contained": [
+    {
+      "resourceType": "Organization",
+      "id": "org522",
+      "name": "Hospital 522"
+    },
+    {
+      "resourceType": "Practitioner",
+      "id": "auth925",
+      "name": [
+        {
+          "text": "John Snow",
+          "family": "Snow",
+          "given": ["John"]
+        }
+      ]
+    }
+  ],
+  "extension": [
+    {
+      "url": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+      "valueCoding": {
+        "system": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+        "code": "METRIPORT"
+      }
+    }
+  ],
+  "masterIdentifier": {
+    "system": "urn:ietf:rfc:3986",
+    "value": "018a875a-3181-74e8-8aa4-40c59ed7e1b2"
+  },
+  "identifier": [
+    {
+      "use": "official",
+      "system": "urn:ietf:rfc:3986",
+      "value": "018a875a-3181-74e8-8aa4-40c59ed7e1b2"
+    }
+  ],
+  "status": "current",
+  "type": {
+    "coding": [
+      {
+        "system": "http://loinc.org/",
+        "code": "34133-9",
+        "display": "Summarization of episode note"
+      }
+    ]
+  },
+  "subject": {
+    "reference": "Patient/018a5164-c0ac-79e2-99cc-9cf951c26d94",
+    "type": "Patient"
+  },
+  "date": "2023-08-15T03:05:58.090Z",
+  "author": [
+    {
+      "reference": "#org522",
+      "type": "Organization"
+    }
+  ],
+  "description": "C-CDA R2.1 Patient Record",
+  "content": [
+    {
+      "extension": [
+        {
+          "url": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+          "valueCoding": {
+            "system": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+            "code": "METRIPORT"
+          }
+        }
+      ],
+      "attachment": {
+        "contentType": "application/pdf",
+        "url": "http://api.metriport.com/doc-contribution/commonwell/?fileName=965f9957-34ac-442b-9a17-fa09c76c16da/018a5164-c0ac-79e2-99cc-9cf951c26d94/965f9957-34ac-442b-9a17-fa09c76c16da_018a5164-c0ac-79e2-99cc-9cf951c26d94_018a875a-3181-74e8-8aa4-40c59ed7e1b2",
+        "size": 1080416,
+        "title": "965f9957-34ac-442b-9a17-fa09c76c16da/018a5164-c0ac-79e2-99cc-9cf951c26d94/965f9957-34ac-442b-9a17-fa09c76c16da_018a5164-c0ac-79e2-99cc-9cf951c26d94_018a875a-3181-74e8-8aa4-40c59ed7e1b2",
+        "creation": "2023-08-14T22:05:58-05:00"
+      },
+      "format": {
+        "code": "urn:ihe:pcc:xphr:2007"
+      }
+    }
+  ],
+  "context": {
+    "period": {
+      "start": "2023-08-15T02:05:58.090Z",
+      "end": "2023-08-15T03:05:58.090Z"
+    },
+    "sourcePatientInfo": {
+      "reference": "Patient/018a5164-c0ac-79e2-99cc-9cf951c26d94",
+      "type": "Patient"
+    }
+  }
+}
+```
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+
+const documentReference = await metriportClient.uploadDocument(
+  "my-patient-id",
+  file,
+  "fileDescription",
+  "practitionerName",
+  "organizationName"
+);
+```
+
+</ResponseExample>
