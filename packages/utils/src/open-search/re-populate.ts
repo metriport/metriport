@@ -25,7 +25,7 @@ const patientIds: string[] = [];
 const docRefIds: string[] = [];
 
 // Number of documents to ingest in parallel
-const PARALLEL_INGESTION_COUNT = 5;
+const PARALLEL_INGESTION_COUNT = 15;
 
 const region = getEnvVarOrFail("AWS_REGION");
 const fhirBaseUrl = getEnvVarOrFail("FHIR_SERVER_URL");
