@@ -11,6 +11,7 @@ import { getETagHeader } from "../models/common/base-update";
 import {
   DocumentQuery,
   DocumentReference,
+  DocumentUploadPayload,
   ListDocumentFilters,
   ListDocumentResult,
   documentListSchema,
@@ -468,6 +469,44 @@ export class MetriportMedicalApi {
       params: {
         fileName,
         conversionType,
+      },
+    });
+
+    return resp.data;
+  }
+
+  /**
+   * Uploads a document to Metriport and returns a FHIR document reference.
+   * The document will be available to HIEs.
+   *
+   * @param patientId The ID of the patient to associate the document to.
+   * @param filePayload The file metadata and file contents.
+   * @param organizationName The name of the organization that created the document.
+   * @param practitionerName The name of the practitioner who created the document.
+   * @param description A brief file description.
+   *
+   * @return The FHIR document reference.
+   */
+  async uploadDocument(
+    patientId: string,
+    filePayload: DocumentUploadPayload,
+    organizationName?: string,
+    practitionerName?: string,
+    description?: string
+  ): Promise<DocumentReference> {
+    if (!filePayload.fileContents) throw new Error("File is required");
+    if (!patientId) throw new Error("Patient ID is required");
+
+    const requestBody = {
+      ...filePayload,
+      organizationName,
+      practitionerName,
+      description,
+    };
+
+    const resp = await this.api.post(`${DOCUMENT_URL}?patientId=${patientId}`, requestBody, {
+      headers: {
+        "Content-Type": "multipart/form-data",
       },
     });
 

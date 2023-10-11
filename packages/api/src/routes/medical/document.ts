@@ -85,8 +85,8 @@ const uploadDocSchema = z.object({
  * @param req.query.patientId - The patient ID.
  * @param req.file - The file to be stored.
  * @param req.body.description - The description of the file.
- * @param req.body.organizationName - The name of the contained Organization
- * @param req.body.practitionerName - The name of the contained Practitioner
+ * @param req.body.organizationName - The name of the organization where the document was created.
+ * @param req.body.practitionerName - The name of the practitioner who created the document.
  *
  * @return Document Reference.
  */
@@ -96,9 +96,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const file = req.file;
+    const file = req.file ?? req.body.fileMetadata;
+    const fileContents = req.file ? req.file.buffer : req.body.fileContents;
 
-    if (!file) {
+    if (!fileContents) {
       throw new BadRequestError("File must be provided.");
     }
 
@@ -109,18 +110,16 @@ router.post(
       .upload({
         Bucket: bucketName,
         Key: fileName,
-        Body: file.buffer,
+        Body: fileContents,
         ContentType: file.mimetype,
       })
       .promise();
 
     const metadata = uploadDocSchema.parse({
       description: req.body.description,
-      orgName: req.body.organizationName,
+      organizationName: req.body.organizationName,
       practitionerName: req.body.practitionerName,
     });
-
-    console.log("FileName:", fileName, "metadata:", metadata);
 
     const docRef = await createAndUploadDocReference({
       cxId,

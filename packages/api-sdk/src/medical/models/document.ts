@@ -58,3 +58,8 @@ export type ListDocumentFilters = {
 export type ListDocumentResult = {
   documents: FHIRDocumentReference[];
 };
+
+export type DocumentUploadPayload = {
+  fileMetadata: Express.Multer.File;
+  fileContents: string;
+};
