@@ -96,7 +96,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const file = req.file ?? req.body.fileMetadata;
+    const fileData = req.file ?? req.body.fileMetadata;
     const fileContents = req.file ? req.file.buffer : req.body.fileContents;
 
     if (!fileContents) {
@@ -111,7 +111,7 @@ router.post(
         Bucket: bucketName,
         Key: fileName,
         Body: fileContents,
-        ContentType: file.mimetype,
+        ContentType: fileData.mimetype,
       })
       .promise();
 
@@ -126,7 +126,7 @@ router.post(
       patientId,
       docId: docRefId,
       file: {
-        ...file,
+        ...fileData,
         originalname: fileName,
       },
       metadata,

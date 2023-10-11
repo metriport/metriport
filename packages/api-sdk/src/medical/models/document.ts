@@ -59,7 +59,13 @@ export type ListDocumentResult = {
   documents: FHIRDocumentReference[];
 };
 
+export type DocumentMetadata = {
+  mimeType?: string;
+  size?: number;
+  fileName?: string;
+};
+
 export type DocumentUploadPayload = {
-  fileMetadata: Express.Multer.File;
+  fileMetadata?: DocumentMetadata;
   fileContents: string;
 };

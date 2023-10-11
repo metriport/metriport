@@ -149,8 +149,12 @@ const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 const documentReference = await metriportClient.uploadDocument(
   "my-patient-id",
   {
-    fileMetadata,
-    fileContents,
+    fileMetadata: {
+      size: <file-size-int>,
+      mimetype: "application/xml>",
+      fileName: <file-name-string>
+    },
+    fileContents
   },
   "organizationName",
   "practitionerName",

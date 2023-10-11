@@ -43,7 +43,11 @@ async function main() {
       const description = "Some brief file description";
 
       const payload: DocumentUploadPayload = {
-        fileMetadata: req.file,
+        fileMetadata: {
+          mimeType: req.file.mimetype,
+          size: req.file.size,
+          fileName: req.file.originalname,
+        },
         fileContents: req.file.buffer.toString("base64"),
       };
 
