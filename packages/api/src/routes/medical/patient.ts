@@ -16,7 +16,7 @@ import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import cwCommands from "../../external/commonwell";
 import { toFHIR } from "../../external/fhir/patient";
-import { countResourcesPerPatient } from "../../external/fhir/patient/count-resources";
+import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 import { PatientModel as Patient } from "../../models/medical/patient";
@@ -321,7 +321,7 @@ async function putConsolidated(req: Request, res: Response) {
 
   // Limit the amount of resources per patient
   if (!Config.isCloudEnv() || Config.isSandbox()) {
-    const { total: currentAmount } = await countResourcesPerPatient({
+    const { total: currentAmount } = await countResources({
       patient: { id: patientId, cxId },
     });
     if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
@@ -370,7 +370,7 @@ router.get(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    const resourceCount = await countResourcesPerPatient({
+    const resourceCount = await countResources({
       patient: { id: patientId, cxId },
       resources,
       dateFrom,
