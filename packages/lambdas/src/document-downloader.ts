@@ -5,6 +5,8 @@ import {
   CommonwellError,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { DOMParser } from "xmldom";
+import { stringToBase64 } from "@metriport/core/util/base64";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import * as stream from "stream";
@@ -33,9 +35,11 @@ const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
 
+const parser = new DOMParser();
+
 const s3Utils = new S3Utils(region);
 
-type Document = {
+type Doc = {
   id: string;
   mimeType: string;
   location: string;
@@ -51,7 +55,7 @@ export type S3Info = {
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: {
-    document: Document;
+    document: Doc;
     fileInfo: S3Info;
     orgName: string;
     orgOid: string;
@@ -122,15 +126,18 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       downloadedDocument &&
       (document.mimeType === "application/xml" || document.mimeType === "text/xml")
     ) {
-      const containsB64 = downloadedDocument.includes("nonXMLBody");
+      const document = parser.parseFromString(downloadedDocument, "text/xml");
 
-      if (containsB64) {
-        const { newXML, b64 } = removeAndReturnB64FromXML(downloadedDocument);
+      const nonXMLBody = document.getElementsByTagName("nonXMLBody")[0];
+
+      if (nonXMLBody) {
+        const b64 = returnB64FromXMLBody(nonXMLBody);
 
         const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
 
-        // TODO use core's base64 functions
-        const b64Buff = Buffer.from(b64, "base64");
+        document.removeChild(nonXMLBody);
+
+        const b64Buff = stringToBase64(b64);
 
         const [b64Upload] = await Promise.all([
           await s3client
@@ -145,7 +152,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
             .putObject({
               Bucket: bucketName,
               Key: fileInfo.fileName,
-              Body: newXML,
+              Body: document.toString(),
               ContentType: "application/xml",
             })
             .promise(),
@@ -283,22 +290,8 @@ export async function getFileInfoFromS3(
   }
 }
 
-export function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: string } {
-  const openingTag = "<text";
-  const closingTag = "</text>";
-  const startIndex = htmlString.indexOf(openingTag);
-  const endIndex = htmlString.lastIndexOf(closingTag);
-  const textTag = htmlString.substring(startIndex, endIndex + closingTag.length);
+export function returnB64FromXMLBody(nonXmlBody: Element): string {
+  const xmlBodyText = nonXmlBody.getElementsByTagName("text")[0];
 
-  const newXML = htmlString.replace(textTag, "");
-  const b64 = removeHTMLTags(textTag).trim();
-
-  return {
-    newXML,
-    b64,
-  };
-}
-
-function removeHTMLTags(htmlString: string): string {
-  return htmlString.replace(/(<([^>]+)>)/gi, "");
+  return xmlBodyText.textContent ?? "";
 }
