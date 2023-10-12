@@ -1,8 +1,9 @@
+import { DOMParser } from "xmldom";
 import {
   downloadDocumentFromCW,
   getUploadStreamToS3,
   getFileInfoFromS3,
-  removeAndReturnB64FromXML,
+  returnB64FromXMLBody,
 } from "../document-downloader";
 import { getEnvOrFail } from "../shared/env";
 
@@ -67,13 +68,13 @@ describe.skip("document-downloader", () => {
       </component>
     </ClinicalDocument>`;
 
-    const { newXML, b64 } = removeAndReturnB64FromXML(xml);
+    const parser = new DOMParser();
 
-    const hasText = newXML.includes("<text>");
-    const hasB64 = newXML.includes("abc123");
+    const document = parser.parseFromString(xml, "text/xml");
 
-    expect(hasText).toEqual(false);
-    expect(hasB64).toEqual(false);
+    const nonXMLBody = document.getElementsByTagName("nonXMLBody")[0];
+
+    const b64 = returnB64FromXMLBody(nonXMLBody);
 
     expect(b64).toEqual("abc123");
   });
