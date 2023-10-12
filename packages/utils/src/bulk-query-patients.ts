@@ -5,7 +5,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { ConsolidatedCountResponse, MetriportMedicalApi, PatientDTO } from "@metriport/api-sdk";
+import { ConsolidatedCountResponse, MetriportMedicalApi, Patient } from "@metriport/api-sdk";
 import fs from "fs";
 import { getEnvVar, getEnvVarOrFail } from "./shared/env";
 
@@ -19,11 +19,13 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 
 // query stuff
 const delayTime = parseInt(getEnvVar("BULK_QUERY_DELAY_TIME") ?? "5000");
-const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "6");
+const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "25");
 const patientChunkDelayJitterMs = parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER_MS") ?? "1000");
 const queryPollDurationMs = 10_000;
 const maxQueryDurationMs = 71_000; // CW has a 70s timeout, so this is the maximum duration any doc query can take
 const maxDocQueryAttemts = 3;
+// add patient IDs here to kick off queries for specific patient IDs
+const patientWhitelist: string[] = [];
 
 // csv stuff
 const cxName = getEnvVarOrFail("CX_NAME");
@@ -44,7 +46,7 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function queryDocsForPatient(patient: PatientDTO) {
+async function queryDocsForPatient(patient: Patient) {
   let docQueryAttempts = 0;
   let docCount = 0;
   let totalFhirResourceCount = 0;
@@ -63,14 +65,11 @@ async function queryDocsForPatient(patient: PatientDTO) {
     const queryStartTime = Date.now();
     while (Date.now() - queryStartTime < maxQueryDurationMs) {
       const docQueryStatus = await metriportAPI.getDocumentQueryStatus(patient.id);
-      // ensure at least 1 doc was downloaded, and both the download + conversion have completed
+      // ensure at least 1 doc was returned
       if (
         docQueryStatus.download &&
-        docQueryStatus.download.status === "completed" &&
-        docQueryStatus.download.successful &&
-        docQueryStatus.download.successful > 0 &&
-        (!docQueryStatus.convert ||
-          (docQueryStatus.convert && docQueryStatus.convert.status === "completed"))
+        docQueryStatus.download.total &&
+        docQueryStatus.download.total > 0
       ) {
         queryComplete = true;
         break;
@@ -112,10 +111,25 @@ async function main() {
   initCsv();
   console.log(`>>> Getting all patients for facility ${facilityId}...`);
   const patients = await metriportAPI.listPatients(facilityId);
+
+  console.log(`>>> Found ${patients.length} patients`);
+  if (patientWhitelist.length > 0) {
+    console.log(
+      `... but will only query for the ${patientWhitelist.length} patients specified in the whitelist`
+    );
+
+    // remove patients not in the whitelist
+    let i = patients.length;
+    while (i--) {
+      if (!patientWhitelist.includes(patients[i].id)) {
+        patients.splice(i, 1);
+      }
+    }
+  }
   for (const patient of patients) {
     console.log(patient.id);
   }
-  console.log(`>>> Found ${patients.length} patients`);
+
   for (let i = 0; i < patients.length; i += patientChunkSize) {
     const chunk = patients.slice(i, i + patientChunkSize);
     console.log(`>>> Querying docs for chunk of ${chunk.length} patients...`);
