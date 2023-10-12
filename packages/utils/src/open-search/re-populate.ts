@@ -4,8 +4,9 @@ dotenv.config();
 import { DocumentReference, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { chunk, Dictionary, groupBy } from "lodash";
+import { Dictionary, groupBy } from "lodash";
 
 /**
  * WARNING: this is expensive to run!
@@ -14,6 +15,8 @@ import { chunk, Dictionary, groupBy } from "lodash";
  *
  * Gets all doc refs from all customers (unless specified otherwise) and, for each, loads
  * the CCDA/XML docs from S3, cleans them up, and indexes them in OpenSearch.
+ *
+ * Note: for sandbox, we should use the seed data S3 bucket, not the medical documents one.
  */
 
 // Indicate how to filter for doc refs, or leave them empty for all doc refs.
@@ -22,7 +25,7 @@ const patientIds: string[] = [];
 const docRefIds: string[] = [];
 
 // Number of documents to ingest in parallel
-const PARALLEL_INGESTION_COUNT = 5;
+const PARALLEL_INGESTION_COUNT = 15;
 
 const region = getEnvVarOrFail("AWS_REGION");
 const fhirBaseUrl = getEnvVarOrFail("FHIR_SERVER_URL");
@@ -42,6 +45,17 @@ docRefIds.length && filtersToApply.append(`_id`, docRefIds.join(","));
 // minimize the amount of data to only what we need
 filtersToApply.append(`_elements`, ["id", "subject", "content", "extension"].join(","));
 const filters = filtersToApply.toString();
+
+const searchService = new OpenSearchFileIngestorDirect({
+  region,
+  endpoint: openSearchHost,
+  indexName: openSearchIndexName,
+  username: openSearchUsername,
+  password: openSearchPassword,
+  settings: { logLevel: "none" },
+});
+
+const isSandbox = () => getEnvVarOrFail("ENV_TYPE") === "sandbox";
 
 async function getCxIds(): Promise<string[]> {
   const fhirApi = makeFhirAdminApi(fhirBaseUrl);
@@ -74,13 +88,26 @@ async function getDocRefsFromCx(cxId: string): Promise<DocumentReference[]> {
     for await (const page of fhirApi.searchResourcePages("DocumentReference", filters)) {
       docs.push(...page);
     }
-    const docsFromCW = docs.filter(isFromCommonWell);
+    const docsWithIngestibleContent = docs.filter(isIngestible);
+    if (isSandbox()) return docsWithIngestibleContent;
+    const docsFromCW = docsWithIngestibleContent.filter(isFromCommonWell);
     const cwDocsWithMetriportAttachment = docsFromCW.filter(hasMetriportAttachment);
     return cwDocsWithMetriportAttachment;
   } catch (error) {
     console.log(`Error getting documents from FHIR server - cxId: ${cxId}, error: `, error);
     throw error;
   }
+}
+
+function isIngestible(doc: DocumentReference): boolean {
+  return (doc.content ?? []).some(content => searchService.isIngestible(toFile(content)));
+}
+
+function toFile(content: DocumentReferenceContent): { contentType?: string; fileName: string } {
+  return {
+    contentType: content.attachment?.contentType,
+    fileName: content.attachment?.title ?? "",
+  };
 }
 
 // TODO These functions are all copied from packages/api, ideally we would move them to packages/core.
@@ -120,15 +147,10 @@ function isCommonwellContent(content: DocumentReferenceContent): boolean {
 
 async function main() {
   const startTimestamp = Date.now();
-
-  const searchService = new OpenSearchFileIngestorDirect({
-    region,
-    endpoint: openSearchHost,
-    indexName: openSearchIndexName,
-    username: openSearchUsername,
-    password: openSearchPassword,
-    settings: { logLevel: "none" },
-  });
+  console.log(`Running at ${new Date().toISOString()}, params:`);
+  console.log(`- cxIds: ${cxIds.join(", ")}`);
+  console.log(`- patientIds: ${patientIds.join(", ")}`);
+  console.log(`- docRefIds: ${docRefIds.join(", ")}`);
 
   // Flatten to process them all in parallel
   const toProcess: { cxId: string; patientId: string; docId: string; s3FileName: string }[] = [];
@@ -174,11 +196,13 @@ async function main() {
 
   console.log(`Ingesting data in OpenSearch...`);
   let totalDocCount = 0;
-  const promises: Promise<void>[] = [];
-  const chunks = chunk(toProcess, PARALLEL_INGESTION_COUNT);
-  for (const chunk of chunks) {
-    promises.push(
-      ...chunk.map(async ({ cxId, patientId, docId, s3FileName }) => {
+
+  console.log(`# of items to process: ${toProcess.length}`);
+  await executeAsynchronously(
+    toProcess,
+    async (itemsOfRun, idx, n) => {
+      console.log(`Run ${idx}/${n}... ${itemsOfRun.length} items`);
+      for (const { cxId, patientId, docId, s3FileName } of itemsOfRun) {
         const payload = {
           cxId,
           patientId,
@@ -190,24 +214,25 @@ async function main() {
           await searchService.ingest(payload);
           totalDocCount++;
           console.log(`...docs done: ${String(totalDocCount).padStart(7, " ")}`);
-        } catch (error) {
+          //eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+          const details = error.meta
+            ? `status: ${error.meta.statusCode}, response: ${
+                error.meta.body?.error ? JSON.stringify(error.meta.body?.error) : undefined
+              }`
+            : error.message;
           console.log(
             `Error ingesting doc ${docId} for cxId ${cxId} and patient ${patientId}, ` +
-              `file ${s3FileName}: ${error}`
+              `file ${s3FileName}: ${details}`
           );
-          return;
         }
-      })
-    );
-  }
-  try {
-    await Promise.all(promises);
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.log(`Error: ${error.message}`);
-    if (error.meta?.body?.error) console.log(`Detailed error: `, error.meta.body.error);
-    throw error;
-  }
+      }
+    },
+    {
+      numberOfAsyncRuns: PARALLEL_INGESTION_COUNT,
+      maxJitterMillis: 0,
+    }
+  );
 
   console.log(`Done.`);
   console.log(``);

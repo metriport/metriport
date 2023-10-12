@@ -55,6 +55,7 @@ export async function populateFhirServer({
 
   let patientsOK = 0;
   let patientsError = 0;
+  // TODO move to executeAsynchronously() from core
   const chunks = chunk(patientsOnDB, PATIENT_CHUNK_SIZE);
   const n = chunks.length;
   for (const [i, patientChunk] of chunks.entries()) {

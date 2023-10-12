@@ -12,9 +12,12 @@ import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import OpenSearchConstruct, { OpenSearchConstructProps } from "../shared/open-search-construct";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
+import { isProd, isSandbox } from "../shared/util";
 
 export function settings(): {
-  openSearch: Omit<OpenSearchConstructProps, "region" | "vpc"> & { indexName: string };
+  openSearch: Omit<OpenSearchConstructProps, "region" | "vpc" | "awsAccount"> & {
+    indexName: string;
+  };
   connectorName: string;
   lambda: {
     memory: number;
@@ -30,24 +33,23 @@ export function settings(): {
 } {
   // TODO 1050 once this works well in staging, we can attempt a smaller/cheaper setup for it, but first validate
   // the prod one, so we don't test prod only when releasing there.
-  // const config = getConfig();
-  // const isLarge = isProd(config) || isSandbox(config);
-  const isLarge = true;
+  const config = getConfig();
+  const isLarge = isProd(config) || isSandbox(config);
   // How long can the lambda run for, max is 900 seconds (15 minutes)
   const timeout = Duration.minutes(1);
   return {
     // https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html
     openSearch: {
       capacity: {
-        dataNodes: isLarge ? 2 : 1,
-        dataNodeInstanceType: isLarge ? "m6g.large.search" : "t3.small.search",
+        dataNodes: isLarge ? 2 : 2,
+        dataNodeInstanceType: isLarge ? "m6g.large.search" : "t3.medium.search",
         masterNodes: isLarge ? 3 : undefined, // odd number, 3+; when not set this is done by data nodes
         // https://docs.aws.amazon.com/opensearch-service/latest/developerguide/managedomains-dedicatedmasternodes.html#dedicatedmasternodes-instance
         masterNodeInstanceType: isLarge ? "m6g.large.search" : undefined,
         warmNodes: 0,
       },
       ebs: {
-        volumeSize: 50, // in GB, total is times amount of data nodes
+        volumeSize: isLarge ? 50 : 10, // in GB, total is times amount of data nodes
         volumeType: EbsDeviceVolumeType.GENERAL_PURPOSE_SSD_GP3,
       },
       encryptionAtRest: true,
@@ -59,7 +61,7 @@ export function settings(): {
       // Number of messages the lambda pull from SQS at once
       batchSize: 1,
       // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-      maxConcurrency: isLarge ? 10 : 4,
+      maxConcurrency: isLarge ? 10 : 5,
       // How long can the lambda run for, max is 900 seconds (15 minutes)
       timeout,
     },
@@ -76,12 +78,14 @@ export function settings(): {
 
 export function setup({
   stack,
+  awsAccount,
   vpc,
   ccdaS3Bucket,
   lambdaLayers,
   alarmSnsAction,
 }: {
   stack: Construct;
+  awsAccount: string;
   vpc: IVpc;
   ccdaS3Bucket: s3.IBucket;
   lambdaLayers: ILayerVersion[];
@@ -103,6 +107,7 @@ export function setup({
   } = settings();
 
   const openSearch = new OpenSearchConstruct(stack, connectorName, {
+    awsAccount,
     region: config.region,
     vpc,
     ...openSearchConfig,

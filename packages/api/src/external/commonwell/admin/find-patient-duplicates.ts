@@ -71,6 +71,7 @@ export async function findDuplicatedPersons(cxId?: string): Promise<DuplicatedPe
     log(`Found ${patients.length} patients for cxId ${cxId}`);
     const personByCx: Record<string, DuplicatedPersonsOfPatient | undefined> = {};
 
+    // TODO move to executeAsynchronously() from core
     const chunks = chunk(patients, MAX_QUERIES_IN_PARALLEL);
     const n = chunks.length;
     for (const [i, chunk] of chunks.entries()) {
