@@ -41,7 +41,8 @@
     "packages/api",
     "packages/connect-widget",
     "packages/infra",
-    "packages/utils"
+    "packages/utils",
+    "packages/tester-node"
   ],
   "lint-staged": {
     "*.{ts,tsx}": [

@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { getEnvVarOrFail } from "./shared/env";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 async function main() {
   const apiKey = getEnvVarOrFail("API_KEY");
