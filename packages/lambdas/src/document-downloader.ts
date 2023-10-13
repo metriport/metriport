@@ -130,7 +130,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const nonXMLBody = document.getElementsByTagName("nonXMLBody")[0];
 
       if (nonXMLBody) {
-        const b64 = returnB64FromXMLBody(nonXMLBody);
+        const xmlBodyTexts = nonXMLBody.getElementsByTagName("text");
+        const b64 = xmlBodyTexts[0].textContent ?? "";
 
         const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
 
@@ -168,17 +169,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
         originalXml.size = newXmlFileInfo.size;
 
-        const msg = `Multiple files created due to b64 in xml`;
+        if (xmlBodyTexts.length > 1) {
+          const msg = `Multiple files created due to b64 in xml`;
 
-        capture.message(msg, {
-          extra: {
-            context: `documentDownloader.extractB64FromXML`,
-            b64FileName: b64Upload.Key,
-            xmlFileName: uploadResult.Key,
-            orgName,
-            cxId,
-          },
-        });
+          capture.message(msg, {
+            extra: {
+              context: `documentDownloader.extractB64FromXML`,
+              b64FileName: b64Upload.Key,
+              xmlFileName: uploadResult.Key,
+              orgName,
+              cxId,
+            },
+          });
+        }
 
         return {
           bucket: b64Upload.Bucket,
@@ -291,10 +294,4 @@ export async function getFileInfoFromS3(
   } catch (err) {
     return { exists: false };
   }
-}
-
-export function returnB64FromXMLBody(nonXmlBody: Element): string {
-  const xmlBodyText = nonXmlBody.getElementsByTagName("text")[0];
-
-  return xmlBodyText.textContent ?? "";
 }
