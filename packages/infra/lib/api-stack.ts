@@ -315,7 +315,7 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       stack: this,
       vpc: this.vpc,
-      medicalDocumentsBucket: medicalDocumentUploadBucket,
+      medicalDocumentUploadBucket,
       apiServiceDnsAddress: props.config.lambdasSentryDSN,
     });
 
