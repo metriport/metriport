@@ -5,8 +5,7 @@ import {
   CommonwellError,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { DOMParser } from "xmldom";
-import { stringToBase64 } from "@metriport/core/util/base64";
+import { DOMParser, XMLSerializer } from "xmldom";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import * as stream from "stream";
@@ -135,9 +134,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
         const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
 
-        document.removeChild(nonXMLBody);
+        const parentNode = nonXMLBody.parentNode;
+        parentNode?.removeChild(nonXMLBody);
 
-        const b64Buff = stringToBase64(b64);
+        const b64Buff = Buffer.from(b64, "base64");
+
+        const s = new XMLSerializer();
+        const newXmlStr = s.serializeToString(document);
 
         const [b64Upload] = await Promise.all([
           await s3client
@@ -152,7 +155,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
             .putObject({
               Bucket: bucketName,
               Key: fileInfo.fileName,
-              Body: document.toString(),
+              Body: newXmlStr,
               ContentType: "application/xml",
             })
             .promise(),
