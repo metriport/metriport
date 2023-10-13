@@ -23,12 +23,13 @@ import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
+import * as docUploadConnector from "./api-stack/doc-upload-connector";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
@@ -196,6 +197,16 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // S3 bucket for Medical Document Uploads
+    //-------------------------------------------
+    const medicalDocumentUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
+      // bucketName: props.config.medicalDocumentsUploadBucketName,
+      bucketName: "devs.metriport.com",
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
+
+    //-------------------------------------------
     // FHIR Converter Service
     //-------------------------------------------
     let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
@@ -299,6 +310,15 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
+    const uploadedDocumentProcessorLambda = docUploadConnector.createLambda({
+      lambdaLayers,
+      envType: props.config.environmentType,
+      stack: this,
+      vpc: this.vpc,
+      medicalDocumentsBucket: medicalDocumentUploadBucket,
+      apiServiceDnsAddress: props.config.lambdasSentryDSN,
+    });
+
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
@@ -324,6 +344,7 @@ export class APIStack extends Stack {
       sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
+      uploadedDocumentProcessorLambda,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -404,6 +425,7 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
+    medicalDocumentUploadBucket.grantReadWrite(uploadedDocumentProcessorLambda);
     sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
