@@ -4,6 +4,10 @@ dotenv.config();
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "../../shared/env";
 
+/**
+ * Script to make it easy to test the API SDK.
+ * TODO: move this to an E2E test on the API SDK itself.
+ */
 const apiUrl = getEnvVarOrFail("API_URL");
 const apiToken = getEnvVarOrFail("API_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");

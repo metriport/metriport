@@ -8,6 +8,7 @@ import {
 import { redriveSidechainDLQ } from "../command/medical/admin/redrive-dlq";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import BadRequestError from "../errors/bad-request";
+import { countResources } from "../external/fhir/patient/count-resources";
 import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import docsRoutes from "./medical/internal-docs";
@@ -126,15 +127,29 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/peek-sidechain-dlq
+ * GET /internal/peek-sidechain-dlq
  *
  * Read the first 10 messages from the sidechain DLQ without removing them, and return a link
  * to download the files they point to.
  */
-router.post(
+router.get(
   "/peek-sidechain-dlq",
   asyncHandler(async (req: Request, res: Response) => {
     const result = await peekIntoSidechainDLQ();
+    return res.json(result);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/count-fhir-resources
+ *
+ * Count all resources for this customer in the FHIR server.
+ */
+router.get(
+  "/count-fhir-resources",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const result = await countResources({ patient: { cxId } });
     return res.json(result);
   })
 );
