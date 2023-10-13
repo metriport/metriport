@@ -1,4 +1,5 @@
 import { SQS } from "aws-sdk";
+import { Command } from "commander";
 import * as fs from "fs";
 import { chunk, uniq } from "lodash";
 import path from "path";
@@ -26,8 +27,18 @@ const paths = [cwd, ...(cwd.includes("src") ? [] : ["src"])];
 const fileName = path.resolve(...paths, "sqs", "messages.json");
 const destinationQueueUrl = "";
 const awsRegion = "";
-
 const maxItemsPerBatch = 10;
+
+type Params = {
+  dryrun?: boolean;
+};
+const program = new Command();
+program
+  .name("populate-sqs")
+  .description("CLI to send messages to SQS.")
+  .option(`--dryrun`, "Just dedup/prepare the messages but not send them")
+  .showHelpAfterError();
+
 const sqsConfig = {
   awsRegion,
 };
@@ -37,6 +48,9 @@ export const sqs = new SQS({
 });
 
 async function main() {
+  program.parse();
+  const { dryrun: dryRun } = program.opts<Params>();
+
   console.log(
     `Running with:\n` +
       `- fileName: ${fileName}\n` +
@@ -62,7 +76,9 @@ async function main() {
 
   const chunks = chunk(filteredPayload, maxItemsPerBatch);
   const n = chunks.length;
-  console.log(`Sending messages to the queue in ${n} chunks in parallel...`);
+  console.log(
+    `${dryRun ? "[dry-run] " : ""}Sending messages to the queue in ${n} chunks in parallel...`
+  );
 
   const promises = chunks.map(chunk => {
     const batchEntries = chunk.map(item => {
@@ -79,7 +95,12 @@ async function main() {
       };
     });
     // Max individual entry and total request size can't be more than 256KB
-    return sqs.sendMessageBatch({ QueueUrl: destinationQueueUrl, Entries: batchEntries }).promise();
+    if (!dryRun) {
+      console.log(`Sending ${batchEntries.length} messages...`);
+      return sqs
+        .sendMessageBatch({ QueueUrl: destinationQueueUrl, Entries: batchEntries })
+        .promise();
+    }
   });
 
   const res = await Promise.allSettled(promises);
