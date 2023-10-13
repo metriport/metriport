@@ -282,7 +282,7 @@ function postProcessSidechainFHIRBundle(
 
 async function postToSidechainConverter(payload: string, patientId: string, log: Log) {
   const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
-  const notFHIRBundleError = "Response is not a FHIR bundle";
+  const notFHIRResponseError = "Response is not a FHIR response";
   let attempt = 0;
   let timeBetweenAttemptsMillis = SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS;
   let apiKey: string;
@@ -297,13 +297,13 @@ async function postToSidechainConverter(payload: string, patientId: string, log:
           "x-api-key": apiKey,
         },
       });
-      if (!res.data || !res.data.resourceType || !(res.data.resourceType === "Bundle")) {
-        throw new Error(notFHIRBundleError);
+      if (!res.data || !res.data.resourceType) {
+        throw new Error(notFHIRResponseError);
       }
       return res;
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      if ([401, 429].includes(error.response?.status) || error.message === notFHIRBundleError) {
+      if ([401, 429].includes(error.response?.status) || error.message === notFHIRResponseError) {
         const msg = "Sidechain quota/auth error, trying again";
         const extra = {
           url: sidechainUrl,
@@ -314,7 +314,7 @@ async function postToSidechainConverter(payload: string, patientId: string, log:
         };
         log(msg, extra);
         capture.message(msg, { extra, level: "info" });
-        if (error.response.status === 429 || error.message === notFHIRBundleError) {
+        if (error.response.status === 429 || error.message === notFHIRResponseError) {
           await markSidechainConverterKeyAsRateLimited(apiKey);
         } else {
           await markSidechainConverterKeyAsRevoked(apiKey);
