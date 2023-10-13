@@ -37,7 +37,7 @@
     <dependency>
       <groupId>com.metriport</groupId>
       <artifactId>metriport-java</artifactId>
-      <version>0.1.7</version>
+      <version>0.1.8</version>
     </dependency>
   </dependencies>
 
@@ -71,6 +71,14 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <repositories>
+    <repository>
+      <id>maven-staging</id>
+      <name>Maven Staging</name>
+      <url>https://s01.oss.sonatype.org/content/repositories/staging/</url>
+    </repository>
+  </repositories>
 
   <build>
     <plugins>

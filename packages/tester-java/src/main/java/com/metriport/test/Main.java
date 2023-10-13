@@ -34,14 +34,14 @@ public class Main {
     log.info(org.getName());
 
     log.info("Listing facilities...");
-    List<Facility> facilities = api.facility().list().getFacilities();
+    List<Facility> facilities = api.facility().list();
 
     for (Facility facility : facilities) {
       log.info(facility.getName());
 
       log.info(String.format("Listing patients of facility '%s'...", facility.getName()));
       PatientList filter = PatientList.builder().facilityId(facility.getId()).build();
-      List<Patient> patients = api.patient().list(filter).getPatients();
+      List<Patient> patients = api.patient().list(filter);
 
       log.info(String.format("...got %d patients, listing them...", patients.size()));
       for (Patient patient : patients) {
