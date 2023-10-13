@@ -201,7 +201,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     const medicalDocumentUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
       // bucketName: props.config.medicalDocumentsUploadBucketName,
-      bucketName: "devs.metriport.com",
+      bucketName: "medical-doc-upload-staging",
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
