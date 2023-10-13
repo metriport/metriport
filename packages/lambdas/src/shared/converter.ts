@@ -53,7 +53,7 @@ export async function postToConverter({
 
       const res = await fhirConverter.post(sidechainUrl, payload, {
         headers: {
-          "Content-Type": "application/xml",
+          // "Content-Type": "application/xml",
           Accept: "application/json",
           "x-api-key": apiKey,
         },

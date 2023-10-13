@@ -106,7 +106,7 @@ const formatXML = (xml: string): string => {
   if (problemListComponent) {
     const problemListTable = problemListComponent?.getElementsByTagName("table")[0];
 
-    addIcd10Codes(problemListComponent, problemListTable);
+    addIcd10Codes(problemListComponent, problemListTable, document);
   }
 
   if (treatmentPlanComponent) {
@@ -129,15 +129,19 @@ const formatXML = (xml: string): string => {
   return document.toString();
 };
 
-const addIcd10Codes = (problemListComponent: Element, problemListTable: Element) => {
-  addCodesToColumn(problemListTable);
+const addIcd10Codes = (
+  problemListComponent: Element,
+  problemListTable: Element,
+  document: Document
+) => {
+  addCodesToColumn(problemListTable, document);
 
   const tableRows = problemListTable.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
 
-  addCodesToRows(problemListComponent, tableRows);
+  addCodesToRows(problemListComponent, tableRows, document);
 };
 
-const addCodesToColumn = (problemListTable: Element) => {
+const addCodesToColumn = (problemListTable: Element, document: Document) => {
   const codeColumn = document.createElement("th");
   codeColumn.appendChild(document.createTextNode("Codes"));
   const columns = Array.from(problemListTable.getElementsByTagName("th"));
@@ -151,7 +155,11 @@ const addCodesToColumn = (problemListTable: Element) => {
   });
 };
 
-const addCodesToRows = (problemListComponent: Element, tableRows: HTMLCollectionOf<Element>) => {
+const addCodesToRows = (
+  problemListComponent: Element,
+  tableRows: HTMLCollectionOf<Element>,
+  document: Document
+) => {
   const rows = Array.from(tableRows);
 
   for (const row of rows) {
@@ -182,7 +190,7 @@ const addCodesToRows = (problemListComponent: Element, tableRows: HTMLCollection
         const codeSystemName = value.getAttribute("codeSystemName");
         const displayName = value.getAttribute("displayName");
 
-        const newCode = createCodeElement(code, codeSystemName, displayName);
+        const newCode = createCodeElement(code, codeSystemName, displayName, document);
         codesRow.appendChild(newCode);
 
         const translations = Array.from(value.getElementsByTagName("translation"));
@@ -192,7 +200,7 @@ const addCodesToRows = (problemListComponent: Element, tableRows: HTMLCollection
           const codeSystemName = translation.getAttribute("codeSystemName");
           const displayName = translation.getAttribute("displayName");
 
-          const newCode = createCodeElement(code, codeSystemName, displayName);
+          const newCode = createCodeElement(code, codeSystemName, displayName, document);
           codesRow.appendChild(newCode);
         });
 
@@ -210,7 +218,8 @@ const addCodesToRows = (problemListComponent: Element, tableRows: HTMLCollection
 const createCodeElement = (
   code: string | null,
   codeSystemName: string | null,
-  displayName: string | null
+  displayName: string | null,
+  document: Document
 ) => {
   const newCode = document.createElement("div");
 
