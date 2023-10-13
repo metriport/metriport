@@ -8,7 +8,7 @@ import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
-import { udpateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
+import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 
 const log = Util.log(`Consolidated Webhook`);
 
@@ -72,7 +72,7 @@ export const processConsolidatedDataWebhook = async ({
         : undefined
     );
 
-    await udpateConsolidatedQueryProgress({
+    await updateConsolidatedQueryProgress({
       patient,
       progress: { status },
     });
@@ -83,7 +83,7 @@ export const processConsolidatedDataWebhook = async ({
     capture.error(err, {
       extra: { patientId, context: `webhook.processConsolidatedDataWebhook`, err },
     });
-    await udpateConsolidatedQueryProgress({
+    await updateConsolidatedQueryProgress({
       patient,
       progress: { status: "failed" },
     });
