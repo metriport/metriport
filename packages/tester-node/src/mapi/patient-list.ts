@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { getEnvVarOrFail } from "../../shared/env";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 /**
  * Script to make it easy to test the API SDK.

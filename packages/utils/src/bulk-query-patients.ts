@@ -5,10 +5,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { ConsolidatedCountResponse, MetriportMedicalApi } from "@metriport/api-sdk";
-import { PatientDTO } from "@metriport/api-sdk/src/medical/models/patientDTO";
+import { ConsolidatedCountResponse, MetriportMedicalApi, PatientDTO } from "@metriport/api-sdk";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import fs from "fs";
-import { getEnvVar, getEnvVarOrFail } from "./shared/env";
 
 // auth stuff
 const apiKey = getEnvVarOrFail("API_KEY");
