@@ -23,6 +23,7 @@ import { emptyFunction, Util } from "../../../shared/util";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { getPatientOrFail } from "./get-patient";
+import { ConsolidationConversionType } from "../../../routes/medical/schemas/patient";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
@@ -33,14 +34,14 @@ export async function startConsolidatedQuery({
   resources,
   dateFrom,
   dateTo,
-  asMedicalRecord,
+  conversionType,
 }: {
   cxId: string;
   patientId: string;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  asMedicalRecord?: boolean;
+  conversionType?: ConsolidationConversionType;
 }): Promise<QueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -54,7 +55,7 @@ export async function startConsolidatedQuery({
     progress,
     reset: true,
   });
-  getConsolidatedAndSendToCx({ patient, resources, dateFrom, dateTo, asMedicalRecord }).catch(
+  getConsolidatedAndSendToCx({ patient, resources, dateFrom, dateTo, conversionType }).catch(
     emptyFunction
   );
   return progress;
@@ -65,33 +66,70 @@ async function getConsolidatedAndSendToCx({
   resources,
   dateFrom,
   dateTo,
-  asMedicalRecord,
+  conversionType,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  asMedicalRecord?: boolean;
+  conversionType?: ConsolidationConversionType;
 }): Promise<void> {
   const { log } = Util.out(
     `getConsolidatedAndSendToCx - cxId ${patient.cxId}, patientId ${patient.id}`
   );
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
-    const bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+    let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
 
-    // CONVERT TO MEDICAL RECORD via Lambda
-    // Ill need to add some meta or something to s3 file so that way if it has same params we dont convert again
-    if (asMedicalRecord) {
+    if (conversionType === "html" || conversionType === "pdf") {
       // need to append the patient to the bundle below
+      const fhir = makeFhirApi(patient.cxId);
+
+      const fhirPatient = await fhir.readResource("Patient", patient.id);
+
+      const bundleWithPatient: Bundle<Resource> = {
+        ...bundle,
+        total: (bundle.total ?? 0) + 1,
+        entry: [
+          {
+            resource: fhirPatient,
+          },
+          ...(bundle.entry ?? []),
+        ],
+      };
 
       const url = await convertFHIRBundleToMedicalRecord({
-        bundle,
+        bundle: bundleWithPatient,
         patient,
         resources,
         dateFrom,
         dateTo,
+        conversionType,
       });
+
+      bundle = {
+        resourceType: "Bundle",
+        total: 1,
+        type: "collection",
+        entry: [
+          {
+            resource: {
+              resourceType: "DocumentReference",
+              subject: {
+                reference: `Patient/${patient.id}`,
+              },
+              content: [
+                {
+                  attachment: {
+                    contentType: "application/html",
+                    url: url,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      };
     }
 
     // trigger WH call
@@ -234,12 +272,14 @@ async function convertFHIRBundleToMedicalRecord({
   resources,
   dateFrom,
   dateTo,
+  conversionType,
 }: {
   bundle: Bundle<Resource>;
   patient: Pick<Patient, "id" | "cxId">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
+  conversionType: ConsolidationConversionType;
 }): Promise<string> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
 
@@ -250,6 +290,7 @@ async function convertFHIRBundleToMedicalRecord({
     resources,
     dateFrom,
     dateTo,
+    conversionType,
   };
 
   const lambdaResult = await lambdaClient

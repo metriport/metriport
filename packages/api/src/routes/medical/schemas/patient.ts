@@ -55,3 +55,7 @@ export function schemaCreateToPatient(input: PatientCreate, cxId: string) {
 export function schemaUpdateToPatient(input: PatientUpdate, cxId: string) {
   return schemaCreateToPatient(input, cxId);
 }
+
+export const consolidationConversionTypeSchema = z.enum(["html", "pdf", "fhir"]);
+
+export type ConsolidationConversionType = z.infer<typeof consolidationConversionTypeSchema>;

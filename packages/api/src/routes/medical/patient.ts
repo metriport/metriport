@@ -37,6 +37,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { consolidationConversionTypeSchema } from "./schemas/patient";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -270,6 +271,7 @@ router.get(
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
  * @return status of querying for the Patient's consolidated data.
  */
 router.post(
@@ -280,8 +282,17 @@ router.post(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const type = getFrom("query").optional("conversionType", req);
+    const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
 
-    const data = await startConsolidatedQuery({ cxId, patientId, resources, dateFrom, dateTo });
+    const data = await startConsolidatedQuery({
+      cxId,
+      patientId,
+      resources,
+      dateFrom,
+      dateTo,
+      conversionType,
+    });
     return res.json(data);
   })
 );

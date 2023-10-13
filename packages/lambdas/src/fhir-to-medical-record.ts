@@ -34,8 +34,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     resources?: ResourceTypeForConsolidation[];
     dateFrom?: string;
     dateTo?: string;
+    conversionType: string;
   }) => {
-    const { bundle, patientId, cxId, resources, dateFrom, dateTo } = req;
+    const { bundle, patientId, cxId, resources, dateFrom, dateTo, conversionType } = req;
 
     try {
       const log = prefixedLog(`patient ${patientId}`);
@@ -59,7 +60,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         })
         .promise();
 
-      const convertUrl = await convertDoc({ fileName, conversionType: "html" });
+      const convertUrl = await convertDoc({ fileName, conversionType });
 
       return convertUrl;
     } catch (err) {

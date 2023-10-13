@@ -223,6 +223,7 @@ export class APIStack extends Stack {
     } = ccdaSearch.setup({
       stack: this,
       vpc: this.vpc,
+      awsAccount,
       ccdaS3Bucket: medicalDocumentsBucket,
       lambdaLayers,
       alarmSnsAction: slackNotification?.alarmAction,
