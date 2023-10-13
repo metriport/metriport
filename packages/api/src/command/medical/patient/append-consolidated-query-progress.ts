@@ -15,7 +15,7 @@ export type SetDocQueryProgress = {
  * 'reset=true' is provided.
  * @returns the updated Patient
  */
-export async function udpateConsolidatedQueryProgress({
+export async function updateConsolidatedQueryProgress({
   patient,
   progress,
   reset,

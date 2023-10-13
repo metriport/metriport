@@ -222,6 +222,10 @@ export class Config {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
 
+  static getFHIRToMedicalRecordLambdaName(): string {
+    return getEnvVarOrFail("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
+  }
+
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
