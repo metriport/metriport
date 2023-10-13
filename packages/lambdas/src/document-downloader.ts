@@ -5,7 +5,7 @@ import {
   CommonwellError,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { DOMParser, XMLSerializer } from "xmldom";
+import { DOMParser } from "xmldom";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
 import * as stream from "stream";
@@ -127,7 +127,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     ) {
       const document = parser.parseFromString(downloadedDocument, "text/xml");
 
-      const nonXMLBody = document.getElementsByTagName("nonXMLBody")[0];
+      const nonXMLBodies = document.getElementsByTagName("nonXMLBody");
+      const nonXMLBody = nonXMLBodies[0];
 
       if (nonXMLBody) {
         const xmlBodyTexts = nonXMLBody.getElementsByTagName("text");
@@ -135,13 +136,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
         const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
 
-        const parentNode = nonXMLBody.parentNode;
-        parentNode?.removeChild(nonXMLBody);
-
         const b64Buff = Buffer.from(b64, "base64");
-
-        const s = new XMLSerializer();
-        const newXmlStr = s.serializeToString(document);
 
         const [b64Upload] = await Promise.all([
           await s3client
@@ -150,14 +145,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
               Key: newFileName,
               Body: b64Buff,
               ContentType: "application/pdf",
-            })
-            .promise(),
-          await s3client
-            .putObject({
-              Bucket: bucketName,
-              Key: fileInfo.fileName,
-              Body: newXmlStr,
-              ContentType: "application/xml",
             })
             .promise(),
         ]);
@@ -169,17 +156,44 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
         originalXml.size = newXmlFileInfo.size;
 
-        if (xmlBodyTexts.length > 1) {
-          const msg = `Multiple files created due to b64 in xml`;
+        const multipleTextMessage = `Multiple text files in nonXML body`;
+        const multipleTextExtra = {
+          context: `documentDownloader.multipleTextFilesInNonXMLBody`,
+          b64FileName: b64Upload.Key,
+          xmlFileName: uploadResult.Key,
+          orgName,
+          cxId,
+        };
+
+        if (nonXMLBodies.length > 1) {
+          const msg = `Multiple nonXML bodies in xml`;
 
           capture.message(msg, {
             extra: {
-              context: `documentDownloader.extractB64FromXML`,
+              context: `documentDownloader.multipleNonXMLBodiesInXML`,
               b64FileName: b64Upload.Key,
               xmlFileName: uploadResult.Key,
               orgName,
               cxId,
             },
+          });
+
+          const nonXMLBodiesArr = Array.from(nonXMLBodies);
+
+          for (const body of nonXMLBodiesArr) {
+            const insideXmlBodyTexts = body.getElementsByTagName("text");
+
+            if (insideXmlBodyTexts.length > 1) {
+              capture.message(multipleTextMessage, {
+                extra: multipleTextExtra,
+              });
+            }
+          }
+        }
+
+        if (xmlBodyTexts.length > 1) {
+          capture.message(multipleTextMessage, {
+            extra: multipleTextExtra,
           });
         }
 
