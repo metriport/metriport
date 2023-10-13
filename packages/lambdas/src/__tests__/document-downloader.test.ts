@@ -3,7 +3,6 @@ import {
   downloadDocumentFromCW,
   getUploadStreamToS3,
   getFileInfoFromS3,
-  returnB64FromXMLBody,
 } from "../document-downloader";
 import { getEnvOrFail } from "../shared/env";
 
@@ -74,7 +73,8 @@ describe.skip("document-downloader", () => {
 
     const nonXMLBody = document.getElementsByTagName("nonXMLBody")[0];
 
-    const b64 = returnB64FromXMLBody(nonXMLBody);
+    const xmlBodyTexts = nonXMLBody.getElementsByTagName("text");
+    const b64 = xmlBodyTexts[0].textContent ?? "";
 
     expect(b64).toEqual("abc123");
   });
