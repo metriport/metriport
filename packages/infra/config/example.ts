@@ -60,6 +60,7 @@ export const config: EnvConfig = {
     CW_TECHNICAL_CONTACT_PHONE: "(123)-123-1234",
   },
   medicalDocumentsBucketName: "test-bucket",
+  medicalDocumentsUploadBucketName: "test-upload-bucket",
   systemRootOID: "2.16.840.1.113883.3.999999",
 };
 export default config;
