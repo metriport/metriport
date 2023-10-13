@@ -61,6 +61,6 @@ export const config: EnvConfig = {
   },
   medicalDocumentsBucketName: "test-bucket",
   systemRootOID: "2.16.840.1.113883.3.999999",
-  fhirToCDAUrl: "https://api.rosetta.careevolution.com/convert/v1/fhirr4tocda",
+  // fhirToCDAUrl: "https://api.rosetta.careevolution.com/convert/v1/fhirr4tocda",
 };
 export default config;
