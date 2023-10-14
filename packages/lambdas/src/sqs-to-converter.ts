@@ -88,7 +88,7 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
   if (!keysTableItems.Items) {
     throw new Error(`No keys found in sidechain keys table`);
   }
-  let activeKey: string | undefined = undefined;
+  const activeKeys: string[] = [];
   const keysToUpdate: string[] = [];
   for (const keyItem of keysTableItems.Items) {
     if (!keyItem.keyStatus || !keyItem.apiKey) {
@@ -96,10 +96,7 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
     }
 
     if (keyItem.keyStatus === sidechainKeysStatus.active.toString()) {
-      if (!activeKey) {
-        // pick the first active API key
-        activeKey = keyItem.apiKey;
-      }
+      activeKeys.push(keyItem.apiKey);
     } else if (
       keyItem.keyStatus === sidechainKeysStatus.rateLimit.toString() &&
       keyItem.rateLimitDate &&
@@ -107,9 +104,7 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
     ) {
       // this key should have its rate limit reset by now
       keysToUpdate.push(keyItem.apiKey);
-      if (!activeKey) {
-        activeKey = keyItem.apiKey;
-      }
+      activeKeys.push(keyItem.apiKey);
     }
   }
 
@@ -134,9 +129,11 @@ async function getAndUpdateSidechainConverterKeys(): Promise<string> {
       })
       .promise();
   }
-  if (!activeKey)
+  if (activeKeys.length < 1)
     throw new Error(`No active key found in sidechain keys table - can't do conversion`);
-  return activeKey;
+
+  // pick a random key
+  return activeKeys[Math.floor(Math.random() * activeKeys.length)];
 }
 
 async function markSidechainConverterKeyAsRateLimited(apiKey: string): Promise<void> {
@@ -285,6 +282,7 @@ function postProcessSidechainFHIRBundle(
 
 async function postToSidechainConverter(payload: string, patientId: string, log: Log) {
   const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
+  const notFHIRResponseError = "Response is not a FHIR response";
   let attempt = 0;
   let timeBetweenAttemptsMillis = SIDECHAIN_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS;
   let apiKey: string;
@@ -299,10 +297,16 @@ async function postToSidechainConverter(payload: string, patientId: string, log:
           "x-api-key": apiKey,
         },
       });
+      if (!res.data || !res.data.resourceType) {
+        throw new Error(notFHIRResponseError);
+      }
+      if (res.data.resourceType !== "Bundle") {
+        throw new Error("CDA XML failed to convert to a FHIR bundle - needs investigation");
+      }
       return res;
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      if ([401, 429].includes(error.response?.status)) {
+      if ([401, 429].includes(error.response?.status) || error.message === notFHIRResponseError) {
         const msg = "Sidechain quota/auth error, trying again";
         const extra = {
           url: sidechainUrl,
@@ -313,7 +317,7 @@ async function postToSidechainConverter(payload: string, patientId: string, log:
         };
         log(msg, extra);
         capture.message(msg, { extra, level: "info" });
-        if (error.response.status === 429) {
+        if (error.response.status === 429 || error.message === notFHIRResponseError) {
           await markSidechainConverterKeyAsRateLimited(apiKey);
         } else {
           await markSidechainConverterKeyAsRevoked(apiKey);

@@ -2,10 +2,10 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import csv from "csv-parser";
-import fs from "fs";
-import { getEnvVar, getEnvVarOrFail } from "./shared/env";
 import dayjs from "dayjs";
+import fs from "fs";
 import path from "path";
 
 const apiKey = getEnvVarOrFail("API_KEY");
