@@ -6,5 +6,6 @@
     "typescript.tsdk": "node_modules/typescript/lib",
     "githubPullRequests.ignoredPullRequestBranches": [
       "develop"
-    ]
+    ],
+    "java.configuration.updateBuildConfiguration": "automatic"
 }
