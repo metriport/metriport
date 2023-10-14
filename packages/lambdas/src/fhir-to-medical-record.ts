@@ -21,7 +21,7 @@ const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 // converter config
 const FHIRToCDAConverterUrl = getEnvOrFail("FHIR_TO_CDA_CONVERTER_URL");
 const convertDocLambda = getEnvOrFail("CONVERT_DOC_LAMBDA_NAME");
-const converterKeysTableName = getEnvOrFail("FHIR_T0_CDA_CONVERTER_KEYS_TABLE_NAME");
+const converterKeysTableName = getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME");
 
 const lambdaClient = makeLambdaClient(region);
 const s3Client = makeS3Client(region);

@@ -8,7 +8,7 @@ import { sleep } from "./sleep";
 // Keep this as early on the file as possible
 capture.init();
 
-// const converterKeysTableName = getEnvOrFail("FHIR_T0_CDA_CONVERTER_KEYS_TABLE_NAME");
+// const converterKeysTableName = getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME");
 enum converterKeysStatus {
   active = "active",
   rateLimit = "rate-limit",
@@ -90,7 +90,7 @@ export async function postToConverter({
 
 async function getAndUpdateSidechainConverterKeys(converterKeysTableName: string): Promise<string> {
   if (!converterKeysTableName) {
-    throw new Error(`Programming error - FHIR_T0_CDA_CONVERTER_KEYS_TABLE_NAME is not set`);
+    throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
   }
   const docClient = new DynamoDB.DocumentClient({
     apiVersion: "2012-08-10",
@@ -168,7 +168,7 @@ async function markSidechainConverterKeyAsRateLimited(
   converterKeysTableName: string
 ): Promise<void> {
   if (!converterKeysTableName) {
-    throw new Error(`Programming error - FHIR_T0_CDA_CONVERTER_KEYS_TABLE_NAME is not set`);
+    throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
   }
 
   const docClient = new DynamoDB.DocumentClient({
@@ -192,7 +192,7 @@ async function markSidechainConverterKeyAsRevoked(
   converterKeysTableName: string
 ): Promise<void> {
   if (!converterKeysTableName) {
-    throw new Error(`Programming error - FHIR_T0_CDA_CONVERTER_KEYS_TABLE_NAME is not set`);
+    throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
   }
 
   const docClient = new DynamoDB.DocumentClient({

@@ -81,7 +81,7 @@ async function getConsolidatedAndSendToCx({
   try {
     let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
 
-    if (conversionType === "html" || conversionType === "pdf") {
+    if (conversionType) {
       const fhir = makeFhirApi(patient.cxId);
 
       const fhirPatient = await fhir.readResource("Patient", patient.id);
@@ -120,7 +120,7 @@ async function getConsolidatedAndSendToCx({
               content: [
                 {
                   attachment: {
-                    contentType: "application/html",
+                    contentType: `application/${conversionType}`,
                     url: url,
                   },
                 },
@@ -306,7 +306,5 @@ async function convertFHIRBundleToMedicalRecord({
   if (lambdaResult.Payload === undefined)
     throw new MetriportError("Payload is undefined", undefined, { lambdaName });
 
-  const fileUrl = lambdaResult.Payload.toString();
-
-  return fileUrl;
+  return lambdaResult.Payload.toString();
 }
