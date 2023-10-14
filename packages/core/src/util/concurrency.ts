@@ -6,8 +6,19 @@ export const executeInChunksDefaultOptions = {
 };
 
 export type ExecuteInChunksOptions = {
-  numberOfAsyncRuns?: number;
+  /**
+   * How many promises should execute at the same time.
+   */
+  numberOfParallelExecutions?: number;
+  /**
+   * Maximum jitter in milliseconds before each run. Makes promises
+   * start at slight different times. Defaults to no jitter.
+   */
   maxJitterMillis?: number;
+  /**
+   * Percentage of the maxJitterMillis to use (number between 0 and 1).
+   * If not set, it will use a random percentage between 0 and 1.
+   */
   jitterPct?: number;
 };
 
@@ -15,7 +26,7 @@ export async function executeAsynchronously<T>(
   collection: T[],
   fn: (chunk: T[], chunkIndex: number, chunkCount: number) => Promise<void>,
   {
-    numberOfAsyncRuns = collection.length,
+    numberOfParallelExecutions: numberOfAsyncRuns = collection.length,
     maxJitterMillis: maxJitterMillis = executeInChunksDefaultOptions.maxJitterMillis,
     jitterPct,
   }: ExecuteInChunksOptions = executeInChunksDefaultOptions

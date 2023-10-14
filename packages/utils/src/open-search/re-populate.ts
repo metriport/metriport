@@ -229,7 +229,7 @@ async function main() {
       }
     },
     {
-      numberOfAsyncRuns: PARALLEL_INGESTION_COUNT,
+      numberOfParallelExecutions: PARALLEL_INGESTION_COUNT,
       maxJitterMillis: 0,
     }
   );
