@@ -82,7 +82,6 @@ async function getConsolidatedAndSendToCx({
     let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
 
     if (conversionType === "html" || conversionType === "pdf") {
-      // need to append the patient to the bundle below
       const fhir = makeFhirApi(patient.cxId);
 
       const fhirPatient = await fhir.readResource("Patient", patient.id);

@@ -1,4 +1,3 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
 import { DynamoDB } from "aws-sdk";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -34,12 +33,14 @@ export async function postToConverter({
   axiosTimeoutSeconds,
   converterKeysTableName,
   log,
+  contentType,
 }: {
   url: string;
-  payload: Bundle<Resource>;
+  payload: unknown;
   axiosTimeoutSeconds: number;
   converterKeysTableName: string;
   log: Log;
+  contentType?: string;
 }) {
   const sidechainUrl = url;
   let attempt = 0;
@@ -53,7 +54,7 @@ export async function postToConverter({
 
       const res = await fhirConverter.post(sidechainUrl, payload, {
         headers: {
-          // "Content-Type": "application/xml",
+          ...(contentType ? { "Content-Type": contentType } : {}),
           Accept: "application/json",
           "x-api-key": apiKey,
         },
