@@ -68,6 +68,7 @@ router.post(
         };
         patientUpdates.push(updateInFHIRAndCW(patientUpdate, facility.id));
       }
+      // TODO split this in batches, don't update all patients at the same time
       const result = await Promise.allSettled(patientUpdates);
       for (const patientUpdate of result) {
         if (patientUpdate.status === "rejected") {
