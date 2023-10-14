@@ -305,8 +305,7 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       convertDocLambdaName: cdaToVisualizationLambda.functionName,
       dynamoDBSidechainKeysTable,
-      // converterUrl: props.config.fhirToCDAUrl,
-      converterUrl: "https://api.rosetta.careevolution.com/convert/v1/fhirr4tocda",
+      converterUrl: props.config.fhirToCDAUrl,
       bucketName: isSandbox(props.config)
         ? props.config.sandboxSeedDataBucketName
         : medicalDocumentsBucket.bucketName,
