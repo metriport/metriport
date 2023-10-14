@@ -21,7 +21,7 @@ import { docConversionTypeSchema } from "./schemas/documents";
 const router = Router();
 const region = Config.getAWSRegion();
 const s3client = makeS3Client(region);
-const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
+// const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
@@ -160,7 +160,7 @@ router.get(
     const docRefId = uuidv7();
     const s3FileName = createS3FileName(cxId, patientId, docRefId);
     const presignedUrl = s3client.createPresignedPost({
-      Bucket: medicalDocumentsUploadBucketName,
+      Bucket: "medical-doc-upload-staging",
       Fields: {
         key: "ramil/" + s3FileName + "_upload",
       },

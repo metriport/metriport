@@ -75,7 +75,7 @@ export function createLambda({
       ENV_TYPE: envType,
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
-      MEDICAL_DOCUMENTS_UPLOAD_BUCKET_NAME: medicalDocumentUploadBucket.bucketName,
+      // MEDICAL_DOCUMENTS_UPLOAD_BUCKET_NAME: medicalDocumentUploadBucket.bucketName,
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,
