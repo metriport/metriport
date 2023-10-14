@@ -300,6 +300,9 @@ async function postToSidechainConverter(payload: string, patientId: string, log:
       if (!res.data || !res.data.resourceType) {
         throw new Error(notFHIRResponseError);
       }
+      if (res.data.resourceType !== "Bundle") {
+        throw new Error("CDA XML failed to convert to a FHIR bundle - needs investigation");
+      }
       return res;
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
