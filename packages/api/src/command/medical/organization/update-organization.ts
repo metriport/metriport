@@ -1,4 +1,5 @@
-import { OrganizationModel, OrganizationData } from "../../../models/medical/organization";
+import { OrganizationData } from "../../../domain/medical/organization";
+import { OrganizationModel } from "../../../models/medical/organization";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getOrganizationOrFail } from "./get-organization";

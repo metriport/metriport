@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   calculateConversionProgress,
   ConvertResult,
@@ -5,16 +6,16 @@ import {
   DocumentQueryStatus,
   Progress,
 } from "../../../domain/medical/document-query";
+import { Patient } from "../../../domain/medical/patient";
+import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 import BadRequestError from "../../../errors/bad-request";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
-import { Patient, PatientModel } from "../../../models/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { emptyFunction, Util } from "../../../shared/util";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
-import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (

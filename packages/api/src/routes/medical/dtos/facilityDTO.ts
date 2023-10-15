@@ -1,4 +1,4 @@
-import { Facility } from "../../../models/medical/facility";
+import { Facility } from "../../../domain/medical/facility";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { AddressStrictDTO } from "./location-address-dto";
 

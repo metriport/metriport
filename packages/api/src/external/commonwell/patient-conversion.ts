@@ -11,7 +11,7 @@ import {
   Patient,
   PatientData,
   splitName,
-} from "../../models/medical/patient";
+} from "../../domain/medical/patient";
 import { driversLicenseURIs, medicareURI, oid, passportURI, ssnURI } from "../../shared/oid";
 
 export const genderMapping: { [k in GenderAtBirth]: string } = {
