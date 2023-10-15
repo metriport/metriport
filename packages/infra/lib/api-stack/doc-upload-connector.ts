@@ -88,7 +88,6 @@ export function createLambda({
   uploadedDocumentProcessorLambda.addEventSource(
     new S3EventSource(medicalDocumentUploadBucket, {
       events: [s3.EventType.OBJECT_CREATED],
-      filters: [{ suffix: "_upload.xml" }],
     })
   );
 

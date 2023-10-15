@@ -4,12 +4,11 @@ import status from "http-status";
 import { getEnvOrFail } from "./shared/env";
 import { S3Event } from "aws-lambda";
 import { makeS3Client } from "@metriport/core/external/aws/s3";
-// import { getFileInfoFromS3 } from "./document-downloader";
 
-// Keep this as early on the file as possible
-// capture.init();
+// // Keep this as early on the file as possible
+// // capture.init();
 
-// const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+// // const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const region = getEnvOrFail("AWS_REGION");
 const s3 = makeS3Client(region);
 
@@ -19,21 +18,19 @@ const buildResponse = (status: number, body?: unknown) => ({
 });
 
 export const handler = async (event: S3Event) => {
-  // Get the object from the event and show its content type
   const bucket = event.Records[0].s3.bucket.name;
   const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
-  const newKey = `devs.metrpiport.com/ramil/${removeSuffix(key, "_upload")}`;
+  const newKey = `devs.metriport.com/ramil/${removeSuffix(key, "_upload")}`;
   const params = {
-    Bucket: bucket,
     CopySource: encodeURI(`${bucket}/${key}`),
+    Bucket: bucket,
     Key: newKey,
   };
   try {
-    console.log("Bucket name is:", bucket, "\nAnd key is", key);
-    s3.copyObject(params, (err, data) => {
-      if (err) console.log("Err copying the file:", err);
-      console.log("Data is:", data);
-    });
+    // make a copy of the file to the general medical documents bucket
+    const resp = await s3.copyObject(params).promise();
+    console.log("RESPONSE", resp);
+
     return buildResponse(status.NOT_FOUND);
   } catch (err) {
     console.log(err);
@@ -48,7 +45,9 @@ function removeSuffix(key: string, arg1: string) {
   console.log("New file name will be", newFileName);
   return newFileName;
 }
+
 // from getFileInfoFromS3
+// Get the object from the event and show its content type
 
 // const head = await s3Client
 //       .headObject({

@@ -162,7 +162,7 @@ router.get(
     const presignedUrl = s3client.createPresignedPost({
       Bucket: "medical-doc-upload-staging",
       Fields: {
-        key: "ramil/" + s3FileName + "_upload",
+        key: s3FileName + "_upload",
       },
       Conditions: [
         ["content-length-range", 0, 25_000_000], // content length restrictions: 0-25MB
