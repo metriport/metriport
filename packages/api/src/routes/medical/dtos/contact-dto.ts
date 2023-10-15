@@ -1,3 +1,3 @@
-import { Contact } from "../../../models/medical/contact";
+import { Contact } from "../../../domain/medical/contact";
 
 export type ContactDTO = Contact;

@@ -1,4 +1,4 @@
-import { PatientExternalData } from "../models/medical/patient";
+import { PatientExternalData } from "../domain/medical/patient";
 import { getLinkStatus as getLinkStatusCW } from "./commonwell/patient";
 import { LinkStatusAcrossHIEs } from "./patient-link";
 

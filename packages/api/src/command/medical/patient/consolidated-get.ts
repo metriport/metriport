@@ -8,13 +8,13 @@ import {
   ResourceType,
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
-import { Patient } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { emptyFunction, Util } from "../../../shared/util";
 import { udpateConsolidatedQueryProgress } from "./append-consolidated-query-progress";

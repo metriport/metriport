@@ -1,4 +1,4 @@
-import { Patient } from "../../models/medical/patient";
+import { Patient } from "./patient";
 
 /**
  * Checks if the patient's list of associated facility IDs contains the facility ID parameter passed by the user.

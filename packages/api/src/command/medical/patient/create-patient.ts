@@ -1,7 +1,8 @@
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { Patient, PatientCreate, PatientData } from "../../../domain/medical/patient";
 import { processAsyncError } from "../../../errors";
 import cwCommands from "../../../external/commonwell";
-import { Patient, PatientCreate, PatientData, PatientModel } from "../../../models/medical/patient";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";

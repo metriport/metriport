@@ -1,7 +1,7 @@
 import { randNumber, randUuid } from "@ngneat/falso";
 import * as patientCmd from "../../../command/medical/patient/get-patient";
 import * as docCmd from "../../../external/fhir/document/search-documents";
-import { makePatient } from "../../../models/medical/__tests__/patient";
+import { makePatient } from "../../../domain/medical/__tests__/patient";
 import { api } from "../../__tests__/shared";
 
 jest.setTimeout(15000);
