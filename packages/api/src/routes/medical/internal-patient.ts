@@ -1,3 +1,4 @@
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -14,7 +15,9 @@ import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
 import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
 import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
+import { Patient } from "../../models/medical/patient";
 import { getETag } from "../../shared/http";
+import { errorToString } from "../../shared/log";
 import { stringToBoolean } from "../../shared/types";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryOrFail } from "../util";
@@ -53,28 +56,35 @@ router.post(
     let failedUpdateCount = 0;
     for (const facility of facilities) {
       const patients = await getPatients({ cxId, facilityId: facility.id });
-      const patientUpdates = [];
-      for (const patient of patients) {
-        const patientUpdate: PatientUpdateCmd = {
-          id: patient.id,
-          cxId: patient.cxId,
-          address: patient.data.address,
-          dob: patient.data.dob,
-          firstName: patient.data.firstName,
-          genderAtBirth: patient.data.genderAtBirth,
-          lastName: patient.data.lastName,
-          contact: patient.data.contact,
-          personalIdentifiers: patient.data.personalIdentifiers,
-        };
-        patientUpdates.push(updateInFHIRAndCW(patientUpdate, facility.id));
-      }
-      // TODO split this in batches, don't update all patients at the same time
-      const result = await Promise.allSettled(patientUpdates);
-      for (const patientUpdate of result) {
-        if (patientUpdate.status === "rejected") {
-          failedUpdateCount++;
+
+      const executeInSequence = async (patients: Patient[]) => {
+        for (const patient of patients) {
+          const patientUpdate: PatientUpdateCmd = {
+            id: patient.id,
+            cxId: patient.cxId,
+            address: patient.data.address,
+            dob: patient.data.dob,
+            firstName: patient.data.firstName,
+            genderAtBirth: patient.data.genderAtBirth,
+            lastName: patient.data.lastName,
+            contact: patient.data.contact,
+            personalIdentifiers: patient.data.personalIdentifiers,
+          };
+          try {
+            await updateInFHIRAndCW(patientUpdate, facility.id);
+          } catch (error) {
+            console.log(`Failed to update patient ${patient.id} - ${errorToString(error)}`);
+            failedUpdateCount++;
+          }
         }
-      }
+      };
+      await executeAsynchronously(
+        patients,
+        async patients => {
+          return executeInSequence(patients);
+        },
+        { numberOfParallelExecutions: 10 }
+      );
     }
     return res.status(status.OK).json({ failedUpdateCount });
   })
