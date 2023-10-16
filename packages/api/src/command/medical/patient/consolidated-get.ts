@@ -70,7 +70,7 @@ async function getConsolidatedAndSendToCx({
   dateTo,
   conversionType,
 }: {
-  patient: Pick<Patient, "id" | "cxId" | 'data'>;
+  patient: Pick<Patient, "id" | "cxId" | "data">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
