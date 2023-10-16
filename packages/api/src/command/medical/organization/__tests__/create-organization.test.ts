@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { randNumber } from "@ngneat/falso";
 import { v4 as uuidv4 } from "uuid";
-import * as createTenant from "../../../../external/fhir/admin";
 import {
   makeOrganization,
   makeOrganizationData,
-} from "../../../../models/medical/__tests__/organization";
+} from "../../../../domain/medical/__tests__/organization";
+import * as createTenant from "../../../../external/fhir/admin";
 import { OrganizationModel } from "../../../../models/medical/organization";
 import { makeOrganizationOID } from "../../../../shared/oid";
 import * as createId from "../../customer-sequence/create-id";

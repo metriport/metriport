@@ -1,9 +1,10 @@
 import { intersectionWith, isEqual } from "lodash";
 import { Op, Transaction } from "sequelize";
+import { Patient, PatientData, splitName } from "../../../domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
-import { Patient, PatientData, PatientModel, splitName } from "../../../models/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";

@@ -5,9 +5,9 @@ import {
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
-import { Facility } from "../../../models/medical/facility";
-import { Organization } from "../../../models/medical/organization";
-import { Patient } from "../../../models/medical/patient";
+import { Facility } from "../../../domain/medical/facility";
+import { Organization } from "../../../domain/medical/organization";
+import { Patient } from "../../../domain/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";

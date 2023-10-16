@@ -1,18 +1,30 @@
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
-import { DocumentQueryProgress, Progress } from "../../../domain/medical/document-query";
-import { Patient, PatientCreate, PatientData, PatientModel } from "../../../models/medical/patient";
+import {
+  DocumentQueryProgress,
+  DocumentQueryStatus,
+  Progress,
+} from "../../../domain/medical/document-query";
+import { Patient, PatientCreate, PatientData } from "../../../domain/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
+import { getPatientOrFail } from "../patient/get-patient";
+import { sendWHNotifications } from "./check-doc-queries-notification";
+import {
+  GroupedValidationResult,
+  PatientsWithValidationResult,
+  SingleValidationResult,
+} from "./check-doc-queries-shared";
 
 dayjs.extend(duration);
 
-const MAX_CONVERSION_TIME = dayjs.duration({ minutes: 30 });
-const MAX_DOWNLOAD_TIME = dayjs.duration({ minutes: 30 });
-
-type PatientInfoFromCheck = { convert?: Progress; download?: Progress; lastUpdatedAt: Date };
+const MAX_TIME_TO_PROCESS = dayjs.duration({ minutes: 30 });
+const MAX_CONCURRENT_UDPATES = 10;
 
 /**
  * Ops-driven function to check the status of all document queries in progress.
@@ -24,37 +36,60 @@ type PatientInfoFromCheck = { convert?: Progress; download?: Progress; lastUpdat
  * @param patientIds - Optional list of patient IDs to check. If not provided, all patients will be checked.
  */
 export async function checkDocumentQueries(patientIds: string[]): Promise<void> {
-  const { log } = Util.out(`checkDocumentQueries - patientIds ${patientIds.join(", ")}`);
+  const { log } = out(`checkDocumentQueries - patientIds ${patientIds.join(", ")}`);
   try {
-    const patientsToUpdate: Record<string, PatientInfoFromCheck> = {};
+    const patientsToUpdate: PatientsWithValidationResult = {};
 
-    const patientsWithDownloadsProcessing = await getDownloadsToUpdate(patientIds);
-    for (const patient of patientsWithDownloadsProcessing) {
-      patientsToUpdate[patient.id] = {
-        download: patient.data.documentQueryProgress?.download ?? ({} as Progress),
-        lastUpdatedAt: patient.updatedAt,
+    const patientsWithInvalidStatusOrCount = await getPatientsToUpdate(patientIds);
+    for (const patient of patientsWithInvalidStatusOrCount) {
+      const docQueryProgress = patient.data.documentQueryProgress;
+      if (!docQueryProgress) {
+        log(`Patient without doc query progress @ query, skipping it: ${patient.id} `);
+        continue;
+      }
+
+      const checkInvalid = (prop: Progress): SingleValidationResult => {
+        const { status, total = 0 } = prop;
+        const isTotalValid = total === calculateTotal(prop);
+        const isStatusValid = isValidStatus(status);
+        if (!isTotalValid && !isStatusValid) return "both";
+        if (!isTotalValid) return "total";
+        if (!isStatusValid) return "status";
+        return undefined;
       };
-      // not updating the DB nor triggering webhook at this time
+
+      if (docQueryProgress.convert) {
+        const whatsInvalid = checkInvalid(docQueryProgress.convert);
+        if (whatsInvalid !== undefined) {
+          patientsToUpdate[patient.id] = { convert: whatsInvalid, cxId: patient.cxId };
+        }
+      }
+      if (docQueryProgress.download) {
+        const whatsInvalid = checkInvalid(docQueryProgress.download);
+        if (whatsInvalid !== undefined) {
+          patientsToUpdate[patient.id] = {
+            ...patientsToUpdate[patient.id],
+            download: whatsInvalid,
+            cxId: patient.cxId,
+          };
+        }
+      }
     }
 
-    const patientsWithConversionsInProgress = await getConversionsToUpdate(patientIds);
-    for (const patient of patientsWithConversionsInProgress) {
-      patientsToUpdate[patient.id] = {
-        ...patientsToUpdate[patient.id],
-        convert: patient.data.documentQueryProgress?.convert ?? ({} as Progress),
-        lastUpdatedAt: patient.updatedAt,
-      };
-    }
+    await updateDocQueryStatus(patientsToUpdate);
 
-    const amount = Object.keys(patientsToUpdate).length;
+    const updatedPatientIds = Object.keys(patientsToUpdate);
+    const amount = updatedPatientIds.length;
     if (amount > 0) {
-      const msg = "Patients with unexpected doc query status";
-      const extra = { amount, patientsToUpdate };
+      const msg = "Fixed patients with unexpected doc query status";
+      const extra = { amount, patientsToUpdate: updatedPatientIds.join(", ") };
       capture.message(msg, { extra, level: "warning" });
       log(msg, stringify(extra));
     }
 
-    log(`Done (${amount} patients found)`);
+    sendWHNotifications(patientsToUpdate);
+
+    log(`Done, ${amount} patients found and updated`);
   } catch (error) {
     const msg = "Error checking document queries";
     log(msg, String(error));
@@ -62,54 +97,107 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
   }
 }
 
-export async function getDownloadsToUpdate(patientIds?: string[]): Promise<Patient[]> {
-  return getPatientsToUpdate("download", MAX_DOWNLOAD_TIME, patientIds);
+function isValidStatus(status: DocumentQueryStatus): boolean {
+  return status !== "processing";
 }
-export async function getConversionsToUpdate(patientIds?: string[]): Promise<Patient[]> {
-  return getPatientsToUpdate("convert", MAX_CONVERSION_TIME, patientIds);
+function getStatus(prop: Progress) {
+  return isValidStatus(prop.status) ? prop.status : "completed";
 }
-export async function getPatientsToUpdate(
-  propertyName: "convert" | "download",
-  maxTime: duration.Duration,
-  patientIds?: string[]
-): Promise<Patient[]> {
-  const query = getQuery(propertyName, maxTime, patientIds);
+function calculateTotal(prop: Progress) {
+  return (prop.errors ?? 0) + (prop.successful ?? 0);
+}
 
-  const patientsWithDocQueriesInProgress = (await PatientModel.sequelize?.query(query, {
+export async function updateDocQueryStatus(patients: PatientsWithValidationResult): Promise<void> {
+  const uniquePatients = Object.entries(patients);
+  await executeAsynchronously(
+    uniquePatients,
+    async patients => updatePatientsInSequence(patients),
+    { numberOfAsyncRuns: MAX_CONCURRENT_UDPATES }
+  );
+}
+
+async function updatePatientsInSequence(patients: [string, GroupedValidationResult][]) {
+  for (const [patientId, { cxId, ...whatToUpdate }] of patients) {
+    await executeOnDBTx(PatientModel.prototype, async transaction => {
+      const patientFilter = {
+        id: patientId,
+        cxId: cxId,
+      };
+      const patient = await getPatientOrFail({
+        ...patientFilter,
+        transaction,
+      });
+      const docProgress = patient.data.documentQueryProgress;
+      if (!docProgress) {
+        console.log(`Patient without doc query progress @ update, skipping it: ${patient.id} `);
+        return;
+      }
+      if (whatToUpdate.convert) {
+        const convert = docProgress.convert;
+        docProgress.convert = convert
+          ? {
+              ...convert,
+              status: getStatus(convert),
+              total: calculateTotal(convert),
+            }
+          : undefined;
+      }
+      if (whatToUpdate.download) {
+        const download = docProgress.download;
+        docProgress.download = download
+          ? {
+              ...download,
+              status: getStatus(download),
+              total: calculateTotal(download),
+            }
+          : undefined;
+      }
+      const updatedPatient = {
+        ...patient,
+        data: {
+          ...patient.data,
+          documentQueryProgress: docProgress,
+        },
+      };
+      await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+    });
+  }
+}
+
+export async function getPatientsToUpdate(patientIds?: string[]): Promise<Patient[]> {
+  const query = getQuery(patientIds);
+
+  const patientsWithInvalidDocQueries = (await PatientModel.sequelize?.query(query, {
     type: QueryTypes.SELECT,
     mapToModel: true,
     instance: new PatientModel(),
   })) as Patient[];
 
-  if (!patientsWithDocQueriesInProgress) {
-    capture.message("patientsWithDocQueriesInProgress is undefined/null", {
-      extra: { patientsWithDocQueriesInProgress, propertyName, query },
+  if (!patientsWithInvalidDocQueries) {
+    capture.message("patientsWithInvalidDocQueries is undefined/null", {
+      extra: { patientsWithInvalidDocQueries, query },
       level: "warning",
     });
     return [];
   }
-  if (!Array.isArray(patientsWithDocQueriesInProgress)) {
-    capture.message("patientsWithDocQueriesInProgress is not an array", {
-      extra: { patientsWithDocQueriesInProgress, propertyName, query },
+  if (!Array.isArray(patientsWithInvalidDocQueries)) {
+    capture.message("patientsWithInvalidDocQueries is not an array", {
+      extra: { patientsWithInvalidDocQueries, query },
       level: "warning",
     });
     return [];
   }
 
   // 'updatedAt' is not being set by sequelize, so we need to set it manually
-  patientsWithDocQueriesInProgress.forEach(patient => {
+  patientsWithInvalidDocQueries.forEach(patient => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!patient.updatedAt) patient.updatedAt = (patient as any)["updated_at"];
   });
 
-  return patientsWithDocQueriesInProgress;
+  return patientsWithInvalidDocQueries;
 }
 
-function getQuery(
-  propertyName: keyof Pick<DocumentQueryProgress, "convert" | "download">,
-  maxTime: duration.Duration,
-  patientIds: string[] = []
-): string {
+function getQuery(patientIds: string[] = []): string {
   // START - Workaround to force a compilation error if we change something on the model, since we're
   // using raw SQL here.
   const data: keyof Pick<PatientCreate, "data"> = "data";
@@ -119,20 +207,26 @@ function getQuery(
   const total: keyof Pick<Progress, "total"> = "total";
   const successful: keyof Pick<Progress, "successful"> = "successful";
   const errors: keyof Pick<Progress, "errors"> = "errors";
+  const processing: DocumentQueryStatus = "processing";
+  type PropName = keyof Pick<DocumentQueryProgress, "convert" | "download">;
   // END
 
-  const property = `${data}->'${documentQueryProgress}'->'${propertyName}'`;
+  const property = (propertyName: PropName) =>
+    `${data}->'${documentQueryProgress}'->'${propertyName}'`;
+  const convert = property("convert");
+  const download = property("download");
+
   const baseQuery =
     `select * from patient ` +
-    `where ${property}->>'${status}' = 'processing' ` +
-    `and ( ` +
-    `  (${property}->'${total}')::int <= ( ` +
-    `    (${property}->'${successful}')::int + ` +
-    `    (${property}->'${errors}')::int ` +
-    `  ) ` +
-    `  or ` +
-    `  updated_at < '${dayjs().subtract(maxTime.asSeconds(), "second").toISOString()}' ` +
-    `)`;
+    `where updated_at < current_date - interval '${MAX_TIME_TO_PROCESS.asMinutes()}' minute ` +
+    `  and ((${convert}->'${total}')::int <> (${convert}->'${successful}')::int + (${convert}->'${errors}')::int ` +
+    `        or ` +
+    `        ${convert}->>'${status}' = '${processing}' ` +
+    `        or ` +
+    `        (${download}->'${total}')::int <> (${download}->'${successful}')::int + (${download}->'${errors}')::int ` +
+    `        or ` +
+    `        ${download}->>'${status}' = '${processing}') `;
+
   const patientFilter = patientIds.length > 0 ? ` and id in ('${patientIds.join("','")}')` : "";
   return baseQuery + patientFilter;
 }
