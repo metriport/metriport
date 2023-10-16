@@ -43,6 +43,7 @@ export async function postToConverter({
   contentType?: string;
 }) {
   const sidechainUrl = url;
+  const notFHIRResponseError = "Response is not a FHIR response";
   let attempt = 0;
   let timeBetweenAttemptsMillis = CONVERTER_INITIAL_TIME_BETTWEEN_ATTEMPTS_MILLIS;
   let apiKey: string;
@@ -59,10 +60,16 @@ export async function postToConverter({
           "x-api-key": apiKey,
         },
       });
+      if (!res.data || !res.data.resourceType) {
+        throw new Error(notFHIRResponseError);
+      }
+      if (res.data.resourceType !== "Bundle") {
+        throw new Error("CDA XML failed to convert to a FHIR bundle - needs investigation");
+      }
       return res;
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      if ([401, 429].includes(error.response?.status)) {
+      if ([401, 429].includes(error.response?.status) || error.message === notFHIRResponseError) {
         const msg = "Sidechain quota/auth error, trying again";
         const extra = {
           url: sidechainUrl,
@@ -73,7 +80,7 @@ export async function postToConverter({
         };
         log(msg, extra);
         capture.message(msg, { extra, level: "info" });
-        if (error.response.status === 429) {
+        if (error.response.status === 429 || error.message === notFHIRResponseError) {
           await markSidechainConverterKeyAsRateLimited(apiKey, converterKeysTableName);
         } else {
           await markSidechainConverterKeyAsRevoked(apiKey, converterKeysTableName);
@@ -112,7 +119,7 @@ async function getAndUpdateSidechainConverterKeys(converterKeysTableName: string
   if (!keysTableItems.Items) {
     throw new Error(`No keys found in sidechain keys table`);
   }
-  let activeKey: string | undefined = undefined;
+  const activeKeys: string[] = [];
   const keysToUpdate: string[] = [];
   for (const keyItem of keysTableItems.Items) {
     if (!keyItem.keyStatus || !keyItem.apiKey) {
@@ -120,10 +127,7 @@ async function getAndUpdateSidechainConverterKeys(converterKeysTableName: string
     }
 
     if (keyItem.keyStatus === converterKeysStatus.active.toString()) {
-      if (!activeKey) {
-        // pick the first active API key
-        activeKey = keyItem.apiKey;
-      }
+      activeKeys.push(keyItem.apiKey);
     } else if (
       keyItem.keyStatus === converterKeysStatus.rateLimit.toString() &&
       keyItem.rateLimitDate &&
@@ -131,9 +135,7 @@ async function getAndUpdateSidechainConverterKeys(converterKeysTableName: string
     ) {
       // this key should have its rate limit reset by now
       keysToUpdate.push(keyItem.apiKey);
-      if (!activeKey) {
-        activeKey = keyItem.apiKey;
-      }
+      activeKeys.push(keyItem.apiKey);
     }
   }
 
@@ -158,9 +160,10 @@ async function getAndUpdateSidechainConverterKeys(converterKeysTableName: string
       })
       .promise();
   }
-  if (!activeKey)
+  if (activeKeys.length < 1)
     throw new Error(`No active key found in sidechain keys table - can't do conversion`);
-  return activeKey;
+  // pick a random key
+  return activeKeys[Math.floor(Math.random() * activeKeys.length)] ?? "";
 }
 
 async function markSidechainConverterKeyAsRateLimited(
