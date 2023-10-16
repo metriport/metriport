@@ -1,4 +1,4 @@
-import { Patient } from "../../models/medical/patient";
+import { Patient } from "./patient";
 
 export const documentQueryStatus = ["processing", "completed", "failed"] as const;
 export type DocumentQueryStatus = (typeof documentQueryStatus)[number];

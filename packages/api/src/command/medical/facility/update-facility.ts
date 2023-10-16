@@ -1,4 +1,5 @@
-import { FacilityData, FacilityModel } from "../../../models/medical/facility";
+import { FacilityData } from "../../../domain/medical/facility";
+import { FacilityModel } from "../../../models/medical/facility";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "./get-facility";

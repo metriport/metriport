@@ -1,8 +1,8 @@
 import { cloneDeep } from "lodash";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { Patient } from "../../models/medical/patient";
-import { PatientDataCommonwell } from "./patient-shared";
+import { Patient } from "../../domain/medical/patient";
 import { LinkStatus } from "../patient-link";
+import { PatientDataCommonwell } from "./patient-shared";
 
 export const setCommonwellId = async ({
   patientId,

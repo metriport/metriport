@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
+import { Period } from "../../../domain/medical/patient";
 import BadRequestError from "../../../errors/bad-request";
-import { Period } from "../../../models/medical/patient";
 import { PatientCreateCmd } from "./create-patient";
 import { PatientUpdateCmd } from "./update-patient";
 
