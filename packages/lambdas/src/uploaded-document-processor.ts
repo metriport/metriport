@@ -4,16 +4,14 @@ import status from "http-status";
 import { getEnvOrFail } from "./shared/env";
 import { S3Event } from "aws-lambda";
 import { makeS3Client } from "@metriport/core/external/aws/s3";
-import { getFileInfoFromS3 } from "./document-downloader";
 import axios from "axios";
+import { getFileInfoFromS3 } from "./shared/file-info";
 
 // // Keep this as early on the file as possible
 // // capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 const api = axios.create();
-
-// // const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const region = getEnvOrFail("AWS_REGION");
 const s3 = makeS3Client(region);
 
