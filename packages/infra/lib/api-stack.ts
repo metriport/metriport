@@ -208,7 +208,7 @@ export class APIStack extends Stack {
 
     const devsTestBucket = s3.Bucket.fromBucketName(
       this,
-      "APIMedicalDocumentsUploadBucket",
+      "APIDevsTestBucket",
       "devs.metriport.com"
     );
 
