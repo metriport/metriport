@@ -132,9 +132,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
       if (nonXMLBody) {
         const xmlBodyTexts = nonXMLBody.getElementsByTagName("text");
-        const b64 = xmlBodyTexts[0].textContent ?? "";
+        const b64 = xmlBodyTexts[0]?.textContent ?? "";
 
-        const newFileName = fileInfo.fileName.split(".")[0].concat(".pdf");
+        const newFileName = fileInfo.fileName.split(".")[0]?.concat(".pdf") ?? "";
 
         const b64Buff = Buffer.from(b64, "base64");
 

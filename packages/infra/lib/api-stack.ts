@@ -306,9 +306,7 @@ export class APIStack extends Stack {
       convertDocLambdaName: cdaToVisualizationLambda.functionName,
       dynamoDBSidechainKeysTable,
       converterUrl: props.config.fhirToCDAUrl,
-      bucketName: isSandbox(props.config)
-        ? props.config.sandboxSeedDataBucketName
-        : medicalDocumentsBucket.bucketName,
+      bucketName: medicalDocumentsBucket.bucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
@@ -1006,7 +1004,7 @@ export class APIStack extends Stack {
     convertDocLambdaName: string;
     converterUrl: string;
     dynamoDBSidechainKeysTable: dynamodb.Table | undefined;
-    bucketName: string | undefined;
+    bucketName: string;
     envType: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
@@ -1029,7 +1027,7 @@ export class APIStack extends Stack {
     const fhirToMedicalRecordLambda = createLambda({
       stack: this,
       name: "FhirToMedicalRecord",
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fhir-to-medical-record",
       envVars: {
         ENV_TYPE: envType,
@@ -1037,14 +1035,12 @@ export class APIStack extends Stack {
         CONVERT_DOC_LAMBDA_NAME: convertDocLambdaName,
         FHIR_TO_CDA_CONVERTER_URL: converterUrl,
         SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME: dynamoDBSidechainKeysTable?.tableName ?? "",
-        ...(bucketName && {
-          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
-        }),
+        MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: lambdaLayers,
       memory: 512,
-      timeout: Duration.minutes(5),
+      timeout: lambdaTimeout,
       vpc,
       alarmSnsAction: alarmAction,
     });

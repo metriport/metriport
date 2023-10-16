@@ -8,8 +8,10 @@ import {
   ResourceType,
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { ConsolidationConversionType } from "@metriport/api-sdk/medical/models/patient";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { FhirToMedicalRecordPayload } from "@metriport/core/src/domain/fhir-to-medical-record";
 import { Config } from "../../../shared/config";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -23,7 +25,6 @@ import { emptyFunction, Util } from "../../../shared/util";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { getPatientOrFail } from "./get-patient";
-import { ConsolidationConversionType } from "../../../routes/medical/schemas/patient";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
@@ -82,53 +83,14 @@ async function getConsolidatedAndSendToCx({
     let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
 
     if (conversionType) {
-      const fhir = makeFhirApi(patient.cxId);
-
-      const fhirPatient = await fhir.readResource("Patient", patient.id);
-
-      const bundleWithPatient: Bundle<Resource> = {
-        ...bundle,
-        total: (bundle.total ?? 0) + 1,
-        entry: [
-          {
-            resource: fhirPatient,
-          },
-          ...(bundle.entry ?? []),
-        ],
-      };
-
-      const url = await convertFHIRBundleToMedicalRecord({
-        bundle: bundleWithPatient,
+      bundle = await handleBundleToMedicalRecord({
+        bundle,
         patient,
         resources,
         dateFrom,
         dateTo,
         conversionType,
       });
-
-      bundle = {
-        resourceType: "Bundle",
-        total: 1,
-        type: "collection",
-        entry: [
-          {
-            resource: {
-              resourceType: "DocumentReference",
-              subject: {
-                reference: `Patient/${patient.id}`,
-              },
-              content: [
-                {
-                  attachment: {
-                    contentType: `application/${conversionType}`,
-                    url: url,
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      };
     }
 
     // trigger WH call
@@ -265,6 +227,70 @@ function issueToString(issue: OperationOutcomeIssue): string {
   );
 }
 
+async function handleBundleToMedicalRecord({
+  bundle,
+  patient,
+  resources,
+  dateFrom,
+  dateTo,
+  conversionType,
+}: {
+  bundle: Bundle<Resource>;
+  patient: Pick<Patient, "id" | "cxId">;
+  resources?: ResourceTypeForConsolidation[];
+  dateFrom?: string;
+  dateTo?: string;
+  conversionType: ConsolidationConversionType;
+}): Promise<Bundle<Resource>> {
+  const fhir = makeFhirApi(patient.cxId);
+
+  const fhirPatient = await fhir.readResource("Patient", patient.id);
+
+  const bundleWithPatient: Bundle<Resource> = {
+    ...bundle,
+    total: (bundle.total ?? 0) + 1,
+    entry: [
+      {
+        resource: fhirPatient,
+      },
+      ...(bundle.entry ?? []),
+    ],
+  };
+
+  const url = await convertFHIRBundleToMedicalRecord({
+    bundle: bundleWithPatient,
+    patient,
+    resources,
+    dateFrom,
+    dateTo,
+    conversionType,
+  });
+
+  return {
+    resourceType: "Bundle",
+    total: 1,
+    type: "collection",
+    entry: [
+      {
+        resource: {
+          resourceType: "DocumentReference",
+          subject: {
+            reference: `Patient/${patient.id}`,
+          },
+          content: [
+            {
+              attachment: {
+                contentType: `application/${conversionType}`,
+                url: url,
+              },
+            },
+          ],
+        },
+      },
+    ],
+  };
+}
+
 async function convertFHIRBundleToMedicalRecord({
   bundle,
   patient,
@@ -282,7 +308,7 @@ async function convertFHIRBundleToMedicalRecord({
 }): Promise<string> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
 
-  const payload = {
+  const payload: FhirToMedicalRecordPayload = {
     bundle,
     patientId: patient.id,
     cxId: patient.cxId,
