@@ -125,7 +125,7 @@ export async function getConsolidatedPatientData({
   dateFrom,
   dateTo,
 }: {
-  patient: Pick<Patient, "id" | "cxId" | "data">;
+  patient: Pick<Patient, "id" | "cxId">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;

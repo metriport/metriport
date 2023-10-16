@@ -2,6 +2,7 @@ import { patientCreateSchema } from "@metriport/api-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import { consolidationConversionTypeSchema } from "@metriport/api-sdk/medical/models/patient";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
@@ -37,7 +38,6 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
-import { consolidationConversionTypeSchema } from "./schemas/patient";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
