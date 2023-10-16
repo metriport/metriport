@@ -32,7 +32,7 @@ export const handler = async (event: S3Event) => {
   const sourceBucket = event.Records[0].s3.bucket.name;
   const sourceKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
   const destinationBucket = "devs.metriport.com";
-  const destinationKey = `/${removeSuffix(sourceKey, "_upload")}`;
+  const destinationKey = `${removeSuffix(sourceKey, "_upload")}`;
 
   const params = {
     CopySource: encodeURI(`${sourceBucket}/${sourceKey}`),
@@ -78,7 +78,7 @@ function removeSuffix(key: string, arg1: string) {
 function getIdsFromKey(destinationKey: string) {
   console.log("Destination key is:", destinationKey);
   const keyParts = destinationKey.split("_");
-  const cxId = keyParts[0];
+  const cxId = keyParts[0].split("/")[0];
   const patientId = keyParts[1];
   const docId = keyParts[2];
   const fileData = {

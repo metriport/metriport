@@ -46,15 +46,15 @@ export function createLambda({
   vpc,
   medicalDocumentUploadBucket,
   devsTestBucket,
-  apiServiceDnsAddress,
-}: {
+}: // apiServiceDnsAddress,
+{
   lambdaLayers: ILayerVersion[];
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
   medicalDocumentUploadBucket: s3.Bucket;
   devsTestBucket: s3.IBucket;
-  apiServiceDnsAddress?: string;
+  // apiServiceDnsAddress?: string;
 }): Lambda {
   const config = getConfig();
   const {
@@ -80,7 +80,7 @@ export function createLambda({
       // MEDICAL_DOCUMENTS_UPLOAD_BUCKET_NAME: medicalDocumentUploadBucket.bucketName,
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      API_URL: `http://${apiServiceDnsAddress}`,
+      API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/internal/docs/doc-ref`,
     },
     timeout: lambdaTimeout,
   });

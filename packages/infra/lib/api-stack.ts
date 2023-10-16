@@ -323,7 +323,7 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       medicalDocumentUploadBucket,
       devsTestBucket,
-      apiServiceDnsAddress: props.config.lambdasSentryDSN,
+      // apiServiceDnsAddress: props.config.lambdasSentryDSN,
     });
 
     //-------------------------------------------
