@@ -59,13 +59,15 @@ export type ListDocumentResult = {
   documents: FHIRDocumentReference[];
 };
 
-export type DocumentMetadata = {
-  mimeType?: string;
-  size?: number;
-  fileName?: string;
-};
-
-export type DocumentUploadPayload = {
-  fileMetadata?: DocumentMetadata;
-  fileContents: string;
+export type SignedUrl = {
+  url: string;
+  fields: {
+    key: string;
+    bucket: string;
+    "X-Amz-Algorithm": string;
+    "X-Amz-Credential": string;
+    "X-Amz-Date": string;
+    Policy: string;
+    "X-Amz-Signature": string;
+  };
 };

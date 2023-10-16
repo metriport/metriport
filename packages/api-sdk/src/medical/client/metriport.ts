@@ -11,9 +11,9 @@ import { getETagHeader } from "../models/common/base-update";
 import {
   DocumentQuery,
   DocumentReference,
-  DocumentUploadPayload,
   ListDocumentFilters,
   ListDocumentResult,
+  SignedUrl,
   documentListSchema,
   documentQuerySchema,
 } from "../models/document";
@@ -475,41 +475,55 @@ export class MetriportMedicalApi {
     return resp.data;
   }
 
+  // /**
+  //  * Uploads a document to Metriport and returns a FHIR document reference.
+  //  * The document will be available to HIEs.
+  //  *
+  //  * @param patientId The ID of the patient to associate the document to.
+  //  * @param filePayload The file metadata and file contents.
+  //  * @param organizationName The name of the organization that created the document.
+  //  * @param practitionerName The name of the practitioner who created the document.
+  //  * @param description A brief file description.
+  //  *
+  //  * @return The FHIR document reference.
+  //  */
+  // async uploadDocument(
+  //   patientId: string,
+  //   filePayload: DocumentUploadPayload,
+  //   organizationName?: string,
+  //   practitionerName?: string,
+  //   description?: string
+  // ): Promise<DocumentReference> {
+  //   if (!filePayload.fileContents) throw new Error("File is required");
+  //   if (!patientId) throw new Error("Patient ID is required");
+
+  //   const requestBody = {
+  //     ...filePayload,
+  //     organizationName,
+  //     practitionerName,
+  //     description,
+  //   };
+
+  //   const resp = await this.api.post(`${DOCUMENT_URL}?patientId=${patientId}`, requestBody, {
+  //     headers: {
+  //       "Content-Type": "multipart/form-data",
+  //     },
+  //   });
+
+  //   return resp.data;
+  // }
+
   /**
-   * Uploads a document to Metriport and returns a FHIR document reference.
-   * The document will be available to HIEs.
+   * Returns a signed url to upload a document to Metriport.
    *
-   * @param patientId The ID of the patient to associate the document to.
-   * @param filePayload The file metadata and file contents.
-   * @param organizationName The name of the organization that created the document.
-   * @param practitionerName The name of the practitioner who created the document.
-   * @param description A brief file description.
-   *
-   * @return The FHIR document reference.
+   * @param patientId - the patient ID
+   * @returns a signed url
    */
-  async uploadDocument(
-    patientId: string,
-    filePayload: DocumentUploadPayload,
-    organizationName?: string,
-    practitionerName?: string,
-    description?: string
-  ): Promise<DocumentReference> {
-    if (!filePayload.fileContents) throw new Error("File is required");
+  async getDocumentUploadUrl(patientId: string): Promise<SignedUrl> {
+    console.log("Triggered API client:)");
     if (!patientId) throw new Error("Patient ID is required");
 
-    const requestBody = {
-      ...filePayload,
-      organizationName,
-      practitionerName,
-      description,
-    };
-
-    const resp = await this.api.post(`${DOCUMENT_URL}?patientId=${patientId}`, requestBody, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
+    const resp = await this.api.get(`${DOCUMENT_URL}?patientId=${patientId}`, {});
     return resp.data;
   }
 }
