@@ -24,3 +24,7 @@ export const queryProgressSchema = z.object({
   status: queryStatusSchema,
 });
 export type QueryProgress = z.infer<typeof queryProgressSchema>;
+
+export const consolidationConversionTypeSchema = z.enum(["html", "pdf", "xml"]);
+
+export type ConsolidationConversionType = z.infer<typeof consolidationConversionTypeSchema>;
