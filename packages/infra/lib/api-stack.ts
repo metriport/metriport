@@ -206,6 +206,12 @@ export class APIStack extends Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
+    const devsTestBucket = s3.Bucket.fromBucketName(
+      this,
+      "APIMedicalDocumentsUploadBucket",
+      "devs.metriport.com"
+    );
+
     //-------------------------------------------
     // FHIR Converter Service
     //-------------------------------------------
@@ -316,6 +322,7 @@ export class APIStack extends Stack {
       stack: this,
       vpc: this.vpc,
       medicalDocumentUploadBucket,
+      devsTestBucket,
       apiServiceDnsAddress: props.config.lambdasSentryDSN,
     });
 

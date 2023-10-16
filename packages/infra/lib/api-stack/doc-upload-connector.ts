@@ -45,6 +45,7 @@ export function createLambda({
   stack,
   vpc,
   medicalDocumentUploadBucket,
+  devsTestBucket,
   apiServiceDnsAddress,
 }: {
   lambdaLayers: ILayerVersion[];
@@ -52,6 +53,7 @@ export function createLambda({
   stack: Construct;
   vpc: IVpc;
   medicalDocumentUploadBucket: s3.Bucket;
+  devsTestBucket: s3.IBucket;
   apiServiceDnsAddress?: string;
 }): Lambda {
   const config = getConfig();
@@ -84,6 +86,7 @@ export function createLambda({
   });
 
   medicalDocumentUploadBucket.grantReadWrite(uploadedDocumentProcessorLambda);
+  devsTestBucket.grantReadWrite(uploadedDocumentProcessorLambda);
 
   uploadedDocumentProcessorLambda.addEventSource(
     new S3EventSource(medicalDocumentUploadBucket, {
