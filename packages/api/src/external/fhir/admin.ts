@@ -1,4 +1,4 @@
-import { Organization } from "../../models/medical/organization";
+import { Organization } from "../../domain/medical/organization";
 import { makeFhirAdminApi } from "./api/api-factory";
 
 type OrgToCreateTenant = Pick<Organization, "organizationNumber" | "cxId">;

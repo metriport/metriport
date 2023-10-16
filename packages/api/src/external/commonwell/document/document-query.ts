@@ -20,15 +20,15 @@ import {
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { reportUsage } from "../../../command/usage/report-usage";
+import { Facility } from "../../../domain/medical/facility";
+import { Organization } from "../../../domain/medical/organization";
+import { Patient } from "../../../domain/medical/patient";
 import { Product } from "../../../domain/product";
 import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
 import { MedicalDataSource } from "../../../external";
 import { makeLambdaClient } from "../../../external/aws/lambda";
-import { Facility } from "../../../models/medical/facility";
-import { Organization } from "../../../models/medical/organization";
-import { Patient } from "../../../models/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";

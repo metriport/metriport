@@ -11,10 +11,10 @@ import {
 } from "@metriport/commonwell-sdk";
 import _, { minBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
+import { Facility } from "../../domain/medical/facility";
+import { Organization } from "../../domain/medical/organization";
+import { Patient, PatientExternalDataEntry } from "../../domain/medical/patient";
 import BadRequestError from "../../errors/bad-request";
-import { Facility } from "../../models/medical/facility";
-import { Organization } from "../../models/medical/organization";
-import { Patient, PatientExternalDataEntry } from "../../models/medical/patient";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
 import { driversLicenseURIs } from "../../shared/oid";

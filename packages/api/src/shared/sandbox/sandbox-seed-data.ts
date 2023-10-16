@@ -1,5 +1,5 @@
-import { Address } from "../../models/medical/address";
-import { PatientData } from "../../models/medical/patient";
+import { Address } from "../../domain/medical/address";
+import { PatientData } from "../../domain/medical/patient";
 import { aaminaDocRefs } from "./sandbox-seed-data-aamina";
 import { andreasDocRefs } from "./sandbox-seed-data-andreas";
 import { damienDocRefs } from "./sandbox-seed-data-damien";

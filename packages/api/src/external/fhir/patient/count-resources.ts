@@ -1,5 +1,5 @@
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { Patient } from "../../../models/medical/patient";
+import { Patient } from "../../../domain/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { makeFhirApi } from "../api/api-factory";

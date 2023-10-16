@@ -1,5 +1,5 @@
-import { CommonWellAPI, RequestMetadata, organizationQueryMeta } from "@metriport/commonwell-sdk";
-import { Patient } from "../../../models/medical/patient";
+import { CommonWellAPI, organizationQueryMeta, RequestMetadata } from "@metriport/commonwell-sdk";
+import { Patient } from "../../../domain/medical/patient";
 import { oid } from "../../../shared/oid";
 import { MedicalDataSource } from "../../index";
 import { makeCommonWellAPI } from "../api";
