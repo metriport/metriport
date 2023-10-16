@@ -42,6 +42,12 @@ You can check the status of the data query by calling [get consolidated data que
   ISO 8601. If not provided, no end date filter will be applied.
 </ParamField>
 
+<ParamField query="conversionType" type="string">
+  The doc type to convert to. Either `html` or `pdf`.
+
+  <Info>This parameter is to indicate how the medical record should be rendered.</Info>
+</ParamField>
+
 <Info>
   You can scroll to the bottom of the page to view all [available
   resources](/medical-api/api-reference/fhir/get-patient-consolidated#available-fhir-resources).
@@ -71,7 +77,7 @@ const consolidatedData = await metriport.startConsolidatedQuery(
 
 ```json
 {
-    "status": "processing"
+  "status": "processing"
 }
 ```
 

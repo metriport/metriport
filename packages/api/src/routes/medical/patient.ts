@@ -221,12 +221,10 @@ router.get(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const patient = await getPatientOrFail({ id: patientId, cxId });
 
     const data = await getConsolidatedPatientData({
-      patient: {
-        cxId,
-        id: patientId,
-      },
+      patient,
       resources,
       dateFrom,
       dateTo,
