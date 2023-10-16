@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { PatientModel } from "../../../../models/medical/patient";
-import { makePatient, makePatientModel } from "../../../../models/medical/__tests__/patient";
+import { makePatientModel } from "../../../../models/medical/__tests__/patient";
+import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import * as whMedical from "../document-webhook";
 import * as docQueryProgress from "../../patient/append-doc-query-progress";

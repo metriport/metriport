@@ -1,5 +1,5 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
-import { Organization } from "../../models/medical/organization";
+import { Organization } from "../../domain/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { OID_PREFIX } from "../../shared/oid";

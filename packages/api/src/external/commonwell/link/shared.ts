@@ -11,7 +11,7 @@ import {
   PatientData,
   PatientExternalData,
   PatientExternalDataEntry,
-} from "../../../models/medical/patient";
+} from "../../../domain/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { PatientDataCommonwell } from "../patient-shared";

@@ -1,6 +1,7 @@
 import { organizationQueryMeta } from "@metriport/commonwell-sdk";
 import { groupBy } from "lodash";
-import { Patient, PatientModel } from "../../../models/medical/patient";
+import { Patient } from "../../../domain/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";

@@ -5,7 +5,7 @@ import { MetriportMedicalApi, PatientCreate, PatientDTO } from "@metriport/api-s
 import * as AWS from "aws-sdk";
 import axios from "axios";
 import { seedData } from "../../../api/src/shared/sandbox/sandbox-seed-data";
-import { getEnvVarOrFail } from "../shared/env";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { uuidv7 } from "../shared/uuid-v7";
 
 export type Doc = {

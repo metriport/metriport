@@ -13,13 +13,13 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { FhirToMedicalRecordPayload } from "@metriport/core/src/domain/fhir-to-medical-record";
 import { Config } from "../../../shared/config";
+import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
-import { Patient } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { emptyFunction, Util } from "../../../shared/util";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";

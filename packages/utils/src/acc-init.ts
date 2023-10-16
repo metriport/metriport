@@ -9,7 +9,7 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider"; // ES Modules import
 import axios from "axios";
 import { uniq } from "lodash";
-import { getEnvVarOrFail } from "./shared/env";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 /**
  * Initializes customers' accounts based on their Cognito users.

@@ -1,6 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Patient } from "../../../domain/medical/patient";
 import { Product } from "../../../domain/product";
-import { Patient } from "../../../models/medical/patient";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";

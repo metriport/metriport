@@ -1,11 +1,11 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-
-import { Sequelize } from "sequelize";
+// Keep dotenv import and config before everything else
 import { MedplumClient } from "@medplum/core";
 import { Organization as FHIROrganization, Patient as FHIRPatient } from "@medplum/fhirtypes";
 import { PersonalIdentifier } from "@metriport/api-sdk";
-import { getEnvVarOrFail } from "./shared/env";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { Sequelize } from "sequelize";
 
 /**
  * Migrate existing orgs and patients to FHIR

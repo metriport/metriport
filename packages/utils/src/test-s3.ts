@@ -1,8 +1,8 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as AWS from "aws-sdk";
-import { getEnvVarOrFail } from "./shared/env";
 
 async function main() {
   const region = getEnvVarOrFail("REGION");
