@@ -1,9 +1,9 @@
 import {
   downloadDocumentFromCW,
   getUploadStreamToS3,
-  getFileInfoFromS3,
   removeAndReturnB64FromXML,
 } from "../document-downloader";
+import { getFileInfoFromS3 } from "../shared/file-info";
 import { getEnvOrFail } from "../shared/env";
 
 const cwOrgCertificate = getEnvOrFail("CW_ORG_CERTIFICATE");
