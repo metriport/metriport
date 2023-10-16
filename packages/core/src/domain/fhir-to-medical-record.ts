@@ -5,6 +5,7 @@ import { ConsolidationConversionType } from "@metriport/api-sdk/medical/models/p
 export type FhirToMedicalRecordPayload = {
   bundle: Bundle<Resource>;
   patientId: string;
+  firstName: string;
   cxId: string;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;

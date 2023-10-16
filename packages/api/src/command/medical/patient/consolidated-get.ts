@@ -50,6 +50,7 @@ export async function startConsolidatedQuery({
     log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
     return patient.data.consolidatedQuery;
   }
+
   const progress: QueryProgress = { status: "processing" };
   await updateConsolidatedQueryProgress({
     patient,
@@ -69,7 +70,7 @@ async function getConsolidatedAndSendToCx({
   dateTo,
   conversionType,
 }: {
-  patient: Pick<Patient, "id" | "cxId">;
+  patient: Pick<Patient, "id" | "cxId" | 'data'>;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -124,7 +125,7 @@ export async function getConsolidatedPatientData({
   dateFrom,
   dateTo,
 }: {
-  patient: Pick<Patient, "id" | "cxId">;
+  patient: Pick<Patient, "id" | "cxId" | "data">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -236,7 +237,7 @@ async function handleBundleToMedicalRecord({
   conversionType,
 }: {
   bundle: Bundle<Resource>;
-  patient: Pick<Patient, "id" | "cxId">;
+  patient: Pick<Patient, "id" | "cxId" | "data">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -300,7 +301,7 @@ async function convertFHIRBundleToMedicalRecord({
   conversionType,
 }: {
   bundle: Bundle<Resource>;
-  patient: Pick<Patient, "id" | "cxId">;
+  patient: Pick<Patient, "id" | "cxId" | "data">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -311,6 +312,7 @@ async function convertFHIRBundleToMedicalRecord({
   const payload: FhirToMedicalRecordPayload = {
     bundle,
     patientId: patient.id,
+    firstName: patient.data.firstName,
     cxId: patient.cxId,
     resources,
     dateFrom,

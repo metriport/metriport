@@ -18,6 +18,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+const envType = getEnvOrFail("ENV_TYPE");
 // converter config
 const FHIRToCDAConverterUrl = getEnvOrFail("FHIR_TO_CDA_CONVERTER_URL");
 const convertDocLambda = getEnvOrFail("CONVERT_DOC_LAMBDA_NAME");
@@ -25,9 +26,10 @@ const converterKeysTableName = getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE
 
 const lambdaClient = makeLambdaClient(region);
 const s3Client = makeS3Client(region);
+const isSandbox = envType === "sandbox";
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRecordPayload) => {
-  const { bundle, patientId, cxId, resources, dateFrom, dateTo, conversionType } = req;
+  const { bundle, patientId, firstName, cxId, resources, dateFrom, dateTo, conversionType } = req;
 
   console.log(
     `Running with conversionType: ${conversionType}, patientId: ${patientId}, cxId: ${cxId}, resources: ${resources}, dateFrom: ${dateFrom}, dateTo: ${dateTo}`
@@ -37,6 +39,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
 
   try {
     const log = prefixedLog(`patient ${patientId}`);
+
+    if (isSandbox) {
+      const convertUrl = await convertDoc({ fileName: `${firstName}-consolidated.xml`, conversionType });
+
+      return convertUrl;
+    }
+
     const res = await postToConverter({
       url: FHIRToCDAConverterUrl,
       payload: bundle,
