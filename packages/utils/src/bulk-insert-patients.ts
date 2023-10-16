@@ -4,10 +4,7 @@ dotenv.config();
 import { sleep } from "@metriport/core/util/sleep";
 import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
-<<<<<<< HEAD
-=======
 import { Command } from "commander";
->>>>>>> develop
 import csv from "csv-parser";
 import dayjs from "dayjs";
 import fs from "fs";
