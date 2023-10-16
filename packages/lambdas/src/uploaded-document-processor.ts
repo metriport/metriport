@@ -4,9 +4,14 @@ import status from "http-status";
 import { getEnvOrFail } from "./shared/env";
 import { S3Event } from "aws-lambda";
 import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { getFileInfoFromS3 } from "./document-downloader";
+import axios from "axios";
 
 // // Keep this as early on the file as possible
 // // capture.init();
+
+const apiServerURL = getEnvOrFail("API_URL");
+const api = axios.create();
 
 // // const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const region = getEnvOrFail("AWS_REGION");
@@ -17,24 +22,50 @@ const buildResponse = (status: number, body?: unknown) => ({
   body,
 });
 
+type FileData = {
+  mimetype?: string;
+  size?: number;
+  docId: string;
+  cxId: string;
+  patientId: string;
+};
+
 export const handler = async (event: S3Event) => {
-  const bucket = event.Records[0].s3.bucket.name;
-  const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
-  const newKey = `devs.metriport.com/ramil/${removeSuffix(key, "_upload")}`;
+  const sourceBucket = event.Records[0].s3.bucket.name;
+  const sourceKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
+  const destinationBucket = "devs.metriport.com";
+  const destinationKey = `/${removeSuffix(sourceKey, "_upload")}`;
+
   const params = {
-    CopySource: encodeURI(`${bucket}/${key}`),
-    Bucket: bucket,
-    Key: newKey,
+    CopySource: encodeURI(`${sourceBucket}/${sourceKey}`),
+    Bucket: destinationBucket,
+    Key: destinationKey,
   };
+
   try {
     // make a copy of the file to the general medical documents bucket
     const resp = await s3.copyObject(params).promise();
-    console.log("RESPONSE", resp);
+    console.log("RESPONSE", JSON.stringify(resp));
+    const { size, contentType } = await getFileInfoFromS3(destinationKey, destinationBucket);
+    console.log("Got size and content type", size, contentType);
 
-    return buildResponse(status.NOT_FOUND);
+    const fileData: FileData = {
+      size,
+      mimetype: contentType,
+      ...getIdsFromKey(destinationKey),
+    };
+    console.log("Got file data:", fileData);
+
+    // parse file details and pass to api internal route
+    try {
+      return forwardCallToServer(fileData);
+    } catch (err) {
+      console.log("Error forwarding call to server", err);
+      return buildResponse(status.INTERNAL_SERVER_ERROR);
+    }
   } catch (err) {
     console.log(err);
-    const message = `Error getting object ${key} from bucket ${bucket}. Make sure they exist and your bucket is in the same region as this function.`;
+    const message = `Error getting object ${sourceKey} from bucket ${sourceBucket}. Make sure they exist and your bucket is in the same region as this function.`;
     console.log(message);
     throw new Error(message);
   }
@@ -46,6 +77,36 @@ function removeSuffix(key: string, arg1: string) {
   return newFileName;
 }
 
+function getIdsFromKey(destinationKey: string) {
+  console.log("Destination key is:", destinationKey);
+  const keyParts = destinationKey.split("_");
+  const cxId = keyParts[0];
+  const patientId = keyParts[1];
+  const docId = keyParts[2];
+  const fileData = {
+    cxId,
+    patientId,
+    docId: docId,
+  };
+  return fileData;
+}
+
+async function forwardCallToServer(fileData: FileData) {
+  console.log("Forwarding call to server at URL: ", apiServerURL);
+  const requestBody = {
+    mimeType: fileData.mimetype,
+    size: fileData.size,
+    originalname: fileData.docId,
+  };
+
+  const url = `${apiServerURL}/internal/docs/doc-ref?cxId=${fileData.cxId}&patientId=${fileData.patientId}`;
+  console.log("URL is", url);
+  const resp = await api.post(url, requestBody);
+
+  console.log(`Server response - status: ${resp.status}`);
+  console.log(`Server response - body: ${resp.data}`);
+  return buildResponse(resp.status, resp.data);
+}
 // from getFileInfoFromS3
 // Get the object from the event and show its content type
 

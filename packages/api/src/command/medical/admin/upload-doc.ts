@@ -1,6 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
-import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+// import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
@@ -12,6 +12,12 @@ const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
 
 const smallId = () => String(randomInt(3)).padStart(3, "0");
 
+export type FileData = {
+  mimetype?: string;
+  size?: number;
+  originalname: string;
+};
+
 /**
  * ADMIN LOGIC - not to be used by other endpoints/services.
  *
@@ -22,13 +28,13 @@ export async function createAndUploadDocReference({
   cxId,
   patientId,
   docId,
-  file,
+  fileData,
   metadata = {},
 }: {
   cxId: string;
   patientId: string;
   docId: string;
-  file: Express.Multer.File;
+  fileData: FileData;
   metadata?: {
     description?: string;
     orgName?: string;
@@ -37,7 +43,7 @@ export async function createAndUploadDocReference({
 }): Promise<DocumentReference> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
-  const fhirApi = makeFhirApi(cxId);
+  // const fhirApi = makeFhirApi(cxId);
   const refDate = dayjs();
   const orgId = smallId();
   const orgRef = `org${orgId}`;
@@ -45,11 +51,11 @@ export async function createAndUploadDocReference({
   const practitionerRef = `auth${practitionerId}`;
 
   const metriportContent = createDocReferenceContent({
-    contentType: file.mimetype,
-    size: file.size,
+    contentType: fileData.mimetype,
+    size: fileData.size,
     creation: refDate.format(),
-    fileName: file.originalname,
-    location: `${docContributionUrl}?fileName=${file.originalname}`,
+    fileName: fileData.originalname,
+    location: `${docContributionUrl}?fileName=${fileData.originalname}`,
     extension: [metriportDataSourceExtension],
     format: "urn:ihe:pcc:xphr:2007",
   });
@@ -118,7 +124,7 @@ export async function createAndUploadDocReference({
     },
   });
 
-  await fhirApi.updateResource(data);
+  // await fhirApi.updateResource(data);
 
   return data;
 }
