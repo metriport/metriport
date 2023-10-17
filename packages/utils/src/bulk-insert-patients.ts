@@ -1,9 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { sleep } from "@metriport/core/util/sleep";
 import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { sleep } from "@metriport/core/util/sleep";
 import { Command } from "commander";
 import csv from "csv-parser";
 import dayjs from "dayjs";
