@@ -34,6 +34,7 @@ export async function postToConverter({
   converterKeysTableName,
   log,
   contentType,
+  conversionType,
 }: {
   url: string;
   payload: unknown;
@@ -41,6 +42,7 @@ export async function postToConverter({
   converterKeysTableName: string;
   log: Log;
   contentType?: string;
+  conversionType: "cda" | "fhir";
 }) {
   const sidechainUrl = url;
   const notFHIRResponseError = "Response is not a FHIR response";
@@ -60,12 +62,16 @@ export async function postToConverter({
           "x-api-key": apiKey,
         },
       });
-      if (!res.data || !res.data.resourceType) {
-        throw new Error(notFHIRResponseError);
+
+      if (conversionType === "fhir") {
+        if (!res.data || !res.data.resourceType) {
+          throw new Error(notFHIRResponseError);
+        }
+        if (res.data.resourceType !== "Bundle") {
+          throw new Error("CDA XML failed to convert to a FHIR bundle - needs investigation");
+        }
       }
-      if (res.data.resourceType !== "Bundle") {
-        throw new Error("CDA XML failed to convert to a FHIR bundle - needs investigation");
-      }
+
       return res;
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -80,7 +86,7 @@ export async function postToConverter({
         };
         log(msg, extra);
         capture.message(msg, { extra, level: "info" });
-        if (error.response.status === 429 || error.message === notFHIRResponseError) {
+        if (error.response?.status === 429 || error.message === notFHIRResponseError) {
           await markSidechainConverterKeyAsRateLimited(apiKey, converterKeysTableName);
         } else {
           await markSidechainConverterKeyAsRevoked(apiKey, converterKeysTableName);

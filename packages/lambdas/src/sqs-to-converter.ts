@@ -286,6 +286,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             converterKeysTableName: sidechainKeysTableName,
             log,
             contentType: "application/xml",
+            conversionType: "fhir",
           });
           conversionResult = res.data;
         } else {
