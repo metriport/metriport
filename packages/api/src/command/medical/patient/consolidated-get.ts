@@ -336,5 +336,7 @@ async function convertFHIRBundleToMedicalRecord({
   if (lambdaResult.Payload === undefined)
     throw new MetriportError("Payload is undefined", undefined, { lambdaName });
 
-  return lambdaResult.Payload.toString();
+  const url = lambdaResult.Payload.toString();
+
+  return url.replace(/['"]+/g, "");
 }
