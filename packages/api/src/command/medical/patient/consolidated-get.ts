@@ -269,6 +269,8 @@ async function handleBundleToMedicalRecord({
     conversionType,
   });
 
+  console.log("URL", url);
+
   return {
     resourceType: "Bundle",
     total: 1,
@@ -335,6 +337,9 @@ async function convertFHIRBundleToMedicalRecord({
 
   if (lambdaResult.Payload === undefined)
     throw new MetriportError("Payload is undefined", undefined, { lambdaName });
+
+  console.log("NOT TOO STRING", lambdaResult.Payload);
+  console.log("TOO STRING", lambdaResult.Payload.toString());
 
   return lambdaResult.Payload.toString();
 }
