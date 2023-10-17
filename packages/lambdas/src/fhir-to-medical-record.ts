@@ -76,7 +76,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
 
     const convertUrl = await convertDoc({ fileName, conversionType });
 
-    return convertUrl;
+    return convertUrl.replace(/['"]+/g, "");
   } catch (err) {
     console.log(
       `Error processing bundle for patient: ${patientId} with resources ${resources}; ${err}`

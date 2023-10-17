@@ -287,7 +287,7 @@ async function handleBundleToMedicalRecord({
             {
               attachment: {
                 contentType: `application/${conversionType}`,
-                url: url.replace(/['"]+/g, ""),
+                url: url,
               },
             },
           ],
