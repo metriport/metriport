@@ -1,6 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { ConsolidationConversionType } from "@metriport/api-sdk/medical/models/patient";
+// import { ConsolidatedConversionType } from "@metriport/api-sdk/medical/models/patient";
 
 export type FhirToMedicalRecordPayload = {
   bundle: Bundle<Resource>;
@@ -10,5 +10,5 @@ export type FhirToMedicalRecordPayload = {
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  conversionType: ConsolidationConversionType;
+  conversionType: any;
 };
