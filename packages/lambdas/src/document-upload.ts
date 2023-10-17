@@ -29,43 +29,45 @@ type FileData = {
 };
 
 export const handler = async (event: S3Event) => {
-  const sourceBucket = event.Records[0].s3.bucket.name;
-  const sourceKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
-  const destinationBucket = "devs.metriport.com";
-  const destinationKey = `${removeSuffix(sourceKey, "_upload")}`;
+  if (event.Records[0]) {
+    const sourceBucket = event.Records[0].s3.bucket.name;
+    const sourceKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
+    const destinationBucket = "devs.metriport.com";
+    const destinationKey = `${removeSuffix(sourceKey, "_upload")}`;
 
-  const params = {
-    CopySource: encodeURI(`${sourceBucket}/${sourceKey}`),
-    Bucket: destinationBucket,
-    Key: destinationKey,
-  };
-
-  try {
-    // make a copy of the file to the general medical documents bucket
-    const resp = await s3.copyObject(params).promise();
-    console.log("RESPONSE", JSON.stringify(resp));
-    const { size, contentType } = await getFileInfoFromS3(destinationKey, destinationBucket);
-    console.log("Got size and content type", size, contentType);
-
-    const fileData: FileData = {
-      size,
-      mimetype: contentType,
-      ...getIdsFromKey(destinationKey),
+    const params = {
+      CopySource: encodeURI(`${sourceBucket}/${sourceKey}`),
+      Bucket: destinationBucket,
+      Key: destinationKey,
     };
-    console.log("Got file data:", fileData);
 
-    // parse file details and pass to api internal route
     try {
-      return forwardCallToServer(fileData);
+      // make a copy of the file to the general medical documents bucket
+      const resp = await s3.copyObject(params).promise();
+      console.log("RESPONSE", JSON.stringify(resp));
+      const { size, contentType } = await getFileInfoFromS3(destinationKey, destinationBucket);
+      console.log("Got size and content type", size, contentType);
+
+      const fileData: FileData = {
+        size,
+        mimetype: contentType,
+        ...getIdsFromKey(destinationKey),
+      };
+      console.log("Got file data:", fileData);
+
+      // parse file details and pass to api internal route
+      try {
+        return forwardCallToServer(fileData);
+      } catch (err) {
+        console.log("Error forwarding call to server", err);
+        return buildResponse(status.INTERNAL_SERVER_ERROR);
+      }
     } catch (err) {
-      console.log("Error forwarding call to server", err);
-      return buildResponse(status.INTERNAL_SERVER_ERROR);
+      console.log(err);
+      const message = `Error getting object ${sourceKey} from bucket ${sourceBucket}. Make sure they exist and your bucket is in the same region as this function.`;
+      console.log(message);
+      throw new Error(message);
     }
-  } catch (err) {
-    console.log(err);
-    const message = `Error getting object ${sourceKey} from bucket ${sourceBucket}. Make sure they exist and your bucket is in the same region as this function.`;
-    console.log(message);
-    throw new Error(message);
   }
 };
 
@@ -75,18 +77,27 @@ function removeSuffix(key: string, arg1: string) {
   return newFileName;
 }
 
-function getIdsFromKey(destinationKey: string) {
+function getIdsFromKey(destinationKey: string): { cxId: string; patientId: string; docId: string } {
   console.log("Destination key is:", destinationKey);
-  const keyParts = destinationKey.split("_");
-  const cxId = keyParts[0].split("/")[0];
-  const patientId = keyParts[1];
-  const docId = keyParts[2];
-  const fileData = {
-    cxId,
-    patientId,
-    docId: docId,
-  };
-  return fileData;
+  if (destinationKey.includes("_")) {
+    const keyParts = destinationKey.split("_");
+    if (keyParts[0] && keyParts[1] && keyParts[2] && keyParts[0].includes("/")) {
+      const cxIdParts = keyParts[0].split("/");
+      if (cxIdParts[0]) {
+        const cxId = cxIdParts[0];
+        const patientId = keyParts[1];
+        const docId = keyParts[2];
+        const fileData = {
+          cxId,
+          patientId,
+          docId,
+        };
+        return fileData;
+      }
+    }
+  }
+  // Need capture to report to Sentry
+  throw new Error("Invalid destination key");
 }
 
 async function forwardCallToServer(fileData: FileData) {
