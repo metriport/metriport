@@ -1,4 +1,4 @@
-import { Patient, PatientData } from "../../../models/medical/patient";
+import { Patient, PatientData } from "../../../domain/medical/patient";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";

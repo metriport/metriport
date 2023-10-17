@@ -6,7 +6,7 @@ import {
 } from "@metriport/commonwell-sdk/models/__tests__/document";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
-import { makePatient } from "../../../../models/medical/__tests__/patient";
+import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { CWDocumentWithMetriportData } from "../../../commonwell/document/shared";
 import { makePeriod } from "../../shared/__tests__/date";
 import { getBestDateFromCWDocRef, toFHIR } from "../index";

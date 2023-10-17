@@ -44,6 +44,7 @@ export function createAPIService(
   cdaToVisualizationLambda: ILambda,
   documentDownloaderLambda: ILambda,
   // uploadedDocumentProcessorLambda: ILambda,
+  fhirToMedicalRecordLambda: ILambda,
   searchIngestionQueue: IQueue,
   searchEndpoint: string,
   searchAuth: { userName: string; secret: ISecret },
@@ -117,6 +118,7 @@ export function createAPIService(
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
           // UPLOADED_DOCUMENT_PROCESSOR_LAMBDA_NAME: uploadedDocumentProcessorLambda.functionName,
+          FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           FHIR_SERVER_URL: fhirServerUrl,
           ...(fhirServerQueueUrl && {
             FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
@@ -162,6 +164,8 @@ export function createAPIService(
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // uploadedDocumentProcessorLambda.grantInvoke(fargateService.taskDefinition.taskRole); // Not sure what it's for
+  fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
 
   sidechainFHIRConverterQueue &&
     provideAccessToQueue({

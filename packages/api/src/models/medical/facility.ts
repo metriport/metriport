@@ -1,21 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
-import { BaseModel, ModelSetup } from "../_default";
-import { AddressStrict } from "./location-address";
-
-export type FacilityData = {
-  name: string;
-  npi: string;
-  tin?: string;
-  active?: boolean;
-  address: AddressStrict;
-};
-
-export interface FacilityCreate extends BaseDomainCreate {
-  cxId: string;
-  data: FacilityData;
-}
-export interface Facility extends BaseDomain, FacilityCreate {}
+import { Facility, FacilityData } from "../../domain/medical/facility";
+import { BaseModel, ModelSetup } from "../../models/_default";
 
 export class FacilityModel extends BaseModel<FacilityModel> implements Facility {
   static NAME = "facility";

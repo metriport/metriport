@@ -1,13 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { DocumentQueryProgress } from "../../../../domain/medical/document-query";
+import { Patient } from "../../../../domain/medical/patient";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
-import { Patient, PatientModel } from "../../../../models/medical/patient";
-import {
-  makePatient,
-  makePatientData,
-  makePatientModel,
-} from "../../../../models/medical/__tests__/patient";
+import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
+import { PatientModel } from "../../../../models/medical/patient";
+import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { appendDocQueryProgress } from "../append-doc-query-progress";
 

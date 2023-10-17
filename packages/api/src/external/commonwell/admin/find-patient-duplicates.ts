@@ -1,7 +1,8 @@
 import { getPersonId, PatientLinkSearchResp, Person } from "@metriport/commonwell-sdk";
 import stringify from "json-stringify-safe";
 import { chunk, groupBy } from "lodash";
-import { Patient, PatientModel } from "../../../models/medical/patient";
+import { Patient } from "../../../domain/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";

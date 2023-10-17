@@ -5,13 +5,19 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { ISubnet, IVpc } from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import { Code, ILayerVersion, Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
+import {
+  Architecture,
+  Code,
+  Function as Lambda,
+  ILayerVersion,
+  Runtime,
+  SingletonFunction,
+} from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import { FilterPattern } from "aws-cdk-lib/aws-logs";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { METRICS_NAMESPACE, getConfig } from "./config";
+import { getConfig, METRICS_NAMESPACE } from "./config";
 
 export const DEFAULT_LAMBDA_TIMEOUT = Duration.seconds(30);
 export const MAXIMUM_LAMBDA_TIMEOUT = Duration.minutes(15);
@@ -45,6 +51,7 @@ export interface LambdaProps extends StackProps {
   readonly maxEventAge?: Duration;
   readonly alarmSnsAction?: SnsAction;
   readonly runtime?: Runtime;
+  readonly architecture?: Architecture;
   readonly layers: ILayerVersion[];
 }
 
@@ -70,6 +77,7 @@ export function createLambda(props: LambdaProps): Lambda {
     environment: props.envVars,
     retryAttempts: props.retryAttempts ?? 0,
     maxEventAge: props.maxEventAge ?? undefined,
+    architecture: props.architecture ?? Architecture.X86_64,
   });
 
   // Allow the lambda to publish metrics to cloudwatch
@@ -144,7 +152,7 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
 
 export function addErrorAlarmToLambdaFunc(
   construct: Construct,
-  lambdaFunc: lambda.SingletonFunction | lambda_node.NodejsFunction,
+  lambdaFunc: SingletonFunction | lambda_node.NodejsFunction,
   alarmName: string,
   alarmAction?: SnsAction
 ) {
