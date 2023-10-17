@@ -50,7 +50,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
     }
 
     if (!converterKeysTableName) {
-      throw new Error("converterKeysTableName is not set");
+      throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
     }
 
     const res = await postToConverter({

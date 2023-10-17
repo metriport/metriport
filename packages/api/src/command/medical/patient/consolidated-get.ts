@@ -86,7 +86,6 @@ async function getConsolidatedAndSendToCx({
     let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
 
     if (conversionType) {
-      console.log("I AM RUNNING CONVERSION");
       bundle = await handleBundleToMedicalRecord({
         bundle,
         patient,
