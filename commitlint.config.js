@@ -6,4 +6,5 @@ module.exports = {
     rules: {
         "footer-empty": [2, "never"],
     },
+    ignores: [(message) => /^Bumps \[.+]\(.+\) from .+ to .+\.$/m.test(message)],
 };
