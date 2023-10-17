@@ -55,6 +55,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
       converterKeysTableName,
       axiosTimeoutSeconds,
       log,
+      conversionType: "cda",
     });
 
     const formattedXML = formatXML(res.data);
