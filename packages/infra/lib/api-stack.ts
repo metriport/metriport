@@ -680,6 +680,7 @@ export class APIStack extends Stack {
         ENV_TYPE: envType,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
+      architecture: lambda.Architecture.ARM_64,
     });
   }
 
@@ -930,7 +931,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [...lambdaLayers, chromiumLayer],
-      memory: 512,
+      memory: 1024,
       timeout: CDA_TO_VIS_TIMEOUT,
       vpc,
       alarmSnsAction: alarmAction,
