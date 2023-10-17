@@ -426,12 +426,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
+        const payloadClean = cleanUpPayload(payloadRaw);
         metrics.download = {
           duration: Date.now() - downloadStart,
           timestamp: new Date(),
         };
 
-        if (!payloadRaw.trim().length) {
+        if (!payloadClean.trim().length) {
           console.log("XML document is empty, skipping...");
           capture.message("XML document is empty", {
             extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
@@ -445,7 +446,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         const conversionStart = Date.now();
         let conversionResult: FHIRBundle;
         if (isSidechainConnector()) {
-          const res = await postToSidechainConverter(payloadRaw, patientId, log);
+          const res = await postToSidechainConverter(payloadClean, patientId, log);
           conversionResult = res.data;
         } else {
           const converterUrl = attrib.serverUrl?.stringValue;
@@ -454,7 +455,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           const invalidAccess = attrib.invalidAccess?.stringValue;
           const params = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
           log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
-          const res = await fhirConverter.post(converterUrl, payloadRaw, {
+          const res = await fhirConverter.post(converterUrl, payloadClean, {
             params,
             headers: { "Content-Type": "text/plain" },
           });
@@ -638,4 +639,13 @@ async function sendConversionResult(
   } else {
     log(`Skipping sending result info to queue`);
   }
+}
+function cleanUpPayload(payloadRaw: string): string {
+  return removeCDUNK(payloadRaw);
+}
+
+function removeCDUNK(payloadRaw: string): string {
+  const stringToReplace = /xsi:type="CD UNK"/g;
+  const replacement = `xsi:type="CD"`;
+  return payloadRaw.replace(stringToReplace, replacement);
 }
