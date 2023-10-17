@@ -31,6 +31,7 @@ import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
+import { MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 
 // TODO Comment to trigger a deploy, remove it when you see this
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
@@ -221,8 +222,8 @@ export class APIStack extends Stack {
       indexName: ccdaSearchIndexName,
     } = ccdaSearch.setup({
       stack: this,
-      awsAccount,
       vpc: this.vpc,
+      awsAccount,
       ccdaS3Bucket: medicalDocumentsBucket,
       lambdaLayers,
       alarmSnsAction: slackNotification?.alarmAction,
@@ -299,6 +300,20 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
+    const fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      convertDocLambdaName: cdaToVisualizationLambda.functionName,
+      dynamoDBSidechainKeysTable,
+      converterUrl: props.config.fhirToCDAUrl,
+      bucketName: isSandbox(props.config)
+        ? props.config.sandboxSeedDataBucketName
+        : medicalDocumentsBucket.bucketName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
@@ -324,6 +339,7 @@ export class APIStack extends Stack {
       sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
+      fhirToMedicalRecordLambda,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -404,7 +420,9 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
+    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
     sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
+    sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(fhirToMedicalRecordLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
 
@@ -981,6 +999,60 @@ export class APIStack extends Stack {
     secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
 
     return documentDownloaderLambda;
+  }
+
+  private setupFhirToMedicalRecordLambda(ownProps: {
+    lambdaLayers: lambda.ILayerVersion[];
+    vpc: ec2.IVpc;
+    convertDocLambdaName: string;
+    converterUrl: string;
+    dynamoDBSidechainKeysTable: dynamodb.Table | undefined;
+    bucketName: string | undefined;
+    envType: string;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      convertDocLambdaName,
+      dynamoDBSidechainKeysTable,
+      converterUrl,
+      bucketName,
+      sentryDsn,
+      envType,
+      alarmAction,
+    } = ownProps;
+
+    const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
+    const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
+
+    const fhirToMedicalRecordLambda = createLambda({
+      stack: this,
+      name: "FhirToMedicalRecord",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "fhir-to-medical-record",
+      envVars: {
+        ENV_TYPE: envType,
+        AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
+        CONVERT_DOC_LAMBDA_NAME: convertDocLambdaName,
+        FHIR_TO_CDA_CONVERTER_URL: converterUrl,
+        SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME: dynamoDBSidechainKeysTable?.tableName ?? "",
+        ...(bucketName ? { MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName } : {}),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: lambdaLayers,
+      memory: 512,
+      timeout: lambdaTimeout,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    if (dynamoDBSidechainKeysTable) {
+      dynamoDBSidechainKeysTable.grantReadWriteData(fhirToMedicalRecordLambda);
+    }
+
+    return fhirToMedicalRecordLambda;
   }
 
   private setupCWDocContribution(ownProps: {

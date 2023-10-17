@@ -263,16 +263,18 @@ export class MetriportMedicalApi {
    * @param resources Optional array of resources to be returned.
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
    * @return The consolidated data query status.
    */
   async startConsolidatedQuery(
     patientId: string,
     resources?: readonly ResourceTypeForConsolidation[],
     dateFrom?: string,
-    dateTo?: string
+    dateTo?: string,
+    conversionType?: string
   ): Promise<QueryStatus> {
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, undefined, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo },
+      params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
     });
     return resp.data;
   }

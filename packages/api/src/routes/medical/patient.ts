@@ -2,6 +2,7 @@ import { patientCreateSchema } from "@metriport/api-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import { consolidationConversionTypeSchema } from "@metriport/api-sdk/medical/models/fhir";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
@@ -220,12 +221,10 @@ router.get(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const patient = await getPatientOrFail({ id: patientId, cxId });
 
     const data = await getConsolidatedPatientData({
-      patient: {
-        cxId,
-        id: patientId,
-      },
+      patient,
       resources,
       dateFrom,
       dateTo,
@@ -270,6 +269,7 @@ router.get(
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
  * @return status of querying for the Patient's consolidated data.
  */
 router.post(
@@ -280,8 +280,17 @@ router.post(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const type = getFrom("query").optional("conversionType", req);
+    const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
 
-    const data = await startConsolidatedQuery({ cxId, patientId, resources, dateFrom, dateTo });
+    const data = await startConsolidatedQuery({
+      cxId,
+      patientId,
+      resources,
+      dateFrom,
+      dateTo,
+      conversionType,
+    });
     return res.json(data);
   })
 );

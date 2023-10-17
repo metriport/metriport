@@ -112,7 +112,7 @@ export async function updateDocQueryStatus(patients: PatientsWithValidationResul
   await executeAsynchronously(
     uniquePatients,
     async patients => updatePatientsInSequence(patients),
-    { numberOfAsyncRuns: MAX_CONCURRENT_UDPATES }
+    { numberOfParallelExecutions: MAX_CONCURRENT_UDPATES }
   );
 }
 
