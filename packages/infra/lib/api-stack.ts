@@ -23,7 +23,6 @@ import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
-import * as docUploadConnector from "./api-stack/doc-upload-connector";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
@@ -32,6 +31,7 @@ import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
+import { S3EventSource } from "aws-cdk-lib/aws-lambda-event-sources/lib/s3";
 
 // TODO Comment to trigger a deploy, remove it when you see this
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
@@ -316,16 +316,6 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    const uploadedDocumentProcessorLambda = docUploadConnector.createLambda({
-      lambdaLayers,
-      envType: props.config.environmentType,
-      stack: this,
-      vpc: this.vpc,
-      medicalDocumentUploadBucket,
-      devsTestBucket,
-      // apiServiceDnsAddress: props.config.lambdasSentryDSN,
-    });
-
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
@@ -351,7 +341,6 @@ export class APIStack extends Stack {
       sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
-      uploadedDocumentProcessorLambda,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -432,7 +421,6 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
-    medicalDocumentUploadBucket.grantReadWrite(uploadedDocumentProcessorLambda);
     sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
@@ -533,6 +521,17 @@ export class APIStack extends Stack {
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
+
+    this.setupDocumentUpload({
+      lambdaLayers,
+      vpc: this.vpc,
+      fargateService: apiService,
+      medicalDocumentUploadBucket,
+      devsTestBucket,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      // alarmAction: slackNotification?.alarmAction,
+    });
 
     this.setupGarminWebhookAuth({
       lambdaLayers,
@@ -692,6 +691,50 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
     });
+  }
+
+  private setupDocumentUpload(ownProps: {
+    lambdaLayers: lambda.ILayerVersion[];
+    vpc: ec2.IVpc;
+    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+    medicalDocumentUploadBucket: s3.Bucket;
+    devsTestBucket: s3.IBucket;
+    envType: string;
+    sentryDsn: string | undefined;
+    // alarmAction: SnsAction | undefined;
+  }) {
+    const {
+      lambdaLayers,
+      vpc,
+      medicalDocumentUploadBucket,
+      fargateService: apiService,
+      devsTestBucket,
+      envType,
+      sentryDsn,
+    } = ownProps;
+
+    const documentUploadLambda = createLambda({
+      stack: this,
+      name: "DocumentUpload",
+      vpc,
+      entry: "document-upload",
+      layers: lambdaLayers,
+      envVars: {
+        ENV_TYPE: envType,
+        API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}/internal/docs/doc-ref`,
+        // MEDICAL_DOCUMENTS_UPLOAD_BUCKET_NAME: medicalDocumentUploadBucket.bucketName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+    });
+
+    medicalDocumentUploadBucket.grantReadWrite(documentUploadLambda);
+    devsTestBucket.grantReadWrite(documentUploadLambda);
+
+    documentUploadLambda.addEventSource(
+      new S3EventSource(medicalDocumentUploadBucket, {
+        events: [s3.EventType.OBJECT_CREATED],
+      })
+    );
   }
 
   private setupGarminWebhookAuth(ownProps: {

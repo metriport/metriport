@@ -97,7 +97,7 @@ async function forwardCallToServer(fileData: FileData) {
     originalname: fileData.docId,
   };
 
-  const url = `${apiServerURL}/internal/docs/doc-ref?cxId=${fileData.cxId}&patientId=${fileData.patientId}`;
+  const url = `${apiServerURL}?cxId=${fileData.cxId}&patientId=${fileData.patientId}`;
   console.log("URL is", url);
   const resp = await api.post(url, requestBody);
 
