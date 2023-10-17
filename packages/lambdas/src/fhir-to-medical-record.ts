@@ -41,7 +41,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
     const log = prefixedLog(`patient ${patientId}`);
 
     if (isSandbox) {
-      const convertUrl = await convertDoc({ fileName: `${firstName}-consolidated.xml`, conversionType });
+      const convertUrl = await convertDoc({
+        fileName: `${firstName}-consolidated.xml`,
+        conversionType,
+      });
 
       return convertUrl;
     }
@@ -99,7 +102,7 @@ const formatXML = (xml: string): string => {
 
   const problemListComponent = components.find(component => {
     const title = component.getElementsByTagName("title")[0];
-    return title?.childNodes[0]?.nodeValue === "Problem list";
+    return title?.childNodes[0]?.nodeValue?.toLowerCase() === "problem list";
   });
 
   if (problemListComponent) {
@@ -110,12 +113,12 @@ const formatXML = (xml: string): string => {
 
   const treatmentPlanComponent = components.find(component => {
     const title = component.getElementsByTagName("title")[0];
-    return title?.childNodes[0]?.nodeValue === "Treatment Plan";
+    return title?.childNodes[0]?.nodeValue?.toLowerCase() === "treatment plan";
   });
 
   const medicationComponent = components.find(component => {
     const title = component.getElementsByTagName("title")[0];
-    return title?.childNodes[0]?.nodeValue === "History of Medication use";
+    return title?.childNodes[0]?.nodeValue?.toLowerCase() === "history of medication use";
   });
 
   if (treatmentPlanComponent && structuredBody) {
