@@ -264,26 +264,6 @@ function oid(id: string): string {
   return `${OID_PREFIX}${id}`;
 }
 
-export async function getFileInfoFromS3(
-  key: string,
-  bucket: string
-): Promise<
-  | { exists: true; size: number; contentType: string }
-  | { exists: false; size?: never; contentType?: never }
-> {
-  try {
-    const head = await s3client
-      .headObject({
-        Bucket: bucket,
-        Key: key,
-      })
-      .promise();
-    return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
-  } catch (err) {
-    return { exists: false };
-  }
-}
-
 export function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: string } {
   const openingTag = "<text";
   const closingTag = "</text>";
