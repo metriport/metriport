@@ -8,6 +8,13 @@ import {
   ResourceType,
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import {
+  FhirToMedicalRecordPayload,
+  ConsolidationConversionType,
+} from "@metriport/api-sdk/medical/models/fhir";
+import { Config } from "../../../shared/config";
 import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -17,9 +24,12 @@ import {
 } from "../../../external/fhir/patient/resource-filter";
 import { capture } from "../../../shared/notifications";
 import { emptyFunction, Util } from "../../../shared/util";
-import { udpateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
+import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { getPatientOrFail } from "./get-patient";
+
+const region = Config.getAWSRegion();
+const lambdaClient = makeLambdaClient(region);
 
 export async function startConsolidatedQuery({
   cxId,
@@ -27,12 +37,14 @@ export async function startConsolidatedQuery({
   resources,
   dateFrom,
   dateTo,
+  conversionType,
 }: {
   cxId: string;
   patientId: string;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
+  conversionType?: ConsolidationConversionType;
 }): Promise<QueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -40,13 +52,16 @@ export async function startConsolidatedQuery({
     log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
     return patient.data.consolidatedQuery;
   }
+
   const progress: QueryProgress = { status: "processing" };
-  await udpateConsolidatedQueryProgress({
+  await updateConsolidatedQueryProgress({
     patient,
     progress,
     reset: true,
   });
-  getConsolidatedAndSendToCx({ patient, resources, dateFrom, dateTo }).catch(emptyFunction);
+  getConsolidatedAndSendToCx({ patient, resources, dateFrom, dateTo, conversionType }).catch(
+    emptyFunction
+  );
   return progress;
 }
 
@@ -55,18 +70,32 @@ async function getConsolidatedAndSendToCx({
   resources,
   dateFrom,
   dateTo,
+  conversionType,
 }: {
-  patient: Pick<Patient, "id" | "cxId">;
+  patient: Pick<Patient, "id" | "cxId" | "data">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
+  conversionType?: ConsolidationConversionType;
 }): Promise<void> {
   const { log } = Util.out(
     `getConsolidatedAndSendToCx - cxId ${patient.cxId}, patientId ${patient.id}`
   );
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
-    const bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+    let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+
+    if (conversionType) {
+      bundle = await handleBundleToMedicalRecord({
+        bundle,
+        patient,
+        resources,
+        dateFrom,
+        dateTo,
+        conversionType,
+      });
+    }
+
     // trigger WH call
     processConsolidatedDataWebhook({
       patient,
@@ -199,4 +228,115 @@ function issueToString(issue: OperationOutcomeIssue): string {
     (issue.diagnostics ? issue.diagnostics.slice(0, 100) + "..." : null) ??
     JSON.stringify(issue)
   );
+}
+
+async function handleBundleToMedicalRecord({
+  bundle,
+  patient,
+  resources,
+  dateFrom,
+  dateTo,
+  conversionType,
+}: {
+  bundle: Bundle<Resource>;
+  patient: Pick<Patient, "id" | "cxId" | "data">;
+  resources?: ResourceTypeForConsolidation[];
+  dateFrom?: string;
+  dateTo?: string;
+  conversionType: ConsolidationConversionType;
+}): Promise<Bundle<Resource>> {
+  const fhir = makeFhirApi(patient.cxId);
+
+  const fhirPatient = await fhir.readResource("Patient", patient.id);
+
+  const bundleWithPatient: Bundle<Resource> = {
+    ...bundle,
+    total: (bundle.total ?? 0) + 1,
+    entry: [
+      {
+        resource: fhirPatient,
+      },
+      ...(bundle.entry ?? []),
+    ],
+  };
+
+  const url = await convertFHIRBundleToMedicalRecord({
+    bundle: bundleWithPatient,
+    patient,
+    resources,
+    dateFrom,
+    dateTo,
+    conversionType,
+  });
+
+  return {
+    resourceType: "Bundle",
+    total: 1,
+    type: "collection",
+    entry: [
+      {
+        resource: {
+          resourceType: "DocumentReference",
+          subject: {
+            reference: `Patient/${patient.id}`,
+          },
+          content: [
+            {
+              attachment: {
+                contentType: `application/${conversionType}`,
+                url: url,
+              },
+            },
+          ],
+        },
+      },
+    ],
+  };
+}
+
+async function convertFHIRBundleToMedicalRecord({
+  bundle,
+  patient,
+  resources,
+  dateFrom,
+  dateTo,
+  conversionType,
+}: {
+  bundle: Bundle<Resource>;
+  patient: Pick<Patient, "id" | "cxId" | "data">;
+  resources?: ResourceTypeForConsolidation[];
+  dateFrom?: string;
+  dateTo?: string;
+  conversionType: ConsolidationConversionType;
+}): Promise<string> {
+  const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
+
+  const payload: FhirToMedicalRecordPayload = {
+    bundle,
+    patientId: patient.id,
+    firstName: patient.data.firstName,
+    cxId: patient.cxId,
+    resources,
+    dateFrom,
+    dateTo,
+    conversionType,
+  };
+
+  const lambdaResult = await lambdaClient
+    .invoke({
+      FunctionName: lambdaName,
+      InvocationType: "RequestResponse",
+      Payload: JSON.stringify(payload),
+    })
+    .promise();
+
+  if (lambdaResult.StatusCode !== 200)
+    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName });
+
+  if (lambdaResult.Payload === undefined)
+    throw new MetriportError("Payload is undefined", undefined, { lambdaName });
+
+  const url = lambdaResult.Payload.toString();
+
+  return url.replace(/['"]+/g, "");
 }
