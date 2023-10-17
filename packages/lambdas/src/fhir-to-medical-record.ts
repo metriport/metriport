@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/serverless";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { FhirToMedicalRecordPayload } from "@metriport/core/src/domain/fhir-to-medical-record";
+// import { FhirToMedicalRecordPayload } from "@metriport/api-sdk/medical/models/fhir";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client } from "@metriport/core/external/aws/s3";
 import { DOMParser } from "xmldom";
@@ -28,7 +28,7 @@ const lambdaClient = makeLambdaClient(region);
 const s3Client = makeS3Client(region);
 const isSandbox = envType === "sandbox";
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRecordPayload) => {
+export const handler = Sentry.AWSLambda.wrapHandler(async (req: any) => {
   const { bundle, patientId, firstName, cxId, resources, dateFrom, dateTo, conversionType } = req;
 
   console.log(

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 
 export const consolidatedFilterSchema = z.object({
   resources: z.string(),
@@ -90,3 +91,18 @@ export const resourceTypeForConsolidation = [
 ] as const;
 
 export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];
+
+export type FhirToMedicalRecordPayload = {
+  bundle: Bundle<Resource>;
+  patientId: string;
+  firstName: string;
+  cxId: string;
+  resources?: ResourceTypeForConsolidation[];
+  dateFrom?: string;
+  dateTo?: string;
+  conversionType: ConsolidationConversionType;
+};
+
+export const consolidationConversionTypeSchema = z.enum(["html", "pdf", "xml"]);
+
+export type ConsolidationConversionType = z.infer<typeof consolidationConversionTypeSchema>;
