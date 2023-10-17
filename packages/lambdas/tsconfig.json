@@ -2,6 +2,7 @@
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
     "typeRoots": ["./src/@types", "./node_modules/@types"],
+    "noUncheckedIndexedAccess": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "allowJs": true,

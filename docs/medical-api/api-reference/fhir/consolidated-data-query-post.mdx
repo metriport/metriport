@@ -12,6 +12,9 @@ is sent to your configured URL containing the Patient's data in FHIR-compliant f
 
 You can check the status of the data query by calling [get consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-get).
 
+This endpoint also provides the ability to render a medical record summary from the FHIR bundle as a PDF or HTML document.
+This will be returned [via a webook](/medical-api/more-info/webhooks#medical-record) as a FHIR bundle with a DocumentReference resource that will contain a url to retrieve the data from.
+
 ## Path Params
 
 <ParamField path="id" type="string" required>
@@ -40,6 +43,12 @@ You can check the status of the data query by calling [get consolidated data que
 <ParamField query="dateTo" type="string" optional>
   The end date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
   ISO 8601. If not provided, no end date filter will be applied.
+</ParamField>
+
+<ParamField query="conversionType" type="string">
+  The doc type to convert to. Either `html` or `pdf`.
+
+  <Info>This parameter is to indicate how the medical record should be rendered.</Info>
 </ParamField>
 
 <Info>
@@ -71,7 +80,7 @@ const consolidatedData = await metriport.startConsolidatedQuery(
 
 ```json
 {
-    "status": "processing"
+  "status": "processing"
 }
 ```
 
