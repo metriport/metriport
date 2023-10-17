@@ -8,7 +8,7 @@ import {
   ResourceType,
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { ConsolidationConversionType } from "@metriport/api-sdk/medical/models/patient";
+import { ConsolidationConversionType } from "@metriport/core/src/domain/fhir-to-medical-record";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { FhirToMedicalRecordPayload } from "@metriport/core/src/domain/fhir-to-medical-record";
