@@ -2,8 +2,8 @@
 import { DataTypes, Sequelize, Transaction } from "sequelize";
 import type { Migration } from "..";
 import { Config } from "../../shared/config";
-import { OID_ID_START } from "../../shared/oid";
 
+const OID_ID_START = 100;
 const tableName = "customer_sequence";
 const dataTypes = ["organization", "facility", "patient"] as const;
 type DataType = (typeof dataTypes)[number];
