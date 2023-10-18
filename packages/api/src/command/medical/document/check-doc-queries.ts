@@ -218,7 +218,7 @@ function getQuery(patientIds: string[] = []): string {
 
   const baseQuery =
     `select * from patient ` +
-    `where updated_at < current_date - interval '${MAX_TIME_TO_PROCESS.asMinutes()}' minute ` +
+    `where updated_at < now() - interval '${MAX_TIME_TO_PROCESS.asMinutes()}' minute ` +
     `  and ((${convert}->'${total}')::int <> (${convert}->'${successful}')::int + (${convert}->'${errors}')::int ` +
     `        or ` +
     `        ${convert}->>'${status}' = '${processing}' ` +
