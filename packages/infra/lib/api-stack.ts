@@ -32,7 +32,7 @@ import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 import { MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
-import { S3EventSource } from "aws-cdk-lib/aws-lambda-event-sources/lib/s3";
+import { S3EventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 
 // TODO Comment to trigger a deploy, remove it when you see this
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
