@@ -218,6 +218,11 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
     const patientId = getFromQueryOrFail("patientId", req);
+    const metadata = uploadDocSchema.parse({
+      fileDescription: req.query.fileDescription,
+      organizationName: req.query.organizationName,
+      practitionerName: req.query.practitionerName,
+    });
 
     const body = req.body[0];
     const fileData = {
@@ -226,11 +231,6 @@ router.post(
       originalname: body.originalname,
     };
 
-    const metadata = uploadDocSchema.parse({
-      fileDescription: req.query.fileDescription,
-      organizationName: req.query.organizationName,
-      practitionerName: req.query.practitionerName,
-    });
     console.log("FileData", fileData);
     console.log("Metadata", metadata);
 
@@ -246,7 +246,7 @@ router.post(
 
     console.log("Customer file upload doc ref res: ", JSON.stringify(docRef));
 
-    return res.status(httpStatus.OK).json(docRef);
+    return res.status(httpStatus.CREATED);
   })
 );
 
