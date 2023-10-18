@@ -8,6 +8,7 @@ on:
       - "packages/connect-widget/**"
       - "packages/api/**"
       - "packages/infra/**"
+      - "packages/lambdas/**"
   workflow_dispatch: # manually executed by a user
 
 jobs:
