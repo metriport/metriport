@@ -159,6 +159,7 @@ const convertStoreAndReturnPdfDocUrl = async ({
       .promise();
   } catch (error) {
     console.log(`Error while converting to pdf: `, error);
+
     capture.error(error, {
       extra: { context: "convertStoreAndReturnPdfDocUrl", lambdaName, error },
     });
