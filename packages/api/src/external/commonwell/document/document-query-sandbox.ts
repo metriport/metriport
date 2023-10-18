@@ -70,7 +70,6 @@ export async function sandboxGetDocRefsAndUpsert({
 
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
-
   const existingFhirDocs = await getDocuments({ cxId: organization.cxId, patientId: patient.id });
   const existingTitles = existingFhirDocs.map(d => d.content?.[0]?.attachment?.title);
 
@@ -124,8 +123,8 @@ export async function sandboxGetDocRefsAndUpsert({
           reference: `Patient/${patient.id}`,
         };
 
-        entry.docRef = addSandboxFields(entry.docRef);
         entry.docRef.contained = contained;
+        entry.docRef = addSandboxFields(entry.docRef);
         await upsertDocumentToFHIRServer(patient.cxId, entry.docRef);
       } catch (err) {
         log(`Error w/ file docId ${entry.docRef.id}, prevDocId ${prevDocId}: ${err}`);
@@ -166,6 +165,19 @@ function addSandboxFields(docRef: DocumentReference): DocumentReference {
     // Add a random date to the sandbox document
     if (docRef.content[0]?.attachment) {
       docRef.content[0].attachment.creation = randomDates[randomIndex];
+      docRef.content[0].attachment.size = Math.floor(Math.random() * 100000);
+    }
+
+    if (docRef.content[0] && !docRef.content[0].extension) {
+      docRef.content[0].extension = [
+        {
+          url: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+          valueCoding: {
+            system: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
+            code: "METRIPORT",
+          },
+        },
+      ];
     }
 
     if (randomIndex < 3) {
@@ -215,6 +227,16 @@ function addSandboxFields(docRef: DocumentReference): DocumentReference {
       docRef.status = "current";
     }
   }
+
+  if (!docRef.date) {
+    docRef.date = docRef.content?.[0]?.attachment?.creation;
+  }
+
+  docRef.contained?.push({
+    resourceType: "Organization",
+    id: "Sandbox example org",
+    name: `Hospital org#${Math.floor(Math.random() * 1000)}`,
+  });
 
   return docRef;
 }
