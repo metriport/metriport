@@ -5,7 +5,7 @@ import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client } from "@metriport/core/external/aws/s3";
 import { DOMParser } from "xmldom";
 import { capture } from "./shared/capture";
-import { getEnvOrFail } from "./shared/env";
+import { getEnvOrFail, getEnv } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { postToConverter } from "./shared/converter";
 
@@ -22,7 +22,7 @@ const envType = getEnvOrFail("ENV_TYPE");
 // converter config
 const FHIRToCDAConverterUrl = getEnvOrFail("FHIR_TO_CDA_CONVERTER_URL");
 const convertDocLambda = getEnvOrFail("CONVERT_DOC_LAMBDA_NAME");
-const converterKeysTableName = getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME");
+const converterKeysTableName = getEnv("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME");
 
 const lambdaClient = makeLambdaClient(region);
 const s3Client = makeS3Client(region);
@@ -49,6 +49,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
       return convertUrl;
     }
 
+    if (!converterKeysTableName) {
+      throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
+    }
+
     const res = await postToConverter({
       url: FHIRToCDAConverterUrl,
       payload: bundle,
@@ -72,7 +76,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
 
     const convertUrl = await convertDoc({ fileName, conversionType });
 
-    return convertUrl;
+    return convertUrl.replace(/['"]+/g, "");
   } catch (err) {
     console.log(
       `Error processing bundle for patient: ${patientId} with resources ${resources}; ${err}`
