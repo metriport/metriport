@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 // import multer from "multer";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { z } from "zod";
 import { createAndUploadDocReference } from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
@@ -17,10 +18,6 @@ import {
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
-// import { makeS3Client } from "../../external/aws/s3";
-// import { Config } from "../../shared/config";
-// import { createS3FileName } from "../../shared/external";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
@@ -30,9 +27,6 @@ import { asyncHandler, getFrom } from "../util";
 import { getFromQueryOrFail } from "./../util";
 
 const router = Router();
-// const upload = multer();
-// const s3client = makeS3Client();
-// const bucketName = Config.getMedicalDocumentsBucketName();
 
 const reprocessOptionsSchema = z.enum(options).array().optional();
 
@@ -200,72 +194,11 @@ router.post(
   })
 );
 
-// const uploadDocSchema = z.object({
-//   description: z.string().optional(),
-//   orgName: z.string().optional(),
-//   practitionerName: z.string().optional(),
-// });
-
-// /** ---------------------------------------------------------------------------
-//  * POST /internal/docs/upload
-//  *
-//  * Upload doc for a patient.
-//  *
-//  * Originally on packages/api/src/routes/internal.ts
-//  *
-//  * @param req.query.cxId - The customer/account's ID.
-//  * @param req.query.patientId - The patient ID.
-//  * @param req.file - The file to be stored.
-//  * @param req.body.description - The description of the file.
-//  * @param req.body.orgName - The name of the contained Organization
-//  * @param req.body.practitionerName - The name of the contained Practitioner
-//  *
-//  * @return 200 Indicating the file was successfully uploaded.
-//  */
-// router.post(
-//   "/upload",
-//   upload.single("file"),
-//   asyncHandler(async (req: Request, res: Response) => {
-//     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-//     const patientId = getFromQueryOrFail("patientId", req);
-//     const file = req.file;
-
-//     if (!file) {
-//       throw new BadRequestError("File must be provided");
-//     }
-
-//     const docRefId = uuidv7();
-//     const fileName = createS3FileName(cxId, patientId, docRefId);
-
-//     await s3client
-//       .upload({
-//         Bucket: bucketName,
-//         Key: fileName,
-//         Body: file.buffer,
-//         ContentType: file.mimetype,
-//       })
-//       .promise();
-
-//     const metadata = uploadDocSchema.parse({
-//       description: req.body.description,
-//       orgName: req.body.orgName,
-//       practitionerName: req.body.practitionerName,
-//     });
-
-//     const docRef = await createAndUploadDocReference({
-//       cxId,
-//       patientId,
-//       docId: docRefId,
-//       file: {
-//         ...file,
-//         originalname: fileName,
-//       },
-//       metadata,
-//     });
-
-//     return res.status(httpStatus.OK).json(docRef);
-//   })
-// );
+const uploadDocSchema = z.object({
+  fileDescription: z.string().optional(),
+  organizationName: z.string().optional(),
+  practitionerName: z.string().optional(),
+});
 
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/doc-ref
@@ -274,8 +207,8 @@ router.post(
  *
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient ID.
- * @param req.query.description - The description of the file.
- * @param req.query.orgName - The name of the contained Organization
+ * @param req.query.fileDescription - The description of the file.
+ * @param req.query.organizationName - The name of the contained Organization
  * @param req.query.practitionerName - The name of the contained Practitioner
  *
  * @return 200 Indicating the file was successfully uploaded.
@@ -285,27 +218,21 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
     const patientId = getFromQueryOrFail("patientId", req);
-    // const fileSize = getFromQuery("size", req);
-    // const fileData: FileData = {
-    //   mimetype: getFromQuery("mimetype", req),
-    //   size: fileSize ? parseInt(fileSize) : undefined,
-    //   originalname: getFromQueryOrFail("originalname", req),
-    // };
 
+    const body = req.body[0];
     const fileData = {
-      mimetype: req.body.mimeType,
-      size: parseInt(req.body.size),
-      originalname: req.body.originalname,
+      mimetype: body.mimetype,
+      size: parseInt(body.size),
+      originalname: body.originalname,
     };
 
-    console.log("CxId", cxId);
-    console.log("PatientId", patientId);
-
-    // const metadata = uploadDocSchema.parse({
-    //   description: req.query.description,
-    //   orgName: req.query.orgName,
-    //   practitionerName: req.query.practitionerName,
-    // });
+    const metadata = uploadDocSchema.parse({
+      fileDescription: req.query.fileDescription,
+      organizationName: req.query.organizationName,
+      practitionerName: req.query.practitionerName,
+    });
+    console.log("FileData", fileData);
+    console.log("Metadata", metadata);
 
     const docRefId = uuidv7();
 
@@ -314,10 +241,10 @@ router.post(
       patientId,
       docId: docRefId,
       fileData,
-      // metadata,
+      metadata,
     });
 
-    console.log("Customer file upload doc ref res: ", docRef);
+    console.log("Customer file upload doc ref res: ", JSON.stringify(docRef));
 
     return res.status(httpStatus.OK).json(docRef);
   })

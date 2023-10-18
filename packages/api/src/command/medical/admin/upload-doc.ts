@@ -36,8 +36,8 @@ export async function createAndUploadDocReference({
   docId: string;
   fileData: FileData;
   metadata?: {
-    description?: string;
-    orgName?: string;
+    fileDescription?: string;
+    organizationName?: string;
     practitionerName?: string;
   };
 }): Promise<DocumentReference> {
@@ -67,7 +67,7 @@ export async function createAndUploadDocReference({
       {
         resourceType: "Organization",
         id: orgRef,
-        name: metadata.orgName ?? `Hospital ${orgRef}`,
+        name: metadata.organizationName ?? `Hospital ${orgRef}`,
       },
       {
         resourceType: "Practitioner",
@@ -99,7 +99,7 @@ export async function createAndUploadDocReference({
         {
           system: "http://loinc.org/",
           code: "75622-1",
-          display: metadata.description,
+          display: metadata.fileDescription,
         },
       ],
     },
@@ -110,7 +110,7 @@ export async function createAndUploadDocReference({
       },
     ],
     extension: [metriportDataSourceExtension],
-    description: metadata.description,
+    description: metadata.fileDescription,
     content: [metriportContent],
     context: {
       period: {

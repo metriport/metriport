@@ -14,7 +14,7 @@ import { createS3FileName } from "../../shared/external";
 import { stringToBoolean } from "../../shared/types";
 import { sanitize } from "../helpers/string";
 import { optionalDateSchema } from "../schemas/date";
-import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
+import { asyncHandler, getCxIdOrFail, getFrom, getFromQuery, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
 
@@ -146,23 +146,25 @@ router.get(
  * Returns a signed url to upload a file to S3.
  *
  * @param patientId - The patientId of the patient.
+ * @param organizationName - The name of the organization that created the document.
+ * @param practitionerName - The name of the practitioner that created the document.
+ * @param fileDescription - The description of the file.
+ *
  * @return presigned url
  */
 router.get(
   "/upload-url",
   asyncHandler(async (req: Request, res: Response) => {
-    console.log("Got the request");
-    // const cxId = getCxIdOrFail(req);
-    const cxId = "ramil-test-cxid";
-    // const patientId = getFromQueryOrFail("patientId", req);
-    const patientId = getFrom("query").orFail("patientId", req);
-    // const contentType = getFrom("headers").orFail("Content-Type", req);
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const queryParams = buildQueryParams(req);
     const docRefId = uuidv7();
     const s3FileName = createS3FileName(cxId, patientId, docRefId);
     const presignedUrl = s3client.createPresignedPost({
+      // Bucket: medicalDocumentsUploadBucketName,
       Bucket: "medical-doc-upload-staging",
       Fields: {
-        key: s3FileName + "_upload",
+        key: s3FileName + "_upload" + queryParams,
       },
       Conditions: [
         ["content-length-range", 0, 25_000_000], // content length restrictions: 0-25MB
@@ -174,16 +176,16 @@ router.get(
   })
 );
 
+function buildQueryParams(req: Request): string {
+  const organizationName = getFromQuery("organizationName", req);
+  const practitionerName = getFromQuery("practitionerName", req);
+  const fileDescription = getFromQuery("fileDescription", req);
+
+  let queryParams = "?";
+  if (organizationName) queryParams += `organizationName=${organizationName}&`;
+  if (practitionerName) queryParams += `practitionerName=${practitionerName}&`;
+  if (fileDescription) queryParams += `fileDescription=${fileDescription}`;
+  return encodeURI(queryParams);
+}
+
 export default router;
-
-// s3 -> bucket / customer id/ patient id / docs
-// s3 -> bucket / customer     medical-documents-upload
-
-// Approach:
-// Route to return the signed url + make api-sdk method + update docs
-// Customer uses FormData with the URL to upload the file to a dedicated s3 bucket (try on devs bucket first, eventually use config bucket destination)
-// Need to get patientId? -> cx provides patientId, we add it to the file name -> creates s3 bucket folder
-// Lambda trigger on upload to s3 -> create a follow up TODO: lambda needs to check the file for validity (potentially use an AWS service to scan files for viruses etc /
-// might want to filter file types (only allow pdfs, xmls, etc) / confirm that the file extension matches the contentType).
-// Lambda to create the FHIR document reference and rename the file (removing _upload)
-// trigger: refer to fhir-converter-connector.ts -> add event source: s3 event source or something like that
