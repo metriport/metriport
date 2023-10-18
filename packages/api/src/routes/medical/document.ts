@@ -115,7 +115,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /downloadUrl
+ * GET /document/downloadUrl
  *
  * Fetches the document from S3 and sends a presigned URL
  *
@@ -141,7 +141,7 @@ router.get(
 );
 
 /**
- * GET /upload-url
+ * GET /document/upload-url
  *
  * Returns a signed url to upload a file to S3.
  *

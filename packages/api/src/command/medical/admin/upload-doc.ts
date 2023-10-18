@@ -1,6 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
-// import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
@@ -43,7 +43,7 @@ export async function createAndUploadDocReference({
 }): Promise<DocumentReference> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
-  // const fhirApi = makeFhirApi(cxId);
+  const fhirApi = makeFhirApi(cxId);
   const refDate = dayjs();
   const orgId = smallId();
   const orgRef = `org${orgId}`;
@@ -124,7 +124,7 @@ export async function createAndUploadDocReference({
     },
   });
 
-  // await fhirApi.updateResource(data);
+  await fhirApi.updateResource(data);
 
   return data;
 }

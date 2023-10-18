@@ -1,12 +1,10 @@
 // import { createReadStream } from "fs";
 // import FormData from "form-data";
-// // import { MetriportMedicalApi } from "@metriport/api-sdk";
-// // import { getEnvVarOrFail } from "./shared/env";
+// import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
-// // const apiKey = getEnvVarOrFail("API_KEY");
-// // const apiUrl = getEnvVarOrFail("API_URL");
-// // const patientId = getEnvVarOrFail("PATIENT_ID");
-
+// const apiKey = getEnvVarOrFail("API_KEY");
+// const apiUrl = getEnvVarOrFail("API_URL");
+// const patientId = getEnvVarOrFail("PATIENT_ID");
 // // const metriportApi = new MetriportMedicalApi(apiKey, {
 // //   baseAddress: apiUrl,
 // // });
