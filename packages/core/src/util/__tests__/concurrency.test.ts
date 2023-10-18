@@ -29,7 +29,7 @@ describe("executeAsynchronously", () => {
     let lastRandom = 0;
     const random_mock = jest
       .spyOn(Math, "random")
-      .mockImplementation(() => randomNumbers[lastRandom++]);
+      .mockImplementation(() => randomNumbers[lastRandom++] ?? 0);
     const list = [1, 2, 3, 4];
     const fn = jest.fn();
     await executeAsynchronously(list, fn, { numberOfParallelExecutions: 2, maxJitterMillis: 1000 });

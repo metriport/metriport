@@ -6,7 +6,7 @@ import {
   PersonalIdentifier,
   splitName,
 } from "../../../domain/medical/patient";
-import { driversLicenseURIs } from "../../../shared/oid";
+import { driversLicenseURIs } from "@metriport/core/domain/oid";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",

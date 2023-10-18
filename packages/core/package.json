@@ -15,6 +15,7 @@
   ],
   "exports": {
     ".": "./dist/index.js",
+    "./domain/*": "./dist/domain/*.js",
     "./external/*": "./dist/external/*.js",
     "./util/*": "./dist/util/*.js"
   },
@@ -22,6 +23,9 @@
     "*": {
       "/": [
         "dist/index.d.ts"
+      ],
+      "domain/*": [
+        "dist/domain/*"
       ],
       "external/*": [
         "dist/external/*"
@@ -46,15 +50,18 @@
   },
   "dependencies": {
     "@opensearch-project/opensearch": "^2.3.1",
+    "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",
-    "http-status": "^1.7.0"
+    "http-status": "^1.7.0",
+    "xmldom": "^0.6.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
     "@medplum/fhirtypes": "^2.0.32",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jest": "29.5.3",
+    "@types/xmldom": "^0.1.32",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
     "eslint": "^8.32.0",

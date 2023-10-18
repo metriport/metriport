@@ -6,6 +6,7 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { chunk, partition } from "lodash";
 import {
   getDocToFileFunction,
@@ -28,13 +29,12 @@ import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
 import { MedicalDataSource } from "../../../external";
-import { makeLambdaClient } from "../../../external/aws/lambda";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
-import { oid } from "../../../shared/oid";
+import { oid } from "@metriport/core/domain/oid";
 import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -47,6 +47,7 @@ import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientData, PatientDataCommonwell } from "../patient-shared";
+import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
   CWDocumentWithMetriportData,
@@ -63,7 +64,7 @@ const DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT = 10; // 1-100% of max delay
 const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
 const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
 
-const lambdaClient = makeLambdaClient();
+type File = DownloadResult & { isNew: boolean };
 
 /**
  * Query CommonWell for DocumentReferences, download and convert documents to FHIR,
@@ -492,6 +493,7 @@ export async function downloadDocsAndUpsertFHIR({
             await jitterSingleDownload();
 
             if (!fileInfo.fileExists) {
+              // Download from CW and upload to S3
               uploadToS3 = async () => {
                 const { organization, facility } = await getPatientData(
                   { id: patient.id, cxId },
@@ -718,15 +720,7 @@ function processFhirAndSearchResponse(
   }
 }
 
-type File = {
-  bucket: string;
-  key: string;
-  location: string;
-  contentType: string | undefined;
-  size: number | undefined;
-  isNew: boolean;
-};
-
+// Make this env-specific, use a factory, lambda to use the same code as this when local
 async function triggerDownloadDocument({
   doc,
   fileInfo,
@@ -734,42 +728,32 @@ async function triggerDownloadDocument({
   facilityNPI,
   cxId,
 }: {
-  doc: DocumentWithMetriportId;
+  doc: DocumentWithLocation;
   fileInfo: S3Info;
   organization: Organization;
   facilityNPI: string;
   cxId: string;
 }): Promise<File> {
-  const lambdaName = Config.getDocumentDownloaderLambdaName();
-  const payload = {
-    document: {
-      id: doc.id,
-      mimeType: doc.content.mimeType,
-      location: doc.content.location,
-    },
-    fileInfo,
+  const docDownloader = makeDocumentDownloader({
     orgName: organization.data.name,
     orgOid: organization.oid,
     npi: facilityNPI,
-    cxId,
+  });
+  const document = {
+    id: doc.id,
+    mimeType: doc.content.mimeType,
+    location: doc.content.location,
   };
-  const lambdaResult = await lambdaClient
-    .invoke({
-      FunctionName: lambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify(payload),
-    })
-    .promise();
+  const adjustedFileInfo = {
+    name: fileInfo.fileName,
+    location: fileInfo.fileLocation,
+  };
 
-  if (lambdaResult.StatusCode !== 200)
-    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName, docId: doc.id });
-
-  if (lambdaResult.Payload === undefined)
-    throw new MetriportError("Payload is undefined", undefined, { lambdaName, docId: doc.id });
-
-  const newFile = JSON.parse(lambdaResult.Payload.toString());
-
-  return newFile;
+  const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+  return {
+    ...result,
+    isNew: true,
+  };
 }
 
 const fileIsConvertible = (f: File) => isConvertible(f.contentType);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * uuidv7: An experimental implementation of the proposed UUID Version 7
  *
@@ -111,8 +112,8 @@ export class UUID {
   toString(): string {
     let text = "";
     for (let i = 0; i < this.bytes.length; i++) {
-      text += DIGITS.charAt(this.bytes[i] >>> 4);
-      text += DIGITS.charAt(this.bytes[i] & 0xf);
+      text += DIGITS.charAt(this.bytes[i]! >>> 4);
+      text += DIGITS.charAt(this.bytes[i]! & 0xf);
       if (i === 3 || i === 5 || i === 7 || i === 9) {
         text += "-";
       }
@@ -144,7 +145,7 @@ export class UUID {
    * subsumed under the variants `0b0` and `0b111`, respectively.
    */
   getVariant(): "VAR_0" | "VAR_10" | "VAR_110" | "VAR_RESERVED" | "NIL" | "MAX" {
-    const n = this.bytes[8] >>> 4;
+    const n = this.bytes[8]! >>> 4;
     if (n < 0) {
       throw new Error("unreachable");
     } else if (n <= 0b0111) {
@@ -165,7 +166,7 @@ export class UUID {
    * not have the variant field value of `0b10`.
    */
   getVersion(): number | undefined {
-    return this.getVariant() === "VAR_10" ? this.bytes[6] >>> 4 : undefined;
+    return this.getVariant() === "VAR_10" ? this.bytes[6]! >>> 4 : undefined;
   }
 
   /** Creates an object from `this`. */
@@ -184,7 +185,7 @@ export class UUID {
    */
   compareTo(other: UUID): number {
     for (let i = 0; i < 16; i++) {
-      const diff = this.bytes[i] - other.bytes[i];
+      const diff = this.bytes[i]! - other.bytes[i]!;
       if (diff !== 0) {
         return Math.sign(diff);
       }
@@ -352,7 +353,7 @@ class DefaultRandom {
       getRandomValues(this.buffer);
       this.cursor = 0;
     }
-    return this.buffer[this.cursor++];
+    return this.buffer[this.cursor++]!;
   }
 }
 
@@ -381,7 +382,7 @@ export const uuidv4 = (): string => uuidv4obj().toString();
 /** Generates a UUIDv4 object. */
 export const uuidv4obj = (): UUID => {
   const bytes = getRandomValues(new Uint8Array(16));
-  bytes[6] = 0x40 | (bytes[6] >>> 4);
-  bytes[8] = 0x80 | (bytes[8] >>> 2);
+  bytes[6] = 0x40 | (bytes[6]! >>> 4);
+  bytes[8] = 0x80 | (bytes[8]! >>> 2);
   return UUID.ofInner(bytes);
 };
