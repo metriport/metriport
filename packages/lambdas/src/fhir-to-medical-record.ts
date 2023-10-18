@@ -41,12 +41,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
     const log = prefixedLog(`patient ${patientId}`);
 
     if (isSandbox) {
+      const lowerCaseName = firstName.toLowerCase();
       const convertUrl = await convertDoc({
-        fileName: `${firstName}-consolidated.xml`,
+        fileName: `${lowerCaseName}-consolidated.xml`,
         conversionType,
       });
 
-      return convertUrl;
+      return convertUrl.replace(/['"]+/g, "");
     }
 
     if (!converterKeysTableName) {
