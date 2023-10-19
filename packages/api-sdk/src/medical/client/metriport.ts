@@ -426,10 +426,11 @@ export class MetriportMedicalApi {
    * Start a document query for the given patient across HIEs.
    *
    * @param patientId Patient ID for which to retrieve document metadata.
-   * @param facilityId The facility providing the NPI to support this operation.
+   * @param facilityId The facility providing the NPI to support this operation If not provided and
+   *        the patient has only one facility, that one will be used.
    * @return The document query request ID, progress & status indicating whether its being executed or not.
    */
-  async startDocumentQuery(patientId: string, facilityId: string): Promise<DocumentQuery> {
+  async startDocumentQuery(patientId: string, facilityId?: string): Promise<DocumentQuery> {
     const resp = await this.api.post(`${DOCUMENT_URL}/query`, null, {
       params: {
         patientId,

@@ -42,13 +42,13 @@ export async function queryDocumentsAcrossHIEs({
 }: {
   cxId: string;
   patientId: string;
-  facilityId: string;
+  facilityId?: string;
   override?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (!isPatientAssociatedWithFacility(patient, facilityId)) {
+  if (facilityId && !isPatientAssociatedWithFacility(patient, facilityId)) {
     throw new BadRequestError(`Patient not associated with given facility`, undefined, {
       patientId: patient.id,
       facilityId,

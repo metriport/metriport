@@ -4,7 +4,7 @@ import Router from "express-promise-router";
 import status from "http-status";
 import stringify from "json-stringify-safe";
 import { z } from "zod";
-import { getFacilities } from "../../command/medical/facility/get-facility";
+import { getFacilities, getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientIds, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -36,6 +36,25 @@ async function updateInFHIRAndCW(
     .update(updatedPatient, facilityId)
     .catch(processAsyncError(`cw.patient.update`));
 }
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/ids
+ *
+ * Get all patient IDs for a given customer.
+ *
+ * @param req.query.cxId The customer ID.
+ * @returns 200 with the list of ids on the body under `patientIds`.
+ */
+router.get(
+  "/ids",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").optional("facilityId", req);
+    if (facilityId) await getFacilityOrFail({ cxId, id: facilityId });
+    const patientIds = await getPatientIds({ cxId, facilityId });
+    return res.status(status.OK).json({ patientIds });
+  })
+);
 
 const updateAllSchema = z.object({
   patientIds: z.string().array().optional(),

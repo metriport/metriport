@@ -46,7 +46,7 @@ import { getAllPages } from "../../fhir/shared/paginated";
 import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getPatientData, PatientDataCommonwell } from "../patient-shared";
+import { getPatientDataWithSingleFacility, PatientDataCommonwell } from "../patient-shared";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
   CWDocumentWithMetriportData,
@@ -72,7 +72,7 @@ const lambdaClient = makeLambdaClient();
  * This is likely to be a long-running function, so it should likely be called asynchronously.
  *
  * @param patient - the patient to query for
- * @param facilityId - the facility to query for
+ * @param facilityId - the facility to query for (optional if the patient only has one facility)
  * @param forceDownload - whether to force download the documents from CW, even if they are already
  * on S3 (optional) - see `downloadDocsAndUpsertFHIR()` for the default value
  * @param ignoreDocRefOnFHIRServer - whether to ignore the doc refs on the FHIR server and re-query
@@ -87,17 +87,16 @@ export async function queryAndProcessDocuments({
   requestId,
 }: {
   patient: Patient;
-  facilityId: string;
+  facilityId?: string | undefined;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<number> {
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
-
-  const { organization, facility } = await getPatientData(patient, facilityId);
-
   try {
+    const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
+
     if (Config.isSandbox()) {
       const documentsSandbox = await sandboxGetDocRefsAndUpsert({
         organization,
@@ -135,7 +134,7 @@ export async function queryAndProcessDocuments({
   } catch (error) {
     console.log(`Error: ${errorToString(error)}`);
     processPatientDocumentRequest(
-      organization.cxId,
+      patient.cxId,
       patient.id,
       "medical.document-download",
       MAPIWebhookStatus.failed
@@ -400,7 +399,7 @@ export async function downloadDocsAndUpsertFHIR({
   requestId,
 }: {
   patient: Patient;
-  facilityId: string;
+  facilityId?: string;
   documents: Document[];
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
@@ -493,7 +492,7 @@ export async function downloadDocsAndUpsertFHIR({
 
             if (!fileInfo.fileExists) {
               uploadToS3 = async () => {
-                const { organization, facility } = await getPatientData(
+                const { organization, facility } = await getPatientDataWithSingleFacility(
                   { id: patient.id, cxId },
                   facilityId
                 );
