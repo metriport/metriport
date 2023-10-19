@@ -52,10 +52,16 @@ router.post(
   "/update-all",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientIdsRaw = getFrom("query").optional("patientIds", req);
+    const patientIds = patientIdsRaw?.split(",") ?? [];
+
     const facilities = await getFacilities({ cxId });
     let failedUpdateCount = 0;
     for (const facility of facilities) {
-      const patients = await getPatients({ cxId, facilityId: facility.id });
+      const allPatients = await getPatients({ cxId, facilityId: facility.id });
+      const patients = patientIds.length
+        ? allPatients.filter(p => patientIds.includes(p.id))
+        : allPatients;
 
       const executeInSequence = async (patients: Patient[]) => {
         for (const patient of patients) {
