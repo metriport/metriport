@@ -54,64 +54,61 @@ async function main() {
   const errors: { patientId: string; error: Error }[] = [];
   await executeAsynchronously(
     patients,
-    async (patientsOfPromise, promiseIndex) => {
-      const { log } = out(`${promiseIndex + 1}`);
-      log(`Querying ${resourceType} for patients at ${patientsOfPromise.length} patients...`);
-      for (const patient of patientsOfPromise) {
-        try {
-          const resourceList = await queryResourceForPatient(patient.id);
-          log(`Got ${resourceList.length} ${resourceType} for patient ${patient.id}`);
+    async (patient, itemIndex, promiseIndex) => {
+      const { log } = out(`${promiseIndex + 1}-${itemIndex + 1}`);
+      try {
+        const resourceList = await queryResourceForPatient(patient.id);
+        log(`Got ${resourceList.length} ${resourceType} for patient ${patient.id}`);
 
-          if (resourceList.length > 0) {
-            const patientFileName = buildPatientFileName(patient.id);
-            fs.writeFileSync(patientFileName, patientCsvHeader);
+        if (resourceList.length > 0) {
+          const patientFileName = buildPatientFileName(patient.id);
+          fs.writeFileSync(patientFileName, patientCsvHeader);
 
-            const convertAuthoredOnToDate = resourceList.map(medication => {
-              return {
-                ...medication,
-                authoredOn: medication.authoredOn
-                  ? new Date(medication.authoredOn.toString())
-                  : undefined,
-              };
-            });
+          const convertAuthoredOnToDate = resourceList.map(medication => {
+            return {
+              ...medication,
+              authoredOn: medication.authoredOn
+                ? new Date(medication.authoredOn.toString())
+                : undefined,
+            };
+          });
 
-            const sortMedicationListByDate = orderBy(
-              convertAuthoredOnToDate,
-              ["authoredOn"],
-              ["desc"]
+          const sortMedicationListByDate = orderBy(
+            convertAuthoredOnToDate,
+            ["authoredOn"],
+            ["desc"]
+          );
+
+          const convertDate = sortMedicationListByDate.map(medication => {
+            return {
+              ...medication,
+              authoredOn: medication.authoredOn
+                ? dayjs(medication.authoredOn).format(dateFormat)
+                : undefined,
+            };
+          });
+
+          const moveUndefinedToTheEnd = convertDate.sort((a, b) => {
+            if (a.authoredOn === undefined) return 1;
+            if (b.authoredOn === undefined) return -1;
+            return 0;
+          });
+
+          totalResources += moveUndefinedToTheEnd.length;
+          moveUndefinedToTheEnd.forEach(medication => {
+            fs.appendFileSync(patientFileName, createMedicationRow(medication).toString());
+            fs.appendFileSync(
+              consolidatedFileName,
+              createConsolidatedRow(patient, medication).toString()
             );
-
-            const convertDate = sortMedicationListByDate.map(medication => {
-              return {
-                ...medication,
-                authoredOn: medication.authoredOn
-                  ? dayjs(medication.authoredOn).format(dateFormat)
-                  : undefined,
-              };
-            });
-
-            const moveUndefinedToTheEnd = convertDate.sort((a, b) => {
-              if (a.authoredOn === undefined) return 1;
-              if (b.authoredOn === undefined) return -1;
-              return 0;
-            });
-
-            totalResources += moveUndefinedToTheEnd.length;
-            moveUndefinedToTheEnd.forEach(medication => {
-              fs.appendFileSync(patientFileName, createMedicationRow(medication).toString());
-              fs.appendFileSync(
-                consolidatedFileName,
-                createConsolidatedRow(patient, medication).toString()
-              );
-            });
-          }
-          log(`Sleeping for ${delayTime} ms before the next patient...`);
-          await sleep(delayTime);
-          //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-          log(`Error getting ${resourceType} for patient ${patient.id}`);
-          errors.push({ patientId: patient.id, error });
+          });
         }
+        log(`Sleeping for ${delayTime} ms before the next patient...`);
+        await sleep(delayTime);
+        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        log(`Error getting ${resourceType} for patient ${patient.id}`);
+        errors.push({ patientId: patient.id, error });
       }
     },
     {

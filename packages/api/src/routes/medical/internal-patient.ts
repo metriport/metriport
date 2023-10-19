@@ -6,7 +6,7 @@ import stringify from "json-stringify-safe";
 import { z } from "zod";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { getPatients } from "../../command/medical/patient/get-patient";
+import { getPatientIds, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { Patient } from "../../domain/medical/patient";
 import { processAsyncError } from "../../errors";
@@ -37,6 +37,10 @@ async function updateInFHIRAndCW(
     .catch(processAsyncError(`cw.patient.update`));
 }
 
+const updateAllSchema = z.object({
+  patientIds: z.string().array().optional(),
+});
+
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/update-all
  *
@@ -46,45 +50,50 @@ async function updateInFHIRAndCW(
  *
  *
  * @param req.query.cxId The customer ID.
+ * @param req.body.patientIds The patient IDs to update (optional, defaults to all patients).
  * @return count of update failues, 0 if all successful
  */
 router.post(
   "/update-all",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const { patientIds: requestedPatientIds = [] } = updateAllSchema.parse(req.body);
+
     const facilities = await getFacilities({ cxId });
     let failedUpdateCount = 0;
     for (const facility of facilities) {
-      const patients = await getPatients({ cxId, facilityId: facility.id });
+      const patientIds = requestedPatientIds.length
+        ? requestedPatientIds
+        : await getPatientIds({ cxId, facilityId: facility.id });
 
-      const executeInSequence = async (patients: Patient[]) => {
-        for (const patient of patients) {
-          const patientUpdate: PatientUpdateCmd = {
-            id: patient.id,
-            cxId: patient.cxId,
-            address: patient.data.address,
-            dob: patient.data.dob,
-            firstName: patient.data.firstName,
-            genderAtBirth: patient.data.genderAtBirth,
-            lastName: patient.data.lastName,
-            contact: patient.data.contact,
-            personalIdentifiers: patient.data.personalIdentifiers,
-          };
-          try {
-            await updateInFHIRAndCW(patientUpdate, facility.id);
-          } catch (error) {
-            console.log(`Failed to update patient ${patient.id} - ${errorToString(error)}`);
-            failedUpdateCount++;
-          }
+      const patients = await getPatients({
+        cxId,
+        facilityId: facility.id,
+        patientIds,
+      });
+
+      const updatePatient = async (patient: Patient) => {
+        const patientUpdate: PatientUpdateCmd = {
+          id: patient.id,
+          cxId: patient.cxId,
+          address: patient.data.address,
+          dob: patient.data.dob,
+          firstName: patient.data.firstName,
+          genderAtBirth: patient.data.genderAtBirth,
+          lastName: patient.data.lastName,
+          contact: patient.data.contact,
+          personalIdentifiers: patient.data.personalIdentifiers,
+        };
+        try {
+          await updateInFHIRAndCW(patientUpdate, facility.id);
+        } catch (error) {
+          console.log(`Failed to update patient ${patient.id} - ${errorToString(error)}`);
+          failedUpdateCount++;
         }
       };
-      await executeAsynchronously(
-        patients,
-        async patients => {
-          return executeInSequence(patients);
-        },
-        { numberOfParallelExecutions: 10 }
-      );
+      await executeAsynchronously(patients, async patient => updatePatient(patient), {
+        numberOfParallelExecutions: 10,
+      });
     }
     return res.status(status.OK).json({ failedUpdateCount });
   })

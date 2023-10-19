@@ -13,9 +13,11 @@ import { getOrganizationOrFail } from "../organization/get-organization";
 export const getPatients = async ({
   facilityId,
   cxId,
+  patientIds,
 }: {
   facilityId?: string;
   cxId: string;
+  patientIds?: string[];
 }): Promise<Patient[]> => {
   const patients = await PatientModel.findAll({
     where: {
@@ -27,10 +29,34 @@ export const getPatients = async ({
             },
           }
         : undefined),
+      ...(patientIds ? { id: patientIds } : undefined),
     },
     order: [["id", "ASC"]],
   });
   return patients;
+};
+
+export const getPatientIds = async ({
+  facilityId,
+  cxId,
+}: {
+  facilityId?: string;
+  cxId: string;
+}): Promise<string[]> => {
+  const patients = await PatientModel.findAll({
+    attributes: ["id"],
+    where: {
+      cxId,
+      ...(facilityId
+        ? {
+            facilityIds: {
+              [Op.contains]: [facilityId],
+            },
+          }
+        : undefined),
+    },
+  });
+  return patients.map(p => p.id);
 };
 
 export const getPatientByDemo = async ({
