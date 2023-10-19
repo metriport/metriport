@@ -57,34 +57,28 @@ router.post(
     for (const facility of facilities) {
       const patients = await getPatients({ cxId, facilityId: facility.id });
 
-      const executeInSequence = async (patients: Patient[]) => {
-        for (const patient of patients) {
-          const patientUpdate: PatientUpdateCmd = {
-            id: patient.id,
-            cxId: patient.cxId,
-            address: patient.data.address,
-            dob: patient.data.dob,
-            firstName: patient.data.firstName,
-            genderAtBirth: patient.data.genderAtBirth,
-            lastName: patient.data.lastName,
-            contact: patient.data.contact,
-            personalIdentifiers: patient.data.personalIdentifiers,
-          };
-          try {
-            await updateInFHIRAndCW(patientUpdate, facility.id);
-          } catch (error) {
-            console.log(`Failed to update patient ${patient.id} - ${errorToString(error)}`);
-            failedUpdateCount++;
-          }
+      const updatePatient = async (patient: Patient) => {
+        const patientUpdate: PatientUpdateCmd = {
+          id: patient.id,
+          cxId: patient.cxId,
+          address: patient.data.address,
+          dob: patient.data.dob,
+          firstName: patient.data.firstName,
+          genderAtBirth: patient.data.genderAtBirth,
+          lastName: patient.data.lastName,
+          contact: patient.data.contact,
+          personalIdentifiers: patient.data.personalIdentifiers,
+        };
+        try {
+          await updateInFHIRAndCW(patientUpdate, facility.id);
+        } catch (error) {
+          console.log(`Failed to update patient ${patient.id} - ${errorToString(error)}`);
+          failedUpdateCount++;
         }
       };
-      await executeAsynchronously(
-        patients,
-        async patients => {
-          return executeInSequence(patients);
-        },
-        { numberOfParallelExecutions: 10 }
-      );
+      await executeAsynchronously(patients, async patient => updatePatient(patient), {
+        numberOfParallelExecutions: 10,
+      });
     }
     return res.status(status.OK).json({ failedUpdateCount });
   })
