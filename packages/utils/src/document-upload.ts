@@ -1,32 +1,37 @@
 // import { createReadStream } from "fs";
 // import FormData from "form-data";
-// import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+// import { MetriportMedicalApi } from "@metriport/api-sdk";
+// import { uuidv7 } from "./shared/uuid-v7";
 
 // const apiKey = getEnvVarOrFail("API_KEY");
 // const apiUrl = getEnvVarOrFail("API_URL");
 // const patientId = getEnvVarOrFail("PATIENT_ID");
-// // const metriportApi = new MetriportMedicalApi(apiKey, {
-// //   baseAddress: apiUrl,
-// // });
+// const metriportApi = new MetriportMedicalApi(apiKey, {
+//   baseAddress: apiUrl,
+// });
 
 // async function main() {
-//   const signedUrl = {}; // paste this from the response of the API call
-
-//   const form = new FormData();
-//   Object.entries(signedUrl.fields).forEach(([field, value]) => {
-//     form.append(field, value);
-//   });
-//   const contentType = "application/xml";
-//   form.append("Content-Type", contentType);
-//   form.append("file", createReadStream("./src/shorter_example.xml"));
-
-//   form.submit(signedUrl.url, (err, response) => {
-//     if (err) {
-//       console.log(`ERROR: `, err);
-//       return;
-//     }
-//     console.log(`RESPONSE: `, response.statusCode);
-//   });
+// const presignedUploadUrl = await metriportApi.getDocumentUploadUrl(
+//   patientId,
+//   "Hosp123",
+//   "John Snow",
+//   "This is a test file for document upload"
+// );
+// console.log("Signed Url is", presignedUploadUrl);
+// const form = new FormData();
+// Object.entries(presignedUploadUrl.fields).forEach(([field, value]) => {
+//   form.append(field, value);
+// });
+// const contentType = "application/xml";
+// form.append("Content-Type", contentType);
+// form.append("file", createReadStream("./src/shorter_example.xml"));
+// form.submit(presignedUploadUrl.url, (err, response) => {
+//   if (err) {
+//     console.log(`ERROR: `, err);
+//     return;
+//   }
+//   console.log(`RESPONSE: `, response.statusCode);
+// });
 // }
 
 // main();

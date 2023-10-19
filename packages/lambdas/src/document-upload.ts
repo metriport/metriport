@@ -3,9 +3,8 @@
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { S3Event } from "aws-lambda";
-import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { makeS3Client, parseS3FileName, getFileInfoFromS3 } from "@metriport/core/external/aws/s3";
 import axios from "axios";
-import { getFileInfoFromS3 } from "./shared/file-info";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 
 // // Keep this as early on the file as possible
@@ -15,27 +14,27 @@ const apiServerURL = getEnvOrFail("API_URL");
 // const destinationBucket = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET");
 const api = axios.create();
 const region = getEnvOrFail("AWS_REGION");
-const s3 = makeS3Client(region);
-
-const buildResponse = (status: number, body?: unknown) => ({
-  statusCode: status,
-  body,
-});
+const s3Client = makeS3Client(region);
 
 type FileData = {
   mimetype?: string;
   size?: number;
+  locationUrl: string;
   docId: string;
   cxId: string;
   patientId: string;
+  organizationName: string;
+  practitionerName: string;
+  fileDescription: string;
 };
 
 export const handler = async (event: S3Event) => {
   if (event.Records[0]) {
     const sourceBucket = event.Records[0].s3.bucket.name;
-    const sourceKey = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
+    const sourceKey = decodeURIComponent(event.Records[0].s3.object.key);
+    console.log("SourceKey:", sourceKey);
     const destinationBucket = "devs.metriport.com";
-    const { destinationKey, queryParams } = getDestinationKeyAndQueryParams(sourceKey);
+    const { destinationKey, fileMetadata } = getDestinationKeyAndFileMetadata(sourceKey);
 
     const params = {
       CopySource: encodeURI(`${sourceBucket}/${sourceKey}`),
@@ -44,92 +43,108 @@ export const handler = async (event: S3Event) => {
     };
     // Make a copy of the file to the general medical documents bucket
     try {
-      await s3.copyObject(params).promise();
-    } catch (err) {
-      console.log("Error copying file to general medical documents bucket", JSON.stringify(err));
-      capture.error("Error copying file to general medical documents bucket", {
-        extra: { context: `document-upload`, err, destinationKey, sourceKey },
+      await s3Client.copyObject(params).promise();
+    } catch (error) {
+      const message = "Error copying uploaded file to medical documents bucket";
+      console.log(message, JSON.stringify(error));
+      capture.error(message, {
+        extra: { context: `document-upload`, err: error, destinationKey, sourceKey },
       });
-      throw err;
+      throw error;
     }
 
     // Get file info from the copied file
-    const { size, contentType } = await getFileInfoFromS3(destinationKey, destinationBucket);
+    const { size, contentType } = await getFileInfoFromS3({
+      key: destinationKey,
+      bucket: destinationBucket,
+      s3: s3Client,
+    });
+    const { docId, cxId, patientId } = parseS3FileName(destinationKey);
+    if (!docId || !cxId || !patientId) {
+      throw new MetriportError("Invalid S3 file name", null, { destinationKey });
+    }
+
     const fileData = {
       size,
       mimetype: contentType,
-      ...getIdsFromKey(destinationKey),
+      locationUrl: `https://${destinationBucket}.s3.${region}.amazonaws.com/${destinationKey}`,
+      docId,
+      cxId,
+      patientId,
+      ...fileMetadata,
     };
     console.log("Got file data:", fileData);
 
     try {
       // POST /internal/docs/doc-ref
-      return forwardCallToServer(fileData, queryParams);
-    } catch (err) {
-      console.log("Failed to process uploaded file", JSON.stringify(err));
-      capture.error("Failed to process uploaded file", {
-        extra: { context: `document-upload`, err, fileData },
+      await forwardCallToServer(fileData);
+    } catch (error) {
+      const message = "Failed with a call to generate a doc-ref on an uploaded file";
+      console.log(message, JSON.stringify(error));
+      capture.error(message, {
+        extra: { context: `document-upload`, err: error, fileData },
       });
     }
   }
 };
 
-function removeSuffix(key: string, arg1: string) {
-  const newFileName = key.indexOf(arg1) > -1 ? key.replace(arg1, "") : key;
-  return newFileName;
+function removeSuffix(key: string, suffix: string) {
+  return key.includes(suffix) ? key.replace(suffix, "") : key;
 }
 
-function getIdsFromKey(destinationKey: string): { cxId: string; patientId: string; docId: string } {
-  if (destinationKey.includes("_")) {
-    const keyParts = destinationKey.split("_");
-    if (keyParts[0] && keyParts[1] && keyParts[2] && keyParts[0].includes("/")) {
-      const cxIdParts = keyParts[0].split("/");
-      if (cxIdParts[0]) {
-        const cxId = cxIdParts[0];
-        const patientId = keyParts[1];
-        const docId = keyParts[2];
-        const fileData = {
-          cxId,
-          patientId,
-          docId,
-        };
-        return fileData;
-      }
-    }
-  }
-  capture.error("Invalid destination key", {
-    extra: { context: `document-upload.ids-from-key`, destinationKey },
-  });
-  throw new MetriportError("Invalid destination key", null, { destinationKey });
-}
-
-async function forwardCallToServer(fileData: FileData, queryParams?: string) {
+async function forwardCallToServer(fileData: FileData) {
   const requestBody = {
     mimeType: fileData.mimetype,
     size: fileData.size,
     originalname: fileData.docId,
+    locationUrl: fileData.locationUrl,
+    organizationName: fileData.organizationName,
+    practitionerName: fileData.practitionerName,
+    fileDescription: fileData.fileDescription,
   };
 
-  const url = `${apiServerURL}?cxId=${fileData.cxId}&patientId=${fileData.patientId}${queryParams}`;
+  const url = `${apiServerURL}?cxId=${fileData.cxId}&patientId=${fileData.patientId}`;
   const encodedUrl = encodeURI(url);
   console.log("POST doc-ref URL is:", encodedUrl);
 
   const resp = await api.post(encodedUrl, requestBody);
   console.log(`Server response - status: ${resp.status}`);
   console.log(`Server response - body: ${resp.data}`);
-  return buildResponse(resp.status, resp.data);
 }
 
-function getDestinationKeyAndQueryParams(sourceKey: string): {
+type FileMetadata = {
+  organizationName: string;
+  practitionerName: string;
+  fileDescription: string;
+};
+
+function getDestinationKeyAndFileMetadata(sourceKey: string): {
   destinationKey: string;
-  queryParams: string | undefined;
+  fileMetadata: FileMetadata;
 } {
   const keyParts = sourceKey.split("?");
-  const destinationKey = keyParts[0] ? removeSuffix(keyParts[0], "_upload") : "";
+  const destinationKey = keyParts[0] ? removeSuffix(keyParts[0], "_upload") : undefined;
   if (!destinationKey) {
     throw new Error("Invalid destination key");
   }
-  const queryParams = keyParts[1] ? `&${keyParts[1]}` : "";
 
-  return { destinationKey, queryParams };
+  if (keyParts[1]) {
+    const queryParams = keyParts[1].split("&");
+    const organizationName = extractQueryParamInfo(queryParams[0]);
+    const practitionerName = extractQueryParamInfo(queryParams[1]);
+    const fileDescription = extractQueryParamInfo(queryParams[2]);
+    const fileMetadata: FileMetadata = {
+      organizationName,
+      practitionerName,
+      fileDescription,
+    };
+    return { destinationKey, fileMetadata };
+  }
+  throw new Error("Invalid query params");
+}
+
+function extractQueryParamInfo(queryParam: string | undefined) {
+  const thing = queryParam?.split("=")[1];
+  if (thing) return thing;
+  throw new Error("Invalid query param");
 }

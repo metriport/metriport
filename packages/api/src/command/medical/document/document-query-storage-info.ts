@@ -9,6 +9,7 @@ import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
+import { getFileInfoFromS3 } from "@metriport/core/external/aws/s3";
 
 const s3Client = makeS3Client();
 const s3BucketName = Config.getMedicalDocumentsBucketName();
@@ -63,7 +64,11 @@ export async function getS3Info(
             exists: fileExists,
             size: fileSize,
             contentType: fileContentType,
-          } = await getFileInfoFromS3(file.fileName, file.fileLocation);
+          } = await getFileInfoFromS3({
+            key: file.fileName,
+            bucket: file.fileLocation,
+            s3: s3Client,
+          });
           return {
             docId: file.docId,
             fileExists,
@@ -92,30 +97,6 @@ export async function getS3Info(
     ref.status === "fulfilled" && ref.value ? ref.value : []
   );
   return successful;
-}
-
-export async function getFileInfoFromS3(
-  key: string,
-  bucket: string
-): Promise<
-  | { exists: true; size: number; contentType: string | undefined }
-  | { exists: false; size?: never; contentType?: never }
-> {
-  try {
-    const head = await s3Client
-      .headObject({
-        Bucket: bucket,
-        Key: key,
-      })
-      .promise();
-    return {
-      exists: true,
-      size: head.ContentLength ?? 0,
-      contentType: head.ContentType ?? undefined,
-    };
-  } catch (err) {
-    return { exists: false };
-  }
 }
 
 export function getUrl(s3FileName: string, s3FileLocation: string) {

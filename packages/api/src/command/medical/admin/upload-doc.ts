@@ -3,12 +3,8 @@ import dayjs from "dayjs";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
-import { Config } from "../../../shared/config";
 import { randomInt } from "../../../shared/numbers";
 import { getPatientOrFail } from "../patient/get-patient";
-
-const apiUrl = Config.getApiUrl();
-const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
 
 const smallId = () => String(randomInt(3)).padStart(3, "0");
 
@@ -16,6 +12,10 @@ export type FileData = {
   mimetype?: string;
   size?: number;
   originalname: string;
+  locationUrl: string;
+  organizationName: string;
+  practitionerName: string;
+  fileDescription: string;
 };
 
 /**
@@ -29,17 +29,11 @@ export async function createAndUploadDocReference({
   patientId,
   docId,
   fileData,
-  metadata = {},
 }: {
   cxId: string;
   patientId: string;
   docId: string;
   fileData: FileData;
-  metadata?: {
-    fileDescription?: string;
-    organizationName?: string;
-    practitionerName?: string;
-  };
 }): Promise<DocumentReference> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
@@ -55,19 +49,18 @@ export async function createAndUploadDocReference({
     size: fileData.size,
     creation: refDate.format(),
     fileName: fileData.originalname,
-    location: `${docContributionUrl}?fileName=${fileData.originalname}`,
+    location: fileData.locationUrl,
     extension: [metriportDataSourceExtension],
     format: "urn:ihe:pcc:xphr:2007",
   });
 
-  // WHEN OPENING THIS FOR CX'S NEED TO UPDATE THE CONTENT
   const data: DocumentReference = getFHIRDocRef(patient.id, {
     id: docId,
     contained: [
       {
         resourceType: "Organization",
         id: orgRef,
-        name: metadata.organizationName ?? `Hospital ${orgRef}`,
+        name: fileData.organizationName,
       },
       {
         resourceType: "Practitioner",
@@ -76,11 +69,12 @@ export async function createAndUploadDocReference({
           {
             family: `Last ${practitionerId}`,
             given: [`First ${practitionerId}`],
-            text: metadata.practitionerName ?? undefined,
+            text: fileData.practitionerName,
           },
         ],
       },
     ],
+
     masterIdentifier: {
       system: "urn:ietf:rfc:3986",
       value: docId,
@@ -99,7 +93,7 @@ export async function createAndUploadDocReference({
         {
           system: "http://loinc.org/",
           code: "75622-1",
-          display: metadata.fileDescription,
+          display: fileData.fileDescription,
         },
       ],
     },
@@ -110,7 +104,7 @@ export async function createAndUploadDocReference({
       },
     ],
     extension: [metriportDataSourceExtension],
-    description: metadata.fileDescription,
+    description: fileData.fileDescription,
     content: [metriportContent],
     context: {
       period: {

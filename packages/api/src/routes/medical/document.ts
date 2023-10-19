@@ -1,8 +1,8 @@
-import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { makeS3Client, createS3FileName } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import httpStatus, { OK } from "http-status";
+import httpStatus, { OK, MOVED_PERMANENTLY } from "http-status";
 import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
@@ -10,13 +10,15 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
 import { Config } from "../../shared/config";
-import { createS3FileName } from "../../shared/external";
 import { stringToBoolean } from "../../shared/types";
 import { sanitize } from "../helpers/string";
 import { optionalDateSchema } from "../schemas/date";
-import { asyncHandler, getCxIdOrFail, getFrom, getFromQuery, getFromQueryOrFail } from "../util";
+import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
+
+const UPLOAD_FILE_SIZE_LIMIT = 25_000_000; // 25MB
+const UPLOAD_FILE_SIZE_LIMIT_SANDBOX = 5_000_000; // 5MB
 
 const router = Router();
 const region = Config.getAWSRegion();
@@ -114,10 +116,30 @@ router.post(
   })
 );
 
+/**
+ * Handles the logic for download url endpoints.
+ *
+ * @param req Request object.
+ * @returns URL for downloading the document.
+ */
+async function getDownloadUrl(req: Request): Promise<string> {
+  const cxId = getCxIdOrFail(req);
+  const fileName = getFromQueryOrFail("fileName", req);
+  const fileHasCxId = fileName.includes(cxId);
+  const type = getFrom("query").optional("conversionType", req);
+  const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
+
+  if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
+
+  const url = await downloadDocument({ fileName, conversionType });
+  return url;
+}
+
+// TODO: Redirect this endpoint to the new one (download-url)
 /** ---------------------------------------------------------------------------
  * GET /document/downloadUrl
- *
  * Fetches the document from S3 and sends a presigned URL
+ * @deprecated Use the GET /download-url endpoint instead.
  *
  * @param req.query.fileName The file name of the document in s3.
  * @param req.query.conversionType The doc type to convert to.
@@ -126,16 +148,24 @@ router.post(
 router.get(
   "/downloadUrl",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const fileName = getFromQueryOrFail("fileName", req);
-    const fileHasCxId = fileName.includes(cxId);
-    const type = getFrom("query").optional("conversionType", req);
-    const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
+    const url = getDownloadUrl(req);
+    return res.status(MOVED_PERMANENTLY).json({ url });
+  })
+);
 
-    if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
-
-    const url = await downloadDocument({ fileName, conversionType });
-
+/** ---------------------------------------------------------------------------
+ * GET /document/download-url
+ *
+ * Fetches the document from S3 and sends a presigned URL
+ *
+ * @param req.query.fileName The file name of the document in s3.
+ * @param req.query.conversionType The doc type to convert to.
+ * @return presigned url
+ */
+router.get(
+  "/download-url",
+  asyncHandler(async (req: Request, res: Response) => {
+    const url = getDownloadUrl(req);
     return res.status(OK).json({ url });
   })
 );
@@ -150,7 +180,9 @@ router.get(
  * @param practitionerName - The name of the practitioner that created the document.
  * @param fileDescription - The description of the file.
  *
- * @return presigned url
+ * @return A presigned URL to upload a file to Metriport and make the document available to other HIEs.
+ * Refer to Metriport Documentation for more details:
+ * https://docs.metriport.com/medical-api/api-reference/document/get-upload-url
  */
 router.get(
   "/upload-url",
@@ -162,12 +194,16 @@ router.get(
     const s3FileName = createS3FileName(cxId, patientId, docRefId);
     const presignedUrl = s3client.createPresignedPost({
       // Bucket: medicalDocumentsUploadBucketName,
-      Bucket: "medical-doc-upload-staging",
+      Bucket: "metriport-medical-document-uploads-staging",
       Fields: {
-        key: s3FileName + "_upload" + queryParams,
+        key: s3FileName + "_upload?" + queryParams,
       },
       Conditions: [
-        ["content-length-range", 0, 25_000_000], // content length restrictions: 0-25MB
+        [
+          "content-length-range",
+          0,
+          Config.isSandbox() ? UPLOAD_FILE_SIZE_LIMIT_SANDBOX : UPLOAD_FILE_SIZE_LIMIT,
+        ], // content length restrictions: 0-25MB for prod, 0-5MB for sandbox
         // ["starts-with", "$Content-Type", "image/"], // content type restriction
         ["starts-with", "$Content-Type", ""], // content type restriction
       ],
@@ -177,15 +213,15 @@ router.get(
 );
 
 function buildQueryParams(req: Request): string {
-  const organizationName = getFromQuery("organizationName", req);
-  const practitionerName = getFromQuery("practitionerName", req);
-  const fileDescription = getFromQuery("fileDescription", req);
-
-  let queryParams = "?";
-  if (organizationName) queryParams += `organizationName=${organizationName}&`;
-  if (practitionerName) queryParams += `practitionerName=${practitionerName}&`;
-  if (fileDescription) queryParams += `fileDescription=${fileDescription}`;
-  return encodeURI(queryParams);
+  console.log("QUERY PARAMS", req.query);
+  const fileReferences = {
+    organizationName: getFromQueryOrFail("organizationName", req),
+    practitionerName: getFromQueryOrFail("practitionerName", req),
+    fileDescription: getFromQueryOrFail("fileDescription", req),
+  };
+  const queryParams = new URLSearchParams(fileReferences).toString();
+  console.log("PROCESSED", queryParams.toString());
+  return queryParams;
 }
 
 export default router;

@@ -14,7 +14,7 @@ import AWS from "aws-sdk";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 import { S3Utils } from "./shared/s3";
-import { getFileInfoFromS3 } from "./shared/file-info";
+import { getFileInfoFromS3 } from "@metriport/core/external/aws/s3";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -111,7 +111,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
 
-    const { size, contentType } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
+    const { size, contentType } = await getFileInfoFromS3({
+      key: uploadResult.Key,
+      bucket: uploadResult.Bucket,
+      s3: s3client,
+    });
 
     const originalXml = {
       bucket: uploadResult.Bucket,
@@ -151,8 +155,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         ]);
 
         const [b64FileInfo, newXmlFileInfo] = await Promise.all([
-          await s3Utils.getFileInfoFromS3(b64Upload.Key, b64Upload.Bucket),
-          await s3Utils.getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket),
+          await s3Utils.getFileInfoFromS3({
+            key: b64Upload.Key,
+            bucket: b64Upload.Bucket,
+            s3: s3client,
+          }),
+          await s3Utils.getFileInfoFromS3({
+            key: uploadResult.Key,
+            bucket: uploadResult.Bucket,
+            s3: s3client,
+          }),
         ]);
 
         originalXml.size = newXmlFileInfo.size;
@@ -262,24 +274,4 @@ export async function downloadDocumentFromCW({
 
 function oid(id: string): string {
   return `${OID_PREFIX}${id}`;
-}
-
-export function removeAndReturnB64FromXML(htmlString: string): { newXML: string; b64: string } {
-  const openingTag = "<text";
-  const closingTag = "</text>";
-  const startIndex = htmlString.indexOf(openingTag);
-  const endIndex = htmlString.lastIndexOf(closingTag);
-  const textTag = htmlString.substring(startIndex, endIndex + closingTag.length);
-
-  const newXML = htmlString.replace(textTag, "");
-  const b64 = removeHTMLTags(textTag).trim();
-
-  return {
-    newXML,
-    b64,
-  };
-}
-
-function removeHTMLTags(htmlString: string): string {
-  return htmlString.replace(/(<([^>]+)>)/gi, "");
 }

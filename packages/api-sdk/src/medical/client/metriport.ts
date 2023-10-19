@@ -13,7 +13,7 @@ import {
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
-  SignedUrl,
+  SignedUploadUrl,
   documentListSchema,
   documentQuerySchema,
 } from "../models/document";
@@ -478,27 +478,31 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Returns a signed url to upload a document to Metriport.
+   * A presigned URL to upload a file to Metriport and make the document available to other HIEs.
+   * The presigned URL is to be used with a form-based upload, where URL.fields are used for the form.fields, and URL.url as form.url.
+   * Refer to Metriport Documentation for more details:
+   * https://docs.metriport.com/medical-api/api-reference/document/get-upload-url
    *
    * @param patientId - the patient ID.
    * @param organizationName - the name of the organization that created the document.
    * @param practitionerName - the name of the practitioner that created the document.
    * @param fileDescription - a brief description of the document.
    *
-   * @returns a signed url
+   * @returns A presigned URL for uploading a document.
    */
   async getDocumentUploadUrl(
     patientId: string,
-    organizationName?: string,
-    practitionerName?: string,
-    fileDescription?: string
-  ): Promise<SignedUrl> {
+    organizationName: string, // could be our customer org name - need to check the FHIR server
+    practitionerName: string,
+    fileDescription: string
+  ): Promise<SignedUploadUrl> {
     if (!patientId) throw new Error("Patient ID is required");
-    let url = `${DOCUMENT_URL}/upload-url/?patientId=${patientId}`;
-    if (organizationName) url += "&organizationName=" + organizationName;
-    if (practitionerName) url += "&practitionerName=" + practitionerName;
-    if (fileDescription) url += "&fileDescription=" + fileDescription;
-
+    const metadataQueryParams = new URLSearchParams({
+      organizationName,
+      practitionerName,
+      fileDescription,
+    }).toString();
+    const url = `${DOCUMENT_URL}/upload-url/?patientId=${patientId}&${metadataQueryParams}`;
     const resp = await this.api.get(url, {});
     return resp.data;
   }

@@ -194,10 +194,14 @@ router.post(
   })
 );
 
-const uploadDocSchema = z.object({
-  fileDescription: z.string().optional(),
-  organizationName: z.string().optional(),
-  practitionerName: z.string().optional(),
+const documentDataSchema = z.object({
+  mimetype: z.string().optional(),
+  size: z.number().optional(),
+  originalname: z.string(),
+  locationUrl: z.string(),
+  organizationName: z.string(),
+  practitionerName: z.string(),
+  fileDescription: z.string(),
 });
 
 /** ---------------------------------------------------------------------------
@@ -207,9 +211,6 @@ const uploadDocSchema = z.object({
  *
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient ID.
- * @param req.query.fileDescription - The description of the file.
- * @param req.query.organizationName - The name of the contained Organization
- * @param req.query.practitionerName - The name of the contained Practitioner
  *
  * @return 200 Indicating the file was successfully uploaded.
  */
@@ -218,21 +219,19 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const metadata = uploadDocSchema.parse({
-      fileDescription: req.query.fileDescription,
-      organizationName: req.query.organizationName,
-      practitionerName: req.query.practitionerName,
-    });
 
     const body = req.body[0];
-    const fileData = {
+    const fileData = documentDataSchema.parse({
       mimetype: body.mimetype,
       size: parseInt(body.size),
       originalname: body.originalname,
-    };
+      locationUrl: body.locationUrl,
+      organizationName: body.organizationName,
+      practitionerName: body.practitionerName,
+      fileDescription: body.fileDescription,
+    });
 
     console.log("FileData", fileData);
-    console.log("Metadata", metadata);
 
     const docRefId = uuidv7();
 
@@ -241,7 +240,6 @@ router.post(
       patientId,
       docId: docRefId,
       fileData,
-      metadata,
     });
 
     console.log("Customer file upload doc ref res: ", JSON.stringify(docRef));

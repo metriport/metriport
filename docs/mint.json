@@ -122,7 +122,7 @@
             "medical-api/api-reference/document/get-document-query",
             "medical-api/api-reference/document/list-documents",
             "medical-api/api-reference/document/get-document",
-            "medical-api/api-reference/document/post-document"
+            "medical-api/api-reference/document/get-upload-url"
           ]
         },
         {

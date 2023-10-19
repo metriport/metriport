@@ -1,8 +1,9 @@
 import { DOMParser } from "xmldom";
 import { downloadDocumentFromCW, getUploadStreamToS3 } from "../document-downloader";
-import { getFileInfoFromS3 } from "../shared/file-info";
+import { getFileInfoFromS3 } from "@metriport/core/external/aws/s3";
 import { getEnvOrFail } from "../shared/env";
 
+const region = getEnvOrFail("AWS_REGION");
 const cwOrgCertificate = getEnvOrFail("CW_ORG_CERTIFICATE");
 const cwOrgPrivateKey = getEnvOrFail("CW_ORG_PRIVATE_KEY");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
@@ -46,7 +47,12 @@ describe.skip("document-downloader", () => {
     expect(uploadResult).toBeTruthy();
     expect(uploadResult.Key).toEqual(docRef.fileName);
 
-    const { size, contentType } = await getFileInfoFromS3(uploadResult.Key, uploadResult.Bucket);
+    const { size, contentType } = await getFileInfoFromS3({
+      key: uploadResult.Key,
+      bucket: uploadResult.Bucket,
+      s3: undefined,
+      region,
+    });
 
     expect(size).toEqual(docRef.size);
     expect(contentType).toEqual(docRef.mimeType);

@@ -1,7 +1,7 @@
 ---
-title: "Upload Document"
+title: "Get Upload URL"
 description: "Uploads a patient document to the server."
-api: "POST /medical/v1/document/"
+api: "GET /medical/v1/document/upload-url"
 ---
 
 This endpoint uploads the specified file to our servers and returns a FHIR Document Reference.
@@ -16,10 +16,6 @@ This endpoint uploads the specified file to our servers and returns a FHIR Docum
 
 <ParamField body="file" type="File" required>
   The file that you would like to upload.
-</ParamField>
-
-<ParamField body="organizationName" type="string">
-  The name of the organization that created this file.
 </ParamField>
 
 <ParamField body="practitionerName" type="string">
@@ -146,19 +142,11 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
-const documentReference = await metriportClient.uploadDocument(
+const documentReference = await metriportClient.getDocumentUploadUrl(
   "my-patient-id",
-  {
-    fileMetadata: {
-      size: <file-size-int>,
-      mimetype: "application/xml>",
-      fileName: <file-name-string>
-    },
-    fileContents
-  },
-  "organizationName",
-  "practitionerName",
-  "description"
+  "my-organization-name",
+  "John Snow",
+  "brief-file-description"
 );
 ```
 
