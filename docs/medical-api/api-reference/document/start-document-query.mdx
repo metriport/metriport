@@ -20,6 +20,10 @@ If there's no document to be converted, the total will be set to zero and the st
   out our [webhooks guide](/medical-api/more-info/webhooks).
 </Tip>
 
+Note that the webhook resulting from this query **does not** return all of the available documents for a patient - only what was retrieved with this current query.
+
+<Snippet file="document-query-complete-tip.mdx" />
+
 <Warning>
   If you were to trigger this endpoint again while the query is still processing, you will get a
   response that reflects the current query progress. So essentially, only a single document query
@@ -57,8 +61,8 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
 const status = await api.startDocumentQuery(
-  "2.16.840.1.113883.3.666.5.2004.4.2005",
-  "2.16.840.1.113883.3.666.123",
+"2.16.840.1.113883.3.666.5.2004.4.2005",
+"2.16.840.1.113883.3.666.123",
 );
 
 ```

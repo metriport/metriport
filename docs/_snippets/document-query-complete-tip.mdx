@@ -1,0 +1,6 @@
+<Tip>
+  There is a scenario in which a previous document query has already retrieved all of the available
+  documents for a patient, in which case, the `medical.document-download` webhook notification will
+  contain an empty document array: `documents: []`. Simply fetch all of the available documents with
+  [this endpoint](/medical-api/api-reference/document/get-document).
+</Tip>
