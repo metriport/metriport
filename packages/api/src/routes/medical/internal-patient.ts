@@ -37,6 +37,10 @@ async function updateInFHIRAndCW(
     .catch(processAsyncError(`cw.patient.update`));
 }
 
+const updateAllSchema = z.object({
+  patientIds: z.string().array().optional(),
+});
+
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/update-all
  *
@@ -46,14 +50,14 @@ async function updateInFHIRAndCW(
  *
  *
  * @param req.query.cxId The customer ID.
+ * @param req.body.patientIds The patient IDs to update (optional, defaults to all patients).
  * @return count of update failues, 0 if all successful
  */
 router.post(
   "/update-all",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientIdsRaw = getFrom("query").optional("patientIds", req);
-    const requestedPatientIds = patientIdsRaw?.split(",") ?? [];
+    const { patientIds: requestedPatientIds = [] } = updateAllSchema.parse(req.body);
 
     const facilities = await getFacilities({ cxId });
     let failedUpdateCount = 0;
