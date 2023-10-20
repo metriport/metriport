@@ -54,6 +54,16 @@ export async function queryDocumentsAcrossHIEs({
       facilityId,
     });
   }
+  if (!facilityId && patient.facilityIds.length > 1) {
+    throw new BadRequestError(
+      `Patient is associated with more than one facility (facilityId is required)`,
+      undefined,
+      {
+        patientId: patient.id,
+        facilityIdCount: patient.facilityIds.length,
+      }
+    );
+  }
   const docQueryProgress = patient.data.documentQueryProgress;
   const requestId = getOrGenerateRequestId(docQueryProgress);
 
