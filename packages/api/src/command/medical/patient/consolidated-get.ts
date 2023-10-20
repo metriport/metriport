@@ -102,7 +102,12 @@ async function getConsolidatedAndSendToCx({
     processConsolidatedDataWebhook({
       patient,
       status: "failed",
-      filters: { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo },
+      filters: {
+        resources: resources ? resources.join(", ") : undefined,
+        dateFrom,
+        dateTo,
+        conversionType,
+      },
     }).catch(emptyFunction);
     capture.error(error, {
       extra: {
