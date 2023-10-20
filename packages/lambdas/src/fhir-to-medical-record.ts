@@ -1,13 +1,14 @@
-import * as Sentry from "@sentry/serverless";
-import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { FhirToMedicalRecordPayload } from "@metriport/api-sdk/medical/models/fhir";
-import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { FhirToMedicalRecordPayload } from "@metriport/core/domain/fhir/index";
+import { logResultToString, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { out } from "@metriport/core/util/log";
+import * as Sentry from "@sentry/serverless";
 import { DOMParser } from "xmldom";
 import { capture } from "./shared/capture";
-import { getEnvOrFail, getEnv } from "./shared/env";
-import { prefixedLog } from "./shared/log";
 import { postToConverter } from "./shared/converter";
+import { getEnv, getEnvOrFail } from "./shared/env";
+import { prefixedLog } from "./shared/log";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -29,13 +30,23 @@ const s3Client = makeS3Client(region);
 const isSandbox = envType === "sandbox";
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRecordPayload) => {
-  const { bundle, patientId, firstName, cxId, resources, dateFrom, dateTo, conversionType } = req;
-
-  console.log(
-    `Running with conversionType: ${conversionType}, patientId: ${patientId}, cxId: ${cxId}, resources: ${resources}, dateFrom: ${dateFrom}, dateTo: ${dateTo}`
+  const {
+    fileName: fhirFileName,
+    patientId,
+    firstName,
+    cxId,
+    dateFrom,
+    dateTo,
+    conversionType,
+  } = req;
+  const { log } = out(`cx ${cxId}, patient ${patientId}`);
+  log(
+    `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
+      `dateTo: ${dateTo}, fileName: ${fhirFileName}`
   );
 
-  console.log(`bundle: ${JSON.stringify(bundle)}`);
+  const bundle = await getBundleFromS3(fhirFileName);
+  log(`Bundle: ${JSON.stringify(bundle)}`);
 
   try {
     const log = prefixedLog(`patient ${patientId}`);
@@ -45,7 +56,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
         fileName: `${firstName}-consolidated.xml`,
         conversionType,
       });
-
       return convertUrl;
     }
 
@@ -63,29 +73,26 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
     });
 
     const formattedXML = formatXML(res.data);
-    const fileName = createFileName({ cxId, patientId, resources, dateFrom, dateTo });
+    const cdaFileName = getCDAFileName(fhirFileName);
 
     await s3Client
       .putObject({
         Bucket: bucketName,
-        Key: fileName,
+        Key: cdaFileName,
         Body: formattedXML,
         ContentType: "application/xml",
       })
       .promise();
 
-    const convertUrl = await convertDoc({ fileName, conversionType });
+    const convertUrl = await convertDoc({ fileName: cdaFileName, conversionType });
 
     return convertUrl.replace(/['"]+/g, "");
   } catch (err) {
-    console.log(
-      `Error processing bundle for patient: ${patientId} with resources ${resources}; ${err}`
-    );
+    log(`Error processing bundle for patient ${patientId}; ${err}`);
     capture.error(err, {
       extra: {
         error: err,
         patientId,
-        resources,
         dateFrom,
         dateTo,
         context: lambdaName,
@@ -94,6 +101,25 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
     throw err;
   }
 });
+
+async function getBundleFromS3(fileName: string) {
+  const getResponse = await s3Client
+    .getObject({
+      Bucket: bucketName,
+      Key: fileName,
+    })
+    .promise();
+  const objectBody = getResponse.Body;
+  if (!objectBody) throw new Error(`No body found for ${fileName}`);
+  return JSON.parse(objectBody.toString());
+}
+
+function getCDAFileName(fhirFileName: string) {
+  const fileNameParts = fhirFileName.split(".");
+  fileNameParts.pop();
+  fileNameParts.push("xml");
+  return fileNameParts.join(".");
+}
 
 const formatXML = (xml: string): string => {
   const parser = new DOMParser();
@@ -265,37 +291,6 @@ const createCodeElement = (
   return newCode;
 };
 
-const createFileName = ({
-  cxId,
-  patientId,
-  resources,
-  dateFrom,
-  dateTo,
-}: {
-  cxId: string;
-  patientId: string;
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-}): string => {
-  const MEDICAL_RECORD_KEY = "MR";
-  let fileName = `${cxId}/${patientId}/${cxId}_${patientId}_${MEDICAL_RECORD_KEY}`;
-
-  if (resources) {
-    fileName = `${fileName}_${resources.toString()}`;
-  }
-
-  if (dateFrom) {
-    fileName = `${fileName}_${dateFrom}`;
-  }
-
-  if (dateTo) {
-    fileName = `${fileName}_${dateTo}`;
-  }
-
-  return `${fileName}.xml`;
-};
-
 const convertDoc = async ({
   fileName,
   conversionType,
@@ -311,9 +306,19 @@ const convertDoc = async ({
     })
     .promise();
 
-  if (result.StatusCode !== 200) throw new Error("Error from conversion lambda");
-
-  if (!result.Payload) throw new Error("Bad payload from conversion lambda");
+  if (result.StatusCode !== 200) {
+    throw new MetriportError("Error from conversion lambda", undefined, {
+      status: result.StatusCode,
+      log: logResultToString(result.LogResult),
+      payload: result.Payload?.toString(),
+    });
+  }
+  if (!result.Payload) {
+    throw new MetriportError("Bad payload from conversion lambda", undefined, {
+      status: result.StatusCode,
+      log: logResultToString(result.LogResult),
+    });
+  }
 
   return result.Payload.toString();
 };
