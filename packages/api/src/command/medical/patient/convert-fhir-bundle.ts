@@ -10,6 +10,9 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { Patient } from "../../../domain/medical/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { Config } from "../../../shared/config";
+import { createS3FileName } from "../../../shared/external";
+
+export const MEDICAL_RECORD_KEY = "MR";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
@@ -96,13 +99,7 @@ async function convertFHIRBundleToMedicalRecord({
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
 
   // create file name
-  const fileName = createFileName({
-    cxId: patient.cxId,
-    patientId: patient.id,
-    resources,
-    dateFrom,
-    dateTo,
-  });
+  const fileName = createS3FileName(patient.cxId, patient.id, `${MEDICAL_RECORD_KEY}.json`);
 
   // store on S3
   const s3 = makeS3Client(Config.getAWSRegion());
@@ -168,36 +165,4 @@ async function convertFHIRBundleToMedicalRecord({
   const url = lambdaResult.Payload.toString();
 
   return url.replace(/['"]+/g, "");
-}
-
-// TODO review this logic, ideally we'd have these parameter stored on the S3 object's metadata and not on the filename
-function createFileName({
-  cxId,
-  patientId,
-  resources,
-  dateFrom,
-  dateTo,
-}: {
-  cxId: string;
-  patientId: string;
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-}): string {
-  const MEDICAL_RECORD_KEY = "MR";
-  let fileName = `${cxId}/${patientId}/${cxId}_${patientId}_${MEDICAL_RECORD_KEY}`;
-
-  if (resources) {
-    fileName = `${fileName}_${resources.toString()}`;
-  }
-
-  if (dateFrom) {
-    fileName = `${fileName}_${dateFrom}`;
-  }
-
-  if (dateTo) {
-    fileName = `${fileName}_${dateTo}`;
-  }
-
-  return `${fileName}.json`;
 }
