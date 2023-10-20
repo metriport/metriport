@@ -23,7 +23,7 @@ import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
-import * as documentUpload from "./api-stack/document-upload";
+import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
@@ -204,6 +204,12 @@ export class APIStack extends Stack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
+
+    const devsTestBucket = s3.Bucket.fromBucketName(
+      this,
+      "APIDevsTestBucket",
+      "devs.metriport.com"
+    );
 
     //-------------------------------------------
     // FHIR Converter Service
@@ -532,13 +538,13 @@ export class APIStack extends Stack {
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
 
-    documentUpload.createLambda({
+    documentUploader.createLambda({
       lambdaLayers,
       stack: this,
       vpc: this.vpc,
       apiService,
       envType: props.config.environmentType,
-      medicalDocumentsBucket,
+      medicalDocumentsBucket: devsTestBucket,
       medicalDocumentsUploadBucket,
       sentryDsn: props.config.lambdasSentryDSN,
     });

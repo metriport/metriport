@@ -28,11 +28,11 @@ export function createLambda({
   //   alarmSnsAction?: SnsAction;
 }): Lambda {
   //   const config = getConfig();
-  const documentUploadLambda = defaultCreateLambda({
+  const documentUploaderLambda = defaultCreateLambda({
     stack,
-    name: "DocumentUpload",
+    name: "DocumentUploader",
     vpc,
-    entry: "document-upload",
+    entry: "document-uploader",
     layers: lambdaLayers,
     envVars: {
       ENV_TYPE: envType,
@@ -42,14 +42,14 @@ export function createLambda({
     },
   });
 
-  medicalDocumentsUploadBucket.grantReadWrite(documentUploadLambda);
-  medicalDocumentsBucket.grantReadWrite(documentUploadLambda);
+  medicalDocumentsUploadBucket.grantReadWrite(documentUploaderLambda);
+  medicalDocumentsBucket.grantReadWrite(documentUploaderLambda);
 
-  documentUploadLambda.addEventSource(
+  documentUploaderLambda.addEventSource(
     new S3EventSource(medicalDocumentsUploadBucket, {
       events: [s3.EventType.OBJECT_CREATED],
     })
   );
 
-  return documentUploadLambda;
+  return documentUploaderLambda;
 }

@@ -1,7 +1,7 @@
 ---
-title: "Get Upload URL"
-description: "Uploads a patient document to the server."
-api: "GET /medical/v1/document/upload-url"
+title: "Post Upload URL"
+description: "Returns a presigned URL to use for a medical document upload to our servers."
+api: "POST /medical/v1/document/upload-url"
 ---
 
 This endpoint uploads the specified file to our servers and returns a FHIR Document Reference.
@@ -142,11 +142,9 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
-const documentReference = await metriportClient.getDocumentUploadUrl(
+const presignedUrl = await metriportClient.getDocumentUploadUrl(
   "my-patient-id",
-  "my-organization-name",
-  "John Snow",
-  "brief-file-description"
+  "document-reference"
 );
 ```
 

@@ -1,14 +1,20 @@
-import { makeS3Client, createS3FileName } from "@metriport/core/external/aws/s3";
+import { DocumentReference } from "@medplum/fhirtypes";
+import { createS3FileName, makeS3Client } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import httpStatus, { OK, MOVED_PERMANENTLY } from "http-status";
+import httpStatus, { MOVED_PERMANENTLY, OK } from "http-status";
 import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getOrganization } from "../../command/medical/organization/get-organization";
+import { getPatient, getPatientOrFail } from "../../command/medical/patient/get-patient";
+import BadRequestError from "../../errors/bad-request";
 import ForbiddenError from "../../errors/forbidden";
+import { makeFhirApi } from "../../external/fhir/api/api-factory";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
+import { OrganizationModel } from "../../models/medical/organization";
+import { PatientModel } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
 import { sanitize } from "../helpers/string";
@@ -20,10 +26,11 @@ import { docConversionTypeSchema } from "./schemas/documents";
 const UPLOAD_FILE_SIZE_LIMIT = 25_000_000; // 25MB
 const UPLOAD_FILE_SIZE_LIMIT_SANDBOX = 5_000_000; // 5MB
 
+const sandboxCxId = Config.getFHIRSandboxCxId();
 const router = Router();
 const region = Config.getAWSRegion();
 const s3client = makeS3Client(region);
-// const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
+const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
@@ -170,33 +177,50 @@ router.get(
   })
 );
 
+// overwrite organization and patient -> don't provide cuz we will overwrite anyway
+// provide as much metadata as possible
+// create TODOs for checks on cx inputs
+// we could require practitioner in encounter cases?
 /**
- * GET /document/upload-url
+ * POST /document/upload-url
  *
- * Returns a signed url to upload a file to S3.
+ * Returns a presigned URL to upload a medical document and creates a draft of a Document Reference for that file on the FHIR server.
  *
  * @param patientId - The patientId of the patient.
- * @param organizationName - The name of the organization that created the document.
- * @param practitionerName - The name of the practitioner that created the document.
- * @param fileDescription - The description of the file.
  *
  * @return A presigned URL to upload a file to Metriport and make the document available to other HIEs.
  * Refer to Metriport Documentation for more details:
- * https://docs.metriport.com/medical-api/api-reference/document/get-upload-url
+ * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
  */
-router.get(
+router.post(
   "/upload-url",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const queryParams = buildQueryParams(req);
-    const docRefId = uuidv7();
-    const s3FileName = createS3FileName(cxId, patientId, docRefId);
+    const organization = await getOrganization({ cxId });
+    if (!organization) throw new ForbiddenError(`Organization not found for CX ${cxId}`);
+
+    const patient = await getPatient({ cxId, id: patientId });
+    if (!patient)
+      throw new ForbiddenError(`Patient not found for CX ${cxId} and patientId ${patientId}`);
+
+    const prelimDocRef = req.body;
+    cxDocRefCheck(prelimDocRef);
+    const docRef = updateDocRef(prelimDocRef, organization, patient);
+
+    console.log("Updated Document Reference", docRef);
+
+    // Make a temporary DocumentReference on the FHIR server sandbox cxId.
+    const fhirServer = makeFhirApi(sandboxCxId);
+    const resultingFhirResource = await fhirServer.createResource(docRef);
+    console.log("Resulting FHIR Resource", resultingFhirResource);
+
+    const fileId = uuidv7();
+    const s3FileName = createS3FileName(cxId, patientId, fileId);
     const presignedUrl = s3client.createPresignedPost({
-      // Bucket: medicalDocumentsUploadBucketName,
-      Bucket: "metriport-medical-document-uploads-staging",
+      Bucket: medicalDocumentsUploadBucketName,
       Fields: {
-        key: s3FileName + "_upload?" + queryParams,
+        key: s3FileName + "_upload?docRefId=" + resultingFhirResource.id,
       },
       Conditions: [
         [
@@ -212,16 +236,38 @@ router.get(
   })
 );
 
-function buildQueryParams(req: Request): string {
-  console.log("QUERY PARAMS", req.query);
-  const fileReferences = {
-    organizationName: getFromQueryOrFail("organizationName", req),
-    practitionerName: getFromQueryOrFail("practitionerName", req),
-    fileDescription: getFromQueryOrFail("fileDescription", req),
-  };
-  const queryParams = new URLSearchParams(fileReferences).toString();
-  console.log("PROCESSED", queryParams.toString());
-  return queryParams;
+export default router;
+
+function cxDocRefCheck(prelimDocRef: DocumentReference) {
+  if (!prelimDocRef.description)
+    throw new BadRequestError(`Document Reference must have a description`);
 }
 
-export default router;
+function updateDocRef(
+  prelimDocRef: DocumentReference,
+  organization: OrganizationModel,
+  patient: PatientModel
+): DocumentReference {
+  console.log("PRELIMINARY DOC REF:", prelimDocRef);
+  const docRefId = uuidv7();
+  return {
+    ...prelimDocRef,
+    id: docRefId,
+    status: "current",
+    contained: [
+      {
+        resourceType: "Organization",
+        name: organization.dataValues.data.name,
+      },
+      {
+        resourceType: "Patient",
+        name: [
+          {
+            given: [patient.dataValues.data.firstName],
+            family: patient.dataValues.data.lastName,
+          },
+        ],
+      },
+    ],
+  };
+}

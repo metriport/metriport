@@ -21,11 +21,7 @@ type FileData = {
   size?: number;
   locationUrl: string;
   docId: string;
-  cxId: string;
-  patientId: string;
-  organizationName: string;
-  practitionerName: string;
-  fileDescription: string;
+  docRefId: string;
 };
 
 export const handler = async (event: S3Event) => {
@@ -34,7 +30,7 @@ export const handler = async (event: S3Event) => {
     const sourceKey = decodeURIComponent(event.Records[0].s3.object.key);
     console.log("SourceKey:", sourceKey);
     const destinationBucket = "devs.metriport.com";
-    const { destinationKey, fileMetadata } = getDestinationKeyAndFileMetadata(sourceKey);
+    const { destinationKey, docRefId } = getDestinationKeyAndDocRefId(sourceKey);
 
     const params = {
       CopySource: encodeURI(`${sourceBucket}/${sourceKey}`),
@@ -69,15 +65,13 @@ export const handler = async (event: S3Event) => {
       mimetype: contentType,
       locationUrl: `https://${destinationBucket}.s3.${region}.amazonaws.com/${destinationKey}`,
       docId,
-      cxId,
-      patientId,
-      ...fileMetadata,
+      docRefId,
     };
     console.log("Got file data:", fileData);
 
     try {
       // POST /internal/docs/doc-ref
-      await forwardCallToServer(fileData);
+      await forwardCallToServer(cxId, patientId, fileData);
     } catch (error) {
       const message = "Failed with a call to generate a doc-ref on an uploaded file";
       console.log(message, JSON.stringify(error));
@@ -92,59 +86,42 @@ function removeSuffix(key: string, suffix: string) {
   return key.includes(suffix) ? key.replace(suffix, "") : key;
 }
 
-async function forwardCallToServer(fileData: FileData) {
-  const requestBody = {
-    mimeType: fileData.mimetype,
-    size: fileData.size,
-    originalname: fileData.docId,
-    locationUrl: fileData.locationUrl,
-    organizationName: fileData.organizationName,
-    practitionerName: fileData.practitionerName,
-    fileDescription: fileData.fileDescription,
-  };
-
-  const url = `${apiServerURL}?cxId=${fileData.cxId}&patientId=${fileData.patientId}`;
+async function forwardCallToServer(cxId: string, patientId: string, fileData: FileData) {
+  const url = `${apiServerURL}?cxId=${cxId}&patientId=${patientId}`;
   const encodedUrl = encodeURI(url);
-  console.log("POST doc-ref URL is:", encodedUrl);
+  console.log("FileData: ", fileData);
+  console.log("POST /document/doc-ref URL is:", encodedUrl);
 
-  const resp = await api.post(encodedUrl, requestBody);
+  const resp = await api.post(encodedUrl, fileData);
   console.log(`Server response - status: ${resp.status}`);
   console.log(`Server response - body: ${resp.data}`);
 }
 
-type FileMetadata = {
-  organizationName: string;
-  practitionerName: string;
-  fileDescription: string;
-};
-
-function getDestinationKeyAndFileMetadata(sourceKey: string): {
+function getDestinationKeyAndDocRefId(sourceKey: string): {
   destinationKey: string;
-  fileMetadata: FileMetadata;
+  docRefId: string;
 } {
   const keyParts = sourceKey.split("?");
-  const destinationKey = keyParts[0] ? removeSuffix(keyParts[0], "_upload") : undefined;
+  let destinationKey;
+  if (keyParts[0]) {
+    const index = keyParts[0].lastIndexOf("/");
+    destinationKey =
+      keyParts[0].substring(0, index) + "/uploads/" + keyParts[0].substring(index + 1);
+    destinationKey = removeSuffix(keyParts[0], "_upload");
+  }
   if (!destinationKey) {
     throw new Error("Invalid destination key");
   }
 
   if (keyParts[1]) {
-    const queryParams = keyParts[1].split("&");
-    const organizationName = extractQueryParamInfo(queryParams[0]);
-    const practitionerName = extractQueryParamInfo(queryParams[1]);
-    const fileDescription = extractQueryParamInfo(queryParams[2]);
-    const fileMetadata: FileMetadata = {
-      organizationName,
-      practitionerName,
-      fileDescription,
-    };
-    return { destinationKey, fileMetadata };
+    const docRefId = extractQueryParamInfo(keyParts[1]);
+    return { destinationKey, docRefId };
   }
   throw new Error("Invalid query params");
 }
 
-function extractQueryParamInfo(queryParam: string | undefined) {
-  const thing = queryParam?.split("=")[1];
-  if (thing) return thing;
+function extractQueryParamInfo(queryParam: string) {
+  const queryParamValue = queryParam?.split("=")[1];
+  if (queryParamValue) return queryParamValue;
   throw new Error("Invalid query param");
 }

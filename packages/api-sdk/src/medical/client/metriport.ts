@@ -1,4 +1,4 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import {
   API_KEY_HEADER,
@@ -21,7 +21,6 @@ import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "..
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import { PatientCreate, PatientUpdate, QueryStatus } from "../models/patient";
-
 import { PatientDTO } from "../models/patientDTO";
 
 const NO_DATA_MESSAGE = "No data returned from API";
@@ -478,32 +477,23 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * A presigned URL to upload a file to Metriport and make the document available to other HIEs.
-   * The presigned URL is to be used with a form-based upload, where URL.fields are used for the form.fields, and URL.url as form.url.
+   * Returns a presigned URL to upload a file to Metriport and make the document available to other HIEs.
+   * The presigned URL is to be used with a form-based upload, where URL.fields is used for the form.fields, and URL.url for the form.url.
    * Refer to Metriport Documentation for more details:
-   * https://docs.metriport.com/medical-api/api-reference/document/get-upload-url
+   * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
    *
    * @param patientId - the patient ID.
-   * @param organizationName - the name of the organization that created the document.
-   * @param practitionerName - the name of the practitioner that created the document.
-   * @param fileDescription - a brief description of the document.
+   * @param docRef - a FHIR Document Reference for this file upload. Try to include as much metadata on the document as possible. Make sure to include DocumentReference.description the DocumentReference.author.practitioner fields. Note that you DO NOT need to fill in the Organization or Patient fields under the author or contained fields - Metriport will fill this in and overwrite whatever you put in.
+   * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/fhir/resources/documentreference.
    *
    * @returns A presigned URL for uploading a document.
    */
   async getDocumentUploadUrl(
     patientId: string,
-    organizationName: string, // could be our customer org name - need to check the FHIR server
-    practitionerName: string,
-    fileDescription: string
+    docRef: FHIRDocumentReference
   ): Promise<SignedUploadUrl> {
-    if (!patientId) throw new Error("Patient ID is required");
-    const metadataQueryParams = new URLSearchParams({
-      organizationName,
-      practitionerName,
-      fileDescription,
-    }).toString();
-    const url = `${DOCUMENT_URL}/upload-url/?patientId=${patientId}&${metadataQueryParams}`;
-    const resp = await this.api.get(url, {});
+    const url = `${DOCUMENT_URL}/upload-url/?patientId=${patientId}`;
+    const resp = await this.api.post(url, docRef);
     return resp.data;
   }
 }
