@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.2.2",
+  "version": "1.3.0-alpha.31",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -15,6 +15,7 @@
   ],
   "exports": {
     ".": "./dist/index.js",
+    "./domain/*": "./dist/domain/*.js",
     "./external/*": "./dist/external/*.js",
     "./util/*": "./dist/util/*.js"
   },
@@ -22,6 +23,9 @@
     "*": {
       "/": [
         "dist/index.d.ts"
+      ],
+      "domain/*": [
+        "dist/domain/*"
       ],
       "external/*": [
         "dist/external/*"
