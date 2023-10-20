@@ -1,22 +1,26 @@
+import {
+  ConversionType,
+  Input as ConvertDocInput,
+  Output as ConvertDocOutput,
+  validConversionTypes,
+} from "@metriport/core/domain/conversion/cda-to-html-pdf";
+import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
 import BadRequestError from "../../../errors/bad-request";
 import NotFoundError from "../../../errors/not-found";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
-import { DocConversionType } from "../../../routes/medical/schemas/documents";
 import { Config } from "../../../shared/config";
 
-const lambdaClient = makeLambdaClient();
 const s3client = makeS3Client();
-
-const htmlConversionType = "html";
-const pdfConversionType = "pdf";
+const lambdaClient = makeLambdaClient();
+const conversionLambdaName = Config.getConvertDocLambdaName();
 
 export const downloadDocument = async ({
   fileName,
   conversionType,
 }: {
   fileName: string;
-  conversionType?: DocConversionType;
+  conversionType?: ConversionType;
 }): Promise<string> => {
   const { exists, contentType } = await doesObjExist({ fileName });
 
@@ -27,26 +31,13 @@ export const downloadDocument = async ({
       `Source file must be xml to convert to ${conversionType}, but it was ${contentType}`
     );
 
-  let url;
-
-  if (conversionType === htmlConversionType) {
-    url = await getConversionUrl({ fileName, conversionType });
-  } else if (conversionType === pdfConversionType) {
-    url = await getConversionUrl({ fileName, conversionType });
-  } else {
-    url = await getSignedURL({ fileName });
+  if (conversionType && validConversionTypes.includes(conversionType)) {
+    return getConversionUrl({ fileName, conversionType });
   }
-
-  return url.replace(/['"]+/g, "");
+  return getSignedURL({ fileName });
 };
 
-const getConversionUrl = async ({
-  fileName,
-  conversionType,
-}: {
-  fileName: string;
-  conversionType?: string;
-}): Promise<string> => {
+const getConversionUrl = async ({ fileName, conversionType }: ConvertDocInput): Promise<string> => {
   const convertedFileName = fileName.concat(`.${conversionType}`);
   const { exists } = await doesObjExist({ fileName: convertedFileName });
 
@@ -54,26 +45,19 @@ const getConversionUrl = async ({
   else return convertDoc({ fileName, conversionType });
 };
 
-const convertDoc = async ({
-  fileName,
-  conversionType,
-}: {
-  fileName: string;
-  conversionType?: string;
-}): Promise<string> => {
+const convertDoc = async ({ fileName, conversionType }: ConvertDocInput): Promise<string> => {
+  if (!conversionLambdaName) throw new Error("Conversion Lambda Name is undefined");
+
   const result = await lambdaClient
     .invoke({
-      FunctionName: Config.getConvertDocLambdaName() ?? "",
+      FunctionName: conversionLambdaName,
       InvocationType: "RequestResponse",
       Payload: JSON.stringify({ fileName, conversionType }),
     })
     .promise();
-
-  if (result.StatusCode !== 200) throw new Error("Lambda invocation failed");
-
-  if (result.Payload === undefined) throw new Error("Payload is undefined");
-
-  return result.Payload.toString();
+  const resultPayload = getLambdaResultPayload({ result, lambdaName: conversionLambdaName });
+  const parsedResult = JSON.parse(resultPayload) as ConvertDocOutput;
+  return parsedResult.url;
 };
 
 const doesObjExist = async ({
@@ -111,5 +95,6 @@ const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string>
     Expires: seconds,
   });
 
-  return url;
+  // TODO try to remove this, moved here b/c this was being done upstream
+  return url.replace(/['"]+/g, "");
 };

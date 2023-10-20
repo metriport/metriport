@@ -2,7 +2,7 @@ import { patientCreateSchema } from "@metriport/api-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { consolidationConversionType } from "@metriport/core/domain/fhir/index";
+import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
