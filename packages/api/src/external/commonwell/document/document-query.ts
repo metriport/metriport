@@ -6,6 +6,7 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
 import { chunk, partition } from "lodash";
 import {
   getDocToFileFunction,
@@ -64,6 +65,7 @@ const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
 const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
 
 const lambdaClient = makeLambdaClient();
+const docDownloaderLambdaName = Config.getDocumentDownloaderLambdaName();
 
 /**
  * Query CommonWell for DocumentReferences, download and convert documents to FHIR,
@@ -740,7 +742,6 @@ async function triggerDownloadDocument({
   facilityNPI: string;
   cxId: string;
 }): Promise<File> {
-  const lambdaName = Config.getDocumentDownloaderLambdaName();
   const payload = {
     document: {
       id: doc.id,
@@ -753,23 +754,26 @@ async function triggerDownloadDocument({
     npi: facilityNPI,
     cxId,
   };
-  const lambdaResult = await lambdaClient
+  const result = await lambdaClient
     .invoke({
-      FunctionName: lambdaName,
+      FunctionName: docDownloaderLambdaName,
       InvocationType: "RequestResponse",
       Payload: JSON.stringify(payload),
     })
     .promise();
+  //
+  // This should show up on a conflict w/ this PR https://github.com/metriport/metriport/pull/1013
+  // Need to make sure the cloud implentation of the doc downloader uses the new logic to handle lambda errors
+  //
+  // This should show up on a conflict w/ this PR https://github.com/metriport/metriport/pull/1013
+  // Need to make sure the cloud implentation of the doc downloader uses the new logic to handle lambda errors
+  //
+  // This should show up on a conflict w/ this PR https://github.com/metriport/metriport/pull/1013
+  // Need to make sure the cloud implentation of the doc downloader uses the new logic to handle lambda errors
+  //
+  const resultPayload = getLambdaResultPayload({ result, lambdaName: docDownloaderLambdaName });
 
-  if (lambdaResult.StatusCode !== 200)
-    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName, docId: doc.id });
-
-  if (lambdaResult.Payload === undefined)
-    throw new MetriportError("Payload is undefined", undefined, { lambdaName, docId: doc.id });
-
-  const newFile = JSON.parse(lambdaResult.Payload.toString());
-
-  return newFile;
+  return JSON.parse(resultPayload);
 }
 
 const fileIsConvertible = (f: File) => isConvertible(f.contentType);
