@@ -78,21 +78,19 @@ export function getLambdaResultPayload({
   log?: typeof console.log;
 }): string | undefined {
   if (result.StatusCode !== 200) {
-    if (!failGracefuly) {
-      throw new MetriportError("Lambda invocation failed", undefined, { lambdaName });
-    } else return undefined;
+    if (failGracefuly) return undefined;
+    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName });
   }
   if (!result.Payload) {
-    if (!failGracefuly) {
-      throw new MetriportError("Lambda payload is undefined", undefined, { lambdaName });
-    } else return undefined;
+    if (failGracefuly) return undefined;
+    throw new MetriportError("Lambda payload is undefined", undefined, { lambdaName });
   }
   if (isLambdaError(result)) {
     const msg = `Error calling lambda ${lambdaName}`;
     const errorDetails = JSON.stringify(getLambdaError(result));
     log(`${msg} - ${errorDetails}`);
-    if (!failGracefuly) throw new MetriportError(msg, undefined, { lambdaName, errorDetails });
-    else return undefined;
+    if (failGracefuly) return undefined;
+    throw new MetriportError(msg, undefined, { lambdaName, errorDetails });
   }
   return result.Payload.toString();
 }
