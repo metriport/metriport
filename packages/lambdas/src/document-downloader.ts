@@ -1,27 +1,26 @@
+import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import {
+  APIMode,
   CommonWell,
   CommonWellAPI,
-  APIMode,
   CommonwellError,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { DOMParser } from "xmldom";
-import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
+import { getFileInfoFromS3 } from "@metriport/core/external/aws/s3";
 import * as Sentry from "@sentry/serverless";
+import AWS from "aws-sdk";
 import * as stream from "stream";
 import { PassThrough } from "stream";
-import AWS from "aws-sdk";
+import { DOMParser } from "xmldom";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
-import { S3Utils } from "./shared/s3";
-import { getFileInfoFromS3 } from "@metriport/core/external/aws/s3";
 
 // Keep this as early on the file as possible
 capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
-const region = getEnvOrFail("AWS_REGION");
+// const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const cwOrgCertificateSecret = getEnvOrFail("CW_ORG_CERTIFICATE");
@@ -36,8 +35,6 @@ const s3client = new AWS.S3({
 });
 
 const parser = new DOMParser();
-
-const s3Utils = new S3Utils(region);
 
 type Doc = {
   id: string;
@@ -155,12 +152,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         ]);
 
         const [b64FileInfo, newXmlFileInfo] = await Promise.all([
-          await s3Utils.getFileInfoFromS3({
+          await getFileInfoFromS3({
             key: b64Upload.Key,
             bucket: b64Upload.Bucket,
             s3: s3client,
           }),
-          await s3Utils.getFileInfoFromS3({
+          await getFileInfoFromS3({
             key: uploadResult.Key,
             bucket: uploadResult.Bucket,
             s3: s3client,
