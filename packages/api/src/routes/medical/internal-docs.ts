@@ -4,7 +4,7 @@ import httpStatus from "http-status";
 // import multer from "multer";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { z } from "zod";
-import { createAndUploadDocReference } from "../../command/medical/admin/upload-doc";
+import { updateAndUploadDocumentReference } from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import {
   isDocumentQueryProgressEqual,
@@ -199,9 +199,7 @@ const documentDataSchema = z.object({
   size: z.number().optional(),
   originalname: z.string(),
   locationUrl: z.string(),
-  organizationName: z.string(),
-  practitionerName: z.string(),
-  fileDescription: z.string(),
+  docRefId: z.string(),
 });
 
 /** ---------------------------------------------------------------------------
@@ -212,7 +210,7 @@ const documentDataSchema = z.object({
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient ID.
  *
- * @return 200 Indicating the file was successfully uploaded.
+ * @return 201 Indicating the file was successfully uploaded.
  */
 router.post(
   "/doc-ref",
@@ -221,28 +219,25 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
 
     const body = req.body[0];
+    console.log("DOC-REF REQUEST BODY:", req.body);
     const fileData = documentDataSchema.parse({
       mimetype: body.mimetype,
       size: parseInt(body.size),
       originalname: body.originalname,
       locationUrl: body.locationUrl,
-      organizationName: body.organizationName,
-      practitionerName: body.practitionerName,
-      fileDescription: body.fileDescription,
+      docRefId: body.docRefId,
     });
 
     console.log("FileData", fileData);
 
-    const docRefId = uuidv7();
-
-    const docRef = await createAndUploadDocReference({
+    const docRef = await updateAndUploadDocumentReference({
       cxId,
       patientId,
-      docId: docRefId,
+      docRefId: fileData.docRefId,
       fileData,
     });
 
-    console.log("Customer file upload doc ref res: ", JSON.stringify(docRef));
+    console.log("Customer file upload doc ref res:", JSON.stringify(docRef));
 
     return res.status(httpStatus.CREATED);
   })

@@ -7,7 +7,7 @@ import { makeS3Client, parseS3FileName, getFileInfoFromS3 } from "@metriport/cor
 import axios from "axios";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 
-// // Keep this as early on the file as possible
+// Keep this as early on the file as possible
 capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
@@ -55,10 +55,11 @@ export const handler = async (event: S3Event) => {
       bucket: destinationBucket,
       s3: s3Client,
     });
-    const { docId, cxId, patientId } = parseS3FileName(destinationKey);
-    if (!docId || !cxId || !patientId) {
+    const s3FileNameParts = parseS3FileName(destinationKey);
+    if (!s3FileNameParts) {
       throw new MetriportError("Invalid S3 file name", null, { destinationKey });
     }
+    const { cxId, patientId, docId } = s3FileNameParts;
 
     const fileData = {
       size,

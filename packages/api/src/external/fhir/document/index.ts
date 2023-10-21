@@ -137,6 +137,14 @@ export const toFHIR = (
   });
 };
 
+export function createFHIRSubject(patientId: string): Reference<PatientFHIR> {
+  const subject: Reference<PatientFHIR> = {
+    reference: `Patient/${patientId}`,
+    type: "Patient",
+  };
+  return subject;
+}
+
 export function getFHIRDocRef(
   patientId: string,
   {
@@ -167,11 +175,6 @@ export function getFHIRDocRef(
     context: DocumentReference["context"];
   }
 ): DocumentReferenceWithId {
-  const subject: Reference<PatientFHIR> = {
-    reference: `Patient/${patientId}`,
-    type: "Patient",
-  };
-
   return {
     id,
     resourceType: "DocumentReference",
@@ -181,7 +184,7 @@ export function getFHIRDocRef(
     date,
     status,
     type,
-    subject,
+    subject: createFHIRSubject(patientId),
     author,
     description,
     content,

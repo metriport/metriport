@@ -231,10 +231,6 @@ export class Config {
     return getEnvVarOrFail("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
-  static getFHIRSandboxCxId(): string {
-    return getEnvVarOrFail("FHIR_SANDBOX_CXID");
-  }
-
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }

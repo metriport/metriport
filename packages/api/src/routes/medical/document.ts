@@ -1,4 +1,3 @@
-import { DocumentReference } from "@medplum/fhirtypes";
 import { createS3FileName, makeS3Client } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
@@ -8,13 +7,14 @@ import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getOrganization } from "../../command/medical/organization/get-organization";
-import { getPatient, getPatientOrFail } from "../../command/medical/patient/get-patient";
-import BadRequestError from "../../errors/bad-request";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import { makeFhirApi } from "../../external/fhir/api/api-factory";
+import {
+  cxDocRefCheck,
+  pickDocRefParts,
+} from "../../external/fhir/document/draft-update-document-reference";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
-import { OrganizationModel } from "../../models/medical/organization";
-import { PatientModel } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
 import { sanitize } from "../helpers/string";
@@ -26,7 +26,6 @@ import { docConversionTypeSchema } from "./schemas/documents";
 const UPLOAD_FILE_SIZE_LIMIT = 25_000_000; // 25MB
 const UPLOAD_FILE_SIZE_LIMIT_SANDBOX = 5_000_000; // 5MB
 
-const sandboxCxId = Config.getFHIRSandboxCxId();
 const router = Router();
 const region = Config.getAWSRegion();
 const s3client = makeS3Client(region);
@@ -199,21 +198,19 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const organization = await getOrganization({ cxId });
     if (!organization) throw new ForbiddenError(`Organization not found for CX ${cxId}`);
+    console.log("ORGANIZATION", organization);
 
-    const patient = await getPatient({ cxId, id: patientId });
-    if (!patient)
-      throw new ForbiddenError(`Patient not found for CX ${cxId} and patientId ${patientId}`);
+    const docRefDraft = req.body;
+    cxDocRefCheck(docRefDraft);
+    console.log("Document Reference Draft", docRefDraft);
 
-    const prelimDocRef = req.body;
-    cxDocRefCheck(prelimDocRef);
-    const docRef = updateDocRef(prelimDocRef, organization, patient);
-
-    console.log("Updated Document Reference", docRef);
+    const docRef = pickDocRefParts(docRefDraft, organization);
+    console.log("Updated Document Reference", JSON.stringify(docRef, null, 2));
 
     // Make a temporary DocumentReference on the FHIR server sandbox cxId.
-    const fhirServer = makeFhirApi(sandboxCxId);
+    const fhirServer = makeFhirApi(cxId);
     const resultingFhirResource = await fhirServer.createResource(docRef);
-    console.log("Resulting FHIR Resource", resultingFhirResource);
+    // console.log("Resulting FHIR Resource", resultingFhirResource);
 
     const fileId = uuidv7();
     const s3FileName = createS3FileName(cxId, patientId, fileId);
@@ -237,37 +234,3 @@ router.post(
 );
 
 export default router;
-
-function cxDocRefCheck(prelimDocRef: DocumentReference) {
-  if (!prelimDocRef.description)
-    throw new BadRequestError(`Document Reference must have a description`);
-}
-
-function updateDocRef(
-  prelimDocRef: DocumentReference,
-  organization: OrganizationModel,
-  patient: PatientModel
-): DocumentReference {
-  console.log("PRELIMINARY DOC REF:", prelimDocRef);
-  const docRefId = uuidv7();
-  return {
-    ...prelimDocRef,
-    id: docRefId,
-    status: "current",
-    contained: [
-      {
-        resourceType: "Organization",
-        name: organization.dataValues.data.name,
-      },
-      {
-        resourceType: "Patient",
-        name: [
-          {
-            given: [patient.dataValues.data.firstName],
-            family: patient.dataValues.data.lastName,
-          },
-        ],
-      },
-    ],
-  };
-}
