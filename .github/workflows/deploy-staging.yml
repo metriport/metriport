@@ -36,6 +36,8 @@ jobs:
           filters: |
             api:
               - "packages/api/**"
+              - "packages/api-sdk/**"
+              - "packages/core/**"
               - "package*.json"
             infra-lambdas:
               - "packages/infra/**"
@@ -43,6 +45,7 @@ jobs:
               - "package*.json"
             widget:
               - "packages/connect-widget/**"
+              - "packages/api-sdk/**"
               - "package*.json"
 
   widget:
