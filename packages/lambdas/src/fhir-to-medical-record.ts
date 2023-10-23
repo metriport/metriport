@@ -1,7 +1,10 @@
-import { FhirToMedicalRecordPayload } from "@metriport/core/domain/fhir/index";
-import { logResultToString, makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { makeS3Client } from "@metriport/core/external/aws/s3";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import {
+  Input as ConversionInput,
+  Output as ConversionOuput,
+} from "@metriport/core/domain/conversion/cda-to-html-pdf";
+import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/serverless";
 import { DOMParser } from "xmldom";
@@ -29,8 +32,8 @@ const lambdaClient = makeLambdaClient(region);
 const s3Client = makeS3Client(region);
 const isSandbox = envType === "sandbox";
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRecordPayload) => {
-  const {
+export const handler = Sentry.AWSLambda.wrapHandler(
+  async ({
     fileName: fhirFileName,
     patientId,
     firstName,
@@ -38,69 +41,74 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: FhirToMedicalRec
     dateFrom,
     dateTo,
     conversionType,
-  } = req;
-  const { log } = out(`cx ${cxId}, patient ${patientId}`);
-  log(
-    `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
-      `dateTo: ${dateTo}, fileName: ${fhirFileName}`
-  );
+  }: Input): Promise<Output> => {
+    const { log } = out(`cx ${cxId}, patient ${patientId}`);
+    log(
+      `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
+        `dateTo: ${dateTo}, fileName: ${fhirFileName}`
+    );
 
-  const bundle = await getBundleFromS3(fhirFileName);
-  log(`Bundle: ${JSON.stringify(bundle)}`);
+    const bundle = await getBundleFromS3(fhirFileName);
+    log(`Bundle: ${JSON.stringify(bundle)}`);
 
-  try {
-    const log = prefixedLog(`patient ${patientId}`);
+    try {
+      const log = prefixedLog(`patient ${patientId}`);
 
-    if (isSandbox) {
-      const convertUrl = await convertDoc({
-        fileName: `${firstName}-consolidated.xml`,
-        conversionType,
+      if (isSandbox) return processSandbox({ firstName, conversionType });
+
+      if (!converterKeysTableName) {
+        throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
+      }
+
+      const res = await postToConverter({
+        url: FHIRToCDAConverterUrl,
+        payload: bundle,
+        converterKeysTableName,
+        axiosTimeoutSeconds,
+        log,
+        conversionType: "cda",
       });
-      return convertUrl;
+
+      const formattedXML = formatXML(res.data);
+      const cdaFileName = getCDAFileName(fhirFileName);
+
+      await s3Client
+        .putObject({
+          Bucket: bucketName,
+          Key: cdaFileName,
+          Body: formattedXML,
+          ContentType: "application/xml",
+        })
+        .promise();
+
+      if (conversionType === "xml") {
+        const url = await getSignedUrl(cdaFileName);
+        return { url };
+      }
+
+      const url = await convertDoc({ fileName: cdaFileName, conversionType });
+      return { url };
+
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      log(`Error processing bundle: ${error.message}`);
+      capture.error(error, {
+        extra: {
+          error,
+          patientId,
+          dateFrom,
+          dateTo,
+          context: lambdaName,
+        },
+      });
+      throw error;
     }
-
-    if (!converterKeysTableName) {
-      throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
-    }
-
-    const res = await postToConverter({
-      url: FHIRToCDAConverterUrl,
-      payload: bundle,
-      converterKeysTableName,
-      axiosTimeoutSeconds,
-      log,
-      conversionType: "cda",
-    });
-
-    const formattedXML = formatXML(res.data);
-    const cdaFileName = getCDAFileName(fhirFileName);
-
-    await s3Client
-      .putObject({
-        Bucket: bucketName,
-        Key: cdaFileName,
-        Body: formattedXML,
-        ContentType: "application/xml",
-      })
-      .promise();
-
-    const convertUrl = await convertDoc({ fileName: cdaFileName, conversionType });
-
-    return convertUrl.replace(/['"]+/g, "");
-  } catch (err) {
-    log(`Error processing bundle for patient ${patientId}; ${err}`);
-    capture.error(err, {
-      extra: {
-        error: err,
-        patientId,
-        dateFrom,
-        dateTo,
-        context: lambdaName,
-      },
-    });
-    throw err;
   }
-});
+);
+
+async function getSignedUrl(fileName: string) {
+  return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
+}
 
 async function getBundleFromS3(fileName: string) {
   const getResponse = await s3Client
@@ -291,34 +299,29 @@ const createCodeElement = (
   return newCode;
 };
 
-const convertDoc = async ({
-  fileName,
-  conversionType,
-}: {
-  fileName: string;
-  conversionType?: string;
-}): Promise<string> => {
+const convertDoc = async (payload: ConversionInput): Promise<string> => {
   const result = await lambdaClient
     .invoke({
       FunctionName: convertDocLambda,
       InvocationType: "RequestResponse",
-      Payload: JSON.stringify({ fileName, conversionType }),
+      Payload: JSON.stringify(payload),
     })
     .promise();
+  const resultPayload = getLambdaResultPayload({ result, lambdaName: convertDocLambda });
 
-  if (result.StatusCode !== 200) {
-    throw new MetriportError("Error from conversion lambda", undefined, {
-      status: result.StatusCode,
-      log: logResultToString(result.LogResult),
-      payload: result.Payload?.toString(),
-    });
-  }
-  if (!result.Payload) {
-    throw new MetriportError("Bad payload from conversion lambda", undefined, {
-      status: result.StatusCode,
-      log: logResultToString(result.LogResult),
-    });
-  }
-
-  return result.Payload.toString();
+  const parsedResult = JSON.parse(resultPayload) as ConversionOuput;
+  return parsedResult.url;
 };
+
+async function processSandbox({
+  firstName,
+  conversionType,
+}: Pick<Input, "firstName" | "conversionType">): Promise<Output> {
+  const fileName = `${firstName}-consolidated.xml`;
+  if (conversionType === "xml") {
+    const url = await getSignedUrl(fileName);
+    return { url };
+  }
+  const url = await convertDoc({ fileName, conversionType });
+  return { url };
+}

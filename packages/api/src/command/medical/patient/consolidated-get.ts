@@ -8,7 +8,7 @@ import {
   ResourceType,
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { ConsolidationConversionType } from "@metriport/core/domain/fhir";
+import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -102,7 +102,12 @@ async function getConsolidatedAndSendToCx({
     processConsolidatedDataWebhook({
       patient,
       status: "failed",
-      filters: { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo },
+      filters: {
+        resources: resources ? resources.join(", ") : undefined,
+        dateFrom,
+        dateTo,
+        conversionType,
+      },
     }).catch(emptyFunction);
     capture.error(error, {
       extra: {
