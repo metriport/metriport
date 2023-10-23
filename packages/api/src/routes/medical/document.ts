@@ -205,7 +205,7 @@ router.post(
     console.log("Document Reference Draft", docRefDraft);
 
     const docRef = pickDocRefParts(docRefDraft, organization);
-    console.log("Updated Document Reference", JSON.stringify(docRef, null, 2));
+    console.log("Updated Document Reference", JSON.stringify(docRef));
 
     // Make a temporary DocumentReference on the FHIR server sandbox cxId.
     const fhirServer = makeFhirApi(cxId);
@@ -214,9 +214,10 @@ router.post(
 
     const fileId = uuidv7();
     const s3FileName = createS3FileName(cxId, patientId, fileId);
+    console.log("Upload File Name", s3FileName);
     const presignedUrl = s3client.createPresignedPost({
       // Bucket: medicalDocumentsUploadBucketName,
-      Bucket: "metriport-medical-documents-uploads-staging",
+      Bucket: "metriport-medical-document-uploads-staging",
       Fields: {
         key: s3FileName + "_upload?docRefId=" + resultingFhirResource.id,
       },
