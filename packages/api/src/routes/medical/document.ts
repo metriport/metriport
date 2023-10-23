@@ -9,11 +9,11 @@ import { queryDocumentsAcrossHIEs } from "../../command/medical/document/documen
 import { getOrganization } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
-import { makeFhirApi } from "../../external/fhir/api/api-factory";
 import {
   cxDocRefCheck,
   pickDocRefParts,
 } from "../../external/fhir/document/draft-update-document-reference";
+import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
 import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
@@ -195,10 +195,11 @@ router.post(
   "/upload-url",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    console.log("OUR CXID", cxId);
     const patientId = getFromQueryOrFail("patientId", req);
     const organization = await getOrganization({ cxId });
     if (!organization) throw new ForbiddenError(`Organization not found for CX ${cxId}`);
-    console.log("ORGANIZATION", organization);
+    console.log("ORGANIZATION", JSON.stringify(organization));
 
     const docRefDraft = req.body;
     cxDocRefCheck(docRefDraft);
@@ -207,19 +208,20 @@ router.post(
     const docRef = pickDocRefParts(docRefDraft, organization);
     console.log("Updated Document Reference", JSON.stringify(docRef));
 
-    // Make a temporary DocumentReference on the FHIR server sandbox cxId.
-    const fhirServer = makeFhirApi(cxId);
-    const resultingFhirResource = await fhirServer.createResource(docRef);
-    // console.log("Resulting FHIR Resource", resultingFhirResource);
+    // Make a temporary DocumentReference on the FHIR server.
+    await upsertDocumentToFHIRServer(cxId, docRef);
 
     const fileId = uuidv7();
     const s3FileName = createS3FileName(cxId, patientId, fileId);
+    const s3Key = s3FileName + "_upload?docRefId=" + docRef.id;
     console.log("Upload File Name", s3FileName);
+    console.log("Key is going to be:", s3Key);
+    console.log("Region", region);
     const presignedUrl = s3client.createPresignedPost({
       // Bucket: medicalDocumentsUploadBucketName,
       Bucket: "metriport-medical-document-uploads-staging",
       Fields: {
-        key: s3FileName + "_upload?docRefId=" + resultingFhirResource.id,
+        key: s3Key,
       },
       Conditions: [
         [
