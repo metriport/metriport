@@ -2,8 +2,9 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import dayjs from "dayjs";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { createDocReferenceContent, createFHIRSubject } from "../../../external/fhir/document";
+import { createDocReferenceContent } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
+import { capture } from "../../../shared/notifications";
 // import { randomInt } from "../../../shared/numbers";
 
 // const smallId = () => String(randomInt(3)).padStart(3, "0");
@@ -122,42 +123,36 @@ export type FileData = {
 // }
 
 /**
- * ADMIN LOGIC - not to be used by other endpoints/services.
+ * Fetches a DocumentReference draft from the FHIR servers and updates its status and file content information.
  *
- * This function is to be able to create a document reference
- * and upload it to the FHIR server with the purpose of testing.
+ * @param cxId The CX ID of the patient
+ * @param patientId The patient ID
+ * @param fileData The file metadata and DocumentReference ID
  */
 export async function updateAndUploadDocumentReference({
   cxId,
-  patientId,
-  docRefId,
   fileData,
 }: {
   cxId: string;
-  patientId: string;
-  docRefId: string;
   fileData: FileData;
-}): Promise<DocumentReference> {
-  // const patient = await getPatientOrFail({ id: patientId, cxId });
+}): Promise<void> {
   const fhirApi = makeFhirApi(cxId);
-  const docRefDraft = await fhirApi.readResource("DocumentReference", docRefId);
-  console.log("DOC REF DRAFT", docRefDraft);
+  try {
+    const docRefDraft = await fhirApi.readResource("DocumentReference", fileData.docRefId);
+    console.log("FETCHED THE DOC REF DRAFT IN POST PROCESSING", JSON.stringify(docRefDraft));
 
-  const updatedDocumentReference = updateDocumentReference(docRefDraft, fileData, patientId);
+    const updatedDocumentReference = updateDocumentReference(docRefDraft, fileData);
+    console.log("FINAlIZED DOCREF: ", JSON.stringify(updatedDocumentReference));
 
-  console.log("Updated DOCREF: ", updatedDocumentReference);
-  // await fhirApi.updateResource(updatedDocumentReference);
-
-  return updatedDocumentReference;
+    await fhirApi.updateResource(updatedDocumentReference);
+  } catch (error) {
+    const message = "Failed to update the document reference for a CX-uploaded file";
+    capture.error(message, { extra: { context: `updateAndUploadDocumentReference`, error, cxId } });
+  }
 }
 
-function updateDocumentReference(doc: DocumentReference, fileData: FileData, patientId: string) {
-  const subject = createFHIRSubject(patientId);
+function updateDocumentReference(doc: DocumentReference, fileData: FileData) {
   const refDate = dayjs();
-  // const orgId = smallId();
-  // const orgRef = `org${orgId}`;
-  // const practitionerId = smallId();
-  // const practitionerRef = `auth${practitionerId}`;
   const docId = uuidv7();
 
   const metriportContent = createDocReferenceContent({
@@ -167,11 +162,10 @@ function updateDocumentReference(doc: DocumentReference, fileData: FileData, pat
     fileName: fileData.originalname,
     location: fileData.locationUrl,
     extension: [metriportDataSourceExtension],
-    format: "urn:ihe:pcc:xphr:2007",
   });
 
   const upd: DocumentReference = { ...doc, id: docId };
   upd.content = upd.content ? [...upd.content, metriportContent] : [metriportContent];
-  upd.subject = subject;
+  upd.docStatus = "amended";
   return upd;
 }

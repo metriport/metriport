@@ -208,7 +208,6 @@ const documentDataSchema = z.object({
  * Get a doc ref for a medical document uploaded by a cx.
  *
  * @param req.query.cxId - The customer/account's ID.
- * @param req.query.patientId - The patient ID.
  *
  * @return 201 Indicating the file was successfully uploaded.
  */
@@ -216,8 +215,6 @@ router.post(
   "/doc-ref",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
-    const patientId = getFromQueryOrFail("patientId", req);
-
     const body = req.body[0];
     console.log("DOC-REF REQUEST BODY:", req.body);
     const fileData = documentDataSchema.parse({
@@ -230,14 +227,10 @@ router.post(
 
     console.log("FileData", fileData);
 
-    const docRef = await updateAndUploadDocumentReference({
+    await updateAndUploadDocumentReference({
       cxId,
-      patientId,
-      docRefId: fileData.docRefId,
       fileData,
     });
-
-    console.log("Customer file upload doc ref res:", JSON.stringify(docRef));
 
     return res.status(httpStatus.CREATED);
   })

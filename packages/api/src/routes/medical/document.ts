@@ -30,6 +30,7 @@ const router = Router();
 const region = Config.getAWSRegion();
 const s3client = makeS3Client(region);
 // const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
+const medicalDocumentsUploadBucketName = "metriport-medical-document-uploads-staging";
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
@@ -195,31 +196,37 @@ router.post(
   "/upload-url",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    console.log("OUR CXID", cxId);
     const patientId = getFromQueryOrFail("patientId", req);
+    const fileId = uuidv7();
+    const s3FileName = createS3FileName(cxId, patientId, fileId);
+    const docRefId = uuidv7();
+    const s3Key = s3FileName + "_upload?docRefId=" + docRefId;
+
     const organization = await getOrganization({ cxId });
     if (!organization) throw new ForbiddenError(`Organization not found for CX ${cxId}`);
-    console.log("ORGANIZATION", JSON.stringify(organization));
 
     const docRefDraft = req.body;
     cxDocRefCheck(docRefDraft);
-    console.log("Document Reference Draft", docRefDraft);
+    console.log("Document Reference Draft", JSON.stringify(docRefDraft));
 
-    const docRef = pickDocRefParts(docRefDraft, organization);
+    const docRef = pickDocRefParts(
+      docRefDraft,
+      organization,
+      docRefId,
+      patientId,
+      s3Key,
+      medicalDocumentsUploadBucketName
+    );
     console.log("Updated Document Reference", JSON.stringify(docRef));
 
     // Make a temporary DocumentReference on the FHIR server.
     await upsertDocumentToFHIRServer(cxId, docRef);
 
-    const fileId = uuidv7();
-    const s3FileName = createS3FileName(cxId, patientId, fileId);
-    const s3Key = s3FileName + "_upload?docRefId=" + docRef.id;
     console.log("Upload File Name", s3FileName);
-    console.log("Key is going to be:", s3Key);
     console.log("Region", region);
     const presignedUrl = s3client.createPresignedPost({
-      // Bucket: medicalDocumentsUploadBucketName,
-      Bucket: "metriport-medical-document-uploads-staging",
+      Bucket: medicalDocumentsUploadBucketName,
+      // Bucket: "metriport-medical-document-uploads-staging",
       Fields: {
         key: s3Key,
       },

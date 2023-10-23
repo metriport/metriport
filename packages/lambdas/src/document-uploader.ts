@@ -28,12 +28,13 @@ export const handler = async (event: S3Event) => {
   if (event.Records[0]) {
     const sourceBucket = event.Records[0].s3.bucket.name;
     const sourceKey = decodeURIComponent(event.Records[0].s3.object.key);
-    console.log("SourceKey:", sourceKey);
+    const copySource = encodeURI(`${sourceBucket}/${sourceKey}`);
+    console.log("Copy Source:", copySource);
     const destinationBucket = "devs.metriport.com";
     const { destinationKey, docRefId } = getDestinationKeyAndDocRefId(sourceKey);
 
     const params = {
-      CopySource: encodeURI(`${sourceBucket}/${sourceKey}`),
+      CopySource: copySource,
       Bucket: destinationBucket,
       Key: destinationKey,
     };
@@ -57,9 +58,13 @@ export const handler = async (event: S3Event) => {
     });
     const s3FileNameParts = parseS3FileName(destinationKey);
     if (!s3FileNameParts) {
-      throw new MetriportError("Invalid S3 file name", null, { destinationKey });
+      const message = "Invalid S3 file name";
+      capture.error(message, {
+        extra: { context: `documentUploader.s3FileNameParse`, destinationKey },
+      });
+      throw new MetriportError(message, null, { destinationKey });
     }
-    const { cxId, patientId, docId } = s3FileNameParts;
+    const { cxId, docId } = s3FileNameParts;
 
     const fileData = {
       size,
@@ -72,7 +77,7 @@ export const handler = async (event: S3Event) => {
 
     try {
       // POST /internal/docs/doc-ref
-      await forwardCallToServer(cxId, patientId, fileData);
+      await forwardCallToServer(cxId, fileData);
     } catch (error) {
       const message = "Failed with a call to generate a doc-ref on an uploaded file";
       console.log(message, JSON.stringify(error));
@@ -87,8 +92,8 @@ function removeSuffix(key: string, suffix: string) {
   return key.includes(suffix) ? key.replace(suffix, "") : key;
 }
 
-async function forwardCallToServer(cxId: string, patientId: string, fileData: FileData) {
-  const url = `${apiServerURL}?cxId=${cxId}&patientId=${patientId}`;
+async function forwardCallToServer(cxId: string, fileData: FileData) {
+  const url = `${apiServerURL}?cxId=${cxId}`;
   const encodedUrl = encodeURI(url);
   console.log("FileData: ", fileData);
   console.log("POST /document/doc-ref URL is:", encodedUrl);

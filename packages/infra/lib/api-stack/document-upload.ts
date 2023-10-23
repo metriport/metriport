@@ -1,11 +1,11 @@
-import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { ILayerVersion, Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { S3EventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import { createLambda as defaultCreateLambda } from "../shared/lambda";
-import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { EnvType } from "../env-type";
+import { createLambda as defaultCreateLambda } from "../shared/lambda";
 
 export function createLambda({
   lambdaLayers,
@@ -19,18 +19,18 @@ export function createLambda({
 }: {
   lambdaLayers: ILayerVersion[];
   stack: Construct;
-  vpc: IVpc;
+  vpc: ec2.IVpc;
   apiService: ecs_patterns.NetworkLoadBalancedFargateService;
   envType: EnvType;
   medicalDocumentsUploadBucket: s3.Bucket;
   medicalDocumentsBucket: s3.IBucket;
   sentryDsn: string | undefined;
   //   alarmSnsAction?: SnsAction;
-}): Lambda {
+}) {
   //   const config = getConfig();
   const documentUploaderLambda = defaultCreateLambda({
     stack,
-    name: "DocumentUploader",
+    name: "DocumentUploaderTest",
     vpc,
     entry: "document-uploader",
     layers: lambdaLayers,
@@ -50,6 +50,4 @@ export function createLambda({
       events: [s3.EventType.OBJECT_CREATED],
     })
   );
-
-  return documentUploaderLambda;
 }

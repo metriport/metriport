@@ -4,7 +4,9 @@ description: "Returns a presigned URL to use for a medical document upload to ou
 api: "POST /medical/v1/document/upload-url"
 ---
 
-This endpoint uploads the specified file to our servers and returns a FHIR Document Reference.
+To use this endpoint, you will need to create a prelimiary version of a [DocumentReference](/medical-api/fhir/resources/documentreference), which we will use as a draft before the file can be uploaded to our servers. In this DocumentReference, we made it a mandatory practice to include the `type` field where you can specify the kind of document ([LOINC](https://www.hl7.org/fhir/valueset-doc-typecodes.html), if possible),`description` field to outline a very brief description of the document, and `context` to provide the relevant dates. Besides these mandatory fields, we ask that you try to provide as much context to the file as possible, including the practitioner (`author` field in the DocumentReference) and narrative (`text`). Note that you **do not** need to enter any references to the patient or your organization, as those will be inferred on our end - anything you will enter in these fields will be overwritten. Once your DocumentReference draft meets the minimum criteria, you can execute the endpoint and receive a presigned URL to use for consecutive file upload. Use that URL with a form-based upload, mapping the URL attributes `url` and `fields` to the corresponding fields of the form. Append the file stream and upload the file. See example below for reference.
+
+Once the file is uploaded, the DocumentReference will be updated with the file attachment details on our end and uploaded it to our FHIR servers, making it available to other HIEs.
 
 ## Query Params
 
@@ -12,125 +14,66 @@ This endpoint uploads the specified file to our servers and returns a FHIR Docum
   The ID of the Patient.
 </ParamField>
 
-## Body Fields
+## Body
 
-<ParamField body="file" type="File" required>
-  The file that you would like to upload.
-</ParamField>
+    <ParamField body="type" type="CodeableConcept" required>
+      A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) of the file type.
+      <Expandable title="Type properties">
+        <ParamField body="text" type="string" required>
+          Plain text representation of the document kind.
+        </ParamField>
 
-<ParamField body="practitionerName" type="string">
-  The name of the practitioner who created this file.
-</ParamField>
+        <ParamField body="coding" type="Coding">
+          A [Coding](/medical-api/fhir/data-types/coding) property, which is a reference to a code defined by a terminology system.
+        </ParamField>
+      </Expandable>
+    </ParamField>
 
-<ParamField body="description" type="string">
-  The brief description of the file.
-</ParamField>
+    <ParamField body="description" type="string" required>
+      A brief description of the file.
+    </ParamField>
+
+    <ParamField body="context" type="DocumentReferenceContext[]" required>
+      Context of the document content.
+      <Expandable title="Context properties">
+        <ParamField body="period" type="Period" required>
+          A time [Period](/medical-api/fhir/data-types/period) property defined by a start and end date and optionally time.
+        </ParamField>
+
+        <ParamField body="facilityType" type="CodeableConcept">
+          Optional [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) for the facilityType. We ask that you provide the name of the facility that generated the document under `text`.
+            <Expandable title="Facility type properties">
+          <ParamField body="type" type="CodeableConcept" required>
+            A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) for the type and name of the facility.
+              <ParamField body="text" type="string">
+                Plain text with the facility name and type.
+              </ParamField>
+
+              <ParamField body="coding" type="Coding">
+                A [Coding](/medical-api/fhir/data-types/coding) property, which is a reference to a code defined by a terminology system.
+              </ParamField>
+          </ParamField>
+            </Expandable>
+        </ParamField>
+
+      </Expandable>
+    </ParamField>
 
 ## Response
 
-A FHIR [DocumentReference](/medical-api/fhir/resources/documentreference) to the file you uploaded.
+A presigned URL that can be used to upload a medical document to our system.
 
 ```json
 {
-  "resourceType": "DocumentReference",
-  "id": "018a875a-3181-74e8-8aa4-40c59ed7e1b2",
-  "meta": {
-    "versionId": "1",
-    "lastUpdated": "2023-09-01T14:31:57.025+00:00",
-    "source": "#vK8lyyAta8eKkbPO"
-  },
-  "contained": [
-    {
-      "resourceType": "Organization",
-      "id": "org522",
-      "name": "Hospital 522"
-    },
-    {
-      "resourceType": "Practitioner",
-      "id": "auth925",
-      "name": [
-        {
-          "text": "John Snow",
-          "family": "Snow",
-          "given": ["John"]
-        }
-      ]
-    }
-  ],
-  "extension": [
-    {
-      "url": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
-      "valueCoding": {
-        "system": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
-        "code": "METRIPORT"
-      }
-    }
-  ],
-  "masterIdentifier": {
-    "system": "urn:ietf:rfc:3986",
-    "value": "018a875a-3181-74e8-8aa4-40c59ed7e1b2"
-  },
-  "identifier": [
-    {
-      "use": "official",
-      "system": "urn:ietf:rfc:3986",
-      "value": "018a875a-3181-74e8-8aa4-40c59ed7e1b2"
-    }
-  ],
-  "status": "current",
-  "type": {
-    "coding": [
-      {
-        "system": "http://loinc.org/",
-        "code": "34133-9",
-        "display": "Summarization of episode note"
-      }
-    ]
-  },
-  "subject": {
-    "reference": "Patient/018a5164-c0ac-79e2-99cc-9cf951c26d94",
-    "type": "Patient"
-  },
-  "date": "2023-08-15T03:05:58.090Z",
-  "author": [
-    {
-      "reference": "#org522",
-      "type": "Organization"
-    }
-  ],
-  "description": "C-CDA R2.1 Patient Record",
-  "content": [
-    {
-      "extension": [
-        {
-          "url": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
-          "valueCoding": {
-            "system": "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
-            "code": "METRIPORT"
-          }
-        }
-      ],
-      "attachment": {
-        "contentType": "application/pdf",
-        "url": "http://api.metriport.com/doc-contribution/commonwell/?fileName=965f9957-34ac-442b-9a17-fa09c76c16da/018a5164-c0ac-79e2-99cc-9cf951c26d94/965f9957-34ac-442b-9a17-fa09c76c16da_018a5164-c0ac-79e2-99cc-9cf951c26d94_018a875a-3181-74e8-8aa4-40c59ed7e1b2",
-        "size": 1080416,
-        "title": "965f9957-34ac-442b-9a17-fa09c76c16da/018a5164-c0ac-79e2-99cc-9cf951c26d94/965f9957-34ac-442b-9a17-fa09c76c16da_018a5164-c0ac-79e2-99cc-9cf951c26d94_018a875a-3181-74e8-8aa4-40c59ed7e1b2",
-        "creation": "2023-08-14T22:05:58-05:00"
-      },
-      "format": {
-        "code": "urn:ihe:pcc:xphr:2007"
-      }
-    }
-  ],
-  "context": {
-    "period": {
-      "start": "2023-08-15T02:05:58.090Z",
-      "end": "2023-08-15T03:05:58.090Z"
-    },
-    "sourcePatientInfo": {
-      "reference": "Patient/018a5164-c0ac-79e2-99cc-9cf951c26d94",
-      "type": "Patient"
-    }
+  "url": "https://s3.us-east-2.amazonaws.com/metriport-medical-document-uploads-staging",
+  "fields": {
+    "key": "<s3-object-key>",
+    "bucket": "<s3-bucket-name>",
+    "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+    "X-Amz-Credential": "<some-credentials-string>",
+    "X-Amz-Date": "20231020T064041Z",
+    "Policy": "<some-policy-string>",
+    "X-Amz-Signature": "<some-signature-string>"
   }
 }
 ```
@@ -139,13 +82,45 @@ A FHIR [DocumentReference](/medical-api/fhir/resources/documentreference) to the
 
 ```javascript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api-sdk";
+import FormData from "form-data";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const docRefDraft = {
+  description: "Third degree wrist burn treatment",
+  type: {
+    text: "Burn management Hospital Progress note",
+    coding: {
+      code: "100556-0",
+      system: "http://loinc.org",
+    },
+  },
+  context: {
+    period: {
+      start: "2023-10-10T14:14:17Z",
+    },
+    facilityType: {
+      text: "My Clinic Name - Acute Care",
+    },
+  },
+};
 
-const presignedUrl = await metriportClient.getDocumentUploadUrl(
-  "my-patient-id",
-  "document-reference"
-);
+const presignedUrl = await metriportClient.getDocumentUploadUrl("my-patient-id", docRef);
+
+const form = new FormData();
+Object.entries(presignedUrl.fields).forEach(([field, value]) => {
+  form.append(field, value);
+});
+const contentType = "application/pdf";
+form.append("Content-Type", contentType);
+form.append("file", createReadStream("<my-file-path>"));
+
+form.submit(presignedUrl.url, (err, response) => {
+  if (err) {
+    console.log(`ERROR: `, err);
+    return;
+  }
+  console.log(`RESPONSE: `, response.statusCode);
+});
 ```
 
 </ResponseExample>
