@@ -1,0 +1,23 @@
+name: "Fern Check"
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install fern
+        run: npm install -g fern-api
+      - name: fern check
+        run: fern check
+      - name: Verify generated code is up to date
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: |
+          fern generate --group local
+          git --no-pager diff --exit-code
