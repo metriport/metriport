@@ -13,7 +13,6 @@ export function pickDocRefParts(
   prelimDocRef: DocumentReference,
   organization: OrganizationModel
 ): DocumentReference {
-  console.log("PRELIMINARY DOC REF:", prelimDocRef);
   const docRefId = uuidv7();
   const containedOrg: Organization = {
     resourceType: "Organization",
@@ -30,7 +29,9 @@ export function pickDocRefParts(
     id: docRefId,
     status: "current",
     docStatus: "preliminary",
-    extension: [temporaryExtension],
+    extension: prelimDocRef.extension
+      ? [...prelimDocRef.extension, temporaryExtension]
+      : [temporaryExtension],
     type: prelimDocRef.type ?? undefined,
     category: prelimDocRef.category ?? undefined,
     date: prelimDocRef.date ?? new Date().toISOString(),

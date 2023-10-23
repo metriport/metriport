@@ -29,7 +29,7 @@ const UPLOAD_FILE_SIZE_LIMIT_SANDBOX = 5_000_000; // 5MB
 const router = Router();
 const region = Config.getAWSRegion();
 const s3client = makeS3Client(region);
-const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
+// const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
@@ -215,7 +215,8 @@ router.post(
     const fileId = uuidv7();
     const s3FileName = createS3FileName(cxId, patientId, fileId);
     const presignedUrl = s3client.createPresignedPost({
-      Bucket: medicalDocumentsUploadBucketName,
+      // Bucket: medicalDocumentsUploadBucketName,
+      Bucket: "metriport-medical-documents-uploads-staging",
       Fields: {
         key: s3FileName + "_upload?docRefId=" + resultingFhirResource.id,
       },

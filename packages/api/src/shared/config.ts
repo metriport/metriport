@@ -197,9 +197,9 @@ export class Config {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
 
-  static getMedicalDocumentsUploadBucketName(): string {
-    return getEnvVarOrFail("MEDICAL_DOCUMENTS_UPLOAD_BUCKET_NAME");
-  }
+  // static getMedicalDocumentsUploadBucketName(): string {
+  //   return getEnvVarOrFail("MEDICAL_DOCUMENTS_UPLOAD_BUCKET_NAME");
+  // }
 
   static getSandboxBucketName(): string | undefined {
     return getEnvVar("SANDBOX_SEED_DATA_BUCKET_NAME");
