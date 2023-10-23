@@ -1,5 +1,4 @@
+import { validConversionTypes } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { z } from "zod";
 
-export const docConversionTypeSchema = z.enum(["html", "pdf"]);
-
-export type DocConversionType = z.infer<typeof docConversionTypeSchema>;
+export const docConversionTypeSchema = z.enum(validConversionTypes);

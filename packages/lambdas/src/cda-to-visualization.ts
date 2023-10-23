@@ -1,3 +1,5 @@
+import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
 import AWS from "aws-sdk";
@@ -27,25 +29,30 @@ const s3client = new AWS.S3({
 });
 
 export const handler = Sentry.AWSLambda.wrapHandler(
-  async (req: { fileName: string; conversionType: string }) => {
-    const { fileName, conversionType } = req;
+  async ({ fileName, conversionType }: Input): Promise<Output> => {
     console.log(`Running with conversionType: ${conversionType}, fileName: ${fileName}`);
 
     const document = await downloadDocumentFromS3({ fileName });
 
-    if (document && conversionType === "html") {
+    if (!document) {
+      throw new MetriportError(`Document not found in S3`, undefined, {
+        fileName,
+      });
+    }
+    if (conversionType === "html") {
       const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document });
       console.log("html", url);
-      return url;
+      return { url };
     }
-
-    if (document && conversionType === "pdf") {
+    if (conversionType === "pdf") {
       const url = await convertStoreAndReturnPdfDocUrl({ fileName, document });
       console.log("pdf", url);
-      return url;
+      return { url };
     }
-
-    return;
+    throw new MetriportError(`Unsupported conversion type`, undefined, {
+      fileName,
+      conversionType,
+    });
   }
 );
 
