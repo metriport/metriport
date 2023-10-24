@@ -18,7 +18,7 @@ import { Patient, PatientExternalDataEntry } from "../../domain/medical/patient"
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
-import { driversLicenseURIs } from "../../shared/oid";
+import { driversLicenseURIs } from "@metriport/core/domain/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
