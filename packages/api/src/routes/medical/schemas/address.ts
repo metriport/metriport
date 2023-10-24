@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { USState } from "../../../shared/geographic-locations";
+import { USState } from "@metriport/core/domain/geographic-locations";
 import { defaultOptionalString, defaultZipString } from "./shared";
 
 export const usStateSchema = z.nativeEnum(USState);

@@ -6,7 +6,8 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
+import { oid } from "@metriport/core/domain/oid";
+import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { chunk, partition } from "lodash";
 import {
   getDocToFileFunction,
@@ -29,13 +30,11 @@ import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
 import { MedicalDataSource } from "../../../external";
-import { makeLambdaClient } from "../../../external/aws/lambda";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
-import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -48,6 +47,7 @@ import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientDataWithSingleFacility, PatientDataCommonwell } from "../patient-shared";
+import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
   CWDocumentWithMetriportData,
@@ -64,8 +64,7 @@ const DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT = 10; // 1-100% of max delay
 const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
 const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
 
-const lambdaClient = makeLambdaClient();
-const docDownloaderLambdaName = Config.getDocumentDownloaderLambdaName();
+type File = DownloadResult & { isNew: boolean };
 
 /**
  * Query CommonWell for DocumentReferences, download and convert documents to FHIR,
@@ -493,6 +492,7 @@ export async function downloadDocsAndUpsertFHIR({
             await jitterSingleDownload();
 
             if (!fileInfo.fileExists) {
+              // Download from CW and upload to S3
               uploadToS3 = async () => {
                 const { organization, facility } = await getPatientDataWithSingleFacility(
                   { id: patient.id, cxId },
@@ -719,15 +719,6 @@ function processFhirAndSearchResponse(
   }
 }
 
-type File = {
-  bucket: string;
-  key: string;
-  location: string;
-  contentType: string | undefined;
-  size: number | undefined;
-  isNew: boolean;
-};
-
 async function triggerDownloadDocument({
   doc,
   fileInfo,
@@ -735,44 +726,32 @@ async function triggerDownloadDocument({
   facilityNPI,
   cxId,
 }: {
-  doc: DocumentWithMetriportId;
+  doc: DocumentWithLocation;
   fileInfo: S3Info;
   organization: Organization;
   facilityNPI: string;
   cxId: string;
 }): Promise<File> {
-  const payload = {
-    document: {
-      id: doc.id,
-      mimeType: doc.content.mimeType,
-      location: doc.content.location,
-    },
-    fileInfo,
+  const docDownloader = makeDocumentDownloader({
     orgName: organization.data.name,
     orgOid: organization.oid,
     npi: facilityNPI,
-    cxId,
+  });
+  const document = {
+    id: doc.id,
+    mimeType: doc.content.mimeType,
+    location: doc.content.location,
   };
-  const result = await lambdaClient
-    .invoke({
-      FunctionName: docDownloaderLambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify(payload),
-    })
-    .promise();
-  //
-  // This should show up on a conflict w/ this PR https://github.com/metriport/metriport/pull/1013
-  // Need to make sure the cloud implentation of the doc downloader uses the new logic to handle lambda errors
-  //
-  // This should show up on a conflict w/ this PR https://github.com/metriport/metriport/pull/1013
-  // Need to make sure the cloud implentation of the doc downloader uses the new logic to handle lambda errors
-  //
-  // This should show up on a conflict w/ this PR https://github.com/metriport/metriport/pull/1013
-  // Need to make sure the cloud implentation of the doc downloader uses the new logic to handle lambda errors
-  //
-  const resultPayload = getLambdaResultPayload({ result, lambdaName: docDownloaderLambdaName });
+  const adjustedFileInfo = {
+    name: fileInfo.fileName,
+    location: fileInfo.fileLocation,
+  };
 
-  return JSON.parse(resultPayload);
+  const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+  return {
+    ...result,
+    isNew: true,
+  };
 }
 
 const fileIsConvertible = (f: File) => isConvertible(f.contentType);

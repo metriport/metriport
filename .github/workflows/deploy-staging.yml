@@ -5,8 +5,11 @@ on:
     branches:
       - develop
     paths:
-      - "packages/connect-widget/**"
       - "packages/api/**"
+      - "packages/api-sdk/**"
+      - "packages/commonwell-sdk/**"
+      - "packages/connect-widget/**"
+      - "packages/core/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
   workflow_dispatch: # manually executed by a user
@@ -37,6 +40,7 @@ jobs:
             api:
               - "packages/api/**"
               - "packages/api-sdk/**"
+              - "packages/commonwell-sdk/**"
               - "packages/core/**"
               - "package*.json"
             infra-lambdas:
@@ -45,7 +49,6 @@ jobs:
               - "package*.json"
             widget:
               - "packages/connect-widget/**"
-              - "packages/api-sdk/**"
               - "package*.json"
 
   widget:

@@ -53,6 +53,7 @@ export function getLambdaError(
  * @param failGracefuly If true, the function will return `undefined` instead of throwing an
  *        error (optional, defaults to `false` - throw an error on failure)
  * @param log A function to log errors (optional, defaults to `console.log`)
+ * @returns The payload of the lambda invocation
  */
 export function getLambdaResultPayload(params: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
