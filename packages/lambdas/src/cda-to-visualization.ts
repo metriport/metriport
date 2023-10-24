@@ -43,11 +43,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       console.log("html", url);
       return { url };
     }
+
     if (conversionType === "pdf") {
       const url = await convertStoreAndReturnPdfDocUrl({ fileName, document, bucketName });
       console.log("pdf", url);
       return { url };
     }
+
     throw new MetriportError(`Unsupported conversion type`, undefined, {
       fileName,
       conversionType,
