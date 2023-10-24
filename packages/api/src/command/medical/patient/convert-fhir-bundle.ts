@@ -126,6 +126,7 @@ async function convertFHIRBundleToMedicalRecord({
     patientId: patient.id,
     firstName: patient.data.firstName,
     cxId: patient.cxId,
+    bucketName: "test",
     dateFrom,
     dateTo,
     conversionType,
