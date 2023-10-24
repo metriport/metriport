@@ -281,8 +281,6 @@ export class APIStack extends Stack {
     const cdaToVisualizationLambda = this.setupCdaToVisualization({
       lambdaLayers,
       vpc: this.vpc,
-      medicalBucketName: medicalDocumentsBucket.bucketName,
-      seedBucketName: sandboxSeedDataBucket?.bucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
@@ -305,8 +303,6 @@ export class APIStack extends Stack {
       convertDocLambdaName: cdaToVisualizationLambda.functionName,
       dynamoDBSidechainKeysTable,
       converterUrl: props.config.fhirToCDAUrl,
-      medicalBucketName: medicalDocumentsBucket.bucketName,
-      seedBucketName: sandboxSeedDataBucket?.bucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
@@ -902,21 +898,11 @@ export class APIStack extends Stack {
   private setupCdaToVisualization(ownProps: {
     lambdaLayers: lambda.ILayerVersion[];
     vpc: ec2.IVpc;
-    medicalBucketName: string;
-    seedBucketName: string | undefined;
     envType: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const {
-      lambdaLayers,
-      vpc,
-      medicalBucketName,
-      seedBucketName,
-      sentryDsn,
-      envType,
-      alarmAction,
-    } = ownProps;
+    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction } = ownProps;
 
     const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
@@ -931,10 +917,6 @@ export class APIStack extends Stack {
       entry: "cda-to-visualization",
       envVars: {
         ENV_TYPE: envType,
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalBucketName,
-        ...(seedBucketName && {
-          SEED_DOCUMENTS_BUCKET_NAME: seedBucketName,
-        }),
         CDA_TO_VIS_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
@@ -1016,8 +998,6 @@ export class APIStack extends Stack {
     convertDocLambdaName: string;
     converterUrl: string;
     dynamoDBSidechainKeysTable: dynamodb.Table | undefined;
-    medicalBucketName: string;
-    seedBucketName: string | undefined;
     envType: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
@@ -1028,8 +1008,6 @@ export class APIStack extends Stack {
       convertDocLambdaName,
       dynamoDBSidechainKeysTable,
       converterUrl,
-      medicalBucketName,
-      seedBucketName,
       sentryDsn,
       envType,
       alarmAction,
@@ -1049,8 +1027,6 @@ export class APIStack extends Stack {
         CONVERT_DOC_LAMBDA_NAME: convertDocLambdaName,
         FHIR_TO_CDA_CONVERTER_URL: converterUrl,
         SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME: dynamoDBSidechainKeysTable?.tableName ?? "",
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalBucketName,
-        ...(seedBucketName ? { SEED_DOCUMENTS_BUCKET_NAME: seedBucketName } : {}),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: lambdaLayers,

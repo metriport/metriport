@@ -11,6 +11,7 @@ import { Patient } from "../../../domain/medical/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
+import { patientMatches } from "../../../shared/sandbox/sandbox-seed-data";
 
 export const MEDICAL_RECORD_KEY = "MR";
 
@@ -120,17 +121,24 @@ async function convertFHIRBundleToMedicalRecord({
     })
     .promise();
 
+  const isSandbox = Config.isSandbox();
+  const patientMatch = patientMatches(patient.data);
+
   // Send it to conversion
   const payload: ConversionInput = {
     fileName,
     patientId: patient.id,
     firstName: patient.data.firstName,
     cxId: patient.cxId,
-    bucketName: "test",
+    bucketName:
+      isSandbox && patientMatch
+        ? Config.getSandboxBucketName() ?? Config.getMedicalDocumentsBucketName()
+        : Config.getMedicalDocumentsBucketName(),
     dateFrom,
     dateTo,
     conversionType,
   };
+
   const result = await lambdaClient
     .invoke({
       FunctionName: lambdaName,

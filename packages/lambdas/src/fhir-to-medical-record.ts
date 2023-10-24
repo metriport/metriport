@@ -2,7 +2,6 @@ import {
   Input as ConversionInput,
   Output as ConversionOuput,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
-// import { seedData } from "@metriport/core/domain/seed/seed-data";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
@@ -22,7 +21,6 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
-const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const envType = getEnvOrFail("ENV_TYPE");
 // converter config
 const FHIRToCDAConverterUrl = getEnvOrFail("FHIR_TO_CDA_CONVERTER_URL");
@@ -37,7 +35,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   async ({
     fileName: fhirFileName,
     patientId,
-    // bucketName,
+    bucketName,
     firstName,
     cxId,
     dateFrom,
@@ -53,13 +51,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     try {
       const log = prefixedLog(`patient ${patientId}`);
 
-      if (isSandbox) return processSandbox({ firstName, conversionType });
+      if (isSandbox) return processSandbox({ firstName, conversionType, bucketName });
 
       if (!converterKeysTableName) {
         throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
       }
 
-      const bundle = await getBundleFromS3(fhirFileName);
+      const bundle = await getBundleFromS3(fhirFileName, bucketName);
       log(`Bundle: ${JSON.stringify(bundle)}`);
 
       const res = await postToConverter({
@@ -84,11 +82,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         .promise();
 
       if (conversionType === "xml") {
-        const url = await getSignedUrl(cdaFileName);
+        const url = await getSignedUrl(cdaFileName, bucketName);
         return { url };
       }
 
-      const url = await convertDoc({ fileName: cdaFileName, conversionType });
+      const url = await convertDoc({ fileName: cdaFileName, conversionType, bucketName });
       return { url };
 
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,11 +106,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   }
 );
 
-async function getSignedUrl(fileName: string) {
+async function getSignedUrl(fileName: string, bucketName: string) {
   return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
 }
 
-async function getBundleFromS3(fileName: string) {
+async function getBundleFromS3(fileName: string, bucketName: string) {
   const getResponse = await s3Client
     .getObject({
       Bucket: bucketName,
@@ -318,13 +316,14 @@ const convertDoc = async (payload: ConversionInput): Promise<string> => {
 async function processSandbox({
   firstName,
   conversionType,
-}: Pick<Input, "firstName" | "conversionType">): Promise<Output> {
+  bucketName,
+}: Pick<Input, "firstName" | "conversionType" | "bucketName">): Promise<Output> {
   const lowerCaseName = firstName.toLowerCase();
   const fileName = `${lowerCaseName}-consolidated.xml`;
   if (conversionType === "xml") {
-    const url = await getSignedUrl(fileName);
+    const url = await getSignedUrl(fileName, bucketName);
     return { url };
   }
-  const url = await convertDoc({ fileName, conversionType });
+  const url = await convertDoc({ fileName, conversionType, bucketName });
   return { url };
 }
