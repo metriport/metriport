@@ -132,7 +132,8 @@ async function convertFHIRBundleToMedicalRecord({
     cxId: patient.cxId,
     bucketName:
       isSandbox && patientMatch
-        ? Config.getSandboxSeedBucketName() ?? Config.getMedicalDocumentsBucketName()
+        ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          Config.getSandboxSeedBucketName()!
         : Config.getMedicalDocumentsBucketName(),
     dateFrom,
     dateTo,
