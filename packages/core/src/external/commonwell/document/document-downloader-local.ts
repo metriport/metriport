@@ -3,6 +3,7 @@ import AWS from "aws-sdk";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
+import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
 import {
   Document,
@@ -63,10 +64,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
-    if (
-      downloadedDocument &&
-      (document.mimeType === "application/xml" || document.mimeType === "text/xml")
-    ) {
+    if (downloadedDocument && isMimeTypeXML(document.mimeType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
         contents: downloadedDocument,
