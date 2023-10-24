@@ -200,7 +200,7 @@ router.post(
     const fileId = uuidv7();
     const s3FileName = createS3FileName(cxId, patientId, fileId);
     const docRefId = uuidv7();
-    const s3Key = s3FileName + "_upload?docRefId=" + docRefId;
+    const s3Key = s3FileName + "_upload_" + docRefId;
 
     const organization = await getOrganization({ cxId });
     if (!organization) throw new ForbiddenError(`Organization not found for CX ${cxId}`);
@@ -240,6 +240,7 @@ router.post(
         ["starts-with", "$Content-Type", ""], // content type restriction
       ],
     });
+
     return res.status(httpStatus.OK).json(presignedUrl);
   })
 );

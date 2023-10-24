@@ -107,27 +107,21 @@ function getDestinationKeyAndDocRefId(sourceKey: string): {
   destinationKey: string;
   docRefId: string;
 } {
-  const keyParts = sourceKey.split("?");
+  // a19fc9aa-bce0-4487-909b-802eab03aeed/018b3a35-1aea-7c55-a8ab-c60a2638a0ee/a19fc9aa-bce0-4487-909b-802eab03aeed_018b3a35-1aea-7c55-a8ab-c60a2638a0ee_018b5f1e-80c3-78da-a9a2-e7ff43da6446_upload_018b5f1e-80c4-7dfc-9ab7-9c8ab31558c5
+  const keyParts = sourceKey.split("_upload_");
+  console.log("Key Parts:", keyParts);
   let destinationKey;
+  const docRefId = keyParts[1];
   if (keyParts[0]) {
     const index = keyParts[0].lastIndexOf("/");
     destinationKey =
       keyParts[0].substring(0, index) + "/uploads/" + keyParts[0].substring(index + 1);
-    destinationKey = removeSuffix(keyParts[0], "_upload");
-  }
-  if (!destinationKey) {
-    throw new Error("Invalid destination key");
+    destinationKey = removeSuffix(destinationKey, "_upload");
   }
 
-  if (keyParts[1]) {
-    const docRefId = extractQueryParamInfo(keyParts[1]);
-    return { destinationKey, docRefId };
+  if (!destinationKey || !docRefId) {
+    throw new MetriportError("Invalid Source Key.", null, { sourceKey, destinationKey, docRefId });
   }
-  throw new Error("Invalid query params");
-}
 
-function extractQueryParamInfo(queryParam: string) {
-  const queryParamValue = queryParam?.split("=")[1];
-  if (queryParamValue) return queryParamValue;
-  throw new Error("Invalid query param");
+  return { destinationKey, docRefId };
 }

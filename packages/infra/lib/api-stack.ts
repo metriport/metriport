@@ -354,6 +354,7 @@ export class APIStack extends Stack {
       sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
+      medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,

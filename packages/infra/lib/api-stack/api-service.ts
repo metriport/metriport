@@ -19,6 +19,7 @@ import { DnsZones } from "../shared/dns";
 import { Secrets } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd } from "../shared/util";
+import * as s3 from "aws-cdk-lib/aws-s3";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
@@ -43,6 +44,7 @@ export function createAPIService(
   sidechainFHIRConverterDLQ: IQueue | undefined,
   cdaToVisualizationLambda: ILambda,
   documentDownloaderLambda: ILambda,
+  medicalDocumentsUploadBucket: s3.Bucket,
   // uploadedDocumentProcessorLambda: ILambda,
   fhirToMedicalRecordLambda: ILambda,
   searchIngestionQueue: IQueue,
@@ -160,12 +162,12 @@ export function createAPIService(
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
-
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  // uploadedDocumentProcessorLambda.grantInvoke(fargateService.taskDefinition.taskRole); // Not sure what it's for
   fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
+  // Access grant for medical document buckets
+  medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
   sidechainFHIRConverterQueue &&
     provideAccessToQueue({
