@@ -132,7 +132,7 @@ async function convertFHIRBundleToMedicalRecord({
     cxId: patient.cxId,
     bucketName:
       isSandbox && patientMatch
-        ? Config.getSandboxBucketName() ?? Config.getMedicalDocumentsBucketName()
+        ? Config.getSandboxSeedBucketName() ?? Config.getMedicalDocumentsBucketName()
         : Config.getMedicalDocumentsBucketName(),
     dateFrom,
     dateTo,
