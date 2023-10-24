@@ -132,7 +132,6 @@ async function convertFHIRBundleToMedicalRecord({
     patientId: patient.id,
     firstName: patient.data.firstName,
     cxId: patient.cxId,
-    bucketName: Config.getMedicalDocumentsBucketName(),
     dateFrom,
     dateTo,
     conversionType,
