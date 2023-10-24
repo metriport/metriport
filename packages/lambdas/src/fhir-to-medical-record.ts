@@ -2,7 +2,7 @@ import {
   Input as ConversionInput,
   Output as ConversionOuput,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
-import { seedData } from "@metriport/core/domain/seed/seed-data";
+// import { seedData } from "@metriport/core/domain/seed/seed-data";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
@@ -22,9 +22,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
-// const medicalBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-// const seedBucketName = getEnvOrFail("SEED_DOCUMENTS_BUCKET_NAME");
-const bucketName = getEnvOrFail("SEED_DOCUMENTS_BUCKET_NAME");
+const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const envType = getEnvOrFail("ENV_TYPE");
 // converter config
 const FHIRToCDAConverterUrl = getEnvOrFail("FHIR_TO_CDA_CONVERTER_URL");
@@ -39,9 +37,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   async ({
     fileName: fhirFileName,
     patientId,
+    // bucketName,
     firstName,
-    // lastName,
-    // dob,
     cxId,
     dateFrom,
     dateTo,
@@ -55,8 +52,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     try {
       const log = prefixedLog(`patient ${patientId}`);
-
-      // const useSeedBucket = isSandboxAndSeedPatient(firstName, lastName, dob);
 
       if (isSandbox) return processSandbox({ firstName, conversionType });
 
@@ -304,18 +299,6 @@ const createCodeElement = (
   newCode.appendChild(document.createElement("br"));
 
   return newCode;
-};
-
-const isSandboxAndSeedPatient = (firstName: string, lastName: string, dob: string) => {
-  const foundPatient = Object.values(seedData).find(patient => {
-    return (
-      patient.demographics.firstName.toLowerCase() === firstName.toLowerCase() &&
-      patient.demographics.lastName.toLowerCase() === lastName.toLowerCase() &&
-      patient.demographics.dob === dob
-    );
-  });
-
-  return isSandbox && foundPatient;
 };
 
 const convertDoc = async (payload: ConversionInput): Promise<string> => {
