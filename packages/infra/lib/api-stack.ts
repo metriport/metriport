@@ -301,6 +301,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       convertDocLambdaName: cdaToVisualizationLambda.functionName,
+      bucketName: medicalDocumentsBucket.bucketName,
       dynamoDBSidechainKeysTable,
       converterUrl: props.config.fhirToCDAUrl,
       envType: props.config.environmentType,
@@ -416,7 +417,6 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
     sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
-    sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(fhirToMedicalRecordLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
 
@@ -996,6 +996,7 @@ export class APIStack extends Stack {
     lambdaLayers: lambda.ILayerVersion[];
     vpc: ec2.IVpc;
     convertDocLambdaName: string;
+    bucketName: string;
     converterUrl: string;
     dynamoDBSidechainKeysTable: dynamodb.Table | undefined;
     envType: string;
@@ -1006,6 +1007,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc,
       convertDocLambdaName,
+      bucketName,
       dynamoDBSidechainKeysTable,
       converterUrl,
       sentryDsn,
@@ -1027,6 +1029,7 @@ export class APIStack extends Stack {
         CONVERT_DOC_LAMBDA_NAME: convertDocLambdaName,
         FHIR_TO_CDA_CONVERTER_URL: converterUrl,
         SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME: dynamoDBSidechainKeysTable?.tableName ?? "",
+        MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: lambdaLayers,

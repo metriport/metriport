@@ -6,7 +6,6 @@ export type Input = {
   fileName: string;
   patientId: string;
   firstName: string;
-  bucketName: string;
   cxId: string;
   dateFrom?: string;
   dateTo?: string;

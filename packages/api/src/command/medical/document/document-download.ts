@@ -5,6 +5,7 @@ import {
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
+import { isMimeTypeXML } from "@metriport/core/src/util/mime";
 import BadRequestError from "../../../errors/bad-request";
 import NotFoundError from "../../../errors/not-found";
 import { makeLambdaClient } from "../../../external/aws/lambda";
@@ -22,21 +23,16 @@ export const downloadDocument = async ({
   fileName: string;
   conversionType?: ConversionType;
 }): Promise<string> => {
-  const { exists, contentType, isSeedData } = await doesObjExist({ fileName });
-
-  const bucketName = isSeedData
-    ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      Config.getSandboxSeedBucketName()!
-    : Config.getMedicalDocumentsBucketName();
+  const { exists, contentType, bucketName } = await doesObjExist({ fileName });
 
   if (!exists) throw new NotFoundError("File does not exist");
 
-  if (conversionType && contentType !== "application/xml" && contentType !== "text/xml")
+  if (conversionType && !isMimeTypeXML(conversionType))
     throw new BadRequestError(
       `Source file must be xml to convert to ${conversionType}, but it was ${contentType}`
     );
 
-  if (conversionType && validConversionTypes.includes(conversionType)) {
+  if (conversionType && validConversionTypes.includes(conversionType) && bucketName) {
     return getConversionUrl({ fileName, conversionType, bucketName });
   }
   return getSignedURL({ fileName });
@@ -54,7 +50,7 @@ const getConversionUrl = async ({
   else return convertDoc({ fileName, conversionType, bucketName });
 };
 
-const convertDoc = async ({
+export const convertDoc = async ({
   fileName,
   conversionType,
   bucketName,
@@ -78,42 +74,52 @@ const doesObjExist = async ({
 }: {
   fileName: string;
 }): Promise<
-  | { exists: true; contentType: string; isSeedData?: boolean }
-  | { exists: false; contentType?: never; isSeedData?: never }
+  | { exists: true; contentType: string; bucketName?: string }
+  | { exists: false; contentType?: never; bucketName?: never }
 > => {
-  let head: AWS.S3.HeadObjectOutput;
-
   if (Config.isSandbox()) {
     try {
-      head = await s3client
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const bucketName = Config.getSandboxSeedBucketName()!;
+      const head = await s3client
         .headObject({
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          Bucket: Config.getSandboxSeedBucketName()!,
+          Bucket: bucketName,
           Key: fileName,
         })
         .promise();
 
-      return { exists: true, contentType: head.ContentType ?? "", isSeedData: true };
+      return {
+        exists: true,
+        contentType: head.ContentType ?? "",
+        bucketName: bucketName,
+      };
     } catch (error) {
-      console.log("Could not find seed file - trying medical documents bucket");
+      console.log(
+        `Could not find seed file ${fileName} in the ${Config.getSandboxSeedBucketName()} bucket - trying medical documents bucket`
+      );
     }
   }
 
   try {
-    head = await s3client
+    const bucketName = Config.getMedicalDocumentsBucketName();
+    const head = await s3client
       .headObject({
-        Bucket: Config.getMedicalDocumentsBucketName(),
+        Bucket: bucketName,
         Key: fileName,
       })
       .promise();
 
-    return { exists: true, contentType: head.ContentType ?? "" };
+    return {
+      exists: true,
+      contentType: head.ContentType ?? "",
+      bucketName: bucketName,
+    };
   } catch (error) {
     return { exists: false };
   }
 };
 
-const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string> => {
+export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string> => {
   const seconds = 60;
 
   const url = s3client.getSignedUrl("getObject", {
