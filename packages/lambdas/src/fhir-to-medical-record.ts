@@ -2,6 +2,7 @@ import {
   Input as ConversionInput,
   Output as ConversionOuput,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
+// import { seedData } from "@metriport/core/domain/seed/seed-data";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
@@ -22,6 +23,8 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+// const medicalBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+// const seedBucketName = getEnvOrFail("SEED_DOCUMENTS_BUCKET_NAME");
 const envType = getEnvOrFail("ENV_TYPE");
 // converter config
 const FHIRToCDAConverterUrl = getEnvOrFail("FHIR_TO_CDA_CONVERTER_URL");
@@ -48,9 +51,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         `dateTo: ${dateTo}, fileName: ${fhirFileName}`
     );
 
-    const bundle = await getBundleFromS3(fhirFileName);
-    log(`Bundle: ${JSON.stringify(bundle)}`);
-
     try {
       const log = prefixedLog(`patient ${patientId}`);
 
@@ -59,6 +59,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       if (!converterKeysTableName) {
         throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
       }
+
+      const bundle = await getBundleFromS3(fhirFileName);
+      log(`Bundle: ${JSON.stringify(bundle)}`);
 
       const res = await postToConverter({
         url: FHIRToCDAConverterUrl,
@@ -317,7 +320,8 @@ async function processSandbox({
   firstName,
   conversionType,
 }: Pick<Input, "firstName" | "conversionType">): Promise<Output> {
-  const fileName = `${firstName}-consolidated.xml`;
+  const lowerCaseName = firstName.toLowerCase();
+  const fileName = `${lowerCaseName}-consolidated.xml`;
   if (conversionType === "xml") {
     const url = await getSignedUrl(fileName);
     return { url };
