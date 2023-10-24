@@ -1,6 +1,6 @@
 import * as nanoid from "nanoid";
 import { Patient } from "@metriport/commonwell-sdk";
-import { driversLicenseURIs } from "../../shared/oid";
+import { driversLicenseURIs } from "@metriport/core/domain/oid";
 import { DocumentQueryResponse } from "@metriport/commonwell-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 

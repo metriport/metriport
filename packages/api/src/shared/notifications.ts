@@ -4,6 +4,7 @@ import axios from "axios";
 import stringify from "json-stringify-safe";
 import MetriportError from "../errors/metriport-error";
 import { Config } from "./config";
+import { Capture } from "@metriport/core/util/capture";
 
 const slackAlertUrl = Config.getSlackAlertUrl();
 const slackNotificationUrl = Config.getSlackNotificationUrl();
@@ -52,7 +53,12 @@ export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
 
 export type UserData = Pick<Sentry.User, "id" | "email">;
 
-export const capture = {
+export type ApiCapture = Capture & {
+  setUser: (user: UserData) => void;
+  setExtra: (extra: Record<string, unknown>) => void;
+};
+
+export const capture: ApiCapture = {
   setUser: (user: UserData): void => {
     Sentry.setUser(user);
   },
