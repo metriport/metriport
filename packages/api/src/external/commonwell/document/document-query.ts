@@ -6,7 +6,7 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
+import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { chunk, partition } from "lodash";
 import {
@@ -35,7 +35,6 @@ import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
-import { oid } from "@metriport/core/domain/oid";
 import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -65,8 +64,6 @@ const DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT = 10; // 1-100% of max delay
 const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
 const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
 
-// const lambdaClient = makeLambdaClient();
-// const docDownloaderLambdaName = Config.getDocumentDownloaderLambdaName();
 type File = DownloadResult & { isNew: boolean };
 
 /**
@@ -722,7 +719,6 @@ function processFhirAndSearchResponse(
   }
 }
 
-// Make this env-specific, use a factory, lambda to use the same code as this when local
 async function triggerDownloadDocument({
   doc,
   fileInfo,

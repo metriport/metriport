@@ -1,4 +1,3 @@
-import { MetriportError } from "../../../util/error/metriport-error";
 import { getLambdaResultPayload, makeLambdaClient } from "../../aws/lambda";
 import {
   Document,
