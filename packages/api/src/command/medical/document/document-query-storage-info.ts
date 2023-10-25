@@ -1,6 +1,5 @@
 import { Document } from "@metriport/commonwell-sdk";
 import { Patient } from "../../../domain/medical/patient";
-import { makeS3Client } from "../../../external/aws/s3";
 import {
   DocumentWithMetriportId,
   getFileExtension,
@@ -9,9 +8,9 @@ import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import { getFileInfoFromS3 } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 
-const s3Client = makeS3Client();
+const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = Config.getMedicalDocumentsBucketName();
 
 export type S3Info = {
@@ -64,11 +63,7 @@ export async function getS3Info(
             exists: fileExists,
             size: fileSize,
             contentType: fileContentType,
-          } = await getFileInfoFromS3({
-            key: file.fileName,
-            bucket: file.fileLocation,
-            s3: s3Client,
-          });
+          } = await s3Utils.getFileInfoFromS3(file.fileName, file.fileLocation);
           return {
             docId: file.docId,
             fileExists,
@@ -100,7 +95,7 @@ export async function getS3Info(
 }
 
 export function getUrl(s3FileName: string, s3FileLocation: string) {
-  return s3Client.getSignedUrl("getObject", {
+  return s3Utils._s3.getSignedUrl("getObject", {
     Bucket: s3FileLocation,
     Key: s3FileName,
   });
