@@ -281,10 +281,9 @@ export class APIStack extends Stack {
     const cdaToVisualizationLambda = this.setupCdaToVisualization({
       lambdaLayers,
       vpc: this.vpc,
-      bucketName: isSandbox(props.config)
-        ? props.config.sandboxSeedDataBucketName
-        : medicalDocumentsBucket.bucketName,
       envType: props.config.environmentType,
+      medicalDocumentsBucket,
+      sandboxSeedDataBucket,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
     });
@@ -304,11 +303,9 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       convertDocLambdaName: cdaToVisualizationLambda.functionName,
+      medicalDocumentsBucket,
       dynamoDBSidechainKeysTable,
       converterUrl: props.config.fhirToCDAUrl,
-      bucketName: isSandbox(props.config)
-        ? props.config.sandboxSeedDataBucketName
-        : medicalDocumentsBucket.bucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
@@ -418,11 +415,7 @@ export class APIStack extends Stack {
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-    medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
-    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
-    sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
-    sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(fhirToMedicalRecordLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
 
@@ -904,12 +897,21 @@ export class APIStack extends Stack {
   private setupCdaToVisualization(ownProps: {
     lambdaLayers: lambda.ILayerVersion[];
     vpc: ec2.IVpc;
-    bucketName: string | undefined;
     envType: string;
+    medicalDocumentsBucket: s3.Bucket;
+    sandboxSeedDataBucket: s3.IBucket | undefined;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, bucketName, sentryDsn, envType, alarmAction } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      medicalDocumentsBucket,
+      sandboxSeedDataBucket,
+    } = ownProps;
 
     const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
@@ -924,9 +926,6 @@ export class APIStack extends Stack {
       entry: "cda-to-visualization",
       envVars: {
         ENV_TYPE: envType,
-        ...(bucketName && {
-          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
-        }),
         CDA_TO_VIS_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
@@ -936,6 +935,12 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+
+    if (sandboxSeedDataBucket) {
+      sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
+    }
 
     return cdaToVisualizationLambda;
   }
@@ -1006,9 +1011,9 @@ export class APIStack extends Stack {
     lambdaLayers: lambda.ILayerVersion[];
     vpc: ec2.IVpc;
     convertDocLambdaName: string;
+    medicalDocumentsBucket: s3.Bucket;
     converterUrl: string;
     dynamoDBSidechainKeysTable: dynamodb.Table | undefined;
-    bucketName: string | undefined;
     envType: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
@@ -1019,10 +1024,10 @@ export class APIStack extends Stack {
       convertDocLambdaName,
       dynamoDBSidechainKeysTable,
       converterUrl,
-      bucketName,
       sentryDsn,
       envType,
       alarmAction,
+      medicalDocumentsBucket,
     } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
@@ -1039,7 +1044,7 @@ export class APIStack extends Stack {
         CONVERT_DOC_LAMBDA_NAME: convertDocLambdaName,
         FHIR_TO_CDA_CONVERTER_URL: converterUrl,
         SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME: dynamoDBSidechainKeysTable?.tableName ?? "",
-        ...(bucketName ? { MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName } : {}),
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: lambdaLayers,
@@ -1052,6 +1057,8 @@ export class APIStack extends Stack {
     if (dynamoDBSidechainKeysTable) {
       dynamoDBSidechainKeysTable.grantReadWriteData(fhirToMedicalRecordLambda);
     }
+
+    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 
     return fhirToMedicalRecordLambda;
   }
