@@ -111,9 +111,9 @@ export function createAPIService(
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
           }),
-          // ...(props.config.medicalDocumentsUploadBucketName && {
-          //   MEDICAL_DOCUMENTS_UPLOAD_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
-          // }),
+          ...(props.config.medicalDocumentsUploadBucketName && {
+            MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
+          }),
           ...(props.config.sandboxSeedDataBucketName && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),

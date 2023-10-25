@@ -22,22 +22,20 @@ export function createLambda({
   vpc: ec2.IVpc;
   apiService: ecs_patterns.NetworkLoadBalancedFargateService;
   envType: EnvType;
-  medicalDocumentsUploadBucket: s3.Bucket;
   medicalDocumentsBucket: s3.IBucket;
+  medicalDocumentsUploadBucket: s3.Bucket;
   sentryDsn: string | undefined;
-  //   alarmSnsAction?: SnsAction;
 }) {
-  //   const config = getConfig();
   const documentUploaderLambda = defaultCreateLambda({
     stack,
-    name: "DocumentUploaderTest", // REMOVE THIS WHEN DONE TESTING
+    name: "DocumentUploader",
     vpc,
     entry: "document-uploader",
     layers: lambdaLayers,
     envVars: {
       ENV_TYPE: envType,
       API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}/internal/docs/doc-ref`,
-      // MEDICAL_DOCUMENTS_UPLOAD_BUCKET_NAME: medicalDocumentUploadBucket.bucketName,
+      MEDICAL_DOCUMENTS_DESTINATION_BUCKET: medicalDocumentsBucket.bucketName,
       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
     },
   });

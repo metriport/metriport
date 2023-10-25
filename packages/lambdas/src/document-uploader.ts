@@ -7,8 +7,7 @@ import { getEnvOrFail } from "./shared/env";
 capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
-// const destinationBucket = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET");
-const destinationBucket = "devs.metriport.com";
+const destinationBucket = getEnvOrFail("MEDICAL_DOCUMENTS_DESTINATION_BUCKET");
 const region = getEnvOrFail("AWS_REGION");
 
 export const handler = async (event: S3Event) => {

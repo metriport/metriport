@@ -28,8 +28,7 @@ import { docConversionTypeSchema } from "./schemas/documents";
 
 const router = Router();
 const region = Config.getAWSRegion();
-// const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
-const medicalDocumentsUploadBucketName = "metriport-medical-document-uploads-staging";
+const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,

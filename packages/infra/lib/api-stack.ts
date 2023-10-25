@@ -199,17 +199,10 @@ export class APIStack extends Stack {
     // S3 bucket for Medical Document Uploads
     //-------------------------------------------
     const medicalDocumentsUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
-      // bucketName: props.config.medicalDocumentsUploadBucketName,
-      bucketName: "metriport-medical-document-uploads-staging",
+      bucketName: props.config.medicalDocumentsUploadBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
-
-    const devsTestBucket = s3.Bucket.fromBucketName(
-      this,
-      "APIDevsTestBucket",
-      "devs.metriport.com"
-    );
 
     //-------------------------------------------
     // FHIR Converter Service
@@ -538,7 +531,7 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       apiService,
       envType: props.config.environmentType,
-      medicalDocumentsBucket: devsTestBucket,
+      medicalDocumentsBucket,
       medicalDocumentsUploadBucket,
       sentryDsn: props.config.lambdasSentryDSN,
     });
