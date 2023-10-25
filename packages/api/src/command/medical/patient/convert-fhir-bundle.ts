@@ -126,6 +126,16 @@ async function convertFHIRBundleToMedicalRecord({
   const isSandbox = Config.isSandbox();
   const patientMatch = patientMatches(patient.data);
 
+  if (isSandbox && patientMatch) {
+    const url = await processSandboxSeed({
+      firstName: patient.data.firstName,
+      conversionType,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      bucketName: Config.getSandboxSeedBucketName()!,
+    });
+
+    return url;
+  }
   // Send it to conversion
   const payload: ConversionInput = {
     fileName,
@@ -137,28 +147,17 @@ async function convertFHIRBundleToMedicalRecord({
     conversionType,
   };
 
-  if (isSandbox && patientMatch) {
-    const url = await processSandboxSeed({
-      firstName: patient.data.firstName,
-      conversionType,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      bucketName: Config.getSandboxSeedBucketName()!,
-    });
+  const result = await lambdaClient
+    .invoke({
+      FunctionName: lambdaName,
+      InvocationType: "RequestResponse",
+      Payload: JSON.stringify(payload),
+    })
+    .promise();
+  const resultPayload = getLambdaResultPayload({ result, lambdaName });
 
-    return url;
-  } else {
-    const result = await lambdaClient
-      .invoke({
-        FunctionName: lambdaName,
-        InvocationType: "RequestResponse",
-        Payload: JSON.stringify(payload),
-      })
-      .promise();
-    const resultPayload = getLambdaResultPayload({ result, lambdaName });
-
-    const parsedResult = JSON.parse(resultPayload) as ConversionOutput;
-    return parsedResult.url;
-  }
+  const parsedResult = JSON.parse(resultPayload) as ConversionOutput;
+  return parsedResult.url;
 }
 
 async function processSandboxSeed({

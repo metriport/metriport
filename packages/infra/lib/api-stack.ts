@@ -282,6 +282,8 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
+      medicalDocumentsBucket,
+      sandboxSeedDataBucket,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
     });
@@ -301,7 +303,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       convertDocLambdaName: cdaToVisualizationLambda.functionName,
-      bucketName: medicalDocumentsBucket.bucketName,
+      medicalDocumentsBucket,
       dynamoDBSidechainKeysTable,
       converterUrl: props.config.fhirToCDAUrl,
       envType: props.config.environmentType,
@@ -413,10 +415,7 @@ export class APIStack extends Stack {
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
-    medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
-    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
-    sandboxSeedDataBucket && sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
 
@@ -899,10 +898,20 @@ export class APIStack extends Stack {
     lambdaLayers: lambda.ILayerVersion[];
     vpc: ec2.IVpc;
     envType: string;
+    medicalDocumentsBucket: s3.Bucket;
+    sandboxSeedDataBucket: s3.IBucket | undefined;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      medicalDocumentsBucket,
+      sandboxSeedDataBucket,
+    } = ownProps;
 
     const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
@@ -926,6 +935,12 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+
+    if (sandboxSeedDataBucket) {
+      sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
+    }
 
     return cdaToVisualizationLambda;
   }
@@ -996,7 +1011,7 @@ export class APIStack extends Stack {
     lambdaLayers: lambda.ILayerVersion[];
     vpc: ec2.IVpc;
     convertDocLambdaName: string;
-    bucketName: string;
+    medicalDocumentsBucket: s3.Bucket;
     converterUrl: string;
     dynamoDBSidechainKeysTable: dynamodb.Table | undefined;
     envType: string;
@@ -1007,12 +1022,12 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc,
       convertDocLambdaName,
-      bucketName,
       dynamoDBSidechainKeysTable,
       converterUrl,
       sentryDsn,
       envType,
       alarmAction,
+      medicalDocumentsBucket,
     } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
@@ -1029,7 +1044,7 @@ export class APIStack extends Stack {
         CONVERT_DOC_LAMBDA_NAME: convertDocLambdaName,
         FHIR_TO_CDA_CONVERTER_URL: converterUrl,
         SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME: dynamoDBSidechainKeysTable?.tableName ?? "",
-        MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: lambdaLayers,
@@ -1042,6 +1057,8 @@ export class APIStack extends Stack {
     if (dynamoDBSidechainKeysTable) {
       dynamoDBSidechainKeysTable.grantReadWriteData(fhirToMedicalRecordLambda);
     }
+
+    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 
     return fhirToMedicalRecordLambda;
   }

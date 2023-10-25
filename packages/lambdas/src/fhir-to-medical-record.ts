@@ -10,7 +10,7 @@ import * as Sentry from "@sentry/serverless";
 import { DOMParser } from "xmldom";
 import { capture } from "./shared/capture";
 import { postToConverter } from "./shared/converter";
-import { getEnv, getEnvOrFail } from "./shared/env";
+import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 
 // Keep this as early on the file as possible
@@ -19,13 +19,13 @@ capture.init();
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
-const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 // Set by us
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
+const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 // converter config
 const FHIRToCDAConverterUrl = getEnvOrFail("FHIR_TO_CDA_CONVERTER_URL");
 const convertDocLambda = getEnvOrFail("CONVERT_DOC_LAMBDA_NAME");
-const converterKeysTableName = getEnv("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME");
+const converterKeysTableName = getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME");
 
 const lambdaClient = makeLambdaClient(region);
 const s3Client = makeS3Client(region);
@@ -47,10 +47,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     try {
       const log = prefixedLog(`patient ${patientId}`);
-
-      if (!converterKeysTableName) {
-        throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
-      }
 
       const bundle = await getBundleFromS3(fhirFileName);
 
