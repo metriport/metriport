@@ -14,33 +14,10 @@ export const createS3FileName = (cxId: string, patientId: string, fileName: stri
   return `${cxId}/${patientId}/${cxId}_${patientId}_${fileName}`;
 };
 
-export const parseS3FileName = (
-  fileKey: string
-): { cxId: string; patientId: string; docId: string } | undefined => {
-  if (fileKey.includes("_")) {
-    const keyParts = fileKey.split("_");
-    if (keyParts[0] && keyParts[1] && keyParts[2] && keyParts[0].includes("/")) {
-      const cxIdParts = keyParts[0].split("/");
-      if (cxIdParts[0]) {
-        const cxId = cxIdParts[0];
-        const patientId = keyParts[1];
-        const docId = keyParts[2];
-        const fileData = {
-          cxId,
-          patientId,
-          docId,
-        };
-        return fileData;
-      }
-    }
-  }
-  return;
-};
-
-/**
+export /**
  * @deprecated Use `S3Utils.getSignedUrl()` instead
  */
-export async function getSignedUrl({
+async function getSignedUrl({
   awsRegion,
   ...req
 }: {
@@ -111,5 +88,26 @@ export class S3Utils {
       Key: fileName,
       Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
     });
+  }
+
+  parseS3FileName(fileKey: string): { cxId: string; patientId: string; docId: string } | undefined {
+    if (fileKey.includes("_")) {
+      const keyParts = fileKey.split("_");
+      if (keyParts[0] && keyParts[1] && keyParts[2] && keyParts[0].includes("/")) {
+        const cxIdParts = keyParts[0].split("/");
+        if (cxIdParts[0]) {
+          const cxId = cxIdParts[0];
+          const patientId = keyParts[1];
+          const docId = keyParts[2];
+          const fileData = {
+            cxId,
+            patientId,
+            docId,
+          };
+          return fileData;
+        }
+      }
+    }
+    return;
   }
 }

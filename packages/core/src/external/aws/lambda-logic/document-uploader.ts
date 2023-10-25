@@ -1,6 +1,6 @@
 import axios from "axios";
 import { MetriportError } from "../../../util/error/metriport-error";
-import { getFileInfoFromS3, makeS3Client, parseS3FileName } from "../s3";
+import { S3Utils } from "../s3";
 
 const api = axios.create();
 
@@ -20,7 +20,7 @@ export async function documentUploaderHandler(
   region: string,
   apiServerURL: string
 ) {
-  const s3Client = makeS3Client(region);
+  const s3Utils = new S3Utils(region);
   const copySource = encodeURI(`${sourceBucket}/${sourceKey}`);
   const { destinationKey, docRefId } = getDestinationKeyAndDocRefId(sourceKey);
 
@@ -32,7 +32,7 @@ export async function documentUploaderHandler(
 
   // Make a copy of the file to the general medical documents bucket
   try {
-    await s3Client.copyObject(params).promise();
+    await s3Utils._s3.copyObject(params).promise();
   } catch (error) {
     const message = "Error copying the uploaded file to medical documents bucket";
     console.log(message, JSON.stringify(error));
@@ -40,13 +40,9 @@ export async function documentUploaderHandler(
   }
 
   // Get file info from the copied file
-  const { size, contentType } = await getFileInfoFromS3({
-    key: destinationKey,
-    bucket: destinationBucket,
-    s3: s3Client,
-  });
+  const { size, contentType } = await s3Utils.getFileInfoFromS3(destinationKey, destinationBucket);
 
-  const s3FileNameParts = parseS3FileName(destinationKey);
+  const s3FileNameParts = s3Utils.parseS3FileName(destinationKey);
   if (!s3FileNameParts) {
     const message = "Invalid S3 file name";
     throw new MetriportError(message, null, { destinationBucket, destinationKey });
