@@ -498,4 +498,16 @@ export class MetriportMedicalApi {
     const resp = await this.api.post(url, referenceDraft);
     return resp.data;
   }
+
+  async getDocumentUploadUrlReworked(
+    patientId: string,
+    payload: {
+      docRef: Partial<FHIRDocumentReference>;
+      fileContent: string;
+    }
+  ): Promise<SignedUploadUrl> {
+    const url = `${DOCUMENT_URL}/upload-url-rework/?patientId=${patientId}`;
+    const resp = await this.api.post(url, payload);
+    return resp.data;
+  }
 }

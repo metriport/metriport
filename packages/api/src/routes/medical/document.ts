@@ -1,9 +1,12 @@
 import { createS3FileName, makeS3Client } from "@metriport/core/external/aws/s3";
+import https from "https";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { MOVED_PERMANENTLY, OK } from "http-status";
 import { z } from "zod";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getOrganization } from "../../command/medical/organization/get-organization";
@@ -237,5 +240,79 @@ router.post(
     return res.status(httpStatus.OK).json(presignedUrl);
   })
 );
+
+router.post(
+  "/upload-url-rework",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const fileId = uuidv7();
+    const s3FileName = createS3FileName(cxId, patientId, fileId);
+    const docRefId = uuidv7();
+    const s3Key = s3FileName + "_upload_" + docRefId;
+
+    const organization = await getOrganization({ cxId });
+    if (!organization) throw new ForbiddenError(`Organization not found for CX ${cxId}`);
+
+    const docRefDraft = req.body.docRef;
+    const fileContent = req.body.fileContent;
+    console.log("File Content", JSON.stringify(fileContent));
+    cxDocRefCheck(docRefDraft);
+
+    const docRef = pickDocRefParts(
+      docRefDraft,
+      organization,
+      docRefId,
+      patientId,
+      s3Key,
+      medicalDocumentsUploadBucketName
+    );
+    console.log("Updated DocumentReference:", JSON.stringify(docRef));
+
+    console.log(
+      "Trying to get the presigned url with bucket:",
+      medicalDocumentsUploadBucketName,
+      "region",
+      region,
+      " and key:",
+      s3Key
+    );
+
+    const client = new S3Client({ region });
+    const command = new PutObjectCommand({ Bucket: medicalDocumentsUploadBucketName, Key: s3Key });
+    const presignedUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
+    console.log("Presigned URL:", presignedUrl);
+
+    await put(presignedUrl, fileContent);
+
+    // Make a temporary DocumentReference on the FHIR server.
+    await upsertDocumentToFHIRServer(cxId, docRef);
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+async function put(url: string, data: string) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      url,
+      { method: "PUT", headers: { "Content-Length": new Blob([data]).size } },
+      res => {
+        let responseBody = "";
+        res.on("data", chunk => {
+          responseBody += chunk;
+        });
+        res.on("end", () => {
+          resolve(responseBody);
+        });
+      }
+    );
+    req.on("error", err => {
+      reject(err);
+    });
+    console.log("PUT FUNC is writing data...");
+    req.write(data);
+    req.end();
+  });
+}
 
 export default router;
