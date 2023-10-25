@@ -1,7 +1,7 @@
 import { rand, randFirstName, randLastName, randPastDate, randUuid } from "@ngneat/falso";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../../shared/date";
-import { USState } from "../../../shared/geographic-locations";
+import { USState } from "@metriport/core/domain/geographic-locations";
 import { makeBaseDomain } from "../../__tests__/base-domain";
 import { Patient, PatientData, PersonalIdentifier } from "../patient";
 import { makeAddressStrict } from "./location-address";

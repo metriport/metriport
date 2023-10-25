@@ -1,6 +1,7 @@
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import * as stream from "stream";
 
 dayjs.extend(duration);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
@@ -36,56 +37,79 @@ export const parseS3FileName = (
   return;
 };
 
+/**
+ * @deprecated Use `S3Utils.getSignedUrl()` instead
+ */
 export async function getSignedUrl({
-  bucketName,
-  fileName,
-  durationSeconds,
   awsRegion,
+  ...req
 }: {
   bucketName: string;
   fileName: string;
   durationSeconds?: number;
   awsRegion: string;
 }): Promise<string> {
-  return makeS3Client(awsRegion).getSignedUrlPromise("getObject", {
-    Bucket: bucketName,
-    Key: fileName,
-    Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
-  });
+  return new S3Utils(awsRegion).getSignedUrl(req);
 }
 
-export async function getFileInfoFromS3({
-  key,
-  bucket,
-  s3,
-  region,
-}: {
-  key: string;
-  bucket: string;
-  s3?: AWS.S3;
-  region?: string;
-}): Promise<
-  | { exists: true; size: number; contentType: string | undefined }
-  | { exists: false; size?: never; contentType?: never }
-> {
-  if (!s3 && !region) {
-    throw new Error("Either 's3' or 'region' must be provided.");
+export class S3Utils {
+  public readonly _s3: AWS.S3;
+
+  constructor(readonly region: string) {
+    this._s3 = makeS3Client(region);
   }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const s3Client = s3 ?? makeS3Client(region!);
-    const head = await s3Client
-      .headObject({
-        Bucket: bucket,
-        Key: key,
-      })
-      .promise();
-    return {
-      exists: true,
-      size: head.ContentLength ?? 0,
-      contentType: head.ContentType ?? undefined,
-    };
-  } catch (err) {
-    return { exists: false };
+
+  get s3(): AWS.S3 {
+    return this._s3;
+  }
+
+  getFileContentsAsString(s3BucketName: string, s3FileName: string): Promise<string> {
+    const stream = this.s3.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
+    return this.streamToString(stream);
+  }
+
+  streamToString(stream: stream.Readable): Promise<string> {
+    const chunks: Buffer[] = [];
+    return new Promise((resolve, reject) => {
+      stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
+      stream.on("error", err => reject(err));
+      stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    });
+  }
+
+  async getFileInfoFromS3(
+    key: string,
+    bucket: string
+  ): Promise<
+    | { exists: true; size: number; contentType: string }
+    | { exists: false; size?: never; contentType?: never }
+  > {
+    try {
+      const head = await this.s3
+        .headObject({
+          Bucket: bucket,
+          Key: key,
+        })
+        .promise();
+      return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
+    } catch (err) {
+      return { exists: false };
+    }
+  }
+
+  async getSignedUrl({
+    bucketName,
+    fileName,
+    durationSeconds,
+  }: {
+    bucketName: string;
+    fileName: string;
+    durationSeconds?: number;
+  }): Promise<string> {
+    return this.s3.getSignedUrlPromise("getObject", {
+      Bucket: bucketName,
+      Key: fileName,
+      Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
+    });
   }
 }

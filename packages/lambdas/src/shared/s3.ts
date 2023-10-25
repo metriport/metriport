@@ -1,6 +1,9 @@
 import S3 from "aws-sdk/clients/s3";
 import * as stream from "stream";
 
+/**
+ * @deprecated use @metriport/core/external/aws/s3 instead
+ */
 export class S3Utils {
   public readonly _s3: S3;
 

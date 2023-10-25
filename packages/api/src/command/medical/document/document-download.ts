@@ -1,24 +1,28 @@
+import {
+  ConversionType,
+  Input as ConvertDocInput,
+  Output as ConvertDocOutput,
+  validConversionTypes,
+} from "@metriport/core/domain/conversion/cda-to-html-pdf";
+import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
 import BadRequestError from "../../../errors/bad-request";
 import NotFoundError from "../../../errors/not-found";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
-import { DocConversionType } from "../../../routes/medical/schemas/documents";
 import { Config } from "../../../shared/config";
 
-const lambdaClient = makeLambdaClient();
 const s3client = makeS3Client();
-
-const htmlConversionType = "html";
-const pdfConversionType = "pdf";
+const lambdaClient = makeLambdaClient();
+const conversionLambdaName = Config.getConvertDocLambdaName();
 
 export const downloadDocument = async ({
   fileName,
   conversionType,
 }: {
   fileName: string;
-  conversionType?: DocConversionType;
+  conversionType?: ConversionType;
 }): Promise<string> => {
-  const { exists, contentType } = await doesObjExist({ fileName });
+  const { exists, contentType, bucketName } = await doesObjExist({ fileName });
 
   if (!exists) throw new NotFoundError("File does not exist");
 
@@ -27,89 +31,106 @@ export const downloadDocument = async ({
       `Source file must be xml to convert to ${conversionType}, but it was ${contentType}`
     );
 
-  let url;
-
-  if (conversionType === htmlConversionType) {
-    url = await getConversionUrl({ fileName, conversionType });
-  } else if (conversionType === pdfConversionType) {
-    url = await getConversionUrl({ fileName, conversionType });
-  } else {
-    url = await getSignedURL({ fileName });
+  if (conversionType && validConversionTypes.includes(conversionType) && bucketName) {
+    return getConversionUrl({ fileName, conversionType, bucketName });
   }
-
-  return url.replace(/['"]+/g, "");
+  return getSignedURL({ fileName });
 };
 
 const getConversionUrl = async ({
   fileName,
   conversionType,
-}: {
-  fileName: string;
-  conversionType?: string;
-}): Promise<string> => {
+  bucketName,
+}: ConvertDocInput): Promise<string> => {
   const convertedFileName = fileName.concat(`.${conversionType}`);
   const { exists } = await doesObjExist({ fileName: convertedFileName });
 
   if (exists) return getSignedURL({ fileName: convertedFileName });
-  else return convertDoc({ fileName, conversionType });
+  else return convertDoc({ fileName, conversionType, bucketName });
 };
 
-const convertDoc = async ({
+export const convertDoc = async ({
   fileName,
   conversionType,
-}: {
-  fileName: string;
-  conversionType?: string;
-}): Promise<string> => {
+  bucketName,
+}: ConvertDocInput): Promise<string> => {
+  if (!conversionLambdaName) throw new Error("Conversion Lambda Name is undefined");
+
   const result = await lambdaClient
     .invoke({
-      FunctionName: Config.getConvertDocLambdaName() ?? "",
+      FunctionName: conversionLambdaName,
       InvocationType: "RequestResponse",
-      Payload: JSON.stringify({ fileName, conversionType }),
+      Payload: JSON.stringify({ fileName, conversionType, bucketName }),
     })
     .promise();
-
-  if (result.StatusCode !== 200) throw new Error("Lambda invocation failed");
-
-  if (result.Payload === undefined) throw new Error("Payload is undefined");
-
-  return result.Payload.toString();
+  const resultPayload = getLambdaResultPayload({ result, lambdaName: conversionLambdaName });
+  const parsedResult = JSON.parse(resultPayload) as ConvertDocOutput;
+  return parsedResult.url;
 };
 
 const doesObjExist = async ({
   fileName,
 }: {
   fileName: string;
-}): Promise<{ exists: true; contentType: string } | { exists: false; contentType?: never }> => {
+}): Promise<
+  | { exists: true; contentType: string; bucketName?: string }
+  | { exists: false; contentType?: never; bucketName?: never }
+> => {
+  if (Config.isSandbox()) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const bucketName = Config.getSandboxSeedBucketName()!;
+      const head = await s3client
+        .headObject({
+          Bucket: bucketName,
+          Key: fileName,
+        })
+        .promise();
+
+      return {
+        exists: true,
+        contentType: head.ContentType ?? "",
+        bucketName: bucketName,
+      };
+    } catch (error) {
+      console.log(
+        `Could not find seed file ${fileName} in the ${Config.getSandboxSeedBucketName()} bucket - trying medical documents bucket`
+      );
+    }
+  }
+
   try {
+    const bucketName = Config.getMedicalDocumentsBucketName();
     const head = await s3client
       .headObject({
-        // TODO 760 Fix this
-        Bucket: Config.isSandbox()
-          ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            Config.getSandboxBucketName()!
-          : Config.getMedicalDocumentsBucketName(),
+        Bucket: bucketName,
         Key: fileName,
       })
       .promise();
-    return { exists: true, contentType: head.ContentType ?? "" };
+
+    return {
+      exists: true,
+      contentType: head.ContentType ?? "",
+      bucketName: bucketName,
+    };
   } catch (error) {
     return { exists: false };
   }
 };
 
-const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string> => {
+export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string> => {
   const seconds = 60;
 
   const url = s3client.getSignedUrl("getObject", {
     // TODO 760 Fix this
     Bucket: Config.isSandbox()
       ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        Config.getSandboxBucketName()!
+        Config.getSandboxSeedBucketName()!
       : Config.getMedicalDocumentsBucketName(),
     Key: fileName,
     Expires: seconds,
   });
 
-  return url;
+  // TODO try to remove this, moved here b/c this was being done upstream
+  return url.replace(/['"]+/g, "");
 };

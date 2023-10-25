@@ -117,13 +117,12 @@ function normalizeName(name: string): string {
   return toTitleCase(name);
 }
 
+const phoneRegex = /^\+?1?\d{10}$/;
 function normalizePhone(phone: string): string {
   const trimmedPhone = phone.trim();
-  if (trimmedPhone.length === 11 && trimmedPhone[0] === "1") {
-    // removes leading country code 1s
-    return trimmedPhone.substring(1);
-  } else if (trimmedPhone.length === 10) {
-    return trimmedPhone.trim();
+  if (trimmedPhone.match(phoneRegex)) {
+    // removes leading country code +1
+    return trimmedPhone.slice(-10);
   }
   throw new Error(`Invalid phone ${phone}`);
 }

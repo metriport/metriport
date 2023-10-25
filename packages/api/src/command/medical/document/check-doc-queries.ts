@@ -116,52 +116,53 @@ export async function updateDocQueryStatus(patients: PatientsWithValidationResul
   );
 }
 
-async function updatePatientsInSequence(patients: [string, GroupedValidationResult][]) {
-  for (const [patientId, { cxId, ...whatToUpdate }] of patients) {
-    await executeOnDBTx(PatientModel.prototype, async transaction => {
-      const patientFilter = {
-        id: patientId,
-        cxId: cxId,
-      };
-      const patient = await getPatientOrFail({
-        ...patientFilter,
-        transaction,
-      });
-      const docProgress = patient.data.documentQueryProgress;
-      if (!docProgress) {
-        console.log(`Patient without doc query progress @ update, skipping it: ${patient.id} `);
-        return;
-      }
-      if (whatToUpdate.convert) {
-        const convert = docProgress.convert;
-        docProgress.convert = convert
-          ? {
-              ...convert,
-              status: getStatus(convert),
-              total: calculateTotal(convert),
-            }
-          : undefined;
-      }
-      if (whatToUpdate.download) {
-        const download = docProgress.download;
-        docProgress.download = download
-          ? {
-              ...download,
-              status: getStatus(download),
-              total: calculateTotal(download),
-            }
-          : undefined;
-      }
-      const updatedPatient = {
-        ...patient,
-        data: {
-          ...patient.data,
-          documentQueryProgress: docProgress,
-        },
-      };
-      await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: [
+  string,
+  GroupedValidationResult
+]) {
+  await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patientFilter = {
+      id: patientId,
+      cxId: cxId,
+    };
+    const patient = await getPatientOrFail({
+      ...patientFilter,
+      transaction,
     });
-  }
+    const docProgress = patient.data.documentQueryProgress;
+    if (!docProgress) {
+      console.log(`Patient without doc query progress @ update, skipping it: ${patient.id} `);
+      return;
+    }
+    if (whatToUpdate.convert) {
+      const convert = docProgress.convert;
+      docProgress.convert = convert
+        ? {
+            ...convert,
+            status: getStatus(convert),
+            total: calculateTotal(convert),
+          }
+        : undefined;
+    }
+    if (whatToUpdate.download) {
+      const download = docProgress.download;
+      docProgress.download = download
+        ? {
+            ...download,
+            status: getStatus(download),
+            total: calculateTotal(download),
+          }
+        : undefined;
+    }
+    const updatedPatient = {
+      ...patient,
+      data: {
+        ...patient.data,
+        documentQueryProgress: docProgress,
+      },
+    };
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+  });
 }
 
 export async function getPatientsToUpdate(patientIds?: string[]): Promise<Patient[]> {
@@ -218,7 +219,7 @@ function getQuery(patientIds: string[] = []): string {
 
   const baseQuery =
     `select * from patient ` +
-    `where updated_at < current_date - interval '${MAX_TIME_TO_PROCESS.asMinutes()}' minute ` +
+    `where updated_at < now() - interval '${MAX_TIME_TO_PROCESS.asMinutes()}' minute ` +
     `  and ((${convert}->'${total}')::int <> (${convert}->'${successful}')::int + (${convert}->'${errors}')::int ` +
     `        or ` +
     `        ${convert}->>'${status}' = '${processing}' ` +

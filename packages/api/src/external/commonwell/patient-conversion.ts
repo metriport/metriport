@@ -6,13 +6,19 @@ import {
   Person as CommonwellPerson,
 } from "@metriport/commonwell-sdk";
 import {
+  driversLicenseURIs,
+  medicareURI,
+  oid,
+  passportURI,
+  ssnURI,
+} from "@metriport/core/domain/oid";
+import {
   GenderAtBirth,
   generalTypes,
   Patient,
   PatientData,
   splitName,
 } from "../../domain/medical/patient";
-import { driversLicenseURIs, medicareURI, oid, passportURI, ssnURI } from "../../shared/oid";
 
 export const genderMapping: { [k in GenderAtBirth]: string } = {
   F: "F",
