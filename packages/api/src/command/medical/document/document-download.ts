@@ -5,7 +5,6 @@ import {
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
-import { isMimeTypeXML } from "@metriport/core/src/util/mime";
 import BadRequestError from "../../../errors/bad-request";
 import NotFoundError from "../../../errors/not-found";
 import { makeLambdaClient } from "../../../external/aws/lambda";
@@ -27,7 +26,7 @@ export const downloadDocument = async ({
 
   if (!exists) throw new NotFoundError("File does not exist");
 
-  if (conversionType && !isMimeTypeXML(conversionType))
+  if (conversionType && contentType !== "application/xml" && contentType !== "text/xml")
     throw new BadRequestError(
       `Source file must be xml to convert to ${conversionType}, but it was ${contentType}`
     );
