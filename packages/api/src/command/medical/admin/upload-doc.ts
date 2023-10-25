@@ -22,10 +22,8 @@ export async function updateAndUploadDocumentReference({
   const fhirApi = makeFhirApi(cxId);
   try {
     const docRefDraft = await fhirApi.readResource("DocumentReference", fileData.docRefId);
-    console.log("FETCHED THE DOC REF DRAFT IN POST PROCESSING", JSON.stringify(docRefDraft));
-
     const updatedDocumentReference = updateDocumentReference(docRefDraft, fileData);
-    console.log("FINALIZED DOCREF: ", JSON.stringify(updatedDocumentReference));
+    console.log("Updated the DocRef:", JSON.stringify(updatedDocumentReference));
 
     await fhirApi.updateResource(updatedDocumentReference);
     return;
@@ -47,7 +45,9 @@ function updateDocumentReference(doc: DocumentReference, fileData: FileData) {
     extension: [metriportDataSourceExtension],
   });
 
+  doc.extension = [metriportDataSourceExtension];
   doc.content = [metriportContent];
   doc.docStatus = "amended";
+
   return doc;
 }

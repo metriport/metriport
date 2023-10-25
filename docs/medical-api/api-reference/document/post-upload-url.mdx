@@ -1,14 +1,14 @@
 ---
 title: "Upload Document"
-description: "Returns a presigned URL to use for a medical document upload to our servers."
-api: "POST /medical/v1/document/upload-url"
+description: "Uploads a medical document to our servers and returns the ID of the FHIR DocumentReference."
+api: "POST /medical/v1/document/upload"
 ---
 
 ## Overview:
 
 This endpoint enables you to upload your patients' medical documents with specified context to our servers, making them available to other HIEs.
 
-## Getting the Presigned URL
+## Process
 
 To use this endpoint, you will need to follow these steps:
 
@@ -19,11 +19,9 @@ To use this endpoint, you will need to follow these steps:
   those will be inferred on our end - anything you will enter in these fields will be overwritten.
 </Tip>
 
-2. Execute the endpoint and receive a presigned URL (later reffered to as `URL`) to use for the consecutive file upload.
+2. Convert your medical document into a string.
 
-3. Use the `URL` from with a form-based upload, mapping the URL attributes `URL.url` and `URL.fields` to the corresponding fields of the form. Append the file contents and upload the file. Once the file is uploaded, the process will complete, making this document available to other HIEs.
-
-<Warning>Make sure to append all the `URL.fields` from the presigned URL to the form!</Warning>
+3. Execute the endpoint.
 
 ## Query Params
 
@@ -33,6 +31,9 @@ To use this endpoint, you will need to follow these steps:
 
 ## Body
 
+  <ParamField body="docRef" type="Partial<DocumentReference>" required>
+    A partial FHIR DocumentReference to provide context to the file upload.
+    <Expandable title="Type properties">
     <ParamField body="type" type="CodeableConcept" required>
       A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) of the file type.
       <Expandable title="Type properties">
@@ -76,14 +77,19 @@ To use this endpoint, you will need to follow these steps:
       </Expandable>
     </ParamField>
 
+      </Expandable>
+
+  </ParamField>
+  <ParamField body="fileContent" type="string" required>
+  </ParamField>
+
 ## Response
 
-A presigned URL that can be used to upload a medical document to our system.
+A document reference ID.
 
 ```json
 {
-  "url": "file-upload-url-string",
-  "fields": Record<string, string>
+  "documentReferenceID": <doc-ref-id-string>
 }
 ```
 
@@ -114,11 +120,14 @@ const docRefDraft: Partial<DocumentReference> = {
   },
 };
 
-const presignedUrl = await metriportClient.getDocumentUploadUrl("my-patient-id", docRef);
-// Submit a form-data file upload request with:
-// - form url: presignedUrl.url
-// - form fields: presignedUrl.fields *
-// - form file: the contents of the file being uploaded
+const fileContent = "<your-file-content-string>";
+
+const payload = {
+  docRef,
+  fileContent,
+};
+
+const documentReferenceID = await metriportClient.uploadDocument("my-patient-id", payload);
 ```
 
 </ResponseExample>

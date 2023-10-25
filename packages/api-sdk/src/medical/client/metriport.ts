@@ -485,28 +485,22 @@ export class MetriportMedicalApi {
    * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
    *
    * @param patientId - the patient ID.
-   * @param docRef - a FHIR Document Reference for this file upload. Try to include as much metadata on the document as possible. Make sure to include DocumentReference.description the DocumentReference.author.practitioner fields. Note that you DO NOT need to fill in the Organization or Patient fields under the author or contained fields - Metriport will fill this in and overwrite whatever you put in.
+   * @param docRef - a FHIR Document Reference for this file upload. Mandatory fields include DocumentReference.description, DocumentReference.type, and DocumentReference.context. Besides that, try to include as much metadata on the document as possible. Note that you DO NOT need to fill in the Organization or Patient fields under the author or contained fields - Metriport will fill this in and overwrite whatever you put in.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/fhir/resources/documentreference.
+   * @param fileContent - the file content string to be uploaded.
    *
-   * @returns A presigned URL for medical document upload.
+   * @returns A document reference ID.
    */
-  async getDocumentUploadUrl(
+  async uploadDocument(
     patientId: string,
-    referenceDraft: Partial<FHIRDocumentReference>
+    docRef: Partial<FHIRDocumentReference>,
+    fileContent: string
   ): Promise<SignedUploadUrl> {
-    const url = `${DOCUMENT_URL}/upload-url/?patientId=${patientId}`;
-    const resp = await this.api.post(url, referenceDraft);
-    return resp.data;
-  }
-
-  async getDocumentUploadUrlReworked(
-    patientId: string,
-    payload: {
-      docRef: Partial<FHIRDocumentReference>;
-      fileContent: string;
-    }
-  ): Promise<SignedUploadUrl> {
-    const url = `${DOCUMENT_URL}/upload-url-rework/?patientId=${patientId}`;
+    const payload = {
+      docRef,
+      fileContent,
+    };
+    const url = `${DOCUMENT_URL}/upload/?patientId=${patientId}`;
     const resp = await this.api.post(url, payload);
     return resp.data;
   }

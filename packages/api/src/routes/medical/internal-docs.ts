@@ -206,17 +206,18 @@ const documentDataSchema = z.object({
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/doc-ref
  *
- * Get a doc ref for a medical document uploaded by a cx.
- *
+ * Update the doc ref for a medical document uploaded by a cx.
  * @param req.query.cxId - The customer/account's ID.
  *
- * @return 201 Indicating the file was successfully uploaded.
+ * @return 201 Indicating the file was successfully updated.
  */
 router.post(
   "/doc-ref",
   asyncHandler(async (req: Request, res: Response) => {
+    console.log("Updating the DocRef on a CX-uploaded file...");
     const cxId = getFromQueryOrFail("cxId", req);
     const body = req.body;
+
     const fileData = documentDataSchema.parse({
       mimeType: body.mimeType,
       size: parseInt(body.size),

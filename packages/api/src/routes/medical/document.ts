@@ -1,12 +1,12 @@
-import { createS3FileName, makeS3Client } from "@metriport/core/external/aws/s3";
-import https from "https";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createS3FileName } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { MOVED_PERMANENTLY, OK } from "http-status";
+import https from "https";
 import { z } from "zod";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getOrganization } from "../../command/medical/organization/get-organization";
@@ -26,12 +26,8 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
 
-const UPLOAD_FILE_SIZE_LIMIT = 25_000_000; // 25MB
-const UPLOAD_FILE_SIZE_LIMIT_SANDBOX = 5_000_000; // 5MB
-
 const router = Router();
 const region = Config.getAWSRegion();
-const s3client = makeS3Client(region);
 // const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 const medicalDocumentsUploadBucketName = "metriport-medical-document-uploads-staging";
 
@@ -183,66 +179,18 @@ router.get(
 );
 
 /**
- * POST /document/upload-url
+ * POST /document/upload
  *
- * Returns a presigned URL to upload a medical document and creates a draft of a Document Reference for that file on the FHIR server.
+ * Uploads a medical document and creates a Document Reference for that file on the FHIR server.
  *
  * @param patientId - The patientId of the patient.
  *
- * @return A presigned URL to upload a file to Metriport and make the document available to other HIEs.
+ * @return documentReferenceID for the uploaded file.
  * Refer to Metriport Documentation for more details:
  * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
  */
 router.post(
-  "/upload-url",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
-    const fileId = uuidv7();
-    const s3FileName = createS3FileName(cxId, patientId, fileId);
-    const docRefId = uuidv7();
-    const s3Key = s3FileName + "_upload_" + docRefId;
-
-    const organization = await getOrganization({ cxId });
-    if (!organization) throw new ForbiddenError(`Organization not found for CX ${cxId}`);
-
-    const docRefDraft = req.body;
-    cxDocRefCheck(docRefDraft);
-
-    const docRef = pickDocRefParts(
-      docRefDraft,
-      organization,
-      docRefId,
-      patientId,
-      s3Key,
-      medicalDocumentsUploadBucketName
-    );
-    console.log("Updated DocumentReference:", JSON.stringify(docRef));
-
-    // Make a temporary DocumentReference on the FHIR server.
-    await upsertDocumentToFHIRServer(cxId, docRef);
-    const presignedUrl = s3client.createPresignedPost({
-      Bucket: medicalDocumentsUploadBucketName,
-      Fields: {
-        key: s3Key,
-      },
-      Conditions: [
-        [
-          "content-length-range",
-          0,
-          Config.isSandbox() ? UPLOAD_FILE_SIZE_LIMIT_SANDBOX : UPLOAD_FILE_SIZE_LIMIT,
-        ], // content length restrictions: 0-25MB for prod, 0-5MB for sandbox
-        // ["starts-with", "$Content-Type", "image/"], // content type restriction
-        ["starts-with", "$Content-Type", ""], // content type restriction
-      ],
-    });
-
-    return res.status(httpStatus.OK).json(presignedUrl);
-  })
-);
-
-router.post(
-  "/upload-url-rework",
+  "/upload",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
@@ -272,22 +220,22 @@ router.post(
     console.log(
       "Trying to get the presigned url with bucket:",
       medicalDocumentsUploadBucketName,
-      "region",
+      "Region",
       region,
-      " and key:",
+      "and key:",
       s3Key
     );
 
     const client = new S3Client({ region });
     const command = new PutObjectCommand({ Bucket: medicalDocumentsUploadBucketName, Key: s3Key });
-    const presignedUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
+    const presignedUrl = await getSignedUrl(client, command);
     console.log("Presigned URL:", presignedUrl);
 
     await put(presignedUrl, fileContent);
 
     // Make a temporary DocumentReference on the FHIR server.
     await upsertDocumentToFHIRServer(cxId, docRef);
-    return res.sendStatus(httpStatus.OK);
+    return res.status(httpStatus.CREATED).json({ documentReferenceID: docRefId });
   })
 );
 
