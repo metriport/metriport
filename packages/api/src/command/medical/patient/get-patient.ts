@@ -71,21 +71,24 @@ export const getPatientByDemo = async ({
       return true;
     }
 
-    // TODO
+    // Basic Implementation with semi-arbitrary threshold
     const jw_score = calculatePatientSimilarity(patient.data, demo);
     console.log('Similarity Score:', jw_score);
+    if (jw_score >= 0.95) {
+      return patient;
+    }
 
     // If the IDs don't match, or none were provided, check the demo for a match
-    let demoMatch =
-      intersectionWith(splitName(patient.data.firstName), splitName(demo.firstName), isEqual)
-        .length > 0 &&
-      intersectionWith(splitName(patient.data.lastName), splitName(demo.lastName), isEqual).length >
-        0 &&
-      intersectionWith(patient.data.address, demo.address, isEqual).length > 0;
-    if (demoMatch && demo.contact && demo.contact.length > 0) {
-      demoMatch = intersectionWith(patient.data.contact, demo.contact, isEqual).length > 0;
-    }
-    return demoMatch;
+    // let demoMatch =
+    //   intersectionWith(splitName(patient.data.firstName), splitName(demo.firstName), isEqual)
+    //     .length > 0 &&
+    //   intersectionWith(splitName(patient.data.lastName), splitName(demo.lastName), isEqual).length >
+    //     0 &&
+    //   intersectionWith(patient.data.address, demo.address, isEqual).length > 0;
+    // if (demoMatch && demo.contact && demo.contact.length > 0) {
+    //   demoMatch = intersectionWith(patient.data.contact, demo.contact, isEqual).length > 0;
+    // }
+    // return demoMatch;
   });
   if (matchingPatients.length === 0) return null;
   if (matchingPatients.length === 1) return matchingPatients[0];
@@ -159,79 +162,75 @@ export const getPatientWithDependencies = async ({
   return { patient, facilities, organization };
 };
 
-
-export const calculatePatientSimilarity =  (
-  patient1: PatientData,
-  patient2: PatientData
-): number => {
+/**
+ * This function calculates the similarity between two patients using the Jaro-Winkler algorithm.
+ * It returns a score between 0 and 1, where 1 means the patients are identical. We calculate scores
+ * for the following fields: First Name, Last Name, Address Line 1, Address Line 2, City, State, Country, Zipcode. 
+ * This function won't be called if gender and DOB are not identical, so that is a givem. 
+ * @param patient1
+ * @param patient2
+ * @returns The average of the similarity scores for each field. 
+ */
+export const calculatePatientSimilarity = (patient1: PatientData, patient2: PatientData): number => {
   let score = 0;
   let fieldCount = 0;
+  const similarityScores: { [key: string]: number } = {};
 
-  const firstNameSimilarity = jaroWinkler(patient1.firstName, patient2.firstName);
-  const lastNameSimilarity = jaroWinkler(patient1.lastName, patient2.lastName);
-  console.log('First Name Similarity:', firstNameSimilarity);
-  console.log('Last Name Similarity:', lastNameSimilarity);
+  const addScore = (field: string, value1: any, value2: any) => {
+    const similarity = jaroWinkler(value1, value2);
+    similarityScores[field] = similarity;
+    score += similarity;
+    fieldCount += 1;
+  };
 
-  score += firstNameSimilarity;
-  score += lastNameSimilarity;
-  fieldCount += 2;
+  addScore('First Name', patient1.firstName, patient2.firstName);
+  addScore('Last Name', patient1.lastName, patient2.lastName);
 
   // Calculate similarity for addresses
-  const address1 = patient1.address[0];  // Assuming we compare the first address
-  const address2 = patient2.address[0];  // Assuming we compare the first address
+  const address1 = patient1.address[0];
+  const address2 = patient2.address[0]; 
 
   if (address1 && address2) {
     if (address1.addressLine1 && address2.addressLine1) {
-      const addressLine1Similarity = jaroWinkler(address1.addressLine1, address2.addressLine1);
-      console.log('Address Line 1 Similarity:', addressLine1Similarity);
-      score += addressLine1Similarity;
-      fieldCount += 1;
+      addScore('Address Line 1', address1.addressLine1, address2.addressLine1);
+    }
+
+    if (address1.addressLine2 && address2.addressLine2) {
+      addScore('Address Line 2', address1.addressLine2, address2.addressLine2);
     }
     
     if (address1.city && address2.city) {
-      const citySimilarity = jaroWinkler(address1.city, address2.city);
-      console.log('City Similarity:', citySimilarity);
-      score += citySimilarity;
-      fieldCount += 1;
+      addScore('City', address1.city, address2.city);
     }
 
     if (address1.state && address2.state) {
-      const stateSimilarity = jaroWinkler(address1.state, address2.state);
-      console.log('State Similarity:', stateSimilarity);
-      score += stateSimilarity;
-      fieldCount += 1;
+      addScore('State', address1.state, address2.state);
     }
 
-    const countrySimilarity = jaroWinkler(address1.country, address2.country);
-    const zipcodeSimilarity = jaroWinkler(address1.zip, address2.zip);
-    console.log('Country Similarity:', countrySimilarity);
-    console.log('Zipcode Similarity:', zipcodeSimilarity);
-    score += countrySimilarity + zipcodeSimilarity;
-    fieldCount += 2;
+    addScore('Country', address1.country, address2.country);
+    addScore('Zipcode', address1.zip, address2.zip);
   }
 
   // Calculate similarity for contact details
-  const contact1 = patient1.contact ? patient1.contact[0] : null;  // Assuming we compare the first contact
-  const contact2 = patient2.contact ? patient2.contact[0] : null;  // Assuming we compare the first contact
+  const contact1 = patient1.contact ? patient1.contact[0] : null;
+  const contact2 = patient2.contact ? patient2.contact[0] : null; 
 
   if (contact1 && contact2) {
     if (contact1.phone && contact2.phone) {
-      const phoneSimilarity = jaroWinkler(contact1.phone, contact2.phone);
-      console.log('Phone Similarity:', phoneSimilarity);
-      score += phoneSimilarity;
-      fieldCount += 1;
+      addScore('Phone', contact1.phone, contact2.phone);
     }
     
     if (contact1.email && contact2.email) {
-      const emailSimilarity = jaroWinkler(contact1.email, contact2.email);
-      console.log('Email Similarity:', emailSimilarity);
-      score += emailSimilarity;
-      fieldCount += 1;
+      addScore('Email', contact1.email, contact2.email);
     }
   }
 
   const totalScore = score / fieldCount;
-  console.log('Total Score:', totalScore);
+  similarityScores['Total Score'] = totalScore;
+  console.log(JSON.stringify(similarityScores, null, 2)); // should this be logged using util.out with log or debug instead?
   return totalScore;
-}
+};
+
+
+
 
