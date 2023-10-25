@@ -131,12 +131,14 @@ router.post(
  */
 async function getDownloadUrl(req: Request): Promise<string> {
   const cxId = getCxIdOrFail(req);
+
   const fileName = getFromQueryOrFail("fileName", req);
-  const fileHasCxId = fileName.includes(cxId);
   const type = getFrom("query").optional("conversionType", req);
   const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
 
-  if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
+  if ((typeof fileName !== "string" || fileName.indexOf(cxId) !== -1) && !Config.isSandbox()) {
+    throw new ForbiddenError();
+  }
 
   const url = await downloadDocument({ fileName, conversionType });
   return url;
