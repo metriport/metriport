@@ -10,7 +10,7 @@ import * as Sentry from "@sentry/serverless";
 import { DOMParser } from "xmldom";
 import { capture } from "./shared/capture";
 import { postToConverter } from "./shared/converter";
-import { getEnv, getEnvOrFail } from "./shared/env";
+import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 
 // Keep this as early on the file as possible
@@ -22,21 +22,18 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const envType = getEnvOrFail("ENV_TYPE");
 // converter config
 const FHIRToCDAConverterUrl = getEnvOrFail("FHIR_TO_CDA_CONVERTER_URL");
 const convertDocLambda = getEnvOrFail("CONVERT_DOC_LAMBDA_NAME");
-const converterKeysTableName = getEnv("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME");
+const converterKeysTableName = getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME");
 
 const lambdaClient = makeLambdaClient(region);
 const s3Client = makeS3Client(region);
-const isSandbox = envType === "sandbox";
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({
     fileName: fhirFileName,
     patientId,
-    firstName,
     cxId,
     dateFrom,
     dateTo,
@@ -45,20 +42,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const { log } = out(`cx ${cxId}, patient ${patientId}`);
     log(
       `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
-        `dateTo: ${dateTo}, fileName: ${fhirFileName}`
+        `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
     );
-
-    const bundle = await getBundleFromS3(fhirFileName);
-    log(`Bundle: ${JSON.stringify(bundle)}`);
 
     try {
       const log = prefixedLog(`patient ${patientId}`);
 
-      if (isSandbox) return processSandbox({ firstName, conversionType });
-
-      if (!converterKeysTableName) {
-        throw new Error(`Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`);
-      }
+      const bundle = await getBundleFromS3(fhirFileName);
 
       const res = await postToConverter({
         url: FHIRToCDAConverterUrl,
@@ -86,7 +76,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         return { url };
       }
 
-      const url = await convertDoc({ fileName: cdaFileName, conversionType });
+      const url = await convertDoc({ fileName: cdaFileName, conversionType, bucketName });
       return { url };
 
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -312,16 +302,3 @@ const convertDoc = async (payload: ConversionInput): Promise<string> => {
   const parsedResult = JSON.parse(resultPayload) as ConversionOuput;
   return parsedResult.url;
 };
-
-async function processSandbox({
-  firstName,
-  conversionType,
-}: Pick<Input, "firstName" | "conversionType">): Promise<Output> {
-  const fileName = `${firstName}-consolidated.xml`;
-  if (conversionType === "xml") {
-    const url = await getSignedUrl(fileName);
-    return { url };
-  }
-  const url = await convertDoc({ fileName, conversionType });
-  return { url };
-}

@@ -81,5 +81,5 @@ export const ssnURI = `${OID_PREFIX}2.16.840.1.113883.4.1`;
 
 export const medicareURI = `${OID_PREFIX}2.16.840.1.113883.4.572`;
 
-// There's one OID for each country: https://terminology.hl7.org/artifacts.html
+// There is one OID for each country: https://terminology.hl7.org/artifacts.html
 export const passportURI = `${OID_PREFIX}2.16.840.1.113883.4.330`;
