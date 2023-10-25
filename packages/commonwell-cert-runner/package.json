@@ -42,7 +42,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "^4.8.7-alpha.0",
+    "@metriport/commonwell-sdk": "^4.8.6",
     "axios": "^1.3.5",
     "commander": "^9.5.0",
     "dayjs": "^1.11.7",
