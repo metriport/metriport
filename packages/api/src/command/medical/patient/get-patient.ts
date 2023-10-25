@@ -1,20 +1,24 @@
 import { intersectionWith, isEqual } from "lodash";
 import { Op, Transaction } from "sequelize";
+import { Patient, PatientData } from "../../../domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
-import { Patient, PatientData, PatientModel, splitName } from "../../../models/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
+import { isMatchingDemographics } from "./calculate-patient-similarity";
 
 export const getPatients = async ({
   facilityId,
   cxId,
+  patientIds,
 }: {
   facilityId?: string;
   cxId: string;
+  patientIds?: string[];
 }): Promise<Patient[]> => {
   const patients = await PatientModel.findAll({
     where: {
@@ -26,10 +30,34 @@ export const getPatients = async ({
             },
           }
         : undefined),
+      ...(patientIds ? { id: patientIds } : undefined),
     },
     order: [["id", "ASC"]],
   });
   return patients;
+};
+
+export const getPatientIds = async ({
+  facilityId,
+  cxId,
+}: {
+  facilityId?: string;
+  cxId: string;
+}): Promise<string[]> => {
+  const patients = await PatientModel.findAll({
+    attributes: ["id"],
+    where: {
+      cxId,
+      ...(facilityId
+        ? {
+            facilityIds: {
+              [Op.contains]: [facilityId],
+            },
+          }
+        : undefined),
+    },
+  });
+  return patients.map(p => p.id);
 };
 
 export const getPatientByDemo = async ({
@@ -56,8 +84,6 @@ export const getPatientByDemo = async ({
     },
   });
 
-  // TODO: #656 Check for personal identifiers & demo in memory, we were having a hard time to get the query to work with Sequelize
-  // Consider checking this out if trying to move this to the query: https://github.com/sequelize/sequelize/issues/5173
   const matchingPatients = patients.filter(patient => {
     // First, check for an ID match - if it's a match, don't bother checking for demo
     if (
@@ -68,17 +94,8 @@ export const getPatientByDemo = async ({
     ) {
       return true;
     }
-    // If the IDs don't match, or none were provided, check the demo for a match
-    let demoMatch =
-      intersectionWith(splitName(patient.data.firstName), splitName(demo.firstName), isEqual)
-        .length > 0 &&
-      intersectionWith(splitName(patient.data.lastName), splitName(demo.lastName), isEqual).length >
-        0 &&
-      intersectionWith(patient.data.address, demo.address, isEqual).length > 0;
-    if (demoMatch && demo.contact && demo.contact.length > 0) {
-      demoMatch = intersectionWith(patient.data.contact, demo.contact, isEqual).length > 0;
-    }
-    return demoMatch;
+
+    if (isMatchingDemographics(patient.data, demo)) return true;
   });
   if (matchingPatients.length === 0) return null;
   if (matchingPatients.length === 1) return matchingPatients[0];

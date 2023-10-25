@@ -1,19 +1,31 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { executeAsynchronously } from "../concurrency";
 import * as sleepFile from "../sleep";
+import { sleep } from "../sleep";
 
 beforeEach(() => {
+  jest.restoreAllMocks();
+});
+afterAll(() => {
   jest.restoreAllMocks();
 });
 
 describe("executeAsynchronously", () => {
   it("runs splits list and runs it asynchronously", async () => {
-    const list = [1, 2, 3, 4, 5];
-    const fn = jest.fn();
-    await executeAsynchronously(list, fn, { numberOfAsyncRuns: 2 });
-    expect(fn).toHaveBeenCalledTimes(2);
-    expect(fn).toHaveBeenNthCalledWith(1, [1, 2, 3], 0, 2);
-    expect(fn).toHaveBeenNthCalledWith(2, [4, 5], 1, 2);
+    const list = ["a", "b", "c", "d", "e"];
+    const fn = jest.fn(async () => {
+      await sleep(20);
+    });
+    await executeAsynchronously(list, fn, {
+      numberOfParallelExecutions: 2,
+      maxJitterMillis: 10,
+      jitterPct: 1,
+    });
+    expect(fn).toHaveBeenNthCalledWith(1, "a", 0, 0, 2);
+    expect(fn).toHaveBeenNthCalledWith(2, "d", 0, 1, 2);
+    expect(fn).toHaveBeenNthCalledWith(3, "b", 1, 0, 2);
+    expect(fn).toHaveBeenNthCalledWith(4, "e", 1, 1, 2);
+    expect(fn).toHaveBeenNthCalledWith(5, "c", 2, 0, 2);
   });
 
   it("defaults async runs to to number of items on list", async () => {
@@ -29,10 +41,13 @@ describe("executeAsynchronously", () => {
     let lastRandom = 0;
     const random_mock = jest
       .spyOn(Math, "random")
-      .mockImplementation(() => randomNumbers[lastRandom++]);
+      .mockImplementation(() => randomNumbers[lastRandom++] ?? 0);
     const list = [1, 2, 3, 4];
     const fn = jest.fn();
-    await executeAsynchronously(list, fn, { numberOfAsyncRuns: 2, maxJitterMillis: 1000 });
+    await executeAsynchronously(list, fn, {
+      numberOfParallelExecutions: 2,
+      maxJitterMillis: 1000,
+    });
     expect(random_mock).toHaveBeenCalledTimes(2);
     expect(sleep_mock).toHaveBeenCalledTimes(2);
     expect(sleep_mock).toHaveBeenNthCalledWith(1, 100);
@@ -43,7 +58,7 @@ describe("executeAsynchronously", () => {
     const sleep_mock = jest.spyOn(sleepFile, "sleep").mockImplementation(async () => {});
     const list = [1, 2, 3, 4];
     const fn = jest.fn();
-    await executeAsynchronously(list, fn, { numberOfAsyncRuns: 2 });
+    await executeAsynchronously(list, fn, { numberOfParallelExecutions: 2 });
     expect(sleep_mock).toHaveBeenCalledTimes(2);
     expect(sleep_mock).toHaveBeenNthCalledWith(1, 0);
     expect(sleep_mock).toHaveBeenNthCalledWith(2, 0);

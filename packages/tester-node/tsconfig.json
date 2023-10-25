@@ -1,0 +1,9 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "compilerOptions": {
+    // Using community best practices with 'extends'
+    "outDir": "./dist"
+  },
+  "include": ["./src"],
+  "exclude": ["dist", "node_modules"]
+}

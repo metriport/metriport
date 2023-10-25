@@ -5,7 +5,7 @@ export class MetriportError extends Error {
   constructor(
     message: string,
     readonly cause?: unknown,
-    readonly additionalInfo?: Record<string, string | undefined | null>
+    readonly additionalInfo?: Record<string, string | number | undefined | null>
   ) {
     super(message);
     this.cause = cause;

@@ -43,6 +43,7 @@ export function createAPIService(
   sidechainFHIRConverterDLQ: IQueue | undefined,
   cdaToVisualizationLambda: ILambda,
   documentDownloaderLambda: ILambda,
+  fhirToMedicalRecordLambda: ILambda | undefined,
   searchIngestionQueue: IQueue,
   searchEndpoint: string,
   searchAuth: { userName: string; secret: ISecret },
@@ -112,6 +113,9 @@ export function createAPIService(
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
+          ...(fhirToMedicalRecordLambda && {
+            FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
+          }),
           FHIR_SERVER_URL: fhirServerUrl,
           ...(fhirServerQueueUrl && {
             FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
@@ -156,6 +160,11 @@ export function createAPIService(
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+
+  if (fhirToMedicalRecordLambda) {
+    fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+    cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
+  }
 
   sidechainFHIRConverterQueue &&
     provideAccessToQueue({

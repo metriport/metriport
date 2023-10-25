@@ -32,16 +32,17 @@
     "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
   },
   "workspaces": [
-    "packages/core",
     "packages/commonwell-sdk",
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
     "packages/react-native-sdk",
+    "packages/core",
     "packages/api-sdk",
     "packages/api",
     "packages/connect-widget",
     "packages/infra",
-    "packages/utils"
+    "packages/utils",
+    "packages/tester-node"
   ],
   "lint-staged": {
     "*.{ts,tsx}": [

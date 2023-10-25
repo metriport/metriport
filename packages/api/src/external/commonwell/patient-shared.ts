@@ -9,15 +9,16 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import _, { minBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
+import { Facility } from "../../domain/medical/facility";
+import { Organization } from "../../domain/medical/organization";
+import { Patient, PatientExternalDataEntry } from "../../domain/medical/patient";
 import BadRequestError from "../../errors/bad-request";
-import { Facility } from "../../models/medical/facility";
-import { Organization } from "../../models/medical/organization";
-import { Patient, PatientExternalDataEntry } from "../../models/medical/patient";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
-import { driversLicenseURIs } from "../../shared/oid";
+import { driversLicenseURIs } from "@metriport/core/domain/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
@@ -174,23 +175,69 @@ function idsToAlertMessage(cwPatientId: string, personIds: string[]): string {
   return `Patient CW ID: ${cwPatientId}; Person IDs: ${personIds.join(", ")}`;
 }
 
-export async function getPatientData(
-  patient: {
-    id: string;
-    cxId: string;
-  },
-  facilityId: string
-): Promise<{
+export type PatientDataWithOneFacility = {
   organization: Organization;
   facility: Facility;
-}> {
+  type: "single";
+};
+export type PatientDataWithMultipleFacilities = {
+  organization: Organization;
+  facilities: Facility[];
+  type: "multiple";
+};
+export async function getPatientData(
+  patient: Pick<Patient, "id" | "cxId">
+): Promise<PatientDataWithMultipleFacilities>;
+export async function getPatientData(
+  patient: Pick<Patient, "id" | "cxId">,
+  facilityId: string
+): Promise<PatientDataWithOneFacility>;
+export async function getPatientData(
+  patient: Pick<Patient, "id" | "cxId">,
+  facilityId?: string
+): Promise<PatientDataWithOneFacility | PatientDataWithMultipleFacilities> {
   const { organization, facilities } = await getPatientWithDependencies(patient);
-  const facility = facilities.find(f => f.id === facilityId);
-  if (!facility) {
-    throw new BadRequestError(`Patient not associated with given facility`, undefined, {
+  if (facilityId) {
+    const facility = facilities.find(f => f.id === facilityId);
+    if (!facility) {
+      throw new BadRequestError(`Patient not associated with given facility`, undefined, {
+        patientId: patient.id,
+        facilityId,
+      });
+    }
+    return { organization, facility, type: "single" };
+  }
+
+  return { organization, facilities, type: "multiple" };
+}
+
+export async function getPatientDataWithSingleFacility(
+  patient: Pick<Patient, "id" | "cxId">,
+  facilityId?: string
+): Promise<Omit<PatientDataWithOneFacility, "type">> {
+  const data = facilityId
+    ? await getPatientData(patient, facilityId)
+    : await getPatientData(patient);
+  const organization = data.organization;
+  if (data.type === "single") {
+    return { organization, facility: data.facility };
+  }
+  const facility = data.facilities[0];
+  if (!data.facilities || !facility) {
+    throw new MetriportError(`Could not determine facility for patient`, undefined, {
       patientId: patient.id,
       facilityId,
     });
+  }
+  if (data.facilities.length > 1) {
+    throw new MetriportError(
+      `Patient has more than one facility, facilityId is required`,
+      undefined,
+      {
+        patientId: patient.id,
+        facilities: data.facilities.length,
+      }
+    );
   }
   return { organization, facility };
 }

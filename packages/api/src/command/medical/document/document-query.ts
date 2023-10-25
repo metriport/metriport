@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   calculateConversionProgress,
   ConvertResult,
@@ -5,16 +6,16 @@ import {
   DocumentQueryStatus,
   Progress,
 } from "../../../domain/medical/document-query";
+import { Patient } from "../../../domain/medical/patient";
+import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 import BadRequestError from "../../../errors/bad-request";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
-import { Patient, PatientModel } from "../../../models/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { emptyFunction, Util } from "../../../shared/util";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
-import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -41,17 +42,27 @@ export async function queryDocumentsAcrossHIEs({
 }: {
   cxId: string;
   patientId: string;
-  facilityId: string;
+  facilityId?: string;
   override?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (!isPatientAssociatedWithFacility(patient, facilityId)) {
+  if (facilityId && !isPatientAssociatedWithFacility(patient, facilityId)) {
     throw new BadRequestError(`Patient not associated with given facility`, undefined, {
       patientId: patient.id,
       facilityId,
     });
+  }
+  if (!facilityId && patient.facilityIds.length > 1) {
+    throw new BadRequestError(
+      `Patient is associated with more than one facility (facilityId is required)`,
+      undefined,
+      {
+        patientId: patient.id,
+        facilityIdCount: patient.facilityIds.length,
+      }
+    );
   }
   const docQueryProgress = patient.data.documentQueryProgress;
   const requestId = getOrGenerateRequestId(docQueryProgress);

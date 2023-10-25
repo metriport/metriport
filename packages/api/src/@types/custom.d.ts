@@ -5,3 +5,5 @@ namespace Express {
     email: string | undefined;
   }
 }
+
+declare module "jaro-winkler";
