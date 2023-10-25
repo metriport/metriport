@@ -1,6 +1,6 @@
 {
   "name": "connect-widget",
-  "version": "1.4.9-alpha.1",
+  "version": "1.4.8",
   "private": true,
   "scripts": {
     "clean": "rimraf build && rimraf node_modules",
