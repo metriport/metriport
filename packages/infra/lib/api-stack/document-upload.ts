@@ -30,7 +30,7 @@ export function createLambda({
   //   const config = getConfig();
   const documentUploaderLambda = defaultCreateLambda({
     stack,
-    name: "DocumentUploaderTest",
+    name: "DocumentUploaderTest", // REMOVE THIS WHEN DONE TESTING
     vpc,
     entry: "document-uploader",
     layers: lambdaLayers,

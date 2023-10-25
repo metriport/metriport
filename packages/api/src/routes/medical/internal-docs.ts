@@ -195,11 +195,12 @@ router.post(
 );
 
 const documentDataSchema = z.object({
-  mimetype: z.string().optional(),
+  mimeType: z.string().optional(),
   size: z.number().optional(),
-  originalname: z.string(),
+  originalName: z.string(),
   locationUrl: z.string(),
   docRefId: z.string(),
+  docId: z.string(),
 });
 
 /** ---------------------------------------------------------------------------
@@ -215,24 +216,22 @@ router.post(
   "/doc-ref",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
-    const body = req.body[0];
-    console.log("DOC-REF REQUEST BODY:", req.body);
+    const body = req.body;
     const fileData = documentDataSchema.parse({
-      mimetype: body.mimetype,
+      mimeType: body.mimeType,
       size: parseInt(body.size),
-      originalname: body.originalname,
+      originalName: body.originalName,
       locationUrl: body.locationUrl,
       docRefId: body.docRefId,
+      docId: body.docId,
     });
-
-    console.log("FileData", fileData);
 
     await updateAndUploadDocumentReference({
       cxId,
       fileData,
     });
 
-    return res.status(httpStatus.CREATED);
+    return res.sendStatus(httpStatus.CREATED);
   })
 );
 

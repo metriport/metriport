@@ -177,10 +177,6 @@ router.get(
   })
 );
 
-// overwrite organization and patient -> don't provide cuz we will overwrite anyway
-// provide as much metadata as possible
-// create TODOs for checks on cx inputs
-// we could require practitioner in encounter cases?
 /**
  * POST /document/upload-url
  *
@@ -207,7 +203,6 @@ router.post(
 
     const docRefDraft = req.body;
     cxDocRefCheck(docRefDraft);
-    console.log("Document Reference Draft", JSON.stringify(docRefDraft));
 
     const docRef = pickDocRefParts(
       docRefDraft,
@@ -217,16 +212,12 @@ router.post(
       s3Key,
       medicalDocumentsUploadBucketName
     );
-    console.log("Updated Document Reference", JSON.stringify(docRef));
+    console.log("Updated DocumentReference:", JSON.stringify(docRef));
 
     // Make a temporary DocumentReference on the FHIR server.
     await upsertDocumentToFHIRServer(cxId, docRef);
-
-    console.log("Upload File Name", s3FileName);
-    console.log("Region", region);
     const presignedUrl = s3client.createPresignedPost({
       Bucket: medicalDocumentsUploadBucketName,
-      // Bucket: "metriport-medical-document-uploads-staging",
       Fields: {
         key: s3Key,
       },
