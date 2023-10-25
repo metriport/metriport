@@ -488,7 +488,7 @@ export class MetriportMedicalApi {
    * @param docRef - a FHIR Document Reference for this file upload. Try to include as much metadata on the document as possible. Make sure to include DocumentReference.description the DocumentReference.author.practitioner fields. Note that you DO NOT need to fill in the Organization or Patient fields under the author or contained fields - Metriport will fill this in and overwrite whatever you put in.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/fhir/resources/documentreference.
    *
-   * @returns A presigned URL for uploading a document.
+   * @returns A presigned URL for medical document upload.
    */
   async getDocumentUploadUrl(
     patientId: string,
