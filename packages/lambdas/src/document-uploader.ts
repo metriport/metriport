@@ -8,7 +8,7 @@ capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 // const destinationBucket = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET");
-const destinationBucket = "metriport-medical-document-uploads-staging";
+const destinationBucket = "devs.metriport.com";
 const region = getEnvOrFail("AWS_REGION");
 
 export const handler = async (event: S3Event) => {
