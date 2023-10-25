@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
-import { makePatient } from "../../../../models/medical/__tests__/patient";
+import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { ISO_DATE } from "../../../../shared/date";
 import { getFilters } from "../get-documents";
 

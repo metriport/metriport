@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { v4 as uuidv4 } from "uuid";
 import { MAPIAccess } from "../../../models/medical/mapi-access";
-import { makeOrganization } from "../../../models/medical/__tests__/organization";
+import { makeOrganization } from "../../../domain/medical/__tests__/organization";
 import { allowMapiAccess } from "../mapi-access";
 import * as getOrg from "../organization/get-organization";
 

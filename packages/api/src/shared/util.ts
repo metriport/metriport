@@ -1,9 +1,9 @@
 import { Sample } from "@metriport/api-sdk/devices/models/common/sample";
+import { debug as coreDebug, log as coreLog } from "@metriport/core/util/log";
 import convert from "convert-units";
 import crypto from "crypto";
 import { mean } from "lodash";
 import { Stream } from "stream";
-import { debug } from "./log";
 
 // Useful as catch handler for asynchonous promises so we don't get an unhandled promise rejection
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -79,21 +79,11 @@ export class Util {
   /**
    * @deprecated Use @metriport/core instead
    */
-  static log =
-    (prefix: string, suffix?: string) =>
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (msg: string, ...optionalParams: any[]): void =>
-      optionalParams
-        ? console.log(`[${prefix}] ${msg}`, ...[...optionalParams, ...([suffix] ?? [])])
-        : console.log(`[${prefix}] ${msg} - ${suffix}`);
+  static log = coreLog;
   /**
    * @deprecated Use @metriport/core instead
    */
-  static debug =
-    (prefix: string, suffix?: string) =>
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (msg: string, ...optionalParams: any[]): void =>
-      debug(`[${prefix}] ${msg}`, ...[...optionalParams, ...([suffix] ?? [])]);
+  static debug = coreDebug;
   /**
    * @deprecated Use @metriport/core instead
    */

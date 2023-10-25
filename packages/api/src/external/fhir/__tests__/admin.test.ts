@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { HapiFhirAdminClient } from "@metriport/core/external/fhir/api/api-hapi";
 import { v4 as uuidv4 } from "uuid";
-import { makeOrgNumber } from "../../../models/medical/__tests__/organization";
+import { makeOrgNumber } from "../../../domain/medical/__tests__/organization";
 import { createTenant, createTenantIfNotExists } from "../admin";
 
 let apiMock_createTenant: jest.SpyInstance;

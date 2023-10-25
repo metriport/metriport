@@ -1,19 +1,20 @@
 import {
   CommonWellAPI,
-  Patient as CommonwellPatient,
+  getIdTrailingSlash,
   LOLA,
+  organizationQueryMeta,
+  Patient as CommonwellPatient,
   Person,
   RequestMetadata,
   StrongId,
-  getIdTrailingSlash,
-  organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { MedicalDataSource } from "..";
-import { Facility } from "../../models/medical/facility";
-import { Organization } from "../../models/medical/organization";
-import { Patient, PatientExternalData } from "../../models/medical/patient";
+import { Facility } from "../../domain/medical/facility";
+import { Organization } from "../../domain/medical/organization";
+import { Patient, PatientExternalData } from "../../domain/medical/patient";
+import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
-import { oid } from "../../shared/oid";
+import { oid } from "@metriport/core/domain/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
@@ -21,13 +22,12 @@ import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { setCommonwellId } from "./patient-external-data";
 import {
-  FindOrCreatePersonResponse,
-  PatientDataCommonwell,
   findOrCreatePerson,
+  FindOrCreatePersonResponse,
   getMatchingStrongIds,
   getPatientData,
+  PatientDataCommonwell,
 } from "./patient-shared";
-import MetriportError from "../../errors/metriport-error";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";

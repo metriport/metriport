@@ -24,7 +24,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 20,
+            "y": 36,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -82,7 +82,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 66,
+            "y": 82,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -112,7 +112,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 75,
+            "y": 91,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -136,7 +136,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 93,
+            "y": 109,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -157,7 +157,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 30,
+            "y": 46,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -178,7 +178,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 84,
+            "y": 108,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -199,7 +199,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 20,
+            "y": 36,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -231,7 +231,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 18,
+            "y": 34,
             "x": 0,
             "type": "text",
             "properties": {
@@ -242,7 +242,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 28,
+            "y": 44,
             "x": 0,
             "type": "text",
             "properties": {
@@ -253,7 +253,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 30,
+            "y": 46,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -274,7 +274,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 64,
+            "y": 80,
             "x": 0,
             "type": "text",
             "properties": {
@@ -337,7 +337,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 54,
+            "y": 70,
             "x": 0,
             "type": "text",
             "properties": {
@@ -348,7 +348,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 56,
+            "y": 72,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -369,7 +369,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 38,
+            "y": 54,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -400,7 +400,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 46,
+            "y": 62,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -421,7 +421,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 56,
+            "y": 72,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -439,7 +439,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 30,
+            "y": 46,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -457,7 +457,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 20,
+            "y": 36,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -493,7 +493,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 38,
+            "y": 54,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -531,7 +531,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 56,
+            "y": 72,
             "x": 14,
             "type": "log",
             "properties": {
@@ -545,7 +545,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 38,
+            "y": 54,
             "x": 14,
             "type": "log",
             "properties": {
@@ -559,7 +559,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 66,
+            "y": 90,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -582,7 +582,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 75,
+            "y": 99,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -607,7 +607,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 84,
+            "y": 100,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -660,7 +660,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 46,
+            "y": 62,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -679,7 +679,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 93,
+            "y": 117,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -693,6 +693,133 @@
                 "stat": "Sum",
                 "period": 300,
                 "title": "API Responses"
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 18,
+            "x": 14,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "WriteIOPS", "DBClusterIdentifier", "api-cluster", { "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "API DB - Connections",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 12,
+            "y": 82,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", "CCDAOpenSearchDLQ", { "region": "us-west-1" } ],
+                    [ "...", "CCDAOpenSearchQueue", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterDLQ", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterQueue", { "region": "us-west-1" } ],
+                    [ "...", "FHIRServerDLQ", { "region": "us-west-1" } ],
+                    [ "...", "FHIRServerQueue", { "region": "us-west-1" } ],
+                    [ "...", "SidechainFHIRConverterDLQ", { "region": "us-west-1" } ],
+                    [ "...", "SidechainFHIRConverterQueue", { "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "SQS Messages Visible"
+            }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 26,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "SearchableDocuments", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "yAxis": "left" } ],
+                    [ ".", "FreeStorageSpace", ".", ".", ".", ".", { "yAxis": "right", "stat": "Minimum" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "OpenSearch - Storage",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 18,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "CPUUtilization", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "label": "Nodes CPU", "region": "us-west-1" } ],
+                    [ ".", "MasterCPUUtilization", ".", ".", ".", ".", { "label": "Master CPU", "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "OpenSearch - CPU",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 18,
+            "x": 7,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "JVMMemoryPressure", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "yAxis": "left", "region": "us-west-1", "label": "Nodes JVMMemoryPressure" } ],
+                    [ ".", "MasterJVMMemoryPressure", ".", ".", ".", ".", { "yAxis": "left", "region": "us-west-1", "label": "Master JVMMemoryPressure" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "OpenSearch - Memory",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 26,
+            "x": 7,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "SearchLatency", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594" ],
+                    [ ".", "ReadLatency", ".", ".", ".", "." ],
+                    [ ".", "IndexingLatency", ".", ".", ".", "." ],
+                    [ ".", "WriteLatency", ".", ".", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "OpenSearch - Latency",
+                "liveData": false
             }
         }
     ]

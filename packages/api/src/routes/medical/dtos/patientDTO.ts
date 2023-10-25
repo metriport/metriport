@@ -1,4 +1,4 @@
-import { Patient } from "../../../models/medical/patient";
+import { Patient } from "../../../domain/medical/patient";
 import { toBaseDTO } from "./baseDTO";
 import { DemographicsDTO } from "./demographicsDTO";
 

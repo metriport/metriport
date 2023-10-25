@@ -1,31 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
-import { BaseModel, ModelSetup } from "../_default";
-import { AddressStrict } from "./location-address";
-
-export enum OrgType {
-  acuteCare = "acuteCare",
-  ambulatory = "ambulatory",
-  hospital = "hospital",
-  labSystems = "labSystems",
-  pharmacy = "pharmacy",
-  postAcuteCare = "postAcuteCare",
-}
-
-export type OrganizationData = {
-  name: string;
-  type: OrgType;
-  location: AddressStrict;
-};
-
-export interface OrganizationCreate extends BaseDomainCreate {
-  cxId: string;
-  oid: string;
-  organizationNumber: number;
-  data: OrganizationData;
-}
-
-export interface Organization extends BaseDomain, OrganizationCreate {}
+import { Organization, OrganizationData } from "../../domain/medical/organization";
+import { BaseModel, ModelSetup } from "../../models/_default";
 
 export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {
   static NAME = "organization";
