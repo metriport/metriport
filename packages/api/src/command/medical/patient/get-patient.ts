@@ -8,6 +8,8 @@ import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
+import jaroWinkler from 'jaro-winkler';
+
 
 export const getPatients = async ({
   facilityId,
@@ -68,6 +70,11 @@ export const getPatientByDemo = async ({
     ) {
       return true;
     }
+
+    // TODO
+    const jw_score = calculatePatientSimilarity(patient.data, demo);
+    console.log('Similarity Score:', jw_score);
+
     // If the IDs don't match, or none were provided, check the demo for a match
     let demoMatch =
       intersectionWith(splitName(patient.data.firstName), splitName(demo.firstName), isEqual)
@@ -151,3 +158,80 @@ export const getPatientWithDependencies = async ({
   const organization = await getOrganizationOrFail({ cxId });
   return { patient, facilities, organization };
 };
+
+
+export const calculatePatientSimilarity =  (
+  patient1: PatientData,
+  patient2: PatientData
+): number => {
+  let score = 0;
+  let fieldCount = 0;
+
+  const firstNameSimilarity = jaroWinkler(patient1.firstName, patient2.firstName);
+  const lastNameSimilarity = jaroWinkler(patient1.lastName, patient2.lastName);
+  console.log('First Name Similarity:', firstNameSimilarity);
+  console.log('Last Name Similarity:', lastNameSimilarity);
+
+  score += firstNameSimilarity;
+  score += lastNameSimilarity;
+  fieldCount += 2;
+
+  // Calculate similarity for addresses
+  const address1 = patient1.address[0];  // Assuming we compare the first address
+  const address2 = patient2.address[0];  // Assuming we compare the first address
+
+  if (address1 && address2) {
+    if (address1.addressLine1 && address2.addressLine1) {
+      const addressLine1Similarity = jaroWinkler(address1.addressLine1, address2.addressLine1);
+      console.log('Address Line 1 Similarity:', addressLine1Similarity);
+      score += addressLine1Similarity;
+      fieldCount += 1;
+    }
+    
+    if (address1.city && address2.city) {
+      const citySimilarity = jaroWinkler(address1.city, address2.city);
+      console.log('City Similarity:', citySimilarity);
+      score += citySimilarity;
+      fieldCount += 1;
+    }
+
+    if (address1.state && address2.state) {
+      const stateSimilarity = jaroWinkler(address1.state, address2.state);
+      console.log('State Similarity:', stateSimilarity);
+      score += stateSimilarity;
+      fieldCount += 1;
+    }
+
+    const countrySimilarity = jaroWinkler(address1.country, address2.country);
+    const zipcodeSimilarity = jaroWinkler(address1.zip, address2.zip);
+    console.log('Country Similarity:', countrySimilarity);
+    console.log('Zipcode Similarity:', zipcodeSimilarity);
+    score += countrySimilarity + zipcodeSimilarity;
+    fieldCount += 2;
+  }
+
+  // Calculate similarity for contact details
+  const contact1 = patient1.contact ? patient1.contact[0] : null;  // Assuming we compare the first contact
+  const contact2 = patient2.contact ? patient2.contact[0] : null;  // Assuming we compare the first contact
+
+  if (contact1 && contact2) {
+    if (contact1.phone && contact2.phone) {
+      const phoneSimilarity = jaroWinkler(contact1.phone, contact2.phone);
+      console.log('Phone Similarity:', phoneSimilarity);
+      score += phoneSimilarity;
+      fieldCount += 1;
+    }
+    
+    if (contact1.email && contact2.email) {
+      const emailSimilarity = jaroWinkler(contact1.email, contact2.email);
+      console.log('Email Similarity:', emailSimilarity);
+      score += emailSimilarity;
+      fieldCount += 1;
+    }
+  }
+
+  const totalScore = score / fieldCount;
+  console.log('Total Score:', totalScore);
+  return totalScore;
+}
+
