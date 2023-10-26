@@ -4,7 +4,7 @@ import {
   cookieFromString,
   CookieManager,
   cookiesToString,
-} from "../../../domain/cookie-manager";
+} from "../../../domain/auth/cookie-management/cookie-manager";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { safeStringify } from "../../../util/string";
 

@@ -22,16 +22,16 @@ import { EnvConfig } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
+import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
-import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
-import { MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 
 // TODO Comment to trigger a deploy, remove it when you see this
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
@@ -309,6 +309,14 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
+    });
+
+    cwEnhancedCoverageConnector.setup({
+      stack: this,
+      vpc: this.vpc,
+      lambdaLayers,
+      secrets,
+      alarmSnsAction: slackNotification?.alarmAction,
     });
 
     //-------------------------------------------

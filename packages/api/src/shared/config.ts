@@ -1,12 +1,17 @@
-export const getEnvVar = (varName: string): string | undefined => process.env[varName];
+import { Config as CoreConfig } from "@metriport/core/util/config";
+import {
+  getEnvVar as coreGetEnvVar,
+  getEnvVarOrFail as coreGetEnvVarOrFail,
+} from "@metriport/core/util/env-var";
 
-export const getEnvVarOrFail = (varName: string): string => {
-  const value = getEnvVar(varName);
-  if (!value || value.trim().length < 1) {
-    throw new Error(`Missing ${varName} env var`);
-  }
-  return value;
-};
+/**
+ * @deprecated Use core's version instead
+ */
+export const getEnvVar = (varName: string): string | undefined => coreGetEnvVar(varName);
+/**
+ * @deprecated Use core's version instead
+ */
+export const getEnvVarOrFail = (varName: string): string => coreGetEnvVarOrFail(varName);
 
 export class Config {
   // env config
@@ -44,11 +49,17 @@ export class Config {
     return getEnvVarOrFail("AWS_REGION");
   }
 
+  /**
+   * @deprecated Use core's Config instead
+   */
   static getSlackAlertUrl(): string | undefined {
-    return getEnvVar("SLACK_ALERT_URL");
+    return CoreConfig.getSlackAlertUrl();
   }
+  /**
+   * @deprecated Use core's Config instead
+   */
   static getSlackNotificationUrl(): string | undefined {
-    return getEnvVar("SLACK_NOTIFICATION_URL");
+    return CoreConfig.getSlackNotificationUrl();
   }
 
   static getSentryDSN(): string | undefined {

@@ -1,55 +1,28 @@
+import {
+  sendAlert as coreSendAlert,
+  sendNotification as coreSendNotification,
+  SlackMessage as CoreSlackMessage,
+} from "@metriport/core/external/slack";
+import { Capture } from "@metriport/core/util/capture";
 import * as Sentry from "@sentry/node";
 import { Extras, ScopeContext } from "@sentry/types";
-import axios from "axios";
 import stringify from "json-stringify-safe";
 import MetriportError from "../errors/metriport-error";
-import { Config } from "./config";
-import { Capture } from "@metriport/core/util/capture";
 
-const slackAlertUrl = Config.getSlackAlertUrl();
-const slackNotificationUrl = Config.getSlackNotificationUrl();
-
-export interface SlackMessage {
-  message: string;
-  subject: string;
-  emoji?: string;
-}
-
-const sendToSlack = async (
-  notif: SlackMessage | string,
-  url: string | undefined
-): Promise<void> => {
-  let subject: string;
-  let message: string | undefined = undefined;
-  let emoji: string | undefined = undefined;
-  if (typeof notif === "string") {
-    subject = notif as string;
-  } else {
-    const n: SlackMessage = notif as SlackMessage;
-    message = n.message;
-    subject = n.subject;
-    emoji = n.emoji ?? emoji;
-  }
-  if (!url) {
-    console.log(`Could not send to Slack, missing URL - ${subject}: ${message ?? "''"}`);
-    return;
-  }
-
-  const payload = stringify({
-    text: subject + (message ? `:${"\n```\n"}${message}${"\n```"}` : ""),
-    ...(emoji ? { icon_emoji: emoji } : undefined),
-  });
-
-  return axios.post(url, payload, {
-    headers: { "Content-Type": "application/json" },
-  });
-};
-
+/**
+ * @deprecated Use core's instead
+ */
+export type SlackMessage = CoreSlackMessage;
+/**
+ * @deprecated Use core's instead
+ */
 export const sendNotification = async (notif: SlackMessage | string): Promise<void> =>
-  sendToSlack(notif, slackNotificationUrl);
-
+  coreSendNotification(notif);
+/**
+ * @deprecated Use core's instead
+ */
 export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
-  sendToSlack(notif, slackAlertUrl);
+  coreSendAlert(notif);
 
 export type UserData = Pick<Sentry.User, "id" | "email">;
 
