@@ -1063,7 +1063,7 @@ export class APIStack extends Stack {
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared,lambdaLayers.chromium],
+      layers: [lambdaLayers.shared, lambdaLayers.chromium],
       memory: 512,
       timeout: lambdaTimeout,
       vpc,
