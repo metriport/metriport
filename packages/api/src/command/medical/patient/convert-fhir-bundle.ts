@@ -13,7 +13,6 @@ import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { convertDoc } from "../document/document-download";
-import BadRequestError from "../../../errors/bad-request";
 
 export const MEDICAL_RECORD_KEY = "MR";
 
@@ -42,12 +41,8 @@ export async function handleBundleToMedicalRecord({
   const patientMatch = getSandboxSeedData(patient.data.firstName);
 
   if (isSandbox) {
-    if (!patientMatch) {
-      throw new BadRequestError("Patient does not match sandbox seed data");
-    }
-
     const url = await processSandboxSeed({
-      firstName: patient.data.firstName,
+      firstName: !patientMatch ? "jane" : patient.data.firstName,
       conversionType,
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       bucketName: Config.getSandboxSeedBucketName()!,
