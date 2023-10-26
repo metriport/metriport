@@ -1,6 +1,6 @@
 import assert from "assert";
 import { Browser, BrowserContext, devices, firefox, Page } from "playwright";
-import { CodeChallenge, CodeChallengeFromSecretManager } from "../../../domain/code-challenge";
+import { CodeChallenge } from "../../../domain/code-challenge";
 import { Cookie, CookieManager, cookiesToString } from "../../../domain/cookie-manager";
 import { sleep } from "../../../util/sleep";
 import { CommonWellManagementAPI } from "./api";
@@ -26,7 +26,7 @@ export type SessionManagementConfig = {
   /**
    * The service to obtain a code to pass the login code challenge, if needed.
    */
-  codeChallenge?: CodeChallenge;
+  codeChallenge: CodeChallenge;
   /**
    * Indicates whether to run the browser in headless mode.
    */
@@ -49,7 +49,7 @@ export class SessionManagement {
   constructor(params: SessionManagementConfig) {
     this.cookieManager = params.cookieManager;
     this.cwManagementApi = params.cwManagementApi;
-    this.codeChallenge = params.codeChallenge ?? new CodeChallengeFromSecretManager();
+    this.codeChallenge = params.codeChallenge;
     this.headless = params.headless == undefined ? true : params.headless;
     this.sessionBaseUrl = this.cwManagementApi.getBaseUrl();
     this.username = params.username;
