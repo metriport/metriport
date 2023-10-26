@@ -11,7 +11,7 @@ import { Patient } from "../../../domain/medical/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
-import { patientMatches } from "../../../shared/sandbox/sandbox-seed-data";
+import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { convertDoc } from "../document/document-download";
 
 export const MEDICAL_RECORD_KEY = "MR";
@@ -37,6 +37,20 @@ export async function handleBundleToMedicalRecord({
   dateTo?: string;
   conversionType: ConsolidationConversionType;
 }): Promise<Bundle<Resource>> {
+  const isSandbox = Config.isSandbox();
+  const patientMatch = getSandboxSeedData(patient.data.firstName);
+
+  if (isSandbox) {
+    const url = await processSandboxSeed({
+      firstName: patientMatch ? patient.data.firstName : "jane",
+      conversionType,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      bucketName: Config.getSandboxSeedBucketName()!,
+    });
+
+    return buildBundle(patient, url, conversionType);
+  }
+
   const fhir = makeFhirApi(patient.cxId);
 
   const fhirPatient = await fhir.readResource("Patient", patient.id);
@@ -61,6 +75,14 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
+  return buildBundle(patient, url, conversionType);
+}
+
+function buildBundle(
+  patient: Pick<Patient, "id">,
+  url: string,
+  conversionType: ConsolidationConversionType
+): Bundle<Resource> {
   return {
     resourceType: "Bundle",
     total: 1,
@@ -103,6 +125,8 @@ async function convertFHIRBundleToMedicalRecord({
 }): Promise<string> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
 
+  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+
   // Store the bundle on S3
   const fileName = createS3FileName(patient.cxId, patient.id, `${MEDICAL_RECORD_KEY}.json`);
 
@@ -123,19 +147,6 @@ async function convertFHIRBundleToMedicalRecord({
     })
     .promise();
 
-  const isSandbox = Config.isSandbox();
-  const patientMatch = patientMatches(patient.data);
-
-  if (isSandbox && patientMatch) {
-    const url = await processSandboxSeed({
-      firstName: patient.data.firstName,
-      conversionType,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      bucketName: Config.getSandboxSeedBucketName()!,
-    });
-
-    return url;
-  }
   // Send it to conversion
   const payload: ConversionInput = {
     fileName,
