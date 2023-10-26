@@ -17,5 +17,5 @@ export function cookiesToString(c: Cookie[]): string {
 
 export interface CookieManager {
   getCookies(): Promise<Cookie[]>;
-  updateCookies(cookies: Cookie[]): Promise<void>;
+  updateCookies(cookies: Cookie[]): Promise<Cookie[]>;
 }

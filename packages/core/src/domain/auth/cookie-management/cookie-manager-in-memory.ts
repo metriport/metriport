@@ -8,5 +8,6 @@ export class CookieManagerInMemory implements CookieManager {
   }
   async updateCookies(cookies: Cookie[]) {
     this.cookies = cookies;
+    return this.cookies;
   }
 }

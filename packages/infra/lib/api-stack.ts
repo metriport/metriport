@@ -22,14 +22,15 @@ import { EnvConfig } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
+import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
-import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
-import { Secrets, getSecrets } from "./shared/secrets";
+import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
@@ -308,7 +309,6 @@ export class APIStack extends Stack {
     });
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
-
     if (!isSandbox(props.config)) {
       fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
         lambdaLayers,
@@ -319,6 +319,15 @@ export class APIStack extends Stack {
         alarmAction: slackNotification?.alarmAction,
       });
     }
+
+    cwEnhancedCoverageConnector.setup({
+      stack: this,
+      vpc: this.vpc,
+      lambdaLayers,
+      secrets,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
