@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-// import multer from "multer";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { z } from "zod";
 import { updateAndUploadDocumentReference } from "../../command/medical/admin/upload-doc";
@@ -209,7 +208,7 @@ const documentDataSchema = z.object({
  * Update the doc ref for a medical document uploaded by a cx.
  * @param req.query.cxId - The customer/account's ID.
  *
- * @return 201 Indicating the file was successfully updated.
+ * @return 201 Indicating the DocRef was successfully updated.
  */
 router.post(
   "/doc-ref",

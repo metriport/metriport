@@ -29,9 +29,6 @@ To use this endpoint, you will need to follow these steps:
 
 ## Body
 
-  <ParamField body="docRef" type="Partial<DocumentReference>" required>
-    A partial FHIR DocumentReference to provide context to the file upload.
-    <Expandable title="Type properties">
     <ParamField body="type" type="CodeableConcept" required>
       A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) of the file type.
       <Expandable title="Type properties">
@@ -75,8 +72,6 @@ To use this endpoint, you will need to follow these steps:
       </Expandable>
     </ParamField>
 
-      </Expandable>
-
 ## Response
 
 A Presigned URL to be used for subsequent file upload.
@@ -117,13 +112,14 @@ const docRef: Partial<DocumentReference> = {
 
 const presignedUrl = await metriportClient.getDocumentUploadUrl("my-patient-id", docRef);
 
-const fileContent = <medical-document-file-contents>;
+// Upload the file using this presignedUrl in a PUT request, something along these lines:
 
-await axios.put(presignedUrl, fileContent, {
-      headers: {
-        "Content-Length": sizeInBytes(data),
-      },
-    });
+// const fileContent = <medical-document-file-contents>;
+// await axios.put(presignedUrl, file, {
+//     headers: {
+//         "Content-Length": sizeInBytes(data),
+//     },
+// });
 ```
 
 </ResponseExample>

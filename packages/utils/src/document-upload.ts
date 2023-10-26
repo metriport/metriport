@@ -2,7 +2,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { DocumentReference } from "@medplum/fhirtypes";
-import fs from "fs/promises";
+import * as fsPromises from "fs/promises";
+// import * as fs from "fs";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { sizeInBytes } from "@metriport/core/util/string";
@@ -18,13 +19,14 @@ const metriportApi = new MetriportMedicalApi(apiKey, {
 
 async function readFileAsync(filePath: string) {
   try {
-    return await fs.readFile(filePath, "utf8");
+    return await fsPromises.readFile(filePath, "utf8");
   } catch (err) {
     console.error(err);
   }
 }
 
-async function put(url: string, data: string) {
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function put(url: string, data: any) {
   const response = await axios.put(url, data, {
     headers: {
       "Content-Length": sizeInBytes(data),
@@ -55,7 +57,8 @@ async function main() {
       },
     },
   };
-  const fileContent = await readFileAsync("./src/shorter_example.xml");
+  const fileContent = await readFileAsync("./src/pdf_example.pdf");
+  // const fileContent = fs.readFileSync("./src/pdf_example.pdf");
   if (!fileContent) throw new Error("File content is empty");
 
   const presignedUrl = await metriportApi.getDocumentUploadUrl(patientId, docRef);

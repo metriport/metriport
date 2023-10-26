@@ -25,8 +25,8 @@ export function pickDocRefParts(
 ): DocumentReference {
   const containedOrg: Organization = {
     resourceType: "Organization",
-    id: organization.id, //internal uuid
-    identifier: [{ value: organization.dataValues.organizationNumber.toString() }], // make this use oid
+    id: organization.id,
+    identifier: [{ value: organization.dataValues.organizationNumber.toString() }],
     name: organization.dataValues.data.name,
   };
   const temporaryExtension = metriportDataSourceExtension;

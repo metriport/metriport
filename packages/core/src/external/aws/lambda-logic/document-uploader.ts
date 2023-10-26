@@ -32,7 +32,7 @@ export async function documentUploaderHandler(
 
   // Make a copy of the file to the general medical documents bucket
   try {
-    await s3Utils._s3.copyObject(params).promise();
+    await s3Utils.s3.copyObject(params).promise();
   } catch (error) {
     const message = "Error copying the uploaded file to medical documents bucket";
     console.log(message, JSON.stringify(error));
