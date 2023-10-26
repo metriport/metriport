@@ -15,20 +15,7 @@ export function cookiesToString(c: Cookie[]): string {
   return c.map(cookieToString).join("; ");
 }
 
-export class CookieManager {
-  private cookies: Cookie[] = [];
-
-  /**
-   * Get Cookies from DynamoDB
-   */
-  async getCookies(): Promise<Cookie[]> {
-    return this.cookies;
-  }
-
-  /**
-   * Store Cookies on DynamoDB
-   */
-  async updateCookies(cookies: Cookie[]) {
-    this.cookies = cookies;
-  }
+export interface CookieManager {
+  getCookies(): Promise<Cookie[]>;
+  updateCookies(cookies: Cookie[]): Promise<void>;
 }
