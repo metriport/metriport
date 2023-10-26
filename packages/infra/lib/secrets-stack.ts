@@ -36,7 +36,8 @@ export class SecretsStack extends Stack {
       logSecretInfo(this, secret, secretName);
     }
 
-    for (const secretName of Object.values(props.config.cwSecretNames)) {
+    for (const secretName of Object.values<string | undefined>(props.config.cwSecretNames)) {
+      if (!secretName) continue;
       const secret = makeSecret(secretName);
       logSecretInfo(this, secret, secretName);
     }
