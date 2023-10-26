@@ -32,6 +32,7 @@ export type EnvConfig = {
     POST_HOG_API_KEY: string;
   };
   commonwell: {
+    CW_URL?: string;
     CW_MEMBER_NAME: string;
     CW_MEMBER_OID: string;
     CW_GATEWAY_ENDPOINT: string;
@@ -62,6 +63,7 @@ export type EnvConfig = {
     TENOVI_AUTH_HEADER: string;
   };
   cwSecretNames: {
+    CW_MANAGEMENT_CREDS?: string;
     CW_ORG_PRIVATE_KEY: string;
     CW_ORG_CERTIFICATE: string;
     CW_MEMBER_PRIVATE_KEY: string;
