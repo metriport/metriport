@@ -5,9 +5,9 @@ import { v4 as uuidv4 } from "uuid";
 import { makePatient } from "../../../../models/medical/__tests__/patient";
 import { getConsolidatedPatientData } from "../consolidated-get";
 import * as getPatient from "../get-patient";
-import { calculatePatientSimilarity} from "../get-patient";
-import { PatientData } from "../../../../models/medical/patient";
-
+import { calculatePatientSimilarity } from "../get-patient";
+import { PatientData, GenderAtBirth } from "../../../../models/medical/patient";
+import { testPatientData } from "./test_data";
 
 let getPatientOrFailMock: jest.SpyInstance;
 let fhir_searchResourcePages: jest.SpyInstance;
@@ -58,49 +58,28 @@ describe("getConsolidatedPatientData", () => {
 });
 
 
-const patient1: PatientData = {
-  firstName: 'Jose',
-  lastName: 'Juarez',
-  dob: '1951-05-05',
-  genderAtBirth: 'M',
-  address: [{
-    zip: '12345',
-    city: 'San Diego',
-    state: 'CA',
-    country: 'USA',
-    addressLine1: 'Guadalajara St'
-  }],
-  contact: [{
-    phone: '1234567899',
-    email: 'jose@domain.com'
-  }]
-};
-
-const patient2: PatientData = {
-  firstName: 'Josef',
-  lastName: 'Juarez',
-  dob: '1951-05-05',
-  genderAtBirth: 'M',
-  address: [{
-    zip: '12345',
-    city: 'San Diego',
-    state: 'CA',
-    country: 'USA',
-    addressLine1: 'Guadalajara St'
-  }],
-  contact: [{
-    phone: '1234567899',
-    email: 'jose@domain.com'
-  }]
-};
+function loadPatientData(data: any): PatientData {
+  return {
+    ...data,
+    genderAtBirth: data.genderAtBirth as GenderAtBirth,
+  };
+}
 
 describe("getConsolidatedPatientData", () => {
+  it("identifies sampleInclusions as matches", async () => {
+    const searchPatient: PatientData = loadPatientData(testPatientData.sampleSearch[0]);
+    testPatientData.sampleInclusions.forEach((resultData: any) => {
+      const resultPatient: PatientData = loadPatientData(resultData);
+      const similarityScore = calculatePatientSimilarity(searchPatient, resultPatient);
+      expect(similarityScore).toBeGreaterThan(0.95);
+    });
+  });
 
-  it("calculates patient similarity correctly", async () => {
-    
-    const similarityScore = calculatePatientSimilarity(patient1, patient2);
-
-    console.log('Similarity Score:', similarityScore);
-    expect(similarityScore).toBeCloseTo(0.99, 1); // Replace 'expectedScore' with the expected similarity score
+  it("identifies sampleExclusions as non-matches", async () => {
+    const searchPatient: PatientData = loadPatientData(testPatientData.sampleSearch[0]);
+    testPatientData.sampleExclusions.forEach((resultData: any) => {
+      const similarityScore = calculatePatientSimilarity(searchPatient, resultData);
+      expect(similarityScore).toBeLessThan(0.95);
+    });
   });
 });

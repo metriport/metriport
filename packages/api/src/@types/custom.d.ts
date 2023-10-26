@@ -6,4 +6,4 @@ namespace Express {
   }
 }
 
-declare module 'jaro-winkler';
+declare module "jaro-winkler";
