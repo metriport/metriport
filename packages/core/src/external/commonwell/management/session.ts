@@ -1,7 +1,11 @@
 import assert from "assert";
 import { Browser, BrowserContext, devices, firefox, Page } from "playwright";
-import { CodeChallenge } from "../../../domain/code-challenge";
-import { Cookie, CookieManager, cookiesToString } from "../../../domain/cookie-manager";
+import { CodeChallenge } from "../../../domain/auth/code-challenge";
+import {
+  Cookie,
+  CookieManager,
+  cookiesToString,
+} from "../../../domain/auth/cookie-management/cookie-manager";
 import { sleep } from "../../../util/sleep";
 import { CommonWellManagementAPI } from "./api";
 
@@ -74,7 +78,7 @@ export class SessionManagement {
       const filteresCookies = cookies.filter(this.isEnabledCookie);
       this.debug(`-----> cookiesString: ${cookiesToString(filteresCookies)}`);
 
-      log(`Got cookies, updating DynamoDB...`);
+      log(`Got cookies, updating store...`);
       await this.cookieManager.updateCookies(filteresCookies);
 
       log(`Done.`);
@@ -164,6 +168,12 @@ export class SessionManagement {
 
       return page;
     } catch (error) {
+      // TODO 1195 send it to S3
+      // TODO 1195 send it to S3
+      // TODO 1195 send it to S3
+      // TODO 1195 send it to S3
+      // TODO 1195 send it to S3
+      // const buffer = await page.screenshot();
       await page.screenshot({ path: "screenshot-error.png" });
       throw error;
     }
