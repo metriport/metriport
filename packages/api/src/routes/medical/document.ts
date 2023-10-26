@@ -180,7 +180,7 @@ router.get(
  *
  * Uploads a medical document and creates a Document Reference for that file on the FHIR server.
  *
- * @param patientId - The patientId of the patient.
+ * @param patientId - The ID of the patient.
  * @body - The Partial<DocumentReference> draft to specify context for the file to be uploaded.
  *
  * @return documentReferenceID for the uploaded file.

@@ -483,7 +483,7 @@ export class MetriportMedicalApi {
    * Refer to Metriport Documentation for more details:
    * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
    *
-   * @param patientId - the patient ID.
+   * @param patientId - the ID of the patient.
    * @param docRef - a FHIR Document Reference for this file upload. Mandatory fields include DocumentReference.description, DocumentReference.type, and DocumentReference.context. Besides that, try to include as much metadata on the document as possible. Note that you DO NOT need to fill in the Organization or Patient fields under the author or contained fields - Metriport will fill this in and overwrite whatever you put in.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/fhir/resources/documentreference.
    *
