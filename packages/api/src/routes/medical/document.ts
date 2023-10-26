@@ -1,11 +1,8 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createS3FileName } from "@metriport/core/external/aws/s3";
+import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { MOVED_PERMANENTLY, OK } from "http-status";
-import https from "https";
 import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
@@ -13,7 +10,7 @@ import { getOrganization } from "../../command/medical/organization/get-organiza
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import {
-  cxDocRefCheck,
+  docRefCheck,
   pickDocRefParts,
 } from "../../external/fhir/document/draft-update-document-reference";
 import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
@@ -28,6 +25,7 @@ import { docConversionTypeSchema } from "./schemas/documents";
 
 const router = Router();
 const region = Config.getAWSRegion();
+const s3Utils = new S3Utils(region);
 const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 
 const getDocSchema = z.object({
@@ -178,18 +176,19 @@ router.get(
 );
 
 /**
- * POST /document/upload
+ * POST /document/upload-url
  *
  * Uploads a medical document and creates a Document Reference for that file on the FHIR server.
  *
  * @param patientId - The patientId of the patient.
+ * @body - The Partial<DocumentReference> draft to specify context for the file to be uploaded.
  *
  * @return documentReferenceID for the uploaded file.
  * Refer to Metriport Documentation for more details:
  * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
  */
 router.post(
-  "/upload",
+  "/upload-url",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
@@ -201,10 +200,8 @@ router.post(
     const organization = await getOrganization({ cxId });
     if (!organization) throw new ForbiddenError(`Organization not found for CX ${cxId}`);
 
-    const docRefDraft = req.body.docRef;
-    const fileContent = req.body.fileContent;
-    console.log("File Content", JSON.stringify(fileContent));
-    cxDocRefCheck(docRefDraft);
+    const docRefDraft = req.body;
+    docRefCheck(docRefDraft);
 
     const docRef = pickDocRefParts(
       docRefDraft,
@@ -225,41 +222,15 @@ router.post(
       s3Key
     );
 
-    const client = new S3Client({ region });
-    const command = new PutObjectCommand({ Bucket: medicalDocumentsUploadBucketName, Key: s3Key });
-    const presignedUrl = await getSignedUrl(client, command);
-    console.log("Presigned URL:", presignedUrl);
-
-    await put(presignedUrl, fileContent);
+    const presignedUrl = await s3Utils.getPresignedUrl({
+      bucket: medicalDocumentsUploadBucketName,
+      key: s3Key,
+    });
 
     // Make a temporary DocumentReference on the FHIR server.
     await upsertDocumentToFHIRServer(cxId, docRef);
-    return res.status(httpStatus.CREATED).json({ documentReferenceID: docRefId });
+    return res.status(httpStatus.OK).json(presignedUrl);
   })
 );
-
-async function put(url: string, data: string) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(
-      url,
-      { method: "PUT", headers: { "Content-Length": new Blob([data]).size } },
-      res => {
-        let responseBody = "";
-        res.on("data", chunk => {
-          responseBody += chunk;
-        });
-        res.on("end", () => {
-          resolve(responseBody);
-        });
-      }
-    );
-    req.on("error", err => {
-      reject(err);
-    });
-    console.log("PUT FUNC is writing data...");
-    req.write(data);
-    req.end();
-  });
-}
 
 export default router;

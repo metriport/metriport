@@ -31,7 +31,6 @@ export {
   documentQueryStatusSchema,
   ListDocumentFilters,
   ListDocumentResult,
-  SignedUploadUrl,
 } from "./medical/models/document";
 export {
   Facility,

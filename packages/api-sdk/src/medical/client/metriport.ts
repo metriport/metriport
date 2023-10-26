@@ -13,7 +13,6 @@ import {
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
-  SignedUploadUrl,
   documentListSchema,
   documentQuerySchema,
 } from "../models/document";
@@ -479,29 +478,23 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Returns a presigned URL to upload a file to Metriport and make the document available to other HIEs.
-   * The presigned URL is to be used with a form-based upload, where URL.fields is used for the form.fields, and URL.url for the form.url.
+   * Returns a Presigned URL to upload a file to Metriport and make the document available to other HIEs.
+   * To upload your file contents, execute a PUT request using this Presigned URL with the file contents as the request body.
    * Refer to Metriport Documentation for more details:
    * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
    *
    * @param patientId - the patient ID.
    * @param docRef - a FHIR Document Reference for this file upload. Mandatory fields include DocumentReference.description, DocumentReference.type, and DocumentReference.context. Besides that, try to include as much metadata on the document as possible. Note that you DO NOT need to fill in the Organization or Patient fields under the author or contained fields - Metriport will fill this in and overwrite whatever you put in.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/fhir/resources/documentreference.
-   * @param fileContent - the file content string to be uploaded.
    *
-   * @returns A document reference ID.
+   * @returns A Presigned URL to be used for subsequent file upload.
    */
-  async uploadDocument(
+  async getDocumentUploadUrl(
     patientId: string,
-    docRef: Partial<FHIRDocumentReference>,
-    fileContent: string
-  ): Promise<SignedUploadUrl> {
-    const payload = {
-      docRef,
-      fileContent,
-    };
-    const url = `${DOCUMENT_URL}/upload/?patientId=${patientId}`;
-    const resp = await this.api.post(url, payload);
+    docRef: Partial<FHIRDocumentReference>
+  ): Promise<string> {
+    const url = `${DOCUMENT_URL}/upload-url/?patientId=${patientId}`;
+    const resp = await this.api.post(url, docRef);
     return resp.data;
   }
 }

@@ -9,7 +9,7 @@ import BadRequestError from "../../../errors/bad-request";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
 
-export function cxDocRefCheck(docRef: DocumentReference) {
+export function docRefCheck(docRef: DocumentReference) {
   if (!docRef.description) throw new BadRequestError(`Document Reference must have a description`);
   if (!docRef.type) throw new BadRequestError(`Document Reference must have a type`);
   if (!docRef.context) throw new BadRequestError(`Document Reference must have context`);

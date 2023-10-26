@@ -58,8 +58,3 @@ export type ListDocumentFilters = {
 export type ListDocumentResult = {
   documents: FHIRDocumentReference[];
 };
-
-export type SignedUploadUrl = {
-  url: string;
-  fields: Record<string, string>;
-};

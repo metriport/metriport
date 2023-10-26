@@ -2,6 +2,8 @@ import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
 
 dayjs.extend(duration);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
@@ -31,13 +33,19 @@ async function getSignedUrl({
 
 export class S3Utils {
   public readonly _s3: AWS.S3;
+  public readonly _s3Client: S3Client;
 
   constructor(readonly region: string) {
     this._s3 = makeS3Client(region);
+    this._s3Client = new S3Client({ region });
   }
 
   get s3(): AWS.S3 {
     return this._s3;
+  }
+
+  get s3Client(): S3Client {
+    return this._s3Client;
   }
 
   getFileContentsAsString(s3BucketName: string, s3FileName: string): Promise<string> {
@@ -88,6 +96,22 @@ export class S3Utils {
       Key: fileName,
       Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
     });
+  }
+
+  async getPresignedUrl({
+    bucket,
+    key,
+    durationSeconds,
+  }: {
+    bucket: string;
+    key: string;
+    durationSeconds?: number;
+  }): Promise<string> {
+    const command = new PutObjectCommand({ Bucket: bucket, Key: key });
+    const presignedUrl = await getPresignedUrl(this.s3Client, command, {
+      expiresIn: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
+    });
+    return presignedUrl;
   }
 
   parseS3FileName(fileKey: string): { cxId: string; patientId: string; docId: string } | undefined {

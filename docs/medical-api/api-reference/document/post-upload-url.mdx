@@ -1,12 +1,10 @@
 ---
 title: "Upload Document"
-description: "Uploads a medical document to our servers and returns the ID of the FHIR DocumentReference."
+description: "Returns a presigned URL to use for a medical document upload to our servers."
 api: "POST /medical/v1/document/upload"
 ---
 
-## Overview:
-
-This endpoint enables you to upload your patients' medical documents with specified context to our servers, making them available to other HIEs.
+This endpoint returns a presigned URL to enable you to upload your patients' medical documents with specified context to our servers, making them available to other HIEs.
 
 ## Process
 
@@ -19,9 +17,9 @@ To use this endpoint, you will need to follow these steps:
   those will be inferred on our end - anything you will enter in these fields will be overwritten.
 </Tip>
 
-2. Convert your medical document into a string.
+2. Execute the endpoint and receive a presigned URL (later reffered to as `URL`) to use for the consecutive file upload.
 
-3. Execute the endpoint.
+3. Upload the file by executing a `PUT` request using the `URL`. Provide a `Content-Length` header to indicate the size of the file content. Once the file is uploaded, the process will complete, making this document available to other HIEs.
 
 ## Query Params
 
@@ -79,17 +77,13 @@ To use this endpoint, you will need to follow these steps:
 
       </Expandable>
 
-  </ParamField>
-  <ParamField body="fileContent" type="string" required>
-  </ParamField>
-
 ## Response
 
-A document reference ID.
+A Presigned URL to be used for subsequent file upload.
 
 ```json
 {
-  "documentReferenceID": <doc-ref-id-string>
+  "presignedUrl": <presigned-url-string>
 }
 ```
 
@@ -97,9 +91,10 @@ A document reference ID.
 
 ```javascript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api-sdk";
+import axios from "axios";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
-const docRefDraft: Partial<DocumentReference> = {
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const docRef: Partial<DocumentReference> = {
   description: "Third degree wrist burn treatment",
   type: {
     text: "Burn management Hospital Progress note",
@@ -120,14 +115,15 @@ const docRefDraft: Partial<DocumentReference> = {
   },
 };
 
-const fileContent = "<your-file-content-string>";
+const presignedUrl = await metriportClient.getDocumentUploadUrl("my-patient-id", docRef);
 
-const payload = {
-  docRef,
-  fileContent,
-};
+const fileContent = <medical-document-file-contents>;
 
-const documentReferenceID = await metriportClient.uploadDocument("my-patient-id", payload);
+await axios.put(presignedUrl, fileContent, {
+      headers: {
+        "Content-Length": sizeInBytes(data),
+      },
+    });
 ```
 
 </ResponseExample>

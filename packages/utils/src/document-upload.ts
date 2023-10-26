@@ -5,6 +5,8 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import fs from "fs/promises";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { sizeInBytes } from "@metriport/core/util/string";
+import axios from "axios";
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -20,6 +22,16 @@ async function readFileAsync(filePath: string) {
   } catch (err) {
     console.error(err);
   }
+}
+
+async function put(url: string, data: string) {
+  const response = await axios.put(url, data, {
+    headers: {
+      "Content-Length": sizeInBytes(data),
+    },
+  });
+
+  return response.data;
 }
 
 async function main() {
@@ -46,7 +58,16 @@ async function main() {
   const fileContent = await readFileAsync("./src/shorter_example.xml");
   if (!fileContent) throw new Error("File content is empty");
 
-  await metriportApi.uploadDocument(patientId, docRef, fileContent);
+  const presignedUrl = await metriportApi.getDocumentUploadUrl(patientId, docRef);
+  console.log("presignedUrl", presignedUrl);
+
+  try {
+    console.log("Uploading file to S3...");
+    await put(presignedUrl, fileContent);
+    console.log("Upload successful! :)");
+  } catch (err) {
+    console.log("ERROR:", err);
+  }
 }
 
 main();
