@@ -42,7 +42,7 @@ export async function handleBundleToMedicalRecord({
 
   if (isSandbox) {
     const url = await processSandboxSeed({
-      firstName: !patientMatch ? "jane" : patient.data.firstName,
+      firstName: patientMatch ? patient.data.firstName : "jane",
       conversionType,
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       bucketName: Config.getSandboxSeedBucketName()!,
