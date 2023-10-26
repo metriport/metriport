@@ -1,14 +1,16 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { cookieFromString, CookieManager } from "@metriport/core/domain/cookie-manager";
+import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
+import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
+import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import {
   SessionManagement,
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { CodeChallengeFromTerminal } from "./code-challenge-terminal";
+import * as readline from "readline-sync";
 
 /**
  * Script to run on local environment the code that enhances coverage @ CommonWell.
@@ -27,7 +29,13 @@ const cwBaseUrl = getEnvVarOrFail("CW_URL");
 const cwUsername = getEnvVarOrFail("CW_USERNAME");
 const cwPassword = getEnvVarOrFail("CW_PASSWORD");
 
-const cookieManager = new CookieManager();
+class CodeChallengeFromTerminal implements CodeChallenge {
+  async getCode() {
+    return readline.question("What's the access code? ");
+  }
+}
+
+const cookieManager = new CookieManagerInMemory();
 const props: SessionManagementConfig = {
   username: cwUsername,
   password: cwPassword,
