@@ -111,7 +111,7 @@ export function setup({
       sessionLambda: IFunction;
     }
   | undefined {
-  const config = getConfig();
+ØÏ  const config = getConfig();
   if (!config.commonwell.sessionManagement) {
     console.log(`CW session management is not enabled, skipping...`);
     return undefined;
