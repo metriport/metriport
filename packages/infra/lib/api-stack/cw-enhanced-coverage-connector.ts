@@ -4,6 +4,7 @@ import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IFunction, ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
+import { SessionManagementConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
 import { Secrets } from "../shared/secrets";
@@ -109,9 +110,11 @@ export function setup({
       sessionLambda: IFunction;
     }
   | undefined {
-  // TODO 1195 enable this
-  // const config = getConfig();
-  // if (!isProd(config)) return undefined;
+  const config = getConfig();
+  if (!config.commonwell.sessionManagement) {
+    console.log(`CW session management is not enabled, skipping...`);
+    return undefined;
+  }
 
   const credsStore = setupCredsStore(secrets);
   if (!credsStore) throw new Error(`Could not setup credentials for CW Management`);
@@ -124,6 +127,7 @@ export function setup({
     stack,
     vpc,
     lambdaLayers,
+    sessionConfig: config.commonwell.sessionManagement,
     credsStore,
     cookieStore,
     codeChallengeStore,
@@ -175,6 +179,7 @@ function createSessionMgmtLambda({
   stack,
   vpc,
   lambdaLayers,
+  sessionConfig,
   credsStore,
   cookieStore,
   codeChallengeStore,
@@ -183,17 +188,15 @@ function createSessionMgmtLambda({
   stack: Construct;
   vpc: IVpc;
   lambdaLayers: ILayerVersion[];
+  sessionConfig: SessionManagementConfig;
   credsStore: secret.ISecret;
   cookieStore: secret.Secret;
   codeChallengeStore: secret.Secret;
   alarmSnsAction?: SnsAction;
 }): IFunction {
   const config = getConfig();
-  const cwBaseUrl = config.commonwell.CW_URL;
-  if (!cwBaseUrl) throw new Error(`Missing CW_URL`);
-  // TODO 1195 move to a dedicated channel to avoid noise
-  const notificationUrl = config.slack?.SLACK_ALERT_URL;
-  if (!notificationUrl) throw new Error(`Missing SLACK_ALERT_URL`);
+  const cwBaseUrl = sessionConfig.url;
+  const notificationUrl = sessionConfig.codeChallengeNotificationUrl;
 
   const {
     connectorName,

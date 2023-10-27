@@ -29,7 +29,6 @@ export class CodeChallengeFromSecretManager implements CodeChallenge {
     await sendToSlack(
       {
         subject: "CW Code Challenge initiated :loading:",
-        // TODO 1195 consider adding the actual URL here, steps, or both.
         message: "Please update the secret manager at AWS console",
         emoji: ":warning:",
       },
