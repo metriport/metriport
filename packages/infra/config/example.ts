@@ -1,5 +1,5 @@
-import { EnvConfig } from "./env-config";
 import { EnvType } from "../lib/env-type";
+import { EnvConfig } from "./env-config";
 
 export const config: EnvConfig = {
   stackName: "MetriportInfraStack",
@@ -50,15 +50,17 @@ export const config: EnvConfig = {
     host: "myhealthapp.com",
   },
   commonwell: {
-    CW_MEMBER_NAME: "Test Org",
-    CW_MEMBER_OID: "1.2.3.1.4.1.11.12.29.2022.123",
-    CW_GATEWAY_ENDPOINT: "https://api.myhealthapp.com/oauth/fhir",
-    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT:
-      "https://myhealthapp.auth.us-east-1.amazoncognito.com/oauth2/token",
-    CW_TECHNICAL_CONTACT_NAME: "Engineering",
-    CW_TECHNICAL_CONTACT_TITLE: "Engineering",
-    CW_TECHNICAL_CONTACT_EMAIL: "support@healthapp.com",
-    CW_TECHNICAL_CONTACT_PHONE: "(123)-123-1234",
+    envVars: {
+      CW_MEMBER_NAME: "Test Org",
+      CW_MEMBER_OID: "1.2.3.1.4.1.11.12.29.2022.123",
+      CW_GATEWAY_ENDPOINT: "https://api.myhealthapp.com/oauth/fhir",
+      CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT:
+        "https://myhealthapp.auth.us-east-1.amazoncognito.com/oauth2/token",
+      CW_TECHNICAL_CONTACT_NAME: "Engineering",
+      CW_TECHNICAL_CONTACT_TITLE: "Engineering",
+      CW_TECHNICAL_CONTACT_EMAIL: "support@healthapp.com",
+      CW_TECHNICAL_CONTACT_PHONE: "(123)-123-1234",
+    },
   },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
