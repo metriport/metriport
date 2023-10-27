@@ -7,8 +7,6 @@ import * as stream from "stream";
 
 dayjs.extend(duration);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
-const UPLOAD_FILE_SIZE_LIMIT = 50_000_000; // 50MB
-const UPLOAD_FILE_SIZE_LIMIT_SANDBOX = 5_000_000; // 5MB
 
 export function makeS3Client(region: string): AWS.S3 {
   return new AWS.S3({ signatureVersion: "v4", region });
@@ -128,19 +126,15 @@ export class S3Utils {
   async getPresignedUploadUrl({
     bucket,
     key,
-    envType,
     durationSeconds,
   }: {
     bucket: string;
     key: string;
-    envType: string;
     durationSeconds?: number;
   }): Promise<string> {
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
-      ContentLength:
-        envType === "sandbox" ? UPLOAD_FILE_SIZE_LIMIT_SANDBOX : UPLOAD_FILE_SIZE_LIMIT,
     });
     const presignedUrl = await getPresignedUrl(this.s3Client, command, {
       expiresIn: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,

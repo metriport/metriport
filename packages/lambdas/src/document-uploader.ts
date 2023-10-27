@@ -32,7 +32,7 @@ export const handler = async (event: S3Event) => {
     } catch (error) {
       console.log("Error in documentUploaderHandler", error);
       capture.error(error, {
-        extra: { context: `documentUploaderHandler`, error },
+        extra: { context: `documentUploaderHandler`, sourceBucket, sourceKey },
       });
     }
   }

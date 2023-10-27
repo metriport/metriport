@@ -5,6 +5,7 @@ import { S3Utils, parseS3FileName } from "../s3";
 const api = axios.create();
 
 const UPLOADS_FOLDER = "uploads";
+const MAXIMUM_FILE_SIZE = 50_000_000; // 50 MB
 
 export type FileData = {
   mimeType?: string | undefined;
@@ -50,6 +51,12 @@ export async function documentUploaderHandler(
   // Get file info from the copied file
   const { size, contentType } = await s3Utils.getFileInfoFromS3(destinationKey, destinationBucket);
 
+  if (size && size > MAXIMUM_FILE_SIZE) {
+    // #1207 TODO: Delete the file if it's too large and alert the customer.
+    const message = "File size exceeds the maximum allowed size of 50 MB";
+    console.log(`${message}: ${size}`);
+    throw new MetriportError(message, null, { size });
+  }
   const fileData: FileData = {
     mimeType: contentType,
     size,
