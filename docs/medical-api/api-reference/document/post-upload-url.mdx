@@ -45,14 +45,14 @@ To use this endpoint, you will need to follow these steps:
       Context of the document content.
       <Expandable title="Context properties">
         <ParamField body="period" type="Period" required>
-          A time [Period](/medical-api/fhir/data-types/period) property defined by a start and end date and optionally time.
+          A time [Period](/medical-api/fhir/data-types/period) property including ISO 8601 timestamp(s).
         </ParamField>
 
         <ParamField body="facilityType" type="CodeableConcept">
           An object containing optional fields to specify the type of the facility. We ask that you simply provide the name of the facility under the `text` field - see example below.
             <Expandable title="Facility type properties">
               <ParamField body="text" type="string">
-                Plain text with the facility name and type - for example `John Snow Clinic - Primary Care Centre`
+                Plain text with the facility name and type - for example `John Snow Clinic - Acute Care Centre`
               </ParamField>
             </Expandable>
         </ParamField>
@@ -64,7 +64,7 @@ To use this endpoint, you will need to follow these steps:
   those will be inferred on our end - anything you will enter in these fields will be overwritten.
 </Tip>
 
-## Example Document Reference
+Example Payload:
 
 ```json
 {
@@ -84,7 +84,7 @@ To use this endpoint, you will need to follow these steps:
       end: "2023-10-10T15:30:30Z",
     },
     facilityType: {
-      text: "My Clinic Name - Acute Care",
+      text: "John Snow Clinic - Acute Care Centre",
     },
   },
 };
@@ -128,12 +128,12 @@ const docRef: Partial<DocumentReference> = {
   },
 };
 
-const presignedUrl = await metriportClient.getDocumentUploadUrl("my-patient-id", docRef);
+const url = await metriportClient.getDocumentUploadUrl("my-patient-id", docRef);
 
-// Upload the document using this presignedUrl in a PUT request, something along these lines:
+// Upload the document using this url in a PUT request, something along these lines:
 
 // const fileContent = <medical-document-document-contents>;
-// await axios.put(presignedUrl, document, {
+// await axios.put(url, document, {
 //     headers: {
 //         "Content-Length": sizeInBytes(data),
 //     },

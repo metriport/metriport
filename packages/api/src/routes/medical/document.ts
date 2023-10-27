@@ -211,6 +211,7 @@ router.post(
     const presignedUrl = await s3Utils.getPresignedUploadUrl({
       bucket: medicalDocumentsUploadBucketName,
       key: s3FileName,
+      envType: Config.getEnvType(),
     });
 
     // Make a temporary DocumentReference on the FHIR server.
