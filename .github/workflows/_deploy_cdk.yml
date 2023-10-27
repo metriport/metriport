@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: "false"
+      is-branch-to-staging:
+          required: false
+          type: boolean
+          default: false
+          description: "whether this workflow should checkout internal's develop/master or a feature branch"
       AWS_REGION:
         required: true
         type: string
@@ -72,12 +77,24 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: metriport
-      # checkout the internal repo to get configs
-      - name: Checkout
+      # checkout the internal repo to get configs - default branches
+      - name: Checkout internal default branch
         uses: actions/checkout@v3
+        if: ${{ inputs.is-branch-to-staging == false }}
         with:
           repository: metriport/metriport-internal
           ref: ${{ (inputs.deploy_env == 'production' || inputs.deploy_env == 'sandbox') && 'master' || 'develop' }}
+          token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
+          path: metriport-internal
+          sparse-checkout: |
+            config-oss/api-infra
+      # checkout the internal repo to get configs - feature branch when "branching to staging"
+      - name: Checkout internal feature branch
+        uses: actions/checkout@v3
+        if: ${{ inputs.is-branch-to-staging == true }}
+        with:
+          repository: metriport/metriport-internal
+          ref: ${{ github.ref }}
           token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
           path: metriport-internal
           sparse-checkout: |

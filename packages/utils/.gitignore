@@ -126,3 +126,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# use this to write one-off test scripts
+scratch.ts
+
+*.csv
+bulk-insert-patient-ids.txt

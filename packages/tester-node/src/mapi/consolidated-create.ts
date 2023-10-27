@@ -1,6 +1,7 @@
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { getEnvVarOrFail } from "../../shared/env";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
+const apiUrl = getEnvVarOrFail("API_URL");
 const apiToken = getEnvVarOrFail("API_KEY");
 const patientId = getEnvVarOrFail("PATIENT_ID");
 
@@ -8,7 +9,7 @@ async function main() {
   console.log(`Calling createPatientConsolidated...`);
 
   const metriport = new MetriportMedicalApi(apiToken, {
-    baseAddress: "http://0.0.0.0:8080",
+    baseAddress: apiUrl,
   });
 
   const createResult = await metriport.createPatientConsolidated(patientId, {

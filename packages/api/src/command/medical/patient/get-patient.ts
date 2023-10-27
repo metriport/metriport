@@ -1,9 +1,10 @@
 import { intersectionWith, isEqual } from "lodash";
 import { Op, Transaction } from "sequelize";
+import { Patient, PatientData } from "../../../domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
-import { Patient, PatientData, PatientModel } from "../../../models/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
@@ -15,9 +16,11 @@ const JW_THRESHOLD = 0.95;
 export const getPatients = async ({
   facilityId,
   cxId,
+  patientIds,
 }: {
   facilityId?: string;
   cxId: string;
+  patientIds?: string[];
 }): Promise<Patient[]> => {
   const patients = await PatientModel.findAll({
     where: {
@@ -29,10 +32,34 @@ export const getPatients = async ({
             },
           }
         : undefined),
+      ...(patientIds ? { id: patientIds } : undefined),
     },
     order: [["id", "ASC"]],
   });
   return patients;
+};
+
+export const getPatientIds = async ({
+  facilityId,
+  cxId,
+}: {
+  facilityId?: string;
+  cxId: string;
+}): Promise<string[]> => {
+  const patients = await PatientModel.findAll({
+    attributes: ["id"],
+    where: {
+      cxId,
+      ...(facilityId
+        ? {
+            facilityIds: {
+              [Op.contains]: [facilityId],
+            },
+          }
+        : undefined),
+    },
+  });
+  return patients.map(p => p.id);
 };
 
 export const getPatientByDemo = async ({

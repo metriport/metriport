@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-// Keep dotenv import and config before everything else
+// Keep dotenv import and config before everything else.
 import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express, { Application, Request, Response } from "express";

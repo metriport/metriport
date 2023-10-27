@@ -61,5 +61,6 @@ export const config: EnvConfig = {
   },
   medicalDocumentsBucketName: "test-bucket",
   systemRootOID: "2.16.840.1.113883.3.999999",
+  fhirToCDAUrl: "https://converter-test.com",
 };
 export default config;

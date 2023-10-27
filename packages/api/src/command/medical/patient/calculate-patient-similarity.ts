@@ -1,4 +1,4 @@
-import { PatientData } from "../../../models/medical/patient";
+import { PatientData } from "../../../domain/medical/patient";
 import jaroWinkler from "jaro-winkler";
 
 /**

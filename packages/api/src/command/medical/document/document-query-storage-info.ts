@@ -1,10 +1,10 @@
 import { Document } from "@metriport/commonwell-sdk";
+import { Patient } from "../../../domain/medical/patient";
 import { makeS3Client } from "../../../external/aws/s3";
 import {
   DocumentWithMetriportId,
   getFileExtension,
 } from "../../../external/commonwell/document/shared";
-import { Patient } from "../../../models/medical/patient";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";

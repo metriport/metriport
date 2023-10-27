@@ -17,6 +17,7 @@
     "exactOptionalPropertyTypes": true,
     "noImplicitReturns": true,
     // END - From @tsconfig/strictest
+    "noUncheckedIndexedAccess": true,
     "outDir": "./dist"
   },
   "include": ["./src"],

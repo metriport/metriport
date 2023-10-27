@@ -1,9 +1,12 @@
-import { Patient as FHIRPatient, Identifier } from "@medplum/fhirtypes";
-import { Patient, splitName } from "../../../models/medical/patient";
-import { GenderAtBirth } from "../../../models/medical/patient";
-import { PersonalIdentifier } from "../../../models/medical/patient";
-import { driversLicenseURIs } from "../../../shared/oid";
-import { ContactTypes } from "../../../models/medical/contact";
+import { Identifier, Patient as FHIRPatient } from "@medplum/fhirtypes";
+import { ContactTypes } from "../../../domain/medical/contact";
+import {
+  GenderAtBirth,
+  Patient,
+  PersonalIdentifier,
+  splitName,
+} from "../../../domain/medical/patient";
+import { driversLicenseURIs } from "@metriport/core/domain/oid";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
@@ -24,17 +27,17 @@ export const toFHIR = (patient: Patient): FHIRPatient => {
       },
     ],
     telecom: patient.data.contact
-      ? patient.data.contact.map(contact => {
+      ? patient.data.contact.flatMap(contact => {
           return contact
             ? Object.entries(contact).map(([key, val]) => {
                 return {
                   system: key as ContactTypes,
                   value: val ?? undefined,
                 };
-              })[0]
-            : {};
+              })[0] ?? []
+            : [];
         })
-      : undefined,
+      : [],
     gender: genderMapping[patient.data.genderAtBirth],
     birthDate: patient.data.dob,
     address: patient.data.address.map(address => {

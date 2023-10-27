@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { makeBaseDomain } from "../../../domain/__tests__/base-model";
 import { Organization, OrganizationData, OrgType } from "../organization";
+import { makeBaseDomain } from "../../__tests__/base-domain";
 import { makeAddressStrict } from "./location-address";
 
 export const makeOrgNumber = () => faker.number.int({ min: 0, max: 1_000_000_000 });

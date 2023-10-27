@@ -1,6 +1,6 @@
 import { Document } from "@metriport/commonwell-sdk";
 import { contentType, extension } from "mime-types";
-import { Patient } from "../../../models/medical/patient";
+import { Patient } from "../../../domain/medical/patient";
 
 export const sandboxSleepTime = 5000;
 

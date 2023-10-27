@@ -6,6 +6,8 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { oid } from "@metriport/core/domain/oid";
+import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { chunk, partition } from "lodash";
 import {
   getDocToFileFunction,
@@ -20,21 +22,19 @@ import {
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { reportUsage } from "../../../command/usage/report-usage";
+import { Facility } from "../../../domain/medical/facility";
+import { Organization } from "../../../domain/medical/organization";
+import { Patient } from "../../../domain/medical/patient";
 import { Product } from "../../../domain/product";
 import ConversionError from "../../../errors/conversion-error";
 import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
 import { MedicalDataSource } from "../../../external";
-import { makeLambdaClient } from "../../../external/aws/lambda";
-import { Facility } from "../../../models/medical/facility";
-import { Organization } from "../../../models/medical/organization";
-import { Patient } from "../../../models/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
-import { oid } from "../../../shared/oid";
 import { Util } from "../../../shared/util";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -46,7 +46,8 @@ import { getAllPages } from "../../fhir/shared/paginated";
 import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getPatientData, PatientDataCommonwell } from "../patient-shared";
+import { getPatientDataWithSingleFacility, PatientDataCommonwell } from "../patient-shared";
+import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
   CWDocumentWithMetriportData,
@@ -63,7 +64,7 @@ const DOC_DOWNLOAD_JITTER_DELAY_MIN_PCT = 10; // 1-100% of max delay
 const DOC_DOWNLOAD_CHUNK_DELAY_MAX_MS = 10_000; // in milliseconds
 const DOC_DOWNLOAD_CHUNK_DELAY_MIN_PCT = 40; // 1-100% of max delay
 
-const lambdaClient = makeLambdaClient();
+type File = DownloadResult & { isNew: boolean };
 
 /**
  * Query CommonWell for DocumentReferences, download and convert documents to FHIR,
@@ -72,7 +73,7 @@ const lambdaClient = makeLambdaClient();
  * This is likely to be a long-running function, so it should likely be called asynchronously.
  *
  * @param patient - the patient to query for
- * @param facilityId - the facility to query for
+ * @param facilityId - the facility to query for (optional if the patient only has one facility)
  * @param forceDownload - whether to force download the documents from CW, even if they are already
  * on S3 (optional) - see `downloadDocsAndUpsertFHIR()` for the default value
  * @param ignoreDocRefOnFHIRServer - whether to ignore the doc refs on the FHIR server and re-query
@@ -87,17 +88,16 @@ export async function queryAndProcessDocuments({
   requestId,
 }: {
   patient: Patient;
-  facilityId: string;
+  facilityId?: string | undefined;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<number> {
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
-
-  const { organization, facility } = await getPatientData(patient, facilityId);
-
   try {
+    const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
+
     if (Config.isSandbox()) {
       const documentsSandbox = await sandboxGetDocRefsAndUpsert({
         organization,
@@ -135,7 +135,7 @@ export async function queryAndProcessDocuments({
   } catch (error) {
     console.log(`Error: ${errorToString(error)}`);
     processPatientDocumentRequest(
-      organization.cxId,
+      patient.cxId,
       patient.id,
       "medical.document-download",
       MAPIWebhookStatus.failed
@@ -400,7 +400,7 @@ export async function downloadDocsAndUpsertFHIR({
   requestId,
 }: {
   patient: Patient;
-  facilityId: string;
+  facilityId?: string;
   documents: Document[];
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
@@ -492,8 +492,9 @@ export async function downloadDocsAndUpsertFHIR({
             await jitterSingleDownload();
 
             if (!fileInfo.fileExists) {
+              // Download from CW and upload to S3
               uploadToS3 = async () => {
-                const { organization, facility } = await getPatientData(
+                const { organization, facility } = await getPatientDataWithSingleFacility(
                   { id: patient.id, cxId },
                   facilityId
                 );
@@ -718,15 +719,6 @@ function processFhirAndSearchResponse(
   }
 }
 
-type File = {
-  bucket: string;
-  key: string;
-  location: string;
-  contentType: string | undefined;
-  size: number | undefined;
-  isNew: boolean;
-};
-
 async function triggerDownloadDocument({
   doc,
   fileInfo,
@@ -734,42 +726,32 @@ async function triggerDownloadDocument({
   facilityNPI,
   cxId,
 }: {
-  doc: DocumentWithMetriportId;
+  doc: DocumentWithLocation;
   fileInfo: S3Info;
   organization: Organization;
   facilityNPI: string;
   cxId: string;
 }): Promise<File> {
-  const lambdaName = Config.getDocumentDownloaderLambdaName();
-  const payload = {
-    document: {
-      id: doc.id,
-      mimeType: doc.content.mimeType,
-      location: doc.content.location,
-    },
-    fileInfo,
+  const docDownloader = makeDocumentDownloader({
     orgName: organization.data.name,
     orgOid: organization.oid,
     npi: facilityNPI,
-    cxId,
+  });
+  const document = {
+    id: doc.id,
+    mimeType: doc.content.mimeType,
+    location: doc.content.location,
   };
-  const lambdaResult = await lambdaClient
-    .invoke({
-      FunctionName: lambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify(payload),
-    })
-    .promise();
+  const adjustedFileInfo = {
+    name: fileInfo.fileName,
+    location: fileInfo.fileLocation,
+  };
 
-  if (lambdaResult.StatusCode !== 200)
-    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName, docId: doc.id });
-
-  if (lambdaResult.Payload === undefined)
-    throw new MetriportError("Payload is undefined", undefined, { lambdaName, docId: doc.id });
-
-  const newFile = JSON.parse(lambdaResult.Payload.toString());
-
-  return newFile;
+  const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+  return {
+    ...result,
+    isNew: true,
+  };
 }
 
 const fileIsConvertible = (f: File) => isConvertible(f.contentType);

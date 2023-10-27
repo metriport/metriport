@@ -1,16 +1,16 @@
 import {
   CommonWellAPI,
   LOLA,
+  organizationQueryMeta,
+  PatientLinkResp,
   Person,
   RequestMetadata,
-  organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { PatientLinkResp } from "@metriport/commonwell-sdk";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { Patient } from "../../../models/medical/patient";
+import { Patient } from "../../../domain/medical/patient";
 import { capture } from "../../../shared/notifications";
-import { oid } from "../../../shared/oid";
+import { oid } from "@metriport/core/domain/oid";
 import { makeCommonWellAPI } from "../api";
 import { setCommonwellId } from "../patient-external-data";
 import {

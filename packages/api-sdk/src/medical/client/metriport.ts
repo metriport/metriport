@@ -263,16 +263,18 @@ export class MetriportMedicalApi {
    * @param resources Optional array of resources to be returned.
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
    * @return The consolidated data query status.
    */
   async startConsolidatedQuery(
     patientId: string,
     resources?: readonly ResourceTypeForConsolidation[],
     dateFrom?: string,
-    dateTo?: string
+    dateTo?: string,
+    conversionType?: string
   ): Promise<QueryStatus> {
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, undefined, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo },
+      params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
     });
     return resp.data;
   }
@@ -424,10 +426,12 @@ export class MetriportMedicalApi {
    * Start a document query for the given patient across HIEs.
    *
    * @param patientId Patient ID for which to retrieve document metadata.
-   * @param facilityId The facility providing the NPI to support this operation.
+   * @param facilityId The facility providing the NPI to support this operation (optional).
+   *        If not provided and the patient has only one facility, that one will be used.
+   *        If not provided and the patient has multiple facilities, an error will be thrown.
    * @return The document query request ID, progress & status indicating whether its being executed or not.
    */
-  async startDocumentQuery(patientId: string, facilityId: string): Promise<DocumentQuery> {
+  async startDocumentQuery(patientId: string, facilityId?: string): Promise<DocumentQuery> {
     const resp = await this.api.post(`${DOCUMENT_URL}/query`, null, {
       params: {
         patientId,

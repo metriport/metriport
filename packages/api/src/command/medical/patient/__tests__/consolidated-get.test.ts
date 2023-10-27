@@ -2,11 +2,11 @@
 import { Observation } from "@medplum/fhirtypes";
 import { HapiFhirClient } from "@metriport/core/external/fhir/api/api-hapi";
 import { v4 as uuidv4 } from "uuid";
-import { makePatient } from "../../../../models/medical/__tests__/patient";
+import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { getConsolidatedPatientData } from "../consolidated-get";
 import * as getPatient from "../get-patient";
 import { calculatePatientSimilarity } from "../calculate-patient-similarity";
-import { PatientData } from "../../../../models/medical/patient";
+import { PatientData } from "../../../../domain/medical/patient";
 import { testPatientData } from "./test_data";
 
 let getPatientOrFailMock: jest.SpyInstance;

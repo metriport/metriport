@@ -8,17 +8,19 @@ import {
   ResourceType,
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
-import { Patient } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { emptyFunction, Util } from "../../../shared/util";
-import { udpateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
+import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
+import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
 
 export async function startConsolidatedQuery({
@@ -27,12 +29,14 @@ export async function startConsolidatedQuery({
   resources,
   dateFrom,
   dateTo,
+  conversionType,
 }: {
   cxId: string;
   patientId: string;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
+  conversionType?: ConsolidationConversionType;
 }): Promise<QueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -40,13 +44,16 @@ export async function startConsolidatedQuery({
     log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
     return patient.data.consolidatedQuery;
   }
+
   const progress: QueryProgress = { status: "processing" };
-  await udpateConsolidatedQueryProgress({
+  await updateConsolidatedQueryProgress({
     patient,
     progress,
     reset: true,
   });
-  getConsolidatedAndSendToCx({ patient, resources, dateFrom, dateTo }).catch(emptyFunction);
+  getConsolidatedAndSendToCx({ patient, resources, dateFrom, dateTo, conversionType }).catch(
+    emptyFunction
+  );
   return progress;
 }
 
@@ -55,18 +62,34 @@ async function getConsolidatedAndSendToCx({
   resources,
   dateFrom,
   dateTo,
+  conversionType,
 }: {
-  patient: Pick<Patient, "id" | "cxId">;
+  patient: Pick<Patient, "id" | "cxId" | "data">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
+  conversionType?: ConsolidationConversionType;
 }): Promise<void> {
   const { log } = Util.out(
     `getConsolidatedAndSendToCx - cxId ${patient.cxId}, patientId ${patient.id}`
   );
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
-    const bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+    let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+
+    if (conversionType) {
+      // If we need to convert to medical record, we also have to update the resulting
+      // FHIR bundle to represent that.
+      bundle = await handleBundleToMedicalRecord({
+        bundle,
+        patient,
+        resources,
+        dateFrom,
+        dateTo,
+        conversionType,
+      });
+    }
+
     // trigger WH call
     processConsolidatedDataWebhook({
       patient,
@@ -79,7 +102,12 @@ async function getConsolidatedAndSendToCx({
     processConsolidatedDataWebhook({
       patient,
       status: "failed",
-      filters: { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo },
+      filters: {
+        resources: resources ? resources.join(", ") : undefined,
+        dateFrom,
+        dateTo,
+        conversionType,
+      },
     }).catch(emptyFunction);
     capture.error(error, {
       extra: {

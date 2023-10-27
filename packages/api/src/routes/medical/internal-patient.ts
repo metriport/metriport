@@ -1,12 +1,14 @@
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import stringify from "json-stringify-safe";
 import { z } from "zod";
-import { getFacilities } from "../../command/medical/facility/get-facility";
+import { getFacilities, getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { getPatients } from "../../command/medical/patient/get-patient";
+import { getPatientIds, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { Patient } from "../../domain/medical/patient";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
@@ -15,6 +17,7 @@ import { findDuplicatedPersons } from "../../external/commonwell/admin/find-pati
 import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
 import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
 import { getETag } from "../../shared/http";
+import { errorToString } from "../../shared/log";
 import { stringToBoolean } from "../../shared/types";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryOrFail } from "../util";
@@ -35,6 +38,29 @@ async function updateInFHIRAndCW(
 }
 
 /** ---------------------------------------------------------------------------
+ * GET /internal/patient/ids
+ *
+ * Get all patient IDs for a given customer.
+ *
+ * @param req.query.cxId The customer ID.
+ * @returns 200 with the list of ids on the body under `patientIds`.
+ */
+router.get(
+  "/ids",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").optional("facilityId", req);
+    if (facilityId) await getFacilityOrFail({ cxId, id: facilityId });
+    const patientIds = await getPatientIds({ cxId, facilityId });
+    return res.status(status.OK).json({ patientIds });
+  })
+);
+
+const updateAllSchema = z.object({
+  patientIds: z.string().array().optional(),
+});
+
+/** ---------------------------------------------------------------------------
  * POST /internal/patient/update-all
  *
  * Triggers an update for all of a cx's patients without changing any
@@ -43,18 +69,29 @@ async function updateInFHIRAndCW(
  *
  *
  * @param req.query.cxId The customer ID.
+ * @param req.body.patientIds The patient IDs to update (optional, defaults to all patients).
  * @return count of update failues, 0 if all successful
  */
 router.post(
   "/update-all",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const { patientIds: requestedPatientIds = [] } = updateAllSchema.parse(req.body);
+
     const facilities = await getFacilities({ cxId });
     let failedUpdateCount = 0;
     for (const facility of facilities) {
-      const patients = await getPatients({ cxId, facilityId: facility.id });
-      const patientUpdates = [];
-      for (const patient of patients) {
+      const patientIds = requestedPatientIds.length
+        ? requestedPatientIds
+        : await getPatientIds({ cxId, facilityId: facility.id });
+
+      const patients = await getPatients({
+        cxId,
+        facilityId: facility.id,
+        patientIds,
+      });
+
+      const updatePatient = async (patient: Patient) => {
         const patientUpdate: PatientUpdateCmd = {
           id: patient.id,
           cxId: patient.cxId,
@@ -66,14 +103,16 @@ router.post(
           contact: patient.data.contact,
           personalIdentifiers: patient.data.personalIdentifiers,
         };
-        patientUpdates.push(updateInFHIRAndCW(patientUpdate, facility.id));
-      }
-      const result = await Promise.allSettled(patientUpdates);
-      for (const patientUpdate of result) {
-        if (patientUpdate.status === "rejected") {
+        try {
+          await updateInFHIRAndCW(patientUpdate, facility.id);
+        } catch (error) {
+          console.log(`Failed to update patient ${patient.id} - ${errorToString(error)}`);
           failedUpdateCount++;
         }
-      }
+      };
+      await executeAsynchronously(patients, async patient => updatePatient(patient), {
+        numberOfParallelExecutions: 10,
+      });
     }
     return res.status(status.OK).json({ failedUpdateCount });
   })
