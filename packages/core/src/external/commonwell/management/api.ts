@@ -1,4 +1,6 @@
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import {
   Cookie,
   cookieFromString,
@@ -7,6 +9,11 @@ import {
 } from "../../../domain/auth/cookie-management/cookie-manager";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { safeStringify } from "../../../util/string";
+
+dayjs.extend(duration);
+
+const DEFAULT_TIMEOUT_GET_MEMBER = dayjs.duration({ seconds: 10 });
+const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ seconds: 20 });
 
 export type Member = {
   id: string;
@@ -27,7 +34,7 @@ export class CommonWellManagementAPI {
   }
 
   public async getMember({
-    timeout = 10_000,
+    timeout = DEFAULT_TIMEOUT_GET_MEMBER.asMilliseconds(),
     log = console.log,
   }: {
     timeout?: number;
@@ -59,7 +66,7 @@ export class CommonWellManagementAPI {
   public async updateIncludeList({
     oid,
     careQualityOrgIds,
-    timeout = 20_000,
+    timeout = DEFAULT_TIMEOUT_INCLUDE_LIST.asMilliseconds(),
     log = console.log,
   }: {
     oid: string;
