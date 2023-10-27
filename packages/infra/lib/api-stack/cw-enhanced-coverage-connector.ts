@@ -114,11 +114,8 @@ export function setup({
   // TODO 1195 enable this
   // TODO 1195 enable this
   // TODO 1195 enable this
-  const config = getConfig();
+  // const config = getConfig();
   // if (!isProd(config)) return undefined;
-
-  console.log(`EnvType: '${config.environmentType}'`);
-  console.log(`CW_URL: '${config.commonwell.CW_URL}'`);
 
   const credsStore = setupCredsStore(secrets);
   if (!credsStore) throw new Error(`Could not setup credentials for CW Management`);
@@ -156,9 +153,10 @@ export function setup({
 
 function setupCredsStore(secrets: Secrets): secret.ISecret | undefined {
   const config = getConfig();
-  const name = config.cwSecretNames.CW_MANAGEMENT_CREDS;
-  if (!name) return undefined;
-  return secrets[name];
+  // A bit of gymnastic to get a compilation error if we change the name of the env var
+  const envVarName: Extract<keyof typeof config.cwSecretNames, "CW_MANAGEMENT_CREDS"> =
+    "CW_MANAGEMENT_CREDS";
+  return secrets[envVarName];
 }
 
 function createCookiesStore(stack: Construct): secret.Secret {
