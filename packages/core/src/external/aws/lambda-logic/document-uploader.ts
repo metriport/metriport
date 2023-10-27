@@ -43,7 +43,7 @@ export async function documentUploaderHandler(
     await s3Utils.s3.copyObject(params).promise();
   } catch (error) {
     const message = "Error copying the uploaded file to medical documents bucket";
-    console.log(message, JSON.stringify(error));
+    console.log(`${message}: ${error}`);
     throw new MetriportError(message, error, { copySource, destinationBucket, destinationKey });
   }
 
@@ -62,8 +62,8 @@ export async function documentUploaderHandler(
     console.log("Forwarding call to server with this fileData:", JSON.stringify(fileData));
     await forwardCallToServer(cxId, apiServerURL, fileData);
   } catch (error) {
-    const message = "Failed with the call to update the doc-ref of an uploaded file.";
-    console.log(message, JSON.stringify(error));
+    const message = "Failed with the call to update the doc-ref of an uploaded file";
+    console.log(`${message}: ${error}`);
     throw new MetriportError(message, error, { sourceKey, destinationKey });
   }
 }

@@ -7,7 +7,7 @@ import * as stream from "stream";
 
 dayjs.extend(duration);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
-const UPLOAD_FILE_SIZE_LIMIT = 25_000_000; // 25MB
+const UPLOAD_FILE_SIZE_LIMIT = 50_000_000; // 50MB
 const UPLOAD_FILE_SIZE_LIMIT_SANDBOX = 5_000_000; // 5MB
 
 export function makeS3Client(region: string): AWS.S3 {

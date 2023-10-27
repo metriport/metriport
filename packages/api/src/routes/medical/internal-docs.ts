@@ -7,7 +7,7 @@ import multer from "multer";
 import { z } from "zod";
 import {
   createAndUploadDocReference,
-  updateAndUploadDocumentReference,
+  updateDocumentReference,
 } from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import {
@@ -294,12 +294,12 @@ router.post(
 
     const fileData = documentDataSchema.parse(req.body);
 
-    await updateAndUploadDocumentReference({
+    await updateDocumentReference({
       cxId,
       fileData,
     });
 
-    return res.sendStatus(httpStatus.CREATED);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

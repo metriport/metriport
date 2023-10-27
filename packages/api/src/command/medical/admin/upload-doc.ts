@@ -130,7 +130,7 @@ export async function createAndUploadDocReference({
  * @param cxId The ID of the organization uploading a document
  * @param fileData The file metadata and DocumentReference ID
  */
-export async function updateAndUploadDocumentReference({
+export async function updateDocumentReference({
   cxId,
   fileData,
 }: {
@@ -140,18 +140,19 @@ export async function updateAndUploadDocumentReference({
   const fhirApi = makeFhirApi(cxId);
   try {
     const docRefDraft = await fhirApi.readResource("DocumentReference", fileData.docId);
-    const updatedDocumentReference = updateDocumentReference(docRefDraft, fileData);
+    const updatedDocumentReference = amendDocumentReference(docRefDraft, fileData);
     console.log("Updated the DocRef:", JSON.stringify(updatedDocumentReference));
 
     await fhirApi.updateResource(updatedDocumentReference);
     return;
   } catch (error) {
     const message = "Failed to update the document reference for a CX-uploaded file";
-    capture.error(message, { extra: { context: `updateAndUploadDocumentReference`, error, cxId } });
+    console.log(message);
+    capture.error(error, { extra: { context: `updateAndUploadDocumentReference`, cxId } });
   }
 }
 
-function updateDocumentReference(doc: DocumentReference, fileData: FileData) {
+function amendDocumentReference(doc: DocumentReference, fileData: FileData) {
   const refDate = dayjs();
 
   const metriportContent = createDocReferenceContent({

@@ -11,9 +11,9 @@ const destinationBucket = getEnvOrFail("MEDICAL_DOCUMENTS_DESTINATION_BUCKET");
 const region = getEnvOrFail("AWS_REGION");
 
 export const handler = async (event: S3Event) => {
-  if (event.Records[0]) {
-    const sourceBucket = event.Records[0].s3.bucket.name;
-    const sourceKey = decodeURIComponent(event.Records[0].s3.object.key);
+  for (const record of event.Records) {
+    const sourceBucket = record.s3.bucket.name;
+    const sourceKey = decodeURIComponent(record.s3.object.key);
     console.log(
       "Running the document uploader handler with sourceBucket:",
       sourceBucket,

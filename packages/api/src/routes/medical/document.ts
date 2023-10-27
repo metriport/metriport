@@ -198,6 +198,7 @@ router.post(
 
     const docRefDraft = req.body;
     docRefCheck(docRefDraft);
+    // #1075 TODO: Validate FHIR Payloads
 
     const docRef = composeDocumentReference(
       docRefDraft,
