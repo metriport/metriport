@@ -1,5 +1,5 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge";
+import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import {

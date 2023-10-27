@@ -3,7 +3,6 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IFunction, ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { getConfig } from "../shared/config";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
@@ -105,17 +104,20 @@ export function setup({
   lambdaLayers: ILayerVersion[];
   secrets: Secrets;
   alarmSnsAction?: SnsAction;
-}): {
-  sessionLambda: IFunction;
-} {
+}):
+  | {
+      sessionLambda: IFunction;
+    }
+  | undefined {
   // TODO 1195 enable this
   // TODO 1195 enable this
   // TODO 1195 enable this
   // TODO 1195 enable this
   // TODO 1195 enable this
-  // if (!isProd(config)) throw new Error(`This connector is only available in prod`);
+  // const config = getConfig();
+  // if (!isProd(config)) return undefined;
 
-  const credsStore = setupCredsStore(stack, secrets);
+  const credsStore = setupCredsStore(secrets);
   if (!credsStore) throw new Error(`Could not setup credentials for CW Management`);
 
   const cookieStore = createCookiesStore(stack);
@@ -149,7 +151,7 @@ export function setup({
   };
 }
 
-function setupCredsStore(stack: Construct, secrets: Secrets): secret.ISecret | undefined {
+function setupCredsStore(secrets: Secrets): secret.ISecret | undefined {
   const config = getConfig();
   const name = config.cwSecretNames.CW_MANAGEMENT_CREDS;
   if (!name) return undefined;
@@ -184,9 +186,9 @@ function createSessionMgmtLambda({
   stack: Construct;
   vpc: IVpc;
   lambdaLayers: ILayerVersion[];
-  credsStore: ISecret;
-  cookieStore: ISecret;
-  codeChallengeStore: ISecret;
+  credsStore: secret.ISecret;
+  cookieStore: secret.Secret;
+  codeChallengeStore: secret.Secret;
   alarmSnsAction?: SnsAction;
 }): IFunction {
   const config = getConfig();
