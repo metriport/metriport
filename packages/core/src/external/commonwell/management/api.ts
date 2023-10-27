@@ -15,6 +15,12 @@ dayjs.extend(duration);
 const DEFAULT_TIMEOUT_GET_MEMBER = dayjs.duration({ seconds: 10 });
 const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ seconds: 20 });
 
+const baseHeaders = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
+  Accept: "application/json, text/plain, */*",
+};
+
 export type Member = {
   id: string;
   name: string;
@@ -46,10 +52,8 @@ export class CommonWellManagementAPI {
       timeout,
       withCredentials: true,
       headers: {
+        ...baseHeaders,
         Cookie: cookiesToString(cookies),
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
-        Accept: "application/json, text/plain, */*",
         Origin: `${this.baseUrl}`,
         Referer: `${this.baseUrl}/Organization/List`,
       },
@@ -87,9 +91,7 @@ export class CommonWellManagementAPI {
         withCredentials: true,
         headers: {
           Cookie: cookiesToString(cookies),
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
-          Accept: "application/json, text/plain, */*",
+          ...baseHeaders,
           Origin: `${this.baseUrl}`,
           Referer: `${this.baseUrl}/Organization/${oid}/IncludeList/Edit`,
         },
