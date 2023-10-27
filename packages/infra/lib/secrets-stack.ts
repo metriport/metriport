@@ -37,7 +37,7 @@ export class SecretsStack extends Stack {
     }
 
     for (const secretName of Object.values<string | undefined>(props.config.cwSecretNames)) {
-      if (!secretName) continue;
+      if (!secretName || !secretName.trim().length) continue;
       const secret = makeSecret(secretName);
       logSecretInfo(this, secret, secretName);
     }
