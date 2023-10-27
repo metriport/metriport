@@ -24,6 +24,7 @@ To use this endpoint, you will need to follow these steps:
 
 ## Body
 
+    A FHIR [DocumentReference](/medical-api/fhir/resources/documentreference).
     <ParamField body="type" type="CodeableConcept" required>
       A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) of the document type.
       <Expandable title="Type properties">
@@ -61,8 +62,8 @@ To use this endpoint, you will need to follow these steps:
     </ParamField>
 
 <Tip>
-  Note that you **do not** need to enter any references to the patient or your organization, as
-  those will be inferred on our end - anything you will enter in these fields will be overwritten.
+  Note that you do not need to include a Patient or Organization resource in the contained property,
+  as those will be inferred on our end - if you do, they will be overwritten.
 </Tip>
 
 Example Payload:
@@ -97,7 +98,7 @@ The URL to be used for file upload.
 
 ```json
 {
-  "url": <url-string>
+  "url": "<url-string>"
 }
 ```
 
