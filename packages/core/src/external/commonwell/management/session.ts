@@ -101,6 +101,7 @@ export class SessionManagement {
     const page = await this.context.newPage();
 
     try {
+      // TODO 1195 remove the excessive logs (".xx")
       log(`.1`);
       await page.goto(this.sessionBaseUrl);
       log(`.2`);
@@ -168,10 +169,6 @@ export class SessionManagement {
 
       return page;
     } catch (error) {
-      // TODO 1195 send it to S3
-      // TODO 1195 send it to S3
-      // TODO 1195 send it to S3
-      // TODO 1195 send it to S3
       // TODO 1195 send it to S3
       // const buffer = await page.screenshot();
       await page.screenshot({ path: "screenshot-error.png" });
