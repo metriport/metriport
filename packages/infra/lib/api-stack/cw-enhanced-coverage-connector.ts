@@ -110,10 +110,6 @@ export function setup({
     }
   | undefined {
   // TODO 1195 enable this
-  // TODO 1195 enable this
-  // TODO 1195 enable this
-  // TODO 1195 enable this
-  // TODO 1195 enable this
   // const config = getConfig();
   // if (!isProd(config)) return undefined;
 
@@ -195,9 +191,6 @@ function createSessionMgmtLambda({
   const config = getConfig();
   const cwBaseUrl = config.commonwell.CW_URL;
   if (!cwBaseUrl) throw new Error(`Missing CW_URL`);
-  // TODO 1195 move to a dedicated channel to avoid noise
-  // TODO 1195 move to a dedicated channel to avoid noise
-  // TODO 1195 move to a dedicated channel to avoid noise
   // TODO 1195 move to a dedicated channel to avoid noise
   const notificationUrl = config.slack?.SLACK_ALERT_URL;
   if (!notificationUrl) throw new Error(`Missing SLACK_ALERT_URL`);
