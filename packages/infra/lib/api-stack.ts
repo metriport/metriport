@@ -307,18 +307,21 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    const fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
-      lambdaLayers,
-      vpc: this.vpc,
-      convertDocLambdaName: cdaToVisualizationLambda.functionName,
-      medicalDocumentsBucket,
-      dynamoDBSidechainKeysTable,
-      converterUrl: props.config.fhirToCDAUrl,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
-    });
+    let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
 
+    if (!isSandbox(props.config)) {
+      fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
+        lambdaLayers,
+        vpc: this.vpc,
+        convertDocLambdaName: cdaToVisualizationLambda.functionName,
+        medicalDocumentsBucket,
+        dynamoDBSidechainKeysTable,
+        converterUrl: props.config.fhirToCDAUrl,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+        alarmAction: slackNotification?.alarmAction,
+      });
+    }
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------

@@ -29,6 +29,12 @@ demographics.
   Patients below will be populated with the corresponding test data.
 </Warning>
 
+<Warning>
+  When querying for consolidated data in sandbox mode using a `conversionType`, if you pass a
+  patient that is not one of the pre-defined Patients below, we will always return a pre-defined
+  file.
+</Warning>
+
 <Tip>
   You can expect about 6 example documents per Patient, roughtly breaking down to: a C-CDA XML (and
   the resulting FHIR resources), 3 PDFs, and 2 images.
