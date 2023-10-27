@@ -65,3 +65,11 @@ const convertDriversLicenseToIdentifier = (
     };
   });
 };
+
+export function toFHIRSubject(patientId: string): Reference<FHIRPatient> {
+  const subject: Reference<FHIRPatient> = {
+    reference: `Patient/${patientId}`,
+    type: "Patient",
+  };
+  return subject;
+}
