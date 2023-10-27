@@ -13,10 +13,13 @@ import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as readline from "readline-sync";
 
 /**
- * Script to run on local environment the code that enhances coverage @ CommonWell.
+ * Script to run on local environment the code that keeps the session w/ CommonWell active.
  *
- * To test it with an active session, set the cookies on an env var or .env file (see instructions
+ * To test it with an active/existing session, set the cookies on an env var or .env file (see instructions
  * on how to obtain it below).
+ *
+ * Otherwise it will try to login using the credentials on the env vars and ask for the code challenge through
+ * the terminal if it's needed.
  */
 
 /**
