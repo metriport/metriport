@@ -1,0 +1,149 @@
+---
+title: "Upload Document"
+description: "Returns a URL to use for a medical document upload to our servers."
+api: "POST /medical/v1/document/upload"
+---
+
+This endpoint returns a URL to enable you to upload your patients' medical documents, making them available to other HIEs.
+
+## Overview
+
+To use this endpoint, you will need to follow these steps:
+
+1. Create a `DocumentReference` to describe the document that's being uploaded (see sections below for details on the expected fields and format).
+
+2. Execute the endpoint and receive a URL to use for the document upload.
+
+3. Upload the document by executing a `PUT` request using the `URL` with a `Content-Length` header specifying the size of the document.
+
+<Warning>We currently size limiting our uploads to 50 MB.</Warning>
+
+## Query Params
+
+<ParamField query="patientId" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Body
+
+    A FHIR [DocumentReference](/medical-api/fhir/resources/documentreference).
+    <ParamField body="type" type="CodeableConcept" required>
+      A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) of the document type.
+      <Expandable title="Type properties">
+        <ParamField body="text" type="string" required>
+          Plain text representation of the document kind - for example `Burn management Hospital Progress note`
+        </ParamField>
+
+        <ParamField body="coding" type="Coding[]">
+          A [Coding](/medical-api/fhir/data-types/coding) property, which is a reference to a code defined by a terminology system (such as [LOINC](https://loinc.org/)) - for example `[{ code: "100556-0", system: "http://loinc.org", display: "Burn management Hospital Progress note"}]`
+        </ParamField>
+      </Expandable>
+    </ParamField>
+
+    <ParamField body="description" type="string" required>
+      A brief description of the document - for example `Discharge Summary`.
+    </ParamField>
+
+    <ParamField body="context" type="DocumentReferenceContext[]" required>
+      Context of the document content.
+      <Expandable title="Context properties">
+        <ParamField body="period" type="Period" required>
+          A time [Period](/medical-api/fhir/data-types/period) property including ISO 8601 timestamp(s) - for example
+          `{ start: "2023-10-10T14:14:17Z" },`
+        </ParamField>
+
+        <ParamField body="facilityType" type="CodeableConcept">
+          An object that represents the facility type.
+            <Expandable title="Facility type properties">
+              <ParamField body="text" type="string">
+                Plain text with the facility name and type - for example `John Snow Clinic - Acute Care Centre`.
+              </ParamField>
+            </Expandable>
+        </ParamField>
+      </Expandable>
+    </ParamField>
+
+<Tip>
+  Note that you do not need to include a Patient or Organization resource in the contained property,
+  as those will be inferred on our end - if you do, they will be overwritten.
+</Tip>
+
+Example Payload:
+
+```json
+{
+  description: "Third degree wrist burn treatment",
+  type: {
+    text: "Burn management Hospital Progress note",
+    coding: [
+      {
+        code: "100556-0",
+        system: "http://loinc.org",
+        display: "Burn management Hospital Progress note"
+      },
+    ],
+  },
+  context: {
+    period: {
+      start: "2023-10-10T14:14:17Z",
+      end: "2023-10-10T15:30:30Z",
+    },
+    facilityType: {
+      text: "John Snow Clinic - Acute Care Centre",
+    },
+  },
+};
+```
+
+## Response
+
+The URL to be used for file upload.
+
+```json
+{
+  "url": "<url-string>"
+}
+```
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+import axios from "axios";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const docRef: Partial<DocumentReference> = {
+  description: "Third degree wrist burn treatment",
+  type: {
+    text: "Burn management Hospital Progress note",
+    coding: [
+      {
+        code: "100556-0",
+        system: "http://loinc.org",
+        display: "Burn management Hospital Progress note",
+      },
+    ],
+  },
+  context: {
+    period: {
+      start: "2023-10-10T14:14:17Z",
+    },
+    facilityType: {
+      text: "My Clinic Name - Acute Care",
+    },
+  },
+};
+
+const url = await metriportClient.getDocumentUploadUrl("my-patient-id", docRef);
+
+// Upload the document using this url in a PUT request, something along these lines:
+
+// const fileContent = <medical-document-document-contents>;
+// await axios.put(url, document, {
+//     headers: {
+//         "Content-Length": <size-in-bytes>,
+//     },
+// });
+```
+
+</ResponseExample>

@@ -4,7 +4,8 @@ description: "Follow this guide to get started accessing your patients' medical 
 ---
 
 <Warning>
-  Access to our Medical API will require you to make requests on behalf of a covered entity with an [NPI
+  Access to our Medical API will require you to make requests on behalf of a covered entity with an
+  [NPI
   number](https://www.cms.gov/Regulations-and-Guidance/Administrative-Simplification/NationalProvIdentStand)
   for a valid
   [Treatment](https://www.hhs.gov/hipaa/for-professionals/privacy/guidance/disclosures-treatment-payment-health-care-operations/index.html)
@@ -23,6 +24,7 @@ Getting started with our Medical API is pretty easy, you'll just need take the f
 6. [Create Facilities and Patients](#6-create-facilities-and-patients).
 7. [Get Patient Medical Documents](#7-get-patient-medical-documents).
 8. [Get Patient FHIR Resources](#8-get-patient-fhir-resources). 🎉🎉🎉
+9. [Share Medical Data with the Networks](#9-share-medical-data-with-the-networks). 🚀🚀🚀
 
 Feel free to check this demo video out before getting started to get a high level overview of the platform:
 
@@ -238,6 +240,19 @@ Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) endpoi
 
 We also provide the ability to add any FHIR resources to a Patient with our [Create Patient's Consolidated
 Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
+
+## 9. Share Medical Data with the Networks 🚀🚀🚀
+
+To uphold data quality in the networks, and improve patient health outcomes, it's required that your organization reciprocates medical data exchange by making net-new patient clinical data available to the networks. Some examples of this include:
+
+- remote patient monitoring observations such as weight and blood pressure;
+- clinical progress notes from patient encounters;
+- lab results
+
+Metriport makes it easy to share this data back with the networks - you can:
+
+- upload FHIR data using our [Create Patient's Consolidated Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
+- upload binary documents using the [Upload Document](/medical-api/api-reference/document/post-upload-url) endpoint.
 
 ## Wrapping up
 

@@ -5,7 +5,10 @@
     "dark": "/logo/dark.png"
   },
   "api": {
-    "baseUrl": ["https://api.sandbox.metriport.com", "https://api.metriport.com"],
+    "baseUrl": [
+      "https://api.sandbox.metriport.com",
+      "https://api.metriport.com"
+    ],
     "auth": {
       "method": "key",
       "name": "x-api-key"
@@ -56,15 +59,23 @@
   "navigation": [
     {
       "group": "Home",
-      "pages": ["home/welcome"]
+      "pages": [
+        "home/welcome"
+      ]
     },
     {
       "group": "API Info",
-      "pages": ["home/api-info/api-keys", "home/api-info/webhooks", "home/api-info/error-responses"]
+      "pages": [
+        "home/api-info/api-keys",
+        "home/api-info/webhooks",
+        "home/api-info/error-responses"
+      ]
     },
     {
       "group": "Getting Started",
-      "pages": ["medical-api/getting-started/quickstart"]
+      "pages": [
+        "medical-api/getting-started/quickstart"
+      ]
     },
     {
       "group": "API Reference",
@@ -121,7 +132,8 @@
             "medical-api/api-reference/document/start-document-query",
             "medical-api/api-reference/document/get-document-query",
             "medical-api/api-reference/document/list-documents",
-            "medical-api/api-reference/document/get-document"
+            "medical-api/api-reference/document/get-document",
+            "medical-api/api-reference/document/post-upload-url"
           ]
         },
         {
@@ -337,7 +349,9 @@
         },
         {
           "group": "Extensions",
-          "pages": ["medical-api/fhir/extensions/doc-id"]
+          "pages": [
+            "medical-api/fhir/extensions/doc-id"
+          ]
         }
       ]
     },
