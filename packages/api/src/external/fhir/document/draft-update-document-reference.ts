@@ -1,13 +1,15 @@
-import {
-  Attachment,
-  DocumentReference,
-  DocumentReferenceContent,
-  Organization,
-} from "@medplum/fhirtypes";
-import { createFHIRSubject } from ".";
+import { Attachment, DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
+import { toFHIRSubject } from "../patient";
 import BadRequestError from "../../../errors/bad-request";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
+import { Config } from "../../../shared/config";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { appendIdentifierOID, toFHIR } from "../organization";
+import { TEMPORARY } from "../../../shared/constants";
+
+const region = Config.getAWSRegion();
+const s3Utils = new S3Utils(region);
 
 export function docRefCheck(docRef: DocumentReference) {
   if (!docRef.description) throw new BadRequestError(`Document Reference must have a description`);
@@ -15,28 +17,34 @@ export function docRefCheck(docRef: DocumentReference) {
   if (!docRef.context) throw new BadRequestError(`Document Reference must have context`);
 }
 
-export function pickDocRefParts(
+/**
+ *
+ * @param prelimDocRef
+ * @param organization
+ * @param patientId
+ * @param docRefId
+ * @param s3Key
+ * @param bucketName
+ * @returns
+ */
+export function composeDocumentReference(
   prelimDocRef: DocumentReference,
   organization: OrganizationModel,
-  docRefId: string,
   patientId: string,
+  docRefId: string,
   s3Key: string,
   bucketName: string
 ): DocumentReference {
-  const containedOrg: Organization = {
-    resourceType: "Organization",
-    id: organization.id,
-    identifier: [{ value: organization.dataValues.organizationNumber.toString() }],
-    name: organization.dataValues.data.name,
-  };
+  const containedOrg = toFHIR(organization);
+  const containedOrgWithOID = appendIdentifierOID(organization, containedOrg);
   const temporaryExtension = metriportDataSourceExtension;
-  temporaryExtension.valueCoding.code = "TEMPORARY";
+  temporaryExtension.valueCoding.code = TEMPORARY;
 
-  const subject = createFHIRSubject(patientId);
+  const subject = toFHIRSubject(patientId);
 
   const attachment: Attachment = {
     title: "pre-upload placeholder",
-    url: `s3://${bucketName}/${s3Key}`,
+    url: s3Utils.buildFileUrl(bucketName, s3Key),
   };
 
   const content: DocumentReferenceContent[] = [{ attachment }];
@@ -44,7 +52,9 @@ export function pickDocRefParts(
   return {
     resourceType: "DocumentReference",
     id: docRefId,
-    contained: prelimDocRef.contained ? [...prelimDocRef.contained, containedOrg] : [containedOrg],
+    contained: prelimDocRef.contained
+      ? [...prelimDocRef.contained, containedOrgWithOID]
+      : [containedOrgWithOID],
     status: "current",
     docStatus: "preliminary",
     text: prelimDocRef.text ?? undefined,

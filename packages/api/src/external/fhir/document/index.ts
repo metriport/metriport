@@ -34,6 +34,7 @@ import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
+import { toFHIRSubject } from "../patient";
 dayjs.extend(isToday);
 
 export const MAX_FHIR_DOC_ID_LENGTH = 64;
@@ -137,14 +138,6 @@ export const toFHIR = (
   });
 };
 
-export function createFHIRSubject(patientId: string): Reference<PatientFHIR> {
-  const subject: Reference<PatientFHIR> = {
-    reference: `Patient/${patientId}`,
-    type: "Patient",
-  };
-  return subject;
-}
-
 export function getFHIRDocRef(
   patientId: string,
   {
@@ -184,7 +177,7 @@ export function getFHIRDocRef(
     date,
     status,
     type,
-    subject: createFHIRSubject(patientId),
+    subject: toFHIRSubject(patientId),
     author,
     description,
     content,

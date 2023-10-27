@@ -2,16 +2,16 @@ import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import httpStatus, { MOVED_PERMANENTLY, OK } from "http-status";
+import httpStatus, { OK } from "http-status";
 import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
-import { getOrganization } from "../../command/medical/organization/get-organization";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import {
   docRefCheck,
-  pickDocRefParts,
+  composeDocumentReference,
 } from "../../external/fhir/document/draft-update-document-reference";
 import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
@@ -154,7 +154,7 @@ router.get(
   "/downloadUrl",
   asyncHandler(async (req: Request, res: Response) => {
     const url = getDownloadUrl(req);
-    return res.status(MOVED_PERMANENTLY).json({ url });
+    return res.status(OK).json({ url });
   })
 );
 
@@ -181,9 +181,9 @@ router.get(
  * Uploads a medical document and creates a Document Reference for that file on the FHIR server.
  *
  * @param patientId - The ID of the patient.
- * @body - The Partial<DocumentReference> draft to specify context for the file to be uploaded.
+ * @body - The DocumentReference with context for the file to be uploaded.
  *
- * @return documentReferenceID for the uploaded file.
+ * @return The URL for document upload.
  * Refer to Metriport Documentation for more details:
  * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
  */
@@ -192,42 +192,29 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const fileId = uuidv7();
-    const s3FileName = createS3FileName(cxId, patientId, fileId);
-    const docRefId = uuidv7();
-    const s3Key = s3FileName + "_upload_" + docRefId;
-
-    const organization = await getOrganization({ cxId });
-    if (!organization) throw new ForbiddenError(`Organization not found for CX ${cxId}`);
+    const docId = uuidv7();
+    const s3FileName = createS3FileName(cxId, patientId, docId);
+    const organization = await getOrganizationOrFail({ cxId });
 
     const docRefDraft = req.body;
     docRefCheck(docRefDraft);
 
-    const docRef = pickDocRefParts(
+    const docRef = composeDocumentReference(
       docRefDraft,
       organization,
-      docRefId,
       patientId,
-      s3Key,
+      docId,
+      s3FileName,
       medicalDocumentsUploadBucketName
     );
-    console.log("Updated DocumentReference:", JSON.stringify(docRef));
 
-    console.log(
-      "Trying to get the presigned url with bucket:",
-      medicalDocumentsUploadBucketName,
-      "Region",
-      region,
-      "and key:",
-      s3Key
-    );
-
-    const presignedUrl = await s3Utils.getPresignedUrl({
+    const presignedUrl = await s3Utils.getPresignedUploadUrl({
       bucket: medicalDocumentsUploadBucketName,
-      key: s3Key,
+      key: s3FileName,
     });
 
     // Make a temporary DocumentReference on the FHIR server.
+    console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
     await upsertDocumentToFHIRServer(cxId, docRef);
     return res.status(httpStatus.OK).json(presignedUrl);
   })

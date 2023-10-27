@@ -1,9 +1,14 @@
+import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import multer from "multer";
 import { z } from "zod";
-import { updateAndUploadDocumentReference } from "../../command/medical/admin/upload-doc";
+import {
+  createAndUploadDocReference,
+  updateAndUploadDocumentReference,
+} from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import {
   isDocumentQueryProgressEqual,
@@ -17,6 +22,7 @@ import {
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
+import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
@@ -26,6 +32,10 @@ import { asyncHandler, getFrom } from "../util";
 import { getFromQueryOrFail } from "./../util";
 
 const router = Router();
+const upload = multer();
+const region = Config.getAWSRegion();
+const s3Utils = new S3Utils(region);
+const bucketName = Config.getMedicalDocumentsBucketName();
 
 const reprocessOptionsSchema = z.enum(options).array().optional();
 
@@ -198,9 +208,75 @@ const documentDataSchema = z.object({
   size: z.number().optional(),
   originalName: z.string(),
   locationUrl: z.string(),
-  docRefId: z.string(),
   docId: z.string(),
 });
+
+const uploadDocSchema = z.object({
+  description: z.string().optional(),
+  orgName: z.string().optional(),
+  practitionerName: z.string().optional(),
+});
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/docs/upload
+ *
+ * Upload doc for a patient.
+ *
+ * Originally on packages/api/src/routes/internal.ts
+ *
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The patient ID.
+ * @param req.file - The file to be stored.
+ * @param req.body.description - The description of the file.
+ * @param req.body.orgName - The name of the contained Organization
+ * @param req.body.practitionerName - The name of the contained Practitioner
+ *
+ * @return 200 Indicating the file was successfully uploaded.
+ */
+router.post(
+  "/upload",
+  upload.single("file"),
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFromQueryOrFail("patientId", req);
+    const file = req.file;
+
+    if (!file) {
+      throw new BadRequestError("File must be provided");
+    }
+
+    const docRefId = uuidv7();
+    const fileName = createS3FileName(cxId, patientId, docRefId);
+
+    await s3Utils.s3
+      .upload({
+        Bucket: bucketName,
+        Key: fileName,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      })
+      .promise();
+
+    const metadata = uploadDocSchema.parse({
+      description: req.body.description,
+      orgName: req.body.orgName,
+      practitionerName: req.body.practitionerName,
+    });
+
+    const docRef = await createAndUploadDocReference({
+      cxId,
+      patientId,
+      docId: docRefId,
+      file: {
+        ...file,
+        originalname: fileName,
+      },
+      metadata,
+    });
+
+    return res.status(httpStatus.OK).json(docRef);
+  })
+);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/doc-ref
@@ -215,16 +291,8 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     console.log("Updating the DocRef on a CX-uploaded file...");
     const cxId = getFromQueryOrFail("cxId", req);
-    const body = req.body;
 
-    const fileData = documentDataSchema.parse({
-      mimeType: body.mimeType,
-      size: parseInt(body.size),
-      originalName: body.originalName,
-      locationUrl: body.locationUrl,
-      docRefId: body.docRefId,
-      docId: body.docId,
-    });
+    const fileData = documentDataSchema.parse(req.body);
 
     await updateAndUploadDocumentReference({
       cxId,

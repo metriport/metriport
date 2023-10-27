@@ -1,25 +1,20 @@
 ---
 title: "Upload Document"
-description: "Returns a presigned URL to use for a medical document upload to our servers."
+description: "Returns a URL to use for a medical document upload to our servers."
 api: "POST /medical/v1/document/upload"
 ---
 
-This endpoint returns a presigned URL to enable you to upload your patients' medical documents with specified context to our servers, making them available to other HIEs.
+This endpoint returns a URL to enable you to upload your patients' medical documents, making them available to other HIEs.
 
-## Process
+## Overview
 
 To use this endpoint, you will need to follow these steps:
 
-1. Create a prelimiary version of a Partial\<[DocumentReference](/medical-api/fhir/resources/documentreference)\> to provide context for the document. In this DocumentReference, we made it a mandatory practice to include the `type` field where you can specify the kind of document (using [LOINC](https://www.hl7.org/fhir/valueset-doc-typecodes.html), if possible),`description` field to outline a very brief description of the document, and `context` field to provide the relevant dates. Besides these mandatory fields, we ask that you try to provide as much context to the file as possible, including the practitioner (`author` field in the DocumentReference) and narrative (`text`).
+1. Create a `DocumentReference` to describe the document that's being uploaded (see sections below for details on the expected fields and format).
 
-<Tip>
-  Note that you **do not** need to enter any references to the patient or your organization, as
-  those will be inferred on our end - anything you will enter in these fields will be overwritten.
-</Tip>
+2. Execute the endpoint and receive a URL to use for the document upload.
 
-2. Execute the endpoint and receive a presigned URL (later reffered to as `URL`) to use for the consecutive file upload.
-
-3. Upload the file by executing a `PUT` request using the `URL`. Provide a `Content-Length` header to indicate the size of the file content. Once the file is uploaded, the process will complete, making this document available to other HIEs.
+3. Upload the document by executing a `PUT` request using the `URL` with a `Content-Length` header specifying the size of the document.
 
 ## Query Params
 
@@ -30,20 +25,20 @@ To use this endpoint, you will need to follow these steps:
 ## Body
 
     <ParamField body="type" type="CodeableConcept" required>
-      A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) of the file type.
+      A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) of the document type.
       <Expandable title="Type properties">
         <ParamField body="text" type="string" required>
-          Plain text representation of the document kind.
+          Plain text representation of the document kind - see example below.
         </ParamField>
 
         <ParamField body="coding" type="Coding[]">
-          A [Coding](/medical-api/fhir/data-types/coding) property, which is a reference to a code defined by a terminology system.
+          A [Coding](/medical-api/fhir/data-types/coding) property, which is a reference to a code defined by a terminology system (such as [LOINC](https://loinc.org/)).
         </ParamField>
       </Expandable>
     </ParamField>
 
     <ParamField body="description" type="string" required>
-      A brief description of the file.
+      A brief description of the document - for example `Discharge Summary`.
     </ParamField>
 
     <ParamField body="context" type="DocumentReferenceContext[]" required>
@@ -54,31 +49,54 @@ To use this endpoint, you will need to follow these steps:
         </ParamField>
 
         <ParamField body="facilityType" type="CodeableConcept">
-          Optional [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) for the facilityType. We ask that you provide the name of the facility that generated the document under `text`.
+          An object containing optional fields to specify the type of the facility. We ask that you simply provide the name of the facility under the `text` field - see example below.
             <Expandable title="Facility type properties">
-          <ParamField body="type" type="CodeableConcept" required>
-            A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) for the type and name of the facility.
               <ParamField body="text" type="string">
-                Plain text with the facility name and type.
+                Plain text with the facility name and type - for example `John Snow Clinic - Primary Care Centre`
               </ParamField>
-
-              <ParamField body="coding" type="Coding">
-                A [Coding](/medical-api/fhir/data-types/coding) property, which is a reference to a code defined by a terminology system.
-              </ParamField>
-          </ParamField>
             </Expandable>
         </ParamField>
-
       </Expandable>
     </ParamField>
 
-## Response
+<Tip>
+  Note that you **do not** need to enter any references to the patient or your organization, as
+  those will be inferred on our end - anything you will enter in these fields will be overwritten.
+</Tip>
 
-A Presigned URL to be used for subsequent file upload.
+## Example Document Reference
 
 ```json
 {
-  "presignedUrl": <presigned-url-string>
+  description: "Third degree wrist burn treatment",
+  type: {
+    text: "Burn management Hospital Progress note",
+    coding: [
+      {
+        code: "100556-0",
+        system: "http://loinc.org",
+      },
+    ],
+  },
+  context: {
+    period: {
+      start: "2023-10-10T14:14:17Z",
+      end: "2023-10-10T15:30:30Z",
+    },
+    facilityType: {
+      text: "My Clinic Name - Acute Care",
+    },
+  },
+};
+```
+
+## Response
+
+The URL to be used for file upload.
+
+```json
+{
+  "url": <url-string>
 }
 ```
 
@@ -112,10 +130,10 @@ const docRef: Partial<DocumentReference> = {
 
 const presignedUrl = await metriportClient.getDocumentUploadUrl("my-patient-id", docRef);
 
-// Upload the file using this presignedUrl in a PUT request, something along these lines:
+// Upload the document using this presignedUrl in a PUT request, something along these lines:
 
-// const fileContent = <medical-document-file-contents>;
-// await axios.put(presignedUrl, file, {
+// const fileContent = <medical-document-document-contents>;
+// await axios.put(presignedUrl, document, {
 //     headers: {
 //         "Content-Length": sizeInBytes(data),
 //     },

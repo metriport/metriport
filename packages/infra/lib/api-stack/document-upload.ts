@@ -34,7 +34,7 @@ export function createLambda({
     layers: lambdaLayers,
     envVars: {
       ENV_TYPE: envType,
-      API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}/internal/docs/doc-ref`,
+      API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}`,
       MEDICAL_DOCUMENTS_DESTINATION_BUCKET: medicalDocumentsBucket.bucketName,
       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
     },

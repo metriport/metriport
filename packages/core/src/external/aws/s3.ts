@@ -1,9 +1,9 @@
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
 
 dayjs.extend(duration);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
@@ -16,10 +16,29 @@ export const createS3FileName = (cxId: string, patientId: string, fileName: stri
   return `${cxId}/${patientId}/${cxId}_${patientId}_${fileName}`;
 };
 
-export /**
+export const parseS3FileName = (
+  fileKey: string
+): { cxId: string; patientId: string; docId: string } | undefined => {
+  if (fileKey.includes("/")) {
+    const keyParts = fileKey.split("/");
+    const docName = keyParts[keyParts.length - 1];
+    if (docName) {
+      const docNameParts = docName.split("_");
+      const cxId = docNameParts[0];
+      const patientId = docNameParts[1];
+      const docId = docNameParts[2];
+      if (cxId && patientId && docId) {
+        return { cxId, patientId, docId };
+      }
+    }
+  }
+  return;
+};
+
+/**
  * @deprecated Use `S3Utils.getSignedUrl()` instead
  */
-async function getSignedUrl({
+export async function getSignedUrl({
   awsRegion,
   ...req
 }: {
@@ -32,6 +51,9 @@ async function getSignedUrl({
 }
 
 export class S3Utils {
+  /**
+   * @deprecated This is v2 of the S3 client. Use `s3Client` instead.
+   */
   public readonly _s3: AWS.S3;
   public readonly _s3Client: S3Client;
 
@@ -40,6 +62,9 @@ export class S3Utils {
     this._s3Client = new S3Client({ region });
   }
 
+  /**
+   * @deprecated This is v2 of the S3 client. Use `s3` instead.
+   */
   get s3(): AWS.S3 {
     return this._s3;
   }
@@ -98,7 +123,7 @@ export class S3Utils {
     });
   }
 
-  async getPresignedUrl({
+  async getPresignedUploadUrl({
     bucket,
     key,
     durationSeconds,
@@ -114,24 +139,7 @@ export class S3Utils {
     return presignedUrl;
   }
 
-  parseS3FileName(fileKey: string): { cxId: string; patientId: string; docId: string } | undefined {
-    if (fileKey.includes("_")) {
-      const keyParts = fileKey.split("_");
-      if (keyParts[0] && keyParts[1] && keyParts[2] && keyParts[0].includes("/")) {
-        const cxIdParts = keyParts[0].split("/");
-        if (cxIdParts[0]) {
-          const cxId = cxIdParts[0];
-          const patientId = keyParts[1];
-          const docId = keyParts[2];
-          const fileData = {
-            cxId,
-            patientId,
-            docId,
-          };
-          return fileData;
-        }
-      }
-    }
-    return;
+  buildFileUrl(bucket: string, key: string): string {
+    return `https://${bucket}.s3.${this.region}.amazonaws.com/${key}`;
   }
 }

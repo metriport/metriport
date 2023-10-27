@@ -45,7 +45,6 @@ export function createAPIService(
   cdaToVisualizationLambda: ILambda,
   documentDownloaderLambda: ILambda,
   medicalDocumentsUploadBucket: s3.Bucket,
-  // uploadedDocumentProcessorLambda: ILambda,
   fhirToMedicalRecordLambda: ILambda,
   searchIngestionQueue: IQueue,
   searchEndpoint: string,
@@ -119,7 +118,6 @@ export function createAPIService(
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          // UPLOADED_DOCUMENT_PROCESSOR_LAMBDA_NAME: uploadedDocumentProcessorLambda.functionName,
           FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           FHIR_SERVER_URL: fhirServerUrl,
           ...(fhirServerQueueUrl && {
