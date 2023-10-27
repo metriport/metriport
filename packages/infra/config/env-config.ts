@@ -8,6 +8,17 @@ export type ConnectWidgetConfig = {
   domain: string;
 };
 
+export type SessionManagementConfig = {
+  url: string;
+  /**
+   * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
+   * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+   * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+   */
+  schedule: string[];
+  codeChallengeNotificationUrl: string;
+};
+
 export type EnvConfig = {
   stackName: string;
   secretsStackName: string;
@@ -32,16 +43,19 @@ export type EnvConfig = {
     POST_HOG_API_KEY: string;
   };
   commonwell: {
-    CW_URL?: string;
-    CW_MEMBER_NAME: string;
-    CW_MEMBER_OID: string;
-    CW_GATEWAY_ENDPOINT: string;
-    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
-    CW_TECHNICAL_CONTACT_NAME: string;
-    CW_TECHNICAL_CONTACT_TITLE: string;
-    CW_TECHNICAL_CONTACT_EMAIL: string;
-    CW_TECHNICAL_CONTACT_PHONE: string;
+    sessionManagement?: SessionManagementConfig;
+    envVars: {
+      CW_MEMBER_NAME: string;
+      CW_MEMBER_OID: string;
+      CW_GATEWAY_ENDPOINT: string;
+      CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
+      CW_TECHNICAL_CONTACT_NAME: string;
+      CW_TECHNICAL_CONTACT_TITLE: string;
+      CW_TECHNICAL_CONTACT_EMAIL: string;
+      CW_TECHNICAL_CONTACT_PHONE: string;
+    };
   };
+  // Secret props should be in upper case because they become env vars for ECS
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: string;
     CRONOMETER_CLIENT_SECRET: string;
@@ -62,6 +76,7 @@ export type EnvConfig = {
     WHOOP_CLIENT_SECRET: string;
     TENOVI_AUTH_HEADER: string;
   };
+  // Secret props should be in upper case because they become env vars for ECS
   cwSecretNames: {
     CW_MANAGEMENT_CREDS?: string;
     CW_ORG_PRIVATE_KEY: string;
@@ -90,8 +105,11 @@ export type EnvConfig = {
   };
   fhirToCDAUrl: string;
   docQueryChecker?: {
-    // "Minutes Hours Day-of-month Month Day-of-week Year"
-    // See more here: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+    /**
+     * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
+     * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+     * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+     */
     scheduleExpressions: string | string[];
   };
 } & (
