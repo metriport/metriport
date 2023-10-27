@@ -114,8 +114,11 @@ export function setup({
   // TODO 1195 enable this
   // TODO 1195 enable this
   // TODO 1195 enable this
-  // const config = getConfig();
+  const config = getConfig();
   // if (!isProd(config)) return undefined;
+
+  console.log(`EnvType: '${config.environmentType}'`);
+  console.log(`CW_URL: '${config.commonwell.CW_URL}'`);
 
   const credsStore = setupCredsStore(secrets);
   if (!credsStore) throw new Error(`Could not setup credentials for CW Management`);
