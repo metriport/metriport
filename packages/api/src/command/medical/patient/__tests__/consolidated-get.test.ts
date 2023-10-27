@@ -5,8 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import { makePatient } from "../../../../models/medical/__tests__/patient";
 import { getConsolidatedPatientData } from "../consolidated-get";
 import * as getPatient from "../get-patient";
-import { calculatePatientSimilarity } from "../get-patient";
-import { PatientData, GenderAtBirth } from "../../../../models/medical/patient";
+import { calculatePatientSimilarity } from "../calculate-patient-similarity";
+import { PatientData } from "../../../../models/medical/patient";
 import { testPatientData } from "./test_data";
 
 let getPatientOrFailMock: jest.SpyInstance;
@@ -57,27 +57,26 @@ describe("getConsolidatedPatientData", () => {
   });
 });
 
-
-function loadPatientData(data: any): PatientData {
-  return {
-    ...data,
-    genderAtBirth: data.genderAtBirth as GenderAtBirth,
-  };
-}
+// function loadPatientData(data: any): PatientData {
+//   return {
+//     ...data,
+//     genderAtBirth: data.genderAtBirth as GenderAtBirth,
+//   };
+// }
 
 describe("getConsolidatedPatientData", () => {
   it("identifies sampleInclusions as matches", async () => {
-    const searchPatient: PatientData = loadPatientData(testPatientData.sampleSearch[0]);
-    testPatientData.sampleInclusions.forEach((resultData: any) => {
-      const resultPatient: PatientData = loadPatientData(resultData);
+    const searchPatient: PatientData = testPatientData.sampleSearch[0];
+    testPatientData.sampleInclusions.forEach((resultData: PatientData) => {
+      const resultPatient: PatientData = resultData;
       const similarityScore = calculatePatientSimilarity(searchPatient, resultPatient);
       expect(similarityScore).toBeGreaterThan(0.95);
     });
   });
 
   it("identifies sampleExclusions as non-matches", async () => {
-    const searchPatient: PatientData = loadPatientData(testPatientData.sampleSearch[0]);
-    testPatientData.sampleExclusions.forEach((resultData: any) => {
+    const searchPatient: PatientData = testPatientData.sampleSearch[0];
+    testPatientData.sampleExclusions.forEach((resultData: PatientData) => {
       const similarityScore = calculatePatientSimilarity(searchPatient, resultData);
       expect(similarityScore).toBeLessThan(0.95);
     });

@@ -1,4 +1,10 @@
-export const testPatientData = {
+import { PatientData } from "../../../../models/medical/patient";
+
+export const testPatientData: {
+  sampleSearch: PatientData[];
+  sampleInclusions: PatientData[];
+  sampleExclusions: PatientData[];
+} = {
   sampleSearch: [
     {
       firstName: "Juan",
