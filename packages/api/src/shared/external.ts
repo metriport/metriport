@@ -2,6 +2,9 @@ import { Document } from "@metriport/commonwell-sdk";
 import { getOrCreateDocRefMapping } from "../command/medical/docref-mapping/get-docref-mapping";
 import { MedicalDataSource } from "../external";
 
+/**
+ * @deprecated Use @metriport/core instead
+ */
 export const createS3FileName = (cxId: string, patientId: string, fileName: string): string => {
   return `${cxId}/${patientId}/${cxId}_${patientId}_${fileName}`;
 };

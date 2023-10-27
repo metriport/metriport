@@ -23,3 +23,8 @@ export const toFHIR = (org: Organization): FHIROrganization => {
     ],
   };
 };
+
+export const appendIdentifierOID = (org: Organization, fhirOrg: FHIROrganization) => {
+  fhirOrg.identifier = [{ value: org.oid }];
+  return fhirOrg;
+};

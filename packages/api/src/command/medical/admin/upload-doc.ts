@@ -1,9 +1,11 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import dayjs from "dayjs";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
+import { capture } from "../../../shared/notifications";
 import { randomInt } from "../../../shared/numbers";
 import { getPatientOrFail } from "../patient/get-patient";
 
@@ -47,7 +49,7 @@ export async function createAndUploadDocReference({
   const metriportContent = createDocReferenceContent({
     contentType: file.mimetype,
     size: file.size,
-    creation: refDate.format(),
+    creation: refDate.toISOString(),
     fileName: file.originalname,
     location: `${docContributionUrl}?fileName=${file.originalname}`,
     extension: [metriportDataSourceExtension],
@@ -119,6 +121,52 @@ export async function createAndUploadDocReference({
   });
 
   await fhirApi.updateResource(data);
-
   return data;
+}
+
+/**
+ * Fetches a DocumentReference draft from the FHIR servers and updates its status and file content information.
+ *
+ * @param cxId The ID of the organization uploading a document
+ * @param fileData The file metadata and DocumentReference ID
+ */
+export async function updateDocumentReference({
+  cxId,
+  fileData,
+}: {
+  cxId: string;
+  fileData: FileData;
+}): Promise<void> {
+  const fhirApi = makeFhirApi(cxId);
+  try {
+    const docRefDraft = await fhirApi.readResource("DocumentReference", fileData.docId);
+    const updatedDocumentReference = amendDocumentReference(docRefDraft, fileData);
+    console.log("Updated the DocRef:", JSON.stringify(updatedDocumentReference));
+
+    await fhirApi.updateResource(updatedDocumentReference);
+    return;
+  } catch (error) {
+    const message = "Failed to update the document reference for a CX-uploaded file";
+    console.log(message);
+    capture.error(error, { extra: { context: `updateAndUploadDocumentReference`, cxId } });
+  }
+}
+
+function amendDocumentReference(doc: DocumentReference, fileData: FileData) {
+  const refDate = dayjs();
+
+  const metriportContent = createDocReferenceContent({
+    contentType: fileData.mimeType,
+    size: fileData.size,
+    creation: refDate.toISOString(),
+    fileName: fileData.originalName,
+    location: fileData.locationUrl,
+    extension: [metriportDataSourceExtension],
+  });
+
+  doc.extension = [metriportDataSourceExtension];
+  doc.content = [metriportContent];
+  doc.docStatus = "amended";
+
+  return doc;
 }

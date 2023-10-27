@@ -1,9 +1,14 @@
+import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import multer from "multer";
 import { z } from "zod";
-import { createAndUploadDocReference } from "../../command/medical/admin/upload-doc";
+import {
+  createAndUploadDocReference,
+  updateDocumentReference,
+} from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import {
   isDocumentQueryProgressEqual,
@@ -17,12 +22,9 @@ import {
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
-import { makeS3Client } from "../../external/aws/s3";
 import { Config } from "../../shared/config";
-import { createS3FileName } from "../../shared/external";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
@@ -31,7 +33,8 @@ import { getFromQueryOrFail } from "./../util";
 
 const router = Router();
 const upload = multer();
-const s3client = makeS3Client();
+const region = Config.getAWSRegion();
+const s3Utils = new S3Utils(region);
 const bucketName = Config.getMedicalDocumentsBucketName();
 
 const reprocessOptionsSchema = z.enum(options).array().optional();
@@ -200,6 +203,14 @@ router.post(
   })
 );
 
+const documentDataSchema = z.object({
+  mimeType: z.string().optional(),
+  size: z.number().optional(),
+  originalName: z.string(),
+  locationUrl: z.string(),
+  docId: z.string(),
+});
+
 const uploadDocSchema = z.object({
   description: z.string().optional(),
   orgName: z.string().optional(),
@@ -237,7 +248,7 @@ router.post(
     const docRefId = uuidv7();
     const fileName = createS3FileName(cxId, patientId, docRefId);
 
-    await s3client
+    await s3Utils.s3
       .upload({
         Bucket: bucketName,
         Key: fileName,
@@ -264,6 +275,31 @@ router.post(
     });
 
     return res.status(httpStatus.OK).json(docRef);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/docs/doc-ref
+ *
+ * Update the doc ref for a medical document uploaded by a cx.
+ * @param req.query.cxId - The customer/account's ID.
+ *
+ * @return 201 Indicating the DocRef was successfully updated.
+ */
+router.post(
+  "/doc-ref",
+  asyncHandler(async (req: Request, res: Response) => {
+    console.log("Updating the DocRef on a CX-uploaded file...");
+    const cxId = getFromQueryOrFail("cxId", req);
+
+    const fileData = documentDataSchema.parse(req.body);
+
+    await updateDocumentReference({
+      cxId,
+      fileData,
+    });
+
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

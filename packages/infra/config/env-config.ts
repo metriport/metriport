@@ -25,6 +25,7 @@ export type EnvConfig = {
   fhirServerQueueUrl?: string;
   systemRootOID: string;
   medicalDocumentsBucketName: string;
+  medicalDocumentsUploadBucketName: string;
   fhirConverterBucketName?: string;
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
