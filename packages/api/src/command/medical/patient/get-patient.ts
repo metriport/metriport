@@ -9,9 +9,7 @@ import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import { calculatePatientSimilarity } from "./calculate-patient-similarity";
-
-const JW_THRESHOLD = 0.95;
+import { isMatchingDemographics } from "./calculate-patient-similarity";
 
 export const getPatients = async ({
   facilityId,
@@ -97,11 +95,7 @@ export const getPatientByDemo = async ({
       return true;
     }
 
-    // Basic Implementation with semi-arbitrary threshold
-    const jw_score = calculatePatientSimilarity(patient.data, demo);
-    if (jw_score >= JW_THRESHOLD) {
-      return patient;
-    }
+    if (isMatchingDemographics(patient.data, demo)) return true;
   });
   if (matchingPatients.length === 0) return null;
   if (matchingPatients.length === 1) return matchingPatients[0];

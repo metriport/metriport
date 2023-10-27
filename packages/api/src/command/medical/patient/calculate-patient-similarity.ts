@@ -1,6 +1,12 @@
 import { PatientData } from "../../../domain/medical/patient";
 import jaroWinkler from "jaro-winkler";
 
+const SIMILARITY_THRESHOLD = 0.95;
+
+export const isMatchingDemographics = (patient1: PatientData, patient2: PatientData): boolean => {
+  const similarityScore = calculatePatientSimilarity(patient1, patient2);
+  return similarityScore >= SIMILARITY_THRESHOLD;
+};
 /**
  * This function calculates the similarity between two patients using the Jaro-Winkler algorithm.
  * It returns a score between 0 and 1, where 1 means the patients are identical. We calculate scores
