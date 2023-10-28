@@ -8,15 +8,10 @@ export type ConnectWidgetConfig = {
   domain: string;
 };
 
-export type SessionManagementConfig = {
-  url: string;
-  /**
-   * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
-   * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
-   * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
-   */
-  schedule: string[];
+export type CWCoverageEnhancementConfig = {
+  managementUrl: string;
   codeChallengeNotificationUrl: string;
+  orgListS3Key: string;
 };
 
 export type EnvConfig = {
@@ -36,6 +31,7 @@ export type EnvConfig = {
   fhirServerUrl: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
+  generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
   fhirConverterBucketName?: string;
@@ -43,7 +39,7 @@ export type EnvConfig = {
     POST_HOG_API_KEY: string;
   };
   commonwell: {
-    sessionManagement?: SessionManagementConfig;
+    coverageEnhancement?: CWCoverageEnhancementConfig;
     envVars: {
       CW_MEMBER_NAME: string;
       CW_MEMBER_OID: string;
