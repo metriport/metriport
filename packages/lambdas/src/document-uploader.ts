@@ -22,13 +22,23 @@ export const handler = async (event: S3Event) => {
     );
     const endpointUrl = apiUrl + "/internal/docs/doc-ref";
     try {
-      await documentUploaderHandler(
+      const resp = await documentUploaderHandler(
         sourceBucket,
         sourceKey,
         destinationBucket,
         region,
         endpointUrl
       );
+      if (resp) {
+        capture.message(resp.message, {
+          extra: {
+            context: `documentUploaderHandler.fileTooLarge`,
+            size: resp.size,
+            destinationBucket,
+            sourceKey,
+          },
+        });
+      }
     } catch (error) {
       console.log("Error in documentUploaderHandler", error);
       capture.error(error, {
