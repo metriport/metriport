@@ -28,7 +28,7 @@ type SimpleOrg = {
 let orgs: SimpleOrg[] = [];
 async function loadOrgList(): Promise<void> {
   const s3Utils = new S3Utils(region);
-  const cqOrgsAsString = await s3Utils.getFileContentsAsString("test", "test");
+  const cqOrgsAsString = await s3Utils.getFileContentsAsString(orgListS3BucketName, orgListS3Key);
   orgs = JSON.parse(cqOrgsAsString) as SimpleOrg[];
   if (!orgs) throw new Error(`Couldn't retrieve org list from S3`);
 }
