@@ -15,7 +15,12 @@ export function cookiesToString(c: Cookie[]): string {
   return c.map(cookieToString).join("; ");
 }
 
-export interface CookieManager {
-  getCookies(): Promise<Cookie[]>;
-  updateCookies(cookies: Cookie[]): Promise<Cookie[]>;
+export abstract class CookieManager {
+  abstract getCookies(): Promise<Cookie[]>;
+
+  async getCookiesAsString(): Promise<string> {
+    return cookiesToString(await this.getCookies());
+  }
+
+  abstract updateCookies(cookies: Cookie[]): Promise<Cookie[]>;
 }

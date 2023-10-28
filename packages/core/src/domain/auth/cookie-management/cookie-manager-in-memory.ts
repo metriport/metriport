@@ -1,6 +1,6 @@
 import { Cookie, CookieManager } from "./cookie-manager";
 
-export class CookieManagerInMemory implements CookieManager {
+export class CookieManagerInMemory extends CookieManager {
   private cookies: Cookie[] = [];
 
   async getCookies(): Promise<Cookie[]> {

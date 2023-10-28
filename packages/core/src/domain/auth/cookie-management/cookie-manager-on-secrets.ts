@@ -2,10 +2,11 @@ import * as AWS from "aws-sdk";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { Cookie, CookieManager } from "./cookie-manager";
 
-export class CookieManagerOnSecrets implements CookieManager {
+export class CookieManagerOnSecrets extends CookieManager {
   private readonly secretManager: AWS.SecretsManager;
 
   constructor(private readonly secretArn: string, region: string) {
+    super();
     this.secretManager = new AWS.SecretsManager({ region });
   }
 
