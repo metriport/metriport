@@ -2,7 +2,7 @@ import { patientCreateSchema } from "@metriport/api-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { consolidationConversionTypeSchema } from "@metriport/api-sdk/medical/models/fhir";
+import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
@@ -38,6 +38,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { z } from "zod";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -257,6 +258,8 @@ router.get(
     });
   })
 );
+
+const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
 
 /** ---------------------------------------------------------------------------
  * POST /patient/:id/consolidated/query

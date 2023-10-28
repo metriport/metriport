@@ -1,6 +1,9 @@
 import S3 from "aws-sdk/clients/s3";
 import * as stream from "stream";
 
+/**
+ * @deprecated use @metriport/core/external/aws/s3 instead
+ */
 export class S3Utils {
   public readonly _s3: S3;
 
@@ -24,25 +27,5 @@ export class S3Utils {
       stream.on("error", err => reject(err));
       stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
     });
-  }
-
-  async getFileInfoFromS3(
-    key: string,
-    bucket: string
-  ): Promise<
-    | { exists: true; size: number; contentType: string }
-    | { exists: false; size?: never; contentType?: never }
-  > {
-    try {
-      const head = await this.s3
-        .headObject({
-          Bucket: bucket,
-          Key: key,
-        })
-        .promise();
-      return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
-    } catch (err) {
-      return { exists: false };
-    }
   }
 }

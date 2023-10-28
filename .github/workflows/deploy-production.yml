@@ -5,8 +5,11 @@ on:
     branches:
       - master
     paths:
-      - "packages/connect-widget/**"
       - "packages/api/**"
+      - "packages/api-sdk/**"
+      - "packages/commonwell-sdk/**"
+      - "packages/connect-widget/**"
+      - "packages/core/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
   workflow_dispatch: # manually executed by a user
@@ -37,6 +40,9 @@ jobs:
           filters: |
             api:
               - "packages/api/**"
+              - "packages/api-sdk/**"
+              - "packages/commonwell-sdk/**"
+              - "packages/core/**"
               - "package*.json"
             infra-lambdas:
               - "packages/infra/**"

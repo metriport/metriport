@@ -1,4 +1,4 @@
-import { Identifier, Patient as FHIRPatient } from "@medplum/fhirtypes";
+import { Identifier, Patient as FHIRPatient, Reference } from "@medplum/fhirtypes";
 import { ContactTypes } from "../../../domain/medical/contact";
 import {
   GenderAtBirth,
@@ -6,7 +6,7 @@ import {
   PersonalIdentifier,
   splitName,
 } from "../../../domain/medical/patient";
-import { driversLicenseURIs } from "../../../shared/oid";
+import { driversLicenseURIs } from "@metriport/core/domain/oid";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
@@ -65,3 +65,11 @@ const convertDriversLicenseToIdentifier = (
     };
   });
 };
+
+export function toFHIRSubject(patientId: string): Reference<FHIRPatient> {
+  const subject: Reference<FHIRPatient> = {
+    reference: `Patient/${patientId}`,
+    type: "Patient",
+  };
+  return subject;
+}

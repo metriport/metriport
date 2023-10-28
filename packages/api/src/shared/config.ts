@@ -196,7 +196,12 @@ export class Config {
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
-  static getSandboxBucketName(): string | undefined {
+
+  static getMedicalDocumentsUploadBucketName(): string {
+    return getEnvVarOrFail("MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME");
+  }
+
+  static getSandboxSeedBucketName(): string | undefined {
     return getEnvVar("SANDBOX_SEED_DATA_BUCKET_NAME");
   }
 
@@ -222,8 +227,8 @@ export class Config {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
 
-  static getFHIRToMedicalRecordLambdaName(): string {
-    return getEnvVarOrFail("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
+  static getFHIRToMedicalRecordLambdaName(): string | undefined {
+    return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {

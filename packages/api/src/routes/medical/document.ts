@@ -1,11 +1,19 @@
+import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { OK } from "http-status";
+import httpStatus, { OK } from "http-status";
 import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
+import {
+  composeDocumentReference,
+  docRefCheck,
+} from "../../external/fhir/document/draft-update-document-reference";
+import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
 import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
@@ -16,6 +24,9 @@ import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
 
 const router = Router();
+const region = Config.getAWSRegion();
+const s3Utils = new S3Utils(region);
+const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
@@ -94,7 +105,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
@@ -108,10 +119,32 @@ router.post(
   })
 );
 
-/** ---------------------------------------------------------------------------
- * GET /downloadUrl
+/**
+ * Handles the logic for download url endpoints.
  *
+ * @param req Request object.
+ * @returns URL for downloading the document.
+ */
+async function getDownloadUrl(req: Request): Promise<string> {
+  const cxId = getCxIdOrFail(req);
+
+  const fileName = getFromQueryOrFail("fileName", req);
+  const type = getFrom("query").optional("conversionType", req);
+  const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
+
+  if ((typeof fileName !== "string" || fileName.indexOf(cxId) !== -1) && !Config.isSandbox()) {
+    throw new ForbiddenError();
+  }
+
+  const url = await downloadDocument({ fileName, conversionType });
+  return url;
+}
+
+// TODO: Redirect this endpoint to the new one (download-url)
+/** ---------------------------------------------------------------------------
+ * GET /document/downloadUrl
  * Fetches the document from S3 and sends a presigned URL
+ * @deprecated Use the GET /download-url endpoint instead.
  *
  * @param req.query.fileName The file name of the document in s3.
  * @param req.query.conversionType The doc type to convert to.
@@ -120,17 +153,71 @@ router.post(
 router.get(
   "/downloadUrl",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const fileName = getFromQueryOrFail("fileName", req);
-    const fileHasCxId = fileName.includes(cxId);
-    const type = getFrom("query").optional("conversionType", req);
-    const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
-
-    if (!fileHasCxId && !Config.isSandbox()) throw new ForbiddenError();
-
-    const url = await downloadDocument({ fileName, conversionType });
-
+    const url = getDownloadUrl(req);
     return res.status(OK).json({ url });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /document/download-url
+ *
+ * Fetches the document from S3 and sends a presigned URL
+ *
+ * @param req.query.fileName The file name of the document in s3.
+ * @param req.query.conversionType The doc type to convert to.
+ * @return presigned url
+ */
+router.get(
+  "/download-url",
+  asyncHandler(async (req: Request, res: Response) => {
+    const url = getDownloadUrl(req);
+    return res.status(OK).json({ url });
+  })
+);
+
+/**
+ * POST /document/upload-url
+ *
+ * Uploads a medical document and creates a Document Reference for that file on the FHIR server.
+ *
+ * @param patientId - The ID of the patient.
+ * @body - The DocumentReference with context for the file to be uploaded.
+ *
+ * @return The URL for document upload.
+ * Refer to Metriport Documentation for more details:
+ * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
+ */
+router.post(
+  "/upload-url",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const docId = uuidv7();
+    const s3FileName = createS3FileName(cxId, patientId, docId);
+    const organization = await getOrganizationOrFail({ cxId });
+
+    const docRefDraft = req.body;
+    docRefCheck(docRefDraft);
+    // #1075 TODO: Validate FHIR Payloads
+
+    const docRef = composeDocumentReference(
+      docRefDraft,
+      organization,
+      patientId,
+      docId,
+      s3FileName,
+      medicalDocumentsUploadBucketName
+    );
+
+    const presignedUrl = await s3Utils.getPresignedUploadUrl({
+      bucket: medicalDocumentsUploadBucketName,
+      key: s3FileName,
+    });
+
+    // Make a temporary DocumentReference on the FHIR server.
+    console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
+    await upsertDocumentToFHIRServer(cxId, docRef);
+    return res.status(httpStatus.OK).json(presignedUrl);
   })
 );
 

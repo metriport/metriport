@@ -1,3 +1,5 @@
+import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
 import AWS from "aws-sdk";
@@ -17,7 +19,6 @@ capture.init();
 // Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
-const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const cdaToVisTimeoutInMillis = getEnvOrFail("CDA_TO_VIS_TIMEOUT_MS");
 const GRACEFUL_SHUTDOWN_ALLOWANCE_MS = 3_000;
 const SIGNED_URL_DURATION_SECONDS = 60;
@@ -27,32 +28,41 @@ const s3client = new AWS.S3({
 });
 
 export const handler = Sentry.AWSLambda.wrapHandler(
-  async (req: { fileName: string; conversionType: string }) => {
-    const { fileName, conversionType } = req;
+  async ({ fileName, conversionType, bucketName }: Input): Promise<Output> => {
     console.log(`Running with conversionType: ${conversionType}, fileName: ${fileName}`);
 
-    const document = await downloadDocumentFromS3({ fileName });
+    const document = await downloadDocumentFromS3({ fileName, bucketName });
 
-    if (document && conversionType === "html") {
-      const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document });
+    if (!document) {
+      throw new MetriportError(`Document not found in S3`, undefined, {
+        fileName,
+      });
+    }
+    if (conversionType === "html") {
+      const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
       console.log("html", url);
-      return url;
+      return { url };
     }
 
-    if (document && conversionType === "pdf") {
-      const url = await convertStoreAndReturnPdfDocUrl({ fileName, document });
+    if (conversionType === "pdf") {
+      const url = await convertStoreAndReturnPdfDocUrl({ fileName, document, bucketName });
       console.log("pdf", url);
-      return url;
+      return { url };
     }
 
-    return;
+    throw new MetriportError(`Unsupported conversion type`, undefined, {
+      fileName,
+      conversionType,
+    });
   }
 );
 
 const downloadDocumentFromS3 = async ({
   fileName,
+  bucketName,
 }: {
   fileName: string;
+  bucketName: string;
 }): Promise<string | undefined> => {
   const file = await s3client
     .getObject({
@@ -67,9 +77,11 @@ const downloadDocumentFromS3 = async ({
 const convertStoreAndReturnHtmlDocUrl = async ({
   fileName,
   document,
+  bucketName,
 }: {
   fileName: string;
   document: string;
+  bucketName: string;
 }) => {
   const convertDoc = await convertToHtml(document);
 
@@ -84,7 +96,7 @@ const convertStoreAndReturnHtmlDocUrl = async ({
     })
     .promise();
 
-  const urlHtml = await getSignedUrl({ fileName: newFileName });
+  const urlHtml = await getSignedUrl({ fileName: newFileName, bucketName });
 
   return urlHtml;
 };
@@ -92,9 +104,11 @@ const convertStoreAndReturnHtmlDocUrl = async ({
 const convertStoreAndReturnPdfDocUrl = async ({
   fileName,
   document,
+  bucketName,
 }: {
   fileName: string;
   document: string;
+  bucketName: string;
 }) => {
   const convertDoc = await convertToHtml(document);
   const tmpFileName = uuid.v4();
@@ -173,7 +187,7 @@ const convertStoreAndReturnPdfDocUrl = async ({
 
   // Logs "shutdown" statement
   console.log("generate-pdf -> shutdown");
-  const urlPdf = await getSignedUrl({ fileName: pdfFilename });
+  const urlPdf = await getSignedUrl({ fileName: pdfFilename, bucketName });
 
   return urlPdf;
 };
@@ -221,7 +235,7 @@ const convertToHtml = async (document: string): Promise<string> => {
   }
 };
 
-const getSignedUrl = async ({ fileName }: { fileName: string }) => {
+const getSignedUrl = async ({ fileName, bucketName }: { fileName: string; bucketName: string }) => {
   const url = s3client.getSignedUrl("getObject", {
     Bucket: bucketName,
     Key: fileName,

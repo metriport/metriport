@@ -4,18 +4,32 @@ import duration from "dayjs/plugin/duration";
 import { IndexFields } from ".";
 import { out } from "../../util/log";
 import { makeS3Client } from "../aws/s3";
+import { genericStopWords, htmlStopWords } from "./cda";
 import {
   IngestRequest,
   OpenSearchFileIngestor,
   OpenSearchFileIngestorConfig,
 } from "./file-ingestor";
-import { stopWords } from "./cda";
 
 dayjs.extend(duration);
 
 const DEFAULT_INGESTION_TIMEOUT = dayjs.duration(10, "minutes").asMilliseconds();
-const regexString = `</?(${stopWords.map(w => w.toLowerCase()).join("|")}).*?>`;
-const regexRemoveMarkdown = new RegExp(regexString, "g");
+
+export const regexGenericWords = new RegExp(
+  `(${genericStopWords.map(w => w.toLowerCase()).join("|")})`,
+  "g"
+);
+// removes the tag w/ attributes, but without content
+export const regexHTML = new RegExp(
+  `</?(${htmlStopWords.map(w => w.toLowerCase()).join("|")})(\\s.*?)?/?>`,
+  "g"
+);
+export const regexFormatting = new RegExp(/(__+|--+)/g);
+export const regexMarkupAttributes = new RegExp(/((\w+(:\w+)?)(:\w+)?="(?<content>[^"]+?)")/g);
+export const regexAdditionalMarkup = new RegExp(/<(\w+(:\w+)?)(\s*|\s(?<content>[^>]+?))\/?>/g);
+export const regexClosingMarkup = new RegExp(/<\/(\w+(:\w+)?)>/g);
+export const regexQuotesNewlinesTabs = new RegExp(/"|(\n\n)|\n|\t|\r|<!/g);
+export const regexMultipleSpaces = new RegExp(/(\s\s+)/g);
 
 export type OpenSearchFileIngestorDirectSettings = {
   logLevel?: "info" | "debug" | "none";
@@ -87,21 +101,42 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
 
   // IMPORTANT: keep this in sync w/ the Lambda's sqs-to-opensearch-xml.ts version of it.
   // Ideally we would use the same code the Lambda does, but since the cost/benefit doesn't seeem to be worth it.
-  protected cleanUpContents(contents: string, log = console.log) {
+  protected cleanUpContents(contents: string, log = console.log, isTracing = false): string {
     log(`Cleaning up file contents...`);
-    const result = contents
-      .trim()
-      .toLowerCase()
-      .replace(regexRemoveMarkdown, " ")
-      // formatting chars found in some XMLs
-      .replace(/(__+|--+)/g, " ")
-      // all opening markup tags w/o attributes + closing markup tags + attribute names + leftover closing tags
-      .replace(/(<\w+|<\/\w+>|(\w|:)+=|\/>)/g, " ")
-      // quotes, newlines, tabs, carriage returns
-      .replace(/"|'|(\n\n)|(\n)|(\t)|(\r)/g, " ")
-      // lastly, merge multiple spaces into one
-      .replace(/(\s\s+)/g, " ");
-    return result;
+
+    const trace = (msg: string) => isTracing && log(msg);
+
+    // Have this here so we can debug it easier when there's a problem. Use the unit test to add new
+    // cases to represent future issues.
+    let step = 1;
+    const runStep = (fn: () => string, action: string): string => {
+      const res = fn();
+      trace(`Step${step}: ${action}`);
+      trace(`Step${step}: ${res}`);
+      step++;
+      return res;
+    };
+    const regexStep = (updatedContents: string, regex: RegExp, replacement: string): string => {
+      return runStep(() => updatedContents.replace(regex, replacement), regex.toString());
+    };
+
+    // The order is important!
+    const step1 = runStep(() => contents.trim().toLowerCase(), "trim + lowercase");
+    const regexSteps = [
+      (input: string) => regexStep(input, regexHTML, " "),
+      (input: string) => regexStep(input, regexFormatting, " "),
+      (input: string) => regexStep(input, regexMarkupAttributes, " $<content> "),
+      (input: string) => regexStep(input, regexAdditionalMarkup, " $<content> "),
+      (input: string) => regexStep(input, regexClosingMarkup, " "),
+      (input: string) => regexStep(input, regexGenericWords, " "),
+      (input: string) => regexStep(input, regexQuotesNewlinesTabs, " "),
+      (input: string) => regexStep(input, regexMultipleSpaces, " "),
+    ];
+    let lastStepResult = step1;
+    for (const step of regexSteps) {
+      lastStepResult = step(lastStepResult);
+    }
+    return lastStepResult;
   }
 
   protected async sendToOpenSearch(
@@ -126,20 +161,7 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     const auth = { username: this.username, password: this.password };
     const client = new Client({ node: this.endpoint, auth });
 
-    // create index if it doesn't already exist
-    const indexExists = Boolean((await client.indices.exists({ index: indexName })).body);
-    if (!indexExists) {
-      log(`Index ${indexName} doesn't exist, creating one...`);
-      const indexProperties: Record<keyof IndexFields, { type: string }> = {
-        cxId: { type: "keyword" },
-        patientId: { type: "keyword" },
-        s3FileName: { type: "keyword" },
-        content: { type: "text" },
-      };
-      const body = { mappings: { properties: indexProperties } };
-      const createResult = (await client.indices.create({ index: indexName, body })).body;
-      log(`Created index ${indexName}: ${JSON.stringify(createResult)}`);
-    }
+    await this.makeSureIndexExists(client, indexName, log);
 
     // add a document to the index
     const document: IndexFields = {
@@ -150,6 +172,7 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     };
 
     log(`Ingesting file ${s3FileName} into index ${indexName}...`);
+    // upsert
     const response = await client.update(
       {
         index: indexName,
@@ -165,5 +188,21 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
     if (this.settings.logLevel === "none") return () => {}; //eslint-disable-line @typescript-eslint/no-empty-function
     if (this.settings.logLevel === "debug") return defaultLogger.debug;
     return defaultLogger.log;
+  }
+
+  private async makeSureIndexExists(client: Client, indexName: string, log = console.log) {
+    const indexExists = Boolean((await client.indices.exists({ index: indexName })).body);
+    if (!indexExists) {
+      log(`Index ${indexName} doesn't exist, creating one...`);
+      const indexProperties: Record<keyof IndexFields, { type: string }> = {
+        cxId: { type: "keyword" },
+        patientId: { type: "keyword" },
+        s3FileName: { type: "keyword" },
+        content: { type: "text" },
+      };
+      const body = { mappings: { properties: indexProperties } };
+      const createResult = (await client.indices.create({ index: indexName, body })).body;
+      log(`Created index ${indexName}: ${JSON.stringify(createResult)}`);
+    }
   }
 }

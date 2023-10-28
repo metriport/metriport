@@ -2,7 +2,7 @@ import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk"
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
-import { oid } from "../../../shared/oid";
+import { oid } from "@metriport/core/domain/oid";
 import { makeCommonWellAPI } from "../api";
 import { setCommonwellId } from "../patient-external-data";
 import { getPatientData } from "../patient-shared";
