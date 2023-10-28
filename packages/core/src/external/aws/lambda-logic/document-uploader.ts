@@ -21,7 +21,7 @@ export async function documentUploaderHandler(
   destinationBucket: string,
   region: string,
   apiServerURL: string
-) {
+): Promise<void | { message: string; size?: number }> {
   const s3Utils = new S3Utils(region);
   const copySource = encodeURI(`${sourceBucket}/${sourceKey}`);
   const s3FileNameParts = parseS3FileName(sourceKey);
@@ -51,12 +51,6 @@ export async function documentUploaderHandler(
   // Get file info from the copied file
   const { size, contentType } = await s3Utils.getFileInfoFromS3(destinationKey, destinationBucket);
 
-  if (size && size > MAXIMUM_FILE_SIZE) {
-    // #1207 TODO: Delete the file if it's too large and alert the customer.
-    const message = "File size exceeds the maximum allowed size of 50 MB";
-    console.log(`${message}: ${size}`);
-    throw new MetriportError(message, null, { size });
-  }
   const fileData: FileData = {
     mimeType: contentType,
     size,
@@ -68,6 +62,12 @@ export async function documentUploaderHandler(
   try {
     console.log("Forwarding call to server with this fileData:", JSON.stringify(fileData));
     await forwardCallToServer(cxId, apiServerURL, fileData);
+    if (size && size > MAXIMUM_FILE_SIZE) {
+      // #1207 TODO: Delete the file if it's too large and alert the customer.
+      const message = "File size exceeds the maximum allowed size of 50 MB";
+      console.log(`${message}: ${size}`);
+      return { message, size };
+    }
   } catch (error) {
     const message = "Failed with the call to update the doc-ref of an uploaded file";
     console.log(`${message}: ${error}`);
