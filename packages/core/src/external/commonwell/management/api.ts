@@ -76,10 +76,11 @@ export class CommonWellManagementAPI {
     oid: string;
     careQualityOrgIds: string[];
     timeout?: number;
-    log: typeof console.log;
-  }) {
+    log?: typeof console.log;
+  }): Promise<void> {
     const cookies = await this.cookieManager.getCookies();
 
+    log(`Posting to /IncludeList...`);
     const resp = await axios.post(
       `${this.baseUrl}/Organization/${oid}/IncludeList`,
       {
