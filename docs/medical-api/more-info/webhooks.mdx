@@ -25,7 +25,13 @@ These are messages you can expect to receive in the following scenarios:
 
 1. When [queried documents](/medical-api/api-reference/document/start-document-query) have completed downloading (`type` for a patient in
    the message will be `document-download`, and at this point you'll be able to [download the raw files](/medical-api/api-reference/document/get-document));
-1. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has completed (`type` for a patient in the message
+
+<Tip>
+  Note that the webhooks will only contain updates for new data fetched in the current document
+  query.
+</Tip>
+
+2. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has completed (`type` for a patient in the message
    will be `document-conversion`, and at this point you'll be able to query for [patient consolidated data](#patient-consolidated-data) in FHIR-compliant format).
 
 Example payload:
