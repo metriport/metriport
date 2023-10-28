@@ -19,9 +19,9 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const cookieSecretArn = getEnvOrFail("COOKIE_SECRET_ARN");
 const codeChallengeSecretArn = getEnvOrFail("CODE_CHALLENGE_SECRET_ARN");
-const codeChallengeNotificationUrl = getEnvOrFail("CW_CREDS_NOTIF_URL");
-const baseUrl = getEnvOrFail("CW_URL");
-const cwCredsSecretName = getEnvOrFail("CW_CREDS_SECRET_NAME");
+const codeChallengeNotificationUrl = getEnvOrFail("CODE_CHALLENGE_NOTIF_URL");
+const cwCredsSecretName = getEnvOrFail("CW_MGMT_CREDS_SECRET_NAME");
+const baseUrl = getEnvOrFail("CW_MGMT_URL");
 
 const cookieManager = new CookieManagerOnSecrets(cookieSecretArn, region);
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl });

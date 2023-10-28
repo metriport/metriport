@@ -188,6 +188,15 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
+    // Multi-purpose bucket
+    //-------------------------------------------
+    const generalBucket = new s3.Bucket(this, "GeneralBucket", {
+      bucketName: props.config.generalBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
+
+    //-------------------------------------------
     // S3 bucket for Medical Documents
     //-------------------------------------------
     const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
@@ -328,6 +337,7 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       lambdaLayers,
       secrets,
+      bucket: generalBucket,
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
