@@ -10,8 +10,8 @@ import { getOrganizationOrFail } from "../../command/medical/organization/get-or
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import {
-  docRefCheck,
   composeDocumentReference,
+  docRefCheck,
 } from "../../external/fhir/document/draft-update-document-reference";
 import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
@@ -212,7 +212,6 @@ router.post(
     const presignedUrl = await s3Utils.getPresignedUploadUrl({
       bucket: medicalDocumentsUploadBucketName,
       key: s3FileName,
-      envType: Config.getEnvType(),
     });
 
     // Make a temporary DocumentReference on the FHIR server.

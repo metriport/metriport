@@ -148,7 +148,7 @@ export async function updateDocumentReference({
   } catch (error) {
     const message = "Failed to update the document reference for a CX-uploaded file";
     console.log(message);
-    capture.error(error, { extra: { context: `updateAndUploadDocumentReference`, cxId } });
+    capture.error(error, { extra: { context: `updateAndUploadDocumentReference`, cxId, error } });
   }
 }
 
