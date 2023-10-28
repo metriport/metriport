@@ -15,6 +15,7 @@ import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter"
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { getFileExtension, sandboxSleepTime } from "./shared";
 import { getDocuments } from "../../fhir/document/get-documents";
+import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
 
 const randomDates = [
   "2023-06-15",
@@ -71,7 +72,7 @@ export async function sandboxGetDocRefsAndUpsert({
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
   const existingFhirDocs = await getDocuments({ cxId: organization.cxId, patientId: patient.id });
-  const existingTitles = existingFhirDocs.map(d => d.content?.[0]?.attachment?.title);
+  const existingDocTitles = existingFhirDocs.map(d => d.content?.[0]?.attachment?.title);
 
   // set initial download/convert totals
   await appendDocQueryProgress({
@@ -93,7 +94,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
   for (const entry of docsWithContent) {
     const fileTitle = entry.docRef.content?.[0]?.attachment?.title;
-    if (!existingTitles.includes(fileTitle)) {
+    if (!existingDocTitles.includes(fileTitle)) {
       const prevDocId = entry.docRef.id;
       entry.docRef.id = uuidv7();
       try {
@@ -164,20 +165,14 @@ function addSandboxFields(docRef: DocumentReference): DocumentReference {
     const randomIndex = Math.floor(Math.random() * randomDates.length);
     // Add a random date to the sandbox document
     if (docRef.content[0]?.attachment) {
-      docRef.content[0].attachment.creation = randomDates[randomIndex];
-      docRef.content[0].attachment.size = Math.floor(Math.random() * 100000);
+      docRef.content[0].attachment.creation =
+        docRef.content[0].attachment.creation ?? randomDates[randomIndex];
+      docRef.content[0].attachment.size =
+        docRef.content[0].attachment.size ?? Math.floor(Math.random() * 100000);
     }
 
     if (docRef.content[0] && !docRef.content[0].extension) {
-      docRef.content[0].extension = [
-        {
-          url: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
-          valueCoding: {
-            system: "https://public.metriport.com/fhir/StructureDefinition/data-source.json",
-            code: "METRIPORT",
-          },
-        },
-      ];
+      docRef.content[0].extension = [metriportDataSourceExtension];
     }
 
     if (randomIndex < 3) {
@@ -228,9 +223,7 @@ function addSandboxFields(docRef: DocumentReference): DocumentReference {
     }
   }
 
-  if (!docRef.date) {
-    docRef.date = docRef.content?.[0]?.attachment?.creation;
-  }
+  docRef.date = docRef.date ?? docRef.content?.[0]?.attachment?.creation;
 
   docRef.contained?.push({
     resourceType: "Organization",
