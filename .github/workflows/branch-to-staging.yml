@@ -42,6 +42,7 @@ jobs:
     uses: ./.github/workflows/_deploy_cdk.yml
     with:
       deploy_env: "staging"
+      is-branch-to-staging: true
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}

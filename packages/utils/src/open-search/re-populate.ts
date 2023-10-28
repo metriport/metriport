@@ -6,6 +6,7 @@ import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api
 import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { out } from "@metriport/core/util/log";
 import { Dictionary, groupBy } from "lodash";
 
 /**
@@ -145,6 +146,8 @@ function isCommonwellContent(content: DocumentReferenceContent): boolean {
   );
 }
 
+type DocToProcess = { cxId: string; patientId: string; docId: string; s3FileName: string };
+
 async function main() {
   const startTimestamp = Date.now();
   console.log(`Running at ${new Date().toISOString()}, params:`);
@@ -153,7 +156,7 @@ async function main() {
   console.log(`- docRefIds: ${docRefIds.join(", ")}`);
 
   // Flatten to process them all in parallel
-  const toProcess: { cxId: string; patientId: string; docId: string; s3FileName: string }[] = [];
+  const toProcess: DocToProcess[] = [];
 
   console.log(`Getting doc refs...`);
   const patientsAndDocRefsByCustomer = await getDocRefs(cxIds);
@@ -197,46 +200,53 @@ async function main() {
   console.log(`Ingesting data in OpenSearch...`);
   let totalDocCount = 0;
 
-  console.log(`# of items to process: ${toProcess.length}`);
-  await executeAsynchronously(
-    toProcess,
-    async (itemsOfRun, idx, n) => {
-      console.log(`Run ${idx}/${n}... ${itemsOfRun.length} items`);
-      for (const { cxId, patientId, docId, s3FileName } of itemsOfRun) {
-        const payload = {
-          cxId,
-          patientId,
-          entryId: docId,
-          s3FileName,
-          s3BucketName,
-        };
-        try {
-          await searchService.ingest(payload);
-          totalDocCount++;
-          console.log(`...docs done: ${String(totalDocCount).padStart(7, " ")}`);
-          //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-          const details = error.meta
-            ? `status: ${error.meta.statusCode}, response: ${
-                error.meta.body?.error ? JSON.stringify(error.meta.body?.error) : undefined
-              }`
-            : error.message;
-          console.log(
-            `Error ingesting doc ${docId} for cxId ${cxId} and patient ${patientId}, ` +
-              `file ${s3FileName}: ${details}`
-          );
-        }
-      }
-    },
-    {
-      numberOfParallelExecutions: PARALLEL_INGESTION_COUNT,
-      maxJitterMillis: 0,
+  const ingestOneDocument = async (
+    { cxId, patientId, docId, s3FileName }: DocToProcess,
+    itemIndex: number,
+    promiseIndex: number,
+    promiseCount: number
+  ) => {
+    const { log } = out(
+      `promise ${leftPad(promiseIndex + 1, 2)}/${promiseCount} - item ${leftPad(itemIndex + 1, 3)}`
+    );
+    try {
+      const payload = {
+        cxId,
+        patientId,
+        entryId: docId,
+        s3FileName,
+        s3BucketName,
+      };
+      await searchService.ingest(payload);
+      totalDocCount++;
+      log(`Docs done: ${leftPad(totalDocCount, 7)}`);
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const details = error.meta
+        ? `status: ${error.meta.statusCode}, response: ${
+            error.meta.body?.error ? JSON.stringify(error.meta.body?.error) : undefined
+          }`
+        : error.message;
+      log(
+        `Error ingesting doc ${docId} for cxId ${cxId} and patient ${patientId}, ` +
+          `file ${s3FileName}: ${details}`
+      );
     }
-  );
+  };
+
+  console.log(`# of items to process: ${toProcess.length}`);
+  await executeAsynchronously(toProcess, ingestOneDocument, {
+    numberOfParallelExecutions: PARALLEL_INGESTION_COUNT,
+    maxJitterMillis: 0,
+  });
 
   console.log(`Done.`);
   console.log(``);
   console.log(`Ingested ${totalDocCount} documents in ${Date.now() - startTimestamp} milliseconds`);
+}
+
+function leftPad(value: number, length: number): string {
+  return String(value).padStart(length, " ");
 }
 
 main();

@@ -14,7 +14,7 @@ import { Organization } from "../../domain/medical/organization";
 import { Patient, PatientExternalData } from "../../domain/medical/patient";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
-import { oid } from "../../shared/oid";
+import { oid } from "@metriport/core/domain/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";

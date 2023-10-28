@@ -1,3 +1,4 @@
+import { Capture } from "@metriport/core/util/capture";
 import * as Sentry from "@sentry/serverless";
 import { Extras } from "@sentry/types";
 import { ScopeContext } from "@sentry/types/types/scope";
@@ -5,6 +6,13 @@ import { getEnv, getEnvOrFail } from "./env";
 
 const envType = getEnvOrFail("ENV_TYPE");
 const sentryDsn = getEnv("SENTRY_DSN");
+
+export type UserData = Pick<Sentry.AWSLambda.User, "id" | "email">;
+
+export type LambdaCapture = Capture & {
+  setUser: (user: UserData) => void;
+  setExtra: (extra: Record<string, unknown>) => void;
+};
 
 export const capture = {
   // TODO #499 Review 'tracesSampleRate' based on the load on our app and Sentry's quotas
@@ -21,6 +29,16 @@ export const capture = {
       enabled: sentryDsn != null,
       environment: envType,
       tracesSampleRate,
+    });
+  },
+
+  setUser: (user: UserData): void => {
+    Sentry.setUser(user);
+  },
+
+  setExtra: (extra: Record<string, unknown>): void => {
+    Object.entries(extra).forEach(([key, value]) => {
+      Sentry.setExtra(key, value);
     });
   },
 
