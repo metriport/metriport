@@ -15,6 +15,7 @@ import { Withings } from "../providers/withings";
 import { Tenovi } from "../providers/tenovi";
 
 export const METRIPORT = "METRIPORT";
+export const TEMPORARY = "TEMPORARY";
 
 export const PROVIDER_APPLE = ProviderSource.apple;
 export const PROVIDER_CRONOMETER = ProviderSource.cronometer;
