@@ -6,7 +6,6 @@ const api = axios.create();
 
 const UPLOADS_FOLDER = "uploads";
 const MAXIMUM_FILE_SIZE = 50_000_000; // 50 MB
-const MAXIMUM_FILE_SIZE_MB = MAXIMUM_FILE_SIZE / 1_000_000;
 
 export type FileData = {
   mimeType?: string | undefined;
@@ -65,7 +64,7 @@ export async function documentUploaderHandler(
     await forwardCallToServer(cxId, apiServerURL, fileData);
     if (size && size > MAXIMUM_FILE_SIZE) {
       // #1207 TODO: Delete the file if it's too large and alert the customer.
-      const message = `File size exceeds the maximum allowed size of ${MAXIMUM_FILE_SIZE_MB} MB.`;
+      const message = `Uploaded file size exceeds the maximum allowed size`;
       console.log(`${message}: ${size}`);
       return { message, size };
     }
