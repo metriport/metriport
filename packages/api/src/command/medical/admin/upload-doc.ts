@@ -8,6 +8,7 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { randomInt } from "../../../shared/numbers";
 import { getPatientOrFail } from "../patient/get-patient";
+import { cloneDeep } from "lodash";
 
 const apiUrl = Config.getApiUrl();
 const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
@@ -154,7 +155,7 @@ export async function updateDocumentReference({
 
 function amendDocumentReference(doc: DocumentReference, fileData: FileData) {
   const refDate = dayjs();
-
+  const amendedDocRef = cloneDeep(doc);
   const metriportContent = createDocReferenceContent({
     contentType: fileData.mimeType,
     size: fileData.size,
@@ -164,9 +165,9 @@ function amendDocumentReference(doc: DocumentReference, fileData: FileData) {
     extension: [metriportDataSourceExtension],
   });
 
-  doc.extension = [metriportDataSourceExtension];
-  doc.content = [metriportContent];
-  doc.docStatus = "amended";
+  amendedDocRef.extension = [metriportDataSourceExtension];
+  amendedDocRef.content = [metriportContent];
+  amendedDocRef.docStatus = "amended";
 
-  return doc;
+  return amendedDocRef;
 }
