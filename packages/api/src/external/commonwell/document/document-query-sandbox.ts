@@ -72,7 +72,7 @@ export async function sandboxGetDocRefsAndUpsert({
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
   const existingFhirDocs = await getDocuments({ cxId: organization.cxId, patientId: patient.id });
-  const existingDocTitles = existingFhirDocs.map(d => d.content?.[0]?.attachment?.title);
+  const existingDocTitles = existingFhirDocs.flatMap(d => d.content?.[0]?.attachment?.title ?? []);
 
   // set initial download/convert totals
   await appendDocQueryProgress({
@@ -94,7 +94,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
   for (const entry of docsWithContent) {
     const fileTitle = entry.docRef.content?.[0]?.attachment?.title;
-    if (!existingDocTitles.includes(fileTitle)) {
+    if (!fileTitle || !existingDocTitles.includes(fileTitle)) {
       const prevDocId = entry.docRef.id;
       entry.docRef.id = uuidv7();
       try {
