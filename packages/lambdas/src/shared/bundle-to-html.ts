@@ -257,13 +257,13 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
       } else if (resource?.resourceType === "Observation") {
         const observation = resource as Observation;
         const isVitalSigns = observation.extension?.find(
-          ext => ext.valueCodeableConcept?.coding?.[0]?.code === "CCD Vitals"
+          ext => ext.valueCodeableConcept?.coding?.[0]?.code?.toLowerCase() === "ccd vitals"
         );
         const isSocialHistory = observation.extension?.find(
-          ext => ext.valueCodeableConcept?.coding?.[0]?.code === "CCD Social History"
+          ext => ext.valueCodeableConcept?.coding?.[0]?.code?.toLowerCase() === "ccd social history"
         );
         const isLaboratory = observation.category?.find(
-          category => category.text === "laboratory"
+          category => category.text?.toLowerCase() === "laboratory"
         );
         const stringifyResource = JSON.stringify(resource);
 
