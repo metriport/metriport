@@ -1,6 +1,7 @@
 import puppeteer from "puppeteer-core";
 import fs from "fs";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { bundleToHtml } from "@metriport/core/src/external/aws/lambda-logic/bundle-to-html";
 import chromium from "@sparticuz/chromium";
 import * as uuid from "uuid";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
@@ -9,7 +10,6 @@ import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { sleep } from "./shared/sleep";
-import { bundleToHtml } from "./shared/bundle-to-html";
 
 // Keep this as early on the file as possible
 capture.init();

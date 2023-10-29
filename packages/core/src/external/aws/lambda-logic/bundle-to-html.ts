@@ -209,7 +209,7 @@ export const bundleToHtml = (json: string): string => {
 };
 
 function extractFhirTypesFromBundle(bundle: Bundle): {
-  patient?: Patient;
+  patient?: Patient | undefined;
   medications: MedicationRequest[];
   conditions: Condition[];
   allergies: AllergyIntolerance[];
@@ -1229,7 +1229,7 @@ function getSpecificCode(coding: Coding[], systemsList: string[]) {
 
 function createSection(title: string, tableContents: string) {
   return `
-    <div id="${title.toLowerCase().replaceAll(" ", "-")}" class="section">
+    <div id="${title.toLowerCase().replace(/\s+/g, '-')}" class="section">
       <div class="section-title">
         <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
