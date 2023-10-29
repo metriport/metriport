@@ -35,6 +35,8 @@
     "http-status": "^1.7.0",
     "nanoid": "^3.3.6",
     "node-fetch": "^2.6.12",
+    "playwright-aws-lambda": "^0.10.0",
+    "playwright-core": "^1.39.0",
     "puppeteer-core": "18.0.5",
     "saxon-js": "^2.5.0",
     "uuid": "^9.0.0",

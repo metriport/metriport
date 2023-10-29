@@ -12,8 +12,8 @@ import { safeStringify } from "../../../util/string";
 
 dayjs.extend(duration);
 
-const DEFAULT_TIMEOUT_GET_MEMBER = dayjs.duration({ seconds: 10 });
-const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ seconds: 20 });
+const DEFAULT_TIMEOUT_GET_MEMBER = dayjs.duration({ seconds: 20 });
+const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ seconds: 30 });
 
 const baseHeaders = {
   "User-Agent":
