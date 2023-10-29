@@ -1,4 +1,4 @@
-import { Duration } from "aws-cdk-lib";
+import { Duration, SecretValue } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IFunction, ILayerVersion } from "aws-cdk-lib/aws-lambda";
@@ -164,7 +164,15 @@ function createCookiesStore(stack: Construct): secret.Secret {
   const name = connectorName + "CookieSecret";
   // Not an actual secret that needs to be set prior to the deployment, this is more a
   // single value storage, that's why we're not creating it on the SecretsStack
-  return new secret.Secret(stack, name, { secretName: name });
+  return new secret.Secret(stack, name, {
+    secretName: name,
+    /**
+     * Do not use this method for any secrets that you care about!
+     * The value will be visible to anyone who has access to the CloudFormation template
+     * (via the AWS Console, SDKs, or CLI).
+     */
+    secretStringValue: SecretValue.unsafePlainText(JSON.stringify({})),
+  });
 }
 
 function createCodeChallengeStore(stack: Construct): secret.Secret {
