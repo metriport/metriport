@@ -1,4 +1,4 @@
-export const consolidationConversionType = ["html", "pdf", "xml"] as const;
+export const consolidationConversionType = ["html", "pdf"] as const;
 
 export type ConsolidationConversionType = (typeof consolidationConversionType)[number];
 
