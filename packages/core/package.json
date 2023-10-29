@@ -53,7 +53,6 @@
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "@opensearch-project/opensearch": "^2.3.1",
-    "@playwright/browser-firefox": "^1.39.0",
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",
     "http-status": "^1.7.0",
