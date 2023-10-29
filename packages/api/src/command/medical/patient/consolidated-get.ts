@@ -138,6 +138,7 @@ export async function getConsolidatedPatientData({
   const {
     resourcesByPatient,
     resourcesBySubject,
+    generalResourcesNoFilter,
     dateFilter: fullDateQuery,
   } = getPatientFilter({
     resources,
@@ -146,6 +147,7 @@ export async function getConsolidatedPatientData({
   });
   log(`Getting consolidated data with resources by patient: ${resourcesByPatient.join(", ")}...`);
   log(`...and by subject: ${resourcesBySubject.join(", ")}`);
+  log(`...and general resources with no specific filter: ${generalResourcesNoFilter.join(", ")}`);
 
   const fhir = makeFhirApi(cxId);
   const errorsToReport: Record<string, string> = {};
@@ -166,6 +168,9 @@ export async function getConsolidatedPatientData({
         () => fhir.searchResourcePages(resource, `subject=${patientId}${dateFilter}`),
         errorsToReport
       );
+    }),
+    ...generalResourcesNoFilter.map(async resource => {
+      return searchResources(resource, () => fhir.searchResourcePages(resource), errorsToReport);
     }),
   ]);
 
