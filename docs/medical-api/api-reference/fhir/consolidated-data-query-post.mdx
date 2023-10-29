@@ -30,6 +30,11 @@ This will be returned [via a webook](/medical-api/more-info/webhooks#medical-rec
   supported resources.
 </Tip>
 
+<Info>
+  Some general resources, like `Practitioner` do not belong to a specific patient - when you query
+  for these, all resources of that type will be returned.
+</Info>
+
 <ParamField query="resources" type="string" optional>
   A comma separated, case sensitive list of resources to be returned. If none are provided all
   resources will be included.
@@ -142,6 +147,7 @@ This is the list of all available [FHIR resources](/medical-api/fhir/resources) 
 - [NutritionOrder](/medical-api/fhir/resources/nutritionorder)
 - [Observation](/medical-api/fhir/resources/observation)
 - [Person](/medical-api/fhir/resources/person)
+- [Practitioner](/medical-api/fhir/resources/practitioner)
 - [Procedure](/medical-api/fhir/resources/procedure)
 - [Provenance](/medical-api/fhir/resources/provenance)
 - [QuestionnaireResponse](/medical-api/fhir/resources/questionnaireresponse)
