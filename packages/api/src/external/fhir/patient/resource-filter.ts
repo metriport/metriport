@@ -2,6 +2,7 @@ import { HumanName, ResourceType } from "@medplum/fhirtypes";
 import {
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
+  generalResources,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
 import { intersection } from "lodash";
@@ -24,6 +25,8 @@ export function getPatientFilter({
     resources && resources.length
       ? intersection(resources, resourcesSearchableBySubject)
       : resourcesSearchableBySubject;
+  const generalResourcesNoFilter =
+    resources && resources.length ? intersection(resources, generalResources) : generalResources;
 
   const fhirDateFilter = isoDateRangeToFHIRDateQuery(dateFrom, dateTo);
   const dateFilter = fhirDateFilter ? `&${fhirDateFilter}` : "";
@@ -31,6 +34,7 @@ export function getPatientFilter({
   return {
     resourcesByPatient,
     resourcesBySubject,
+    generalResourcesNoFilter,
     dateFilter,
   };
 }

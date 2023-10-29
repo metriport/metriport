@@ -1,4 +1,4 @@
-import { Identifier, Patient as FHIRPatient } from "@medplum/fhirtypes";
+import { Identifier, Patient as FHIRPatient, Reference } from "@medplum/fhirtypes";
 import { ContactTypes } from "../../../domain/medical/contact";
 import {
   GenderAtBirth,

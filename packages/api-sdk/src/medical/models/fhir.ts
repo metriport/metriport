@@ -84,9 +84,13 @@ export type ResourceSearchableByPatient = (typeof resourcesSearchableByPatient)[
 export const resourcesSearchableBySubject = ["AdverseEvent", "Task"] as const;
 export type ResourceSearchableBySubject = (typeof resourcesSearchableBySubject)[number];
 
+export const generalResources = ["Practitioner"] as const;
+export type GeneralResources = (typeof generalResources)[number];
+
 export const resourceTypeForConsolidation = [
   ...resourcesSearchableByPatient,
   ...resourcesSearchableBySubject,
+  ...generalResources,
 ] as const;
 
 export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];

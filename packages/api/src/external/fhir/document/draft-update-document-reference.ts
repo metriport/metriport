@@ -7,6 +7,7 @@ import { Config } from "../../../shared/config";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { appendIdentifierOID, toFHIR } from "../organization";
 import { TEMPORARY } from "../../../shared/constants";
+import { cloneDeep } from "lodash";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -37,7 +38,7 @@ export function composeDocumentReference(
 ): DocumentReference {
   const containedOrg = toFHIR(organization);
   const containedOrgWithOID = appendIdentifierOID(organization, containedOrg);
-  const temporaryExtension = metriportDataSourceExtension;
+  const temporaryExtension = cloneDeep(metriportDataSourceExtension);
   temporaryExtension.valueCoding.code = TEMPORARY;
 
   const subject = toFHIRSubject(patientId);
