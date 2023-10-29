@@ -12,4 +12,6 @@ export type Input = {
   conversionType: ConsolidationConversionType;
 };
 
-export type Output = { url: string };
+export type Output = {
+  url: string;
+};
