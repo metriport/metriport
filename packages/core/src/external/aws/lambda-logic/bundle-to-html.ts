@@ -1049,7 +1049,7 @@ function renderFamilyHistoryConditions(familyMemberHistory: FamilyMemberHistory)
   });
 }
 
-function renderAdministrativeGender(familyMemberHistory: FamilyMemberHistory) {
+function renderAdministrativeGender(familyMemberHistory: FamilyMemberHistory): string | null {
   const adminGenCode = familyMemberHistory.sex?.coding?.find(coding => {
     return coding.system?.toLowerCase().includes("administrativegender");
   })?.code;
@@ -1057,6 +1057,8 @@ function renderAdministrativeGender(familyMemberHistory: FamilyMemberHistory) {
   if (adminGenCode) {
     return adminGenCode;
   }
+
+  return null;
 }
 
 function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
@@ -1212,24 +1214,30 @@ function createCoverageSection(coverages: Coverage[]) {
   return createSection("Coverage", coverageTableContents);
 }
 
-function getSpecificCode(coding: Coding[], systemsList: string[]) {
+function getSpecificCode(coding: Coding[], systemsList: string[]): string | null {
   // return the first code that matches the system
   // systemList should be in order of priority
 
-  for (const system of systemsList) {
-    const code = coding.find(coding => {
-      return coding.system?.toLowerCase().includes(system);
-    })?.code;
+  if (systemsList.length) {
+    for (const system of systemsList) {
+      const code = coding.find(coding => {
+        return coding.system?.toLowerCase().includes(system);
+      })?.code;
 
-    if (code) {
-      return `${system.toUpperCase()}: ${code}`;
+      if (code) {
+        return `${system.toUpperCase()}: ${code}`;
+      }
+
+      return null;
     }
   }
+
+  return null;
 }
 
 function createSection(title: string, tableContents: string) {
   return `
-    <div id="${title.toLowerCase().replace(/\s+/g, '-')}" class="section">
+    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
       <div class="section-title">
         <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
