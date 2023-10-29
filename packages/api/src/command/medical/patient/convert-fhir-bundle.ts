@@ -183,11 +183,6 @@ async function processSandboxSeed({
   const lowerCaseName = firstName.toLowerCase();
   const fileName = `${lowerCaseName}-consolidated.xml`;
 
-  if (conversionType === "xml") {
-    const url = await s3Utils.getSignedUrl({ fileName, bucketName });
-    return url;
-  }
-
   const url = await convertDoc({ fileName, conversionType, bucketName });
   return url;
 }
