@@ -34,6 +34,7 @@ export const bundleToHtml = (json: string): string => {
     conditions,
     allergies,
     procedures,
+    observationOther,
     observationSocialHistory,
     observationVitals,
     observationLaboratory,
@@ -191,6 +192,7 @@ export const bundleToHtml = (json: string): string => {
           ${createObservationSocialHistorySection(observationSocialHistory)}
           ${createObservationVitalsSection(observationVitals)}
           ${createObservationLaboratorySection(observationLaboratory)}
+          ${createOtherObservationsSection(observationOther)}
           ${createEncountersSection(encounters)}
           ${createImmunizationSection(immunizations)}
           ${createFamilyHistorySection(familyMemberHistories)}
@@ -215,6 +217,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   observationSocialHistory: Observation[];
   observationVitals: Observation[];
   observationLaboratory: Observation[];
+  observationOther: Observation[];
   encounters: Encounter[];
   immunizations: Immunization[];
   familyMemberHistories: FamilyMemberHistory[];
@@ -230,6 +233,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   const observationSocialHistory: Observation[] = [];
   const observationVitals: Observation[] = [];
   const observationLaboratory: Observation[] = [];
+  const observationOther: Observation[] = [];
   const encounters: Encounter[] = [];
   const immunizations: Immunization[] = [];
   const familyMemberHistories: FamilyMemberHistory[] = [];
@@ -252,17 +256,28 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
         procedures.push(resource as Procedure);
       } else if (resource?.resourceType === "Observation") {
         const observation = resource as Observation;
+        const isVitalSigns = observation.extension?.find(
+          ext => ext.valueCodeableConcept?.coding?.[0]?.code === "CCD Vitals"
+        );
+        const isSocialHistory = observation.extension?.find(
+          ext => ext.valueCodeableConcept?.coding?.[0]?.code === "CCD Social History"
+        );
+        const isLaboratory = observation.category?.find(
+          category => category.text === "laboratory"
+        );
         const stringifyResource = JSON.stringify(resource);
 
-        if (stringifyResource && stringifyResource.toLowerCase().includes("vital signs")) {
+        if (stringifyResource && isVitalSigns) {
           observationVitals.push(observation);
-        } else if (stringifyResource && stringifyResource.toLowerCase().includes("laboratory")) {
+        } else if (stringifyResource && isLaboratory) {
           observationLaboratory.push(observation);
         } else if (
           stringifyResource &&
-          stringifyResource.toLowerCase().includes("social history")
+          isSocialHistory
         ) {
           observationSocialHistory.push(observation);
+        } else {
+          observationOther.push(observation);
         }
       } else if (resource?.resourceType === "Encounter") {
         encounters.push(resource as Encounter);
@@ -289,6 +304,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
     observationSocialHistory,
     observationVitals,
     observationLaboratory,
+    observationOther,
     encounters,
     immunizations,
     familyMemberHistories,
@@ -361,6 +377,9 @@ function createMRHeader(patient: Patient) {
               </li>
             </div>
             <div class='half'>
+              <li>
+                <a href="#other-observations">Other Observations</a>
+              </li>
               <li>
                 <a href="#encounters">Encounters</a>
               </li>
@@ -810,6 +829,53 @@ function createObservationLaboratorySection(observations: Observation[]) {
       : `<tbody><tr><td>No observation info found</td></tr></tbody>`;
 
   return createSection("Laboratory", observationTableContents);
+}
+
+function createOtherObservationsSection(observations: Observation[]) {
+  if (!observations) {
+    return "";
+  }
+
+  const observationsSortedByDate = observations.sort((a, b) => {
+    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
+  });
+
+  const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
+    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+    return aDate === bDate && a.code?.text === b.code?.text;
+  });
+
+  const observationTableContents =
+    removeDuplicate.length > 0
+      ? `
+    <thead>
+      <tr>
+        <th style="width: 30%">Observation</th>
+        <th style="width: 23.33333%">Value</th>
+        <th style="width: 23.33333%">Code</th>
+        <th style="width: 23.33333%">Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${removeDuplicate
+        .map(observation => {
+          const code = getSpecificCode(observation.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
+
+          return `
+            <tr>
+              <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
+              <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
+              <td>${code ?? ""}</td>
+              <td>${dayjs(observation.effectiveDateTime).format(ISO_DATE) ?? ""}</td>
+            </tr>
+          `;
+        })
+        .join("")}
+    </tbody>
+  `
+      : `<tbody><tr><td>No observation info found</td></tr></tbody>`;
+  return createSection("Other Observations", observationTableContents);
 }
 
 function createEncountersSection(encounters: Encounter[]) {
