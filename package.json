@@ -7,7 +7,7 @@
     "prepare": "husky install",
     "init": "npm i && SCRIPT='i' npm run lambdas:no-run",
     "clean": "npm run clean --workspaces --if-present && SCRIPT='clean' npm run lambdas && echo 'rimraf node_modules' && rimraf node_modules",
-    "prep-lambdas": "cd packages/lambdas && npm run prep-deploy ; npm run build ; cd ../..",
+    "prep-lambdas": "cd packages/lambdas && npm run prep-deploy && cd ../..",
     "prep-deploy": "npm run install-deps && npm run lint && npm run build && npm run test && npm run prep-lambdas",
     "prep-deploy-staging": "npm run install-deps && npm run lint && npm run build:staging && npm run test && npm run prep-lambdas",
     "package": "npm run prep-deploy",
