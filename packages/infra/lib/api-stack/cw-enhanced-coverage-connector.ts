@@ -212,6 +212,7 @@ function createSessionMgmtLambda({
     layers: lambdaLayers,
     memory,
     envVars: {
+      ENV_TYPE: config.environmentType,
       COOKIE_SECRET_ARN: cookieStore.secretArn,
       CODE_CHALLENGE_SECRET_ARN: codeChallengeStore.secretArn,
       CW_CREDS_NOTIF_URL: notificationUrl,
