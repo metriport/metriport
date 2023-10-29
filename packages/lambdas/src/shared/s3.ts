@@ -28,24 +28,4 @@ export class S3Utils {
       stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
     });
   }
-
-  async getFileInfoFromS3(
-    key: string,
-    bucket: string
-  ): Promise<
-    | { exists: true; size: number; contentType: string }
-    | { exists: false; size?: never; contentType?: never }
-  > {
-    try {
-      const head = await this.s3
-        .headObject({
-          Bucket: bucket,
-          Key: key,
-        })
-        .promise();
-      return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
-    } catch (err) {
-      return { exists: false };
-    }
-  }
 }
