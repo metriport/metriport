@@ -26,6 +26,7 @@
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/core": "file:packages/core",
     "@opensearch-project/opensearch": "^2.3.1",
+    "@playwright/browser-chromium": "^1.39.0",
     "aws-sdk": "2.1243",
     "axios": "^1.3.2",
     "commander": "^10.0.0",
@@ -34,6 +35,7 @@
     "express": "^4.18.1",
     "express-promise-router": "^4.1.1",
     "lodash": "^4.17.21",
+    "playwright": "^1.39.0",
     "readline-sync": "^1.4.10",
     "sequelize": "^6.31.0"
   },

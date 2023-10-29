@@ -1,5 +1,5 @@
 import assert from "assert";
-import { Browser, BrowserContext, devices, firefox, Page } from "playwright";
+import { Browser, Page } from "playwright";
 import { CodeChallenge } from "../../../domain/auth/code-challenge";
 import {
   Cookie,
@@ -31,10 +31,7 @@ export type SessionManagementConfig = {
    * The service to obtain a code to pass the login code challenge, if needed.
    */
   codeChallenge: CodeChallenge;
-  /**
-   * Indicates whether to run the browser in headless mode.
-   */
-  headless?: boolean;
+  browser: Browser;
   debug?: typeof console.log;
 };
 
@@ -42,9 +39,7 @@ export class SessionManagement {
   private readonly cookieManager: CookieManager;
   private readonly cwManagementApi: CommonWellManagementAPI;
   private readonly codeChallenge: CodeChallenge;
-  private readonly headless: boolean;
-  private browser: Browser | undefined;
-  private context: BrowserContext | undefined;
+  private browser: Browser;
   private sessionBaseUrl: string;
   private username: string;
   private password: string;
@@ -54,7 +49,7 @@ export class SessionManagement {
     this.cookieManager = params.cookieManager;
     this.cwManagementApi = params.cwManagementApi;
     this.codeChallenge = params.codeChallenge;
-    this.headless = params.headless == undefined ? true : params.headless;
+    this.browser = params.browser;
     this.sessionBaseUrl = this.cwManagementApi.getBaseUrl();
     this.username = params.username;
     this.password = params.password;
@@ -64,8 +59,9 @@ export class SessionManagement {
   async keepSessionActive(): Promise<void> {
     const log = console.log;
     try {
-      const isSessionValid = (await this.cwManagementApi.getMember()) != undefined;
+      const member = await this.cwManagementApi.getMember();
 
+      const isSessionValid = member != undefined;
       if (isSessionValid) {
         log(`Session is still valid, returning...`);
         return;
@@ -94,11 +90,10 @@ export class SessionManagement {
    */
   protected async login(): Promise<Page> {
     const log = this.debug;
-    if (!this.browser || !this.browser.isConnected() || !this.context) {
-      this.browser = await firefox.launch({ headless: this.headless, slowMo: 50 });
-      this.context = await this.browser.newContext(devices["Desktop Firefox HiDPI"]);
-    }
-    const page = await this.context.newPage();
+    if (!this.browser) throw new Error(`Browser is not defined`);
+    if (!this.browser.isConnected()) throw new Error(`Browser is not conneceted`);
+
+    const page = await this.browser.newPage();
 
     try {
       // TODO 1195 remove the excessive logs (".xx")
@@ -179,7 +174,7 @@ export class SessionManagement {
   protected async logout(): Promise<void> {
     const log = this.debug;
     log(`Closing the browser if it was opened...`);
-    if (this.context) await this.context.close();
+    // TODO 1195 Move this outside this class, we get the browser connected and shouldn't disconnect it here.
     if (this.browser) await this.browser.close();
   }
 

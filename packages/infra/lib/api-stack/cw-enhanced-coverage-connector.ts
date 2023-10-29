@@ -167,11 +167,13 @@ function createCookiesStore(stack: Construct): secret.Secret {
   return new secret.Secret(stack, name, {
     secretName: name,
     /**
-     * Do not use this method for any secrets that you care about!
+     * Initialize w/ an empty JSON so it can be parsed by the lambda.
+     *
+     * From the SDK: Do not use this method for any secrets that you care about!
      * The value will be visible to anyone who has access to the CloudFormation template
      * (via the AWS Console, SDKs, or CLI).
      */
-    secretStringValue: SecretValue.unsafePlainText(JSON.stringify({})),
+    secretStringValue: SecretValue.unsafePlainText(JSON.stringify([])),
   });
 }
 

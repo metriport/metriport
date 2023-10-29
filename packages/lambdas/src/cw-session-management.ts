@@ -7,6 +7,7 @@ import {
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
 import * as Sentry from "@sentry/serverless";
+import playwright from "playwright-aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 
@@ -47,12 +48,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
     const { username, password } = await getCreds();
     console.log(`...username ${username}, password 🤫`);
 
+    const browser = await playwright.launchChromium();
+
     const props: SessionManagementConfig = {
       username,
       password,
       cookieManager,
       cwManagementApi,
       codeChallenge,
+      browser,
     };
     const cwSession = new SessionManagement(props);
 
