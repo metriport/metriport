@@ -9,8 +9,9 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
+import { driversLicenseURIs } from "@metriport/core/domain/oid";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import _, { minBy } from "lodash";
+import { intersectionBy, minBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import { Facility } from "../../domain/medical/facility";
 import { Organization } from "../../domain/medical/organization";
@@ -18,16 +19,22 @@ import { Patient, PatientExternalDataEntry } from "../../domain/medical/patient"
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
-import { driversLicenseURIs } from "@metriport/core/domain/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
+
+export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
+/**
+ * Status of the patient's link to CareQuality.
+ */
+export type CQLinkStatus = (typeof cqLinkStatus)[number];
 
 export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(
     public patientId: string,
     public personId?: string | undefined,
-    public status?: LinkStatus | undefined
+    public status?: LinkStatus | undefined,
+    public cqLinkStatus?: CQLinkStatus
   ) {
     super();
   }
@@ -249,7 +256,7 @@ export function getMatchingStrongIds(
   const personIds = person.details?.identifier;
   const patientIds = commonwellPatient.details?.identifier;
   if (!personIds || !personIds.length || !patientIds || !patientIds.length) return [];
-  return _.intersectionBy(personIds, patientIds, id => `${id.system}|${id.key}`);
+  return intersectionBy(personIds, patientIds, id => `${id.system}|${id.key}`);
 }
 
 export async function searchPersonIds({

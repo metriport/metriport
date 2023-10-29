@@ -1,14 +1,13 @@
 import { organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { oid } from "@metriport/core/domain/oid";
 import { groupBy } from "lodash";
 import { Patient } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
-import { oid } from "@metriport/core/domain/oid";
 import { Util } from "../../../shared/util";
-import { MedicalDataSource } from "../../index";
 import { makeCommonWellAPI } from "../api";
-import { create } from "../patient";
-import { getPatientData, PatientDataCommonwell } from "../patient-shared";
+import { create, getCWData } from "../patient";
+import { getPatientData } from "../patient-shared";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string | undefined;
@@ -71,7 +70,7 @@ export async function recreatePatientAtCW(
       return undefined;
     }
     const commonwellData = patient.data.externalData
-      ? (patient.data.externalData[MedicalDataSource.COMMONWELL] as PatientDataCommonwell)
+      ? getCWData(patient.data.externalData)
       : undefined;
     if (!commonwellData) {
       const msg = `Patient has no externalData for CommonWell`;

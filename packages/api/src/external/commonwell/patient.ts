@@ -8,13 +8,13 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
+import { oid } from "@metriport/core/domain/oid";
 import { MedicalDataSource } from "..";
 import { Facility } from "../../domain/medical/facility";
 import { Organization } from "../../domain/medical/organization";
 import { Patient, PatientExternalData } from "../../domain/medical/patient";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
-import { oid } from "@metriport/core/domain/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
@@ -22,6 +22,7 @@ import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { setCommonwellId } from "./patient-external-data";
 import {
+  CQLinkStatus,
   findOrCreatePerson,
   FindOrCreatePersonResponse,
   getMatchingStrongIds,
@@ -33,10 +34,22 @@ const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
 const deleteContext = "cw.patient.delete";
 
+export function getCWData(
+  data: PatientExternalData | undefined
+): PatientDataCommonwell | undefined {
+  if (!data) return undefined;
+  return data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell; // TODO validate the type
+}
+
 export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus {
   if (!data) return "processing";
+  return getCWData(data)?.status ?? "processing";
+}
 
-  return (data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell).status ?? "processing";
+export function getCQLinkStatus(data: PatientExternalData | undefined): CQLinkStatus {
+  const defaultStatus: CQLinkStatus = "unlinked";
+  if (!data) return defaultStatus;
+  return getCWData(data)?.cqLinkStatus ?? defaultStatus;
 }
 
 type StoreIdsFunction = (params: {
@@ -45,7 +58,11 @@ type StoreIdsFunction = (params: {
   status?: LinkStatus;
 }) => Promise<void>;
 
-function getStoreIdsFn(patientId: string, cxId: string): StoreIdsFunction {
+function getStoreIdsFn(
+  patientId: string,
+  cxId: string,
+  cqLinkStatus?: CQLinkStatus
+): StoreIdsFunction {
   return async ({
     commonwellPatientId,
     personId,
@@ -61,6 +78,7 @@ function getStoreIdsFn(patientId: string, cxId: string): StoreIdsFunction {
       commonwellPatientId,
       commonwellPersonId: personId,
       commonwellStatus: status,
+      cqLinkStatus,
     });
   };
 }
@@ -82,7 +100,7 @@ export async function create(
     const orgOID = organization.oid;
     const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
-    const storeIds = getStoreIdsFn(patient.id, patient.cxId);
+    const storeIds = getStoreIdsFn(patient.id, patient.cxId, "unlinked");
 
     commonWell = makeCommonWellAPI(orgName, oid(orgOID));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
@@ -294,7 +312,7 @@ async function setupUpdate(
   | undefined
 > {
   const commonwellData = patient.data.externalData
-    ? (patient.data.externalData[MedicalDataSource.COMMONWELL] as PatientDataCommonwell) // TODO validate the type
+    ? getCWData(patient.data.externalData)
     : undefined;
   if (!commonwellData) return undefined;
   const commonwellPatientId = commonwellData.patientId;

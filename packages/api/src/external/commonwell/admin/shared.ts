@@ -1,9 +1,9 @@
 import { CommonWellAPI, organizationQueryMeta, RequestMetadata } from "@metriport/commonwell-sdk";
-import { Patient } from "../../../domain/medical/patient";
 import { oid } from "@metriport/core/domain/oid";
-import { MedicalDataSource } from "../../index";
+import { Patient } from "../../../domain/medical/patient";
 import { makeCommonWellAPI } from "../api";
-import { getPatientData, PatientDataCommonwell } from "../patient-shared";
+import { getCWData } from "../patient";
+import { getPatientData } from "../patient-shared";
 
 export type CWAccess =
   | {
@@ -26,7 +26,7 @@ export async function getCWAccessForPatient(patient: Patient): Promise<CWAccess>
     return { error: "missing-facility-id" };
   }
   const commonwellData = patient.data.externalData
-    ? (patient.data.externalData[MedicalDataSource.COMMONWELL] as PatientDataCommonwell)
+    ? getCWData(patient.data.externalData)
     : undefined;
   if (!commonwellData) {
     console.log(`Patient ${patient.id} has no externalData for CommonWell, skipping...`);
