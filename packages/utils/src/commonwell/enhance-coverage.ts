@@ -93,6 +93,19 @@ export async function main() {
     debug: console.log,
   };
 
+  const props: SessionManagementConfig = {
+    username: cwUsername,
+    password: cwPassword,
+    cookieManager,
+    cwManagementApi: new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl }),
+    codeChallenge: new CodeChallengeFromTerminal(),
+    browser: await chromium.launch({
+      headless: false,
+      slowMo: 100,
+    }),
+    errorScreenshotToFileSystem: true,
+    debug: console.log,
+  };
   const cwSession = new SessionManagement(props);
   await cwSession.keepSessionActive();
 
