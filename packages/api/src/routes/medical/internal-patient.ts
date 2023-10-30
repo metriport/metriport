@@ -8,6 +8,7 @@ import { getFacilities, getFacilityOrFail } from "../../command/medical/facility
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientIds, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { normalizeAddresses } from "../../command/normalize-address";
 import { Patient } from "../../domain/medical/patient";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
@@ -21,7 +22,7 @@ import { errorToString } from "../../shared/log";
 import { stringToBoolean } from "../../shared/types";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryOrFail } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
 
 const router = Router();
@@ -336,6 +337,17 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const resultCW = await recreatePatientsAtCW(cxId);
     return res.status(status.OK).json(resultCW);
+  })
+);
+
+router.post(
+  "/address",
+  asyncHandler(async (req: Request, res: Response) => {
+    const payload = req.body;
+    const address = payload.address;
+    if (!address) throw new BadRequestError(`Missing address in payload: ${payload}`);
+    const normalizedAddresses = await normalizeAddresses(address);
+    return res.status(status.OK).json(normalizedAddresses);
   })
 );
 

@@ -6,6 +6,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { normalizeAddresses } from "../../normalize-address";
 
 type Identifier = Pick<Patient, "cxId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -19,10 +20,20 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     sanitized;
 
+  const normalizedAddress = await normalizeAddresses(address);
+
   const patientExists = await getPatientByDemo({
     facilityId,
     cxId,
-    demo: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
+    demo: {
+      firstName,
+      lastName,
+      dob,
+      genderAtBirth,
+      personalIdentifiers,
+      address: normalizedAddress,
+      contact,
+    },
   });
   if (patientExists) return patientExists;
 
@@ -33,7 +44,15 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
     id: uuidv7(),
     cxId,
     facilityIds: [facilityId],
-    data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
+    data: {
+      firstName,
+      lastName,
+      dob,
+      genderAtBirth,
+      personalIdentifiers,
+      address: normalizedAddress,
+      contact,
+    },
   };
   const newPatient = await PatientModel.create(patientCreate);
 

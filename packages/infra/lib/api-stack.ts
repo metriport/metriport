@@ -16,6 +16,7 @@ import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
+import * as location from "aws-cdk-lib/aws-location";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
@@ -218,6 +219,17 @@ export class APIStack extends Stack {
     }
 
     const lambdaLayers = setupLambdasLayers(this);
+
+    //-------------------------------------------
+    // Amazon Location Service
+    //-------------------------------------------
+    new location.CfnPlaceIndex(this, "LocationService", {
+      dataSource: "Here",
+      dataSourceConfiguration: {
+        intendedUse: "SingleUse",
+      },
+      indexName: "places.index.HERE",
+    });
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -1035,14 +1047,7 @@ export class APIStack extends Stack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const {
-      lambdaLayers,
-      vpc,
-      sentryDsn,
-      envType,
-      alarmAction,
-      medicalDocumentsBucket,
-    } = ownProps;
+    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));

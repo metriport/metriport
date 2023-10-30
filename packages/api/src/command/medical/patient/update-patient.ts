@@ -1,5 +1,6 @@
 import { Patient, PatientData } from "../../../domain/medical/patient";
 import { validateVersionForUpdate } from "../../../models/_default";
+import { normalizeAddresses } from "../../normalize-address";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
@@ -19,6 +20,8 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
   const patient = await getPatientOrFail({ id, cxId });
   validateVersionForUpdate(patient, eTag);
 
+  const normalizedAddress = await normalizeAddresses(sanitized.address);
+
   return patient.update({
     data: {
       ...patient.data,
@@ -27,7 +30,7 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
       dob: sanitized.dob,
       genderAtBirth: sanitized.genderAtBirth,
       personalIdentifiers: sanitized.personalIdentifiers,
-      address: sanitized.address,
+      address: normalizedAddress,
       contact: sanitized.contact,
     },
   });
