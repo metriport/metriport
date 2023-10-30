@@ -35,6 +35,10 @@ const getDocSchema = z.object({
   output: z.enum(["fhir", "dto"]).nullish(),
 });
 
+const requestMetadataDataSchema = z.object({
+  data: z.record(z.string()),
+});
+
 /** ---------------------------------------------------------------------------
  * GET /document
  *
@@ -107,6 +111,13 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
+    const requestMetadata = requestMetadataDataSchema.safeParse(req.body);
+
+    if (requestMetadata.success) {
+      console.log(`Request Metadata: ${JSON.stringify(requestMetadata.data)}`);
+    } else {
+      console.log("No request metadata provided");
+    }
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
