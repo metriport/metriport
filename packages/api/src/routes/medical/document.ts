@@ -133,7 +133,9 @@ async function getDownloadUrl(req: Request): Promise<string> {
   const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
 
   if ((typeof fileName !== "string" || fileName.indexOf(cxId) !== -1) && !Config.isSandbox()) {
-    throw new ForbiddenError();
+    const message = "File name is invalid or does not contain the CX ID";
+    console.log(`${message}: ${fileName}, ${cxId}`);
+    throw new ForbiddenError(message);
   }
 
   const url = await downloadDocument({ fileName, conversionType });
