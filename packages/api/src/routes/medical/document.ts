@@ -21,7 +21,7 @@ import { sanitize } from "../helpers/string";
 import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
-import { docConversionTypeSchema } from "./schemas/documents";
+import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 
 const router = Router();
 const region = Config.getAWSRegion();
@@ -129,7 +129,8 @@ async function getDownloadUrl(req: Request): Promise<string> {
   const cxId = getCxIdOrFail(req);
 
   const fileName = getFromQueryOrFail("fileName", req);
-  const fileHasCxId = fileName.includes(cxId);
+  const fileNameString = docFileNameSchema.parse(fileName);
+  const fileHasCxId = fileNameString.includes(cxId);
   const type = getFrom("query").optional("conversionType", req);
   const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
 
