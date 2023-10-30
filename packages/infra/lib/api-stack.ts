@@ -1,5 +1,6 @@
 import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import * as appConfig from "aws-cdk-lib/aws-appconfig";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
@@ -96,6 +97,75 @@ export class APIStack extends Stack {
       "APICertificateCertificateRequestorFunctionAlarm",
       slackNotification?.alarmAction
     );
+
+    //-------------------------------------------
+    // Application-wide feature flags
+    //-------------------------------------------
+    const appConfigOSSApp = new appConfig.CfnApplication(this, "OSSAPIConfig", {
+      name: "OSSAPIConfig",
+    });
+
+    const appConfigOSSProfile = new appConfig.CfnConfigurationProfile(this, "OSSAPIConfigProfile", {
+      applicationId: appConfigOSSApp.ref,
+      locationUri: "hosted",
+      name: "OSSAPIConfigProfile",
+      type: "AWS.AppConfig.FeatureFlags",
+    });
+
+    const cxsWithEnhancedCoverageFeatureFlag = "cxsWithEnhancedCoverage";
+    const appConfigOSSVersion = new appConfig.CfnHostedConfigurationVersion(
+      this,
+      "OSSAPIConfigVersion",
+      {
+        applicationId: appConfigOSSApp.ref,
+        configurationProfileId: appConfigOSSProfile.ref,
+        contentType: "application/json",
+        content: JSON.stringify({
+          version: "1",
+          flags: {
+            [cxsWithEnhancedCoverageFeatureFlag]: {
+              name: cxsWithEnhancedCoverageFeatureFlag,
+              attributes: {
+                cxIds: {
+                  type: "string[]",
+                },
+              },
+            },
+          },
+          values: {
+            [cxsWithEnhancedCoverageFeatureFlag]: {
+              enabled: true,
+              cxIds: [],
+            },
+          },
+        }),
+      }
+    );
+
+    const appConfigOSSEnv = new appConfig.CfnEnvironment(this, "OSSAPIConfigEnv", {
+      applicationId: appConfigOSSApp.ref,
+      name: props.config.environmentType,
+    });
+
+    const appConfigOSSStrategy = new appConfig.CfnDeploymentStrategy(
+      this,
+      "OSSAPIConfigDeploymentStrategy",
+      {
+        deploymentDurationInMinutes: 0,
+        growthFactor: 100,
+        name: "OSSAPIConfigDeploymentStrategy",
+        replicateTo: "SSM_DOCUMENT",
+        finalBakeTimeInMinutes: 0,
+      }
+    );
+
+    new appConfig.CfnDeployment(this, "OSSAPIConfigDeployment", {
+      applicationId: appConfigOSSApp.ref,
+      configurationProfileId: appConfigOSSProfile.ref,
+      configurationVersion: appConfigOSSVersion.ref,
+      environmentId: appConfigOSSEnv.ref,
+      deploymentStrategyId: appConfigOSSStrategy.ref,
+    });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -319,6 +389,7 @@ export class APIStack extends Stack {
         alarmAction: slackNotification?.alarmAction,
       });
     }
+
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
     //-------------------------------------------
@@ -349,7 +420,13 @@ export class APIStack extends Stack {
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
-      ccdaSearchIndexName
+      ccdaSearchIndexName,
+      {
+        appId: appConfigOSSApp.ref,
+        configId: appConfigOSSProfile.ref,
+        env: appConfigOSSEnv.name,
+        cxsWithEnhancedCoverageFeatureFlag,
+      }
     );
 
     // Access grant for Aurora DB
@@ -1035,14 +1112,7 @@ export class APIStack extends Stack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const {
-      lambdaLayers,
-      vpc,
-      sentryDsn,
-      envType,
-      alarmAction,
-      medicalDocumentsBucket,
-    } = ownProps;
+    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));

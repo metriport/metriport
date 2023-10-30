@@ -49,7 +49,13 @@ export function createAPIService(
   searchIngestionQueue: IQueue,
   searchEndpoint: string,
   searchAuth: { userName: string; secret: ISecret },
-  searchIndexName: string
+  searchIndexName: string,
+  appConfigEnvVars: {
+    appId: string;
+    env: string;
+    configId: string;
+    cxsWithEnhancedCoverageFeatureFlag: string;
+  }
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -141,6 +147,11 @@ export function createAPIService(
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
+          // app config
+          APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+          APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+          CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG:
+            appConfigEnvVars.cxsWithEnhancedCoverageFeatureFlag,
         },
       },
       memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
