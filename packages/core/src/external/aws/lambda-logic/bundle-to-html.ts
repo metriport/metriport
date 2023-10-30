@@ -353,10 +353,11 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
 }
 
 function createMRHeader(patient: Patient, isAWEinPastYear: boolean) {
+
   return `
     <div id="mr-header">
       <div class='logo-container'>
-        <img src="metriport-logo.png" alt="Logo">
+        <img src="../../../metriport-logo.png" alt="Logo">
       </div>
       <h1 class="title">
         Medical Record Document (${dayjs().format(ISO_DATE)})
