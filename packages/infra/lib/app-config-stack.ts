@@ -24,7 +24,7 @@ export function createAppConfigStack(
     applicationId: appConfigOSSApp.ref,
     locationUri: "hosted",
     name: "OSSAPIConfigProfile",
-    type: "AWS.AppConfig.FeatureFlags",
+    type: "AWS.Freeform",
   });
 
   const cxsWithEnhancedCoverageFeatureFlag = "cxsWithEnhancedCoverage";
