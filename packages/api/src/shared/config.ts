@@ -248,10 +248,10 @@ export class Config {
   }
 
   // app config for feature flags
-  static appConfigAppId(): string {
+  static getAppConfigAppId(): string {
     return getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
   }
-  static appConfigConfigId(): string {
+  static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
   }
   static getCxsWithEnhancedCoverageFeatureFlagName(): string {
