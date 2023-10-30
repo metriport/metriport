@@ -4,7 +4,7 @@ export type Cookie = {
 };
 
 export function cookieFromString(c: string): Cookie | undefined {
-  const [name, value] = c.split("=");
+  const [name, value] = (c?.trim() ?? "").split("=");
   if (!name || !value) return undefined;
   return { name, value };
 }
