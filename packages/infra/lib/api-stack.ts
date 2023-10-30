@@ -1059,7 +1059,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [...lambdaLayers, chromiumLayer],
-      memory: 1024,
+      memory: 4096,
       timeout: lambdaTimeout,
       vpc,
       alarmSnsAction: alarmAction,
