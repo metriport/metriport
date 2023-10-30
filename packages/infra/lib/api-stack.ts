@@ -1037,6 +1037,12 @@ export class APIStack extends Stack {
   }): Lambda {
     const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket } = ownProps;
 
+    const chromiumLayer = new lambda.LayerVersion(this, "chromium-fhir-to-mr-layer", {
+      compatibleRuntimes: [lambda.Runtime.NODEJS_18_X],
+      code: lambda.Code.fromAsset("../lambdas/layers/chromium"),
+      description: "Adds chromium to the lambda",
+    });
+
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
 
@@ -1052,7 +1058,7 @@ export class APIStack extends Stack {
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: lambdaLayers,
+      layers: [...lambdaLayers, chromiumLayer],
       memory: 512,
       timeout: lambdaTimeout,
       vpc,
