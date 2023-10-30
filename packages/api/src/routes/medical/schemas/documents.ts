@@ -2,3 +2,5 @@ import { validConversionTypes } from "@metriport/core/domain/conversion/cda-to-h
 import { z } from "zod";
 
 export const docConversionTypeSchema = z.enum(validConversionTypes);
+
+export const docFileNameSchema = z.string();
