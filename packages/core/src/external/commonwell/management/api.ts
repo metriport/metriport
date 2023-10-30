@@ -13,7 +13,7 @@ import { safeStringify } from "../../../util/string";
 dayjs.extend(duration);
 
 const DEFAULT_TIMEOUT_GET_MEMBER = dayjs.duration({ seconds: 20 });
-const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ seconds: 30 });
+const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ seconds: 60 });
 
 const baseHeaders = {
   "User-Agent":
@@ -81,6 +81,7 @@ export class CommonWellManagementAPI {
     const cookies = await this.cookieManager.getCookies();
 
     log(`Posting to /IncludeList...`);
+    const before = Date.now();
     const resp = await axios.post(
       `${this.baseUrl}/Organization/${oid}/IncludeList`,
       {
@@ -98,7 +99,7 @@ export class CommonWellManagementAPI {
         },
       }
     );
-    log(`Responded w/ ${resp.status} - ${resp.statusText}`);
+    log(`Responded w/ ${resp.status} - ${resp.statusText} - took ${Date.now() - before}ms`);
     const result = resp.data["SelectedOrganizationList"];
     if (!result) {
       const msg = `Bad response from CommonWell`;

@@ -1,4 +1,3 @@
-import assert from "assert";
 import { Browser, Page } from "playwright";
 import { CodeChallenge } from "../../../domain/auth/code-challenge";
 import {
@@ -18,6 +17,22 @@ const cookiesToUse = [
   "__RequestVerificationToken",
   "SessionTimeoutRedirect",
   "MPUserTimeZoneOffset",
+];
+const logDenyList = [
+  ".png",
+  ".jpg",
+  "css",
+  ".js",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".svg",
+  "jquery",
+  "bootstrap",
+  "angular",
+  "modernizr",
+  "theme",
+  "htm",
 ];
 
 /**
@@ -113,6 +128,10 @@ export class SessionManagement {
 
     // Log information about the requests
     await page.route("**", (route, request) => {
+      if (logDenyList.some(d => request.url().includes(d))) {
+        route.continue();
+        return;
+      }
       request.response().then(resp => {
         const responseString = resp ? ` - status: ${resp.status()}, ${resp.statusText()}` : "";
         log(request.url() + responseString);
@@ -125,28 +144,26 @@ export class SessionManagement {
       log(`.1`);
       await page.goto(this.sessionBaseUrl);
       log(`.2`);
-      assert(await page.getByRole("link", { name: "Healthcare ID" }).isEnabled());
       await page.getByRole("link", { name: "Healthcare ID" }).click();
       log(`.3`);
-      assert(await page.getByTestId("username").isEditable());
-      await page.getByTestId("username").click();
-      await page.getByTestId("username").fill(this.username);
+      const usernameLocator = () => page.getByTestId("username");
+      await usernameLocator().click();
+      await usernameLocator().fill(this.username);
       log(`.5`);
-      assert(await page.getByTestId("login-pwd").isEditable());
-      await page.getByTestId("login-pwd").click();
-      await page.getByTestId("login-pwd").fill(this.password);
+      const loginLocator = () => page.getByTestId("login-pwd");
+      await loginLocator().click();
+      await loginLocator().fill(this.password);
       log(`.7`);
-      assert(await page.getByRole("button", { name: "Continue" }).isEnabled());
       await page.getByRole("button", { name: "Continue" }).click();
       log(`.8`);
 
       log(`Waiting to see if the code challenge will be requested...`);
       log(`URL pre sleep: ${page.url()}`);
-      // await page.screenshot({ path: "screenshot-pre.png" });
+
+      // Take some time so the code challenge can be requested, if needed.
       await sleep(2_000);
       // It should be: https://identity.onehealthcareid.com/oneapp/index.html#/rba/options/email
       log(`URL post sleep: ${page.url()}`);
-      // await page.screenshot({ path: "screenshot-post.png" });
       log(`.9`);
 
       const isAccessCodePage = await page.getByRole("heading", { name: "Access Code" }).isVisible();
@@ -155,7 +172,6 @@ export class SessionManagement {
         const accessCode = await this.codeChallenge.getCode();
         log(`.A`);
 
-        assert(await page.getByTestId("accessCodeBox").isEnabled());
         await page.getByTestId("accessCodeBox").click();
         await page.getByTestId("accessCodeBox").fill(accessCode);
         log(`.B`);
@@ -163,11 +179,9 @@ export class SessionManagement {
         const skipCheckbox = page.getByRole("checkbox", {
           name: "Skip this step in future if this is your private device.",
         });
-        assert(await skipCheckbox.isEnabled());
         await skipCheckbox.click();
         log(`.C`);
 
-        assert(await page.getByRole("button", { name: "Continue" }).isEnabled());
         await page.getByRole("button", { name: "Continue" }).click();
         log(`.D`);
       } else {
@@ -175,21 +189,19 @@ export class SessionManagement {
       }
       log(`.10`);
 
-      assert(await page.locator("#OrganizationsBtn").isEnabled());
       await page.locator("#OrganizationsBtn").click();
       log(`.11`);
 
-      assert(await page.locator("#ListOrganizationsBtn").isEnabled());
       await page.locator("#ListOrganizationsBtn").click();
       log(`.12`);
 
-      assert(await page.getByRole("heading", { name: "Organization List" }).isVisible());
       await page.getByRole("heading", { name: "Organization List" }).click();
       log(`.13`);
 
       return page;
     } catch (error) {
       const msg = "Error while logging in";
+      await sleep(500); // give some time for the (error) page to load
       if (this.errorToFS) {
         await page.screenshot({ path: "screenshot-error.png" });
         throw new MetriportError(msg, error);
