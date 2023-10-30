@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.build.json",
     "build:cloud": "tsc -p tsconfig.cloud.json",
     "typecheck": "tsc --noEmit",
-    "prep-deploy": "npm run clean && npm ci --omit=dev --ignore-scripts --no-fund && ./build-shared-layer.sh",
+    "prep-deploy": "./scripts/prep-deploy.sh",
     "lint": "eslint . --ext .ts",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests"
   },
