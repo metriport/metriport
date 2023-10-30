@@ -129,10 +129,11 @@ async function getDownloadUrl(req: Request): Promise<string> {
   const cxId = getCxIdOrFail(req);
 
   const fileName = getFromQueryOrFail("fileName", req);
+  const fileHasCxId = fileName.includes(cxId);
   const type = getFrom("query").optional("conversionType", req);
   const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
 
-  if ((typeof fileName !== "string" || fileName.indexOf(cxId) !== -1) && !Config.isSandbox()) {
+  if (!fileHasCxId && !Config.isSandbox()) {
     const message = "File name is invalid or does not contain the CX ID";
     console.log(`${message}: ${fileName}, ${cxId}`);
     throw new ForbiddenError(message);
