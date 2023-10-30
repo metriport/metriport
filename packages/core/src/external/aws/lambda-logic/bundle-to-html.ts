@@ -29,8 +29,7 @@ const ICD_10_CODE = "icd-10";
 const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
 
-export const bundleToHtml = (json: string): string => {
-  const fhirBundle: Bundle = JSON.parse(json);
+export const bundleToHtml = (fhirBundle: Bundle): string => {
   const {
     patient,
     practitioners,
