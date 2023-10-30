@@ -7,6 +7,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -203,6 +204,22 @@ export function createAPIService(
     resource: fargateService.taskDefinition.taskRole,
   });
   searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
+
+  // Setting permissions for AppConfig
+  fargateService.taskDefinition.taskRole.attachInlinePolicy(
+    new iam.Policy(stack, "OSSAPIPermissionsForAppConfig", {
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "appconfig:StartConfigurationSession",
+            "appconfig:GetLatestConfiguration",
+            "appconfig:GetConfiguration",
+          ],
+          resources: ["*"],
+        }),
+      ],
+    })
+  );
 
   // CloudWatch Alarms and Notifications
 
