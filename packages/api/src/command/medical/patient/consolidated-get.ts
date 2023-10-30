@@ -169,9 +169,9 @@ export async function getConsolidatedPatientData({
         errorsToReport
       );
     }),
-    ...generalResourcesNoFilter.map(async resource => {
-      return searchResources(resource, () => fhir.searchResourcePages(resource), errorsToReport);
-    }),
+    // ...generalResourcesNoFilter.map(async resource => {
+    //   return searchResources(resource, () => fhir.searchResourcePages(resource), errorsToReport);
+    // }),
   ]);
 
   const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
