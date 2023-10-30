@@ -1,15 +1,16 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
-import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { ILayerVersion, Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
-import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import { IVpc } from "aws-cdk-lib/aws-ec2";
+import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { METRICS_NAMESPACE, getConfig } from "../shared/config";
-import { MAXIMUM_LAMBDA_TIMEOUT, createLambda as defaultCreateLambda } from "../shared/lambda";
+import { getConfig, METRICS_NAMESPACE } from "../shared/config";
+import { createLambda as defaultCreateLambda, MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { FHIRConnector } from "./fhir-converter-connector";
 
@@ -43,7 +44,7 @@ export function createQueueAndBucket({
   alarmSnsAction,
 }: {
   stack: Construct;
-  lambdaLayers: ILayerVersion[];
+  lambdaLayers: LambdaLayers;
   alarmSnsAction?: SnsAction;
 }): FHIRConnector {
   const config = getConfig();
@@ -51,7 +52,7 @@ export function createQueueAndBucket({
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
-    lambdaLayers,
+    lambdaLayers: [lambdaLayers.shared],
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
@@ -93,7 +94,7 @@ export function createLambda({
 }: {
   envType: EnvType;
   stack: Construct;
-  lambdaLayers: ILayerVersion[];
+  lambdaLayers: LambdaLayers;
   vpc: IVpc;
   sourceQueue: IQueue;
   destinationQueue: IQueue;
@@ -127,7 +128,7 @@ export function createLambda({
     vpc,
     subnets: vpc.privateSubnets,
     entry: "sqs-to-converter",
-    layers: lambdaLayers,
+    layers: [lambdaLayers.shared],
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,

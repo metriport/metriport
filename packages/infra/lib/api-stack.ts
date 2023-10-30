@@ -32,6 +32,7 @@ import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-con
 import { createAppConfigStack } from "./app-config-stack";
 import { createIHEStack } from "./ihe-stack";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
@@ -714,14 +715,14 @@ export class APIStack extends Stack {
   }
 
   private setupTestLambda(
-    lambdaLayers: lambda.ILayerVersion[],
+    lambdaLayers: LambdaLayers,
     envType: string,
     sentryDsn: string | undefined
   ) {
     return createLambda({
       stack: this,
       name: "Tester",
-      layers: lambdaLayers,
+      layers: [lambdaLayers.shared],
       vpc: this.vpc,
       subnets: this.vpc.privateSubnets,
       entry: "tester",
@@ -734,7 +735,7 @@ export class APIStack extends Stack {
   }
 
   private setupGarminWebhookAuth(ownProps: {
-    lambdaLayers: lambda.ILayerVersion[];
+    lambdaLayers: LambdaLayers;
     baseResource: apig.Resource;
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -759,7 +760,7 @@ export class APIStack extends Stack {
       name: "Garmin",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "garmin",
-      layers: lambdaLayers,
+      layers: [lambdaLayers.shared],
       envVars: {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/garmin`,
@@ -782,7 +783,7 @@ export class APIStack extends Stack {
   }
 
   private setupWithingsWebhookAuth(ownProps: {
-    lambdaLayers: lambda.ILayerVersion[];
+    lambdaLayers: LambdaLayers;
     baseResource: apig.Resource;
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -798,18 +799,13 @@ export class APIStack extends Stack {
       envType,
       sentryDsn,
     } = ownProps;
-    const digLayer = new lambda.LayerVersion(this, "dig-layer", {
-      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      code: lambda.Code.fromAsset("../lambdas/layers/dig-layer"),
-      description: "Adds dig to the lambdas",
-    });
 
     const withingsLambda = createLambda({
       stack: this,
       name: "Withings",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "withings",
-      layers: [...lambdaLayers, digLayer],
+      layers: [lambdaLayers.shared, lambdaLayers.dig],
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
         ENV_TYPE: envType,
@@ -826,7 +822,7 @@ export class APIStack extends Stack {
   }
 
   private setupFitbitWebhook(ownProps: {
-    lambdaLayers: lambda.ILayerVersion[];
+    lambdaLayers: LambdaLayers;
     baseResource: apig.Resource;
     secrets: Secrets;
     vpc: ec2.IVpc;
@@ -855,7 +851,7 @@ export class APIStack extends Stack {
       name: "FitbitAuth",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fitbit-auth",
-      layers: lambdaLayers,
+      layers: [lambdaLayers.shared],
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/fitbit`,
         ENV_TYPE: envType,
@@ -873,7 +869,7 @@ export class APIStack extends Stack {
       name: "FitbitSubscriberVerification",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fitbit-subscriber-verification",
-      layers: lambdaLayers,
+      layers: [lambdaLayers.shared],
       envVars: {
         ENV_TYPE: envType,
         FITBIT_SUBSCRIBER_VERIFICATION_CODE: fitbitSubscriberVerificationCode,
@@ -901,7 +897,7 @@ export class APIStack extends Stack {
   }
 
   private setupTenoviWebhookAuth(ownProps: {
-    lambdaLayers: lambda.ILayerVersion[];
+    lambdaLayers: LambdaLayers;
     baseResource: apig.Resource;
     secrets: Secrets;
     vpc: ec2.IVpc;
@@ -928,7 +924,7 @@ export class APIStack extends Stack {
       name: "TenoviAuth",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "tenovi",
-      layers: lambdaLayers,
+      layers: [lambdaLayers.shared],
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/tenovi`,
         ENV_TYPE: envType,
@@ -951,7 +947,7 @@ export class APIStack extends Stack {
   }
 
   private setupCdaToVisualization(ownProps: {
-    lambdaLayers: lambda.ILayerVersion[];
+    lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: string;
     medicalDocumentsBucket: s3.Bucket;
@@ -969,12 +965,6 @@ export class APIStack extends Stack {
       sandboxSeedDataBucket,
     } = ownProps;
 
-    const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
-      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      code: lambda.Code.fromAsset("../lambdas/layers/chromium"),
-      description: "Adds chromium to the lambda",
-    });
-
     const cdaToVisualizationLambda = createLambda({
       stack: this,
       name: "CdaToVisualization",
@@ -985,7 +975,7 @@ export class APIStack extends Stack {
         CDA_TO_VIS_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [...lambdaLayers, chromiumLayer],
+      layers: [lambdaLayers.shared, lambdaLayers.chromium],
       memory: 1024,
       timeout: CDA_TO_VIS_TIMEOUT,
       vpc,
@@ -1007,7 +997,7 @@ export class APIStack extends Stack {
    * lambda.
    */
   private setupDocumentDownloader(ownProps: {
-    lambdaLayers: lambda.ILayerVersion[];
+    lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     secrets: Secrets;
     cwOrgCertificate: string;
@@ -1041,7 +1031,7 @@ export class APIStack extends Stack {
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: lambdaLayers,
+      layers: [lambdaLayers.shared],
       memory: 512,
       timeout: Duration.minutes(5),
       vpc,
@@ -1064,7 +1054,7 @@ export class APIStack extends Stack {
   }
 
   private setupFhirToMedicalRecordLambda(ownProps: {
-    lambdaLayers: lambda.ILayerVersion[];
+    lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
     envType: string;
@@ -1072,12 +1062,6 @@ export class APIStack extends Stack {
     alarmAction: SnsAction | undefined;
   }): Lambda {
     const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket } = ownProps;
-
-    const chromiumLayer = new lambda.LayerVersion(this, "chromium-fhir-to-mr-layer", {
-      compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
-      code: lambda.Code.fromAsset("../lambdas/layers/chromium"),
-      description: "Adds chromium to the lambda",
-    });
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
@@ -1094,7 +1078,7 @@ export class APIStack extends Stack {
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [...lambdaLayers, chromiumLayer],
+      layers: [lambdaLayers.shared,lambdaLayers.chromium],
       memory: 1024,
       timeout: lambdaTimeout,
       vpc,
@@ -1108,7 +1092,7 @@ export class APIStack extends Stack {
 
   private setupCWDocContribution(ownProps: {
     baseResource: apig.Resource;
-    lambdaLayers: lambda.ILayerVersion[];
+    lambdaLayers: LambdaLayers;
     alarmAction: SnsAction | undefined;
     authorizer: apig.IAuthorizer;
     oauthScopes: cognito.OAuthScope[];
@@ -1123,7 +1107,7 @@ export class APIStack extends Stack {
       name: "CommonWellDocContribution",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "cw-doc-contribution",
-      layers: lambdaLayers,
+      layers: [lambdaLayers.shared],
       alarmSnsAction: alarmAction,
       envVars: {
         ENV_TYPE: envType,
@@ -1145,7 +1129,7 @@ export class APIStack extends Stack {
   }
 
   private setupTokenAuthLambda(
-    lambdaLayers: lambda.ILayerVersion[],
+    lambdaLayers: LambdaLayers,
     dynamoDBTokenTable: dynamodb.Table,
     alarmAction: SnsAction | undefined,
     envType: string,
@@ -1156,7 +1140,7 @@ export class APIStack extends Stack {
       name: "TokenAuth",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "token-auth",
-      layers: lambdaLayers,
+      layers: [lambdaLayers.shared],
       envVars: {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
         ENV_TYPE: envType,
@@ -1419,12 +1403,4 @@ function setupSlackNotifSnsTopic(
   });
   const alarmAction = new SnsAction(slackNotifSnsTopic);
   return { snsTopic: slackNotifSnsTopic, alarmAction };
-}
-
-function setupLambdasLayers(stack: Stack): lambda.ILayerVersion[] {
-  return [
-    new lambda.LayerVersion(stack, "lambdaNodeModules", {
-      code: lambda.Code.fromAsset("../lambdas/layers/shared/shared-layer.zip"),
-    }),
-  ];
 }
