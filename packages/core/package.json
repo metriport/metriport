@@ -49,6 +49,8 @@
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.435.0",
+    "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "@opensearch-project/opensearch": "^2.3.1",
     "aws-sdk": "^2.1243.0",
