@@ -60,6 +60,8 @@ export async function main() {
       headless: false,
       slowMo: 100,
     }),
+    errorScreenshotToFileSystem: true,
+    debug: console.log,
   };
   const cwSession = new SessionManagement(props);
   await cwSession.keepSessionActive();
