@@ -1035,16 +1035,9 @@ export class APIStack extends Stack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const {
-      lambdaLayers,
-      vpc,
-      sentryDsn,
-      envType,
-      alarmAction,
-      medicalDocumentsBucket,
-    } = ownProps;
+    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket } = ownProps;
 
-    const chromiumLayer = new lambda.LayerVersion(this, "chromium-layer", {
+    const chromiumLayer = new lambda.LayerVersion(this, "chromium-fhir-to-mr-layer", {
       compatibleRuntimes: [lambda.Runtime.NODEJS_16_X],
       code: lambda.Code.fromAsset("../lambdas/layers/chromium"),
       description: "Adds chromium to the lambda",
