@@ -56,6 +56,7 @@
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",
     "http-status": "^1.7.0",
+    "lodash": "^4.17.21",
     "xmldom": "^0.6.0"
   },
   "devDependencies": {
