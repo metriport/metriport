@@ -6,6 +6,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { SessionManagementConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
+import { LambdaLayers } from "../shared/lambda-layers";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
 import { Secrets } from "../shared/secrets";
 
@@ -102,7 +103,7 @@ export function setup({
 }: {
   stack: Construct;
   vpc: IVpc;
-  lambdaLayers: ILayerVersion[];
+  lambdaLayers: LambdaLayers;
   secrets: Secrets;
   alarmSnsAction?: SnsAction;
 }):
@@ -126,7 +127,7 @@ export function setup({
   const sessionLambda = createSessionMgmtLambda({
     stack,
     vpc,
-    lambdaLayers,
+    lambdaLayers: [lambdaLayers.shared, lambdaLayers.playwright],
     sessionConfig: config.commonwell.sessionManagement,
     credsStore,
     cookieStore,
