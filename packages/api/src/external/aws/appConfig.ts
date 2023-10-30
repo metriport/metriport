@@ -15,7 +15,7 @@ export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<stri
       Config.getEnvType(),
       Config.getCxsWithEnhancedCoverageFeatureFlagName()
     );
-    if (featureFlag?.enabled) return featureFlag?.cxIds ? featureFlag?.cxIds : [];
+    if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
   } catch (error) {
     console.log(
       `Failed to get cxsWithEnhancedCoverage Feature Flag Value with error: ${errorToString(error)}`
