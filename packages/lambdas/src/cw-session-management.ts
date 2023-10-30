@@ -7,7 +7,7 @@ import {
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
 import * as Sentry from "@sentry/serverless";
-import playwright from "playwright-aws-lambda";
+import { launchChromium } from "playwright-aws-lambda/dist/src"; // https://github.com/JupiterOne/playwright-aws-lambda/issues/15#issuecomment-1243395780
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 
@@ -48,7 +48,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
     const { username, password } = await getCreds();
     console.log(`...username ${username}, password 🤫`);
 
-    const browser = await playwright.launchChromium();
+    const browser = await launchChromium();
 
     const props: SessionManagementConfig = {
       username,
@@ -57,6 +57,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
       cwManagementApi,
       codeChallenge,
       browser,
+      debug: console.log,
     };
     const cwSession = new SessionManagement(props);
 
@@ -71,6 +72,25 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
     };
     console.log(`Error`, error);
     capture.error(error, { extra: { ...additional, lambdaName, error } });
+
+    // TODO 1195 enable this and give access to Bucket on CDK
+    // if (error instanceof MetriportError) {
+    //   const contents = error.additionalInfo?.[SessionManagement.exceptionScreenshotKey] as
+    //     | string
+    //     | undefined;
+    //   if (contents) {
+    //     const s3Client = makeS3Client(region);
+    //     await s3Client
+    //       .putObject({
+    //         Bucket: generalBucket,
+    //         Key: `lambdas/${lambdaName}/error_${new Date().toISOString()}.jpg`,
+    //         Body: base64ToBuffer(contents),
+    //       })
+    //       .promise();
+    //   } else {
+    //     console.log(`MetriportError but no b64 screenshot`);
+    //   }
+    // }
   }
 });
 

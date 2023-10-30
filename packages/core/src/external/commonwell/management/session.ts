@@ -6,6 +6,7 @@ import {
   CookieManager,
   cookiesToString,
 } from "../../../domain/auth/cookie-management/cookie-manager";
+import { MetriportError } from "../../../util/error/metriport-error";
 import { sleep } from "../../../util/sleep";
 import { CommonWellManagementAPI } from "./api";
 
@@ -32,6 +33,16 @@ export type SessionManagementConfig = {
    */
   codeChallenge: CodeChallenge;
   browser: Browser;
+  /**
+   * Whether to save a screenshot to the file system when an error happens.
+   * If `true`, it will save the screenshot to the file system, current folder.
+   * If `false`, it will include the screenshot as base64 on the error object.
+   * Defaults to `false`.
+   */
+  errorScreenshotToFileSystem?: boolean;
+  /**
+   * The function to use to log debug messages.
+   */
   debug?: typeof console.log;
 };
 
@@ -43,7 +54,10 @@ export class SessionManagement {
   private sessionBaseUrl: string;
   private username: string;
   private password: string;
+  private errorToFS: boolean;
   private debug: typeof console.log;
+
+  static exceptionScreenshotKey = "screenshotAsB64";
 
   constructor(params: SessionManagementConfig) {
     this.cookieManager = params.cookieManager;
@@ -53,6 +67,8 @@ export class SessionManagement {
     this.sessionBaseUrl = this.cwManagementApi.getBaseUrl();
     this.username = params.username;
     this.password = params.password;
+    this.errorToFS =
+      params.errorScreenshotToFileSystem == undefined ? false : params.errorScreenshotToFileSystem;
     this.debug = params.debug ?? (() => {}); //eslint-disable-line @typescript-eslint/no-empty-function
   }
 
@@ -94,6 +110,15 @@ export class SessionManagement {
     if (!this.browser.isConnected()) throw new Error(`Browser is not conneceted`);
 
     const page = await this.browser.newPage();
+
+    // Log information about the requests
+    await page.route("**", (route, request) => {
+      request.response().then(resp => {
+        const responseString = resp ? ` - status: ${resp.status()}, ${resp.statusText()}` : "";
+        log(request.url() + responseString);
+      });
+      route.continue();
+    });
 
     try {
       // TODO 1195 remove the excessive logs (".xx")
@@ -164,10 +189,16 @@ export class SessionManagement {
 
       return page;
     } catch (error) {
-      // TODO 1195 send it to S3
-      // const buffer = await page.screenshot();
-      await page.screenshot({ path: "screenshot-error.png" });
-      throw error;
+      const msg = "Error while logging in";
+      if (this.errorToFS) {
+        await page.screenshot({ path: "screenshot-error.png" });
+        throw new MetriportError(msg, error);
+      }
+      const buffer = await page.screenshot();
+      const screenshotAsB64 = buffer.toString("base64");
+      throw new MetriportError(msg, error, {
+        [SessionManagement.exceptionScreenshotKey]: screenshotAsB64,
+      });
     }
   }
 
