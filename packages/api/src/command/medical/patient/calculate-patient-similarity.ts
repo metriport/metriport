@@ -1,7 +1,7 @@
 import { PatientData } from "../../../domain/medical/patient";
 import jaroWinkler from "jaro-winkler";
 
-const SIMILARITY_THRESHOLD = 0.95;
+const SIMILARITY_THRESHOLD = 0.96;
 
 export const isMatchingDemographics = (patient1: PatientData, patient2: PatientData): boolean => {
   const similarityScore = calculatePatientSimilarity(patient1, patient2);
