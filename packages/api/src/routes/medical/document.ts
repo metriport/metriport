@@ -153,7 +153,7 @@ async function getDownloadUrl(req: Request): Promise<string> {
 router.get(
   "/downloadUrl",
   asyncHandler(async (req: Request, res: Response) => {
-    const url = getDownloadUrl(req);
+    const url = await getDownloadUrl(req);
     return res.status(OK).json({ url });
   })
 );
@@ -170,7 +170,7 @@ router.get(
 router.get(
   "/download-url",
   asyncHandler(async (req: Request, res: Response) => {
-    const url = getDownloadUrl(req);
+    const url = await getDownloadUrl(req);
     return res.status(OK).json({ url });
   })
 );
