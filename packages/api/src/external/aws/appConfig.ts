@@ -5,14 +5,17 @@ import { capture } from "../../shared/notifications";
 
 export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
   try {
-    const cxIds = await getFeatureFlagValue<string[]>(
+    const featureFlag = await getFeatureFlagValue<{
+      enabled: boolean | undefined;
+      cxIds: string[] | undefined;
+    }>(
       Config.getAWSRegion(),
       Config.getAppConfigAppId(),
       Config.getAppConfigConfigId(),
       Config.getEnvType(),
       Config.getCxsWithEnhancedCoverageFeatureFlagName()
     );
-    return cxIds ? cxIds : [];
+    if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
   } catch (error) {
     console.log(
       `Failed to get cxsWithEnhancedCoverage Feature Flag Value with error: ${errorToString(error)}`
