@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.4.3-alpha.1",
+  "version": "1.4.3-alpha.3",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -57,6 +57,7 @@
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",
     "http-status": "^1.7.0",
+    "lodash": "^4.17.21",
     "xmldom": "^0.6.0"
   },
   "devDependencies": {
