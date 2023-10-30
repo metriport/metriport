@@ -170,7 +170,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
             display: flex;
             justify-content: space-between;
           }
-          
+
 
           #nav .half {
             width: 50%;
@@ -353,14 +353,13 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
 }
 
 function createMRHeader(patient: Patient, isAWEinPastYear: boolean) {
-
   return `
     <div id="mr-header">
       <div class='logo-container'>
-        <img src="../../../metriport-logo.png" alt="Logo">
+        <img src="../../../metriport-logo-black.png" alt="Logo">
       </div>
       <h1 class="title">
-        Medical Record Document (${dayjs().format(ISO_DATE)})
+        Medical Record Summary (${dayjs().format(ISO_DATE)})
       </h1>
       <div class="header-tables">
         <div style="margin-right: 10px" class="header-table">
