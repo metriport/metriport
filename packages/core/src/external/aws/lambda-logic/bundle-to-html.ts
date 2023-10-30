@@ -170,6 +170,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
             display: flex;
             justify-content: space-between;
           }
+          
 
           #nav .half {
             width: 50%;
