@@ -1,0 +1,26 @@
+{
+  "name": "playwright-layer",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "preinstall": "npm i -g rimraf",
+    "clean": "rimraf dist && rimraf node_modules",
+    "prep-deploy": "./scripts/prep-deploy.sh",
+    "build": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "playwright-aws-lambda": "^0.10.0",
+    "playwright-core": "^1.39.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node18": "^1.0.1",
+    "ts-node": "^10.9.1"
+  }
+}
