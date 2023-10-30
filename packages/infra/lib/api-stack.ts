@@ -1,6 +1,5 @@
 import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-import * as appConfig from "aws-cdk-lib/aws-appconfig";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
@@ -29,6 +28,7 @@ import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
+import { createAppConfigStack } from "./app-config-stack";
 import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
@@ -101,71 +101,8 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    const appConfigOSSApp = new appConfig.CfnApplication(this, "OSSAPIConfig", {
-      name: "OSSAPIConfig",
-    });
-
-    const appConfigOSSProfile = new appConfig.CfnConfigurationProfile(this, "OSSAPIConfigProfile", {
-      applicationId: appConfigOSSApp.ref,
-      locationUri: "hosted",
-      name: "OSSAPIConfigProfile",
-      type: "AWS.AppConfig.FeatureFlags",
-    });
-
-    const cxsWithEnhancedCoverageFeatureFlag = "cxsWithEnhancedCoverage";
-    const appConfigOSSVersion = new appConfig.CfnHostedConfigurationVersion(
-      this,
-      "OSSAPIConfigVersion",
-      {
-        applicationId: appConfigOSSApp.ref,
-        configurationProfileId: appConfigOSSProfile.ref,
-        contentType: "application/json",
-        content: JSON.stringify({
-          version: "1",
-          flags: {
-            [cxsWithEnhancedCoverageFeatureFlag]: {
-              name: cxsWithEnhancedCoverageFeatureFlag,
-              attributes: {
-                cxIds: {
-                  type: "string[]",
-                },
-              },
-            },
-          },
-          values: {
-            [cxsWithEnhancedCoverageFeatureFlag]: {
-              enabled: true,
-              cxIds: [],
-            },
-          },
-        }),
-      }
-    );
-
-    const appConfigOSSEnv = new appConfig.CfnEnvironment(this, "OSSAPIConfigEnv", {
-      applicationId: appConfigOSSApp.ref,
-      name: props.config.environmentType,
-    });
-
-    const appConfigOSSStrategy = new appConfig.CfnDeploymentStrategy(
-      this,
-      "OSSAPIConfigDeploymentStrategy",
-      {
-        deploymentDurationInMinutes: 0,
-        growthFactor: 100,
-        name: "OSSAPIConfigDeploymentStrategy",
-        replicateTo: "SSM_DOCUMENT",
-        finalBakeTimeInMinutes: 0,
-      }
-    );
-
-    new appConfig.CfnDeployment(this, "OSSAPIConfigDeployment", {
-      applicationId: appConfigOSSApp.ref,
-      configurationProfileId: appConfigOSSProfile.ref,
-      configurationVersion: appConfigOSSVersion.ref,
-      environmentId: appConfigOSSEnv.ref,
-      deploymentStrategyId: appConfigOSSStrategy.ref,
-    });
+    const { appConfigAppId, appConfigConfigId, cxsWithEnhancedCoverageFeatureFlag } =
+      createAppConfigStack(this, { config: props.config });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -422,9 +359,8 @@ export class APIStack extends Stack {
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
       ccdaSearchIndexName,
       {
-        appId: appConfigOSSApp.ref,
-        configId: appConfigOSSProfile.ref,
-        env: appConfigOSSEnv.name,
+        appId: appConfigAppId,
+        configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
       }
     );

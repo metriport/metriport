@@ -52,7 +52,6 @@ export function createAPIService(
   searchIndexName: string,
   appConfigEnvVars: {
     appId: string;
-    env: string;
     configId: string;
     cxsWithEnhancedCoverageFeatureFlag: string;
   }
