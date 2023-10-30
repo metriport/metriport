@@ -356,7 +356,7 @@ function createMRHeader(patient: Patient, isAWEinPastYear: boolean) {
   return `
     <div id="mr-header">
       <div class='logo-container'>
-        <img src="../../../metriport-logo-black.png" alt="Logo">
+        <img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
       </div>
       <h1 class="title">
         Medical Record Summary (${dayjs().format(ISO_DATE)})
