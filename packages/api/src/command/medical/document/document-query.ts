@@ -64,7 +64,11 @@ export async function queryDocumentsAcrossHIEs({
       }
     );
   }
+
+  // const request = await
   const docQueryProgress = patient.data.documentQueryProgress;
+
+  console.log("HEREEEE: ", docQueryProgress);
   const requestId = getOrGenerateRequestId(docQueryProgress);
 
   if (

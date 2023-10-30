@@ -2,6 +2,7 @@ import { patientCreateSchema } from "@metriport/api-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import { requestMetadataDataSchema } from "../../domain/medical/request";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
@@ -285,6 +286,13 @@ router.post(
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
+    const requestMetadata = requestMetadataDataSchema.safeParse(req.body);
+
+    if (requestMetadata.success) {
+      console.log(`Request Metadata: ${JSON.stringify(requestMetadata.data)}`);
+    } else {
+      console.log("No request metadata provided");
+    }
 
     const data = await startConsolidatedQuery({
       cxId,

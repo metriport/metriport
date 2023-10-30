@@ -4,6 +4,8 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
 import { z } from "zod";
+import { requestMetadataDataSchema, RequestMetadata } from "../../domain/medical/request";
+import { RequestCreateCmd, createRequest } from "../../command/medical/request/create-request";
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -22,7 +24,6 @@ import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema } from "./schemas/documents";
-
 const router = Router();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -33,10 +34,6 @@ const getDocSchema = z.object({
   dateTo: optionalDateSchema,
   content: z.string().min(3).nullish(),
   output: z.enum(["fhir", "dto"]).nullish(),
-});
-
-const requestMetadataDataSchema = z.object({
-  data: z.record(z.string()),
 });
 
 /** ---------------------------------------------------------------------------
@@ -111,13 +108,28 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
-    const requestMetadata = requestMetadataDataSchema.safeParse(req.body);
+    const requestJson = requestMetadataDataSchema.safeParse(req.body);
 
-    if (requestMetadata.success) {
-      console.log(`Request Metadata: ${JSON.stringify(requestMetadata.data)}`);
+    let requestMetadata: RequestMetadata;
+    if (requestJson.success) {
+      console.log(`Request Metadata: ${JSON.stringify(requestJson.data)}`);
+      requestMetadata = { data: requestJson.data.data }; // Access the inner data property
     } else {
       console.log("No request metadata provided");
+      requestMetadata = { data: {} };
     }
+    const requestCreate: RequestCreateCmd = {
+      cxId,
+      facilityId,
+      patientId,
+      metadata: requestMetadata,
+    };
+
+    // TODO pass REQUEST into queru.
+    // TODO create DocQueryProgress Stuff
+
+    const request = await createRequest(requestCreate);
+    console.log("Request", JSON.stringify(request));
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,

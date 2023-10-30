@@ -1,5 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Request, RequestData } from "../../domain/medical/request";
+import { Request, RequestMetadata } from "../../domain/medical/request";
+import { DocumentQueryProgress } from "../../domain/medical/document-query";
 import { BaseModel, ModelSetup } from "../_default";
 
 export class RequestModel extends BaseModel<RequestModel> implements Request {
@@ -7,7 +8,8 @@ export class RequestModel extends BaseModel<RequestModel> implements Request {
   declare cxId: string;
   declare patientId: string;
   declare facilityIds: string[];
-  declare data: RequestData;
+  declare metadata: RequestMetadata;
+  declare documentQueryProgress: DocumentQueryProgress;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     RequestModel.init(
@@ -22,7 +24,10 @@ export class RequestModel extends BaseModel<RequestModel> implements Request {
         facilityIds: {
           type: DataTypes.ARRAY(DataTypes.STRING),
         },
-        data: {
+        metadata: {
+          type: DataTypes.JSONB,
+        },
+        documentQueryProgress: {
           type: DataTypes.JSONB,
         },
       },
