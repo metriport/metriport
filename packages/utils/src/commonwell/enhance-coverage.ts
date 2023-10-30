@@ -10,6 +10,7 @@ import {
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { chromium } from "playwright";
 import * as readline from "readline-sync";
 
 /**
@@ -36,14 +37,6 @@ class CodeChallengeFromTerminal implements CodeChallenge {
 }
 
 const cookieManager = new CookieManagerInMemory();
-const props: SessionManagementConfig = {
-  username: cwUsername,
-  password: cwPassword,
-  cookieManager,
-  cwManagementApi: new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl }),
-  codeChallenge: new CodeChallengeFromTerminal(),
-  headless: false,
-};
 
 export async function main() {
   console.log(`Testing SessionManagement.keepSessionActive()...`);
@@ -54,6 +47,19 @@ export async function main() {
     .flatMap(c => cookieFromString(c) ?? []);
   cookieManager.updateCookies(actualCookies);
 
+  const props: SessionManagementConfig = {
+    username: cwUsername,
+    password: cwPassword,
+    cookieManager,
+    cwManagementApi: new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl }),
+    codeChallenge: new CodeChallengeFromTerminal(),
+    browser: await chromium.launch({
+      headless: false,
+      slowMo: 100,
+    }),
+    errorScreenshotToFileSystem: true,
+    debug: console.log,
+  };
   const cwSession = new SessionManagement(props);
   await cwSession.keepSessionActive();
 }
