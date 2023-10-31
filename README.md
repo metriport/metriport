@@ -196,7 +196,7 @@ root folder's `package.json` under the `workspaces` section.
 To setup this repository for local development, issue this command on the root folder:
 
 ```shell
-$ npm run install-deps # only needs to be run once
+$ npm run init # only needs to be run once
 $ npm run build # packages depend on each other, so its best to build/compile them all
 ```
 
