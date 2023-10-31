@@ -42,14 +42,10 @@ jobs:
           node-version: "18.14"
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 100 # bc of below
       - name: Log Git Ref
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
         shell: bash
-      # check commits' messages to make sure they follow Conventional Commits
-      - uses: wagoid/commitlint-github-action@v5
 
       # run even when treat-as-package is false b/c of inter-package dependencies
       - name: Install on root

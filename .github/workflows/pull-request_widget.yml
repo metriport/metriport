@@ -8,6 +8,10 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-commits:
+    uses: ./.github/workflows/_check-commits.yml
+    secrets: inherit
+
   check-pr-production:
     if: ${{ github.event.pull_request.base.ref == 'master' }}
     uses: ./.github/workflows/_build.yml

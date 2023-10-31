@@ -196,11 +196,9 @@ export class Config {
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
-
   static getMedicalDocumentsUploadBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME");
   }
-
   static getSandboxSeedBucketName(): string | undefined {
     return getEnvVar("SANDBOX_SEED_DATA_BUCKET_NAME");
   }
@@ -245,5 +243,16 @@ export class Config {
   }
   static getSearchIndexName(): string {
     return getEnvVarOrFail("SEARCH_INDEX");
+  }
+
+  // app config for feature flags
+  static getAppConfigAppId(): string {
+    return getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
+  }
+  static getAppConfigConfigId(): string {
+    return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+  }
+  static getCxsWithEnhancedCoverageFeatureFlagName(): string {
+    return getEnvVarOrFail("CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG");
   }
 }

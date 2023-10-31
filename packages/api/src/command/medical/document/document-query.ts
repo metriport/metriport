@@ -16,6 +16,7 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { emptyFunction, Util } from "../../../shared/util";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
+import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../../external/aws/appConfig";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -88,12 +89,17 @@ export async function queryDocumentsAcrossHIEs({
     reset: true,
   });
 
-  getDocumentsFromCW({
-    patient,
-    facilityId,
-    forceDownload: override,
-    requestId,
-  }).catch(emptyFunction);
+  const cxsWithEnhancedCoverageFeatureFlagValue =
+    await getCxsWithEnhancedCoverageFeatureFlagValue();
+  if (!cxsWithEnhancedCoverageFeatureFlagValue.includes(patient.cxId)) {
+    // kick off document query unless the cx has the enhanced coverage feature enabled
+    getDocumentsFromCW({
+      patient,
+      facilityId,
+      forceDownload: override,
+      requestId,
+    }).catch(emptyFunction);
+  }
 
   return createQueryResponse("processing", updatedPatient);
 }
