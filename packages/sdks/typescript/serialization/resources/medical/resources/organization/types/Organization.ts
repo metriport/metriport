@@ -12,13 +12,11 @@ export const Organization: core.serialization.ObjectSchema<
 > = core.serialization
     .object({
         id: core.serialization.string(),
-        eTag: core.serialization.string().optional(),
     })
-    .extend(core.serialization.lazyObject(async () => (await import("../../../../..")).medical.BaseOrganization));
+    .extend(core.serialization.lazyObject(async () => (await import("../../../../..")).medical.OrganizationCreate));
 
 export declare namespace Organization {
-    interface Raw extends serializers.medical.BaseOrganization.Raw {
+    interface Raw extends serializers.medical.OrganizationCreate.Raw {
         id: string;
-        eTag?: string | null;
     }
 }

@@ -35,10 +35,10 @@ public class PatientClient {
 
   /**
    * Creates a Patient in Metriport for the specified Facility where the patient is receiving care.
-   * <p>The more demographic info you can provide about a Patient,
+   * The more demographic info you can provide about a Patient,
    * the higher chances Metriport will be able to find a match.
    * For example, nicknames, old addresses, multiple phone numbers,
-   * a pre-marital last name, etc.</p>
+   * a pre-marital last name, etc.
    */
   public Patient create(PatientCreate request, RequestOptions requestOptions) {
     HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
@@ -71,10 +71,10 @@ public class PatientClient {
 
     /**
      * Creates a Patient in Metriport for the specified Facility where the patient is receiving care.
-     * <p>The more demographic info you can provide about a Patient,
+     * The more demographic info you can provide about a Patient,
      * the higher chances Metriport will be able to find a match.
      * For example, nicknames, old addresses, multiple phone numbers,
-     * a pre-marital last name, etc.</p>
+     * a pre-marital last name, etc.
      */
     public Patient create(PatientCreate request) {
       return create(request,null);

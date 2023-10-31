@@ -6,16 +6,16 @@ import * as serializers from "../../../../..";
 import * as Metriport from "../../../../../../api";
 import * as core from "../../../../../../core";
 
-export const BaseOrganization: core.serialization.ObjectSchema<
-    serializers.medical.BaseOrganization.Raw,
-    Metriport.medical.BaseOrganization
+export const OrganizationCreate: core.serialization.ObjectSchema<
+    serializers.medical.OrganizationCreate.Raw,
+    Metriport.medical.OrganizationCreate
 > = core.serialization.object({
     name: core.serialization.string(),
     type: core.serialization.lazy(async () => (await import("../../../../..")).medical.OrgType),
     location: core.serialization.lazyObject(async () => (await import("../../../../..")).Address),
 });
 
-export declare namespace BaseOrganization {
+export declare namespace OrganizationCreate {
     interface Raw {
         name: string;
         type: serializers.medical.OrgType.Raw;

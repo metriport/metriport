@@ -26,19 +26,15 @@ export class Document {
 
     /**
      * Triggers a document query for the specified patient across HIEs.
-     *
      * When executed, this endpoint triggers an asynchronous document query across HIEs.
      * This is a two step process where the documents will first be downloaded from
      * the respective HIE and, if they are C-CDA/XML, then converted to FHIR.
-     *
      * Each process (download, conversion) will contain its own `total` and `status`
      * as well as the count for `successful` operations and `errors`.
-     *
      * When the asynchronous document query finishes, it stores new/updated document
      * references for future requests and updates the status of download to `completed`.
      * Meanwhile, in the background, files will be converted and the convert count will be
      * incremented. Once all documents have been converted it too will be marked as `completed`.
-     *
      * If there's no document to be converted, the total will be set to zero and
      * the status to `completed`.
      *
@@ -159,7 +155,6 @@ export class Document {
      * Lists all Documents that can be retrieved for a Patient.
      * This endpoint returns the document references available
      * at Metriport which are associated with the given Patient.
-     *
      * To start a new document query, see the [Start Document Query endpoint](/api-reference/medical/document/start-query).
      *
      */

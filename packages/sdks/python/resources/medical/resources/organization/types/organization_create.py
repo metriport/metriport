@@ -10,7 +10,7 @@ from .....commons.types.address import Address
 from .org_type import OrgType
 
 
-class BaseOrganization(pydantic.BaseModel):
+class OrganizationCreate(pydantic.BaseModel):
     name: str = pydantic.Field(
         description=(
             "The name of your organization. \n"

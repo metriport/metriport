@@ -29,8 +29,8 @@ public final class ConnectTokenResponse {
   /**
    * @return The temporary token to allow the specified user to access
    * the Metriport Connect widget.
-   * <p>The token will expire 10 minutes after it is created, and
-   * can be reused for the duration of the session.</p>
+   * The token will expire 10 minutes after it is created, and
+   * can be reused for the duration of the session.
    */
   @JsonProperty("token")
   public String getToken() {
@@ -88,8 +88,8 @@ public final class ConnectTokenResponse {
 
     /**
      * <p>The temporary token to allow the specified user to access
-     * the Metriport Connect widget.</p>
-     * <p>The token will expire 10 minutes after it is created, and
+     * the Metriport Connect widget.
+     * The token will expire 10 minutes after it is created, and
      * can be reused for the duration of the session.</p>
      * @return Reference to {@code this} so that method calls can be chained together.
      */

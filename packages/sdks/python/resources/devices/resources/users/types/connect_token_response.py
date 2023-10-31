@@ -13,7 +13,6 @@ class ConnectTokenResponse(pydantic.BaseModel):
         description=(
             "The temporary token to allow the specified user to access \n"
             "the Metriport Connect widget.\n"
-            "\n"
             "The token will expire 10 minutes after it is created, and \n"
             "can be reused for the duration of the session.\n"
         )

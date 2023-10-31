@@ -10,4 +10,5 @@ export * as patient from "./patient";
 export * from "./patient/types";
 export * from "./document/client/requests";
 export * from "./fhir/client/requests";
+export * from "./organization/client/requests";
 export * from "./patient/client/requests";

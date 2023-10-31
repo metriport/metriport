@@ -20,12 +20,11 @@ import * as Metriport from "../../../../..";
  *         }
  *     }
  */
-export interface Organization extends Metriport.medical.BaseOrganization {
+export interface Organization extends Metriport.medical.OrganizationCreate {
     /**
      * The ID assigned to your organization.
      * This ID will be used to uniquely identify your organization in medical documents.
      *
      */
     id: string;
-    eTag?: string;
 }

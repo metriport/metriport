@@ -33,17 +33,17 @@ public class DocumentClient {
 
   /**
    * Triggers a document query for the specified patient across HIEs.
-   * <p>When executed, this endpoint triggers an asynchronous document query across HIEs.
+   * When executed, this endpoint triggers an asynchronous document query across HIEs.
    * This is a two step process where the documents will first be downloaded from
-   * the respective HIE and, if they are C-CDA/XML, then converted to FHIR.</p>
-   * <p>Each process (download, conversion) will contain its own <code>total</code> and <code>status</code>
-   * as well as the count for <code>successful</code> operations and <code>errors</code>.</p>
-   * <p>When the asynchronous document query finishes, it stores new/updated document
+   * the respective HIE and, if they are C-CDA/XML, then converted to FHIR.
+   * Each process (download, conversion) will contain its own <code>total</code> and <code>status</code>
+   * as well as the count for <code>successful</code> operations and <code>errors</code>.
+   * When the asynchronous document query finishes, it stores new/updated document
    * references for future requests and updates the status of download to <code>completed</code>.
    * Meanwhile, in the background, files will be converted and the convert count will be
-   * incremented. Once all documents have been converted it too will be marked as <code>completed</code>.</p>
-   * <p>If there's no document to be converted, the total will be set to zero and
-   * the status to <code>completed</code>.</p>
+   * incremented. Once all documents have been converted it too will be marked as <code>completed</code>.
+   * If there's no document to be converted, the total will be set to zero and
+   * the status to <code>completed</code>.
    */
   public DocumentQuery startQuery(StartDocumentQueryRequest request,
       RequestOptions requestOptions) {
@@ -71,17 +71,17 @@ public class DocumentClient {
 
     /**
      * Triggers a document query for the specified patient across HIEs.
-     * <p>When executed, this endpoint triggers an asynchronous document query across HIEs.
+     * When executed, this endpoint triggers an asynchronous document query across HIEs.
      * This is a two step process where the documents will first be downloaded from
-     * the respective HIE and, if they are C-CDA/XML, then converted to FHIR.</p>
-     * <p>Each process (download, conversion) will contain its own <code>total</code> and <code>status</code>
-     * as well as the count for <code>successful</code> operations and <code>errors</code>.</p>
-     * <p>When the asynchronous document query finishes, it stores new/updated document
+     * the respective HIE and, if they are C-CDA/XML, then converted to FHIR.
+     * Each process (download, conversion) will contain its own <code>total</code> and <code>status</code>
+     * as well as the count for <code>successful</code> operations and <code>errors</code>.
+     * When the asynchronous document query finishes, it stores new/updated document
      * references for future requests and updates the status of download to <code>completed</code>.
      * Meanwhile, in the background, files will be converted and the convert count will be
-     * incremented. Once all documents have been converted it too will be marked as <code>completed</code>.</p>
-     * <p>If there's no document to be converted, the total will be set to zero and
-     * the status to <code>completed</code>.</p>
+     * incremented. Once all documents have been converted it too will be marked as <code>completed</code>.
+     * If there's no document to be converted, the total will be set to zero and
+     * the status to <code>completed</code>.
      */
     public DocumentQuery startQuery(StartDocumentQueryRequest request) {
       return startQuery(request,null);
@@ -130,7 +130,7 @@ public class DocumentClient {
        * Lists all Documents that can be retrieved for a Patient.
        * This endpoint returns the document references available
        * at Metriport which are associated with the given Patient.
-       * <p>To start a new document query, see the <a href="/api-reference/medical/document/start-query">Start Document Query endpoint</a>.</p>
+       * To start a new document query, see the <a href="/api-reference/medical/document/start-query">Start Document Query endpoint</a>.
        */
       public ListDocumentsResponse list(ListDocumentsRequest request,
           RequestOptions requestOptions) {
@@ -166,7 +166,7 @@ public class DocumentClient {
          * Lists all Documents that can be retrieved for a Patient.
          * This endpoint returns the document references available
          * at Metriport which are associated with the given Patient.
-         * <p>To start a new document query, see the <a href="/api-reference/medical/document/start-query">Start Document Query endpoint</a>.</p>
+         * To start a new document query, see the <a href="/api-reference/medical/document/start-query">Start Document Query endpoint</a>.
          */
         public ListDocumentsResponse list(ListDocumentsRequest request) {
           return list(request,null);

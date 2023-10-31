@@ -13,14 +13,17 @@ import java.lang.Exception;
 import java.lang.Object;
 import java.lang.RuntimeException;
 import java.lang.String;
+import java.util.HashMap;
+import java.util.Map;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import resources.medical.organization.types.BaseOrganization;
+import resources.medical.organization.requests.OrganizationUpdateRequest;
 import resources.medical.organization.types.Organization;
+import resources.medical.organization.types.OrganizationCreate;
 
 public class OrganizationClient {
   protected final ClientOptions clientOptions;
@@ -32,7 +35,7 @@ public class OrganizationClient {
   /**
    * Registers your Organization in Metriport.
    */
-  public Organization create(BaseOrganization request, RequestOptions requestOptions) {
+  public Organization create(OrganizationCreate request, RequestOptions requestOptions) {
     HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
       .addPathSegments("organization")
 
@@ -65,7 +68,7 @@ public class OrganizationClient {
   /**
    * Registers your Organization in Metriport.
    */
-  public Organization create(BaseOrganization request) {
+  public Organization create(OrganizationCreate request) {
     return create(request,null);
   }
 
@@ -105,25 +108,33 @@ public class OrganizationClient {
   /**
    * Updates your Organization's details.
    */
-  public Organization update(String id, BaseOrganization request, RequestOptions requestOptions) {
+  public Organization update(String id, OrganizationUpdateRequest request,
+      RequestOptions requestOptions) {
     HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
       .addPathSegments("organization")
 
       .addPathSegment(id)
       .build();
+    Map<String, Object> properties = new HashMap<>();
+    properties.put("name", request.getName());
+    properties.put("type", request.getType());
+    properties.put("location", request.getLocation());
     RequestBody body;
     try {
-      body = RequestBody.create(ObjectMappers.JSON_MAPPER.writeValueAsBytes(request), MediaType.parse("application/json"));
+      body = RequestBody.create(ObjectMappers.JSON_MAPPER.writeValueAsBytes(properties), MediaType.parse("application/json"));
     }
     catch(Exception e) {
       throw new RuntimeException(e);
     }
-    Request okhttpRequest = new Request.Builder()
+    Request.Builder _requestBuilder = new Request.Builder()
       .url(httpUrl)
       .method("PUT", body)
       .headers(Headers.of(clientOptions.headers(requestOptions)))
-      .addHeader("Content-Type", "application/json")
-      .build();
+      .addHeader("Content-Type", "application/json");
+    if (request.getETag().isPresent()) {
+      _requestBuilder.addHeader("ETag", request.getETag().get());
+    }
+    Request okhttpRequest = _requestBuilder.build();
     try {
       Response response = clientOptions.httpClient().newCall(okhttpRequest).execute();
       if (response.isSuccessful()) {
@@ -139,7 +150,7 @@ public class OrganizationClient {
   /**
    * Updates your Organization's details.
    */
-  public Organization update(String id, BaseOrganization request) {
+  public Organization update(String id, OrganizationUpdateRequest request) {
     return update(id,request,null);
   }
 }

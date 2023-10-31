@@ -25,7 +25,6 @@ class PatientClient:
     def create(self, *, facility_id: str, request: BasePatient) -> Patient:
         """
         Creates a Patient in Metriport for the specified Facility where the patient is receiving care.
-
         The more demographic info you can provide about a Patient,
         the higher chances Metriport will be able to find a match.
         For example, nicknames, old addresses, multiple phone numbers,
@@ -154,7 +153,6 @@ class AsyncPatientClient:
     async def create(self, *, facility_id: str, request: BasePatient) -> Patient:
         """
         Creates a Patient in Metriport for the specified Facility where the patient is receiving care.
-
         The more demographic info you can provide about a Patient,
         the higher chances Metriport will be able to find a match.
         For example, nicknames, old addresses, multiple phone numbers,

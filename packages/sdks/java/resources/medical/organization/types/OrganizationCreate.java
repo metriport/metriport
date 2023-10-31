@@ -18,16 +18,16 @@ import resources.commons.types.Address;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonDeserialize(
-    builder = BaseOrganization.Builder.class
+    builder = OrganizationCreate.Builder.class
 )
-public final class BaseOrganization implements IBaseOrganization {
+public final class OrganizationCreate implements IOrganizationCreate {
   private final String name;
 
   private final OrgType type;
 
   private final Address location;
 
-  private BaseOrganization(String name, OrgType type, Address location) {
+  private OrganizationCreate(String name, OrgType type, Address location) {
     this.name = name;
     this.type = type;
     this.location = location;
@@ -62,10 +62,10 @@ public final class BaseOrganization implements IBaseOrganization {
   @Override
   public boolean equals(Object other) {
     if (this == other) return true;
-    return other instanceof BaseOrganization && equalTo((BaseOrganization) other);
+    return other instanceof OrganizationCreate && equalTo((OrganizationCreate) other);
   }
 
-  private boolean equalTo(BaseOrganization other) {
+  private boolean equalTo(OrganizationCreate other) {
     return name.equals(other.name) && type.equals(other.type) && location.equals(other.location);
   }
 
@@ -86,7 +86,7 @@ public final class BaseOrganization implements IBaseOrganization {
   public interface NameStage {
     TypeStage name(String name);
 
-    Builder from(BaseOrganization other);
+    Builder from(OrganizationCreate other);
   }
 
   public interface TypeStage {
@@ -98,7 +98,7 @@ public final class BaseOrganization implements IBaseOrganization {
   }
 
   public interface _FinalStage {
-    BaseOrganization build();
+    OrganizationCreate build();
   }
 
   @JsonIgnoreProperties(
@@ -115,7 +115,7 @@ public final class BaseOrganization implements IBaseOrganization {
     }
 
     @Override
-    public Builder from(BaseOrganization other) {
+    public Builder from(OrganizationCreate other) {
       name(other.getName());
       type(other.getType());
       location(other.getLocation());
@@ -154,8 +154,8 @@ public final class BaseOrganization implements IBaseOrganization {
     }
 
     @Override
-    public BaseOrganization build() {
-      return new BaseOrganization(name, type, location);
+    public OrganizationCreate build() {
+      return new OrganizationCreate(name, type, location);
     }
   }
 }

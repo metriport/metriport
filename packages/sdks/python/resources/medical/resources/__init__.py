@@ -23,7 +23,7 @@ from .fhir import (
     ResourcesSearchableBySubject,
     StartConsolidatedQueryResponse,
 )
-from .organization import BaseOrganization, OrgType, Organization
+from .organization import OrgType, Organization, OrganizationCreate
 from .patient import (
     Addresses,
     BasePatient,
@@ -41,7 +41,6 @@ from .patient import (
 __all__ = [
     "Addresses",
     "BaseFacility",
-    "BaseOrganization",
     "BasePatient",
     "CodeableConcept",
     "Coding",
@@ -63,6 +62,7 @@ __all__ = [
     "ListPatientsResponse",
     "OrgType",
     "Organization",
+    "OrganizationCreate",
     "Patient",
     "PatientConsolidatedDataStatus",
     "Period",

@@ -7,7 +7,7 @@ package resources.medical.organization.types;
 import java.lang.String;
 import resources.commons.types.Address;
 
-public interface IBaseOrganization {
+public interface IOrganizationCreate {
   String getName();
 
   OrgType getType();

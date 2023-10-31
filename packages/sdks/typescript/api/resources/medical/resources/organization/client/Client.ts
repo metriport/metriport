@@ -27,7 +27,7 @@ export class Organization {
      * Registers your Organization in Metriport.
      */
     public async create(
-        request: Metriport.medical.BaseOrganization,
+        request: Metriport.medical.OrganizationCreate,
         requestOptions?: Organization.RequestOptions
     ): Promise<Metriport.medical.Organization> {
         const _response = await core.fetcher({
@@ -41,7 +41,9 @@ export class Organization {
                 "X-Fern-Language": "JavaScript",
             },
             contentType: "application/json",
-            body: await serializers.medical.BaseOrganization.jsonOrThrow(request, { unrecognizedObjectKeys: "strip" }),
+            body: await serializers.medical.OrganizationCreate.jsonOrThrow(request, {
+                unrecognizedObjectKeys: "strip",
+            }),
             timeoutMs: requestOptions?.timeoutInSeconds != null ? requestOptions.timeoutInSeconds * 1000 : 60000,
         });
         if (_response.ok) {
@@ -128,9 +130,10 @@ export class Organization {
      */
     public async update(
         id: string,
-        request: Metriport.medical.BaseOrganization,
+        request: Metriport.medical.OrganizationUpdateRequest,
         requestOptions?: Organization.RequestOptions
     ): Promise<Metriport.medical.Organization> {
+        const { eTag, ..._body } = request;
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
@@ -140,9 +143,12 @@ export class Organization {
             headers: {
                 "X-API-Key": await core.Supplier.get(this._options.apiKey),
                 "X-Fern-Language": "JavaScript",
+                ETag: eTag != null ? eTag : undefined,
             },
             contentType: "application/json",
-            body: await serializers.medical.BaseOrganization.jsonOrThrow(request, { unrecognizedObjectKeys: "strip" }),
+            body: await serializers.medical.OrganizationUpdateRequest.jsonOrThrow(_body, {
+                unrecognizedObjectKeys: "strip",
+            }),
             timeoutMs: requestOptions?.timeoutInSeconds != null ? requestOptions.timeoutInSeconds * 1000 : 60000,
         });
         if (_response.ok) {

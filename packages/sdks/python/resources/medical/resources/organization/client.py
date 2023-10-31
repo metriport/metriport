@@ -9,8 +9,11 @@ import pydantic
 from .....core.api_error import ApiError
 from .....core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from .....core.jsonable_encoder import jsonable_encoder
-from .types.base_organization import BaseOrganization
+from .....core.remove_none_from_dict import remove_none_from_dict
+from ....commons.types.address import Address
+from .types.org_type import OrgType
 from .types.organization import Organization
+from .types.organization_create import OrganizationCreate
 
 # this is used as the default value for optional parameters
 OMIT = typing.cast(typing.Any, ...)
@@ -20,12 +23,12 @@ class OrganizationClient:
     def __init__(self, *, client_wrapper: SyncClientWrapper):
         self._client_wrapper = client_wrapper
 
-    def create(self, *, request: BaseOrganization) -> Organization:
+    def create(self, *, request: OrganizationCreate) -> Organization:
         """
         Registers your Organization in Metriport.
 
         Parameters:
-            - request: BaseOrganization.
+            - request: OrganizationCreate.
         """
         _response = self._client_wrapper.httpx_client.request(
             "POST",
@@ -60,20 +63,30 @@ class OrganizationClient:
             raise ApiError(status_code=_response.status_code, body=_response.text)
         raise ApiError(status_code=_response.status_code, body=_response_json)
 
-    def update(self, id: str, *, request: BaseOrganization) -> Organization:
+    def update(
+        self, id: str, *, name: str, type: OrgType, location: Address, e_tag: typing.Optional[str] = None
+    ) -> Organization:
         """
         Updates your Organization's details.
 
         Parameters:
             - id: str. The ID of your organization.
 
-            - request: BaseOrganization.
+            - name: str. The name of your organization.
+                         This is usually your legal corporate entity name -
+                         for example `Metriport Inc.`.
+
+            - type: OrgType. The type of your organization.
+
+            - location: Address.
+
+            - e_tag: typing.Optional[str].
         """
         _response = self._client_wrapper.httpx_client.request(
             "PUT",
             urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"organization/{id}"),
-            json=jsonable_encoder(request),
-            headers=self._client_wrapper.get_headers(),
+            json=jsonable_encoder({"name": name, "type": type, "location": location}),
+            headers=remove_none_from_dict({**self._client_wrapper.get_headers(), "ETag": e_tag}),
             timeout=60,
         )
         if 200 <= _response.status_code < 300:
@@ -89,12 +102,12 @@ class AsyncOrganizationClient:
     def __init__(self, *, client_wrapper: AsyncClientWrapper):
         self._client_wrapper = client_wrapper
 
-    async def create(self, *, request: BaseOrganization) -> Organization:
+    async def create(self, *, request: OrganizationCreate) -> Organization:
         """
         Registers your Organization in Metriport.
 
         Parameters:
-            - request: BaseOrganization.
+            - request: OrganizationCreate.
         """
         _response = await self._client_wrapper.httpx_client.request(
             "POST",
@@ -129,20 +142,30 @@ class AsyncOrganizationClient:
             raise ApiError(status_code=_response.status_code, body=_response.text)
         raise ApiError(status_code=_response.status_code, body=_response_json)
 
-    async def update(self, id: str, *, request: BaseOrganization) -> Organization:
+    async def update(
+        self, id: str, *, name: str, type: OrgType, location: Address, e_tag: typing.Optional[str] = None
+    ) -> Organization:
         """
         Updates your Organization's details.
 
         Parameters:
             - id: str. The ID of your organization.
 
-            - request: BaseOrganization.
+            - name: str. The name of your organization.
+                         This is usually your legal corporate entity name -
+                         for example `Metriport Inc.`.
+
+            - type: OrgType. The type of your organization.
+
+            - location: Address.
+
+            - e_tag: typing.Optional[str].
         """
         _response = await self._client_wrapper.httpx_client.request(
             "PUT",
             urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"organization/{id}"),
-            json=jsonable_encoder(request),
-            headers=self._client_wrapper.get_headers(),
+            json=jsonable_encoder({"name": name, "type": type, "location": location}),
+            headers=remove_none_from_dict({**self._client_wrapper.get_headers(), "ETag": e_tag}),
             timeout=60,
         )
         if 200 <= _response.status_code < 300:

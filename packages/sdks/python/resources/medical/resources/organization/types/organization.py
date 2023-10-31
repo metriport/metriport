@@ -6,17 +6,16 @@ import typing
 import pydantic
 
 from ......core.datetime_utils import serialize_datetime
-from .base_organization import BaseOrganization
+from .organization_create import OrganizationCreate
 
 
-class Organization(BaseOrganization):
+class Organization(OrganizationCreate):
     id: str = pydantic.Field(
         description=(
             "The ID assigned to your organization. \n"
             "This ID will be used to uniquely identify your organization in medical documents.\n"
         )
     )
-    e_tag: typing.Optional[str] = pydantic.Field(alias="eTag")
 
     def json(self, **kwargs: typing.Any) -> str:
         kwargs_with_defaults: typing.Any = {"by_alias": True, "exclude_unset": True, **kwargs}

@@ -3,7 +3,6 @@
 from .resources import (
     Addresses,
     BaseFacility,
-    BaseOrganization,
     BasePatient,
     CodeableConcept,
     Coding,
@@ -25,6 +24,7 @@ from .resources import (
     ListPatientsResponse,
     OrgType,
     Organization,
+    OrganizationCreate,
     Patient,
     PatientConsolidatedDataStatus,
     Period,
@@ -45,7 +45,6 @@ from .resources import (
 __all__ = [
     "Addresses",
     "BaseFacility",
-    "BaseOrganization",
     "BasePatient",
     "CodeableConcept",
     "Coding",
@@ -67,6 +66,7 @@ __all__ = [
     "ListPatientsResponse",
     "OrgType",
     "Organization",
+    "OrganizationCreate",
     "Patient",
     "PatientConsolidatedDataStatus",
     "Period",
