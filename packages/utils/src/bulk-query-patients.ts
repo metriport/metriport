@@ -35,6 +35,12 @@ const patientChunkDelayJitterMs = parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER
 const queryPollDurationMs = 10_000;
 const maxQueryDurationMs = 71_000; // CW has a 70s timeout, so this is the maximum duration any doc query can take
 const maxDocQueryAttemts = 3;
+/**
+ * If the doc query returns less than this, we want to query again to try and get better
+ * coverage. Had situation where we requeried a patient w/ 1 doc ref and it jumped from
+ * 1 to 20.
+ */
+const minDocsToConsiderCompleted = 2;
 
 // csv stuff
 const csvHeader =
@@ -81,11 +87,10 @@ async function queryDocsForPatient(patientId: string) {
         const queryStartTime = Date.now();
         while (Date.now() - queryStartTime < maxQueryDurationMs) {
           const docQueryStatus = await metriportAPI.getDocumentQueryStatus(patientId);
-          // ensure at least 1 doc was returned
           if (
             docQueryStatus.download &&
             docQueryStatus.download.total &&
-            docQueryStatus.download.total > 0
+            docQueryStatus.download.total >= minDocsToConsiderCompleted
           ) {
             queryComplete = true;
             break;
