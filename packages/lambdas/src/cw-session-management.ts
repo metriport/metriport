@@ -10,7 +10,9 @@ import {
 import { base64ToBuffer } from "@metriport/core/util/base64";
 import { AdditionalInfo, MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
-import { launchChromium } from "playwright-aws-lambda/dist/src"; // https://github.com/JupiterOne/playwright-aws-lambda/issues/15#issuecomment-1243395780
+
+import * as playwright from "playwright-aws-lambda";
+// import playwright from 'playwright-aws-lambda';
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 
@@ -28,6 +30,7 @@ const cwCredsSecretName = getEnvOrFail("CW_MGMT_CREDS_SECRET_NAME");
 const baseUrl = getEnvOrFail("CW_MGMT_URL");
 const errorBucketName = getEnvOrFail("ERROR_BUCKET_NAME");
 
+const s3Client = makeS3Client(region);
 const cookieManager = new CookieManagerOnSecrets(cookieSecretArn, region);
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl });
 // TODO 1195 move this to an email based code challenge, so it can be fully automated.
@@ -48,11 +51,25 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
       `codeChallengeSecretArn: ${codeChallengeSecretArn}, ` +
       `baseUrl: ${baseUrl}`
   );
+  let screenshotIdx = 0;
+  const screenshot = async (screenshotAsB64: string, title: string) => {
+    console.log(`Screenshot!`);
+    await s3Client
+      .putObject({
+        Bucket: errorBucketName,
+        Key: `lambdas/${lambdaName}/run_${new Date().toISOString()}/screenshot${++screenshotIdx}_${title}.jpg`,
+        Body: base64ToBuffer(screenshotAsB64),
+      })
+      .promise();
+  };
+
   try {
     const { username, password } = await getCreds();
     console.log(`...username ${username}, password 🤫`);
 
-    const browser = await launchChromium();
+    const browser = await playwright.launchChromium({
+      headless: true,
+    });
 
     const props: SessionManagementConfig = {
       username,
@@ -62,6 +79,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
       codeChallenge,
       browser,
       debug: console.log,
+      screenshot,
     };
     const cwSession = new SessionManagement(props);
 
@@ -101,7 +119,6 @@ async function reportErrorToS3(error: MetriportError, additional: AdditionalInfo
       | string
       | undefined;
     if (contents) {
-      const s3Client = makeS3Client(region);
       await s3Client
         .putObject({
           Bucket: errorBucketName,

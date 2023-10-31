@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { Browser, Page } from "playwright";
 import { CodeChallenge } from "../../../domain/auth/code-challenge";
 import {
@@ -7,9 +8,12 @@ import {
 } from "../../../domain/auth/cookie-management/cookie-manager";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { sleep } from "../../../util/sleep";
-import { CommonWellManagementAPI } from "./api";
+import { CommonWellManagementAPI, userAgent } from "./api";
 
 // This file relies heavily on Playwright: https://playwright.dev/docs/library
+
+// TODO to duration
+const timeBetweenSteps = 1_000;
 
 const cookiesToUse = [
   "MP_RQ_COOKIE",
@@ -35,6 +39,28 @@ const logDenyList = [
   "htm",
 ];
 
+// TODO move this to the api.ts
+const apiEndpoints = ["api", "authenticate", "verifyotp", "getmembers"];
+
+const htmlRequestHeaders = {
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Cache-Control": "no-cache",
+  Connection: "keep-alive",
+  "Content-Type": "application/x-www-form-urlencoded",
+};
+const apiRequestHeaders = {
+  Accept: "application/json, text/plain, */*",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Cache-Control": "no-cache",
+  "Content-Type": "application/json",
+};
+
+export type Screenshot = (screenshotAsB64: string, title: string) => Promise<void>;
+
 /**
  * Manages the session on the CommonWell management portal.
  */
@@ -59,6 +85,7 @@ export type SessionManagementConfig = {
    * The function to use to log debug messages.
    */
   debug?: typeof console.log;
+  screenshot?: Screenshot;
 };
 
 export class SessionManagement {
@@ -71,6 +98,7 @@ export class SessionManagement {
   private password: string;
   private errorToFS: boolean;
   private debug: typeof console.log;
+  private screenshot: Screenshot;
 
   static exceptionScreenshotKey = "screenshotAsB64";
 
@@ -85,6 +113,7 @@ export class SessionManagement {
     this.errorToFS =
       params.errorScreenshotToFileSystem == undefined ? false : params.errorScreenshotToFileSystem;
     this.debug = params.debug ?? (() => {}); //eslint-disable-line @typescript-eslint/no-empty-function
+    this.screenshot = params.screenshot ?? (async () => {});
   }
 
   async keepSessionActive(): Promise<void> {
@@ -124,30 +153,45 @@ export class SessionManagement {
     if (!this.browser) throw new Error(`Browser is not defined`);
     if (!this.browser.isConnected()) throw new Error(`Browser is not conneceted`);
 
-    const page = await this.browser.newPage();
-
-    // Log information about the requests
-    await page.route("**", (route, request) => {
-      if (logDenyList.some(d => request.url().includes(d))) {
-        route.continue();
-        return;
-      }
-      request.response().then(resp => {
-        const responseString = resp ? ` - status: ${resp.status()}, ${resp.statusText()}` : "";
-        log(request.url() + responseString);
-      });
-      route.continue();
+    const page = await this.browser.newPage({
+      acceptDownloads: false,
+      userAgent,
     });
-
     try {
+      // Log information about the requests
+      await page.route("**", (route, request) => {
+        if (logDenyList.some(d => request.url().includes(d))) {
+          route.continue();
+          return;
+        }
+        if (apiEndpoints.some(e => request.url().includes(e))) {
+          page.setExtraHTTPHeaders(apiRequestHeaders);
+        } else {
+          page.setExtraHTTPHeaders(htmlRequestHeaders);
+        }
+        request.response().then(async resp => {
+          const responseString = resp ? ` - status: ${resp.status()}, ${resp.statusText()}` : "";
+          log(request.url() + responseString);
+          if (request.url().includes("/authenticate") && resp) {
+            const respBody = await resp.body();
+            log(`${request.url()} - body: ${respBody.toString()}`);
+          }
+        });
+        route.continue();
+      });
+
       // TODO 1195 remove the excessive logs (".xx")
       log(`.1`);
       await page.goto(this.sessionBaseUrl);
+      await sleep(timeBetweenSteps);
+      this.screenshot((await page.screenshot()).toString("base64"), "choose-auth");
       log(`.2`);
       await page.getByRole("link", { name: "Healthcare ID" }).click();
+      await sleep(timeBetweenSteps);
+      this.screenshot((await page.screenshot()).toString("base64"), "auth-home");
       log(`.3`);
       const usernameLocator = () => page.getByTestId("username");
-      await usernameLocator().click();
+      await usernameLocator().click({ timeout: 10_000 });
       await usernameLocator().fill(this.username);
       log(`.5`);
       const loginLocator = () => page.getByTestId("login-pwd");
@@ -164,6 +208,8 @@ export class SessionManagement {
       await sleep(2_000);
       // It should be: https://identity.onehealthcareid.com/oneapp/index.html#/rba/options/email
       log(`URL post sleep: ${page.url()}`);
+      await sleep(timeBetweenSteps);
+      this.screenshot((await page.screenshot()).toString("base64"), "post-creds");
       log(`.9`);
 
       const isAccessCodePage = await page.getByRole("heading", { name: "Access Code" }).isVisible();
@@ -180,22 +226,36 @@ export class SessionManagement {
           name: "Skip this step in future if this is your private device.",
         });
         await skipCheckbox.click();
+        await sleep(timeBetweenSteps);
+        this.screenshot((await page.screenshot()).toString("base64"), "access-code");
         log(`.C`);
 
         await page.getByRole("button", { name: "Continue" }).click();
         log(`.D`);
       } else {
+        const isLoginPageAgain = await usernameLocator().isVisible();
+        if (isLoginPageAgain) {
+          log(`---> It asked for the login again, browser error.`);
+          // await sleep(20_000);
+          throw new Error("Browser failed to login");
+        }
         log("---> It did not ask for code challenge.");
       }
       log(`.10`);
 
       await page.locator("#OrganizationsBtn").click();
+      await sleep(timeBetweenSteps);
+      this.screenshot((await page.screenshot()).toString("base64"), "cw-home");
       log(`.11`);
 
       await page.locator("#ListOrganizationsBtn").click();
+      await sleep(timeBetweenSteps);
+      this.screenshot((await page.screenshot()).toString("base64"), "cw-list-orgs");
       log(`.12`);
 
       await page.getByRole("heading", { name: "Organization List" }).click();
+      await sleep(timeBetweenSteps);
+      this.screenshot((await page.screenshot()).toString("base64"), "cw-list-orgs2");
       log(`.13`);
 
       return page;
@@ -218,7 +278,12 @@ export class SessionManagement {
     const log = this.debug;
     log(`Closing the browser if it was opened...`);
     // TODO 1195 Move this outside this class, we get the browser connected and shouldn't disconnect it here.
-    if (this.browser) await this.browser.close();
+    if (this.browser)
+      try {
+        await this.browser.close();
+      } catch (err) {
+        log(`Error while closing the browser, likely context was already closed.`);
+      }
   }
 
   protected isEnabledCookie(c: Cookie) {
