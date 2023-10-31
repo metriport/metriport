@@ -1,9 +1,10 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
+// import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
 import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
+// import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { LinkPatients } from "@metriport/core/external/commonwell/management/link-patients";
 import {
@@ -14,7 +15,9 @@ import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import * as fs from "fs";
 import { chunk } from "lodash";
-import { chromium } from "playwright";
+// import { chromium as runtime } from "playwright";
+import { firefox as runtime } from "playwright";
+import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
 import * as readline from "readline-sync";
 
 /**
@@ -58,22 +61,36 @@ const cxOrgOID = getEnvVarOrFail("ORG_OID");
 const cqOrgsList = fs.readFileSync(`${__dirname}/cq-org-list.json`, "utf8");
 const CQ_ORG_CHUNK_SIZE = 50;
 
+// const region = getEnvVarOrFail("AWS_REGION");
+// const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
+
+// const cookiesSecretArn = getEnvVarOrFail("CW_COOKIES_SECRET_ARN");
+// const cookieManager = new CookieManagerOnSecrets(cookiesSecretArn, region);
+const cookieManager = new CookieManagerInMemory();
+if (cookies) {
+  cookieManager.updateCookies(cookies.split(";").flatMap(c => cookieFromString(c) ?? []));
+}
+
 class CodeChallengeFromTerminal implements CodeChallenge {
   async getCode() {
     return readline.question("What's the access code? ");
   }
 }
+const codeChallenge = new CodeChallengeFromTerminal();
+// const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
+// const codeChallenge = new CodeChallengeFromSecretManager(
+//   codeChallengeSecretArn,
+//   region,
+//   notificationUrl
+// );
+
+const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
 
 type SimpleOrg = {
   Id: string;
   Name: string;
   States: string[];
 };
-
-const cookieManager = new CookieManagerInMemory();
-if (cookies) {
-  cookieManager.updateCookies(cookies.split(";").flatMap(c => cookieFromString(c) ?? []));
-}
 
 export async function main() {
   console.log(`Running coverage enhancement... - started at ${new Date().toISOString()}`);
@@ -83,9 +100,9 @@ export async function main() {
     username: cwUsername,
     password: cwPassword,
     cookieManager,
-    cwManagementApi: new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl }),
-    codeChallenge: new CodeChallengeFromTerminal(),
-    browser: await chromium.launch({
+    cwManagementApi,
+    codeChallenge,
+    browser: await runtime.launch({
       headless: false,
       slowMo: 100,
     }),

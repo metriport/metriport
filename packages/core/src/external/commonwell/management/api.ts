@@ -15,9 +15,11 @@ dayjs.extend(duration);
 const DEFAULT_TIMEOUT_GET_MEMBER = dayjs.duration({ seconds: 20 });
 const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ seconds: 60 });
 
-const baseHeaders = {
-  "User-Agent":
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
+export const userAgent =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
+
+export const baseHeaders = {
+  "User-Agent": userAgent,
   Accept: "application/json, text/plain, */*",
 };
 
