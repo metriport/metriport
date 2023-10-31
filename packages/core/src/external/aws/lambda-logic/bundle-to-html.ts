@@ -581,11 +581,10 @@ function createDiagnosticReportsSection(
       });
 
       if (
-        !labs ||
-        (labs?.length === 0 && !progressNotes) ||
-        (progressNotes?.length === 0 && !reasonForVisit) ||
-        (reasonForVisit?.length === 0 && !filteredDocumentation) ||
-        filteredDocumentation?.length === 0
+        (!labs || labs?.length === 0) &&
+        (!progressNotes || progressNotes?.length === 0) &&
+        (!reasonForVisit || reasonForVisit?.length === 0) &&
+        (!filteredDocumentation || filteredDocumentation?.length === 0)
       ) {
         return "";
       }
