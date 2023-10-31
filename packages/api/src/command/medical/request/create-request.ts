@@ -8,7 +8,7 @@ export type RequestCreateCmd = {
   cxId: string;
   facilityId: string;
   patientId: string;
-  metadata: RequestMetadata;
+  metadata?: RequestMetadata;
 };
 
 export const createRequest = async (request: RequestCreateCmd): Promise<Request> => {

@@ -12,12 +12,18 @@ export interface RequestCreate extends BaseDomainCreate {
   cxId: string;
   patientId: string;
   facilityIds: string[];
-  metadata: RequestMetadata;
+  metadata?: RequestMetadata;
   documentQueryProgress?: DocumentQueryProgress;
 }
 
-export const requestMetadataDataSchema = z.object({
-  data: z.record(z.string()),
+export const requestMetadataDataSchemaOptional = z.object({
+  data: z.record(z.string()).optional(),
+});
+
+export const requestMetadataDataSchemaRequired = z.object({
+  data: z.record(z.string()).refine(data => Object.keys(data).length > 0, {
+    message: "Data object cannot be empty",
+  }),
 });
 
 export interface Request extends BaseDomain, RequestCreate {}

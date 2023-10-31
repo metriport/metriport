@@ -3,9 +3,19 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
+
 import { z } from "zod";
-import { requestMetadataDataSchema, RequestMetadata } from "../../domain/medical/request";
+import { getETag } from "../../shared/http";
+import {
+  requestMetadataDataSchemaOptional,
+  requestMetadataDataSchemaRequired,
+} from "../../domain/medical/request";
 import { RequestCreateCmd, createRequest } from "../../command/medical/request/create-request";
+import { deleteRequest, RequestDeleteCmd } from "../../command/medical/request/delete-request";
+import { updateRequest, RequestUpdateCmd } from "../../command/medical/request/update-request";
+import { areDocumentsProcessingRequest } from "../../command/medical/document/document-status";
+import { dtoFromModel } from "./dtos/requestDTO";
+
 import { downloadDocument } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -108,21 +118,13 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
-    const requestJson = requestMetadataDataSchema.safeParse(req.body);
+    const requestMetadata = requestMetadataDataSchemaOptional.parse(req.body);
 
-    let requestMetadata: RequestMetadata;
-    if (requestJson.success) {
-      console.log(`Request Metadata: ${JSON.stringify(requestJson.data)}`);
-      requestMetadata = { data: requestJson.data.data }; // Access the inner data property
-    } else {
-      console.log("No request metadata provided");
-      requestMetadata = { data: {} };
-    }
     const requestCreate: RequestCreateCmd = {
       cxId,
       facilityId,
       patientId,
-      metadata: requestMetadata,
+      metadata: { data: requestMetadata.data },
     };
 
     // TODO pass REQUEST into queru.
@@ -139,6 +141,63 @@ router.post(
     });
 
     return res.status(OK).json(docQueryProgress);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * PUT /document/request/:id
+ *
+ * Updates the request according to the request ID
+ * Note: this is not a PATCH, so requests must include all patient data in the payload.
+ *
+ * @param req.query.requestId The facility providing NPI for the patient update
+ * @return The patient to be updated
+ */
+router.put(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const requestId = getFromQueryOrFail("requestId", req);
+    const requestMetadata = requestMetadataDataSchemaRequired.parse(req.body);
+
+    // TODO what is desired behavior here
+    const isProcessing = await areDocumentsProcessingRequest({ id: requestId, cxId });
+    if (isProcessing) {
+      console.log(res.status(httpStatus.LOCKED).json("Document querying currently in progress"));
+    }
+
+    const requestUpdate: RequestUpdateCmd = {
+      metadata: { data: requestMetadata.data },
+      ...getETag(req),
+      id: requestId,
+      cxId,
+    };
+
+    const updatedRequest = await updateRequest(requestUpdate);
+    return res.status(OK).json(dtoFromModel(updatedRequest));
+  })
+);
+
+// TODO does this even make sense as a capability?
+/** ---------------------------------------------------------------------------
+ * DELETE /document/request/:id
+ *
+ * Deletes a Document Query request from our DB.
+ *
+ * @return 204 No Content
+ */
+router.delete(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const id = getFromQueryOrFail("requestId", req);
+    const requestDelete: RequestDeleteCmd = {
+      ...getETag(req),
+      id,
+      cxId,
+    };
+    await deleteRequest(requestDelete, { allEnvs: true });
+    return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );
 
