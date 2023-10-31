@@ -580,11 +580,16 @@ function createDiagnosticReportsSection(
         return !noteIsBlacklisted;
       });
 
+      const hasNoLabs = !labs || labs?.length === 0;
+      const hasNoProgressNotes = !progressNotes || progressNotes?.length === 0;
+      const hasNoReasonForVisit = !reasonForVisit || reasonForVisit?.length === 0;
+      const hasNoDocumentation = !filteredDocumentation || filteredDocumentation?.length === 0;
+
       if (
-        (!labs || labs?.length === 0) &&
-        (!progressNotes || progressNotes?.length === 0) &&
-        (!reasonForVisit || reasonForVisit?.length === 0) &&
-        (!filteredDocumentation || filteredDocumentation?.length === 0)
+        hasNoLabs &&
+        hasNoProgressNotes &&
+        hasNoReasonForVisit &&
+        hasNoDocumentation
       ) {
         return "";
       }
