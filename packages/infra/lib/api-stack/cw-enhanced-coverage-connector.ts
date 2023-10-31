@@ -76,7 +76,7 @@ export function setup({
   vpc,
   lambdaLayers,
   secrets,
-  bucket, // TODO 1195 to be used when we enable createPatientsGroupingLambda
+  bucket,
   alarmSnsAction,
 }: {
   stack: Construct;
@@ -113,6 +113,7 @@ export function setup({
     credsStore,
     cookieStore,
     codeChallengeStore,
+    bucket,
     alarmSnsAction,
   });
 
@@ -120,7 +121,6 @@ export function setup({
   const linkPatientQueue = createLinkPatientQueue(stack, lambdaLayers);
 
   // lambda to batch patients + CQ orgs
-  console.log(bucket); // just o bypass the unused variable warning
   // const patientGroupingLambda = createPatientsGroupingLambda({
   //   stack,
   //   vpc,
@@ -189,6 +189,7 @@ function createSessionMgmtLambda({
   credsStore,
   cookieStore,
   codeChallengeStore,
+  bucket,
   alarmSnsAction,
 }: {
   stack: Construct;
@@ -198,6 +199,7 @@ function createSessionMgmtLambda({
   credsStore: secret.ISecret;
   cookieStore: secret.Secret;
   codeChallengeStore: secret.Secret;
+  bucket: IBucket;
   alarmSnsAction?: SnsAction;
 }): IFunction {
   const config = getConfig();
@@ -224,6 +226,7 @@ function createSessionMgmtLambda({
       CODE_CHALLENGE_NOTIF_URL: notificationUrl,
       CW_MGMT_CREDS_SECRET_NAME: credsStore.secretName,
       CW_MGMT_URL: cwBaseUrl,
+      ERROR_BUCKET_NAME: bucket.bucketName,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
     },
     timeout,
@@ -237,6 +240,8 @@ function createSessionMgmtLambda({
 
   codeChallengeStore.grantRead(lambda);
   codeChallengeStore.grantWrite(lambda);
+
+  bucket.grantReadWrite(lambda);
 
   return lambda;
 }

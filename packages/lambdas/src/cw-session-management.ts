@@ -1,11 +1,14 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
+import { makeS3Client } from "@metriport/core/external/aws/s3";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import {
   SessionManagement,
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
+import { base64ToBuffer } from "@metriport/core/util/base64";
+import { AdditionalInfo, MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import { launchChromium } from "playwright-aws-lambda/dist/src"; // https://github.com/JupiterOne/playwright-aws-lambda/issues/15#issuecomment-1243395780
 import { capture } from "./shared/capture";
@@ -23,6 +26,7 @@ const codeChallengeSecretArn = getEnvOrFail("CODE_CHALLENGE_SECRET_ARN");
 const codeChallengeNotificationUrl = getEnvOrFail("CODE_CHALLENGE_NOTIF_URL");
 const cwCredsSecretName = getEnvOrFail("CW_MGMT_CREDS_SECRET_NAME");
 const baseUrl = getEnvOrFail("CW_MGMT_URL");
+const errorBucketName = getEnvOrFail("ERROR_BUCKET_NAME");
 
 const cookieManager = new CookieManagerOnSecrets(cookieSecretArn, region);
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl });
@@ -73,24 +77,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
     console.log(`Error`, error);
     capture.error(error, { extra: { ...additional, lambdaName, error } });
 
-    // TODO 1195 enable this and give access to Bucket on CDK
-    // if (error instanceof MetriportError) {
-    //   const contents = error.additionalInfo?.[SessionManagement.exceptionScreenshotKey] as
-    //     | string
-    //     | undefined;
-    //   if (contents) {
-    //     const s3Client = makeS3Client(region);
-    //     await s3Client
-    //       .putObject({
-    //         Bucket: generalBucket,
-    //         Key: `lambdas/${lambdaName}/error_${new Date().toISOString()}.jpg`,
-    //         Body: base64ToBuffer(contents),
-    //       })
-    //       .promise();
-    //   } else {
-    //     console.log(`MetriportError but no b64 screenshot`);
-    //   }
-    // }
+    if (error instanceof MetriportError) reportErrorToS3(error, additional);
+
+    throw error;
   }
 });
 
@@ -104,4 +93,35 @@ async function getCreds(): Promise<{ username: string; password: string }> {
   if (!creds.username) throw new Error(`Missing username property on creds`);
   if (!creds.password) throw new Error(`Missing password property on creds`);
   return { username: creds.username, password: creds.password };
+}
+
+async function reportErrorToS3(error: MetriportError, additional: AdditionalInfo) {
+  try {
+    const contents = error.additionalInfo?.[SessionManagement.exceptionScreenshotKey] as
+      | string
+      | undefined;
+    if (contents) {
+      const s3Client = makeS3Client(region);
+      await s3Client
+        .putObject({
+          Bucket: errorBucketName,
+          Key: `lambdas/${lambdaName}/error_${new Date().toISOString()}.jpg`,
+          Body: base64ToBuffer(contents),
+        })
+        .promise();
+    } else {
+      console.log(`MetriportError but no b64 screenshot`);
+    }
+  } catch (error) {
+    console.log(`Error on reportErrorToS3`, error);
+    capture.error(error, {
+      extra: {
+        ...additional,
+        lambdaName,
+        error,
+        context: "reportErrorToS3",
+      },
+    });
+    // intentionally not throwing here
+  }
 }
