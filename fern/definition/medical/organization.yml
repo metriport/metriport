@@ -15,7 +15,7 @@ service:
       request: BaseOrganization
       response: Organization
       examples:
-        - request: 
+        - request:
             name: Metriport Inc.
             type: ambulatory
             location: $commons.Address.Example1
@@ -46,7 +46,7 @@ service:
       examples:
         - path-parameters:
             id: "12345678"
-          request: 
+          request:
             name: Metriport Inc.
             type: ambulatory
             location: $commons.Address.Example1
@@ -54,17 +54,17 @@ service:
             body: $Organization.Example1
 
 types:
-  BaseOrganization: 
-    properties: 
+  BaseOrganization:
+    properties:
       name:
         type: string
-        docs: |       
+        docs: |
           The name of your organization. 
           This is usually your legal corporate entity name - 
           for example `Metriport Inc.`.
-      type: 
+      type:
         type: OrgType
-        docs: The type of your organization. 
+        docs: The type of your organization.
       location: commons.Address
 
   Organization:
@@ -83,9 +83,9 @@ types:
           name: Metriport Inc.
           type: ambulatory
           location: $commons.Address.Example1
-  
-  OrgType: 
-    enum: 
+
+  OrgType:
+    enum:
       - acuteCare
       - ambulatory
       - hospital

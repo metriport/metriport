@@ -12,7 +12,7 @@ service:
       docs: Creates a Facility in Metriport where your patients receive care.
       method: POST
       path: ""
-      request: 
+      request:
         name: FacilityCreate
         body: BaseFacility
       response: Facility
@@ -53,7 +53,7 @@ service:
         id:
           type: string
           docs: The ID of the Facility.
-      request: 
+      request:
         name: FacilityUpdate
         body: BaseFacility
       response: Facility
@@ -82,13 +82,13 @@ service:
         - name: Example1
           response:
             body:
-              facilities: 
+              facilities:
                 - $Facility.Example1
                 - $Facility.Example1
 
 types:
-  BaseFacility: 
-    properties: 
+  BaseFacility:
+    properties:
       name:
         type: string
         docs: The name of your Facility. This is the actual address where a patient will receive care (can be virtual) - for example `Care Facility, LLC`.

@@ -9,9 +9,8 @@ service:
   endpoints:
     create:
       display-name: Create Patient
-      docs: | 
+      docs: |
         Creates a Patient in Metriport for the specified Facility where the patient is receiving care.
-
         The more demographic info you can provide about a Patient, 
         the higher chances Metriport will be able to find a match. 
         For example, nicknames, old addresses, multiple phone numbers, 
@@ -38,7 +37,7 @@ service:
               - $PersonalIdentifier.Example1
           response:
             body: $Patient.Example1
-    
+
     get:
       display-name: Get Patient
       docs: Get a Patient
@@ -62,61 +61,61 @@ service:
       method: PUT
       path: /{id}
       path-parameters:
-        id: 
+        id:
           type: string
           docs: The ID of the Patient to update.
-      request: 
+      request:
         name: PatientUpdate
         query-parameters:
-          facilityId: 
+          facilityId:
             type: string
             docs: The ID of the Facility where the patient is receiving care.
         body: BasePatient
       response: Patient
-    
-    list: 
+
+    list:
       display-name: List Patients at Facility
       docs: Lists all Patients receiving care at the specified Facility.
       method: GET
       path: ""
-      request: 
+      request:
         name: PatientList
         query-parameters:
-          facilityId: 
+          facilityId:
             type: optional<string>
             docs: The ID of the Facility where the patient is receiving care.
       response: ListPatientsResponse
-    
-    delete: 
+
+    delete:
       display-name: Delete Patient
       docs: Removes the specified Patient.
       method: DELETE
       path: /{id}
       path-parameters:
-        id: 
+        id:
           type: string
           docs: The ID of the Patient to delete.
-      request: 
+      request:
         name: PatientDelete
         query-parameters:
-          facilityId: 
+          facilityId:
             type: optional<string>
             docs: The ID of the Facility where the patient is receiving care.
 
 types:
-  Addresses: 
+  Addresses:
     discriminated: false
-    union: 
+    union:
       - commons.Address
       - list<commons.Address>
-  
-  Contacts: 
+
+  Contacts:
     discriminated: false
-    union: 
+    union:
       - Contact
 
   PersonalIdentifier:
-    union: 
+    union:
       driversLicense: DriversLicense
     examples:
       - name: Example1
@@ -124,8 +123,8 @@ types:
           type: driversLicense
           state: CA
           value: "51227265"
-  
-  DriversLicense: 
+
+  DriversLicense:
     properties:
       state:
         type: commons.USState
@@ -135,9 +134,9 @@ types:
         docs: The ID number.
       assigner: optional<string>
       period: optional<Period>
-  
-  Period: 
-    properties: 
+
+  Period:
+    properties:
       start: optional<string>
       end: optional<string>
 
@@ -169,11 +168,11 @@ types:
       - name: Example2
         value: "2.16.840.1.113883.3.666.123"
 
-  BasePatient: 
-    properties: 
+  BasePatient:
+    properties:
       firstName:
         type: string
-        docs: | 
+        docs: |
           The Patient's first name(s). 
           You may provide a comma/space delimited string to specify 
           multiple first and last names. For example, the following inputs 
@@ -213,7 +212,7 @@ types:
           genderAtBirth: F
           personalIdentifiers:
             - $PersonalIdentifier.Example1
-  
-  ListPatientsResponse: 
-    properties: 
+
+  ListPatientsResponse:
+    properties:
       patients: list<Patient>
