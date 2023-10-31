@@ -12,6 +12,8 @@ import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
 
+// TODO remove this comment
+
 const app: Application = express();
 const version = Config.getVersion();
 
