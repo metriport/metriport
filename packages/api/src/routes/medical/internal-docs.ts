@@ -12,6 +12,7 @@ import {
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import {
   isDocumentQueryProgressEqual,
+  queryDocumentsAcrossHIEs,
   updateDocQuery,
 } from "../../command/medical/document/document-query";
 import { options, reprocessDocuments } from "../../command/medical/document/document-redownload";
@@ -20,6 +21,7 @@ import {
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
@@ -300,6 +302,47 @@ router.post(
     });
 
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/docs/query
+ *
+ * Starts a new document query even if the current one is in 'processing' state.
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The customer/account's ID.
+ * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
+ *
+ * @return updated document query progress
+ */
+router.post(
+  "/query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFromQueryOrFail("cxId", req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const facilityId = getFrom("query").optional("facilityId", req);
+
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const patientUpdate: PatientUpdateCmd = {
+      ...patient.data,
+      id: patient.id,
+      cxId: patient.cxId,
+    };
+
+    if (patientUpdate.documentQueryProgress) {
+      patientUpdate.documentQueryProgress = undefined;
+    }
+    patientUpdate.id = patientId;
+
+    await updatePatient(patientUpdate, true);
+
+    const docQueryProgress = await queryDocumentsAcrossHIEs({
+      cxId,
+      patientId,
+      facilityId,
+    });
+
+    return res.status(httpStatus.OK).json(docQueryProgress);
   })
 );
 
