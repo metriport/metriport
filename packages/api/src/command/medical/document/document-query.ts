@@ -1,6 +1,6 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import {
-  calculateConversionProgress,
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
@@ -9,6 +9,7 @@ import {
 import { Patient } from "../../../domain/medical/patient";
 import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 import BadRequestError from "../../../errors/bad-request";
+import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../../external/aws/appConfig";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { PatientModel } from "../../../models/medical/patient";
@@ -16,7 +17,7 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { emptyFunction, Util } from "../../../shared/util";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
-import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../../external/aws/appConfig";
+import { areDocumentsProcessing } from "./document-status";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -40,11 +41,13 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   override,
+  skipDocQueryStatusCheck = false,
 }: {
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
+  skipDocQueryStatusCheck?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -66,12 +69,10 @@ export async function queryDocumentsAcrossHIEs({
     );
   }
   const docQueryProgress = patient.data.documentQueryProgress;
-  const requestId = getOrGenerateRequestId(docQueryProgress);
+  const requestId = getOrGenerateRequestId(docQueryProgress, skipDocQueryStatusCheck);
 
-  if (
-    docQueryProgress?.download?.status === "processing" ||
-    docQueryProgress?.convert?.status === "processing"
-  ) {
+  const isCheckStatus = !skipDocQueryStatusCheck;
+  if (isCheckStatus && areDocumentsProcessing(docQueryProgress)) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
   }
@@ -206,18 +207,20 @@ export const updateConversionProgress = async ({
  * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.
  *
  * @param docQueryProgress Progress of the previous query
+ * @param forceNew Force creating a new request ID
  * @returns uuidv7 string ID for the request
  */
-function getOrGenerateRequestId(docQueryProgress: DocumentQueryProgress | undefined): string {
-  if (!docQueryProgress) return uuidv7();
+function getOrGenerateRequestId(
+  docQueryProgress: DocumentQueryProgress | undefined,
+  forceNew = false
+): string {
+  if (forceNew) return generateRequestId();
 
-  const isDownloadFinished = docQueryProgress.download?.status === "completed";
-  const conversionStatus = docQueryProgress.convert?.status ?? undefined;
-
-  if (isDownloadFinished && (!conversionStatus || conversionStatus === "completed")) {
-    return uuidv7();
-  } else if (docQueryProgress.requestId) {
+  if (areDocumentsProcessing(docQueryProgress) && docQueryProgress?.requestId) {
     return docQueryProgress.requestId;
   }
-  return uuidv7();
+
+  return generateRequestId();
 }
+
+const generateRequestId = (): string => uuidv7();
