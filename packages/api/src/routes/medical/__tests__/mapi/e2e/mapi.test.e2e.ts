@@ -14,6 +14,7 @@ import { createFacility, validateFacility } from "./facility";
 import { validateCWOrg, validateFhirOrg, validateLocalOrg } from "./organization";
 import { createPatient, validateFhirPatient, validateLocalPatient } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
+import { areDocumentsProcessing } from "../../../../../command/medical/document/document-status";
 
 const maxRetries = 4;
 
@@ -132,11 +133,7 @@ if (Config.isStaging() || Config.isDev()) {
       let status = await medicalApi.getDocumentQueryStatus(patient.id);
       let retryLimit = 0;
 
-      while (
-        (status.download?.status === "processing" ||
-          (status.convert && status.convert?.status === "processing")) &&
-        retryLimit < maxRetries
-      ) {
+      while (areDocumentsProcessing(status) && retryLimit < maxRetries) {
         await Util.sleep(5000);
         status = await medicalApi.getDocumentQueryStatus(patient.id);
         retryLimit++;

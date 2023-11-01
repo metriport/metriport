@@ -1,15 +1,16 @@
 import { patientCreateSchema } from "@metriport/api-sdk";
+import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -38,8 +39,8 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
-import { z } from "zod";
 import { cxWebhookPayloadSchemaOptional } from "../../domain/webhook";
+import { z } from "zod";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -104,8 +105,8 @@ router.put(
     const facilityId = getFromQueryOrFail("facilityId", req);
     const payload = patientUpdateSchema.parse(req.body);
 
-    const isProcessing = await areDocumentsProcessing({ id, cxId });
-    if (isProcessing) {
+    const patient = await getPatientOrFail({ id, cxId });
+    if (areDocumentsProcessing(patient)) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
     }
 

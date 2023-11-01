@@ -1,16 +1,17 @@
-import { getPatientOrFail } from "../patient/get-patient";
+import { DocumentQueryProgress, isProcessing } from "../../../domain/medical/document-query";
+import { Patient } from "../../../domain/medical/patient";
 
-export const areDocumentsProcessing = async ({
-  id,
-  cxId,
-}: {
-  id: string;
-  cxId: string;
-}): Promise<boolean> => {
-  const patient = await getPatientOrFail({ id, cxId });
+export function areDocumentsProcessing(patient: Patient): boolean;
+export function areDocumentsProcessing(progress: DocumentQueryProgress | undefined): boolean;
+export function areDocumentsProcessing(
+  param: Patient | DocumentQueryProgress | undefined
+): boolean {
+  if (!param) return false;
 
-  return (
-    patient.data.documentQueryProgress?.download?.status === "processing" ||
-    patient.data.documentQueryProgress?.convert?.status === "processing"
-  );
-};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const progress = (param as any).data
+    ? (param as Patient).data.documentQueryProgress
+    : (param as DocumentQueryProgress);
+
+  return isProcessing(progress?.download) || isProcessing(progress?.convert);
+}
