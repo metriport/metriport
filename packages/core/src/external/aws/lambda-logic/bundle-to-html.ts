@@ -585,12 +585,7 @@ function createDiagnosticReportsSection(
       const hasNoReasonForVisit = !reasonForVisit || reasonForVisit?.length === 0;
       const hasNoDocumentation = !filteredDocumentation || filteredDocumentation?.length === 0;
 
-      if (
-        hasNoLabs &&
-        hasNoProgressNotes &&
-        hasNoReasonForVisit &&
-        hasNoDocumentation
-      ) {
+      if (hasNoLabs && hasNoProgressNotes && hasNoReasonForVisit && hasNoDocumentation) {
         return "";
       }
 
