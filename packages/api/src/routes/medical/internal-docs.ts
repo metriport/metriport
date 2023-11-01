@@ -1,4 +1,4 @@
-import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
+import { createS3FileName, S3Utils } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -21,7 +21,6 @@ import {
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
@@ -318,27 +317,15 @@ router.post(
 router.post(
   "/query",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getFromQueryOrFail("cxId", req);
-    const patientId = getFromQueryOrFail("patientId", req);
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
-
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const patientUpdate: PatientUpdateCmd = {
-      ...patient.data,
-      id: patient.id,
-      cxId: patient.cxId,
-    };
-
-    if (patientUpdate.documentQueryProgress) {
-      patientUpdate.documentQueryProgress = undefined;
-    }
-
-    await updatePatient(patientUpdate, true);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
+      skipDocQueryStatusCheck: true,
     });
 
     return res.status(httpStatus.OK).json(docQueryProgress);

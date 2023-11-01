@@ -9,6 +9,7 @@ import {
 import { Patient } from "../../../domain/medical/patient";
 import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 import BadRequestError from "../../../errors/bad-request";
+import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../../external/aws/appConfig";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { PatientModel } from "../../../models/medical/patient";
@@ -16,7 +17,6 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { emptyFunction, Util } from "../../../shared/util";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
-import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../../external/aws/appConfig";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -40,11 +40,13 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   override,
+  skipDocQueryStatusCheck = false,
 }: {
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
+  skipDocQueryStatusCheck?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -68,9 +70,11 @@ export async function queryDocumentsAcrossHIEs({
   const docQueryProgress = patient.data.documentQueryProgress;
   const requestId = getOrGenerateRequestId(docQueryProgress);
 
+  const isCheckStatus = !skipDocQueryStatusCheck;
   if (
-    docQueryProgress?.download?.status === "processing" ||
-    docQueryProgress?.convert?.status === "processing"
+    isCheckStatus &&
+    (docQueryProgress?.download?.status === "processing" ||
+      docQueryProgress?.convert?.status === "processing")
   ) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
