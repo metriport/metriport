@@ -1,7 +1,7 @@
 ---
 title: "Upload Document"
 description: "Returns a URL to use for a medical document upload to our servers."
-api: "POST /medical/v1/document/upload-url"
+api: "POST /medical/v1/document/upload"
 ---
 
 This endpoint returns a URL to enable you to upload your patients' medical documents, making them available to other HIEs.
@@ -134,12 +134,12 @@ const docRef: Partial<DocumentReference> = {
   },
 };
 
-const url = await metriportClient.getDocumentUploadUrl("my-patient-id", docRef);
+const response = await metriport.getUploadDocumentUrl("my-patient-id", docRef);
 
 // Upload the document using this url in a PUT request, something along these lines:
 
 // const fileContent = <medical-document-document-contents>;
-// await axios.put(url, document, {
+// await axios.put(response.url, document, {
 //     headers: {
 //         "Content-Length": <size-in-bytes>,
 //     },

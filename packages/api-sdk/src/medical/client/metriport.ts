@@ -478,7 +478,8 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Returns a Presigned URL to upload a file to Metriport and make the document available to other HIEs.
+   * @deprecated - Use getUploadDocumentUrl() instead.
+   * Returns a URL to upload a file to Metriport and make the document available to other HIEs.
    * To upload your file contents, execute a PUT request using this Presigned URL with the file contents as the request body.
    * Refer to Metriport Documentation for more details:
    * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
@@ -487,13 +488,34 @@ export class MetriportMedicalApi {
    * @param docRef - a FHIR Document Reference for this file upload. Mandatory fields include DocumentReference.description, DocumentReference.type, and DocumentReference.context. Besides that, try to include as much metadata on the document as possible. Note that you DO NOT need to fill in the Organization or Patient fields under the author or contained fields - Metriport will fill this in and overwrite whatever you put in.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/fhir/resources/documentreference.
    *
-   * @returns A Presigned URL to be used for subsequent file upload.
+   * @returns A URL string to be used for subsequent file upload.
    */
   async getDocumentUploadUrl(
     patientId: string,
     docRef: Partial<FHIRDocumentReference>
   ): Promise<string> {
     const url = `${DOCUMENT_URL}/upload-url/?patientId=${patientId}`;
+    const resp = await this.api.post(url, docRef);
+    return resp.data;
+  }
+
+  /**
+   * Returns a URL to upload a file to Metriport and make the document available to other HIEs.
+   * To upload your file contents, execute a PUT request using this URL with the file contents as the request body.
+   * Refer to Metriport Documentation for more details:
+   * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
+   *
+   * @param patientId - the ID of the patient.
+   * @param docRef - a FHIR Document Reference for this file upload. Mandatory fields include DocumentReference.description, DocumentReference.type, and DocumentReference.context. Besides that, try to include as much metadata on the document as possible. Note that you DO NOT need to fill in the Organization or Patient fields under the author or contained fields - Metriport will fill this in and overwrite whatever you put in.
+   * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/fhir/resources/documentreference.
+   *
+   * @returns A JSON object with a URL to be used for subsequent file upload.
+   */
+  async getUploadDocumentUrl(
+    patientId: string,
+    docRef: Partial<FHIRDocumentReference>
+  ): Promise<{ url: string }> {
+    const url = `${DOCUMENT_URL}/upload/?patientId=${patientId}`;
     const resp = await this.api.post(url, docRef);
     return resp.data;
   }
