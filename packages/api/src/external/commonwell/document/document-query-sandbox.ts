@@ -54,6 +54,7 @@ export async function sandboxGetDocRefsAndUpsert({
       downloadProgress: {
         status: "completed",
       },
+      reset: true,
       requestId,
     });
     return [];
@@ -155,7 +156,10 @@ export async function sandboxGetDocRefsAndUpsert({
     convertProgress: docsToConvert <= 0 ? {
       total: 0,
       status: "completed",
-    } : undefined,
+    } : {
+      total: docsToConvert,
+      status: "processing",
+    },
     requestId,
   });
 
