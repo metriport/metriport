@@ -479,7 +479,7 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * @deprecated - Use getUploadDocumentUrl() instead.
+   * @deprecated - Use createDocumentReference() instead.
    * Returns a URL to upload a file to Metriport and make the document available to other HIEs.
    * To upload your file contents, execute a PUT request using this Presigned URL with the file contents as the request body.
    * Refer to Metriport Documentation for more details:
@@ -512,7 +512,7 @@ export class MetriportMedicalApi {
    *
    * @returns The DocumentReference ID, and the URL to be used for subsequent file upload.
    */
-  async getUploadDocumentUrl(
+  async createDocumentReference(
     patientId: string,
     docRef: Partial<FHIRDocumentReference>
   ): Promise<UploadDocumentResult> {

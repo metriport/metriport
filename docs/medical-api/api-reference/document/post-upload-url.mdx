@@ -135,7 +135,7 @@ const docRef: Partial<DocumentReference> = {
   },
 };
 
-const resp = await metriport.getUploadDocumentUrl("my-patient-id", docRef);
+const resp = await metriport.createDocumentReference("my-patient-id", docRef);
 
 // Upload the document using this url in a PUT request, something along these lines:
 
