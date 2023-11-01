@@ -92,6 +92,8 @@ export async function sandboxGetDocRefsAndUpsert({
     requestId,
   });
 
+  let docsToConvert: number = convertibleDocCount;
+
   for (const entry of docsWithContent) {
     const fileTitle = entry.docRef.content?.[0]?.attachment?.title;
     if (!fileTitle || !existingDocTitles.includes(fileTitle)) {
@@ -130,6 +132,9 @@ export async function sandboxGetDocRefsAndUpsert({
       } catch (err) {
         log(`Error w/ file docId ${entry.docRef.id}, prevDocId ${prevDocId}: ${err}`);
       }
+    } else {
+      log(`Skipping file ${fileTitle} as it already exists`);
+      docsToConvert = docsToConvert - 1;
     }
   }
 
@@ -142,7 +147,10 @@ export async function sandboxGetDocRefsAndUpsert({
       status: "completed",
       successful: entries.length,
     },
-    convertProgress: undefined,
+    convertProgress: docsToConvert === 0 ? {
+      total: 0,
+      status: "completed",
+    } : undefined,
     requestId,
   });
 
