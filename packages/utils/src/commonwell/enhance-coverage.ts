@@ -16,8 +16,10 @@ import { out } from "@metriport/core/util/log";
 import * as fs from "fs";
 import { chunk } from "lodash";
 // import { chromium as runtime } from "playwright";
-import { firefox as runtime } from "playwright";
 import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
+import { sleep } from "@metriport/core/util/sleep";
+import axios from "axios";
+import { firefox as runtime } from "playwright";
 import * as readline from "readline-sync";
 
 /**
@@ -55,11 +57,14 @@ const cwUsername = getEnvVarOrFail("CW_USERNAME");
 const cwPassword = getEnvVarOrFail("CW_PASSWORD");
 
 const metriportApiBaseUrl = getEnvVarOrFail("API_URL");
+const docQueryEndpoint = getEnvVarOrFail("INTERNAL_DOC_QUERY_ENDPOINT");
+
 const cxId = getEnvVarOrFail("CX_ID");
 const cxOrgOID = getEnvVarOrFail("ORG_OID");
 
 const cqOrgsList = fs.readFileSync(`${__dirname}/cq-org-list.json`, "utf8");
 const CQ_ORG_CHUNK_SIZE = 50;
+const WAIT_TIME_BEFORE_DOC_QUERY = 50;
 
 // const region = getEnvVarOrFail("AWS_REGION");
 // const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
@@ -144,8 +149,30 @@ export async function main() {
       }
     }
   } finally {
-    console.log(`################################## Total time: ${Date.now() - startedAt}ms`);
+    console.log(`Patient link - Duration: ${Date.now() - startedAt}ms`);
   }
+
+  console.log(`Triggering doc query in ${WAIT_TIME_BEFORE_DOC_QUERY}ms...`);
+  await sleep(WAIT_TIME_BEFORE_DOC_QUERY);
+
+  // Now trigger the doc query
+  await triggerDocQuery();
+
+  console.log(
+    `Doc query triggered, this is an asynchronous process and it might take a few moments to finish.`
+  );
+}
+
+// TODO 1195 WIP
+// TODO 1195 WIP
+// TODO 1195 WIP
+// TODO 1195 WIP
+// TODO 1195 WIP
+async function triggerDocQuery() {
+  await axios.post(metriportApiBaseUrl + docQueryEndpoint, {
+    cxId,
+    patientIds,
+  });
 }
 
 main();
