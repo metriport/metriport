@@ -96,6 +96,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
   for (const entry of docsWithContent) {
     const fileTitle = entry.docRef.content?.[0]?.attachment?.title;
+    // if it doesnt exist were adding it to the fhir server as a reference
     if (!fileTitle || !existingDocTitles.includes(fileTitle)) {
       const prevDocId = entry.docRef.id;
       entry.docRef.id = uuidv7();
@@ -134,7 +135,11 @@ export async function sandboxGetDocRefsAndUpsert({
       }
     } else {
       log(`Skipping file ${fileTitle} as it already exists`);
-      docsToConvert = docsToConvert - 1;
+      const isDocConvertible = isConvertible(entry.content?.mimeType);
+
+      if  (isDocConvertible) {
+        docsToConvert = docsToConvert - 1;
+      }
     }
   }
 
@@ -147,7 +152,7 @@ export async function sandboxGetDocRefsAndUpsert({
       status: "completed",
       successful: entries.length,
     },
-    convertProgress: docsToConvert === 0 ? {
+    convertProgress: docsToConvert <= 0 ? {
       total: 0,
       status: "completed",
     } : undefined,
