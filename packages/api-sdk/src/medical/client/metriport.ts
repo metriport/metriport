@@ -13,6 +13,7 @@ import {
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
+  UploadDocumentResult,
   documentListSchema,
   documentQuerySchema,
 } from "../models/document";
@@ -500,8 +501,8 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Returns a URL to upload a file to Metriport and make the document available to other HIEs.
-   * To upload your file contents, execute a PUT request using this URL with the file contents as the request body.
+   * Creates a DocumentReference and returns its ID along with a URL to upload the respective Document file to Metriport and make this document available to other HIEs.
+   * To upload your file contents, execute a PUT request using the returned uploadUrl with the file contents as the request body.
    * Refer to Metriport Documentation for more details:
    * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
    *
@@ -509,12 +510,12 @@ export class MetriportMedicalApi {
    * @param docRef - a FHIR Document Reference for this file upload. Mandatory fields include DocumentReference.description, DocumentReference.type, and DocumentReference.context. Besides that, try to include as much metadata on the document as possible. Note that you DO NOT need to fill in the Organization or Patient fields under the author or contained fields - Metriport will fill this in and overwrite whatever you put in.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/fhir/resources/documentreference.
    *
-   * @returns A JSON object with a URL to be used for subsequent file upload.
+   * @returns The DocumentReference ID, and the URL to be used for subsequent file upload.
    */
   async getUploadDocumentUrl(
     patientId: string,
     docRef: Partial<FHIRDocumentReference>
-  ): Promise<{ url: string }> {
+  ): Promise<UploadDocumentResult> {
     const url = `${DOCUMENT_URL}/upload/?patientId=${patientId}`;
     const resp = await this.api.post(url, docRef);
     return resp.data;

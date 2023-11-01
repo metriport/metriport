@@ -53,12 +53,12 @@ async function main() {
   const fileContent = fs.readFileSync(filePath); // works for pdf and xml
   if (!fileContent) throw new Error("File content is empty");
 
-  const presignedUrl = await metriportApi.getUploadDocumentUrl(patientId, docRef);
-  console.log("presignedUrl", presignedUrl);
+  const resp = await metriportApi.getUploadDocumentUrl(patientId, docRef);
+  console.log("getUploadDocumentUrl response:", resp);
 
   try {
     console.log("Uploading file to S3...");
-    await put(presignedUrl.url, fileContent);
+    await put(resp.uploadUrl, fileContent);
     console.log("Upload successful! :)");
   } catch (err) {
     console.log("ERROR:", err);

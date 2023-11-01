@@ -1,10 +1,10 @@
 ---
 title: "Upload Document"
-description: "Returns a URL to use for a medical document upload to our servers."
+description: "Creates a DocumentReference and returns its ID and a URL to use for a medical document upload to our servers."
 api: "POST /medical/v1/document/upload"
 ---
 
-This endpoint returns a URL to enable you to upload your patients' medical documents, making them available to other HIEs.
+This endpoint returns the DocumentReference ID and a URL to enable you to upload your patients' medical documents, making them available to other HIEs.
 
 ## Overview
 
@@ -97,11 +97,12 @@ Example Payload:
 
 ## Response
 
-The URL to be used for file upload.
+The DocumentReference ID and a URL to be used for file upload.
 
 ```json
 {
-  "url": "<url-string>"
+  "documentReferenceId": "<DocumentReference-ID-string>,
+  "uploadUrl": "<url-string>"
 }
 ```
 
@@ -134,12 +135,12 @@ const docRef: Partial<DocumentReference> = {
   },
 };
 
-const response = await metriport.getUploadDocumentUrl("my-patient-id", docRef);
+const resp = await metriport.getUploadDocumentUrl("my-patient-id", docRef);
 
 // Upload the document using this url in a PUT request, something along these lines:
 
 // const fileContent = <medical-document-document-contents>;
-// await axios.put(response.url, document, {
+// await axios.put(resp.uploadUrl, document, {
 //     headers: {
 //         "Content-Length": <size-in-bytes>,
 //     },

@@ -1,4 +1,5 @@
 import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
+import { UploadDocumentResult } from "@metriport/api-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -179,7 +180,7 @@ router.get(
   })
 );
 
-async function getUploadUrlAndCreateDocRef(req: Request): Promise<string> {
+async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocumentResult> {
   const cxId = getCxIdOrFail(req);
   const patientId = getFromQueryOrFail("patientId", req);
   const docId = uuidv7();
@@ -208,7 +209,7 @@ async function getUploadUrlAndCreateDocRef(req: Request): Promise<string> {
   console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
   await upsertDocumentToFHIRServer(cxId, docRef);
 
-  return url;
+  return { documentReferenceId: docId, uploadUrl: url };
 }
 
 /**
@@ -227,7 +228,8 @@ async function getUploadUrlAndCreateDocRef(req: Request): Promise<string> {
 router.post(
   "/upload-url",
   asyncHandler(async (req: Request, res: Response) => {
-    const url = await getUploadUrlAndCreateDocRef(req);
+    const resp = await getUploadUrlAndCreateDocRef(req);
+    const url = resp.uploadUrl;
     return res.status(httpStatus.OK).json(url);
   })
 );
@@ -247,8 +249,8 @@ router.post(
 router.post(
   "/upload",
   asyncHandler(async (req: Request, res: Response) => {
-    const url = await getUploadUrlAndCreateDocRef(req);
-    return res.status(httpStatus.OK).json({ url });
+    const resp = await getUploadUrlAndCreateDocRef(req);
+    return res.status(httpStatus.OK).json(resp);
   })
 );
 
