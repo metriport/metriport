@@ -332,7 +332,6 @@ router.post(
     if (patientUpdate.documentQueryProgress) {
       patientUpdate.documentQueryProgress = undefined;
     }
-    patientUpdate.id = patientId;
 
     await updatePatient(patientUpdate, true);
 
