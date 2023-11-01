@@ -40,7 +40,6 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxWebhookPayloadSchemaOptional } from "../../domain/webhook";
-import { z } from "zod";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
