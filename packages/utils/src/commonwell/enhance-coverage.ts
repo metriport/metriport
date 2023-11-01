@@ -1,10 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-// import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
+import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
 import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
-// import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { LinkPatients } from "@metriport/core/external/commonwell/management/link-patients";
 import {
@@ -15,10 +14,11 @@ import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import * as fs from "fs";
 import { chunk } from "lodash";
+import * as readline from "readline-sync";
+
+// Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
 // import { chromium as runtime } from "playwright";
 import { firefox as runtime } from "playwright";
-import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
-import * as readline from "readline-sync";
 
 /**
  * Script to run on local environment the code that enhances coverage @ CommonWell.
@@ -43,6 +43,9 @@ const patientIds: string[] = [];
  */
 const downloadProgressIndex = 0;
 
+// If it fails to get the cookie, we might need to run this on a "headed" browser = update this to false:
+const headless = true;
+
 /**
  * You shouldn't need to, but if you want to use existing cookies login to the CW portal and go to
  * this page: (https://portal.commonwellalliance.org/Organization/List).
@@ -61,28 +64,33 @@ const cxOrgOID = getEnvVarOrFail("ORG_OID");
 const cqOrgsList = fs.readFileSync(`${__dirname}/cq-org-list.json`, "utf8");
 const CQ_ORG_CHUNK_SIZE = 50;
 
-// const region = getEnvVarOrFail("AWS_REGION");
-// const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
-
-// const cookiesSecretArn = getEnvVarOrFail("CW_COOKIES_SECRET_ARN");
-// const cookieManager = new CookieManagerOnSecrets(cookiesSecretArn, region);
-const cookieManager = new CookieManagerInMemory();
-if (cookies) {
-  cookieManager.updateCookies(cookies.split(";").flatMap(c => cookieFromString(c) ?? []));
-}
-
+/**
+ * Code to run this on local environment.
+ */
 class CodeChallengeFromTerminal implements CodeChallenge {
   async getCode() {
     return readline.question("What's the access code? ");
   }
 }
 const codeChallenge = new CodeChallengeFromTerminal();
+const cookieManager = new CookieManagerInMemory();
+/**
+ * Code to run this on a cloud environment, like EC2.
+ */
+// const region = getEnvVarOrFail("AWS_REGION");
+// const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
+// const cookiesSecretArn = getEnvVarOrFail("CW_COOKIES_SECRET_ARN");
+// const cookieManager = new CookieManagerOnSecrets(cookiesSecretArn, region);
 // const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
 // const codeChallenge = new CodeChallengeFromSecretManager(
 //   codeChallengeSecretArn,
 //   region,
 //   notificationUrl
 // );
+
+if (cookies) {
+  cookieManager.updateCookies(cookies.split(";").flatMap(c => cookieFromString(c) ?? []));
+}
 
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
 
@@ -103,7 +111,7 @@ export async function main() {
     cwManagementApi,
     codeChallenge,
     browser: await runtime.launch({
-      headless: false,
+      headless,
       slowMo: 100,
     }),
     errorScreenshotToFileSystem: true,

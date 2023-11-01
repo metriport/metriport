@@ -1,20 +1,24 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
-import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
+import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import {
   SessionManagement,
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { chromium as runtime } from "playwright";
-// import { firefox as runtime } from "playwright";
-import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
+import * as readline from "readline-sync";
+
+// Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
+// import { chromium as runtime } from "playwright";
+import { firefox as runtime } from "playwright";
 
 /**
  * Script to run on local environment the code that keeps the session w/ CommonWell active.
+ * This is mostly to test the auth/cookie management code without running coverage enhancement .
  *
  * To test it with an active/existing session, set the cookies on an env var or .env file (see instructions
  * on how to obtain it below).
@@ -22,6 +26,9 @@ import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code
  * Otherwise it will try to login using the credentials on the env vars and ask for the code challenge through
  * the terminal if it's needed.
  */
+
+// If it fails to get the cookie, we might need to run this on a "headed" browser = update this to false:
+const headless = true;
 
 /**
  * To get the cookies, login to the CW portal and go to this page: (https://portal.commonwellalliance.org/Organization/List).
@@ -33,24 +40,29 @@ const cwBaseUrl = getEnvVarOrFail("CW_URL");
 const cwUsername = getEnvVarOrFail("CW_USERNAME");
 const cwPassword = getEnvVarOrFail("CW_PASSWORD");
 
-const region = getEnvVarOrFail("AWS_REGION");
-const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
-
-const cookiesSecretArn = getEnvVarOrFail("CW_COOKIES_SECRET_ARN");
-const cookieManager = new CookieManagerOnSecrets(cookiesSecretArn, region);
-// const cookieManager = new CookieManagerInMemory();
-
-const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
-const codeChallenge = new CodeChallengeFromSecretManager(
-  codeChallengeSecretArn,
-  region,
-  notificationUrl
-);
-// class CodeChallengeFromTerminal implements CodeChallenge {
-//   async getCode() {
-//     return readline.question("What's the access code? ");
-//   }
-// }
+/**
+ * Code to run this on local environment.
+ */
+class CodeChallengeFromTerminal implements CodeChallenge {
+  async getCode() {
+    return readline.question("What's the access code? ");
+  }
+}
+const codeChallenge = new CodeChallengeFromTerminal();
+const cookieManager = new CookieManagerInMemory();
+/**
+ * Code to run this on a cloud environment, like EC2.
+ */
+// const region = getEnvVarOrFail("AWS_REGION");
+// const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
+// const cookiesSecretArn = getEnvVarOrFail("CW_COOKIES_SECRET_ARN");
+// const cookieManager = new CookieManagerOnSecrets(cookiesSecretArn, region);
+// const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
+// const codeChallenge = new CodeChallengeFromSecretManager(
+//   codeChallengeSecretArn,
+//   region,
+//   notificationUrl
+// );
 
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
 
@@ -70,8 +82,7 @@ export async function main() {
     cwManagementApi,
     codeChallenge,
     browser: await runtime.launch({
-      headless: false,
-      // headless: true,
+      headless,
       slowMo: 100,
     }),
     errorScreenshotToFileSystem: true,
