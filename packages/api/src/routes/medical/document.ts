@@ -242,7 +242,7 @@ router.post(
  * @param patientId - The ID of the patient.
  * @body - The DocumentReference with context for the file to be uploaded.
  *
- * @return A JSON object with a URL for document upload.
+ * @return The DocumentReference ID and the URL for document upload.
  * Refer to Metriport Documentation for more details:
  * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
  */
