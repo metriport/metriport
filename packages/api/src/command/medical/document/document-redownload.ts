@@ -31,6 +31,7 @@ import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
+import { areDocumentsProcessing } from "./document-status";
 
 export const options = [
   "re-query-doc-refs",
@@ -186,10 +187,7 @@ async function processDocuments({
   const { cxId, id: patientId } = patient;
   const { log } = Util.out(`processDocuments - M patientId ${patientId}`);
 
-  if (
-    patient.data.documentQueryProgress?.download?.status === "processing" ||
-    patient.data.documentQueryProgress?.convert?.status === "processing"
-  ) {
+  if (areDocumentsProcessing(patient)) {
     log(`Patient ${patientId} is already being processed, skipping ${docs.length} docs...`);
     return;
   }
