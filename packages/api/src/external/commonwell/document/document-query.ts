@@ -103,9 +103,9 @@ export async function queryAndProcessDocuments({
     if (Config.isSandbox()) {
       const documentsSandbox = await sandboxGetDocRefsAndUpsert({
         organization,
-        facility,
         patient,
         requestId,
+        cxPayload,
       });
       return documentsSandbox.length;
     } else {
@@ -121,6 +121,7 @@ export async function queryAndProcessDocuments({
         ignoreDocRefOnFHIRServer,
         ignoreFhirConversionAndUpsert,
         requestId,
+        cxPayload,
       });
 
       if (
@@ -698,7 +699,9 @@ export async function downloadDocsAndUpsertFHIR({
       cxId,
       patient.id,
       "medical.document-conversion",
-      MAPIWebhookStatus.completed
+      MAPIWebhookStatus.completed,
+      undefined,
+      cxPayload
     );
     if (conversionStatusFromAppend !== conversionStatusFromDB) {
       log(

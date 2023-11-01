@@ -110,7 +110,6 @@ router.post(
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
     const cxPayload = cxWebhookPayloadSchemaOptional.parse(req.body);
-    console.log(JSON.stringify(cxPayload));
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,

@@ -287,7 +287,6 @@ router.post(
     const type = getFrom("query").optional("conversionType", req);
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxPayload = cxWebhookPayloadSchemaOptional.parse(req.body);
-    console.log(JSON.stringify(cxPayload));
 
     const data = await startConsolidatedQuery({
       cxId,

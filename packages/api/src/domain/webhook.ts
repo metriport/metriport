@@ -19,6 +19,4 @@ export type MAPIWebhookType = (typeof mapiWebhookType)[number];
 
 export type WebhookType = DAPIWebhookType | MAPIWebhookType;
 
-export const cxWebhookPayloadSchemaOptional = z.object({
-  data: z.record(z.string()).optional(),
-});
+export const cxWebhookPayloadSchemaOptional = z.record(z.string()).optional();
