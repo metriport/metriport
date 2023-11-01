@@ -13,7 +13,7 @@ const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const patientId = getEnvVarOrFail("PATIENT_ID");
 
-const filePath = "../src/pdf_example.pdf";
+const filePath = "./src/pdf_example.pdf";
 
 const metriportApi = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -60,7 +60,7 @@ async function main() {
     },
   };
   const fileContent = await readFileAsync(filePath); // works for xml; doesn't work for pdf
-  // const fileContent = fs.readFileSync("./src/pdf_example.pdf"); // works for pdf; hasn't been tested with xml
+  // const fileContent = fs.readFileSync(filePath); // works for pdf; hasn't been tested with xml
   if (!fileContent) throw new Error("File content is empty");
 
   const presignedUrl = await metriportApi.getDocumentUploadUrl(patientId, docRef);
