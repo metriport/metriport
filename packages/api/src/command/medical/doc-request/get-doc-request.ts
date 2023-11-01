@@ -1,15 +1,15 @@
 import { Op, Transaction } from "sequelize";
 import NotFoundError from "../../../errors/not-found";
-import { RequestModel } from "../../../models/medical/request";
+import { DocRequestModel } from "../../../models/medical/doc-request";
 
-export const getrequestIds = async ({
+export const getDocRequestIds = async ({
   facilityId,
   cxId,
 }: {
   facilityId?: string;
   cxId: string;
 }): Promise<string[]> => {
-  const requests = await RequestModel.findAll({
+  const requests = await DocRequestModel.findAll({
     attributes: ["id"],
     where: {
       cxId,
@@ -25,7 +25,7 @@ export const getrequestIds = async ({
   return requests.map(p => p.id);
 };
 
-export type GetRequest = {
+export type GetDocRequest = {
   id: string;
   cxId: string;
 } & (
@@ -39,13 +39,13 @@ export type GetRequest = {
     }
 );
 
-export const getRequest = async ({
+export const getDocRequest = async ({
   id,
   cxId,
   transaction,
   lock,
-}: GetRequest): Promise<RequestModel | undefined> => {
-  const request = await RequestModel.findOne({
+}: GetDocRequest): Promise<DocRequestModel | undefined> => {
+  const request = await DocRequestModel.findOne({
     where: { cxId, id },
     transaction,
     lock,
@@ -53,8 +53,8 @@ export const getRequest = async ({
   return request ?? undefined;
 };
 
-export const getRequestOrFail = async (params: GetRequest): Promise<RequestModel> => {
-  const request = await getRequest(params);
+export const getDocRequestOrFail = async (params: GetDocRequest): Promise<DocRequestModel> => {
+  const request = await getDocRequest(params);
   if (!request) throw new NotFoundError(`Could not find request`, undefined, { id: params.id });
   return request;
 };

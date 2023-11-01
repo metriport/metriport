@@ -10,10 +10,14 @@ import {
   updateDocumentReference,
 } from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
+import { isDocumentQueryProgressEqual } from "../../domain/medical/document-query";
+import { updateDocRequestQuery } from "../../command/medical/document/document-query";
 import {
-  isDocumentQueryProgressEqual,
-  updateDocQuery,
-} from "../../command/medical/document/document-query";
+  DocRequestCreateCmd,
+  createDocRequest,
+} from "../../command/medical/doc-request/create-doc-request";
+import { DocRequest } from "../../domain/medical/doc-request";
+
 import { options, reprocessDocuments } from "../../command/medical/document/document-redownload";
 import {
   MAPIWebhookStatus,
@@ -112,8 +116,18 @@ router.post(
     log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
     // END TODO 785
 
-    let expectedPatient = await updateDocQuery({
+    // TODO fix. Just trying to get stuff to build so I can commit.
+    const requestCreate: DocRequestCreateCmd = {
+      cxId,
+      facilityId: "",
+      patientId,
+      metadata: { data: {} },
+    };
+    const createdDocRequest: DocRequest = await createDocRequest(requestCreate);
+
+    let expectedDocRequest = await updateDocRequestQuery({
       patient: { id: patientId, cxId },
+      docRequest: createdDocRequest,
       convertResult,
     });
 
@@ -127,13 +141,14 @@ router.post(
       log(`[attempt ${curAttempt}] Status post-update: ${JSON.stringify(postDocQueryProgress)}`);
       if (
         !isDocumentQueryProgressEqual(
-          expectedPatient.data.documentQueryProgress,
+          expectedDocRequest[0].documentQueryProgress,
           postDocQueryProgress
         )
       ) {
         log(`[attempt ${curAttempt}] Status post-update not expected... trying to update again`);
-        expectedPatient = await updateDocQuery({
+        expectedDocRequest = await updateDocRequestQuery({
           patient: { id: patientId, cxId },
+          docRequest: createdDocRequest,
           convertResult,
         });
       } else {
@@ -148,7 +163,7 @@ router.post(
     }
     // END TODO 785
 
-    const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
+    const conversionStatus = expectedDocRequest[0].documentQueryProgress?.convert?.status;
     if (conversionStatus === "completed") {
       processPatientDocumentRequest(
         cxId,
@@ -177,15 +192,26 @@ router.post(
     if (!downloadProgress && !convertProgress) {
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
     }
+
+    // TODO fix. Just trying to get stuff to build so I can commit.
+    const requestCreate: DocRequestCreateCmd = {
+      cxId,
+      facilityId: "",
+      patientId,
+      metadata: { data: {} },
+    };
+    const createdDocRequest: DocRequest = await createDocRequest(requestCreate);
+
     const patient = await getPatientOrFail({ cxId, id: patientId });
-    const updatedPatient = await updateDocQuery({
+    const updatedDocRequest = await updateDocRequestQuery({
       patient: { id: patientId, cxId },
+      docRequest: createdDocRequest,
       downloadProgress,
       convertProgress,
       requestId: patient.data.documentQueryProgress?.requestId,
     });
 
-    return res.json(updatedPatient.data.documentQueryProgress);
+    return res.json(updatedDocRequest[0].documentQueryProgress);
   })
 );
 

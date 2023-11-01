@@ -2,18 +2,28 @@ import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import httpStatus, { OK } from "http-status";
-
+import * as httpStatus from "http-status";
 import { z } from "zod";
 import { getETag } from "../../shared/http";
 import {
-  requestMetadataDataSchemaOptional,
-  requestMetadataDataSchemaRequired,
-} from "../../domain/medical/request";
-import { RequestCreateCmd, createRequest } from "../../command/medical/request/create-request";
-import { deleteRequest, RequestDeleteCmd } from "../../command/medical/request/delete-request";
-import { updateRequest, RequestUpdateCmd } from "../../command/medical/request/update-request";
+  docRequestMetadataDataSchemaOptional,
+  docRequestMetadataDataSchemaRequired,
+} from "../../domain/medical/doc-request";
+import {
+  DocRequestCreateCmd,
+  createDocRequest,
+} from "../../command/medical/doc-request/create-doc-request";
+import {
+  deleteDocRequest,
+  DocRequestDeleteCmd,
+} from "../../command/medical/doc-request/delete-doc-request";
+import {
+  updateDocRequest,
+  DocRequestUpdateCmd,
+} from "../../command/medical/doc-request/update-doc-request";
 import { areDocumentsProcessingRequest } from "../../command/medical/document/document-status";
+import { DocRequest } from "../../domain/medical/doc-request";
+
 import { dtoFromModel } from "./dtos/requestDTO";
 
 import { downloadDocument } from "../../command/medical/document/document-download";
@@ -38,7 +48,7 @@ const router = Router();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
-
+const { OK } = httpStatus;
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
   dateTo: optionalDateSchema,
@@ -116,27 +126,28 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const facilityId = getFrom("query").optional("facilityId", req);
+    const facilityId = getFromQueryOrFail("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
-    const requestMetadata = requestMetadataDataSchemaOptional.parse(req.body);
+    const docRequestMetadata = docRequestMetadataDataSchemaOptional.parse(req.body);
 
-    const requestCreate: RequestCreateCmd = {
+    const requestCreate: DocRequestCreateCmd = {
       cxId,
       facilityId,
       patientId,
-      metadata: { data: requestMetadata.data },
+      metadata: { data: docRequestMetadata.data || {} },
     };
 
     // TODO pass REQUEST into queru.
     // TODO create DocQueryProgress Stuff
 
-    const request = await createRequest(requestCreate);
-    console.log("Request", JSON.stringify(request));
+    const createdDocRequest: DocRequest = await createDocRequest(requestCreate);
+    console.log("Request", JSON.stringify(createdDocRequest));
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
+      docRequest: createdDocRequest,
       override,
     });
 
@@ -158,7 +169,7 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const requestId = getFromQueryOrFail("requestId", req);
-    const requestMetadata = requestMetadataDataSchemaRequired.parse(req.body);
+    const docRequestMetadata = docRequestMetadataDataSchemaRequired.parse(req.body);
 
     // TODO what is desired behavior here
     const isProcessing = await areDocumentsProcessingRequest({ id: requestId, cxId });
@@ -166,15 +177,15 @@ router.put(
       console.log(res.status(httpStatus.LOCKED).json("Document querying currently in progress"));
     }
 
-    const requestUpdate: RequestUpdateCmd = {
-      metadata: { data: requestMetadata.data },
+    const docRequestUpdate: DocRequestUpdateCmd = {
+      metadata: { data: docRequestMetadata.data },
       ...getETag(req),
       id: requestId,
       cxId,
     };
 
-    const updatedRequest = await updateRequest(requestUpdate);
-    return res.status(OK).json(dtoFromModel(updatedRequest));
+    const updatedDocRequest = await updateDocRequest(docRequestUpdate);
+    return res.status(OK).json(dtoFromModel(updatedDocRequest));
   })
 );
 
@@ -191,12 +202,12 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromQueryOrFail("requestId", req);
-    const requestDelete: RequestDeleteCmd = {
+    const docRequestDelete: DocRequestDeleteCmd = {
       ...getETag(req),
       id,
       cxId,
     };
-    await deleteRequest(requestDelete, { allEnvs: true });
+    await deleteDocRequest(docRequestDelete, { allEnvs: true });
     return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );

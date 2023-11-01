@@ -1,18 +1,18 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Request, RequestMetadata } from "../../domain/medical/request";
+import { DocRequest, DocRequestMetadata } from "../../domain/medical/doc-request";
 import { DocumentQueryProgress } from "../../domain/medical/document-query";
 import { BaseModel, ModelSetup } from "../_default";
 
-export class RequestModel extends BaseModel<RequestModel> implements Request {
-  static NAME = "request";
+export class DocRequestModel extends BaseModel<DocRequestModel> implements DocRequest {
+  static NAME = "docRequest";
   declare cxId: string;
   declare patientId: string;
   declare facilityIds: string[];
-  declare metadata: RequestMetadata;
+  declare metadata: DocRequestMetadata;
   declare documentQueryProgress: DocumentQueryProgress;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    RequestModel.init(
+    DocRequestModel.init(
       {
         ...BaseModel.attributes(),
         cxId: {
@@ -33,7 +33,7 @@ export class RequestModel extends BaseModel<RequestModel> implements Request {
       },
       {
         ...BaseModel.modelOptions(sequelize),
-        tableName: RequestModel.NAME,
+        tableName: DocRequestModel.NAME,
       }
     );
   };

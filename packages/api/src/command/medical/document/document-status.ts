@@ -1,5 +1,5 @@
 import { getPatientOrFail } from "../patient/get-patient";
-import { getRequestOrFail } from "../request/get-request";
+import { getDocRequestOrFail } from "../doc-request/get-doc-request";
 
 export const areDocumentsProcessing = async ({
   id,
@@ -23,7 +23,7 @@ export const areDocumentsProcessingRequest = async ({
   id: string;
   cxId: string;
 }): Promise<boolean> => {
-  const request = await getRequestOrFail({ id, cxId });
+  const request = await getDocRequestOrFail({ id, cxId });
 
   return (
     request.documentQueryProgress?.download?.status === "processing" ||

@@ -4,8 +4,9 @@ import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
-  Progress,
+  isDocumentQueryProgressEqual,
 } from "../../../domain/medical/document-query";
+import { DocRequest } from "../../../domain/medical/doc-request";
 import { Patient } from "../../../domain/medical/patient";
 import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 import BadRequestError from "../../../errors/bad-request";
@@ -14,35 +15,27 @@ import { PatientDataCommonwell } from "../../../external/commonwell/patient-shar
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { emptyFunction, Util } from "../../../shared/util";
-import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 
-export function isProgressEqual(a?: Progress, b?: Progress): boolean {
-  return (
-    a?.errors === b?.errors &&
-    a?.status === b?.status &&
-    a?.successful === b?.successful &&
-    a?.total === b?.total
-  );
-}
-
-export function isDocumentQueryProgressEqual(
-  a?: DocumentQueryProgress,
-  b?: DocumentQueryProgress
-): boolean {
-  return isProgressEqual(a?.convert, b?.convert) && isProgressEqual(a?.download, b?.download);
-}
+import {
+  appendDocRequestQueryProgress,
+  SetDocRequestQueryProgress,
+} from "../doc-request/append-doc-request-query-progress";
+import { getDocRequestOrFail } from "../doc-request/get-doc-request";
+import { DocRequestModel } from "../../../models/medical/doc-request";
 
 // TODO: eventually we will have to update this to support multiple HIEs
 export async function queryDocumentsAcrossHIEs({
   cxId,
   patientId,
   facilityId,
+  docRequest,
   override,
 }: {
   cxId: string;
   patientId: string;
   facilityId?: string;
+  docRequest: DocRequest;
   override?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
@@ -65,10 +58,9 @@ export async function queryDocumentsAcrossHIEs({
     );
   }
 
-  // const request = await
-  const docQueryProgress = patient.data.documentQueryProgress;
-
-  console.log("HEREEEE: ", docQueryProgress);
+  // Doc Request should be undefined here, since a new DocRequest is created each time the endpoint is called.
+  const docQueryProgress = docRequest.documentQueryProgress;
+  console.log("Doc Request Object: ", docQueryProgress);
   const requestId = getOrGenerateRequestId(docQueryProgress);
 
   if (
@@ -76,21 +68,25 @@ export async function queryDocumentsAcrossHIEs({
     docQueryProgress?.convert?.status === "processing"
   ) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
-    return createQueryResponse("processing", patient);
+    return createQueryDocRequestResponse("processing", docRequest);
   }
 
   const externalData = patient.data.externalData?.COMMONWELL;
-  if (!externalData) return createQueryResponse("failed");
+  if (!externalData) return createQueryDocRequestResponse("failed");
 
   const cwData = externalData as PatientDataCommonwell;
-  if (!cwData.patientId) return createQueryResponse("failed");
+  if (!cwData.patientId) return createQueryDocRequestResponse("failed");
 
-  const updatedPatient = await updateDocQuery({
+  const [updatedDocRequest, updatedPatient] = await appendDocRequestQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
+    docRequest,
     downloadProgress: { status: "processing" },
     requestId,
     reset: true,
   });
+
+  // TODP: is there anything to do with updated patient
+  console.log("Updated Patient: ", JSON.stringify(updatedPatient));
 
   getDocumentsFromCW({
     patient,
@@ -99,7 +95,7 @@ export async function queryDocumentsAcrossHIEs({
     requestId,
   }).catch(emptyFunction);
 
-  return createQueryResponse("processing", updatedPatient);
+  return createQueryDocRequestResponse("processing", updatedDocRequest);
 }
 
 export const createQueryResponse = (
@@ -115,14 +111,28 @@ export const createQueryResponse = (
   };
 };
 
-type UpdateResult = {
+export const createQueryDocRequestResponse = (
+  status: DocumentQueryStatus,
+  docRequest?: DocRequest
+): DocumentQueryProgress => {
+  return {
+    download: {
+      status,
+      ...docRequest?.documentQueryProgress?.download,
+    },
+    ...docRequest?.documentQueryProgress,
+  };
+};
+
+type UpdateDocRequestResult = {
   patient: Pick<Patient, "id" | "cxId">;
+  docRequest: Pick<DocRequest, "id" | "cxId">;
   convertResult: ConvertResult;
 };
 
-type UpdateDocQueryParams =
-  | (SetDocQueryProgress & { convertResult?: never })
-  | (UpdateResult & {
+export type UpdateDocRequestQueryParams =
+  | (SetDocRequestQueryProgress & { convertResult?: never })
+  | (UpdateDocRequestResult & {
       downloadProgress?: never;
       convertProgress?: never;
       reset?: never;
@@ -131,64 +141,64 @@ type UpdateDocQueryParams =
 /**
  * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
  */
-export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Patient> {
+export async function updateDocRequestQuery(
+  params: UpdateDocRequestQueryParams
+): Promise<[DocRequest, Patient?]> {
   if (params.convertResult) {
-    return updateConversionProgress(params);
+    return updateDocRequestConversionProgress(params);
   }
-  return appendDocQueryProgress(params);
+  return appendDocRequestQueryProgress(params);
 }
 
-export const updateConversionProgress = async ({
-  patient,
+export const updateDocRequestConversionProgress = async ({
+  docRequest,
   convertResult,
-}: UpdateResult): Promise<Patient> => {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
+}: UpdateDocRequestResult): Promise<[DocRequest]> => {
+  const docRequestFilter = {
+    id: docRequest.id,
+    cxId: docRequest.cxId,
   };
-  const { log } = Util.out(`updateConversionProgress - patient ${patient.id}`);
+  const { log } = Util.out(`updateConversionProgress - doc request id ${docRequest.id}`);
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
-      ...patientFilter,
+    const existingDocRequest = await getDocRequestOrFail({
+      ...docRequestFilter,
       lock: true,
       transaction,
     });
 
     const documentQueryProgress = calculateConversionProgress({
-      patient: existingPatient,
+      docQueryProgress: existingDocRequest.documentQueryProgress,
       convertResult,
     });
 
-    const updatedPatient = {
-      ...existingPatient,
-      data: {
-        ...existingPatient.data,
-        documentQueryProgress,
-      },
+    const updatedDocRequest: DocRequest = {
+      ...existingDocRequest,
+      documentQueryProgress,
     };
-    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+
+    await DocRequestModel.update(updatedDocRequest, { where: docRequestFilter, transaction });
 
     // START TODO 785 remove this once we're confident with the flow
     const maxAttempts = 3;
     let curAttempt = 1;
     while (curAttempt++ < maxAttempts) {
-      const patientPost = await getPatientOrFail({
-        id: patient.id,
-        cxId: patient.cxId,
+      const docRequestPost = await getDocRequestOrFail({
+        ...docRequestFilter,
+        lock: true,
         transaction,
       });
       log(
         `[txn attempt ${curAttempt}] Status post-update: ${JSON.stringify(
-          patientPost.data.documentQueryProgress
+          docRequestPost.documentQueryProgress
         )}`
       );
       if (
-        !isDocumentQueryProgressEqual(documentQueryProgress, patientPost.data.documentQueryProgress)
+        !isDocumentQueryProgressEqual(documentQueryProgress, docRequestPost.documentQueryProgress)
       ) {
         log(
           `[txn attempt ${curAttempt}] Status post-update not expected... trying to update again`
         );
-        await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+        await DocRequestModel.update(updatedDocRequest, { where: docRequestFilter, transaction });
       } else {
         log(`[txn attempt ${curAttempt}] Status post-update is as expected!`);
         break;
@@ -196,7 +206,7 @@ export const updateConversionProgress = async ({
     }
     // END TODO 785
 
-    return updatedPatient;
+    return [updatedDocRequest];
   });
 };
 

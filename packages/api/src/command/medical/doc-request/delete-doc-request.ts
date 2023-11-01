@@ -1,20 +1,20 @@
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
-import { getRequestOrFail } from "./get-request";
+import { getDocRequestOrFail } from "./get-doc-request";
 
-export type RequestDeleteCmd = BaseUpdateCmdWithCustomer;
+export type DocRequestDeleteCmd = BaseUpdateCmdWithCustomer;
 
 export type DeleteOptions = {
   allEnvs?: boolean;
 };
 
-export const deleteRequest = async (
-  requestDelete: RequestDeleteCmd,
+export const deleteDocRequest = async (
+  requestDelete: DocRequestDeleteCmd,
   options: DeleteOptions = {}
 ): Promise<void> => {
   const { id, cxId, eTag } = requestDelete;
 
-  const request = await getRequestOrFail({ id, cxId });
+  const request = await getDocRequestOrFail({ id, cxId });
   validateVersionForUpdate(request, eTag);
 
   if (options.allEnvs) {

@@ -68,6 +68,7 @@ export type PatientData = {
   documentQueryProgress?: DocumentQueryProgress;
   consolidatedQuery?: QueryProgress;
   externalData?: PatientExternalData;
+  docRequests?: string[];
 };
 
 // TODO move this to the domain folder

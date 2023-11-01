@@ -1,5 +1,3 @@
-import { Patient } from "./patient";
-
 export const documentQueryStatus = ["processing", "completed", "failed"] as const;
 export type DocumentQueryStatus = (typeof documentQueryStatus)[number];
 
@@ -20,16 +18,12 @@ export const convertResult = ["success", "failed"] as const;
 export type ConvertResult = (typeof convertResult)[number];
 
 export const calculateConversionProgress = ({
-  patient,
+  docQueryProgress,
   convertResult,
 }: {
-  patient: Pick<Patient, "id" | "cxId">;
+  docQueryProgress: DocumentQueryProgress;
   convertResult: ConvertResult;
-} & {
-  patient: Pick<Patient, "data" | "id">;
 }): DocumentQueryProgress => {
-  const docQueryProgress = patient.data.documentQueryProgress ?? {};
-
   const totalToConvert = docQueryProgress?.convert?.total ?? 0;
 
   const successfulConvert = docQueryProgress?.convert?.successful ?? 0;
@@ -56,4 +50,20 @@ export function getStatusFromProgress(
   const { successful, errors, total } = progress;
   const isConversionCompleted = (successful ?? 0) + (errors ?? 0) >= (total ?? 0);
   return isConversionCompleted ? "completed" : "processing";
+}
+
+export function isProgressEqual(a?: Progress, b?: Progress): boolean {
+  return (
+    a?.errors === b?.errors &&
+    a?.status === b?.status &&
+    a?.successful === b?.successful &&
+    a?.total === b?.total
+  );
+}
+
+export function isDocumentQueryProgressEqual(
+  a?: DocumentQueryProgress,
+  b?: DocumentQueryProgress
+): boolean {
+  return isProgressEqual(a?.convert, b?.convert) && isProgressEqual(a?.download, b?.download);
 }

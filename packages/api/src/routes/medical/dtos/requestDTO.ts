@@ -1,5 +1,5 @@
 import { toBaseDTO } from "./baseDTO";
-import { Request } from "../../../domain/medical/request";
+import { DocRequest } from "../../../domain/medical/doc-request";
 import { DocumentQueryProgress, Progress } from "../../../domain/medical/document-query";
 
 export type RequestDTO = {
@@ -46,15 +46,15 @@ function toProgressDTO(model: Progress): ProgressDTO {
   };
 }
 
-export function dtoFromModel(request: Request): RequestDTO {
+export function dtoFromModel(docRequest: DocRequest): RequestDTO {
   return {
-    ...toBaseDTO(request),
-    cxId: request.cxId,
-    patientId: request.patientId,
-    facilityIds: request.facilityIds,
-    metadata: request.metadata,
-    documentQueryProgress: request.documentQueryProgress
-      ? toDocumentQueryProgressDTO(request.documentQueryProgress)
+    ...toBaseDTO(docRequest),
+    cxId: docRequest.cxId,
+    patientId: docRequest.patientId,
+    facilityIds: docRequest.facilityIds,
+    metadata: docRequest.metadata,
+    documentQueryProgress: docRequest.documentQueryProgress
+      ? toDocumentQueryProgressDTO(docRequest.documentQueryProgress)
       : undefined,
   };
 }

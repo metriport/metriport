@@ -8,6 +8,8 @@ import { Util } from "../../../shared/util";
 import { queryDocumentsAcrossHIEs } from "../document/document-query";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { getPatients } from "../patient/get-patient";
+import { DocRequestCreateCmd, createDocRequest } from "../doc-request/create-doc-request";
+import { DocRequest } from "../../../domain/medical/doc-request";
 
 const PATIENT_CHUNK_SIZE = 20;
 
@@ -76,18 +78,32 @@ export async function populateFhirServer({
 
     if (triggerDocQuery) {
       log(`Triggering ASYNC doc query for ${patientChunk.length} patients (chunk ${i}/${n})...`);
-      patientChunk.forEach(patient => {
-        if (patient.facilityIds.length < 1) return;
-        queryDocumentsAcrossHIEs({
+      for (const patient of patientChunk) {
+        if (patient.facilityIds.length < 1) continue;
+        const requestCreate: DocRequestCreateCmd = {
           cxId,
-          patientId: patient.id,
           facilityId: patient.facilityIds[0],
-          override: true,
+          patientId: patient.id,
+          metadata: { data: {} },
+        };
+
+        try {
+          const createdDocRequest: DocRequest = await createDocRequest(requestCreate);
+          queryDocumentsAcrossHIEs({
+            cxId,
+            patientId: patient.id,
+            facilityId: patient.facilityIds[0],
+            docRequest: createdDocRequest,
+            override: true,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          }).catch((err: any) => {
+            log(`Failed to init query of documents for patient ${patient.id}: `, err.message);
+          });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        }).catch((err: any) => {
-          log(`Failed to init query of documents for patient ${patient.id}: `, err.message);
-        });
-      });
+        } catch (err: any) {
+          log(`Failed to create DocRequest for patient ${patient.id}: `, err.message);
+        }
+      }
     }
 
     patientsOK += res.filter(r => r.status === "fulfilled").length;

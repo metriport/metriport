@@ -111,40 +111,42 @@ const transformWorkoutsToActivityLogs = (workouts?: OuraWorkouts) => {
 };
 
 // Data retrieved from https://cloud.ouraring.com/v2/docs#tag/Daily-Activity
-export const ouraDailyActivityResponse = z.object({
-  class_5_min: z.string().nullable().optional(),
-  score: z.number().nullable().optional(),
-  active_calories: z.number(),
-  average_met_minutes: z.number(),
-  contributors: z.object({
-    meet_daily_targets: z.number(),
-    move_every_hour: z.number(),
-    recovery_time: z.number(),
-    stay_active: z.number(),
-    training_frequency: z.number(),
-    training_volume: z.number(),
-  }),
-  equivalent_walking_distance: z.number(),
-  high_activity_met_minutes: z.number(),
-  high_activity_time: z.number(),
-  inactivity_alerts: z.number(),
-  low_activity_met_minutes: z.number(),
-  low_activity_time: z.number(),
-  medium_activity_met_minutes: z.number(),
-  medium_activity_time: z.number(),
-  met: streamingDataSchema,
-  meters_to_target: z.number(),
-  non_wear_time: z.number(),
-  resting_time: z.number(),
-  sedentary_met_minutes: z.number(),
-  sedentary_time: z.number(),
-  steps: z.number(),
-  target_calories: z.number(),
-  target_meters: z.number(),
-  total_calories: z.number(),
-  day: z.string(),
-  timestamp: z.string(),
-}).optional();
+export const ouraDailyActivityResponse = z
+  .object({
+    class_5_min: z.string().nullable().optional(),
+    score: z.number().nullable().optional(),
+    active_calories: z.number(),
+    average_met_minutes: z.number(),
+    contributors: z.object({
+      meet_daily_targets: z.number(),
+      move_every_hour: z.number(),
+      recovery_time: z.number(),
+      stay_active: z.number(),
+      training_frequency: z.number(),
+      training_volume: z.number(),
+    }),
+    equivalent_walking_distance: z.number(),
+    high_activity_met_minutes: z.number(),
+    high_activity_time: z.number(),
+    inactivity_alerts: z.number(),
+    low_activity_met_minutes: z.number(),
+    low_activity_time: z.number(),
+    medium_activity_met_minutes: z.number(),
+    medium_activity_time: z.number(),
+    met: streamingDataSchema,
+    meters_to_target: z.number(),
+    non_wear_time: z.number(),
+    resting_time: z.number(),
+    sedentary_met_minutes: z.number(),
+    sedentary_time: z.number(),
+    steps: z.number(),
+    target_calories: z.number(),
+    target_meters: z.number(),
+    total_calories: z.number(),
+    day: z.string(),
+    timestamp: z.string(),
+  })
+  .optional();
 
 export type OuraDailyActivity = z.infer<typeof ouraDailyActivityResponse>;
 
