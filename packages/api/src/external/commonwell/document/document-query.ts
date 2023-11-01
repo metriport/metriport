@@ -86,6 +86,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
+  cxPayload,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
@@ -93,6 +94,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
+  cxPayload?: object;
 }): Promise<number> {
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
   try {
@@ -138,7 +140,9 @@ export async function queryAndProcessDocuments({
       patient.cxId,
       patient.id,
       "medical.document-download",
-      MAPIWebhookStatus.failed
+      MAPIWebhookStatus.failed,
+      undefined,
+      cxPayload
     );
     await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
@@ -398,6 +402,7 @@ export async function downloadDocsAndUpsertFHIR({
   ignoreDocRefOnFHIRServer = false,
   ignoreFhirConversionAndUpsert = false,
   requestId,
+  cxPayload,
 }: {
   patient: Patient;
   facilityId?: string;
@@ -406,6 +411,7 @@ export async function downloadDocsAndUpsertFHIR({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
+  cxPayload?: object;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(
     `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
@@ -680,7 +686,8 @@ export async function downloadDocsAndUpsertFHIR({
     patient.id,
     "medical.document-download",
     MAPIWebhookStatus.completed,
-    toDTO(docsNewLocation)
+    toDTO(docsNewLocation),
+    cxPayload
   );
   // send webhook to CXs if docs are done converting (at this point only if no conversions to be done)
   const patientFromDB = await getPatientOrFail({ cxId: patient.cxId, id: patient.id });

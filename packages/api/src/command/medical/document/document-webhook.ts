@@ -19,7 +19,7 @@ type WebhookDocumentDataPayload = {
   documents?: DocumentReferenceDTO[];
   status: MAPIWebhookStatus;
 };
-type WebhookPatientPayload = { patientId: string } & WebhookDocumentDataPayload;
+type WebhookPatientPayload = { patientId: string; cxPayload?: object } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
   meta: WebhookMetadataPayload;
   patients: WebhookPatientPayload[];
@@ -39,13 +39,14 @@ export const processPatientDocumentRequest = async (
   patientId: string,
   whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
-  documents?: DocumentReferenceDTO[]
+  documents?: DocumentReferenceDTO[],
+  cxPayload?: object
 ): Promise<void> => {
   try {
     const settings = await getSettingsOrFail({ id: cxId });
     // create a representation of this request and store on the DB
     const payload: WebhookPatientDataPayloadWithoutMessageId = {
-      patients: [{ patientId, documents, status }],
+      patients: [{ patientId, documents, status, cxPayload }],
     };
     const webhookRequest = await createWebhookRequest({ cxId, type: whType, payload });
     // send it to the customer and update the request status

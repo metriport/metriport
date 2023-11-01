@@ -40,11 +40,13 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   override,
+  cxPayload,
 }: {
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
+  cxPayload?: object;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -98,6 +100,7 @@ export async function queryDocumentsAcrossHIEs({
       facilityId,
       forceDownload: override,
       requestId,
+      cxPayload,
     }).catch(emptyFunction);
   }
 

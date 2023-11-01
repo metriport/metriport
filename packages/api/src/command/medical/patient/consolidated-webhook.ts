@@ -21,6 +21,7 @@ type PayloadPatient = {
   status: ConsolidatedWebhookStatus;
   bundle?: Bundle<Resource>;
   filters?: Filters;
+  cxPayload?: object;
 };
 type Payload = {
   meta: WebhookMetadataPayload;
@@ -41,11 +42,13 @@ export const processConsolidatedDataWebhook = async ({
   status,
   bundle,
   filters,
+  cxPayload,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status: ConsolidatedWebhookStatus;
   bundle?: Bundle<Resource>;
   filters?: Filters;
+  cxPayload?: object;
 }): Promise<void> => {
   const apiType = Product.medical;
   const { id: patientId, cxId } = patient;
@@ -54,7 +57,7 @@ export const processConsolidatedDataWebhook = async ({
 
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
-      patients: [{ patientId, status, bundle, filters }],
+      patients: [{ patientId, status, bundle, filters, cxPayload }],
     };
     const webhookRequest = await createWebhookRequest({
       cxId,

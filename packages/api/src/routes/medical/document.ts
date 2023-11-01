@@ -23,6 +23,8 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 
+import { cxWebhookPayloadSchemaOptional } from "../../domain/webhook";
+
 const router = Router();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -33,10 +35,6 @@ const getDocSchema = z.object({
   dateTo: optionalDateSchema,
   content: z.string().min(3).nullish(),
   output: z.enum(["fhir", "dto"]).nullish(),
-});
-
-export const docRequestMetadataDataSchemaOptional = z.object({
-  data: z.record(z.string()).optional(),
 });
 
 /** ---------------------------------------------------------------------------
@@ -111,14 +109,15 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
-    const docRequestMetadata = docRequestMetadataDataSchemaOptional.parse(req.body);
-    console.log(JSON.stringify(docRequestMetadata));
+    const cxPayload = cxWebhookPayloadSchemaOptional.parse(req.body);
+    console.log(JSON.stringify(cxPayload));
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
       override,
+      cxPayload,
     });
 
     return res.status(OK).json(docQueryProgress);

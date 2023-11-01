@@ -1,4 +1,5 @@
 import { Product } from "./product";
+import { z } from "zod";
 
 export const dapiWHPrefix = Product.devices;
 export const dapiWebhookType = [
@@ -17,3 +18,7 @@ export const mapiWebhookType = [
 export type MAPIWebhookType = (typeof mapiWebhookType)[number];
 
 export type WebhookType = DAPIWebhookType | MAPIWebhookType;
+
+export const cxWebhookPayloadSchemaOptional = z.object({
+  data: z.record(z.string()).optional(),
+});
