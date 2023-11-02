@@ -17,6 +17,7 @@ export type EnvConfig = {
   domain: string; // Base domain
   subdomain: string; // API subdomain
   authSubdomain: string; // Authentication subdomain
+  iheSubdomain?: string; // Subdomain for IHE integrations
   dbName: string;
   dbUsername: string;
   loadBalancerDnsName?: string;
