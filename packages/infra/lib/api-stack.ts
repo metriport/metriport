@@ -29,6 +29,7 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
+import { createIHEStack } from "./ihe-stack";
 import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
@@ -636,6 +637,20 @@ export class APIStack extends Stack {
         period: apig.Period.DAY,
       },
     });
+
+    //-------------------------------------------
+    // IHE API Gateway
+    //-------------------------------------------
+    if (props.config.iheSubdomain) {
+      createIHEStack(this, {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+        certificate,
+        publicZone,
+      });
+    }
 
     //-------------------------------------------
     // Output
