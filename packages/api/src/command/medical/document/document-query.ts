@@ -176,6 +176,11 @@ export const updateConversionProgress = async ({
           cxDocumentRequestMetadata !== undefined
             ? (cxDocumentRequestMetadata as Record<string, string>)
             : existingPatient.data.cxDocumentRequestMetadata,
+        whOverride:
+          (cxDocumentRequestMetadata as { meta?: { whOverrideFlag?: boolean } })?.meta
+            ?.whOverrideFlag === true
+            ? true
+            : false,
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });

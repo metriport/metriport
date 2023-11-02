@@ -33,7 +33,16 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
     id: uuidv7(),
     cxId,
     facilityIds: [facilityId],
-    data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
+    data: {
+      firstName,
+      lastName,
+      dob,
+      genderAtBirth,
+      personalIdentifiers,
+      address,
+      contact,
+      whOverride: false,
+    },
   };
   const newPatient = await PatientModel.create(patientCreate);
 

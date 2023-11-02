@@ -50,6 +50,11 @@ export async function updateConsolidatedQueryProgress({
           cxConsolidatedRequestMetadata !== undefined
             ? (cxConsolidatedRequestMetadata as Record<string, string>)
             : patient.data.cxConsolidatedRequestMetadata,
+        whOverride:
+          (cxConsolidatedRequestMetadata as { meta?: { whOverrideFlag?: boolean } })?.meta
+            ?.whOverrideFlag === true
+            ? true
+            : false,
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });

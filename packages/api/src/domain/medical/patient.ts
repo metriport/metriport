@@ -70,6 +70,7 @@ export type PatientData = {
   externalData?: PatientExternalData;
   cxDocumentRequestMetadata?: Record<string, string>;
   cxConsolidatedRequestMetadata?: Record<string, string>;
+  whOverride?: boolean;
 };
 
 // TODO move this to the domain folder
