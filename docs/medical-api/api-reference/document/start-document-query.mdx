@@ -37,6 +37,16 @@ If there's no document to be converted, the total will be set to zero and the st
   The ID of the Facility where the patient is receiving care.
 </ParamField>
 
+## Request Body
+
+<BodyField name="cxDocumentRequestMetadata" type="object" optional>
+  An object that can contain a `meta` field, which is a record of string key-value pairs. This metadata will be returned in the webhook response.
+</BodyField>
+
+<BodyField name="cxDocumentRequestMetadata.meta" type="object" optional>
+  A record of string key-value pairs. Each key and value should be a string with a minimum length of 1 and a maximum length of 40 characters.
+</BodyField>
+
 ## Response
 
 <Snippet file="document-progress-download.mdx" />

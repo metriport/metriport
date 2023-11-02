@@ -61,6 +61,16 @@ This will be returned [via a webook](/medical-api/more-info/webhooks#medical-rec
   resources](/medical-api/api-reference/fhir/get-patient-consolidated#available-fhir-resources).
 </Info>
 
+## Request Body
+
+<BodyField name="cxConsolidatedRequestMetadata" type="object" optional>
+  An object that can contain a `meta` field, which is a record of string key-value pairs. This metadata will be returned in the webhook response.
+</BodyField>
+
+<BodyField name="cxConsolidatedRequestMetadata.meta" type="object" optional>
+  A record of string key-value pairs. Each key and value should be a string with a minimum length of 1 and a maximum length of 40 characters.
+</BodyField>
+
 ## Response
 
 Returns a JSON containing a `status` property indicating the query status. Possible values for consolidated
