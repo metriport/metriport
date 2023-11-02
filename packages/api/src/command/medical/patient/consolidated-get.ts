@@ -22,6 +22,7 @@ import { updateConsolidatedQueryProgress } from "./append-consolidated-query-pro
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
+import { updatePatient } from "../patient/update-patient";
 
 export async function startConsolidatedQuery({
   cxId,
@@ -47,15 +48,24 @@ export async function startConsolidatedQuery({
     return patient.data.consolidatedQuery;
   }
 
+  const updatedPatient = await updatePatient({
+    ...patient,
+    firstName: patient.data.firstName,
+    lastName: patient.data.lastName,
+    dob: patient.data.dob,
+    genderAtBirth: patient.data.genderAtBirth,
+    address: patient.data.address,
+    cxDocumentRequestMetadata: cxConsolidatedRequestMetadata,
+  });
+
   const progress: QueryProgress = { status: "processing" };
   await updateConsolidatedQueryProgress({
-    patient,
+    patient: updatedPatient,
     progress,
     reset: true,
-    cxConsolidatedRequestMetadata,
   });
   getConsolidatedAndSendToCx({
-    patient,
+    patient: updatedPatient,
     resources,
     dateFrom,
     dateTo,

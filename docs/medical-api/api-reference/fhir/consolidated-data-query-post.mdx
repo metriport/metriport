@@ -63,13 +63,10 @@ This will be returned [via a webook](/medical-api/more-info/webhooks#medical-rec
 
 ## Request Body
 
-<BodyField name="cxConsolidatedRequestMetadata" type="object" optional>
-  An object that can contain a `meta` field, which is a record of string key-value pairs. This metadata will be returned in the webhook response.
+<BodyField name="meta" type="object" optional>
+    A record of string key-value pairs. You can specify up to 50 keys, with key names up to 40 characters long and values up to 500 characters long.
 </BodyField>
 
-<BodyField name="cxConsolidatedRequestMetadata.meta" type="object" optional>
-  A record of string key-value pairs. Each key and value should be a string with a minimum length of 1 and a maximum length of 40 characters.
-</BodyField>
 
 ## Response
 

@@ -116,7 +116,7 @@ router.post(
       patientId,
       facilityId,
       override,
-      cxDocumentRequestMetadata,
+      cxDocumentRequestMetadata: cxDocumentRequestMetadata?.meta,
     });
 
     return res.status(OK).json(docQueryProgress);

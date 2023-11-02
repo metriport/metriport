@@ -52,8 +52,10 @@ export const processConsolidatedDataWebhook = async ({
   const apiType = Product.medical;
   const { id: patientId, cxId } = patient;
   try {
-    const settings = await getSettingsOrFail({ id: cxId });
-    const currentPatient = await getPatientOrFail({ id: patientId, cxId });
+    const [settings, currentPatient] = await Promise.all([
+      getSettingsOrFail({ id: cxId }),
+      getPatientOrFail({ id: patientId, cxId }),
+    ]);
 
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {

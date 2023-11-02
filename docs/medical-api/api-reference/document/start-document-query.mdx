@@ -39,13 +39,10 @@ If there's no document to be converted, the total will be set to zero and the st
 
 ## Request Body
 
-<BodyField name="cxDocumentRequestMetadata" type="object" optional>
-  An object that can contain a `meta` field, which is a record of string key-value pairs. This metadata will be returned in the webhook response.
+<BodyField name="meta" type="object" optional>
+  A record of string key-value pairs. You can specify up to 50 keys, with key names up to 40 characters long and values up to 500 characters long. This metadata will be returned in the webhook response.
 </BodyField>
 
-<BodyField name="cxDocumentRequestMetadata.meta" type="object" optional>
-  A record of string key-value pairs. Each key and value should be a string with a minimum length of 1 and a maximum length of 40 characters.
-</BodyField>
 
 ## Response
 

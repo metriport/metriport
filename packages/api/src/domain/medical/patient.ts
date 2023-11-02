@@ -68,8 +68,8 @@ export type PatientData = {
   documentQueryProgress?: DocumentQueryProgress;
   consolidatedQuery?: QueryProgress;
   externalData?: PatientExternalData;
-  cxDocumentRequestMetadata?: Record<string, string>;
-  cxConsolidatedRequestMetadata?: Record<string, string>;
+  cxDocumentRequestMetadata?: unknown;
+  cxConsolidatedRequestMetadata?: unknown;
 };
 
 // TODO move this to the domain folder

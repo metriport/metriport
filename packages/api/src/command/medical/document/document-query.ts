@@ -18,6 +18,7 @@ import { emptyFunction, Util } from "../../../shared/util";
 import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { areDocumentsProcessing } from "./document-status";
+import { updatePatient } from "../patient/update-patient";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -85,12 +86,21 @@ export async function queryDocumentsAcrossHIEs({
   const cwData = externalData as PatientDataCommonwell;
   if (!cwData.patientId) return createQueryResponse("failed");
 
-  const updatedPatient = await updateDocQuery({
+  const updatedPatientProgress = await updateDocQuery({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "processing" },
     requestId,
     reset: true,
-    cxDocumentRequestMetadata,
+  });
+
+  const updatedPatientMetadata = await updatePatient({
+    ...updatedPatientProgress,
+    firstName: updatedPatientProgress.data.firstName,
+    lastName: updatedPatientProgress.data.lastName,
+    dob: updatedPatientProgress.data.dob,
+    genderAtBirth: updatedPatientProgress.data.genderAtBirth,
+    address: updatedPatientProgress.data.address,
+    cxDocumentRequestMetadata: cxDocumentRequestMetadata,
   });
 
   const cxsWithEnhancedCoverageFeatureFlagValue =
@@ -105,7 +115,7 @@ export async function queryDocumentsAcrossHIEs({
     }).catch(emptyFunction);
   }
 
-  return createQueryResponse("processing", updatedPatient);
+  return createQueryResponse("processing", updatedPatientMetadata);
 }
 
 export const createQueryResponse = (
@@ -148,7 +158,6 @@ export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Pati
 export const updateConversionProgress = async ({
   patient,
   convertResult,
-  cxDocumentRequestMetadata,
 }: UpdateResult): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -172,10 +181,6 @@ export const updateConversionProgress = async ({
       data: {
         ...existingPatient.data,
         documentQueryProgress,
-        cxDocumentRequestMetadata:
-          cxDocumentRequestMetadata !== undefined
-            ? (cxDocumentRequestMetadata as Record<string, string>)
-            : existingPatient.data.cxDocumentRequestMetadata,
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });

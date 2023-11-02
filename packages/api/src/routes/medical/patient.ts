@@ -295,7 +295,7 @@ router.post(
       dateFrom,
       dateTo,
       conversionType,
-      cxConsolidatedRequestMetadata,
+      cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.meta,
     });
     return res.json(data);
   })

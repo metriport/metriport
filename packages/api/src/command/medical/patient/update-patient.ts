@@ -11,7 +11,8 @@ export type PatientUpdateCmd = BaseUpdateCmdWithCustomer & PatientNoExternalData
 // See: document-query.test.ts, "send a modified object to Sequelize"
 // See: https://metriport.slack.com/archives/C04DMKE9DME/p1686779391180389
 export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Patient> => {
-  const { id, cxId, eTag } = patientUpdate;
+  const { id, cxId, eTag, cxDocumentRequestMetadata, cxConsolidatedRequestMetadata } =
+    patientUpdate;
 
   const sanitized = sanitize(patientUpdate);
   validate(sanitized);
@@ -29,6 +30,14 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
       personalIdentifiers: sanitized.personalIdentifiers,
       address: sanitized.address,
       contact: sanitized.contact,
+      cxDocumentRequestMetadata:
+        cxDocumentRequestMetadata !== undefined
+          ? cxDocumentRequestMetadata
+          : patient.data.cxDocumentRequestMetadata,
+      cxConsolidatedRequestMetadata:
+        cxConsolidatedRequestMetadata !== undefined
+          ? cxConsolidatedRequestMetadata
+          : patient.data.cxConsolidatedRequestMetadata,
     },
   });
 };

@@ -21,7 +21,6 @@ export async function updateConsolidatedQueryProgress({
   patient,
   progress,
   reset,
-  cxConsolidatedRequestMetadata,
 }: SetDocQueryProgress): Promise<void> {
   const patientFilter = {
     id: patient.id,
@@ -46,10 +45,6 @@ export async function updateConsolidatedQueryProgress({
       data: {
         ...patient.data,
         consolidatedQuery,
-        cxConsolidatedRequestMetadata:
-          cxConsolidatedRequestMetadata !== undefined
-            ? (cxConsolidatedRequestMetadata as Record<string, string>)
-            : patient.data.cxConsolidatedRequestMetadata,
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
