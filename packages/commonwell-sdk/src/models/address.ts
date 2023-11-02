@@ -21,7 +21,7 @@ export const addressSchema = z.object({
   city: z.string().optional().nullable(),
   state: z.string().optional().nullable(),
   zip: z.string(),
-  country: z.string().optional().nullable(),
+  country: z.literal("USA").optional().default("USA"),
   period: periodSchema.optional().nullable(),
 });
 
