@@ -56,6 +56,11 @@ export async function startConsolidatedQuery({
     genderAtBirth: patient.data.genderAtBirth,
     address: patient.data.address,
     cxDocumentRequestMetadata: cxConsolidatedRequestMetadata,
+    whOverride:
+      (cxConsolidatedRequestMetadata as { meta?: { whOverrideFlag?: boolean } })?.meta
+        ?.whOverrideFlag === true
+        ? true
+        : false,
   });
 
   const progress: QueryProgress = { status: "processing" };

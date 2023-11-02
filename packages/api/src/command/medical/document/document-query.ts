@@ -101,6 +101,11 @@ export async function queryDocumentsAcrossHIEs({
     genderAtBirth: updatedPatientProgress.data.genderAtBirth,
     address: updatedPatientProgress.data.address,
     cxDocumentRequestMetadata: cxDocumentRequestMetadata,
+    whOverride:
+      (cxDocumentRequestMetadata as { meta?: { whOverrideFlag?: boolean } })?.meta
+        ?.whOverrideFlag === true
+        ? true
+        : false,
   });
 
   const cxsWithEnhancedCoverageFeatureFlagValue =

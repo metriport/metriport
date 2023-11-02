@@ -68,15 +68,16 @@ export const processConsolidatedDataWebhook = async ({
       payload,
     });
     // send it to the customer and update the WH request status
-    await processRequest(
-      webhookRequest,
-      settings,
-      bundle
-        ? {
-            bundleLength: optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown",
-          }
-        : undefined
-    );
+    if (!currentPatient.data.whOverride)
+      await processRequest(
+        webhookRequest,
+        settings,
+        bundle
+          ? {
+              bundleLength: optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown",
+            }
+          : undefined
+      );
 
     await updateConsolidatedQueryProgress({
       patient,
