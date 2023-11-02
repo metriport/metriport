@@ -52,7 +52,6 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
   const iheLambda = createLambda({
     stack: stack,
     name: "IHE",
-    runtime: lambda.Runtime.NODEJS_18_X,
     entry: "ihe",
     layers: props.lambdaLayers,
     envVars: {
