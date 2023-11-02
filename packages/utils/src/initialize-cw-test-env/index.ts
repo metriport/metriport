@@ -50,7 +50,7 @@ async function main() {
         city: a.city ?? "",
         state: a.state ?? "",
         zip: a.zip ?? "",
-        country: a.country ?? "USA",
+        country: "USA",
       })),
     };
     const docs = v.docRefs.map((d, idx) => ({

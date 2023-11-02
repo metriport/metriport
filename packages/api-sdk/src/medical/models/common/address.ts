@@ -14,7 +14,7 @@ export const addressSchema = z.object({
     .refine(zip => zip.length === zipLength, {
       message: `Zip must be a string consisting of ${zipLength} numbers.`,
     }),
-  country: defaultOptionalString.default("USA"), // here for backwards compatibility, we'll ignore this and always default to USA
+  country: z.literal("USA").optional().default("USA"),
 });
 
 export type Address = z.infer<typeof addressSchema>;
