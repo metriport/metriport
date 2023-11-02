@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { v4 as uuidv4 } from "uuid";
+import { calculateConversionProgress } from "../../../../domain/medical/conversion-progress";
 import {
-  calculateConversionProgress,
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
 } from "../../../../domain/medical/document-query";
 import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/document-query";
-import { PatientModel } from "../../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
+import { PatientModel } from "../../../../models/medical/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { updateConversionProgress } from "../document-query";
 

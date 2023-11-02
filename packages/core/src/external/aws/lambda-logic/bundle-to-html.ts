@@ -54,7 +54,8 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
     throw new Error("No patient found in bundle");
   }
 
-  const isAWEinPastYear = findAnnualWellnessVisit(conditions);
+  const aweVisits = getAnnualWellnessVisits(conditions);
+  const isAWEinPastYear = aweVisits.length > 0;
 
   const htmlPage = `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -164,7 +165,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
           #nav {
             border: 1px solid;
             border-radius: 5px;
-            padding: 20px 40px;
+            padding: 20px;
             margin: 0;
             background-color: #f2f2f2;
             display: flex;
@@ -178,6 +179,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
 
           #nav li {
             margin-bottom: 10px;
+            margin-left: 20px;
           }
 
           #nav li a {
@@ -197,11 +199,20 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
             justify-content: space-between;
           }
 
-          .report .header .title {
+          #report .header .title {
             margin: 0;
           }
 
+          #report .labs a {
+            text-decoration: none;
+            color: black;
+          }
+
           .documentation .divider {
+            display: none;
+          }
+
+          .reason-for-visit .divider {
             display: none;
           }
 
@@ -216,7 +227,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
         ${createMRHeader(patient, isAWEinPastYear)}
         <div class="divider"></div>
         <div id="mr-sections">
-          ${createDiagnosticReportsSection(encounters, diagnosticReports, practitioners)}
+          ${createDiagnosticReportsSection(encounters, diagnosticReports, practitioners, aweVisits)}
           ${createMedicationSection(medications)}
           ${createConditionSection(conditions)}
           ${createAllergySection(allergies)}
@@ -371,8 +382,9 @@ function createMRHeader(patient: Patient, isAWEinPastYear: boolean) {
                   "Name",
                   `${patient.name?.[0]?.given?.[0] ?? ""} ${patient.name?.[0]?.family ?? ""}`
                 )}
-                ${createHeaderTableRow("Id", patient.id ?? "")}
+                ${createHeaderTableRow("ID", patient.id ?? "")}
                 ${createHeaderTableRow("DOB", patient.birthDate ?? "")}
+                ${createHeaderTableRow("Gender", patient.gender ?? "")}
               </tbody>
             </table>
           </div>
@@ -391,7 +403,7 @@ function createMRHeader(patient: Patient, isAWEinPastYear: boolean) {
             <tbody>
             ${createHeaderTableRow(
               "Status",
-              isAWEinPastYear ? "Confirmed in the past year" : "Not Confirmed in the past year"
+              isAWEinPastYear ? "Likely Present: Please Review and Confirm" : "May Not Be Present"
             )}
             </tbody>
           </table>
@@ -401,6 +413,9 @@ function createMRHeader(patient: Patient, isAWEinPastYear: boolean) {
           <h4>Table of Contents</h4>
           <ul id="nav">
             <div class='half'>
+              <li>
+                <a href="#awe">Annual Wellness Exams</a>
+              </li>
               <li>
                 <a href="#reports">Reports</a>
               </li>
@@ -424,11 +439,11 @@ function createMRHeader(patient: Patient, isAWEinPastYear: boolean) {
               <li>
                 <a href="#vitals">Vitals</a>
               </li>
+            </div>
+            <div class='half'>
               <li>
                 <a href="#laboratory">Laboratory</a>
               </li>
-            </div>
-            <div class='half'>
               <li>
                 <a href="#other-observations">Other Observations</a>
               </li>
@@ -471,134 +486,220 @@ function createHeaderTableRow(label: string, value: string) {
   `;
 }
 
+type EncounterTypes =
+  | "labs"
+  | "progressNotes"
+  | "afterInstructions"
+  | "reasonForVisit"
+  | "documentation";
+
+type EncounterSection = {
+  [key: string]: {
+    [k in EncounterTypes]?: DiagnosticReport[];
+  };
+};
+
 function createDiagnosticReportsSection(
   encounters: Encounter[],
   diagnosticReports: DiagnosticReport[],
-  practitioners: Practitioner[]
+  practitioners: Practitioner[],
+  aweVisits: Condition[]
 ) {
-  const mappedEncounters = mapResourceToId(encounters);
+  const mappedEncounters = mapResourceToId<Encounter>(encounters);
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
 
   if (!diagnosticReports) {
     return "";
   }
 
-  type EncounterTypes =
-    | "labs"
-    | "progressNotes"
-    | "afterInstructions"
-    | "reasonForVisit"
-    | "documentation";
+  const encounterSections: EncounterSection = buildEncounterSections(
+    {},
+    mappedEncounters,
+    diagnosticReports
+  );
 
-  type EncounterSection = {
-    [key: string]: {
-      [k in EncounterTypes]?: DiagnosticReport[];
-    };
-  };
+  const AWEreports = buildReports(encounterSections, mappedPractitioners, aweVisits, true);
 
-  const encounterSections: EncounterSection = {};
+  const nonAWEreports = buildReports(encounterSections, mappedPractitioners, aweVisits, false);
 
+  const hasAWEreports = AWEreports.length > 0;
+  const hasNonAWEreports = nonAWEreports.length > 0;
+
+  return `
+    <div id="awe" class="section">
+      <div class="section-title">
+        <h3 id="awe" title="reports">&#x276F; Annual Wellness Exams</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+      <div class="section-content">
+        ${
+          hasAWEreports
+            ? AWEreports
+            : `<table><tbody><tr><td>No annual wellness exam info found</td></tr></tbody></table>`
+        }
+      </div>
+    </div>
+    <div id="reports" class="section">
+      <div class="section-title">
+        <h3 id="reports" title="reports">&#x276F; Reports</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+      <div class="section-content">
+        ${
+          hasNonAWEreports
+            ? nonAWEreports
+            : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function buildEncounterSections(
+  encounterSections: EncounterSection,
+  mappedEncounters: Record<string, Encounter>,
+  diagnosticReports: DiagnosticReport[]
+): EncounterSection {
   for (const report of diagnosticReports) {
     const encounterRefId = report.encounter?.reference?.split("/")[1];
 
     if (encounterRefId) {
-      if (!encounterSections[encounterRefId]) {
-        encounterSections[encounterRefId] = {};
-      }
+      const encounterDate = mappedEncounters[encounterRefId]?.period?.start;
 
-      let diagnosticReportsType: EncounterTypes | undefined;
+      if (encounterDate) {
+        const formattedDate = dayjs(encounterDate).format(ISO_DATE);
 
-      if (report?.code?.coding) {
-        for (const iterator of report.code.coding) {
-          if (iterator.display?.toLowerCase() === "progress note") {
-            diagnosticReportsType = "progressNotes";
-          } else if (iterator.display?.toLowerCase() === "patient education") {
-            diagnosticReportsType = "afterInstructions";
-          } else if (iterator.display?.toLowerCase().includes("reason for visit")) {
-            diagnosticReportsType = "reasonForVisit";
-          } else if (
-            iterator.display?.toLowerCase() === "assessments" ||
-            iterator.display?.toLowerCase() === "eval note"
-          ) {
-            diagnosticReportsType = "documentation";
+        if (!encounterSections[formattedDate]) {
+          encounterSections[formattedDate] = {};
+        }
+
+        let diagnosticReportsType: EncounterTypes | undefined;
+
+        if (report?.code?.coding) {
+          for (const iterator of report.code.coding) {
+            if (iterator.display?.toLowerCase() === "progress note") {
+              diagnosticReportsType = "progressNotes";
+            } else if (iterator.display?.toLowerCase() === "patient education") {
+              diagnosticReportsType = "afterInstructions";
+            } else if (iterator.display?.toLowerCase().includes("reason for visit")) {
+              diagnosticReportsType = "reasonForVisit";
+            } else if (
+              iterator.display?.toLowerCase() === "assessments" ||
+              iterator.display?.toLowerCase() === "eval note"
+            ) {
+              diagnosticReportsType = "documentation";
+            }
           }
         }
-      }
 
-      if (report.category) {
-        for (const iterator of report.category) {
-          if (iterator.text?.toLowerCase() === "lab") {
-            diagnosticReportsType = "labs";
+        if (report.category) {
+          for (const iterator of report.category) {
+            if (iterator.text?.toLowerCase() === "lab") {
+              diagnosticReportsType = "labs";
+            }
           }
         }
-      }
 
-      if (diagnosticReportsType) {
-        if (!encounterSections?.[encounterRefId]?.[diagnosticReportsType]) {
-          encounterSections[encounterRefId] = {
-            ...encounterSections[encounterRefId],
-            [diagnosticReportsType]: [],
-          };
+        if (diagnosticReportsType) {
+          const reportDate = dayjs(report.effectiveDateTime).format(ISO_DATE) ?? "";
+          let isReportDuplicate = false;
+
+          if (encounterSections[formattedDate]?.[diagnosticReportsType]) {
+            const isDuplicate = encounterSections[formattedDate]?.[diagnosticReportsType]?.find(
+              reportInside => {
+                const reportInsideDate =
+                  dayjs(reportInside.effectiveDateTime).format(ISO_DATE) ?? "";
+                const isDuplicate = reportInsideDate === reportDate;
+
+                return isDuplicate;
+              }
+            );
+
+            isReportDuplicate = !!isDuplicate;
+          }
+
+          if (!encounterSections?.[formattedDate]?.[diagnosticReportsType]) {
+            encounterSections[formattedDate] = {
+              ...encounterSections[formattedDate],
+              [diagnosticReportsType]: [],
+            };
+          }
+
+          if (diagnosticReportsType === "documentation") {
+            const documentationDecodedNote = report.presentedForm?.[0]?.data ?? "";
+            const decodeNote = Buffer.from(documentationDecodedNote, "base64").toString("binary");
+            const blackListNote = "Not on file";
+            const noteIsBlacklisted = decodeNote
+              .toLowerCase()
+              .includes(blackListNote.toLowerCase());
+
+            if (noteIsBlacklisted) {
+              continue;
+            }
+          }
+
+          if (!isReportDuplicate) {
+            encounterSections[formattedDate]?.[diagnosticReportsType]?.push(report);
+          }
         }
-
-        encounterSections[encounterRefId]?.[diagnosticReportsType]?.push(report);
       }
     }
   }
 
-  const reports = Object.entries(encounterSections)
-    // SORT BY ENCOUNTER DATE DESCENDING
-    .sort(([keyA], [keyB]) => {
-      const encounterA = mappedEncounters[keyA] as Encounter | undefined;
-      const encounterB = mappedEncounters[keyB] as Encounter | undefined;
-      const encounterADate = encounterA?.period?.start ?? "";
-      const encounterBDate = encounterB?.period?.start ?? "";
+  return encounterSections;
+}
 
-      return dayjs(encounterADate).isBefore(dayjs(encounterBDate)) ? 1 : -1;
-    })
-    .filter(([key]) => {
-      // FILTER FOR ENCOUNTERS IN THE PAST 2 YEARS
-      const encounter = mappedEncounters[key] as Encounter | undefined;
-      const encounterDate = encounter?.period?.start ?? "";
-      const encounterDateFormatted = dayjs(encounterDate).format(ISO_DATE);
-      const twoYearsAgo = dayjs().subtract(2, "year").format(ISO_DATE);
+function buildReports(
+  encounterSections: EncounterSection,
+  mappedPractitioners: Record<string, Practitioner>,
+  aweVisits: Condition[],
+  onlyAWE: boolean
+) {
+  return (
+    Object.entries(encounterSections)
+      // SORT BY ENCOUNTER DATE DESCENDING
+      .sort(([keyA], [keyB]) => {
+        return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
+      })
+      .filter(([key]) => {
+        // FILTER FOR ENCOUNTERS IN THE PAST 2 YEARS
+        const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+        const twoYearsAgo = dayjs().subtract(2, "year").format(ISO_DATE);
 
-      return encounterDateFormatted > twoYearsAgo;
-    })
-    .map(([key, value]) => {
-      const encounter = mappedEncounters[key] as Encounter | undefined;
-      const labs = value.labs;
-      const progressNotes = value.progressNotes;
-      const reasonForVisit = value.reasonForVisit;
-      const documentation = value.documentation;
-      const filteredDocumentation = documentation?.filter(documentation => {
-        const documentationDecodedNote = documentation.presentedForm?.[0]?.data ?? "";
-        const decodeNote = Buffer.from(documentationDecodedNote, "base64").toString("binary");
-        const blackListNote = "Not on file";
-        const noteIsBlacklisted = decodeNote.toLowerCase().includes(blackListNote.toLowerCase());
+        return encounterDateFormatted > twoYearsAgo;
+      })
+      .filter(([key]) => {
+        // FILTER FOR ENCOUNTERS WITH AWE DIAGNOSTIC REPORTS
+        const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+        const aweVisit = aweVisits.find(aweVisit => {
+          const aweVisitDate = aweVisit.onsetDateTime ?? "";
+          const aweVisitDateFormatted = dayjs(aweVisitDate).format(ISO_DATE);
 
-        return !noteIsBlacklisted;
-      });
+          return aweVisitDateFormatted === encounterDateFormatted;
+        });
 
-      const hasNoLabs = !labs || labs?.length === 0;
-      const hasNoProgressNotes = !progressNotes || progressNotes?.length === 0;
-      const hasNoReasonForVisit = !reasonForVisit || reasonForVisit?.length === 0;
-      const hasNoDocumentation = !filteredDocumentation || filteredDocumentation?.length === 0;
+        return onlyAWE ? aweVisit : !aweVisit;
+      })
+      .map(([key, value]) => {
+        const labs = value.labs;
+        const progressNotes = value.progressNotes;
+        const reasonForVisit = value.reasonForVisit;
+        const documentation = value.documentation;
 
-      if (
-        hasNoLabs &&
-        hasNoProgressNotes &&
-        hasNoReasonForVisit &&
-        hasNoDocumentation
-      ) {
-        return "";
-      }
+        const hasNoLabs = !labs || labs?.length === 0;
+        const hasNoProgressNotes = !progressNotes || progressNotes?.length === 0;
+        const hasNoReasonForVisit = !reasonForVisit || reasonForVisit?.length === 0;
+        const hasNoDocumentation = !documentation || documentation?.length === 0;
 
-      return `
+        if (hasNoLabs && hasNoProgressNotes && hasNoReasonForVisit && hasNoDocumentation) {
+          return "";
+        }
+
+        return `
         <div id="report">
           <div class="header">
             <h3 class="title">Encounter</h3>
-            <span>Date: ${dayjs(encounter?.period?.start).format(ISO_DATE) ?? ""}</span>
+            <span>Date: ${dayjs(key).format(ISO_DATE) ?? ""}</span>
           </div>
           <div>
           ${
@@ -616,27 +717,23 @@ function createDiagnosticReportsSection(
                 ? createWhatWasDocumentedFromDiagnosticReports(documentation, mappedPractitioners)
                 : ""
             }
-            <div class="labs">
-              <h4>Labs</h4>
-              <span>See Labs Section</span>
-            </div>
+            ${
+              labs && labs.length > 0
+                ? `
+                  <div class="labs">
+                    <h4>Labs</h4>
+                    <a href="#laboratory">Click To See Labs Section</a>
+                  </div>
+                  `
+                : ""
+            }
+
           </div>
         </div>
     `;
-    })
-    .join("");
-
-  return `
-    <div id="reports" class="section">
-      <div class="section-title">
-        <h3 id="reports" title="reports">&#x276F; Reports</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-      <div class="section-content">
-        ${reports}
-      </div>
-    </div>
-  `;
+      })
+      .join("")
+  );
 }
 
 function createProgressNotesFromDiagnosticReports(
@@ -691,7 +788,7 @@ function createReasonForVisitFromDiagnosticReports(
     })
     .join("");
 
-  return `<div>
+  return `<div class="reason-for-visit">
     <h4>Reason For Visit</h4>
     ${reasons}
   </div>`;
@@ -705,6 +802,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
     .map(documentation => {
       const note = documentation.presentedForm?.[0]?.data ?? "";
       const decodeNote = Buffer.from(note, "base64").toString("binary");
+      const cleanNote = decodeNote.replace("documented in this encounter", "");
 
       const practitionerRefId = documentation.performer?.[0]?.reference?.split("/")[1] ?? "";
       const practitioner = mappedPractitioners[practitionerRefId];
@@ -714,7 +812,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
       return `
         <div>
           ${practitioner ? `<span>By: ${practitionerName}</span>` : ""}
-          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${decodeNote}</p>
+          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${cleanNote}</p>
         </div>
       `;
     })
@@ -744,9 +842,52 @@ function createMedicationSection(medicationRequests: MedicationRequest[]) {
     );
   });
 
-  const blacklistInstructions = ["not defined"];
+  const completedMedications = removeDuplicate.filter(
+    medicationRequest => medicationRequest.status === "completed"
+  );
+
+  const activeMedications = removeDuplicate.filter(
+    medicationRequest => medicationRequest.status === "active"
+  );
+
+  const stoppedMedications = removeDuplicate.filter(
+    medicationRequest => medicationRequest.status === "stopped"
+  );
+
+  const emptyMedications = removeDuplicate.filter(
+    medicationRequest => !medicationRequest.status || medicationRequest.status === "unknown"
+  );
+
+  const activeMedicationsSection = createSectionInMedications(
+    activeMedications,
+    "Active Medications"
+  );
+
+  const emptyMedicationsSection = createSectionInMedications(
+    emptyMedications,
+    "Unknown Status Medications"
+  );
+
+  const completedMedicationsSection = createSectionInMedications(
+    [...completedMedications, ...stoppedMedications],
+    "Historical Medications"
+  );
 
   const medicalTableContents = `
+  ${activeMedicationsSection}
+  ${emptyMedicationsSection}
+    ${completedMedicationsSection}
+  `;
+
+  return createSection("Medications", medicalTableContents);
+}
+
+function createSectionInMedications(medicationRequests: MedicationRequest[], title: string) {
+  const medicalTableContents =
+    medicationRequests.length > 0
+      ? `
+      <h4>${title}</h4>
+      <table>
     <thead>
       <tr>
         <th style="width: 25%">Medication</th>
@@ -762,12 +903,13 @@ function createMedicationSection(medicationRequests: MedicationRequest[]) {
       </tr>
     </thead>
     <tbody>
-      ${removeDuplicate
+      ${medicationRequests
         .map(medicationRequest => {
           const code = getSpecificCode(medicationRequest.medicationCodeableConcept?.coding ?? [], [
             RX_NORM_CODE,
             NDC_CODE,
           ]);
+          const blacklistInstructions = ["not defined"];
 
           const blacklistedInstruction = blacklistInstructions.find(instruction => {
             return medicationRequest.dosageInstruction?.[0]?.text
@@ -800,76 +942,185 @@ function createMedicationSection(medicationRequests: MedicationRequest[]) {
         })
         .join("")}
     </tbody>
-  `;
+  </table>
+  `
+      : ` <h4>${title}</h4>       <table>
+      <tbody><tr><td>No medication info found</td></tr></tbody>   </table>`;
 
-  return createSection("Medications", medicalTableContents);
+  return medicalTableContents;
 }
+
+type RenderCondition = {
+  code: string | null;
+  name: string;
+  firstSeen: string;
+  lastSeen: string;
+  clinicalStatus: string;
+};
 
 function createConditionSection(conditions: Condition[]) {
   if (!conditions) {
     return "";
   }
 
-  const conditionsSortedByDate = conditions.sort((a, b) => {
-    return dayjs(a.onsetDateTime).isBefore(dayjs(b.onsetDateTime)) ? 1 : -1;
-  });
-
-  const removeDuplicate = uniqWith(conditionsSortedByDate, (a, b) => {
+  const removeDuplicate = uniqWith(conditions, (a, b) => {
     const aDate = dayjs(a.onsetDateTime).format(ISO_DATE);
     const bDate = dayjs(b.onsetDateTime).format(ISO_DATE);
     return aDate === bDate && a.code?.text === b.code?.text;
-  });
+  })
+    .reduce((acc, condition) => {
+      const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
+      const name = condition.code?.text ?? "";
+      const onsetDateTime = condition.onsetDateTime ?? "";
+      const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.code ?? "";
+      const onsetStartTime = condition.onsetPeriod?.start;
+      const onsetEndTime = condition.onsetPeriod?.end;
 
-  const conditionTableContents = `
+      const newCondition: RenderCondition = {
+        code,
+        name,
+        firstSeen: onsetStartTime ?? onsetDateTime,
+        lastSeen: onsetEndTime ?? onsetDateTime,
+        clinicalStatus,
+      };
+
+      const existingCondition = acc.find(
+        condition => condition.code === newCondition.code && condition.name === newCondition.name
+      );
+
+      if (existingCondition) {
+        // If the existing condition has a earlier first seen date, update the first seen date
+        // if the existing condition has an later last seen date, update the last seen date
+        if (dayjs(existingCondition.firstSeen).isAfter(dayjs(newCondition.firstSeen))) {
+          existingCondition.firstSeen = newCondition.firstSeen;
+        } else if (dayjs(existingCondition.lastSeen).isBefore(dayjs(newCondition.lastSeen))) {
+          existingCondition.lastSeen = newCondition.lastSeen;
+        }
+
+        return acc;
+      }
+
+      acc.push(newCondition);
+
+      return acc;
+    }, [] as RenderCondition[])
+    .sort((a, b) => {
+      return dayjs(a.firstSeen).isBefore(dayjs(b.firstSeen)) ? 1 : -1;
+    });
+
+  const conditionTableContents =
+    removeDuplicate.length > 0
+      ? `
+      <table>
+
     <thead>
       <tr>
-        <th style="width: 50%">Condition</th>
-        <th style="width: 16%">Code</th>
-        <th style="width: 16%">Date</th>
-        <th style="width: 16%">Status</th>
+        <th style="width: 40%">Condition</th>
+        <th style="width: 15%">Code</th>
+        <th style="width: 15%">First seen</th>
+        <th style="width: 15%">Last seen</th>
+        <th style="width: 15%">Status</th>
       </tr>
     </thead>
     <tbody>
       ${removeDuplicate
         .map(condition => {
-          const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
-
           return `
             <tr>
-              <td>${condition.code?.text ?? ""}</td>
-              <td>${code ?? ""}</td>
-              <td>${dayjs(condition.onsetDateTime).format(ISO_DATE) ?? ""}</td>
-              <td>${condition.clinicalStatus?.coding?.[0]?.code ?? ""}</td>
+              <td>${condition.name}</td>
+              <td>${condition.code ?? ""}</td>
+              <td>${dayjs(condition.firstSeen).format(ISO_DATE) ?? ""}</td>
+              <td>${dayjs(condition.lastSeen).format(ISO_DATE) ?? ""}</td>
+              <td>${condition.clinicalStatus}</td>
             </tr>
           `;
         })
         .join("")}
     </tbody>
-  `;
+    </table>
+
+  `
+      : `        <table>
+      <tbody><tr><td>No condition info found</td></tr></tbody>        </table>
+      `;
 
   return createSection("Conditions", conditionTableContents);
 }
+
+type RenderAllergy = {
+  name: string;
+  manifestation: string;
+  code: string | null;
+  firstSeen: string;
+  lastSeen: string;
+  clinicalStatus: string;
+};
 
 function createAllergySection(allergies: AllergyIntolerance[]) {
   if (!allergies) {
     return "";
   }
 
-  const allergiesSortedByDate = allergies.sort((a, b) => {
-    return dayjs(a.onsetDateTime).isBefore(dayjs(b.onsetDateTime)) ? 1 : -1;
-  });
-
-  const removeDuplicate = uniqWith(allergiesSortedByDate, (a, b) => {
+  const removeDuplicate = uniqWith(allergies, (a, b) => {
     const aDate = dayjs(a.onsetDateTime).format(ISO_DATE);
     const bDate = dayjs(b.onsetDateTime).format(ISO_DATE);
     return aDate === bDate && a.code?.text === b.code?.text;
-  });
+  })
+    .reduce((acc, allergy) => {
+      const code = getSpecificCode(allergy.code?.coding ?? [], [
+        SNOMED_CODE,
+        ICD_10_CODE,
+        RX_NORM_CODE,
+      ]);
+      const name = allergy.code?.text ?? "";
+      const manifestation = allergy.reaction?.[0]?.manifestation?.[0]?.text ?? "";
+      const onsetDateTime = allergy.onsetDateTime
+        ? allergy.onsetDateTime
+        : allergy.recordedDate
+        ? allergy.recordedDate
+        : "";
+      const clinicalStatus = allergy.clinicalStatus?.coding?.[0]?.code ?? "";
+      const onsetStartTime = allergy.onsetPeriod?.start;
+      const onsetEndTime = allergy.onsetPeriod?.end;
+
+      const newAllergy: RenderAllergy = {
+        code,
+        name,
+        manifestation,
+        firstSeen: onsetStartTime ?? onsetDateTime,
+        lastSeen: onsetEndTime ?? onsetDateTime,
+        clinicalStatus,
+      };
+
+      const existingAllergy = acc.find(
+        allergy => allergy.code === newAllergy.code && allergy.name === newAllergy.name
+      );
+
+      if (existingAllergy) {
+        // If the existing allergy has a earlier first seen date, update the first seen date
+        // if the existing allergy has an later last seen date, update the last seen date
+        if (dayjs(existingAllergy.firstSeen).isAfter(dayjs(newAllergy.firstSeen))) {
+          existingAllergy.firstSeen = newAllergy.firstSeen;
+        } else if (dayjs(existingAllergy.lastSeen).isBefore(dayjs(newAllergy.lastSeen))) {
+          existingAllergy.lastSeen = newAllergy.lastSeen;
+        }
+
+        return acc;
+      }
+
+      acc.push(newAllergy);
+
+      return acc;
+    }, [] as RenderAllergy[])
+    .sort((a, b) => {
+      return dayjs(a.firstSeen).isBefore(dayjs(b.firstSeen)) ? 1 : -1;
+    });
 
   const blacklistCodeText = ["no known allergies"];
   const blacklistManifestationText = ["info not available", "other"];
 
   const filterBlacklistText = removeDuplicate.filter(allergy => {
-    const codeText = allergy.code?.text?.toLowerCase();
+    const codeText = allergy.code?.toLowerCase();
 
     return codeText && !blacklistCodeText.includes(codeText);
   });
@@ -877,42 +1128,44 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
   const allergyTableContents =
     filterBlacklistText.length > 0
       ? `
+      <table>
+
     <thead>
       <tr>
         <th style="width: 30%">Allergy</th>
         <th style="width: 17.5%">Manifestation</th>
         <th style="width: 17.5%">Code</th>
-        <th style="width: 17.5%">Date</th>
+        <th style="width: 17.5%">First Seen</th>
+        <th style="width: 17.5%">Last Seen</th>
         <th style="width: 17.5%">Status</th>
       </tr>
     </thead>
     <tbody>
       ${filterBlacklistText
         .map(allergy => {
-          const code = getSpecificCode(allergy.code?.coding ?? [], [SNOMED_CODE, ICD_10_CODE]);
-
           const blacklistManifestation = blacklistManifestationText.find(manifestation => {
-            return allergy.reaction?.[0]?.manifestation?.[0]?.text
-              ?.toLowerCase()
-              .includes(manifestation);
+            return allergy.manifestation?.toLowerCase().includes(manifestation);
           });
 
           return `
             <tr>
-              <td>${allergy.code?.text ?? ""}</td>
-              <td>${
-                blacklistManifestation ? "" : allergy.reaction?.[0]?.manifestation?.[0]?.text ?? ""
-              }</td>
-              <td>${code ?? ""}</td>
-              <td>${dayjs(allergy.onsetDateTime).format(ISO_DATE) ?? ""}</td>
-              <td>${allergy.clinicalStatus?.coding?.[0]?.code ?? ""}</td>
+              <td>${allergy.name}</td>
+              <td>${blacklistManifestation ? "" : allergy.manifestation}</td>
+              <td>${allergy.code}</td>
+              <td>${dayjs(allergy.firstSeen).format(ISO_DATE) ?? ""}</td>
+              <td>${dayjs(allergy.lastSeen).format(ISO_DATE) ?? ""}</td>
+              <td>${allergy.clinicalStatus}</td>
             </tr>
           `;
         })
         .join("")}
     </tbody>
+    </table>
+
   `
-      : `<tbody><tr><td>No allergy info found</td></tr></tbody>`;
+      : `        <table>
+      <tbody><tr><td>No allergy info found</td></tr></tbody>        </table>
+      `;
 
   return createSection("Allergies", allergyTableContents);
 }
@@ -935,6 +1188,8 @@ function createProcedureSection(procedures: Procedure[]) {
   const procedureTableContents =
     removeDuplicate.length > 0
       ? `
+      <table>
+
     <thead>
       <tr>
         <th style="width: 30%">Procedure</th>
@@ -960,11 +1215,23 @@ function createProcedureSection(procedures: Procedure[]) {
         })
         .join("")}
     </tbody>
+    </table>
+
   `
-      : `<tbody><tr><td>No procedure info found</td></tr></tbody>`;
+      : `        <table>
+      <tbody><tr><td>No procedure info found</td></tr></tbody>        </table>
+      `;
 
   return createSection("Procedures", procedureTableContents);
 }
+
+type RenderObservation = {
+  display: string;
+  code: string | null;
+  value: string;
+  firstDate: string;
+  lastDate: string;
+};
 
 function createObservationSocialHistorySection(observations: Observation[]) {
   if (!observations) {
@@ -979,11 +1246,59 @@ function createObservationSocialHistorySection(observations: Observation[]) {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
     return aDate === bDate && a.code?.text === b.code?.text;
-  });
+  })
+    .filter(observation => {
+      const value = renderSocialHistoryValue(observation) ?? "";
+      const blacklistValues = ["sex assigned at birth"];
+      const display = observation.code?.coding?.[0]?.display ?? "";
+      const valueIsBlacklisted = blacklistValues.includes(display);
+
+      return value && value.length > 0 && !valueIsBlacklisted;
+    })
+    .reduce((acc, observation) => {
+      const display = observation.code?.coding?.[0]?.display ?? "";
+      const value = renderSocialHistoryValue(observation) ?? "";
+      const observationDate = dayjs(observation.effectiveDateTime).format(ISO_DATE);
+      const lastItemInArray = acc[acc.length - 1];
+
+      if (lastItemInArray) {
+        const lastItemInArrayFirstDate = lastItemInArray.firstDate;
+        const lastItemInArrayLastDate = lastItemInArray.lastDate;
+        const lastItemInArrayDisplay = lastItemInArray.display;
+        const lastItemInArrayValue = lastItemInArray.value;
+
+        const isSameDisplay = lastItemInArrayDisplay === display;
+        const isSameValue = lastItemInArrayValue === value;
+
+        if (isSameDisplay && isSameValue) {
+          // If the existing observation has a earlier first seen date, update the first seen date
+          // if the existing observation has an later last seen date, update the last seen date
+          if (dayjs(lastItemInArrayFirstDate).isAfter(dayjs(observationDate))) {
+            lastItemInArray.firstDate = observationDate;
+          } else if (dayjs(lastItemInArrayLastDate).isBefore(dayjs(observationDate))) {
+            lastItemInArray.lastDate = observationDate;
+          }
+
+          return acc;
+        }
+      }
+
+      acc.push({
+        display,
+        code: getSpecificCode(observation.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]),
+        value,
+        firstDate: observationDate,
+        lastDate: observationDate,
+      });
+
+      return acc;
+    }, [] as RenderObservation[]);
 
   const observationTableContents =
     removeDuplicate.length > 0
       ? `
+      <table>
+
     <thead>
       <tr>
         <th style="width: 30%">Observation</th>
@@ -995,21 +1310,29 @@ function createObservationSocialHistorySection(observations: Observation[]) {
     <tbody>
       ${removeDuplicate
         .map(observation => {
-          const code = getSpecificCode(observation.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
+          // if dates are the same just render firstdate
+          const date =
+            observation.firstDate === observation.lastDate
+              ? observation.firstDate
+              : `${observation.firstDate} - ${observation.lastDate}`;
 
           return `
             <tr>
-              <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
-              <td>${renderSocialHistoryValue(observation)}</td>
-              <td>${code ?? ""}</td>
-              <td>${dayjs(observation.effectiveDateTime).format(ISO_DATE) ?? ""}</td>
+              <td>${observation.display}</td>
+              <td>${observation.value}</td>
+              <td>${observation.code ?? ""}</td>
+              <td>${date}</td>
             </tr>
           `;
         })
         .join("")}
     </tbody>
+    </table>
+
   `
-      : `<tbody><tr><td>No observation info found</td></tr></tbody>`;
+      : `        <table>
+      <tbody><tr><td>No observation info found</td></tr></tbody>        </table>
+      `;
 
   return createSection("Social History", observationTableContents);
 }
@@ -1044,17 +1367,46 @@ function createObservationVitalsSection(observations: Observation[]) {
 
   const observationTableContents =
     removeDuplicate.length > 0
-      ? `
+      ? createVitalsByDate(removeDuplicate)
+      : `        <table>
+      <tbody><tr><td>No observation info found</td></tr></tbody>        </table>
+      `;
+
+  return createSection("Vitals", observationTableContents);
+}
+
+function createVitalsByDate(observations: Observation[]): string {
+  const filteredObservations = observations.reduce((acc, observation) => {
+    const observationDate = dayjs(observation.effectiveDateTime).format(ISO_DATE);
+    const existingObservation = acc.find(observation => observation.date === observationDate);
+
+    if (existingObservation) {
+      existingObservation.observations.push(observation);
+      return acc;
+    }
+
+    acc.push({
+      date: observationDate,
+      observations: [observation],
+    });
+
+    return acc;
+  }, [] as { date: string; observations: Observation[] }[]);
+
+  return filteredObservations
+    .map(tables => {
+      const observationTableContents = `
+      <table>
+
     <thead>
       <tr>
-        <th style="width: 30%">Observation</th>
-        <th style="width: 23.33333%">Value</th>
-        <th style="width: 23.33333%">Code</th>
-        <th style="width: 23.33333%">Date</th>
+        <th style="width: 33.33333%">Observation</th>
+        <th style="width: 33.33333%">Value</th>
+        <th style="width: 33.33333%">Code</th>
       </tr>
     </thead>
     <tbody>
-      ${removeDuplicate
+      ${tables.observations
         .map(observation => {
           const code = getSpecificCode(observation.code?.coding ?? [], [LOINC_CODE]);
 
@@ -1063,16 +1415,22 @@ function createObservationVitalsSection(observations: Observation[]) {
               <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
               <td>${renderVitalsValue(observation)}</td>
               <td>${code ?? ""}</td>
-              <td>${dayjs(observation.effectiveDateTime).format(ISO_DATE) ?? ""}</td>
             </tr>
           `;
         })
         .join("")}
     </tbody>
-  `
-      : `<tbody><tr><td>No observation info found</td></tr></tbody>`;
+    </table>
+      `;
 
-  return createSection("Vitals", observationTableContents);
+      return `
+      <div>
+        <h4>Vital Results On: ${tables.date}</h4>
+        ${observationTableContents}
+      </div>
+      `;
+    })
+    .join("");
 }
 
 function renderVitalsValue(observation: Observation) {
@@ -1103,39 +1461,80 @@ function createObservationLaboratorySection(observations: Observation[]) {
 
   const observationTableContents =
     removeDuplicate.length > 0
-      ? `
-    <thead>
-      <tr>
-        <th style="width: 30%">Observation</th>
-        <th style="width: 14%">Value</th>
-        <th style="width: 14%">Interpretation</th>
-        <th style="width: 14%">Reference Range</th>
-        <th style="width: 14%">Code</th>
-        <th style="width: 14%">Date</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${removeDuplicate
-        .map(observation => {
-          const code = getSpecificCode(observation.code?.coding ?? [], [SNOMED_CODE]);
-
-          return `
-            <tr>
-              <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
-              <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
-              <td>${observation.interpretation?.[0]?.text ?? ""}</td>
-              <td>${observation.referenceRange?.[0]?.text ?? ""}</td>
-              <td>${code ?? ""}</td>
-              <td>${dayjs(observation.effectiveDateTime).format(ISO_DATE) ?? ""}</td>
-            </tr>
-          `;
-        })
-        .join("")}
-    </tbody>
-  `
-      : `<tbody><tr><td>No observation info found</td></tr></tbody>`;
+      ? createObservationsByDate(removeDuplicate)
+      : `        <table>
+      <tbody><tr><td>No laboratory info found</td></tr></tbody>        <table>
+      `;
 
   return createSection("Laboratory", observationTableContents);
+}
+
+function createObservationsByDate(observations: Observation[]): string {
+  const blacklistReferenceRangeText = ["unknown", "not detected"];
+
+  const filteredObservations = observations.reduce((acc, observation) => {
+    const observationDate = dayjs(observation.effectiveDateTime).format(ISO_DATE);
+    const existingObservation = acc.find(observation => observation.date === observationDate);
+
+    if (existingObservation) {
+      existingObservation.observations.push(observation);
+      return acc;
+    }
+
+    acc.push({
+      date: observationDate,
+      observations: [observation],
+    });
+
+    return acc;
+  }, [] as { date: string; observations: Observation[] }[]);
+
+  return filteredObservations
+    .map(tables => {
+      const observationTableContents = `
+      <table>
+    <thead>
+        <tr>
+          <th style="width: 20%">Observation</th>
+          <th style="width: 20%">Value</th>
+          <th style="width: 20%">Interpretation</th>
+          <th style="width: 20%">Reference Range</th>
+          <th style="width: 20%">Code</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tables.observations
+          .map(observation => {
+            const code = getSpecificCode(observation.code?.coding ?? [], [SNOMED_CODE]);
+            const blacklistReferenceRange = blacklistReferenceRangeText.find(referenceRange => {
+              return observation.referenceRange?.[0]?.text?.toLowerCase().includes(referenceRange);
+            });
+
+            return `
+              <tr>
+                <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
+                <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
+                <td>${observation.interpretation?.[0]?.text ?? ""}</td>
+                <td>${
+                  blacklistReferenceRange ? "" : observation.referenceRange?.[0]?.text ?? ""
+                }</td>
+                <td>${code ?? ""}</td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+      </table>
+      `;
+
+      return `
+      <div>
+        <h4>Lab Results On: ${tables.date}</h4>
+        ${observationTableContents}
+      </div>
+      `;
+    })
+    .join("");
 }
 
 function createOtherObservationsSection(observations: Observation[]) {
@@ -1151,44 +1550,90 @@ function createOtherObservationsSection(observations: Observation[]) {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
     return aDate === bDate && a.code?.text === b.code?.text;
+  }).filter(observation => {
+    const value = observation.valueQuantity?.value ?? observation.valueString;
+    const notOnFile = "not on file";
+    const valueHasNotOnFile = observation.valueString?.toLowerCase().includes(notOnFile);
+
+    return !!value && !valueHasNotOnFile;
   });
 
   const observationTableContents =
     removeDuplicate.length > 0
-      ? `
-    <thead>
-      <tr>
-        <th style="width: 30%">Observation</th>
-        <th style="width: 23.33333%">Value</th>
-        <th style="width: 23.33333%">Code</th>
-        <th style="width: 23.33333%">Date</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${removeDuplicate
-        .map(observation => {
-          const code = getSpecificCode(observation.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
-
-          return `
-            <tr>
-              <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
-              <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
-              <td>${code ?? ""}</td>
-              <td>${dayjs(observation.effectiveDateTime).format(ISO_DATE) ?? ""}</td>
-            </tr>
-          `;
-        })
-        .join("")}
-    </tbody>
-  `
-      : `<tbody><tr><td>No observation info found</td></tr></tbody>`;
+      ? createOtherObservationsByDate(removeDuplicate)
+      : `        <table>
+      <tbody><tr><td>No observation info found</td></tr></tbody>        </table>
+      `;
   return createSection("Other Observations", observationTableContents);
 }
 
+function createOtherObservationsByDate(observations: Observation[]): string {
+  const filteredObservations = observations.reduce((acc, observation) => {
+    const observationDate = dayjs(observation.effectiveDateTime).format(ISO_DATE);
+    const existingObservation = acc.find(observation => observation.date === observationDate);
+
+    if (existingObservation) {
+      existingObservation.observations.push(observation);
+      return acc;
+    }
+
+    acc.push({
+      date: observationDate,
+      observations: [observation],
+    });
+
+    return acc;
+  }, [] as { date: string; observations: Observation[] }[]);
+
+  return filteredObservations
+    .map(tables => {
+      const observationTableContents = `
+      <table>
+
+      <thead>
+        <tr>
+          <th style="width: 33.33333%">Observation</th>
+          <th style="width: 33.33333%">Value</th>
+          <th style="width: 33.33333%">Code</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tables.observations
+          .map(observation => {
+            const code = getSpecificCode(observation.code?.coding ?? [], [
+              ICD_10_CODE,
+              SNOMED_CODE,
+            ]);
+
+            return `
+              <tr>
+                <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
+                <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
+                <td>${code ?? ""}</td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+      </table>
+      `;
+
+      return `
+      <div>
+        <h4>Observation Results On: ${tables.date}</h4>
+        ${observationTableContents}
+      </div>
+      `;
+    })
+    .join("");
+}
+
 function renderClassDisplay(encounter: Encounter) {
-  if (encounter.class?.display) {
+  const isDisplayUndefined = encounter.class?.display === undefined;
+
+  if (encounter.class?.display && !isDisplayUndefined) {
     return encounter.class?.display;
-  } else if (encounter.class?.code) {
+  } else if (encounter.class?.code && !isDisplayUndefined) {
     const extension = encounter.class?.extension?.find(coding => {
       return coding.valueCoding?.code === encounter.class?.code;
     });
@@ -1217,6 +1662,8 @@ function createImmunizationSection(immunizations: Immunization[]) {
   const immunizationTableContents =
     removeDuplicate.length > 0
       ? `
+      <table>
+
     <thead>
       <tr>
         <th style="width: 30%">Immunization</th>
@@ -1246,8 +1693,12 @@ function createImmunizationSection(immunizations: Immunization[]) {
         })
         .join("")}
     </tbody>
+    </table>
+
   `
-      : `<tbody><tr><td>No immunization info found</td></tr></tbody>`;
+      : `        <table>
+      <tbody><tr><td>No immunization info found</td></tr></tbody>        </table>
+      `;
 
   return createSection("Immunizations", immunizationTableContents);
 }
@@ -1268,6 +1719,8 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
   const familyMemberHistoryTableContents =
     removeDuplicate.length > 0
       ? `
+      <table>
+
     <thead>
       <tr>
         <th style="width: 17.5%">Family Member</th>
@@ -1297,9 +1750,13 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
         })
         .join("")}
     </tbody>
+    </table>
+
   `
-      : `<tbody><tr><td>No family member history
-        info found</td></tr></tbody>`;
+      : `        <table>
+      <tbody><tr><td>No family member history
+        info found</td></tr></tbody>        </table>
+        `;
 
   return createSection("Family Member History", familyMemberHistoryTableContents);
 }
@@ -1337,6 +1794,8 @@ function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
   const relatedPersonTableContents =
     removeDuplicate.length > 0
       ? `
+      <table>
+
     <thead>
       <tr>
         <th style="width: 25%">Name</th>
@@ -1359,15 +1818,19 @@ function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
         })
         .join("")}
     </tbody>
+    </table>
+
   `
-      : `<tbody><tr><td>No related person info found</td></tr></tbody>`;
+      : `        <table>
+      <tbody><tr><td>No related person info found</td></tr></tbody>        </table>
+      `;
 
   return createSection("Related Persons", relatedPersonTableContents);
 }
 
 function renderRelatedPersonContacts(relatedPerson: RelatedPerson) {
   return relatedPerson.telecom?.map(telecom => {
-    return `${telecom.use}: ${telecom.value}`;
+    return `${telecom.system}${telecom.use ? `- ${telecom.use}` : ""}: ${telecom.value}`;
   });
 }
 
@@ -1390,11 +1853,19 @@ function createTaskSection(tasks: Task[]) {
     const aDate = dayjs(a.authoredOn).format(ISO_DATE);
     const bDate = dayjs(b.authoredOn).format(ISO_DATE);
     return aDate === bDate && a.description === b.description;
+  }).filter(task => {
+    // date is before 1920
+    const date = dayjs(task.authoredOn).format(ISO_DATE);
+    const isBefore1920 = dayjs(date).isBefore(dayjs("1920-01-01"));
+
+    return !isBefore1920;
   });
 
   const taskTableContents =
     removeDuplicate.length > 0
       ? `
+      <table>
+
     <thead>
       <tr>
         <th style="width: 20%">Task</th>
@@ -1421,8 +1892,12 @@ function createTaskSection(tasks: Task[]) {
         })
         .join("")}
     </tbody>
+    </table>
+
   `
-      : `<tbody><tr><td>No task info found</td></tr></tbody>`;
+      : `        <table>
+      <tbody><tr><td>No task info found</td></tr></tbody>        </table>
+      `;
 
   return createSection("Tasks", taskTableContents);
 }
@@ -1446,6 +1921,8 @@ function createEncountersSection(encounters: Encounter[]) {
   const encounterTableContents =
     removeDuplicate.length > 0
       ? `
+      <table>
+
     <thead>
       <tr>
         <th style="width: 30%">Encounter</th>
@@ -1470,8 +1947,12 @@ function createEncountersSection(encounters: Encounter[]) {
         })
         .join("")}
     </tbody>
+    </table>
+
   `
-      : `<tbody><tr><td>No encounter info found</td></tr></tbody>`;
+      : `        <table>
+      <tbody><tr><td>No encounter info found</td></tr></tbody>        </table>
+      `;
 
   return createSection("Encounters", encounterTableContents);
 }
@@ -1494,6 +1975,8 @@ function createCoverageSection(coverages: Coverage[]) {
   const coverageTableContents =
     removeDuplicate.length > 0
       ? `
+      <table>
+
     <thead>
       <tr>
         <th style="width: 20%">Provider</th>
@@ -1518,8 +2001,12 @@ function createCoverageSection(coverages: Coverage[]) {
         })
         .join("")}
     </tbody>
+    </table>
+
   `
-      : `<tbody><tr><td>No coverage info found</td></tr></tbody>`;
+      : `        <table>
+      <tbody><tr><td>No coverage info found</td></tr></tbody>        </table>
+      `;
 
   return createSection("Coverage", coverageTableContents);
 }
@@ -1528,21 +2015,21 @@ function getSpecificCode(coding: Coding[], systemsList: string[]): string | null
   // return the first code that matches the system
   // systemList should be in order of priority
 
+  let specifiedCode: string | null = null;
+
   if (systemsList.length) {
     for (const system of systemsList) {
       const code = coding.find(coding => {
         return coding.system?.toLowerCase().includes(system);
       })?.code;
 
-      if (code) {
-        return `${system.toUpperCase()}: ${code}`;
+      if (code && !specifiedCode) {
+        specifiedCode = `${system.toUpperCase()}: ${code}`;
       }
-
-      return null;
     }
   }
 
-  return null;
+  return specifiedCode;
 }
 
 function createSection(title: string, tableContents: string) {
@@ -1553,9 +2040,7 @@ function createSection(title: string, tableContents: string) {
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
-        <table>
           ${tableContents}
-        </table>
       </div>
     </div>
   `;
@@ -1573,8 +2058,8 @@ function mapResourceToId<ResourceType>(resources: Resource[]): Record<string, Re
 }
 
 // find condition with code Z00 in the past year
-function findAnnualWellnessVisit(conditions: Condition[]): boolean {
-  const annualWellnessVisit = conditions.find(condition => {
+function getAnnualWellnessVisits(conditions: Condition[]) {
+  const annualWellnessVisit = conditions.filter(condition => {
     const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
 
     return (
@@ -1582,5 +2067,5 @@ function findAnnualWellnessVisit(conditions: Condition[]): boolean {
     );
   });
 
-  return !!annualWellnessVisit;
+  return annualWellnessVisit;
 }

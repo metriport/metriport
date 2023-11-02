@@ -1,0 +1,30 @@
+name: Check commit messages on non-shared branches
+
+on:
+  workflow_call:
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
+jobs:
+  check-commit-messages:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.head.ref != 'master' && github.event.pull_request.head.ref != 'develop' }}
+    steps:
+      - name: Log Environment
+        run: |
+          env
+        shell: bash
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 100 # bc of below
+      # check commits' messages to make sure they follow Conventional Commits
+      - uses: wagoid/commitlint-github-action@v5
