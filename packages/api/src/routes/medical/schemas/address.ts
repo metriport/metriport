@@ -10,7 +10,7 @@ export const addressSchema = z.object({
   city: defaultOptionalString,
   state: usStateSchema.or(defaultOptionalString),
   zip: defaultZipString,
-  country: defaultOptionalString.default("USA"), // here for backwards compatibility, we'll ignore this and always default to USA
+  country: z.literal("USA").optional().default("USA"), // here for backwards compatibility, we'll ignore this and always default to USA
 });
 
 export const AddressStrictSchema = z.object({
@@ -19,5 +19,5 @@ export const AddressStrictSchema = z.object({
   city: z.string().min(1),
   state: usStateSchema,
   zip: defaultZipString,
-  country: z.string().min(1).default("USA"),
+  country: z.literal("USA").default("USA"),
 });
