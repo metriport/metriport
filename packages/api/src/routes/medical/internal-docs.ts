@@ -1,4 +1,4 @@
-import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
+import { createS3FileName, S3Utils } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -12,6 +12,7 @@ import {
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import {
   isDocumentQueryProgressEqual,
+  queryDocumentsAcrossHIEs,
   updateDocQuery,
 } from "../../command/medical/document/document-query";
 import { options, reprocessDocuments } from "../../command/medical/document/document-redownload";
@@ -300,6 +301,34 @@ router.post(
     });
 
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/docs/query
+ *
+ * Starts a new document query even if the current one is in 'processing' state.
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The customer/account's ID.
+ * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
+ *
+ * @return updated document query progress
+ */
+router.post(
+  "/query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const facilityId = getFrom("query").optional("facilityId", req);
+
+    const docQueryProgress = await queryDocumentsAcrossHIEs({
+      cxId,
+      patientId,
+      facilityId,
+      skipDocQueryStatusCheck: true,
+    });
+
+    return res.status(httpStatus.OK).json(docQueryProgress);
   })
 );
 
