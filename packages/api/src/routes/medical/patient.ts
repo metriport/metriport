@@ -14,6 +14,7 @@ import { createPatient, PatientCreateCmd } from "../../command/medical/patient/c
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import cwCommands from "../../external/commonwell";
@@ -100,13 +101,15 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityIdParam = getFrom("query").optional("facilityId", req);
     const payload = patientUpdateSchema.parse(req.body);
 
     const patient = await getPatientOrFail({ id, cxId });
     if (areDocumentsProcessing(patient)) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
     }
+
+    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     const patientUpdate: PatientUpdateCmd = {
       ...schemaUpdateToPatient(payload, cxId),
@@ -164,7 +167,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityId = getFrom("query").optional("facilityId", req);
 
     const patientDeleteCmd = {
       ...getETag(req),

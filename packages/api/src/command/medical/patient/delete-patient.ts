@@ -1,3 +1,4 @@
+import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import cwCommands from "../../../external/commonwell";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { validateVersionForUpdate } from "../../../models/_default";
@@ -7,7 +8,7 @@ import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
 
 export type PatientDeleteCmd = BaseUpdateCmdWithCustomer & {
-  facilityId: string;
+  facilityId?: string;
 };
 
 export type DeleteOptions = {
@@ -18,10 +19,12 @@ export const deletePatient = async (
   patientDelete: PatientDeleteCmd,
   options: DeleteOptions = {}
 ): Promise<void> => {
-  const { id, cxId, facilityId, eTag } = patientDelete;
+  const { id, cxId, facilityId: facilityIdParam, eTag } = patientDelete;
 
   const patient = await getPatientOrFail({ id, cxId });
   validateVersionForUpdate(patient, eTag);
+
+  const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
   if (options.allEnvs || Config.isSandbox()) {
     const fhirApi = makeFhirApi(cxId);
