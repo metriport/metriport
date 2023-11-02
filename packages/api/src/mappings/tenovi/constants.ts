@@ -6,6 +6,7 @@ export const tenoviMetricTypes = [
   "weight",
   "temperature",
   "glucose",
+  "blood_glucose",
   "peak_expiratory_flow",
   "forced_expiratory_volume",
 ] as const;
