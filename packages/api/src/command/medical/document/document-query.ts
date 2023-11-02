@@ -41,14 +41,14 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   override,
-  cxRequestMetadata,
+  cxDocumentRequestMetadata,
   skipDocQueryStatusCheck = false,
 }: {
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
-  cxRequestMetadata?: unknown;
+  cxDocumentRequestMetadata?: unknown;
   skipDocQueryStatusCheck?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
@@ -90,7 +90,7 @@ export async function queryDocumentsAcrossHIEs({
     downloadProgress: { status: "processing" },
     requestId,
     reset: true,
-    cxRequestMetadata,
+    cxDocumentRequestMetadata,
   });
 
   const cxsWithEnhancedCoverageFeatureFlagValue =
@@ -124,7 +124,7 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
-  cxRequestMetadata?: unknown;
+  cxDocumentRequestMetadata?: unknown;
 };
 
 type UpdateDocQueryParams =
@@ -148,7 +148,7 @@ export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Pati
 export const updateConversionProgress = async ({
   patient,
   convertResult,
-  cxRequestMetadata,
+  cxDocumentRequestMetadata,
 }: UpdateResult): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -172,11 +172,11 @@ export const updateConversionProgress = async ({
       data: {
         ...existingPatient.data,
         documentQueryProgress,
+        cxDocumentRequestMetadata:
+          cxDocumentRequestMetadata !== undefined
+            ? (cxDocumentRequestMetadata as Record<string, string>)
+            : existingPatient.data.cxDocumentRequestMetadata,
       },
-      cxRequestMetadata:
-        cxRequestMetadata !== undefined
-          ? (cxRequestMetadata as Record<string, string>)
-          : existingPatient.cxRequestMetadata,
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 

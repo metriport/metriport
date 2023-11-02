@@ -9,7 +9,7 @@ export type SetDocQueryProgress = {
   convertibleDownloadErrors?: number;
   increaseCountConvertible?: number;
   requestId?: string | undefined;
-  cxRequestMetadata?: unknown;
+  cxDocumentRequestMetadata?: unknown;
 } & (
   | {
       downloadProgress?: Progress | undefined | null;
@@ -37,6 +37,7 @@ export async function appendDocQueryProgress({
   increaseCountConvertible,
   reset,
   requestId,
+  cxDocumentRequestMetadata,
 }: SetDocQueryProgress): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
@@ -92,6 +93,10 @@ export async function appendDocQueryProgress({
       data: {
         ...existingPatient.data,
         documentQueryProgress,
+        cxDocumentRequestMetadata:
+          cxDocumentRequestMetadata !== undefined
+            ? (cxDocumentRequestMetadata as Record<string, string>)
+            : existingPatient.data.cxDocumentRequestMetadata,
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });

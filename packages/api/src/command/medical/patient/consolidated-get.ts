@@ -30,7 +30,7 @@ export async function startConsolidatedQuery({
   dateFrom,
   dateTo,
   conversionType,
-  cxRequestMetadata,
+  cxConsolidatedRequestMetadata,
 }: {
   cxId: string;
   patientId: string;
@@ -38,7 +38,7 @@ export async function startConsolidatedQuery({
   dateFrom?: string;
   dateTo?: string;
   conversionType?: ConsolidationConversionType;
-  cxRequestMetadata?: unknown;
+  cxConsolidatedRequestMetadata?: unknown;
 }): Promise<QueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -52,7 +52,7 @@ export async function startConsolidatedQuery({
     patient,
     progress,
     reset: true,
-    cxRequestMetadata,
+    cxConsolidatedRequestMetadata,
   });
   getConsolidatedAndSendToCx({
     patient,

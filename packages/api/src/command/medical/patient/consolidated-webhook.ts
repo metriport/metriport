@@ -26,7 +26,7 @@ type PayloadPatient = {
 type Payload = {
   meta: WebhookMetadataPayload;
   patients: PayloadPatient[];
-  cxRequestMetadata?: unknown;
+  cxConsolidatedRequestMetadata?: unknown;
 };
 type PayloadWithoutMeta = Omit<Payload, "meta">;
 
@@ -58,7 +58,7 @@ export const processConsolidatedDataWebhook = async ({
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
       patients: [{ patientId, status, bundle, filters }],
-      cxRequestMetadata: currentPatient.cxRequestMetadata,
+      cxConsolidatedRequestMetadata: currentPatient.data.cxConsolidatedRequestMetadata,
     };
     const webhookRequest = await createWebhookRequest({
       cxId,
