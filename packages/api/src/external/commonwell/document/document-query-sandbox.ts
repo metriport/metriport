@@ -54,6 +54,7 @@ export async function sandboxGetDocRefsAndUpsert({
       downloadProgress: {
         status: "completed",
       },
+      reset: true,
       requestId,
     });
     return [];
@@ -92,8 +93,11 @@ export async function sandboxGetDocRefsAndUpsert({
     requestId,
   });
 
+  let docsToConvert: number = convertibleDocCount;
+
   for (const entry of docsWithContent) {
     const fileTitle = entry.docRef.content?.[0]?.attachment?.title;
+    // if it doesnt exist were adding it to the fhir server as a reference
     if (!fileTitle || !existingDocTitles.includes(fileTitle)) {
       const prevDocId = entry.docRef.id;
       entry.docRef.id = uuidv7();
@@ -130,6 +134,13 @@ export async function sandboxGetDocRefsAndUpsert({
       } catch (err) {
         log(`Error w/ file docId ${entry.docRef.id}, prevDocId ${prevDocId}: ${err}`);
       }
+    } else {
+      log(`Skipping file ${fileTitle} as it already exists`);
+      const isDocConvertible = isConvertible(entry.content?.mimeType);
+
+      if  (isDocConvertible) {
+        docsToConvert = docsToConvert - 1;
+      }
     }
   }
 
@@ -142,7 +153,13 @@ export async function sandboxGetDocRefsAndUpsert({
       status: "completed",
       successful: entries.length,
     },
-    convertProgress: undefined,
+    convertProgress: docsToConvert <= 0 ? {
+      total: 0,
+      status: "completed",
+    } : {
+      total: docsToConvert,
+      status: "processing",
+    },
     requestId,
   });
 
