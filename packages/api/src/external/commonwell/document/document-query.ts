@@ -137,8 +137,7 @@ export async function queryAndProcessDocuments({
       patient.cxId,
       patient.id,
       "medical.document-download",
-      MAPIWebhookStatus.failed,
-      undefined
+      MAPIWebhookStatus.failed
     );
     await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
@@ -691,8 +690,7 @@ export async function downloadDocsAndUpsertFHIR({
       cxId,
       patient.id,
       "medical.document-conversion",
-      MAPIWebhookStatus.completed,
-      undefined
+      MAPIWebhookStatus.completed
     );
     if (conversionStatusFromAppend !== conversionStatusFromDB) {
       log(
