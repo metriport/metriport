@@ -16,9 +16,6 @@ export const tenoviMeasurementSchema = z.object({
   timestamp: z.string(),
   timezone_offset: z.number(),
   estimated_timestamp: z.boolean(),
-  filter_params: z.object({
-    measurement_index: z.number().optional(),
-  }),
 });
 
 export const tenoviMeasurementDataSchema = z.array(tenoviMeasurementSchema);
