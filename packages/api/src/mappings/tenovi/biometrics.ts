@@ -177,7 +177,7 @@ export function updateBiometricsWithBloodGluc(
   value: number,
   sourceInfo?: SourceInfo
 ) {
-  if (metric === "glucose") {
+  if (metric === "glucose" || metric === "blood_glucose") {
     biometrics.blood_glucose = {
       samples_mg_dL: [
         {
