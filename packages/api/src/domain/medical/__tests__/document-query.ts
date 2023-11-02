@@ -18,5 +18,6 @@ export function makeDocumentQueryProgress(
   return {
     download: makeProgress(seed.download),
     convert: makeProgress(seed.convert),
+    requestId: seed.requestId === null ? undefined : seed.requestId ?? faker.datatype.uuid(),
   };
 }

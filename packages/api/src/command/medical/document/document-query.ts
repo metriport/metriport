@@ -210,7 +210,7 @@ export const updateConversionProgress = async ({
  * @param forceNew Force creating a new request ID
  * @returns uuidv7 string ID for the request
  */
-function getOrGenerateRequestId(
+export function getOrGenerateRequestId(
   docQueryProgress: DocumentQueryProgress | undefined,
   forceNew = false
 ): string {
