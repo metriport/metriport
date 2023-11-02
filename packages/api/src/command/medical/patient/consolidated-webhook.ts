@@ -9,6 +9,7 @@ import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
+import { getPatientOrFail } from "./get-patient";
 
 const log = Util.log(`Consolidated Webhook`);
 
@@ -21,11 +22,11 @@ type PayloadPatient = {
   status: ConsolidatedWebhookStatus;
   bundle?: Bundle<Resource>;
   filters?: Filters;
-  cxPayload?: object;
 };
 type Payload = {
   meta: WebhookMetadataPayload;
   patients: PayloadPatient[];
+  cxRequestMetadata?: unknown;
 };
 type PayloadWithoutMeta = Omit<Payload, "meta">;
 
@@ -42,22 +43,22 @@ export const processConsolidatedDataWebhook = async ({
   status,
   bundle,
   filters,
-  cxPayload,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status: ConsolidatedWebhookStatus;
   bundle?: Bundle<Resource>;
   filters?: Filters;
-  cxPayload?: object;
 }): Promise<void> => {
   const apiType = Product.medical;
   const { id: patientId, cxId } = patient;
   try {
     const settings = await getSettingsOrFail({ id: cxId });
+    const currentPatient = await getPatientOrFail({ id: patientId, cxId });
 
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
-      patients: [{ patientId, status, bundle, filters, cxPayload }],
+      patients: [{ patientId, status, bundle, filters }],
+      cxRequestMetadata: currentPatient.cxRequestMetadata,
     };
     const webhookRequest = await createWebhookRequest({
       cxId,

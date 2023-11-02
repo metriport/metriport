@@ -34,12 +34,10 @@ export async function sandboxGetDocRefsAndUpsert({
   organization,
   patient,
   requestId,
-  cxPayload,
 }: {
   organization: Organization;
   patient: Patient;
   requestId: string;
-  cxPayload?: object;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
 
@@ -172,8 +170,7 @@ export async function sandboxGetDocRefsAndUpsert({
     patient.id,
     "medical.document-download",
     MAPIWebhookStatus.completed,
-    toDTO(result),
-    cxPayload
+    toDTO(result)
   );
 
   return result;

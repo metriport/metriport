@@ -8,6 +8,7 @@ export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
   progress: QueryProgress;
   reset?: boolean;
+  cxRequestMetadata?: unknown;
 };
 
 /**
@@ -20,6 +21,7 @@ export async function updateConsolidatedQueryProgress({
   patient,
   progress,
   reset,
+  cxRequestMetadata,
 }: SetDocQueryProgress): Promise<void> {
   const patientFilter = {
     id: patient.id,
@@ -45,6 +47,10 @@ export async function updateConsolidatedQueryProgress({
         ...patient.data,
         consolidatedQuery,
       },
+      cxRequestMetadata:
+        cxRequestMetadata !== undefined
+          ? (cxRequestMetadata as Record<string, string>)
+          : patient.cxRequestMetadata,
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
   });

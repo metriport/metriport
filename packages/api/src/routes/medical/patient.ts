@@ -39,7 +39,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
-import { cxWebhookPayloadSchemaOptional } from "../../domain/webhook";
+import { cxRequestMetadataScheme } from "./schemas/request-metadata";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -286,7 +286,7 @@ router.post(
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
-    const cxPayload = cxWebhookPayloadSchemaOptional.parse(req.body);
+    const cxRequestMetadata = cxRequestMetadataScheme.parse(req.body);
 
     const data = await startConsolidatedQuery({
       cxId,
@@ -295,7 +295,7 @@ router.post(
       dateFrom,
       dateTo,
       conversionType,
-      cxPayload,
+      cxRequestMetadata,
     });
     return res.json(data);
   })

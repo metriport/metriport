@@ -7,6 +7,7 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
   declare cxId: string;
   declare facilityIds: string[];
   declare data: PatientData;
+  declare cxRequestMetadata: Record<string, string | undefined>; // New field
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientModel.init(
@@ -20,6 +21,10 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
         },
         data: {
           type: DataTypes.JSONB,
+        },
+        cxRequestMetadata: {
+          type: DataTypes.JSONB,
+          allowNull: true,
         },
       },
       {

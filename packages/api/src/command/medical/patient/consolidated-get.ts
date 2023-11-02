@@ -30,7 +30,7 @@ export async function startConsolidatedQuery({
   dateFrom,
   dateTo,
   conversionType,
-  cxPayload,
+  cxRequestMetadata,
 }: {
   cxId: string;
   patientId: string;
@@ -38,7 +38,7 @@ export async function startConsolidatedQuery({
   dateFrom?: string;
   dateTo?: string;
   conversionType?: ConsolidationConversionType;
-  cxPayload?: object;
+  cxRequestMetadata?: unknown;
 }): Promise<QueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -52,6 +52,7 @@ export async function startConsolidatedQuery({
     patient,
     progress,
     reset: true,
+    cxRequestMetadata,
   });
   getConsolidatedAndSendToCx({
     patient,
@@ -59,7 +60,6 @@ export async function startConsolidatedQuery({
     dateFrom,
     dateTo,
     conversionType,
-    cxPayload,
   }).catch(emptyFunction);
   return progress;
 }
@@ -70,14 +70,12 @@ async function getConsolidatedAndSendToCx({
   dateFrom,
   dateTo,
   conversionType,
-  cxPayload,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "data">;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
   conversionType?: ConsolidationConversionType;
-  cxPayload?: object;
 }): Promise<void> {
   const { log } = Util.out(
     `getConsolidatedAndSendToCx - cxId ${patient.cxId}, patientId ${patient.id}`
@@ -105,7 +103,6 @@ async function getConsolidatedAndSendToCx({
       status: "completed",
       bundle,
       filters,
-      cxPayload,
     }).catch(emptyFunction);
   } catch (error) {
     log(`Failed to get FHIR resources: ${JSON.stringify(filters)}`);
@@ -118,7 +115,6 @@ async function getConsolidatedAndSendToCx({
         dateTo,
         conversionType,
       },
-      cxPayload,
     }).catch(emptyFunction);
     capture.error(error, {
       extra: {

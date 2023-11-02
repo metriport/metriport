@@ -23,7 +23,7 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 
-import { cxWebhookPayloadSchemaOptional } from "../../domain/webhook";
+import { cxRequestMetadataScheme } from "./schemas/request-metadata";
 
 const router = Router();
 const region = Config.getAWSRegion();
@@ -109,14 +109,14 @@ router.post(
     const patientId = getFromQueryOrFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
-    const cxPayload = cxWebhookPayloadSchemaOptional.parse(req.body);
+    const cxRequestMetadata = cxRequestMetadataScheme.parse(req.body);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
       override,
-      cxPayload,
+      cxRequestMetadata,
     });
 
     return res.status(OK).json(docQueryProgress);

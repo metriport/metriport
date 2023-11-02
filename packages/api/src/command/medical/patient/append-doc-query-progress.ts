@@ -9,6 +9,7 @@ export type SetDocQueryProgress = {
   convertibleDownloadErrors?: number;
   increaseCountConvertible?: number;
   requestId?: string | undefined;
+  cxRequestMetadata?: unknown;
 } & (
   | {
       downloadProgress?: Progress | undefined | null;

@@ -4,6 +4,7 @@ import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
+import { getPatientOrFail } from "../patient/get-patient";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
@@ -19,10 +20,11 @@ type WebhookDocumentDataPayload = {
   documents?: DocumentReferenceDTO[];
   status: MAPIWebhookStatus;
 };
-type WebhookPatientPayload = { patientId: string; cxPayload?: object } & WebhookDocumentDataPayload;
+type WebhookPatientPayload = { patientId: string } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
   meta: WebhookMetadataPayload;
   patients: WebhookPatientPayload[];
+  cxRequestMetadata: unknown;
 };
 type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload, "meta">;
 
@@ -39,14 +41,16 @@ export const processPatientDocumentRequest = async (
   patientId: string,
   whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
-  documents?: DocumentReferenceDTO[],
-  cxPayload?: object
+  documents?: DocumentReferenceDTO[]
 ): Promise<void> => {
   try {
     const settings = await getSettingsOrFail({ id: cxId });
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+
     // create a representation of this request and store on the DB
     const payload: WebhookPatientDataPayloadWithoutMessageId = {
-      patients: [{ patientId, documents, status, cxPayload }],
+      patients: [{ patientId, documents, status }],
+      cxRequestMetadata: patient.cxRequestMetadata,
     };
     const webhookRequest = await createWebhookRequest({ cxId, type: whType, payload });
     // send it to the customer and update the request status
