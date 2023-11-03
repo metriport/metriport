@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import { faker } from "@faker-js/faker";
 import { executeAsynchronously } from "../concurrency";
 import * as sleepFile from "../sleep";
 import { sleep } from "../sleep";
@@ -11,6 +12,40 @@ afterAll(() => {
 });
 
 describe("executeAsynchronously", () => {
+  it("fails if minJitter is lower than zero", async () => {
+    const list = ["a", "b", "c", "d", "e"];
+    const fn = jest.fn(async () => {});
+    await expect(
+      executeAsynchronously(list, fn, {
+        numberOfParallelExecutions: 2,
+        minJitterMillis: faker.number.int({ min: 1 }) * -1,
+      })
+    ).rejects.toThrow();
+  });
+
+  it("fails if maxJitter is lower than zero", async () => {
+    const list = ["a", "b", "c", "d", "e"];
+    const fn = jest.fn(async () => {});
+    await expect(
+      executeAsynchronously(list, fn, {
+        numberOfParallelExecutions: 2,
+        maxJitterMillis: faker.number.int({ min: 1 }) * -1,
+      })
+    ).rejects.toThrow();
+  });
+
+  it("fails if minJitter is higer than maxJitter", async () => {
+    const list = ["a", "b", "c", "d", "e"];
+    const fn = jest.fn(async () => {});
+    await expect(
+      executeAsynchronously(list, fn, {
+        numberOfParallelExecutions: 2,
+        maxJitterMillis: faker.number.int({ min: 0, max: 10 }),
+        minJitterMillis: faker.number.int({ min: 11 }),
+      })
+    ).rejects.toThrow();
+  });
+
   it("runs splits list and runs it asynchronously", async () => {
     const list = ["a", "b", "c", "d", "e"];
     const fn = jest.fn(async () => {
@@ -19,7 +54,7 @@ describe("executeAsynchronously", () => {
     await executeAsynchronously(list, fn, {
       numberOfParallelExecutions: 2,
       maxJitterMillis: 10,
-      jitterPct: 1,
+      minJitterMillis: 10,
     });
     expect(fn).toHaveBeenNthCalledWith(1, "a", 0, 0, 2);
     expect(fn).toHaveBeenNthCalledWith(2, "d", 0, 1, 2);
