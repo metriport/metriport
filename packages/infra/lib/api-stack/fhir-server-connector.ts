@@ -1,7 +1,6 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Queue } from "aws-cdk-lib/aws-sqs";
@@ -9,6 +8,7 @@ import { Construct } from "constructs";
 import { EnvType } from "../env-type";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
+import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { isProd } from "../shared/util";
 
@@ -50,7 +50,7 @@ export function createConnector({
   stack: Construct;
   vpc: IVpc;
   fhirConverterBucket: s3.IBucket;
-  lambdaLayers: ILayerVersion[];
+  lambdaLayers: LambdaLayers;
   alarmSnsAction?: SnsAction;
 }): Queue | undefined {
   const config = getConfig();
@@ -83,7 +83,7 @@ export function createConnector({
     fifo: false,
     visibilityTimeout,
     maxReceiveCount,
-    lambdaLayers,
+    lambdaLayers: [lambdaLayers.shared],
     alarmSnsAction,
   });
 
@@ -96,7 +96,7 @@ export function createConnector({
     vpc,
     subnets: vpc.privateSubnets,
     entry: "sqs-to-fhir",
-    layers: lambdaLayers,
+    layers: [lambdaLayers.shared],
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,

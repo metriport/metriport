@@ -1,4 +1,5 @@
 import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
+import { UploadDocumentResult } from "@metriport/api-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -183,7 +184,40 @@ router.get(
   })
 );
 
+async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocumentResult> {
+  const cxId = getCxIdOrFail(req);
+  const patientId = getFromQueryOrFail("patientId", req);
+  const docId = uuidv7();
+  const s3FileName = createS3FileName(cxId, patientId, docId);
+  const organization = await getOrganizationOrFail({ cxId });
+
+  const docRefDraft = req.body;
+  docRefCheck(docRefDraft);
+  // #1075 TODO: Validate FHIR Payloads
+
+  const docRef = composeDocumentReference(
+    docRefDraft,
+    organization,
+    patientId,
+    docId,
+    s3FileName,
+    medicalDocumentsUploadBucketName
+  );
+
+  const url = await s3Utils.getPresignedUploadUrl({
+    bucket: medicalDocumentsUploadBucketName,
+    key: s3FileName,
+  });
+
+  // Make a temporary DocumentReference on the FHIR server.
+  console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
+  await upsertDocumentToFHIRServer(cxId, docRef);
+
+  return { documentReferenceId: docId, uploadUrl: url };
+}
+
 /**
+ * @deprecated - use POST /document/upload instead.
  * POST /document/upload-url
  *
  * Uploads a medical document and creates a Document Reference for that file on the FHIR server.
@@ -191,41 +225,36 @@ router.get(
  * @param patientId - The ID of the patient.
  * @body - The DocumentReference with context for the file to be uploaded.
  *
- * @return The URL for document upload.
+ * @return The URL string for document upload.
  * Refer to Metriport Documentation for more details:
  * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
  */
 router.post(
   "/upload-url",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
-    const docId = uuidv7();
-    const s3FileName = createS3FileName(cxId, patientId, docId);
-    const organization = await getOrganizationOrFail({ cxId });
+    const resp = await getUploadUrlAndCreateDocRef(req);
+    const url = resp.uploadUrl;
+    return res.status(httpStatus.OK).json(url);
+  })
+);
 
-    const docRefDraft = req.body;
-    docRefCheck(docRefDraft);
-    // #1075 TODO: Validate FHIR Payloads
-
-    const docRef = composeDocumentReference(
-      docRefDraft,
-      organization,
-      patientId,
-      docId,
-      s3FileName,
-      medicalDocumentsUploadBucketName
-    );
-
-    const presignedUrl = await s3Utils.getPresignedUploadUrl({
-      bucket: medicalDocumentsUploadBucketName,
-      key: s3FileName,
-    });
-
-    // Make a temporary DocumentReference on the FHIR server.
-    console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
-    await upsertDocumentToFHIRServer(cxId, docRef);
-    return res.status(httpStatus.OK).json(presignedUrl);
+/**
+ * POST /document/upload
+ *
+ * Uploads a medical document and creates a Document Reference for that file on the FHIR server.
+ *
+ * @param patientId - The ID of the patient.
+ * @body - The DocumentReference with context for the file to be uploaded.
+ *
+ * @return The DocumentReference ID and the URL for document upload.
+ * Refer to Metriport Documentation for more details:
+ * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
+ */
+router.post(
+  "/upload",
+  asyncHandler(async (req: Request, res: Response) => {
+    const resp = await getUploadUrlAndCreateDocRef(req);
+    return res.status(httpStatus.OK).json(resp);
   })
 );
 
