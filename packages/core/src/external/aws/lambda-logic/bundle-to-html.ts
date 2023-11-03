@@ -636,7 +636,6 @@ function buildEncounterSections(
             if (noteIsBlacklisted) {
               continue;
             }
-            
           }
 
           if (!isReportDuplicate) {

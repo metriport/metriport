@@ -12,6 +12,7 @@ import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { isDAPIWebhookRequest } from "./devices-util";
 import { updateWebhookRequestStatus } from "./webhook-request";
+import crypto from "crypto";
 
 const DEFAULT_TIMEOUT_SEND_PAYLOAD_MS = 5_000;
 const DEFAULT_TIMEOUT_SEND_TEST_MS = 2_000;
@@ -23,7 +24,12 @@ type WebhookPingPayload = {
   ping: string;
 };
 
-export type WebhookMetadataPayload = { messageId: string; when: string; type: string };
+export type WebhookMetadataPayload = {
+  messageId: string;
+  when: string;
+  type: string;
+  hmac: string;
+};
 
 async function missingWHSettings(
   webhookRequest: WebhookRequest,
@@ -80,12 +86,18 @@ export const processRequest = async (
     });
   };
 
-  const payload = webhookRequest.payload;
+  const payload = webhookRequest.payload as Record<string, string>;
   try {
+    console.log("wh key", webhookKey);
+    console.log("payload", JSON.stringify(payload.patients));
     const meta: WebhookMetadataPayload = {
       messageId: webhookRequest.id,
       when: dayjs(webhookRequest.createdAt).toISOString(),
       type: webhookRequest.type,
+      hmac: crypto
+        .createHmac("sha256", webhookKey)
+        .update(JSON.stringify(payload.patients))
+        .digest("hex"),
     };
     await sendPayload(
       {

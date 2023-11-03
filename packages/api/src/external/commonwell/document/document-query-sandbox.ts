@@ -138,7 +138,7 @@ export async function sandboxGetDocRefsAndUpsert({
       log(`Skipping file ${fileTitle} as it already exists`);
       const isDocConvertible = isConvertible(entry.content?.mimeType);
 
-      if  (isDocConvertible) {
+      if (isDocConvertible) {
         docsToConvert = docsToConvert - 1;
       }
     }
@@ -153,13 +153,16 @@ export async function sandboxGetDocRefsAndUpsert({
       status: "completed",
       successful: entries.length,
     },
-    convertProgress: docsToConvert <= 0 ? {
-      total: 0,
-      status: "completed",
-    } : {
-      total: docsToConvert,
-      status: "processing",
-    },
+    convertProgress:
+      docsToConvert <= 0
+        ? {
+            total: 0,
+            status: "completed",
+          }
+        : {
+            total: docsToConvert,
+            status: "processing",
+          },
     requestId,
   });
 
