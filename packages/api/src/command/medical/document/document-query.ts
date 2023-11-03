@@ -41,13 +41,13 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   override,
-  skipDocQueryStatusCheck = false,
+  forceQuery = false,
 }: {
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
-  skipDocQueryStatusCheck?: boolean;
+  forceQuery?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -69,9 +69,9 @@ export async function queryDocumentsAcrossHIEs({
     );
   }
   const docQueryProgress = patient.data.documentQueryProgress;
-  const requestId = getOrGenerateRequestId(docQueryProgress, skipDocQueryStatusCheck);
+  const requestId = getOrGenerateRequestId(docQueryProgress, forceQuery);
 
-  const isCheckStatus = !skipDocQueryStatusCheck;
+  const isCheckStatus = !forceQuery;
   if (isCheckStatus && areDocumentsProcessing(docQueryProgress)) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
@@ -92,7 +92,7 @@ export async function queryDocumentsAcrossHIEs({
 
   const cxsWithEnhancedCoverageFeatureFlagValue =
     await getCxsWithEnhancedCoverageFeatureFlagValue();
-  if (!cxsWithEnhancedCoverageFeatureFlagValue.includes(patient.cxId)) {
+  if (forceQuery || !cxsWithEnhancedCoverageFeatureFlagValue.includes(patient.cxId)) {
     // kick off document query unless the cx has the enhanced coverage feature enabled
     getDocumentsFromCW({
       patient,
