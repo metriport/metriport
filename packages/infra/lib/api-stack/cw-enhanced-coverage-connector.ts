@@ -91,8 +91,10 @@ export function setup({
       linkPatientsLambda: IFunction;
     }
   | undefined {
-  const config = getConfig();
-  const coverageConfig = config.commonwell.coverageEnhancement;
+  // TODO 1195 Either remove or re-enable this and finish building it
+  // const config = getConfig();
+  // const coverageConfig = config.commonwell.coverageEnhancement;
+  const coverageConfig = {} as CWCoverageEnhancementConfig;
   if (!coverageConfig) {
     console.log(`CW coverage enhancement is not enabled, skipping...`);
     return undefined;
@@ -148,10 +150,12 @@ export function setup({
 }
 
 function setupCredsStore(secrets: Secrets): secret.ISecret | undefined {
-  const config = getConfig();
+  // const config = getConfig();
   // A bit of gymnastic to get a compilation error if we change the name of the env var
-  const envVarName: Extract<keyof typeof config.cwSecretNames, "CW_MANAGEMENT_CREDS"> =
-    "CW_MANAGEMENT_CREDS";
+  // TODO 1195 Either remove or re-enable this and finish building it
+  // const envVarName: Extract<keyof typeof config.cwSecretNames, "CW_MANAGEMENT_CREDS"> =
+  //     "CW_MANAGEMENT_CREDS";
+  const envVarName = "not-available";
   return secrets[envVarName];
 }
 

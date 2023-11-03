@@ -39,7 +39,8 @@ export type EnvConfig = {
     POST_HOG_API_KEY: string;
   };
   commonwell: {
-    coverageEnhancement?: CWCoverageEnhancementConfig;
+    // TODO 1195 Either remove or re-enable this and finish building it
+    // coverageEnhancement?: CWCoverageEnhancementConfig;
     envVars: {
       CW_MEMBER_NAME: string;
       CW_MEMBER_OID: string;
@@ -74,7 +75,8 @@ export type EnvConfig = {
   };
   // Secret props should be in upper case because they become env vars for ECS
   cwSecretNames: {
-    CW_MANAGEMENT_CREDS?: string;
+    // TODO 1195 Either remove or re-enable this and finish building it
+    // CW_MANAGEMENT_CREDS?: string;
     CW_ORG_PRIVATE_KEY: string;
     CW_ORG_CERTIFICATE: string;
     CW_MEMBER_PRIVATE_KEY: string;

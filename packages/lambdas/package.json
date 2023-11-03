@@ -10,8 +10,6 @@
     "build": "tsc -p tsconfig.build.json",
     "build:cloud": "tsc -p tsconfig.cloud.json",
     "typecheck": "tsc --noEmit",
-    "build-shared-layer": "npm ci --omit=dev --ignore-scripts --no-fund && mkdir -p ./layers/shared/nodejs && rsync -a --no-links node_modules ./layers/shared/nodejs/ && cd ./layers/shared && zip -r shared-layer.zip ./nodejs && cd ../..",
-    "build-playwright-layer": "pushd layers/playwright && npm run prep-deploy && popd",
     "prep-deploy": "./scripts/prep-deploy.sh",
     "lint": "eslint . --ext .ts",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests"

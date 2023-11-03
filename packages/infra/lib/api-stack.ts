@@ -22,7 +22,6 @@ import { EnvConfig } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
-import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
@@ -31,9 +30,9 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { createIHEStack } from "./ihe-stack";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
@@ -199,7 +198,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Multi-purpose bucket
     //-------------------------------------------
-    const generalBucket = new s3.Bucket(this, "GeneralBucket", {
+    new s3.Bucket(this, "GeneralBucket", {
       bucketName: props.config.generalBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
@@ -338,14 +337,17 @@ export class APIStack extends Stack {
       });
     }
 
-    cwEnhancedCoverageConnector.setup({
-      stack: this,
-      vpc: this.vpc,
-      lambdaLayers,
-      secrets,
-      bucket: generalBucket,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
+    // TODO 1195 Either remove or re-enable this and finish building it
+    // Also consider whether the playwright layer should be kept around
+    // import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
+    // cwEnhancedCoverageConnector.setup({
+    //   stack: this,
+    //   vpc: this.vpc,
+    //   lambdaLayers,
+    //   secrets,
+    //   bucket: generalBucket,
+    //   alarmSnsAction: slackNotification?.alarmAction,
+    // });
 
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
@@ -1088,7 +1090,7 @@ export class APIStack extends Stack {
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared,lambdaLayers.chromium],
+      layers: [lambdaLayers.shared, lambdaLayers.chromium],
       memory: 1024,
       timeout: lambdaTimeout,
       vpc,
