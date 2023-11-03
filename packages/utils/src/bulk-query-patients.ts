@@ -66,6 +66,10 @@ async function getAllPatientIds(): Promise<string[]> {
   return (Array.isArray(patientIds) ? patientIds : []) as string[];
 }
 
+async function triggerDocQuery(patientId: string): Promise<void> {
+  await axios.post(`${apiUrl}/internal/docs/query?cxId=${cxId}&patientId=${patientId}`);
+}
+
 async function queryDocsForPatient(patientId: string) {
   try {
     let docQueryAttempts = 0;
@@ -81,7 +85,8 @@ async function queryDocsForPatient(patientId: string) {
     const docQueryPromise = async () => {
       while (docQueryAttempts < maxDocQueryAttemts) {
         console.log(`>>> Starting doc query for patient ${patientId}...`);
-        await metriportAPI.startDocumentQuery(patientId);
+        // can't use the SDK b/c we need to bypass the feature flag that disables doc query for enhanced coverage customers
+        await triggerDocQuery(patientId);
         // add a bit of jitter to the requests
         await sleep(200 + Math.random() * patientChunkDelayJitterMs);
         const queryStartTime = Date.now();
