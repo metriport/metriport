@@ -104,11 +104,10 @@ export async function queryDocumentsAcrossHIEs({
     address: updatedPatientProgress.data.address,
     cxDocumentRequestMetadata: cxDocumentRequestMetadata,
     whOverride:
-      (cxDocumentRequestMetadata as { meta?: { whOverrideFlag?: boolean } })?.meta
-        ?.whOverrideFlag === true
-        ? true
-        : false,
+      (cxDocumentRequestMetadata as { whOverrideFlag?: string })?.whOverrideFlag !== undefined,
   });
+
+  console.log("WH BOOL: ", updatedPatientMetadata.data.whOverride);
 
   const cxsWithEnhancedCoverageFeatureFlagValue =
     await getCxsWithEnhancedCoverageFeatureFlagValue();

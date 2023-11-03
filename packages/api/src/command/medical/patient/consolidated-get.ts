@@ -60,10 +60,7 @@ export async function startConsolidatedQuery({
     cxDocumentRequestMetadata: cxConsolidatedRequestMetadata,
     cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata,
     whOverride:
-      (cxConsolidatedRequestMetadata as { meta?: { whOverrideFlag?: boolean } })?.meta
-        ?.whOverrideFlag === true
-        ? true
-        : false,
+      (cxConsolidatedRequestMetadata as { whOverrideFlag?: string })?.whOverrideFlag !== undefined,
   });
 
   const progress: QueryProgress = { status: "processing" };
