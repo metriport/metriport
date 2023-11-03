@@ -325,7 +325,7 @@ router.post(
       cxId,
       patientId,
       facilityId,
-      skipDocQueryStatusCheck: true,
+      forceQuery: true,
     });
 
     return res.status(httpStatus.OK).json(docQueryProgress);

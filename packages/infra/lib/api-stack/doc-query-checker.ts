@@ -1,15 +1,16 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { ILayerVersion, Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
+import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
+import { LambdaLayers } from "../shared/lambda-layers";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
 
 export type DocQueryCheckerProps = {
   stack: Construct;
-  lambdaLayers: ILayerVersion[];
+  lambdaLayers: LambdaLayers;
   vpc: IVpc;
   apiAddress: string;
   alarmSnsAction?: SnsAction;
@@ -51,7 +52,7 @@ export function createDocQueryChecker(props: DocQueryCheckerProps): Lambda | und
 
   const lambda = createScheduledLambda({
     stack,
-    layers: lambdaLayers,
+    layers: [lambdaLayers.shared],
     name,
     vpc,
     scheduleExpression,
