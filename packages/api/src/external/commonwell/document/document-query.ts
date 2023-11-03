@@ -55,6 +55,7 @@ import {
   DocumentWithMetriportId,
   getFileName,
 } from "./shared";
+import httpStatus from "http-status";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -476,7 +477,7 @@ export async function downloadDocsAndUpsertFHIR({
     const s3Refs = await Promise.allSettled(
       docChunk.map(async doc => {
         let errorReported = false;
-        let uploadToS3: () => Promise<File>;
+        let uploadToS3: () => Promise<File | void>;
         let file: Awaited<ReturnType<typeof uploadToS3>> | undefined = undefined;
         const isConvertibleDoc = isConvertible(doc.content?.mimeType);
 
@@ -506,6 +507,7 @@ export async function downloadDocsAndUpsertFHIR({
                   organization,
                   facilityNPI,
                   cxId,
+                  requestId,
                 });
 
                 return newFile;
@@ -527,6 +529,7 @@ export async function downloadDocsAndUpsertFHIR({
               };
             }
             file = await uploadToS3();
+            if (!file) return;
           } catch (error) {
             if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) errorCountConvertible++;
 
@@ -725,13 +728,15 @@ async function triggerDownloadDocument({
   organization,
   facilityNPI,
   cxId,
+  requestId,
 }: {
   doc: DocumentWithLocation;
   fileInfo: S3Info;
   organization: Organization;
   facilityNPI: string;
   cxId: string;
-}): Promise<File> {
+  requestId: string;
+}): Promise<File | void> {
   const docDownloader = makeDocumentDownloader({
     orgName: organization.data.name,
     orgOid: organization.oid,
@@ -747,11 +752,23 @@ async function triggerDownloadDocument({
     location: fileInfo.fileLocation,
   };
 
-  const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
-  return {
-    ...result,
-    isNew: true,
-  };
+  try {
+    const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+    return {
+      ...result,
+      isNew: true,
+    };
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error.response?.status === httpStatus.NOT_FOUND) {
+      console.log(`Document not found on CW, skipping - requestId: ${requestId}. Error: ${error}`);
+    } else {
+      const message = "Error downloading document from CW";
+      console.log(`${message}: ${error}`);
+      capture.error(error, { extra: { context: `triggerDownloadDocument`, error, requestId } });
+      throw error;
+    }
+  }
 }
 
 const fileIsConvertible = (f: File) => isConvertible(f.contentType);
