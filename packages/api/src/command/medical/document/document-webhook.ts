@@ -24,7 +24,6 @@ type WebhookPatientPayload = { patientId: string } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
   meta: WebhookMetadataPayload;
   patients: WebhookPatientPayload[];
-  documentRequestMetadata: unknown;
 };
 type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload, "meta">;
 
@@ -52,11 +51,15 @@ export const processPatientDocumentRequest = async (
     // create a representation of this request and store on the DB
     const payload: WebhookPatientDataPayloadWithoutMessageId = {
       patients: [{ patientId, documents, status }],
-      documentRequestMetadata: patient.data.cxDocumentRequestMetadata,
     };
     const webhookRequest = await createWebhookRequest({ cxId, type: whType, payload });
     // send it to the customer and update the request status
-    await processRequest(webhookRequest, settings);
+    await processRequest(
+      webhookRequest,
+      settings,
+      undefined,
+      patient.data.cxDocumentRequestMetadata
+    );
 
     reportUsageCmd({ cxId, entityId: patientId, product: Product.medical });
   } catch (err) {

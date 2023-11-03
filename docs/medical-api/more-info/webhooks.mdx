@@ -34,11 +34,7 @@ These are messages you can expect to receive in the following scenarios:
 2. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has completed (`type` for a patient in the message
    will be `document-conversion`, and at this point you'll be able to query for [patient consolidated data](#patient-consolidated-data) in FHIR-compliant format).
 
-3. Note: You will not recieve both a cxDocumentRequestMetadata and cxConsolidatedRequestMetadata in a single webhook. Below it is shown that way
-   just to demonstrate the way each would look in their respective situations. cxDocumentRequestMetadata when querrying /document/query and cxConsolidatedRequestMetadata
-   when querrying patient/consolidated/query
-
-Example payload:
+3. Note: only one of `documentRequestMetadata` and `consolidatedRequestMetadata` will be present on the webhook meta.data payload. 
 
 ```json
 {
@@ -46,6 +42,10 @@ Example payload:
     "messageId": "<message-id>",
     "when": "<date-time-in-utc>",
     "type": "medical.document-download"
+    "data": {
+      "<some-request-meta-property>": "<the-property-value>", 
+      "<another-property>": "the other value"
+    }
   },
   "patients": [
     {
@@ -100,12 +100,6 @@ Example payload:
       ...
     }
   ]
-  "documentRequestMetadata": {
-    "<some-request-meta-property>": "<the-property-value>"
-  },
-  "consolidatedRequestMetadata": {
-    "<some-request-meta-property>": "<the-property-value>"
-  },
 }
 ```
 
