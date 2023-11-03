@@ -49,13 +49,15 @@ export async function startConsolidatedQuery({
   }
 
   const updatedPatient = await updatePatient({
-    ...patient,
+    id: patient.id,
+    cxId: patient.cxId,
+    eTag: patient.eTag,
     firstName: patient.data.firstName,
     lastName: patient.data.lastName,
     dob: patient.data.dob,
     genderAtBirth: patient.data.genderAtBirth,
     address: patient.data.address,
-    cxDocumentRequestMetadata: cxConsolidatedRequestMetadata,
+    cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata,
   });
 
   const progress: QueryProgress = { status: "processing" };

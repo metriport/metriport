@@ -94,6 +94,7 @@ export async function appendDocQueryProgress({
         documentQueryProgress,
       },
     };
+    console.log("updatedPatient: ", JSON.stringify(updatedPatient));
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
     return updatedPatient;
   });
