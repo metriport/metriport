@@ -3,18 +3,18 @@ import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
+import { LambdaLayers } from "./shared/lambda-layers";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
   alarmAction: SnsAction | undefined;
-  lambdaLayers: lambda.ILayerVersion[];
+  lambdaLayers: LambdaLayers;
   certificate: cert.DnsValidatedCertificate;
   publicZone: r53.IHostedZone;
 }
@@ -53,7 +53,7 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     stack: stack,
     name: "IHE",
     entry: "ihe",
-    layers: props.lambdaLayers,
+    layers: [props.lambdaLayers.shared],
     envVars: {
       ENV_TYPE: props.config.environmentType,
       ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),

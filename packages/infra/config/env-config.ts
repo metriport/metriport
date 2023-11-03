@@ -8,6 +8,12 @@ export type ConnectWidgetConfig = {
   domain: string;
 };
 
+export type CWCoverageEnhancementConfig = {
+  managementUrl: string;
+  codeChallengeNotificationUrl: string;
+  orgListS3Key: string;
+};
+
 export type EnvConfig = {
   stackName: string;
   secretsStackName: string;
@@ -25,6 +31,7 @@ export type EnvConfig = {
   fhirServerUrl: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
+  generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
   fhirConverterBucketName?: string;
@@ -32,15 +39,20 @@ export type EnvConfig = {
     POST_HOG_API_KEY: string;
   };
   commonwell: {
-    CW_MEMBER_NAME: string;
-    CW_MEMBER_OID: string;
-    CW_GATEWAY_ENDPOINT: string;
-    CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
-    CW_TECHNICAL_CONTACT_NAME: string;
-    CW_TECHNICAL_CONTACT_TITLE: string;
-    CW_TECHNICAL_CONTACT_EMAIL: string;
-    CW_TECHNICAL_CONTACT_PHONE: string;
+    // TODO 1195 Either remove or re-enable this and finish building it
+    // coverageEnhancement?: CWCoverageEnhancementConfig;
+    envVars: {
+      CW_MEMBER_NAME: string;
+      CW_MEMBER_OID: string;
+      CW_GATEWAY_ENDPOINT: string;
+      CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
+      CW_TECHNICAL_CONTACT_NAME: string;
+      CW_TECHNICAL_CONTACT_TITLE: string;
+      CW_TECHNICAL_CONTACT_EMAIL: string;
+      CW_TECHNICAL_CONTACT_PHONE: string;
+    };
   };
+  // Secret props should be in upper case because they become env vars for ECS
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: string;
     CRONOMETER_CLIENT_SECRET: string;
@@ -61,7 +73,10 @@ export type EnvConfig = {
     WHOOP_CLIENT_SECRET: string;
     TENOVI_AUTH_HEADER: string;
   };
+  // Secret props should be in upper case because they become env vars for ECS
   cwSecretNames: {
+    // TODO 1195 Either remove or re-enable this and finish building it
+    // CW_MANAGEMENT_CREDS?: string;
     CW_ORG_PRIVATE_KEY: string;
     CW_ORG_CERTIFICATE: string;
     CW_MEMBER_PRIVATE_KEY: string;
@@ -88,8 +103,11 @@ export type EnvConfig = {
   };
   fhirToCDAUrl: string;
   docQueryChecker?: {
-    // "Minutes Hours Day-of-month Month Day-of-week Year"
-    // See more here: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+    /**
+     * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
+     * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+     * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+     */
     scheduleExpressions: string | string[];
   };
 } & (

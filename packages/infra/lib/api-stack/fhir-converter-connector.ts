@@ -1,16 +1,17 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { ILayerVersion, Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { settings as settingsFhirConverter } from "./fhir-converter-service";
-import { METRICS_NAMESPACE, getConfig } from "../shared/config";
+import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
+import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
+import { settings as settingsFhirConverter } from "./fhir-converter-service";
 
 export type FHIRConnector = {
   queue: IQueue;
@@ -53,7 +54,7 @@ export function createQueueAndBucket({
   alarmSnsAction,
 }: {
   stack: Construct;
-  lambdaLayers: ILayerVersion[];
+  lambdaLayers: LambdaLayers;
   alarmSnsAction?: SnsAction;
 }): FHIRConnector {
   const config = getConfig();
@@ -67,7 +68,7 @@ export function createQueueAndBucket({
     visibilityTimeout,
     maxReceiveCount,
     createRetryLambda: true,
-    lambdaLayers,
+    lambdaLayers: [lambdaLayers.shared],
     alarmSnsAction,
   });
 
@@ -102,7 +103,7 @@ export function createLambda({
   conversionResultQueueUrl,
   alarmSnsAction,
 }: {
-  lambdaLayers: ILayerVersion[];
+  lambdaLayers: LambdaLayers;
   envType: EnvType;
   stack: Construct;
   vpc: IVpc;
@@ -131,7 +132,7 @@ export function createLambda({
     vpc,
     subnets: vpc.privateSubnets,
     entry: "sqs-to-converter",
-    layers: lambdaLayers,
+    layers: [lambdaLayers.shared],
     memory: lambdaMemory,
     envVars: {
       METRICS_NAMESPACE,
