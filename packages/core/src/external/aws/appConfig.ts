@@ -22,7 +22,7 @@ export async function getFeatureFlagValue<T>(
     .promise();
   const configContent = config.Content;
   console.log(
-    `From config with appId=${appId} configId=${configId} envName=${envName} featureFlagName=${featureFlagName} - got config content: ${configContent}`
+    `From config with appId=${appId} configId=${configId} envName=${envName} featureFlagName=${featureFlagName} - got config version: ${config.ConfigurationVersion}`
   );
   if (configContent && config.ContentType && config.ContentType === "application/json") {
     const configContentValue = JSON.parse(configContent.toString());
