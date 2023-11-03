@@ -763,9 +763,6 @@ async function triggerDownloadDocument({
     if (error.response?.status === httpStatus.NOT_FOUND) {
       console.log(`Document not found on CW, skipping - requestId: ${requestId}. Error: ${error}`);
     } else {
-      const message = "Error downloading document from CW";
-      console.log(`${message}: ${error}`);
-      capture.error(error, { extra: { context: `triggerDownloadDocument`, error, requestId } });
       throw error;
     }
   }
