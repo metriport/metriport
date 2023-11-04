@@ -7,6 +7,12 @@ import { getEnvVar } from "./env-var";
  *   environment where core is being used
  */
 export class Config {
+  static readonly PROD_ENV = "production";
+
+  static isCloudEnv(): boolean {
+    return process.env.NODE_ENV === this.PROD_ENV;
+  }
+
   static getSlackAlertUrl(): string | undefined {
     return getEnvVar("SLACK_ALERT_URL");
   }
