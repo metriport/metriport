@@ -22,10 +22,10 @@ on:
         type: string
         default: "false"
       is-branch-to-staging:
-          required: false
-          type: boolean
-          default: false
-          description: "whether this workflow should checkout internal's develop/master or a feature branch"
+        required: false
+        type: boolean
+        default: false
+        description: "whether this workflow should checkout internal's develop/master or a feature branch"
       AWS_REGION:
         required: true
         type: string
@@ -106,31 +106,26 @@ jobs:
         shell: bash
 
       # INSTALL DEPENDENCIES
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
+      - name: Install root dependencies
+        run: npm run install-deps
+        working-directory: "metriport/"
+      # ideally would only build what's needed, the connect-widget for one takes a long time and its not used by the lambdas nor infra
+      - name: Build root dependencies
+        run: npm run build:cloud
         working-directory: "metriport/"
       - name: Lambdas build shared layer
         run: npm run prep-deploy
-        working-directory: "metriport/packages/lambdas/"
-      - name: Lambdas install dependencies
-        run: npm ci --ignore-scripts
         working-directory: "metriport/packages/lambdas/"
 
       # BUILD
       - name: Infra build/compile
         run: npm run build:cloud
         working-directory: "metriport/packages/infra"
-      - name: Lambdas build/compile
-        run: npm run build:cloud
-        working-directory: "metriport/packages/lambdas"
 
       # TESTS
       - name: Infra test
         run: npm run test
         working-directory: "metriport/packages/infra"
-      - name: Lambdas test
-        run: npm run test
-        working-directory: "metriport/packages/lambdas"
 
         # SENTRY
       - name: Create Sentry release

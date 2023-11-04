@@ -56,7 +56,9 @@
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",
     "http-status": "^1.7.0",
+    "json-stringify-safe": "^5.0.1",
     "lodash": "^4.17.21",
+    "playwright": "^1.39.0",
     "xmldom": "^0.6.0"
   },
   "devDependencies": {
@@ -64,6 +66,7 @@
     "@medplum/fhirtypes": "^2.0.32",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jest": "29.5.3",
+    "@types/json-stringify-safe": "^5.0.0",
     "@types/xmldom": "^0.1.32",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",

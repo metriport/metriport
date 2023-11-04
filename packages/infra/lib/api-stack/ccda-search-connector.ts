@@ -1,7 +1,7 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { EbsDeviceVolumeType, IVpc } from "aws-cdk-lib/aws-ec2";
-import { IFunction, ILayerVersion } from "aws-cdk-lib/aws-lambda";
+import { IFunction } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { IDomain } from "aws-cdk-lib/aws-opensearchservice";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -10,6 +10,7 @@ import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
+import { LambdaLayers } from "../shared/lambda-layers";
 import OpenSearchConstruct, { OpenSearchConstructProps } from "../shared/open-search-construct";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { isProd, isSandbox } from "../shared/util";
@@ -88,7 +89,7 @@ export function setup({
   awsAccount: string;
   vpc: IVpc;
   ccdaS3Bucket: s3.IBucket;
-  lambdaLayers: ILayerVersion[];
+  lambdaLayers: LambdaLayers;
   alarmSnsAction?: SnsAction;
 }): {
   queue: IQueue;
@@ -122,7 +123,7 @@ export function setup({
     fifo: false,
     visibilityTimeout,
     maxReceiveCount,
-    lambdaLayers,
+    lambdaLayers: [lambdaLayers.shared],
     alarmSnsAction,
   });
 
@@ -135,7 +136,7 @@ export function setup({
     vpc,
     subnets: vpc.privateSubnets,
     entry: "sqs-to-opensearch-xml",
-    layers: lambdaLayers,
+    layers: [lambdaLayers.shared],
     memory,
     envVars: {
       METRICS_NAMESPACE,

@@ -17,7 +17,7 @@ import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
-import { Secrets } from "../shared/secrets";
+import { Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd } from "../shared/util";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -96,7 +96,7 @@ export function createAPIService(
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
-          ...secrets,
+          ...secretsToECS(secrets),
         },
         environment: {
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
@@ -107,7 +107,7 @@ export function createAPIService(
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
           SYSTEM_ROOT_OID: props.config.systemRootOID,
-          ...props.config.commonwell,
+          ...props.config.commonwell.envVars,
           ...(props.config.slack ? props.config.slack : undefined),
           ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
           ...(props.config.usageReportUrl && {
