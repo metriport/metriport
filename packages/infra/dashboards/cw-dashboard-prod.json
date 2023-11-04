@@ -821,6 +821,28 @@
                 "title": "OpenSearch - Latency",
                 "liveData": false
             }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 26,
+            "x": 14,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "2xx", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "region": "us-west-1" } ],
+                    [ ".", "5xx", ".", ".", ".", ".", { "region": "us-west-1" } ],
+                    [ ".", "3xx", ".", ".", ".", ".", { "region": "us-west-1" } ],
+                    [ ".", "SearchRate", ".", ".", ".", ".", { "region": "us-west-1", "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Sum",
+                "period": 60,
+                "title": "OpenSearch - Searches",
+                "liveData": false
+            }
         }
     ]
 }

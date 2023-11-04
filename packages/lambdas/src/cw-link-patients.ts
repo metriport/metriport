@@ -66,7 +66,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
     console.log(`Done.`);
   }
-  console.log(`Total time: ${Date.now() - startedAt}ms`);
+  console.log(`Total time: ${Date.now() - startedAt} ms`);
 });
 
 function recordToEntry(record: SQSRecord): LinkPatientsCommand {

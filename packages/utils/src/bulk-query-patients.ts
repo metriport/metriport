@@ -3,9 +3,11 @@ dotenv.config();
 // keep that ^ on top
 import { ConsolidatedCountResponse, MetriportMedicalApi } from "@metriport/api-sdk";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { sleep } from "@metriport/core/util/sleep";
 import axios from "axios";
 import fs from "fs";
 import { chunk } from "lodash";
+import { queryDocsForPatient as externalQueryDocsForPatient } from "./commonwell/doc-query-shared";
 
 /**
  * This script kicks off document queries in bulk for the configured cx.
@@ -20,6 +22,9 @@ import { chunk } from "lodash";
 // add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
 
+// If you're sure we want to trigger WH notifications to the CX, enable this
+const triggerWHNotificationsToCx = false;
+
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
 const cxName = getEnvVarOrFail("CX_NAME");
@@ -31,16 +36,13 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 // query stuff
 const delayTime = parseInt(getEnvVar("BULK_QUERY_DELAY_TIME") ?? "5000");
 const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "25");
-const patientChunkDelayJitterMs = parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER_MS") ?? "1000");
-const queryPollDurationMs = 10_000;
-const maxQueryDurationMs = 71_000; // CW has a 70s timeout, so this is the maximum duration any doc query can take
-const maxDocQueryAttemts = 3;
-/**
- * If the doc query returns less than this, we want to query again to try and get better
- * coverage. Had situation where we requeried a patient w/ 1 doc ref and it jumped from
- * 1 to 20.
- */
-const minDocsToConsiderCompleted = 2;
+const detailedConfig = {
+  patientChunkDelayJitterMs: parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER_MS") ?? "1000"),
+  queryPollDurationMs: 10_000,
+  maxQueryDurationMs: 71_000, // CW has a 70s timeout, so this is the maximum duration any doc query can take
+  maxDocQueryAttemts: 3,
+  minDocsToConsiderCompleted: 2,
+};
 
 // csv stuff
 const csvHeader =
@@ -56,61 +58,36 @@ function initCsv() {
   fs.writeFileSync(csvName, csvHeader);
 }
 
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 async function getAllPatientIds(): Promise<string[]> {
   const resp = await axios.get(`${apiUrl}/internal/patient/ids?cxId=${cxId}`);
   const patientIds = resp.data.patientIds;
   return (Array.isArray(patientIds) ? patientIds : []) as string[];
 }
 
-async function triggerDocQuery(patientId: string): Promise<void> {
-  await axios.post(`${apiUrl}/internal/docs/query?cxId=${cxId}&patientId=${patientId}`);
-}
-
 async function queryDocsForPatient(patientId: string) {
   try {
-    let docQueryAttempts = 0;
     let docCount = 0;
     let totalFhirResourceCount = 0;
     let status: "completed" | "docs-not-found" = "docs-not-found";
-    let queryComplete = false;
     let fhirResourceTypesToCounts: ConsolidatedCountResponse = {
       filter: { resources: "" },
       resources: {},
       total: 0,
     };
-    const docQueryPromise = async () => {
-      while (docQueryAttempts < maxDocQueryAttemts) {
-        console.log(`>>> Starting doc query for patient ${patientId}...`);
-        // can't use the SDK b/c we need to bypass the feature flag that disables doc query for enhanced coverage customers
-        await triggerDocQuery(patientId);
-        // add a bit of jitter to the requests
-        await sleep(200 + Math.random() * patientChunkDelayJitterMs);
-        const queryStartTime = Date.now();
-        while (Date.now() - queryStartTime < maxQueryDurationMs) {
-          const docQueryStatus = await metriportAPI.getDocumentQueryStatus(patientId);
-          if (
-            docQueryStatus.download &&
-            docQueryStatus.download.total &&
-            docQueryStatus.download.total >= minDocsToConsiderCompleted
-          ) {
-            queryComplete = true;
-            break;
-          }
-          await sleep(queryPollDurationMs);
-        }
-        docQueryAttempts++;
-        if (queryComplete) break;
-        console.log(
-          `>>> Didn't find docs for patient ${patientId} on attempt ${docQueryAttempts}...`
-        );
-      }
-    };
+    const docQueryPromise = async () =>
+      externalQueryDocsForPatient({
+        cxId,
+        patientId,
+        apiUrl,
+        apiKey,
+        triggerWHNotificationsToCx,
+        config: detailedConfig,
+        log: console.log,
+      });
+
     const getPatientPromise = async () => metriportAPI.getPatient(patientId);
-    const [patient] = await Promise.all([getPatientPromise(), docQueryPromise()]);
+    const [patient, docQueryResult] = await Promise.all([getPatientPromise(), docQueryPromise()]);
+    const { queryComplete, docQueryAttempts } = docQueryResult;
 
     if (queryComplete) {
       status = "completed";
