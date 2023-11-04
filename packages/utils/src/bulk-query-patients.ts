@@ -22,6 +22,9 @@ import { queryDocsForPatient as externalQueryDocsForPatient } from "./commonwell
 // add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
 
+// If you're sure we want to trigger WH notifications to the CX, enable this
+const triggerWHNotificationsToCx = false;
+
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
 const cxName = getEnvVarOrFail("CX_NAME");
@@ -77,6 +80,7 @@ async function queryDocsForPatient(patientId: string) {
         patientId,
         apiUrl,
         apiKey,
+        triggerWHNotificationsToCx,
         config: detailedConfig,
         log: console.log,
       });

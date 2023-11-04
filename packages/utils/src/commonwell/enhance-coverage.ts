@@ -71,6 +71,8 @@ const apiKey = getEnvVarOrFail("API_KEY");
 const cqOrgsList = fs.readFileSync(`${__dirname}/cq-org-list.json`, "utf8");
 const CQ_ORG_CHUNK_SIZE = 50;
 const DOC_QUERIES_IN_PARALLEL = 25;
+// We most likely want to send notifications to the CX during the Enhanced Coverage flow
+const triggerWHNotificationsToCx = true;
 
 /**
  * Code to run this on local environment.
@@ -175,6 +177,7 @@ export async function main() {
         cxId,
         patientId,
         apiUrl: metriportApiBaseUrl,
+        triggerWHNotificationsToCx,
         apiKey,
       });
       console.log(`Done doc query for patient ${patientId}, found ${docsFound} docs`);
