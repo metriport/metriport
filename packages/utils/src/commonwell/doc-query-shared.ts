@@ -57,10 +57,10 @@ export async function queryDocsForPatient({
 
   const metriportAPI = new MetriportMedicalApi(apiKey, {
     baseAddress: apiUrl,
-    // TODO 1106 Enable this
-    // triggerWHNotifications: triggerWHNotificationsToCx
   });
   async function triggerDocQuery(patientId: string): Promise<void> {
+    // TODO 1106 send this along the request
+    // triggerWHNotificationsToCx
     await axios.post(`${apiUrl}/internal/docs/query?cxId=${cxId}&patientId=${patientId}`);
   }
 
