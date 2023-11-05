@@ -31,13 +31,9 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
       address: sanitized.address,
       contact: sanitized.contact,
       cxDocumentRequestMetadata:
-        cxDocumentRequestMetadata !== undefined
-          ? cxDocumentRequestMetadata
-          : patient.data.cxDocumentRequestMetadata,
+        cxDocumentRequestMetadata !== undefined ? cxDocumentRequestMetadata : undefined,
       cxConsolidatedRequestMetadata:
-        cxConsolidatedRequestMetadata !== undefined
-          ? cxConsolidatedRequestMetadata
-          : patient.data.cxConsolidatedRequestMetadata,
+        cxConsolidatedRequestMetadata !== undefined ? cxConsolidatedRequestMetadata : undefined,
     },
   });
 };
