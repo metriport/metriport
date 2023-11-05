@@ -56,7 +56,6 @@ export const processConsolidatedDataWebhook = async ({
       getPatientOrFail({ id: patientId, cxId }),
     ]);
 
-    console.log("CURRENT PATIENT PAYLOAD: ", currentPatient.data.cxConsolidatedRequestMetadata);
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
       patients: [{ patientId, status, bundle, filters }],

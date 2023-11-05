@@ -63,20 +63,11 @@ This will be returned [via a webook](/medical-api/more-info/webhooks#medical-rec
 
 ## Request Body
 
-<BodyField name="metadata" type="object" optional>
-    A record of string key-value pairs. You can specify up to 50 keys, with key names up to 40 characters long and values up to 500 characters long.
-</BodyField>
-
+<Snippet file="webhook-metadata.mdx" />
 
 ## Example
 
-{
-  "metadata": {
-     youCan: "putAny",
-     stringKeyValue: "pairsHere",
-  }
-}
-
+<Snippet file="webhook-metadata-post-example.mdx" />
 
 ## Response
 

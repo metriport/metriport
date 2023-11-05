@@ -12,12 +12,21 @@ This is the usual flow to obtain Patient data:
 1. You trigger a [document query](/medical-api/api-reference/document/start-document-query) to retrieve a Patient's medical documents from HIEs;
    - XML C-CDA documents will be converted and stored on Metriport's FHIR storage;
    - as documents get downloaded and converted, you should get [patient document data](#patient-document-data) webhook messages;
-1. Once document conversion is completed, you can [query for patient consolidated data](/medical-api/api-reference/fhir/consolidated-data-query-post);
+2. Once document conversion is completed, you can [query for patient consolidated data](/medical-api/api-reference/fhir/consolidated-data-query-post);
    - depending on the amount of data this can take some time to crunch together, so results are sent through a webhook message:
      [patient consolidated data](#patient-consolidated-data)
 
 To enable this integration approach with Metriport, and for some prerequesite reading to understand
 how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
+
+### Passing Metadata
+
+You can pass metadata to the [queried documents](/medical-api/api-reference/document/start-document-query) or [query for patient consolidated data](/medical-api/api-reference/fhir/consolidated-data-query-post),
+and you will receive that data back in the meta.data field of the json. Below is an example payload within the body of your post request:
+
+<Snippet file="webhook-metadata-post-example.mdx" />
+
+You can specify up to 50 keys, with key names up to 40 characters long and values up to 500 characters long. This might be used to pass in your own requestID or other patient metadata.
 
 ### Patient Document Data
 
@@ -33,8 +42,6 @@ These are messages you can expect to receive in the following scenarios:
 
 2. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has completed (`type` for a patient in the message
    will be `document-conversion`, and at this point you'll be able to query for [patient consolidated data](#patient-consolidated-data) in FHIR-compliant format).
-
-3. Note: only one of `documentRequestMetadata` and `consolidatedRequestMetadata` will be present on the webhook meta.data payload. 
 
 ```json
 {

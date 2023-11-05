@@ -23,6 +23,12 @@ type WebhookPingPayload = {
   ping: string;
 };
 
+/**
+ * @param {messageId} string - The ID of the webhook request
+ * @param {when} string - The date and time when the webhook request was created
+ * @param {type} string - The type of the webhook request, either document-download or consolidated-request
+ * @param {data} unknown - Any data the customer pases to the webhook request
+ */
 export type WebhookMetadataPayload = {
   messageId: string;
   when: string;
