@@ -264,6 +264,7 @@ export class MetriportMedicalApi {
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
+   * @param req.body Optional metadata to be sent through webhook
    * @return The consolidated data query status.
    */
   async startConsolidatedQuery(
@@ -271,9 +272,10 @@ export class MetriportMedicalApi {
     resources?: readonly ResourceTypeForConsolidation[],
     dateFrom?: string,
     dateTo?: string,
-    conversionType?: string
+    conversionType?: string,
+    metadata?: unknown
   ): Promise<QueryStatus> {
-    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, undefined, {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, metadata, {
       params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
     });
     return resp.data;
@@ -429,10 +431,16 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation (optional).
    *        If not provided and the patient has only one facility, that one will be used.
    *        If not provided and the patient has multiple facilities, an error will be thrown.
+   * @param req.body Optional metadata to be sent through Webhook.
    * @return The document query request ID, progress & status indicating whether its being executed or not.
    */
-  async startDocumentQuery(patientId: string, facilityId?: string): Promise<DocumentQuery> {
-    const resp = await this.api.post(`${DOCUMENT_URL}/query`, null, {
+  async startDocumentQuery(
+    patientId: string,
+    facilityId?: string,
+    metadata?: unknown
+  ): Promise<DocumentQuery> {
+    console.log("startDocumentQuery", patientId, facilityId, metadata);
+    const resp = await this.api.post(`${DOCUMENT_URL}/query`, metadata, {
       params: {
         patientId,
         facilityId,
