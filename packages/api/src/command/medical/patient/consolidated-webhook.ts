@@ -65,6 +65,7 @@ export const processConsolidatedDataWebhook = async ({
     await processRequest(
       webhookRequest,
       settings,
+      cxId,
       bundle
         ? {
             bundleLength: optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown",

@@ -210,7 +210,7 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
           payload,
         });
         // send it to the customer and update the request status
-        await processRequest(webhookRequest, settings);
+        await processRequest(webhookRequest, settings, cxId);
 
         reportDevicesUsage(
           cxId,

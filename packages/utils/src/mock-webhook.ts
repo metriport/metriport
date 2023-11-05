@@ -1,30 +1,33 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import express, { Application, Request, Response } from "express";
 import crypto from "crypto";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 const app: Application = express();
 
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
-const secretKey = process.argv[2]; // Get the secret key from command line arguments
-
-if (secretKey) {
-  console.log(`Secret provided: ${secretKey}`);
-} else {
-  console.log("No secret key provided.");
-}
+const wh_key = getEnvVarOrFail("WH_KEY");
+const cxId = getEnvVarOrFail("CX_ID");
 
 app.post("/", (req: Request, res: Response) => {
   console.log(`BODY: ${JSON.stringify(req.body, undefined, 2)}`);
 
-  if (secretKey && req.body.patients) {
+  const timestamp = req.headers["x-metriport-timestamp"];
+  if (typeof timestamp === "string" && wh_key && req.body.patients) {
     const receivedHash = crypto
-      .createHmac("sha256", secretKey)
-      .update(JSON.stringify(req.body.patients))
+      .createHmac("sha256", wh_key)
+      .update(cxId)
+      .update(JSON.stringify(req.body))
+      .update(timestamp)
       .digest("hex");
+    const expectedHash = req.headers["x-metriport-signature"];
     console.log(`Received hash: ${receivedHash}`);
-    console.log(`Expected hash: ${req.body.meta.hmac}`);
-    console.log(`Hashes are ${receivedHash === req.body.meta.hmac ? "the same" : "different"}`);
+    console.log(`Expected hash: ${expectedHash}`);
+    console.log(`Hashes are ${receivedHash === expectedHash ? "the same" : "different"}`);
   }
 
   if (req.body.ping) {

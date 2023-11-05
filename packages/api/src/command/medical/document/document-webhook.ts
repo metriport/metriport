@@ -49,7 +49,7 @@ export const processPatientDocumentRequest = async (
     };
     const webhookRequest = await createWebhookRequest({ cxId, type: whType, payload });
     // send it to the customer and update the request status
-    await processRequest(webhookRequest, settings);
+    await processRequest(webhookRequest, settings, cxId);
 
     reportUsageCmd({ cxId, entityId: patientId, product: Product.medical });
   } catch (err) {

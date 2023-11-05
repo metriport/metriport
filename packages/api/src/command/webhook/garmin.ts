@@ -151,7 +151,7 @@ const processOneCustomer = async (
       payload,
     });
     // send it to the customer and update the request status
-    const success = await processRequest(webhookRequest, settings);
+    const success = await processRequest(webhookRequest, settings, cxId);
     // give it some time to prevent flooding the customer
     if (success) await Util.sleep(Math.random() * 200);
   }

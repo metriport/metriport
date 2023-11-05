@@ -28,7 +28,6 @@ export type WebhookMetadataPayload = {
   messageId: string;
   when: string;
   type: string;
-  hmac: string;
 };
 
 async function missingWHSettings(
@@ -67,6 +66,7 @@ function getProductFromWebhookRequest(webhookRequest: WebhookRequest): Product {
 export const processRequest = async (
   webhookRequest: WebhookRequest,
   settings: Settings,
+  cxId: string,
   additionalWHRequestMeta?: Record<string, string>
 ): Promise<boolean> => {
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
@@ -88,24 +88,21 @@ export const processRequest = async (
 
   const payload = webhookRequest.payload as Record<string, string>;
   try {
-    console.log("wh key", webhookKey);
-    console.log("payload", JSON.stringify(payload.patients));
     const meta: WebhookMetadataPayload = {
       messageId: webhookRequest.id,
       when: dayjs(webhookRequest.createdAt).toISOString(),
       type: webhookRequest.type,
-      hmac: crypto
-        .createHmac("sha256", webhookKey)
-        .update(JSON.stringify(payload.patients))
-        .digest("hex"),
     };
+
     await sendPayload(
       {
         meta,
         ...payload,
       },
       webhookUrl,
-      webhookKey
+      webhookKey,
+      cxId,
+      meta.when
     );
     // mark this request as successful on the DB
     const status = "success";
@@ -188,14 +185,24 @@ export const sendPayload = async (
   payload: unknown,
   url: string,
   apiKey: string,
+  cxId: string,
+  timestamp: string,
   timeout = DEFAULT_TIMEOUT_SEND_PAYLOAD_MS
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   try {
+    const hmac = crypto
+      .createHmac("sha256", apiKey)
+      .update(cxId)
+      .update(JSON.stringify(payload))
+      .update(timestamp)
+      .digest("hex");
     const res = await axios.post(url, payload, {
       headers: {
         "x-webhook-key": apiKey,
         "user-agent": "Metriport API",
+        "X-Metriport-Signature": hmac,
+        "X-Metriport-Timestamp": timestamp,
       },
       timeout,
       maxRedirects: 0, // disable redirects to prevent SSRF
@@ -207,12 +214,13 @@ export const sendPayload = async (
   }
 };
 
-export const sendTestPayload = async (url: string, key: string): Promise<boolean> => {
+export const sendTestPayload = async (url: string, key: string, cxId: string): Promise<boolean> => {
   const ping = nanoid();
   const payload: WebhookPingPayload = {
     ping,
   };
-  const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
+  const timestamp = "0:00";
+  const res = await sendPayload(payload, url, key, cxId, timestamp, DEFAULT_TIMEOUT_SEND_TEST_MS);
   if (res.pong && res.pong === ping) return true;
   return false;
 };

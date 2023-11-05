@@ -132,7 +132,7 @@ async function createAndSendPayload(
         });
 
         const settings = await getSettingsOrFail({ id: cxId });
-        await processRequest(webhookRequest, settings);
+        await processRequest(webhookRequest, settings, cxId);
 
         analytics({
           distinctId: cxId,

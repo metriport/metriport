@@ -72,7 +72,7 @@ export const sendProviderConnected = async (
       type: "devices.provider-connected",
       payload,
     });
-    await processRequest(webhookRequest, settings);
+    await processRequest(webhookRequest, settings, cxId);
   } catch (error) {
     console.log(
       `Failed to send provider connected WH - provider: ${provider}, ` +
@@ -116,7 +116,7 @@ export const sendProviderDisconnected = async (
       type: "devices.provider-disconnected",
       payload,
     });
-    await processRequest(webhookRequest, settings);
+    await processRequest(webhookRequest, settings, cxId);
   } catch (error) {
     console.log(
       `Failed to send provider disconnected WH - providers: ${disconnectedProviders}, ` +

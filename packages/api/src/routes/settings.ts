@@ -126,7 +126,7 @@ const updateSettingsSchema = z
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
-    const id = getCxIdOrFail(req);
+    const cxId = getCxIdOrFail(req);
     const { webhookUrl } = updateSettingsSchema.parse(req.body);
     if (webhookUrl) {
       for (const blacklistedStr of webhookURLIncludeBlacklist) {
@@ -137,7 +137,7 @@ router.post(
       if (webhookURLExactBlacklist.includes(webhookUrl)) throw new BadRequestError(`Invalid URL`);
     }
     const settings = await updateSettings({
-      id,
+      cxId,
       webhookUrl: webhookUrl ?? undefined,
     });
     res.status(status.OK).json(SettingsDTO.fromEntity(settings));
