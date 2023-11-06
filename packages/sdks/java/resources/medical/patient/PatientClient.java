@@ -42,7 +42,7 @@ public class PatientClient {
    */
   public Patient create(PatientCreate request, RequestOptions requestOptions) {
     HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-      .addPathSegments("patient")
+      .addPathSegments("medical/v1/patient")
       ;httpUrl.addQueryParameter("facilityId", request.getFacilityId());
       RequestBody body;
       try {
@@ -85,7 +85,7 @@ public class PatientClient {
      */
     public Patient get(String id, RequestOptions requestOptions) {
       HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-        .addPathSegments("patient")
+        .addPathSegments("medical/v1/patient")
 
         .addPathSegment(id)
         .build();
@@ -119,7 +119,7 @@ public class PatientClient {
      */
     public Patient update(String id, PatientUpdate request, RequestOptions requestOptions) {
       HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-        .addPathSegments("patient")
+        .addPathSegments("medical/v1/patient")
 
         .addPathSegment(id);httpUrl.addQueryParameter("facilityId", request.getFacilityId());
         RequestBody body;
@@ -166,7 +166,7 @@ public class PatientClient {
        */
       public ListPatientsResponse list(PatientList request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-          .addPathSegments("patient")
+          .addPathSegments("medical/v1/patient")
           ;if (request.getFacilityId().isPresent()) {
             httpUrl.addQueryParameter("facilityId", request.getFacilityId().get());
           }
@@ -207,7 +207,7 @@ public class PatientClient {
          */
         public void delete(String id, PatientDelete request, RequestOptions requestOptions) {
           HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-            .addPathSegments("patient")
+            .addPathSegments("medical/v1/patient")
 
             .addPathSegment(id);if (request.getFacilityId().isPresent()) {
               httpUrl.addQueryParameter("facilityId", request.getFacilityId().get());

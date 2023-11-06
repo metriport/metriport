@@ -114,7 +114,8 @@ public final class Patient implements IBasePatient {
   }
 
   /**
-   * @return The ID assigned to this Patient. This ID will be used to uniquely identify this Patient in medical documents.
+   * @return The ID assigned to this Patient. This ID will be used to uniquely
+   * identify this Patient in medical documents.
    */
   @JsonProperty("id")
   public String getId() {
@@ -267,7 +268,8 @@ public final class Patient implements IBasePatient {
     }
 
     /**
-     * <p>The ID assigned to this Patient. This ID will be used to uniquely identify this Patient in medical documents.</p>
+     * <p>The ID assigned to this Patient. This ID will be used to uniquely
+     * identify this Patient in medical documents.</p>
      * @return Reference to {@code this} so that method calls can be chained together.
      */
     @Override

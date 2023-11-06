@@ -11,7 +11,10 @@ from .base_patient import BasePatient
 
 class Patient(BasePatient):
     id: str = pydantic.Field(
-        description="The ID assigned to this Patient. This ID will be used to uniquely identify this Patient in medical documents."
+        description=(
+            "The ID assigned to this Patient. This ID will be used to uniquely \n"
+            "identify this Patient in medical documents.\n"
+        )
     )
 
     def json(self, **kwargs: typing.Any) -> str:

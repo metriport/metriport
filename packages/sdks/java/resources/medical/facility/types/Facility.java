@@ -89,7 +89,8 @@ public final class Facility implements IBaseFacility {
   }
 
   /**
-   * @return The ID assigned to this Facility. This ID will be used to uniquely identify this Facility in medical documents.
+   * @return The ID assigned to this Facility. This ID will be used
+   * to uniquely identify this Facility in medical documents.
    */
   @JsonProperty("id")
   public String getId() {
@@ -210,7 +211,8 @@ public final class Facility implements IBaseFacility {
     }
 
     /**
-     * <p>The ID assigned to this Facility. This ID will be used to uniquely identify this Facility in medical documents.</p>
+     * <p>The ID assigned to this Facility. This ID will be used
+     * to uniquely identify this Facility in medical documents.</p>
      * @return Reference to {@code this} so that method calls can be chained together.
      */
     @Override

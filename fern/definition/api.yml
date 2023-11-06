@@ -5,7 +5,7 @@ auth-schemes:
     header: X-API-Key
     name: apiKey
 environments: 
-  Production: https://api.metriport.com/medical/v1
+  Production: https://api.metriport.com
 default-environment: Production
 error-discrimination:
   strategy: status-code

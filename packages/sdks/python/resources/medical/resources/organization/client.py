@@ -32,7 +32,7 @@ class OrganizationClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "POST",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "organization"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/organization"),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -51,7 +51,7 @@ class OrganizationClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "organization"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/organization"),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )
@@ -84,7 +84,7 @@ class OrganizationClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "PUT",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"organization/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/organization/{id}"),
             json=jsonable_encoder({"name": name, "type": type, "location": location}),
             headers=remove_none_from_dict({**self._client_wrapper.get_headers(), "ETag": e_tag}),
             timeout=60,
@@ -111,7 +111,7 @@ class AsyncOrganizationClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "POST",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "organization"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/organization"),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -130,7 +130,7 @@ class AsyncOrganizationClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "organization"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/organization"),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )
@@ -163,7 +163,7 @@ class AsyncOrganizationClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "PUT",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"organization/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/organization/{id}"),
             json=jsonable_encoder({"name": name, "type": type, "location": location}),
             headers=remove_none_from_dict({**self._client_wrapper.get_headers(), "ETag": e_tag}),
             timeout=60,

@@ -3,7 +3,7 @@
  */
 
 export const MetriportEnvironment = {
-    Production: "https://api.metriport.com/medical/v1",
+    Production: "https://api.metriport.com",
 } as const;
 
 export type MetriportEnvironment = typeof MetriportEnvironment.Production;

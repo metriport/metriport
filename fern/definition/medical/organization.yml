@@ -4,7 +4,7 @@ imports:
   commons: ../commons.yml
 
 service:
-  base-path: /organization
+  base-path: /medical/v1/organization
   auth: true
   endpoints:
     create:

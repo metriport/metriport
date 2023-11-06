@@ -37,7 +37,7 @@ class PatientClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "POST",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "patient"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/patient"),
             params=remove_none_from_dict({"facilityId": facility_id}),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
@@ -60,7 +60,7 @@ class PatientClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}"),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )
@@ -85,7 +85,7 @@ class PatientClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "PUT",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}"),
             params=remove_none_from_dict({"facilityId": facility_id}),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
@@ -108,7 +108,7 @@ class PatientClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "patient"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/patient"),
             params=remove_none_from_dict({"facilityId": facility_id}),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -132,7 +132,7 @@ class PatientClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "DELETE",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}"),
             params=remove_none_from_dict({"facilityId": facility_id}),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -165,7 +165,7 @@ class AsyncPatientClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "POST",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "patient"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/patient"),
             params=remove_none_from_dict({"facilityId": facility_id}),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
@@ -188,7 +188,7 @@ class AsyncPatientClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}"),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )
@@ -213,7 +213,7 @@ class AsyncPatientClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "PUT",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}"),
             params=remove_none_from_dict({"facilityId": facility_id}),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
@@ -236,7 +236,7 @@ class AsyncPatientClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "patient"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/patient"),
             params=remove_none_from_dict({"facilityId": facility_id}),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -260,7 +260,7 @@ class AsyncPatientClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "DELETE",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}"),
             params=remove_none_from_dict({"facilityId": facility_id}),
             headers=self._client_wrapper.get_headers(),
             timeout=60,

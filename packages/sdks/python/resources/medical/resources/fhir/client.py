@@ -46,7 +46,9 @@ class FhirClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "POST",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}/consolidated/query"),
+            urllib.parse.urljoin(
+                f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}/consolidated/query"
+            ),
             params=remove_none_from_dict({"resources": resources, "dateFrom": date_from, "dateTo": date_to}),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -68,7 +70,9 @@ class FhirClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}/consolidated/query"),
+            urllib.parse.urljoin(
+                f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}/consolidated/query"
+            ),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )
@@ -108,7 +112,9 @@ class FhirClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}/consolidated/count"),
+            urllib.parse.urljoin(
+                f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}/consolidated/count"
+            ),
             params=remove_none_from_dict({"resources": resources, "dateFrom": date_from, "dateTo": date_to}),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -154,7 +160,9 @@ class AsyncFhirClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "POST",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}/consolidated/query"),
+            urllib.parse.urljoin(
+                f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}/consolidated/query"
+            ),
             params=remove_none_from_dict({"resources": resources, "dateFrom": date_from, "dateTo": date_to}),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -176,7 +184,9 @@ class AsyncFhirClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}/consolidated/query"),
+            urllib.parse.urljoin(
+                f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}/consolidated/query"
+            ),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )
@@ -216,7 +226,9 @@ class AsyncFhirClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"patient/{id}/consolidated/count"),
+            urllib.parse.urljoin(
+                f"{self._client_wrapper.get_base_url()}/", f"medical/v1/patient/{id}/consolidated/count"
+            ),
             params=remove_none_from_dict({"resources": resources, "dateFrom": date_from, "dateTo": date_to}),
             headers=self._client_wrapper.get_headers(),
             timeout=60,

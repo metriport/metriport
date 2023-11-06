@@ -7,7 +7,7 @@ package core;
 import java.lang.String;
 
 public final class Environment {
-  public static final Environment PRODUCTION = new Environment("https://api.metriport.com/medical/v1");
+  public static final Environment PRODUCTION = new Environment("https://api.metriport.com");
 
   private final String url;
 

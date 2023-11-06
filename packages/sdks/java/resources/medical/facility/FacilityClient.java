@@ -35,7 +35,7 @@ public class FacilityClient {
    */
   public Facility create(BaseFacility request, RequestOptions requestOptions) {
     HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-      .addPathSegments("facility")
+      .addPathSegments("medical/v1/facility")
 
       .build();
     RequestBody body;
@@ -75,7 +75,7 @@ public class FacilityClient {
    */
   public Facility get(String id, RequestOptions requestOptions) {
     HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-      .addPathSegments("facility")
+      .addPathSegments("medical/v1/facility")
 
       .addPathSegment(id)
       .build();
@@ -109,7 +109,7 @@ public class FacilityClient {
    */
   public Facility update(String id, BaseFacility request, RequestOptions requestOptions) {
     HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-      .addPathSegments("facility")
+      .addPathSegments("medical/v1/facility")
 
       .addPathSegment(id)
       .build();
@@ -150,7 +150,7 @@ public class FacilityClient {
    */
   public ListFacilitiesResponse list(RequestOptions requestOptions) {
     HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-      .addPathSegments("facility")
+      .addPathSegments("medical/v1/facility")
 
       .build();
     Request okhttpRequest = new Request.Builder()

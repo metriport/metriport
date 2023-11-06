@@ -3,14 +3,14 @@ name: "Fern Check"
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [master, develop]
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install fern
         run: npm install -g fern-api
       - name: fern check

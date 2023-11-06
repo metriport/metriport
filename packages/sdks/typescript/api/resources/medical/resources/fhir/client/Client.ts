@@ -49,7 +49,7 @@ export class Fhir {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                `patient/${id}/consolidated/query`
+                `/medical/v1/patient/${id}/consolidated/query`
             ),
             method: "POST",
             headers: {
@@ -101,7 +101,7 @@ export class Fhir {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                `patient/${id}/consolidated/query`
+                `/medical/v1/patient/${id}/consolidated/query`
             ),
             method: "GET",
             headers: {
@@ -167,7 +167,7 @@ export class Fhir {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                `patient/${id}/consolidated/count`
+                `/medical/v1/patient/${id}/consolidated/count`
             ),
             method: "GET",
             headers: {

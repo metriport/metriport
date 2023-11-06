@@ -4,7 +4,7 @@ imports:
   commons: ../commons.yml
 
 service:
-  base-path: /facility
+  base-path: /medical/v1/facility
   auth: true
   endpoints:
     create:
@@ -35,7 +35,9 @@ service:
       path-parameters:
         id:
           type: string
-          docs: The ID assigned to this Facility. This ID will be used to uniquely identify this Facility in medical documents.
+          docs: | 
+            The ID assigned to this Facility. This ID will be used 
+            to uniquely identify this Facility in medical documents.
       response: Facility
       examples:
         - name: Example1
@@ -108,7 +110,9 @@ types:
     properties:
       id:
         type: string
-        docs: The ID assigned to this Facility. This ID will be used to uniquely identify this Facility in medical documents.
+        docs: | 
+          The ID assigned to this Facility. This ID will be used 
+          to uniquely identify this Facility in medical documents.
     examples:
       - name: Example1
         value:

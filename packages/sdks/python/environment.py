@@ -4,4 +4,4 @@ import enum
 
 
 class MetriportEnvironment(enum.Enum):
-    PRODUCTION = "https://api.metriport.com/medical/v1"
+    PRODUCTION = "https://api.metriport.com"

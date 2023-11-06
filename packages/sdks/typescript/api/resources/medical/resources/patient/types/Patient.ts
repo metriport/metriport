@@ -20,6 +20,10 @@ import * as Metriport from "../../../../..";
  *     }
  */
 export interface Patient extends Metriport.medical.BasePatient {
-    /** The ID assigned to this Patient. This ID will be used to uniquely identify this Patient in medical documents. */
+    /**
+     * The ID assigned to this Patient. This ID will be used to uniquely
+     * identify this Patient in medical documents.
+     *
+     */
     id: string;
 }

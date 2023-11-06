@@ -30,7 +30,7 @@ class FacilityClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "POST",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "facility"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/facility"),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -48,11 +48,13 @@ class FacilityClient:
         Get a Facility in Metriport where your patients receive care.
 
         Parameters:
-            - id: str. The ID assigned to this Facility. This ID will be used to uniquely identify this Facility in medical documents.
+            - id: str. The ID assigned to this Facility. This ID will be used
+                       to uniquely identify this Facility in medical documents.
+
         """
         _response = self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"facility/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/facility/{id}"),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )
@@ -75,7 +77,7 @@ class FacilityClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "PUT",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"facility/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/facility/{id}"),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -94,7 +96,7 @@ class FacilityClient:
         """
         _response = self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "facility"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/facility"),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )
@@ -120,7 +122,7 @@ class AsyncFacilityClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "POST",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "facility"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/facility"),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -138,11 +140,13 @@ class AsyncFacilityClient:
         Get a Facility in Metriport where your patients receive care.
 
         Parameters:
-            - id: str. The ID assigned to this Facility. This ID will be used to uniquely identify this Facility in medical documents.
+            - id: str. The ID assigned to this Facility. This ID will be used
+                       to uniquely identify this Facility in medical documents.
+
         """
         _response = await self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"facility/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/facility/{id}"),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )
@@ -165,7 +169,7 @@ class AsyncFacilityClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "PUT",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"facility/{id}"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", f"medical/v1/facility/{id}"),
             json=jsonable_encoder(request),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
@@ -184,7 +188,7 @@ class AsyncFacilityClient:
         """
         _response = await self._client_wrapper.httpx_client.request(
             "GET",
-            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "facility"),
+            urllib.parse.urljoin(f"{self._client_wrapper.get_base_url()}/", "medical/v1/facility"),
             headers=self._client_wrapper.get_headers(),
             timeout=60,
         )

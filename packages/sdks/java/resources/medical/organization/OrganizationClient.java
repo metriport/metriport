@@ -37,7 +37,7 @@ public class OrganizationClient {
    */
   public Organization create(OrganizationCreate request, RequestOptions requestOptions) {
     HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-      .addPathSegments("organization")
+      .addPathSegments("medical/v1/organization")
 
       .build();
     RequestBody body;
@@ -77,7 +77,7 @@ public class OrganizationClient {
    */
   public Organization get(RequestOptions requestOptions) {
     HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-      .addPathSegments("organization")
+      .addPathSegments("medical/v1/organization")
 
       .build();
     Request okhttpRequest = new Request.Builder()
@@ -111,7 +111,7 @@ public class OrganizationClient {
   public Organization update(String id, OrganizationUpdateRequest request,
       RequestOptions requestOptions) {
     HttpUrl httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl()).newBuilder()
-      .addPathSegments("organization")
+      .addPathSegments("medical/v1/organization")
 
       .addPathSegment(id)
       .build();

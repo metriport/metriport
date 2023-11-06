@@ -33,7 +33,7 @@ export class Facility {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                "/facility"
+                "/medical/v1/facility"
             ),
             method: "POST",
             headers: {
@@ -82,7 +82,7 @@ export class Facility {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                `/facility/${id}`
+                `/medical/v1/facility/${id}`
             ),
             method: "GET",
             headers: {
@@ -134,7 +134,7 @@ export class Facility {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                `/facility/${id}`
+                `/medical/v1/facility/${id}`
             ),
             method: "PUT",
             headers: {
@@ -183,7 +183,7 @@ export class Facility {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                "/facility"
+                "/medical/v1/facility"
             ),
             method: "GET",
             headers: {

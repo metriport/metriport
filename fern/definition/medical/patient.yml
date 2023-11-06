@@ -4,7 +4,7 @@ imports:
   commons: ../commons.yml
 
 service:
-  base-path: /patient
+  base-path: /medical/v1/patient
   auth: true
   endpoints:
     create:
@@ -201,7 +201,9 @@ types:
     properties:
       id:
         type: string
-        docs: The ID assigned to this Patient. This ID will be used to uniquely identify this Patient in medical documents.
+        docs: | 
+          The ID assigned to this Patient. This ID will be used to uniquely 
+          identify this Patient in medical documents.
     examples:
       - name: Example1
         value:

@@ -33,7 +33,7 @@ export class Organization {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                "/organization"
+                "/medical/v1/organization"
             ),
             method: "POST",
             headers: {
@@ -84,7 +84,7 @@ export class Organization {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                "/organization"
+                "/medical/v1/organization"
             ),
             method: "GET",
             headers: {
@@ -137,7 +137,7 @@ export class Organization {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                `/organization/${id}`
+                `/medical/v1/organization/${id}`
             ),
             method: "PUT",
             headers: {

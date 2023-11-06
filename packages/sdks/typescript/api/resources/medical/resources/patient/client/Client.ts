@@ -42,7 +42,7 @@ export class Patient {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                "/patient"
+                "/medical/v1/patient"
             ),
             method: "POST",
             headers: {
@@ -92,7 +92,7 @@ export class Patient {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                `/patient/${id}`
+                `/medical/v1/patient/${id}`
             ),
             method: "GET",
             headers: {
@@ -147,7 +147,7 @@ export class Patient {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                `/patient/${id}`
+                `/medical/v1/patient/${id}`
             ),
             method: "PUT",
             headers: {
@@ -206,7 +206,7 @@ export class Patient {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                "/patient"
+                "/medical/v1/patient"
             ),
             method: "GET",
             headers: {
@@ -265,7 +265,7 @@ export class Patient {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.environment)) ?? environments.MetriportEnvironment.Production,
-                `/patient/${id}`
+                `/medical/v1/patient/${id}`
             ),
             method: "DELETE",
             headers: {
