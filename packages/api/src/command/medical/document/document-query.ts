@@ -14,11 +14,11 @@ import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../externa
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { emptyFunction, Util } from "../../../shared/util";
-import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
+import { Util, emptyFunction } from "../../../shared/util";
+import { SetDocQueryProgress, appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
+import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
-import { updatePatient } from "../patient/update-patient";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -86,23 +86,12 @@ export async function queryDocumentsAcrossHIEs({
   const cwData = externalData as PatientDataCommonwell;
   if (!cwData.patientId) return createQueryResponse("failed");
 
-  const updatedPatientProgress: Patient = await updateDocQuery({
-    patient: { id: patient.id, cxId: patient.cxId },
-    downloadProgress: { status: "processing" },
-    requestId,
-    reset: true,
-  });
-
-  const updatedPatientMetadata = await updatePatient({
+  const updatedPatient = await storeQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    eTag: patient.eTag,
-    firstName: updatedPatientProgress.data.firstName,
-    lastName: updatedPatientProgress.data.lastName,
-    dob: updatedPatientProgress.data.dob,
-    genderAtBirth: updatedPatientProgress.data.genderAtBirth,
-    address: updatedPatientProgress.data.address,
-    cxDocumentRequestMetadata: cxDocumentRequestMetadata,
+    documentQueryProgress: { download: { status: "processing" } },
+    requestId,
+    cxDocumentRequestMetadata,
   });
 
   const cxsWithEnhancedCoverageFeatureFlagValue =
@@ -117,7 +106,7 @@ export async function queryDocumentsAcrossHIEs({
     }).catch(emptyFunction);
   }
 
-  return createQueryResponse("processing", updatedPatientMetadata);
+  return createQueryResponse("processing", updatedPatient);
 }
 
 export const createQueryResponse = (
@@ -136,7 +125,7 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
-  cxDocumentRequestMetadata?: unknown;
+  // cxDocumentRequestMetadata?: unknown;
 };
 
 type UpdateDocQueryParams =

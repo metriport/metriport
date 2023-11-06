@@ -17,12 +17,11 @@ import {
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
 import { capture } from "../../../shared/notifications";
-import { emptyFunction, Util } from "../../../shared/util";
-import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
+import { Util, emptyFunction } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
-import { updatePatient } from "../patient/update-patient";
+import { storeQueryInit } from "./query-init";
 
 export async function startConsolidatedQuery({
   cxId,
@@ -48,24 +47,15 @@ export async function startConsolidatedQuery({
     return patient.data.consolidatedQuery;
   }
 
-  const updatedPatient = await updatePatient({
+  const progress: QueryProgress = { status: "processing" };
+
+  const updatedPatient = await storeQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    eTag: patient.eTag,
-    firstName: patient.data.firstName,
-    lastName: patient.data.lastName,
-    dob: patient.data.dob,
-    genderAtBirth: patient.data.genderAtBirth,
-    address: patient.data.address,
-    cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata,
+    consolidatedQuery: progress,
+    cxConsolidatedRequestMetadata,
   });
 
-  const progress: QueryProgress = { status: "processing" };
-  await updateConsolidatedQueryProgress({
-    patient: updatedPatient,
-    progress,
-    reset: true,
-  });
   getConsolidatedAndSendToCx({
     patient: updatedPatient,
     resources,
