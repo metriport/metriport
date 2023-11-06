@@ -8,6 +8,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
+import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import {
   getDocToFileFunction,
@@ -55,7 +56,6 @@ import {
   DocumentWithMetriportId,
   getFileName,
 } from "./shared";
-import httpStatus from "http-status";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -477,7 +477,7 @@ export async function downloadDocsAndUpsertFHIR({
     const s3Refs = await Promise.allSettled(
       docChunk.map(async doc => {
         let errorReported = false;
-        let uploadToS3: () => Promise<File | void>;
+        let uploadToS3: () => Promise<File>;
         let file: Awaited<ReturnType<typeof uploadToS3>> | undefined = undefined;
         const isConvertibleDoc = isConvertible(doc.content?.mimeType);
 
@@ -529,7 +529,6 @@ export async function downloadDocsAndUpsertFHIR({
               };
             }
             file = await uploadToS3();
-            if (!file) return;
           } catch (error) {
             if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) errorCountConvertible++;
 
@@ -621,13 +620,14 @@ export async function downloadDocsAndUpsertFHIR({
           errorCount++;
 
           log(`Error processing doc: ${error}`, doc);
-          if (!errorReported) {
+          if (!errorReported && !(error instanceof NotFoundError)) {
             capture.error(error, {
               extra: {
                 context: `cw.downloadDocsAndUpsertFHIR`,
                 patientId: patient.id,
                 document: doc,
                 requestId,
+                error,
               },
             });
           }
@@ -644,9 +644,9 @@ export async function downloadDocsAndUpsertFHIR({
               },
               requestId,
             });
-          } catch (err) {
-            capture.error(err, {
-              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId },
+          } catch (error) {
+            capture.error(error, {
+              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId, error },
             });
           }
         }
@@ -736,7 +736,7 @@ async function triggerDownloadDocument({
   facilityNPI: string;
   cxId: string;
   requestId: string;
-}): Promise<File | void> {
+}): Promise<File> {
   const docDownloader = makeDocumentDownloader({
     orgName: organization.data.name,
     orgOid: organization.oid,
@@ -760,8 +760,9 @@ async function triggerDownloadDocument({
     };
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    if (error.response?.status === httpStatus.NOT_FOUND) {
+    if (error.status === httpStatus.NOT_FOUND) {
       console.log(`Document not found on CW, skipping - requestId: ${requestId}. Error: ${error}`);
+      throw new NotFoundError("Document not found on CW", error, { requestId });
     } else {
       throw error;
     }

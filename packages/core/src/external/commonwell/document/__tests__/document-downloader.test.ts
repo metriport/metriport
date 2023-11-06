@@ -5,34 +5,6 @@ import { getEnvVarOrFail } from "../../../../util/env-var";
 import { S3Utils } from "../../../aws/s3";
 import { DocumentDownloaderLocal } from "../document-downloader-local";
 
-const cwOrgCertificate = getEnvVarOrFail("CW_ORG_CERTIFICATE");
-const cwOrgPrivateKey = getEnvVarOrFail("CW_ORG_PRIVATE_KEY");
-const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-
-const region = getEnvVarOrFail("AWS_REGION");
-const fileName = getEnvVarOrFail("FILE_NAME");
-const fileLocation = getEnvVarOrFail("FILE_LOCATION");
-const mimeType = getEnvVarOrFail("MIME_TYPE");
-const fileSize = getEnvVarOrFail("FILE_SIZE");
-const size = fileSize ? parseInt(fileSize) : undefined;
-const orgName = getEnvVarOrFail("ORG_NAME");
-const orgOid = getEnvVarOrFail("ORG_OID");
-const orgNpi = getEnvVarOrFail("ORG_NPI");
-
-// TODO move these to .env so we don't need to update the test file to run it
-const docRef = {
-  fileName,
-  fileLocation,
-  mimeType,
-  size,
-};
-// TODO move these to .env so we don't need to update the test file to run it
-const org = {
-  name: orgName,
-  oid: orgOid,
-  npi: orgNpi,
-};
-
 class DocumentDownloaderForTest extends DocumentDownloaderLocal {
   override getUploadStreamToS3(s3FileName: string, s3FileLocation: string, contentType?: string) {
     return super.getUploadStreamToS3(s3FileName, s3FileLocation, contentType);
@@ -44,6 +16,33 @@ class DocumentDownloaderForTest extends DocumentDownloaderLocal {
 
 // TO BE RUN LOCALLY NOT IN CI/CD
 describe.skip("document-downloader", () => {
+  const cwOrgCertificate = getEnvVarOrFail("CW_ORG_CERTIFICATE");
+  const cwOrgPrivateKey = getEnvVarOrFail("CW_ORG_PRIVATE_KEY");
+  const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+
+  const region = getEnvVarOrFail("AWS_REGION");
+  const fileName = getEnvVarOrFail("FILE_NAME");
+  const fileLocation = getEnvVarOrFail("FILE_LOCATION");
+  const mimeType = getEnvVarOrFail("MIME_TYPE");
+  const fileSize = getEnvVarOrFail("FILE_SIZE");
+  const size = fileSize ? parseInt(fileSize) : undefined;
+  const orgName = getEnvVarOrFail("ORG_NAME");
+  const orgOid = getEnvVarOrFail("ORG_OID");
+  const orgNpi = getEnvVarOrFail("ORG_NPI");
+
+  const docRef = {
+    fileName,
+    fileLocation,
+    mimeType,
+    size,
+  };
+
+  const org = {
+    name: orgName,
+    oid: orgOid,
+    npi: orgNpi,
+  };
+
   const commonWell =
     cwOrgCertificate && cwOrgPrivateKey
       ? new CommonWell(
