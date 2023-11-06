@@ -87,7 +87,7 @@ export async function create(
     commonWell = makeCommonWellAPI(orgName, oid(orgOID));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
     const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
-    debug(`Registering this Patient: ${JSON.stringify(commonwellPatient, undefined, 2)}`);
+    debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
     const { commonwellPatientId, patientRefLink } = await registerPatient({
       commonWell,
