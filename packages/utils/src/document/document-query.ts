@@ -14,17 +14,13 @@ const metriportApi = new MetriportMedicalApi(apiKey, {
 });
 
 const metadata = {
-  metadata: {
-    someKey: "someValue",
-    anotherKey: "anotherValue",
-  },
+  someKey: "someValue",
+  anotherKey: "anotherValue",
 };
 
 const metadata2 = {
-  metadata: {
-    someKey: "someValue2",
-    anotherKey: "anotherValue2",
-  },
+  someKey: "someValue2",
+  anotherKey: "anotherValue2",
 };
 
 async function main() {
