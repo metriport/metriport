@@ -263,8 +263,8 @@ export class MetriportMedicalApi {
    * @param resources Optional array of resources to be returned.
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
-   * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
-   * @param req.body Optional metadata to be sent through webhook
+   * @param conversionType Optional to indicate how the medical record should be rendered.
+   * @param metadata Optional metadata to be sent along the webhook request as response of this query
    * @return The consolidated data query status.
    */
   async startConsolidatedQuery(
@@ -432,7 +432,7 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation (optional).
    *        If not provided and the patient has only one facility, that one will be used.
    *        If not provided and the patient has multiple facilities, an error will be thrown.
-   * @param req.body Optional metadata to be sent through webhook.
+   * @param metadata Optional metadata to be sent along the webhook request as response of this query
    * @return The document query request ID, progress & status indicating whether its being executed or not.
    */
   async startDocumentQuery(
