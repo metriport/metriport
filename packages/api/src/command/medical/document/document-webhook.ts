@@ -54,7 +54,7 @@ export const processPatientDocumentRequest = async (
     };
     const webhookRequest = await createWebhookRequest({ cxId, type: whType, payload });
     // send it to the customer and update the request status
-    if (!isDisableWH(patient.data.cxConsolidatedRequestMetadata)) {
+    if (!isDisableWH(patient.data.cxDocumentRequestMetadata)) {
       await processRequest(
         webhookRequest,
         settings,

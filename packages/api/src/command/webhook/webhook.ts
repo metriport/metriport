@@ -220,5 +220,6 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
 
 export const isDisableWH = (meta?: unknown): boolean => {
   if (!meta) return false;
+  console.log(meta);
   return Boolean((meta as { disableWHFlag?: string })?.disableWHFlag);
 };
