@@ -34,7 +34,10 @@ export function validateNPI(npi: string): boolean {
   // account for NPI prefix
   sum += 24;
 
-  const checkDigit = 10 - (sum % 10);
+  let checkDigit = 10 - (sum % 10);
+  if (checkDigit === 10) {
+    checkDigit = 0;
+  }
   const lastNPIDigit = parseInt(npi.charAt(npi.length - 1), 10);
   return checkDigit === lastNPIDigit;
 }
