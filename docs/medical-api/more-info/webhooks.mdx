@@ -21,12 +21,14 @@ how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 
 ### Passing Metadata
 
-You can pass metadata to the [queried documents](/medical-api/api-reference/document/start-document-query) or [query for patient consolidated data](/medical-api/api-reference/fhir/consolidated-data-query-post),
-and you will receive that data back in the meta.data field of the json. Below is an example payload within the body of your post request:
+You can pass metadata to the [start document query](/medical-api/api-reference/document/start-document-query) or [start consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-post), 
+endpoints, and you will receive the meta.data field of the webhook request. 
+
+The metadata parameter when provided, must be a container with a 'metadata' key that holds a record of up to 
+50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. You may use this to attach whatever metadata is relevant for your business use case, i.e. external ids. 
+Below is an example payload you could send in the request body of one of those endpoints:
 
 <Snippet file="webhook-metadata-post-example.mdx" />
-
-You can specify up to 50 keys, with key names up to 40 characters long and values up to 500 characters long. This might be used to pass in your own requestID or other patient metadata.
 
 ### Patient Document Data
 
@@ -50,8 +52,8 @@ These are messages you can expect to receive in the following scenarios:
     "when": "<date-time-in-utc>",
     "type": "medical.document-download"
     "data": {
-      "<some-request-meta-property>": "<the-property-value>", 
-      "<another-property>": "the other value"
+        youCan: "putAny",
+        stringKeyValue: "pairsHere",
     }
   },
   "patients": [

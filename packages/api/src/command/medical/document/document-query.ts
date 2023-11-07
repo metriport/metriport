@@ -125,7 +125,6 @@ export const createQueryResponse = (
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
-  // cxDocumentRequestMetadata?: unknown;
 };
 
 type UpdateDocQueryParams =

@@ -33,8 +33,8 @@ async function main() {
     const consolidatedQueryResponse = await metriportApi.startConsolidatedQuery(
       patientId,
       ["AllergyIntolerance"],
-      undefined,
-      undefined,
+      "2023-03-01",
+      "2023-04-01",
       undefined,
       metadata
     );

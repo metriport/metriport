@@ -273,7 +273,7 @@ export class MetriportMedicalApi {
     dateFrom?: string,
     dateTo?: string,
     conversionType?: string,
-    metadata?: unknown
+    metadata?: { metadata: Record<string, string> }
   ): Promise<QueryStatus> {
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, metadata, {
       params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
@@ -437,9 +437,8 @@ export class MetriportMedicalApi {
   async startDocumentQuery(
     patientId: string,
     facilityId?: string,
-    metadata?: unknown
+    metadata?: { metadata: Record<string, string> }
   ): Promise<DocumentQuery> {
-    console.log("startDocumentQuery", patientId, facilityId, metadata);
     const resp = await this.api.post(`${DOCUMENT_URL}/query`, metadata, {
       params: {
         patientId,
