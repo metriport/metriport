@@ -29,6 +29,7 @@ export async function queryDocsForPatient({
   patientId,
   apiUrl,
   apiKey,
+  triggerWHNotificationsToCx,
   config = {
     patientChunkDelayJitterMs: 1000,
     queryPollDurationMs: 10_000,
@@ -64,7 +65,8 @@ export async function queryDocsForPatient({
   };
 
   async function triggerDocQuery(patientId: string): Promise<void> {
-    await axios.post(`${apiUrl}/internal/docs/query?cxId=${cxId}&patientId=${patientId}`, metadata);
+    const payload = triggerWHNotificationsToCx ? metadata : {};
+    await axios.post(`${apiUrl}/internal/docs/query?cxId=${cxId}&patientId=${patientId}`, payload);
   }
 
   while (docQueryAttempts < maxDocQueryAttemts) {

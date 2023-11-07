@@ -7,7 +7,7 @@ import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload, isDisableWH } from "../../webhook/webhook";
-import { createWebhookRequest, updateWebhookRequestStatus } from "../../webhook/webhook-request";
+import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { getPatientOrFail } from "./get-patient";
 
@@ -60,14 +60,16 @@ export const processConsolidatedDataWebhook = async ({
     const payload: PayloadWithoutMeta = {
       patients: [{ patientId, status, bundle, filters }],
     };
-    const webhookRequest = await createWebhookRequest({
-      cxId,
-      type: "medical.consolidated-data",
-      payload,
-    });
+
     // send it to the customer and update the WH request status
 
     if (!isDisableWH(currentPatient.data.cxConsolidatedRequestMetadata)) {
+      const webhookRequest = await createWebhookRequest({
+        cxId,
+        type: "medical.consolidated-data",
+        payload,
+      });
+
       await processRequest(
         webhookRequest,
         settings,
@@ -79,10 +81,11 @@ export const processConsolidatedDataWebhook = async ({
         currentPatient.data.cxConsolidatedRequestMetadata
       );
     } else {
-      const status = "success";
-      await updateWebhookRequestStatus({
-        id: webhookRequest.id,
-        status,
+      await createWebhookRequest({
+        cxId,
+        type: "medical.consolidated-data",
+        payload,
+        status: "success",
       });
     }
 

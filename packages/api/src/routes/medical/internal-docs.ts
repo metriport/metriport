@@ -312,7 +312,7 @@ router.post(
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
- * @param req.body Optional metadata to be sent through Webhook. WH disable can be sent here.
+ * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
  * @return updated document query progress
  */
 router.post(
