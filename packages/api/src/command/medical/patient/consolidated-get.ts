@@ -236,8 +236,10 @@ export async function getConsolidatedPatientData({
           const binaryResourceId = url.split("/")[1];
           if (binaryResourceId) {
             const binaryResource = binaryIdToResource[binaryResourceId];
-            diagReport.presentedForm[0].data = binaryResource.data;
-            success[diagReportIndex] = diagReport;
+            if (binaryResource) {
+              diagReport.presentedForm[0].data = binaryResource.data;
+              success[diagReportIndex] = diagReport;
+            }
           }
         }
       }
