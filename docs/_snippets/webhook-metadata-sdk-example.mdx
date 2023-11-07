@@ -1,0 +1,19 @@
+```typescript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metadata = {
+    youCan: "putAny",
+    stringKeyValue: "pairsHere",
+};
+
+const metriport = new MetriportMedicalApi(apiToken);
+
+const consolidatedData = await metriport.startConsolidatedQuery(
+  patientId,
+  ["AllergyIntolerance", "Appointment"] as const,
+  "2023-03-01",
+  "2023-04-01"
+  undefined,
+  metadata
+);
+```

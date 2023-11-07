@@ -6,9 +6,14 @@ import stringify from "json-stringify-safe";
 import { z } from "zod";
 import { getFacilities, getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { getPatientIds, getPatients } from "../../command/medical/patient/get-patient";
+import {
+  getPatientIds,
+  getPatientOrFail,
+  getPatients,
+} from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { Patient } from "../../domain/medical/patient";
+import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
@@ -20,7 +25,7 @@ import { getETag } from "../../shared/http";
 import { errorToString } from "../../shared/log";
 import { stringToBoolean } from "../../shared/types";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryOrFail } from "../util";
+import { asyncHandler, getFrom, getFromParamsOrFail } from "../util";
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
 
@@ -132,7 +137,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityId = getFrom("query").optional("facilityId", req);
 
     const patientDeleteCmd = {
       ...getETag(req),
@@ -162,9 +167,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFromParamsOrFail("patientId", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityIdParam = getFrom("query").optional("facilityId", req);
     const linkSource = getFromParamsOrFail("source", req);
     const linkCreate = linkCreateSchema.parse(req.body);
+
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     if (linkSource === MedicalDataSource.COMMONWELL) {
       await cwCommands.link.create(linkCreate.entityId, patientId, cxId, facilityId);
@@ -190,8 +198,11 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFromParamsOrFail("patientId", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityIdParam = getFrom("query").optional("facilityId", req);
     const linkSource = req.params.source;
+
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     if (linkSource === MedicalDataSource.COMMONWELL) {
       await cwCommands.link.reset(patientId, cxId, facilityId);
@@ -216,7 +227,10 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFromParamsOrFail("patientId", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityIdParam = getFrom("query").optional("facilityId", req);
+
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     const links: PatientLinksDTO = {
       currentLinks: [],

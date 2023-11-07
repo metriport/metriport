@@ -240,7 +240,7 @@ router.post(
   upload.single("file"),
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromQueryOrFail("patientId", req);
+    const patientId = getUUIDFrom("query", req, "patientId").orFail();
     const file = req.file;
 
     if (!file) {

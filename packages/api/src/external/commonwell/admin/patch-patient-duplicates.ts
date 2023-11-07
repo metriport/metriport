@@ -50,6 +50,7 @@ export async function patchDuplicatedPersonsForPatient(
     const currentLinkedPerson = await commonWell.getPersonById(queryMeta, currentLinkedPersonId);
     if (isEnrolledBy(orgName, currentLinkedPerson)) {
       await commonWell.unenrollPerson(queryMeta, currentLinkedPersonId);
+      await commonWell.deletePerson(queryMeta, currentLinkedPersonId);
     }
   }
 

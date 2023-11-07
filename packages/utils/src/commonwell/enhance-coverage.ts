@@ -10,14 +10,21 @@ import {
   SessionManagement,
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import * as fs from "fs";
 import { chunk } from "lodash";
 import * as readline from "readline-sync";
+import { queryDocsForPatient } from "./doc-query-shared";
+
+dayjs.extend(duration);
 
 // Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
 // import { chromium as runtime } from "playwright";
+import { sleep } from "@metriport/core/util/sleep";
 import { firefox as runtime } from "playwright";
 
 /**
@@ -45,6 +52,7 @@ const downloadProgressIndex = 0;
 
 // If it fails to get the cookie, we might need to run this on a "headed" browser = update this to false:
 const headless = true;
+//const headless = false;
 
 /**
  * You shouldn't need to, but if you want to use existing cookies login to the CW portal and go to
@@ -60,9 +68,14 @@ const cwPassword = getEnvVarOrFail("CW_PASSWORD");
 const metriportApiBaseUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const cxOrgOID = getEnvVarOrFail("ORG_OID");
+const apiKey = getEnvVarOrFail("API_KEY");
 
 const cqOrgsList = fs.readFileSync(`${__dirname}/cq-org-list.json`, "utf8");
 const CQ_ORG_CHUNK_SIZE = 50;
+const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 }).asMilliseconds();
+const DOC_QUERIES_IN_PARALLEL = 25;
+// We most likely want to send notifications to the CX during the Enhanced Coverage flow
+const triggerWHNotificationsToCx = true;
 
 /**
  * Code to run this on local environment.
@@ -136,9 +149,7 @@ export async function main() {
     for (const [i, orgChunk] of chunks.entries()) {
       const { log } = out(`CHUNK ${i}/${chunks.length}`);
       const orgIds = orgChunk.map(org => org.Id);
-
       log(`--------------------------------- Starting`);
-
       try {
         await linkPatients.linkPatientToOrgs({
           cxId,
@@ -152,8 +163,45 @@ export async function main() {
       }
     }
   } finally {
-    console.log(`################################## Total time: ${Date.now() - startedAt}ms`);
+    console.log(
+      `################################## Patient linking time: ${Date.now() - startedAt} ms`
+    );
   }
+
+  console.log(
+    `################################## Triggering doc query... - started at ${new Date().toISOString()}`
+  );
+
+  console.log(`Giving some time for patients to be updated @ CW...`);
+  await sleep(WAIT_BETWEEN_LINKING_AND_DOC_QUERY);
+  const dqStartedAt = Date.now();
+
+  await executeAsynchronously(
+    patientIds,
+    async (patientId: string) => {
+      const { docsFound } = await queryDocsForPatient({
+        cxId,
+        patientId,
+        apiUrl: metriportApiBaseUrl,
+        triggerWHNotificationsToCx,
+        apiKey,
+      });
+      console.log(`Done doc query for patient ${patientId}, found ${docsFound} docs`);
+    },
+    {
+      numberOfParallelExecutions: DOC_QUERIES_IN_PARALLEL,
+      maxJitterMillis: 50,
+      minJitterMillis: 10,
+    }
+  );
+  console.log(`################################## Doc query time: ${Date.now() - dqStartedAt} ms`);
+
+  const duration = Date.now() - startedAt;
+  const durationMin = dayjs.duration(duration).asMinutes();
+  console.log(`################################## Total time: ${duration} ms / ${durationMin} min`);
+
+  // for some reason it was hanging when updating this script, this fixes it
+  process.exit(0);
 }
 
 main();

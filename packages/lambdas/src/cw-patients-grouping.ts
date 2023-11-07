@@ -77,6 +77,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
     capture.error(error, { extra: { lambdaName, error } });
     throw error;
   } finally {
-    console.log(`Total time: ${Date.now() - startedAt}ms`);
+    console.log(`Total time: ${Date.now() - startedAt} ms`);
   }
 });
