@@ -6,7 +6,7 @@ import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { getPatientOrFail } from "../patient/get-patient";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
-import { processRequest, WebhookMetadataPayload, isDisableWH } from "../../webhook/webhook";
+import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 
 const log = Util.log(`Document Webhook`);
@@ -53,7 +53,7 @@ export const processPatientDocumentRequest = async (
       patients: [{ patientId, documents, status }],
     };
     // send it to the customer and update the request status
-    if (!isDisableWH(patient.data.cxDocumentRequestMetadata)) {
+    if (!isWebhookDisabled(patient.data.cxDocumentRequestMetadata)) {
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: whType,
