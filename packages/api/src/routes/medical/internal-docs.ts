@@ -239,7 +239,7 @@ router.post(
   upload.single("file"),
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromQueryOrFail("patientId", req);
+    const patientId = getUUIDFrom("query", req, "patientId").orFail();
     const file = req.file;
 
     if (!file) {
@@ -317,9 +317,9 @@ router.post(
 router.post(
   "/query",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getFrom("query").orFail("cxId", req);
-    const patientId = getFrom("query").orFail("patientId", req);
-    const facilityId = getFrom("query").optional("facilityId", req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getUUIDFrom("query", req, "patientId").orFail();
+    const facilityId = getUUIDFrom("query", req, "facilityId").optional();
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,

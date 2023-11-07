@@ -20,6 +20,11 @@ export const oauthUserTokenResponse = z.object({
   oauth_token_secret: z.string(),
 });
 
+/**
+ * @deprecated This is currently relying on `oauthSignature`, which has a critical security vulnerability:
+ *             https://github.com/metriport/metriport/security/dependabot/153
+ *             Marking this as deprecated to make sure we don't use this on MAPI until that is fixed.
+ */
 export interface OAuth1 {
   processStep1(userToken: string): Promise<string>;
   processStep2(
@@ -32,6 +37,11 @@ export interface OAuth1 {
   deregister(userAccessTokens: string[], cxId?: string): Promise<void>;
 }
 
+/**
+ * @deprecated This is currently relying on `oauthSignature`, which has a critical security vulnerability:
+ *             https://github.com/metriport/metriport/security/dependabot/153
+ *             Marking this as deprecated to make sure we don't use this on MAPI until that is fixed.
+ */
 export class OAuth1DefaultImpl implements OAuth1 {
   constructor(
     private readonly providerName: ProviderOAuth1Options,
@@ -127,6 +137,9 @@ export class OAuth1DefaultImpl implements OAuth1 {
           }
         : undefined),
     };
+    /**
+     * This has a critical security vulnerability: https://github.com/metriport/metriport/security/dependabot/153
+     */
     const oauth_signature = oauthSignature.generate(
       "POST",
       requestUrl,
