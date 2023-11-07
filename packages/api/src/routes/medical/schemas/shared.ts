@@ -25,3 +25,7 @@ export const defaultZipString = z.coerce
     message: `Zip must be a string consisting of ${zipLength} numbers`,
   });
 export const defaultNameString = defaultString.min(1);
+
+export const dataSourceType = ["metriport", "other", "both"] as const;
+export type DataSourceType = (typeof dataSourceType)[number];
+export const dataSourceSchema = z.enum(dataSourceType).default("both");

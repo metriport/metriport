@@ -40,6 +40,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { dataSourceSchema } from "./schemas/shared";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -215,6 +216,7 @@ router.get(
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @param req.query.dataSource Optional to query for metriport data only, outside data only, or both.
  * @return Patient's consolidated data.
  */
 router.get(
@@ -225,6 +227,8 @@ router.get(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const source = getFrom("query").optional("dataSource", req);
+    const dataSource = dataSourceSchema.parse(source);
     const patient = await getPatientOrFail({ id: patientId, cxId });
 
     const data = await getConsolidatedPatientData({
@@ -232,6 +236,7 @@ router.get(
       resources,
       dateFrom,
       dateTo,
+      dataSource,
     });
 
     return res.json(data);
@@ -276,6 +281,7 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
+ * @param req.query.dataSource Optional to query for metriport data only, outside data only, or both.
  * @return status of querying for the Patient's consolidated data.
  */
 router.post(
@@ -287,11 +293,14 @@ router.post(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
+    const source = getFrom("query").optional("dataSource", req);
+    const dataSource = dataSourceSchema.parse(source);
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
 
     const data = await startConsolidatedQuery({
       cxId,
       patientId,
+      dataSource,
       resources,
       dateFrom,
       dateTo,

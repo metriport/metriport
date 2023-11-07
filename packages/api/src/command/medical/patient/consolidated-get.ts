@@ -2,6 +2,7 @@ import { OperationOutcomeError } from "@medplum/core";
 import {
   Bundle,
   BundleEntry,
+  Extension,
   ExtractResource,
   OperationOutcomeIssue,
   Resource,
@@ -9,6 +10,7 @@ import {
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { DataSourceType } from "aws-sdk/clients/appsync";
 import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -16,16 +18,20 @@ import {
   fullDateQueryForResource,
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
+import { isMetriportExtension } from "../../../external/fhir/shared/extensions/metriport";
 import { capture } from "../../../shared/notifications";
-import { emptyFunction, Util } from "../../../shared/util";
+import { Util, emptyFunction } from "../../../shared/util";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
 
+type ResourceWithExtension = { extension?: Extension[]; content?: { extension?: Extension[] }[] };
+
 export async function startConsolidatedQuery({
   cxId,
   patientId,
+  dataSource,
   resources,
   dateFrom,
   dateTo,
@@ -33,6 +39,7 @@ export async function startConsolidatedQuery({
 }: {
   cxId: string;
   patientId: string;
+  dataSource: DataSourceType;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -51,20 +58,27 @@ export async function startConsolidatedQuery({
     progress,
     reset: true,
   });
-  getConsolidatedAndSendToCx({ patient, resources, dateFrom, dateTo, conversionType }).catch(
-    emptyFunction
-  );
+  getConsolidatedAndSendToCx({
+    patient,
+    resources,
+    dateFrom,
+    dateTo,
+    conversionType,
+    dataSource,
+  }).catch(emptyFunction);
   return progress;
 }
 
 async function getConsolidatedAndSendToCx({
   patient,
+  dataSource,
   resources,
   dateFrom,
   dateTo,
   conversionType,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "data">;
+  dataSource: DataSourceType;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -73,9 +87,20 @@ async function getConsolidatedAndSendToCx({
   const { log } = Util.out(
     `getConsolidatedAndSendToCx - cxId ${patient.cxId}, patientId ${patient.id}`
   );
-  const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
+  const filters = {
+    resources: resources ? resources.join(", ") : undefined,
+    dateFrom,
+    dateTo,
+    dataSource,
+  };
   try {
-    let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+    let bundle = await getConsolidatedPatientData({
+      patient,
+      resources,
+      dateFrom,
+      dateTo,
+      dataSource,
+    });
 
     if (conversionType) {
       // If we need to convert to medical record, we also have to update the resulting
@@ -122,11 +147,13 @@ async function getConsolidatedAndSendToCx({
 
 export async function getConsolidatedPatientData({
   patient,
+  dataSource,
   resources,
   dateFrom,
   dateTo,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
+  dataSource: DataSourceType;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -176,11 +203,13 @@ export async function getConsolidatedPatientData({
 
   const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
 
+  const filteredByDataSource = success.filter(r => filterByDataSource(r, dataSource));
+
   const failuresAmount = Object.keys(errorsToReport).length;
   if (failuresAmount > 0) {
     log(
       `Failed to get FHIR resources (${failuresAmount} failures, ${
-        success.length
+        filteredByDataSource.length
       } succeeded): ${JSON.stringify(errorsToReport)}`
     );
     capture.message(`Failed to get FHIR resources`, {
@@ -188,14 +217,14 @@ export async function getConsolidatedPatientData({
         context: `getConsolidatedPatientData`,
         patientId,
         errorsToReport,
-        succeeded: success.length,
+        succeeded: filteredByDataSource.length,
         failed: failuresAmount,
       },
       level: "error",
     });
   }
 
-  const entry: BundleEntry[] = success.map(r => ({ resource: r }));
+  const entry: BundleEntry[] = filteredByDataSource.map(r => ({ resource: r }));
   return buildResponse(entry);
 }
 
@@ -232,4 +261,25 @@ function issueToString(issue: OperationOutcomeIssue): string {
     (issue.diagnostics ? issue.diagnostics.slice(0, 100) + "..." : null) ??
     JSON.stringify(issue)
   );
+}
+
+function filterByDataSource(r: Resource, dataSource: DataSourceType): boolean {
+  if (dataSource === "both") return true;
+  const hasMetriportExtension = checkForMetriportExtension(r as ResourceWithExtension);
+
+  return dataSource === "other" ? !hasMetriportExtension : hasMetriportExtension;
+}
+
+function checkForMetriportExtension(r: ResourceWithExtension): boolean {
+  if (r.extension) {
+    return r.extension.some(isMetriportExtension) ?? false;
+  }
+  if (r.content) {
+    return (
+      r.content.some((contentItem: { extension?: Extension[] }) =>
+        contentItem.extension?.some(isMetriportExtension)
+      ) ?? false
+    );
+  }
+  return false;
 }
