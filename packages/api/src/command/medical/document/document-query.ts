@@ -7,8 +7,7 @@ import {
   Progress,
 } from "../../../domain/medical/document-query";
 import { Patient } from "../../../domain/medical/patient";
-import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
-import BadRequestError from "../../../errors/bad-request";
+import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../../external/aws/appConfig";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
@@ -55,22 +54,9 @@ export async function queryDocumentsAcrossHIEs({
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (facilityId && !isPatientAssociatedWithFacility(patient, facilityId)) {
-    throw new BadRequestError(`Patient not associated with given facility`, undefined, {
-      patientId: patient.id,
-      facilityId,
-    });
-  }
-  if (!facilityId && patient.facilityIds.length > 1) {
-    throw new BadRequestError(
-      `Patient is associated with more than one facility (facilityId is required)`,
-      undefined,
-      {
-        patientId: patient.id,
-        facilityIdCount: patient.facilityIds.length,
-      }
-    );
-  }
+
+  validateOptionalFacilityId(patient, facilityId);
+
   const docQueryProgress = patient.data.documentQueryProgress;
   const requestId = getOrGenerateRequestId(docQueryProgress, forceQuery);
 

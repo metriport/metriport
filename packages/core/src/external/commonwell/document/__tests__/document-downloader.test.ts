@@ -1,28 +1,9 @@
 import { APIMode, CommonWell, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import * as stream from "stream";
 import { oid } from "../../../../domain/oid";
-import { getEnvVar } from "../../../../util/env-var";
+import { getEnvVarOrFail } from "../../../../util/env-var";
 import { S3Utils } from "../../../aws/s3";
 import { DocumentDownloaderLocal } from "../document-downloader-local";
-
-const cwOrgCertificate = getEnvVar("CW_ORG_CERTIFICATE");
-const cwOrgPrivateKey = getEnvVar("CW_ORG_PRIVATE_KEY");
-const bucketName = getEnvVar("MEDICAL_DOCUMENTS_BUCKET_NAME");
-
-// TODO move these to .env so we don't need to update the test file to run it
-const region = "...";
-const docRef = {
-  fileName: "...",
-  fileLocation: "...",
-  mimeType: "...",
-  size: 0,
-};
-// TODO move these to .env so we don't need to update the test file to run it
-const org = {
-  name: "...",
-  oid: "...",
-  npi: "...",
-};
 
 class DocumentDownloaderForTest extends DocumentDownloaderLocal {
   override getUploadStreamToS3(s3FileName: string, s3FileLocation: string, contentType?: string) {
@@ -35,6 +16,33 @@ class DocumentDownloaderForTest extends DocumentDownloaderLocal {
 
 // TO BE RUN LOCALLY NOT IN CI/CD
 describe.skip("document-downloader", () => {
+  const cwOrgCertificate = getEnvVarOrFail("CW_ORG_CERTIFICATE");
+  const cwOrgPrivateKey = getEnvVarOrFail("CW_ORG_PRIVATE_KEY");
+  const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+
+  const region = getEnvVarOrFail("AWS_REGION");
+  const fileName = getEnvVarOrFail("FILE_NAME");
+  const fileLocation = getEnvVarOrFail("FILE_LOCATION");
+  const mimeType = getEnvVarOrFail("MIME_TYPE");
+  const fileSize = getEnvVarOrFail("FILE_SIZE");
+  const size = fileSize ? parseInt(fileSize) : undefined;
+  const orgName = getEnvVarOrFail("ORG_NAME");
+  const orgOid = getEnvVarOrFail("ORG_OID");
+  const orgNpi = getEnvVarOrFail("ORG_NPI");
+
+  const docRef = {
+    fileName,
+    fileLocation,
+    mimeType,
+    size,
+  };
+
+  const org = {
+    name: orgName,
+    oid: orgOid,
+    npi: orgNpi,
+  };
+
   const commonWell =
     cwOrgCertificate && cwOrgPrivateKey
       ? new CommonWell(

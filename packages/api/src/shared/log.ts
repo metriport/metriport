@@ -2,6 +2,9 @@ import { inspect } from "node:util";
 import { ZodError } from "zod";
 import { Config } from "./config";
 
+/**
+ * @deprecated Use @metriport/core instead
+ */
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function debug(msg: string, ...optionalParams: any[]): void {
   if (Config.isCloudEnv()) return;

@@ -8,6 +8,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
+import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import {
   getDocToFileFunction,
@@ -505,6 +506,7 @@ export async function downloadDocsAndUpsertFHIR({
                   organization,
                   facilityNPI,
                   cxId,
+                  requestId,
                 });
 
                 return newFile;
@@ -617,13 +619,14 @@ export async function downloadDocsAndUpsertFHIR({
           errorCount++;
 
           log(`Error processing doc: ${error}`, doc);
-          if (!errorReported) {
+          if (!errorReported && !(error instanceof NotFoundError)) {
             capture.error(error, {
               extra: {
                 context: `cw.downloadDocsAndUpsertFHIR`,
                 patientId: patient.id,
                 document: doc,
                 requestId,
+                error,
               },
             });
           }
@@ -640,9 +643,9 @@ export async function downloadDocsAndUpsertFHIR({
               },
               requestId,
             });
-          } catch (err) {
-            capture.error(err, {
-              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId },
+          } catch (error) {
+            capture.error(error, {
+              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId, error },
             });
           }
         }
@@ -724,12 +727,14 @@ async function triggerDownloadDocument({
   organization,
   facilityNPI,
   cxId,
+  requestId,
 }: {
   doc: DocumentWithLocation;
   fileInfo: S3Info;
   organization: Organization;
   facilityNPI: string;
   cxId: string;
+  requestId: string;
 }): Promise<File> {
   const docDownloader = makeDocumentDownloader({
     orgName: organization.data.name,
@@ -746,11 +751,21 @@ async function triggerDownloadDocument({
     location: fileInfo.fileLocation,
   };
 
-  const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
-  return {
-    ...result,
-    isNew: true,
-  };
+  try {
+    const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+    return {
+      ...result,
+      isNew: true,
+    };
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error.status === httpStatus.NOT_FOUND) {
+      console.log(`Document not found on CW, skipping - requestId: ${requestId}. Error: ${error}`);
+      throw new NotFoundError("Document not found on CW", error, { requestId });
+    } else {
+      throw error;
+    }
+  }
 }
 
 const fileIsConvertible = (f: File) => isConvertible(f.contentType);

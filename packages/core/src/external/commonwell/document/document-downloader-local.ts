@@ -12,6 +12,7 @@ import {
   DownloadResult,
   FileInfo,
 } from "./document-downloader";
+import NotFoundError from "../../../util/error/not-found";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -236,9 +237,10 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       };
       this.config.capture &&
         this.config.capture.error(error, { extra: { ...additionalInfo, error } });
-
       if (error instanceof CommonwellError && error.cause?.response?.status === 404) {
-        throw new MetriportError("CW - Document not found", error, additionalInfo);
+        const msg = "CW - Document not found";
+        console.log(`${msg} - ${JSON.stringify(additionalInfo)}`);
+        throw new NotFoundError(msg, undefined, additionalInfo);
       }
       throw new MetriportError(`CW - Error downloading document`, error, additionalInfo);
     }
