@@ -264,7 +264,7 @@ export class MetriportMedicalApi {
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param conversionType Optional to indicate how the medical record should be rendered.
-   * @param metadata Optional metadata to be sent along the webhook request as response of this query
+   * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The consolidated data query status.
    */
   async startConsolidatedQuery(
