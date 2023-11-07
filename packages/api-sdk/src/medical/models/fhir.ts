@@ -84,7 +84,9 @@ export type ResourceSearchableByPatient = (typeof resourcesSearchableByPatient)[
 export const resourcesSearchableBySubject = ["AdverseEvent", "Task"] as const;
 export type ResourceSearchableBySubject = (typeof resourcesSearchableBySubject)[number];
 
-export const generalResources = ["Practitioner"] as const;
+// TODO #1214 - re introduce Practitioner resource here after dedup
+// export const generalResources = ["Practitioner", "Binary"] as const;
+export const generalResources = ["Binary"] as const;
 export type GeneralResources = (typeof generalResources)[number];
 
 export const resourceTypeForConsolidation = [
