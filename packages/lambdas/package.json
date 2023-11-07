@@ -46,7 +46,7 @@
     "xmldom": "^0.6.0"
   },
   "devDependencies": {
-    "@metriport/core": "^1.4.11",
+    "@metriport/core": "^1.4.12-alpha.0",
     "@sparticuz/chromium": "106.0.2",
     "@tsconfig/node18": "^1.0.1",
     "@types/jest": "^29.5.5",
