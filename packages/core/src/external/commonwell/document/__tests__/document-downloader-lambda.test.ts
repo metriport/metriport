@@ -51,22 +51,15 @@ describe.skip("document-downloader", () => {
       location: `${docRef.fileLocation}`,
     };
 
-    try {
-      await docDownloader.download({
+    await expect(
+      docDownloader.download({
         document,
         fileInfo: {
           name: docRef.fileName,
           location: bucketName,
         },
         cxId,
-      });
-
-      fail("Expected docDownloader.download to throw an error");
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.log(`Error thrown by ${lambdaName}!`, JSON.stringify(error, null, 2));
-      expect(error).toBeInstanceOf(MetriportError);
-      expect(error.message).toMatch(`Error calling lambda ${lambdaName}`);
-    }
+      })
+    ).rejects.toThrowError(new MetriportError(`Error calling lambda ${lambdaName}`));
   });
 });
