@@ -1,11 +1,8 @@
 import httpStatus from "http-status";
-import MetriportError from "./metriport-error";
+import { MetriportError } from "./metriport-error";
 
 const numericStatus = httpStatus.NOT_FOUND;
 
-/**
- * @deprecated - use @metriport/core instead
- */
 export default class NotFoundError extends MetriportError {
   constructor(
     message = "Could not find the requested resource",
