@@ -5,7 +5,6 @@ import {
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
-import { Facility } from "../../../domain/medical/facility";
 import { Organization } from "../../../domain/medical/organization";
 import { Patient } from "../../../domain/medical/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
@@ -38,8 +37,6 @@ export async function sandboxGetDocRefsAndUpsert({
 }: {
   organization: Organization;
   patient: Patient;
-  facility: Facility;
-  override?: boolean;
   requestId: string;
 }): Promise<DocumentReference[]> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
@@ -138,7 +135,7 @@ export async function sandboxGetDocRefsAndUpsert({
       log(`Skipping file ${fileTitle} as it already exists`);
       const isDocConvertible = isConvertible(entry.content?.mimeType);
 
-      if  (isDocConvertible) {
+      if (isDocConvertible) {
         docsToConvert = docsToConvert - 1;
       }
     }
@@ -153,13 +150,16 @@ export async function sandboxGetDocRefsAndUpsert({
       status: "completed",
       successful: entries.length,
     },
-    convertProgress: docsToConvert <= 0 ? {
-      total: 0,
-      status: "completed",
-    } : {
-      total: docsToConvert,
-      status: "processing",
-    },
+    convertProgress:
+      docsToConvert <= 0
+        ? {
+            total: 0,
+            status: "completed",
+          }
+        : {
+            total: docsToConvert,
+            status: "processing",
+          },
     requestId,
   });
 

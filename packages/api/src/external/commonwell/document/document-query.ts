@@ -102,7 +102,6 @@ export async function queryAndProcessDocuments({
     if (Config.isSandbox()) {
       const documentsSandbox = await sandboxGetDocRefsAndUpsert({
         organization,
-        facility,
         patient,
         requestId,
       });

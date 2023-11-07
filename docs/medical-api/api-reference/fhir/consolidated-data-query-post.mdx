@@ -61,6 +61,14 @@ This will be returned [via a webook](/medical-api/more-info/webhooks#medical-rec
   resources](/medical-api/api-reference/fhir/get-patient-consolidated#available-fhir-resources).
 </Info>
 
+## Request Body
+
+<Snippet file="webhook-request-metadata.mdx" />
+
+## Example
+
+<Snippet file="webhook-metadata-post-example.mdx" />
+
 ## Response
 
 Returns a JSON containing a `status` property indicating the query status. Possible values for consolidated
@@ -68,18 +76,7 @@ data query status are `processing`, `completed`, or `failed`.
 
 <ResponseExample>
 
-```typescript Metriport SDK
-import { MetriportMedicalApi } from "@metriport/api-sdk";
-
-const metriport = new MetriportMedicalApi(apiToken);
-
-const consolidatedData = await metriport.startConsolidatedQuery(
-  patientId,
-  ["AllergyIntolerance", "Appointment"] as const,
-  "2023-03-01",
-  "2023-04-01"
-);
-```
+<Snippet file="webhook-metadata-sdk-example.mdx" />
 
 </ResponseExample>
 

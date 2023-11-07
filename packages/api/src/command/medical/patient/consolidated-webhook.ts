@@ -9,6 +9,7 @@ import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
+import { getPatientOrFail } from "./get-patient";
 
 const log = Util.log(`Consolidated Webhook`);
 
@@ -50,7 +51,10 @@ export const processConsolidatedDataWebhook = async ({
   const apiType = Product.medical;
   const { id: patientId, cxId } = patient;
   try {
-    const settings = await getSettingsOrFail({ id: cxId });
+    const [settings, currentPatient] = await Promise.all([
+      getSettingsOrFail({ id: cxId }),
+      getPatientOrFail({ id: patientId, cxId }),
+    ]);
 
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
@@ -69,7 +73,8 @@ export const processConsolidatedDataWebhook = async ({
         ? {
             bundleLength: optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown",
           }
-        : undefined
+        : undefined,
+      currentPatient.data.cxConsolidatedRequestMetadata
     );
 
     await updateConsolidatedQueryProgress({

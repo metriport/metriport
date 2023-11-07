@@ -22,6 +22,8 @@ export const makePatientData = (data: Partial<PatientData> = {}): PatientData =>
     personalIdentifiers: data.personalIdentifiers ?? [makePersonalIdentifier()],
     address: data.address ?? [makeAddressStrict()],
     documentQueryProgress: data.documentQueryProgress,
+    cxDocumentRequestMetadata: data.cxDocumentRequestMetadata,
+    cxConsolidatedRequestMetadata: data.cxConsolidatedRequestMetadata,
   };
 };
 export const makePatient = (params: Partial<Patient> = {}): Patient => {
