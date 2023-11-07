@@ -8,6 +8,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { CWCoverageEnhancementConfig } from "../../config/env-config";
+import { EnvType } from "../env-type";
 import { getConfig } from "../shared/config";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
@@ -75,6 +76,7 @@ export function setup({
   stack,
   vpc,
   lambdaLayers,
+  envType,
   secrets,
   bucket,
   alarmSnsAction,
@@ -82,12 +84,14 @@ export function setup({
   stack: Construct;
   vpc: IVpc;
   lambdaLayers: LambdaLayers;
+  envType: EnvType;
   secrets: Secrets;
   bucket: IBucket;
   alarmSnsAction?: SnsAction;
 }):
   | {
       sessionLambda: IFunction;
+      linkPatientQueue: sqs.IQueue;
       linkPatientsLambda: IFunction;
     }
   | undefined {
@@ -120,7 +124,7 @@ export function setup({
   });
 
   // queue to get the group of patients + CQ orgs
-  const linkPatientQueue = createLinkPatientQueue(stack, lambdaLayers);
+  const linkPatientQueue = createLinkPatientQueue(stack, lambdaLayers, envType);
 
   // lambda to batch patients + CQ orgs
   // const patientGroupingLambda = createPatientsGroupingLambda({
@@ -145,6 +149,7 @@ export function setup({
 
   return {
     sessionLambda,
+    linkPatientQueue,
     linkPatientsLambda,
   };
 }
@@ -223,8 +228,8 @@ function createSessionMgmtLambda({
     entry: "cw-session-management",
     layers: lambdaLayers,
     memory,
+    envType: config.environmentType,
     envVars: {
-      ENV_TYPE: config.environmentType,
       COOKIE_SECRET_ARN: cookieStore.secretArn,
       CODE_CHALLENGE_SECRET_ARN: codeChallengeStore.secretArn,
       CODE_CHALLENGE_NOTIF_URL: notificationUrl,
@@ -270,7 +275,11 @@ function createSessionMgmtLambda({
 //   });
 // }
 
-function createLinkPatientQueue(stack: Construct, lambdaLayers: LambdaLayers): sqs.IQueue {
+function createLinkPatientQueue(
+  stack: Construct,
+  lambdaLayers: LambdaLayers,
+  envType: EnvType
+): sqs.IQueue {
   const {
     connectorName,
     sqsLinkPatients: { receiveMessageWaitTime, maxReceiveCount, visibilityTimeout },
@@ -283,6 +292,7 @@ function createLinkPatientQueue(stack: Construct, lambdaLayers: LambdaLayers): s
     createDLQ: true,
     createRetryLambda: true,
     lambdaLayers: [lambdaLayers.shared],
+    envType,
     contentBasedDeduplication: false, // gotta set deduplication ID in SendMessage()
     receiveMessageWaitTime,
     maxReceiveCount,
@@ -320,8 +330,8 @@ function createLinkPatientsLambda({
     entry: "cw-link-patients",
     layers: [lambdaLayers.shared],
     memory,
+    envType: config.environmentType,
     envVars: {
-      ENV_TYPE: config.environmentType,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       INPUT_QUEUE_URL: inputQueue.queueUrl,
       CW_MANAGEMENT_URL: coverageConfig.managementUrl,

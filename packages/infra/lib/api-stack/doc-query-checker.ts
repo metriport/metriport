@@ -61,9 +61,9 @@ export function createDocQueryChecker(props: DocQueryCheckerProps): Lambda | und
     memory: lambdaMemory,
     timeout: lambdaTimeout,
     alarmSnsAction,
+    envType: config.environmentType,
     envVars: {
       TIMEOUT_MILLIS: String(httpTimeout.toMilliseconds()),
-      ENV_TYPE: config.environmentType,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
     },
   });

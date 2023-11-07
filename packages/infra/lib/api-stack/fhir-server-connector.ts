@@ -84,6 +84,7 @@ export function createConnector({
     visibilityTimeout,
     maxReceiveCount,
     lambdaLayers: [lambdaLayers.shared],
+    envType,
     alarmSnsAction,
   });
 
@@ -98,9 +99,9 @@ export function createConnector({
     entry: "sqs-to-fhir",
     layers: [lambdaLayers.shared],
     memory: lambdaMemory,
+    envType,
     envVars: {
       METRICS_NAMESPACE,
-      ENV_TYPE: envType,
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),

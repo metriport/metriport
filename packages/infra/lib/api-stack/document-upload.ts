@@ -32,8 +32,8 @@ export function createLambda({
     vpc,
     entry: "document-uploader",
     layers: [lambdaLayers.shared],
+    envType,
     envVars: {
-      ENV_TYPE: envType,
       API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}`,
       MEDICAL_DOCUMENTS_DESTINATION_BUCKET: medicalDocumentsBucket.bucketName,
       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
