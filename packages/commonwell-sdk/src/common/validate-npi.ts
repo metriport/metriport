@@ -7,7 +7,7 @@
  * @returns true if valid; false otherwise.
  */
 export function validateNPI(npi: string): boolean {
-  if (npi.length !== 10) {
+  if (!npi || npi.length !== 10) {
     return false;
   }
   const firstNPIDigit = parseInt(npi.charAt(0), 10);
@@ -34,10 +34,9 @@ export function validateNPI(npi: string): boolean {
   // account for NPI prefix
   sum += 24;
 
-  let checkDigit = 10 - (sum % 10);
-  if (checkDigit === 10) {
-    checkDigit = 0;
-  }
+  const diffFromNextTens = 10 - (sum % 10);
+  const checkDigit = diffFromNextTens % 10;
+
   const lastNPIDigit = parseInt(npi.charAt(npi.length - 1), 10);
   return checkDigit === lastNPIDigit;
 }
