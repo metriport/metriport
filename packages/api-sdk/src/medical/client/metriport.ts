@@ -432,7 +432,7 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation (optional).
    *        If not provided and the patient has only one facility, that one will be used.
    *        If not provided and the patient has multiple facilities, an error will be thrown.
-   * @param metadata Optional metadata to be sent along the webhook request as response of this query
+   * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The document query request ID, progress & status indicating whether its being executed or not.
    */
   async startDocumentQuery(
