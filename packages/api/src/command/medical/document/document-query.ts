@@ -13,9 +13,10 @@ import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../externa
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { emptyFunction, Util } from "../../../shared/util";
-import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
+import { Util, emptyFunction } from "../../../shared/util";
+import { SetDocQueryProgress, appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
+import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
@@ -40,12 +41,14 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   override,
+  cxDocumentRequestMetadata,
   forceQuery = false,
 }: {
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
+  cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
@@ -69,11 +72,12 @@ export async function queryDocumentsAcrossHIEs({
   const cwData = externalData as PatientDataCommonwell;
   if (!cwData.patientId) return createQueryResponse("failed");
 
-  const updatedPatient = await updateDocQuery({
-    patient: { id: patient.id, cxId: patient.cxId },
-    downloadProgress: { status: "processing" },
+  const updatedPatient = await storeQueryInit({
+    id: patient.id,
+    cxId: patient.cxId,
+    documentQueryProgress: { download: { status: "processing" } },
     requestId,
-    reset: true,
+    cxDocumentRequestMetadata,
   });
 
   const cxsWithEnhancedCoverageFeatureFlagValue =

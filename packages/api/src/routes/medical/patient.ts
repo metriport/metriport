@@ -40,6 +40,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -276,6 +277,7 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
+ * @param req.body Optional metadata to be sent through Webhook.
  * @return status of querying for the Patient's consolidated data.
  */
 router.post(
@@ -288,6 +290,7 @@ router.post(
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
+    const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const data = await startConsolidatedQuery({
       cxId,
@@ -296,6 +299,7 @@ router.post(
       dateFrom,
       dateTo,
       conversionType,
+      cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
     });
     return res.json(data);
   })

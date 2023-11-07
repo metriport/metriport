@@ -29,8 +29,7 @@ export async function queryDocsForPatient({
   patientId,
   apiUrl,
   apiKey,
-  // TODO 1106 Remove this directive
-  triggerWHNotificationsToCx, // eslint-disable-line @typescript-eslint/no-unused-vars
+  triggerWHNotificationsToCx,
   config = {
     patientChunkDelayJitterMs: 1000,
     queryPollDurationMs: 10_000,
@@ -58,10 +57,16 @@ export async function queryDocsForPatient({
   const metriportAPI = new MetriportMedicalApi(apiKey, {
     baseAddress: apiUrl,
   });
+
+  const metadata = {
+    metadata: {
+      disableWHFlag: "true",
+    },
+  };
+
   async function triggerDocQuery(patientId: string): Promise<void> {
-    // TODO 1106 send this along the request
-    // triggerWHNotificationsToCx
-    await axios.post(`${apiUrl}/internal/docs/query?cxId=${cxId}&patientId=${patientId}`);
+    const payload = triggerWHNotificationsToCx ? metadata : {};
+    await axios.post(`${apiUrl}/internal/docs/query?cxId=${cxId}&patientId=${patientId}`, payload);
   }
 
   while (docQueryAttempts < maxDocQueryAttemts) {
