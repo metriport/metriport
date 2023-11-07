@@ -5,6 +5,8 @@ import { CommonWellManagementAPI } from "./api";
 
 dayjs.extend(duration);
 
+const UPDATE_TIMEOUT = dayjs.duration({ minutes: 2 });
+
 /**
  * Manages the session on the CommonWell management portal.
  */
@@ -37,8 +39,12 @@ export class LinkPatients {
     await this.cwManagementApi.updateIncludeList({ oid: cxOrgOID, careQualityOrgIds: cqOrgIds });
 
     console.log(`Calling API /update-all...`);
-    await axios.post(`${this.apiUrl}/internal/patient/update-all?cxId=${cxId}`, {
-      patientIds,
-    });
+    await axios.post(
+      `${this.apiUrl}/internal/patient/update-all?cxId=${cxId}`,
+      {
+        patientIds,
+      },
+      { timeout: UPDATE_TIMEOUT.asMilliseconds() }
+    );
   }
 }
