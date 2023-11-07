@@ -101,6 +101,7 @@ router.get(
  * @param req.query.patientId Patient ID for which to retrieve document metadata.
  * @param req.query.facilityId The facility providing NPI for the document query.
  * @param req.query.override Whether to override files already downloaded (optional, defaults to false).
+ * @param req.body Optional metadata to be sent through Webhook.
  * @return The status of document querying.
  */
 router.post(

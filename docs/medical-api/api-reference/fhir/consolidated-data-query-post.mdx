@@ -63,10 +63,11 @@ This will be returned [via a webook](/medical-api/more-info/webhooks#medical-rec
 
 ## Request Body
 
-<BodyField name="meta" type="object" optional>
-    A record of string key-value pairs. You can specify up to 50 keys, with key names up to 40 characters long and values up to 500 characters long.
-</BodyField>
+<Snippet file="webhook-request-metadata.mdx" />
 
+## Example
+
+<Snippet file="webhook-metadata-post-example.mdx" />
 
 ## Response
 
@@ -78,6 +79,12 @@ data query status are `processing`, `completed`, or `failed`.
 ```typescript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
+const metadata = {
+  metadata: {
+    someKey: "someValue",
+  },
+};
+
 const metriport = new MetriportMedicalApi(apiToken);
 
 const consolidatedData = await metriport.startConsolidatedQuery(
@@ -85,6 +92,8 @@ const consolidatedData = await metriport.startConsolidatedQuery(
   ["AllergyIntolerance", "Appointment"] as const,
   "2023-03-01",
   "2023-04-01"
+  undefined,
+  metadata
 );
 ```
 

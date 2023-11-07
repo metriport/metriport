@@ -8,7 +8,6 @@ export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
   progress: QueryProgress;
   reset?: boolean;
-  cxConsolidatedRequestMetadata?: unknown;
 };
 
 /**
