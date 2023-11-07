@@ -56,6 +56,12 @@ This will be returned [via a webook](/medical-api/more-info/webhooks#medical-rec
   <Info>This parameter is to indicate how the medical record should be rendered.</Info>
 </ParamField>
 
+<ParamField query="dataSource" type="string" optional>
+  The origin of the resource. Can be one of `metriport`, `other`, or `both`. `metriport` indicates
+  resources created internally by Metriport, while `other` denotes resources from external
+  organizations. If not provided, will default to `both`.
+</ParamField>
+
 <Info>
   You can scroll to the bottom of the page to view all [available
   resources](/medical-api/api-reference/fhir/get-patient-consolidated#available-fhir-resources).
