@@ -22,6 +22,7 @@ import { EnvConfig } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
+// import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
