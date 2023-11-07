@@ -147,16 +147,16 @@ async function getConsolidatedAndSendToCx({
 
 export async function getConsolidatedPatientData({
   patient,
-  dataSource,
   resources,
   dateFrom,
   dateTo,
+  dataSource = "both",
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  dataSource: DataSourceType;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
+  dataSource?: DataSourceType;
 }): Promise<Bundle<Resource>> {
   const { log } = Util.out(
     `getConsolidatedPatientData - cxId ${patient.cxId}, patientId ${patient.id}`
