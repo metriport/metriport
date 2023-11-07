@@ -6,7 +6,7 @@ import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { getPatientOrFail } from "../patient/get-patient";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
-import { processRequest, WebhookMetadataPayload } from "../../webhook/webhook";
+import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 
 const log = Util.log(`Document Webhook`);
@@ -52,14 +52,27 @@ export const processPatientDocumentRequest = async (
     const payload: WebhookPatientDataPayloadWithoutMessageId = {
       patients: [{ patientId, documents, status }],
     };
-    const webhookRequest = await createWebhookRequest({ cxId, type: whType, payload });
     // send it to the customer and update the request status
-    await processRequest(
-      webhookRequest,
-      settings,
-      undefined,
-      patient.data.cxDocumentRequestMetadata
-    );
+    if (!isWebhookDisabled(patient.data.cxDocumentRequestMetadata)) {
+      const webhookRequest = await createWebhookRequest({
+        cxId,
+        type: whType,
+        payload,
+      });
+      await processRequest(
+        webhookRequest,
+        settings,
+        undefined,
+        patient.data.cxDocumentRequestMetadata
+      );
+    } else {
+      await createWebhookRequest({
+        cxId,
+        type: whType,
+        payload,
+        status: "success",
+      });
+    }
 
     reportUsageCmd({ cxId, entityId: patientId, product: Product.medical });
   } catch (err) {

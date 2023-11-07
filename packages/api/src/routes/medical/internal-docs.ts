@@ -31,6 +31,7 @@ import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom } from "../util";
 import { getFromQueryOrFail } from "./../util";
+import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
 const upload = multer();
@@ -311,21 +312,23 @@ router.post(
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
- *
+ * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
  * @return updated document query progress
  */
 router.post(
   "/query",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getUUIDFrom("query", req, "patientId").orFail();
-    const facilityId = getUUIDFrom("query", req, "facilityId").optional();
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const facilityId = getFrom("query").optional("facilityId", req);
+    const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
       forceQuery: true,
+      cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
     });
 
     return res.status(httpStatus.OK).json(docQueryProgress);

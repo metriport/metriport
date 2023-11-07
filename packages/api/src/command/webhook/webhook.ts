@@ -217,3 +217,9 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
   if (res.pong && res.pong === ping) return true;
   return false;
 };
+
+export const isWebhookDisabled = (meta?: unknown): boolean => {
+  if (!meta) return false;
+  console.log(meta);
+  return Boolean((meta as { disableWHFlag?: string })?.disableWHFlag);
+};
