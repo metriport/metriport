@@ -59,8 +59,6 @@ export async function startConsolidatedQuery({
     address: patient.data.address,
     cxDocumentRequestMetadata: cxConsolidatedRequestMetadata,
     cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata,
-    whOverride:
-      (cxConsolidatedRequestMetadata as { whOverrideFlag?: string })?.whOverrideFlag !== undefined,
   });
 
   const progress: QueryProgress = { status: "processing" };

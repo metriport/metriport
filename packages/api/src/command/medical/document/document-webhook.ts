@@ -6,8 +6,8 @@ import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { getPatientOrFail } from "../patient/get-patient";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
-import { processRequest, WebhookMetadataPayload } from "../../webhook/webhook";
-import { createWebhookRequest } from "../../webhook/webhook-request";
+import { processRequest, WebhookMetadataPayload, isDisableWH } from "../../webhook/webhook";
+import { createWebhookRequest, updateWebhookRequestStatus } from "../../webhook/webhook-request";
 
 const log = Util.log(`Document Webhook`);
 
@@ -56,7 +56,15 @@ export const processPatientDocumentRequest = async (
     };
     const webhookRequest = await createWebhookRequest({ cxId, type: whType, payload });
     // send it to the customer and update the request status
-    if (!patient.data.whOverride) await processRequest(webhookRequest, settings);
+    if (!isDisableWH(patient.data.cxConsolidatedRequestMetadata)) {
+      await processRequest(webhookRequest, settings);
+    } else {
+      const status = "success";
+      await updateWebhookRequestStatus({
+        id: webhookRequest.id,
+        status,
+      });
+    }
 
     reportUsageCmd({ cxId, entityId: patientId, product: Product.medical });
   } catch (err) {

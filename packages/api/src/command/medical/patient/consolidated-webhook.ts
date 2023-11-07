@@ -6,8 +6,8 @@ import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
-import { processRequest, WebhookMetadataPayload } from "../../webhook/webhook";
-import { createWebhookRequest } from "../../webhook/webhook-request";
+import { processRequest, WebhookMetadataPayload, isDisableWH } from "../../webhook/webhook";
+import { createWebhookRequest, updateWebhookRequestStatus } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { getPatientOrFail } from "./get-patient";
 
@@ -68,7 +68,8 @@ export const processConsolidatedDataWebhook = async ({
       payload,
     });
     // send it to the customer and update the WH request status
-    if (!currentPatient.data.whOverride)
+
+    if (!isDisableWH(currentPatient.data.cxConsolidatedRequestMetadata)) {
       await processRequest(
         webhookRequest,
         settings,
@@ -78,6 +79,13 @@ export const processConsolidatedDataWebhook = async ({
             }
           : undefined
       );
+    } else {
+      const status = "success";
+      await updateWebhookRequestStatus({
+        id: webhookRequest.id,
+        status,
+      });
+    }
 
     await updateConsolidatedQueryProgress({
       patient,
