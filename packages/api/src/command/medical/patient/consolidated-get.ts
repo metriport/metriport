@@ -88,8 +88,10 @@ async function getConsolidatedAndSendToCx({
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
     let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+    const hasResources = bundle.entry && bundle.entry.length > 0;
+    const shouldCreateMedicalRecord = conversionType && hasResources;
 
-    if (conversionType) {
+    if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.
       bundle = await handleBundleToMedicalRecord({
