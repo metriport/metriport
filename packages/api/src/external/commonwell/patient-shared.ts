@@ -1,14 +1,15 @@
 import {
   CommonWellAPI,
-  getDemographics,
-  getPersonId,
-  isEnrolled,
-  isUnenrolled,
   Patient as CommonwellPatient,
   Person as CommonwellPerson,
   RequestMetadata,
   StrongId,
+  getDemographics,
+  getPersonId,
+  isEnrolled,
+  isUnenrolled,
 } from "@metriport/commonwell-sdk";
+import { driversLicenseURIs } from "@metriport/core/domain/oid";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import _, { minBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
@@ -18,7 +19,6 @@ import { Patient, PatientExternalDataEntry } from "../../domain/medical/patient"
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
-import { driversLicenseURIs } from "@metriport/core/domain/oid";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
@@ -71,7 +71,7 @@ export async function findOrCreatePerson({
   } else {
     // Search by demographics
     const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, commonwellPatientId);
-    debug(`resp searchPersonByPatientDemo: ${JSON.stringify(respSearch, null, 2)}`);
+    debug(`resp searchPersonByPatientDemo: `, () => JSON.stringify(respSearch, null, 2));
     const persons = respSearch._embedded?.person
       ? respSearch._embedded.person
           .flatMap(p => (p && getPersonId(p) ? p : []))
@@ -119,9 +119,9 @@ export async function findOrCreatePerson({
   }
 
   // If not found, enroll/add person
-  debug(`Enrolling this person: ${JSON.stringify(person, null, 2)}`);
+  debug(`Enrolling this person: `, () => JSON.stringify(person, null, 2));
   const respPerson = await commonWell.enrollPerson(queryMeta, person);
-  debug(`resp enrollPerson: ${JSON.stringify(respPerson, null, 2)}`);
+  debug(`resp enrollPerson: `, () => JSON.stringify(respPerson, null, 2));
   const personId = getPersonId(respPerson);
   if (!personId) {
     const msg = `Could not get person ID from CW response`;
