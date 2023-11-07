@@ -1,0 +1,78 @@
+{
+  "name": "metriport",
+  "version": "1.0.0",
+  "bin": {},
+  "scripts": {
+    "preinstall": "npm i -g rimraf",
+    "prepare": "husky install",
+    "init": "npm i && SCRIPT='i' npm run lambdas:no-run",
+    "clean": "npm run clean --workspaces --if-present && SCRIPT='clean' npm run lambdas && echo 'rimraf node_modules' && rimraf node_modules",
+    "prep-lambdas": "cd packages/lambdas && npm run prep-deploy && cd ../..",
+    "prep-deploy": "npm run install-deps && npm run build:cloud && npm run test && npm run prep-lambdas",
+    "prep-deploy-staging": "npm run install-deps && npm run build:staging && npm run test && npm run prep-lambdas",
+    "package": "npm run prep-deploy",
+    "install-deps": "npm ci --ignore-scripts --no-fund && SCRIPT='ci --ignore-scripts --no-fund' npm run lambdas:no-run",
+    "build": "npm run build --workspaces && SCRIPT='build' npm run lambdas",
+    "build:cloud": "npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
+    "build:staging": "ENV_TYPE='staging' npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
+    "typecheck": "npm run typecheck --workspaces --if-present && SCRIPT='typecheck' npm run lambdas",
+    "lint": "npm run lint --workspaces --if-present && SCRIPT='lint' npm run lambdas",
+    "lint-fix": "npm run lint-fix --workspaces --if-present",
+    "lint-staged": "npx lint-staged",
+    "prettier-fix": "npm run prettier-fix --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && SCRIPT='test' npm run lambdas",
+    "test:e2e": "npm run test:e2e --workspaces --if-present",
+    "lambdas:no-run": "cd packages/lambdas && npm $SCRIPT && cd ../..",
+    "lambdas": "cd packages/lambdas && npm run $SCRIPT && cd ../..",
+    "commit": "cz",
+    "check-secrets": "docker run --rm -v $(pwd):/path zricethezav/gitleaks:v8.17.0 protect --source='/path' --staged --no-banner -v",
+    "publish:alpha": "npm run build && npx lerna publish --dist-tag next",
+    "publish:alpha:ignore": "npm run build && npx lerna publish --dist-tag next --ignore-changes '**'",
+    "publish:prod": "npm run build && npx lerna publish",
+    "publish:prod:ignore": "npm run build && npx lerna publish --ignore-changes '**'",
+    "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
+  },
+  "workspaces": [
+    "packages/commonwell-sdk",
+    "packages/commonwell-cert-runner",
+    "packages/commonwell-jwt-maker",
+    "packages/react-native-sdk",
+    "packages/core",
+    "packages/api-sdk",
+    "packages/api",
+    "packages/connect-widget",
+    "packages/infra",
+    "packages/utils",
+    "packages/tester-node"
+  ],
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --max-warnings=0"
+    ],
+    "*.{ts,tsx,md}": [
+      "prettier --list-different"
+    ]
+  },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.4.2",
+    "@commitlint/config-conventional": "^17.4.2",
+    "@commitlint/cz-commitlint": "^17.4.2",
+    "@semantic-release/git": "^10.0.1",
+    "@tsconfig/recommended": "^1.0.2",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "commitizen": "^4.3.0",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.6.0",
+    "husky": "^8.0.3",
+    "lerna": "^7.1.1",
+    "lint-staged": "^13.1.0",
+    "semantic-release": "^20.0.2",
+    "typescript": "^4.9.5"
+  }
+}
