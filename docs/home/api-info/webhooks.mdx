@@ -36,6 +36,17 @@ different messages when they become available - specifically:
 1. If using the Devices API - accept and process [user data messages](#devices-api-messages).
 1. If using the Medical API - accept and process [patient data messages](#medical-api-messages).
 
+## Signature Verification
+
+When Metriport sends a webhook event, it includes two additional headers: `x-metriport-timestamp` and `x-metriport-signature`. 
+
+- `x-metriport-timestamp`: This is a timestamp of when the webhook event was generated.
+- `x-metriport-signature`: This is a [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA256 hash computed using your webhook key, the timestamp, and the body of the webhook event.
+
+You can use these headers to verify that the webhook events sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
+
+<Snippet file="webhook-signature-validation.mdx" />
+
 ## Authentication
 
 Validate requests to your public endpoint by comparing the webhook key with each request's HTTP header.

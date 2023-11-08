@@ -49,7 +49,7 @@ export const processData = async (data: WithingsWebhook) => {
       type: "devices.health-data",
       payload,
     });
-    await processRequest(webhookRequest, settings, cxId);
+    await processRequest(webhookRequest, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (error) {
     capture.error(error, {

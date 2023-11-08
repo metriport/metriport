@@ -26,7 +26,7 @@ export const processAppleData = async (
       payload,
     });
 
-    await processRequest(webhookRequest, settings, cxId);
+    await processRequest(webhookRequest, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (error) {
     log(`Error on processAppleData: ${errorToString(error)}`);

@@ -68,21 +68,16 @@ const getWebhookDataForUpdate = (
   };
   // if there's a URL, fire a test towards it - intentionally asynchronous
   webhookData.webhookUrl &&
-    testWebhook({ id: settings.id, ...webhookData, cxId }).catch(processAsyncError(`testWebhook`));
+    testWebhook({ id: settings.id, ...webhookData }).catch(processAsyncError(`testWebhook`));
   return webhookData;
 };
 
-type TestWebhookCommand = Pick<Settings, "id" | "webhookUrl" | "webhookKey"> & { cxId: string };
+type TestWebhookCommand = Pick<Settings, "id" | "webhookUrl" | "webhookKey">;
 
-const testWebhook = async ({
-  id,
-  webhookUrl,
-  webhookKey,
-  cxId,
-}: TestWebhookCommand): Promise<void> => {
+const testWebhook = async ({ id, webhookUrl, webhookKey }: TestWebhookCommand): Promise<void> => {
   if (!webhookUrl || !webhookKey) return;
   try {
-    const testOK = await sendTestPayload(webhookUrl, webhookKey, cxId);
+    const testOK = await sendTestPayload(webhookUrl, webhookKey);
     await updateWebhookStatus({
       id,
       webhookEnabled: testOK,

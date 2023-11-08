@@ -29,7 +29,7 @@ export const retryFailedRequests = async (cxId: string): Promise<void> => {
   const _processRequest = async () => {
     try {
       for (const request of failed) {
-        const success = await processRequest(request, settings, cxId);
+        const success = await processRequest(request, settings);
         // give it some time to prevent flooding the customer
         if (success) await Util.sleep(Math.random() * 200);
       }

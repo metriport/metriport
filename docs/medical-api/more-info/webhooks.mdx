@@ -354,14 +354,3 @@ Example payload:
   ]
 }
 ```
-
-## Signature Verification
-
-When Metriport sends a webhook event, it includes two additional headers: `x-metriport-timestamp` and `x-metriport-signature`. 
-
-- `x-metriport-timestamp`: This is a timestamp of when the webhook event was generated.
-- `x-metriport-signature`: This is a HMAC SHA256 hash computed using your webhook key, the timestamp, and the body of the webhook event.
-
-You can use these headers to verify that the webhook events sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
-
-<Snippet file="webhook-signature-validation.mdx" />

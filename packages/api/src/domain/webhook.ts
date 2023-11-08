@@ -16,4 +16,7 @@ export const mapiWebhookType = [
 ] as const;
 export type MAPIWebhookType = (typeof mapiWebhookType)[number];
 
-export type WebhookType = DAPIWebhookType | MAPIWebhookType;
+export const PingWebhookType = `${Product.ping}` as const;
+export type PingWebhookType = (typeof PingWebhookType)[number];
+
+export type WebhookType = DAPIWebhookType | MAPIWebhookType | PingWebhookType;

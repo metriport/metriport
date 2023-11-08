@@ -11,26 +11,26 @@ app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
 const whKey = getEnvVarOrFail("WH_KEY");
-const cxId = getEnvVarOrFail("CX_ID");
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 
 app.post("/", (req: Request, res: Response) => {
   console.log(`BODY: ${JSON.stringify(req.body, undefined, 2)}`);
 
-  const timestamp = req.headers["x-metriport-timestamp"];
   const signature = req.headers["x-metriport-signature"];
   const metriportApi = new MetriportMedicalApi(apiKey, {
     baseAddress: apiUrl,
   });
-  if (typeof timestamp !== "string" || typeof signature !== "string") {
-    console.log(`Invalid timestamp or signature`);
-    return res.status(400).send({ error: "Invalid timestamp or signature" });
-  }
-  if (metriportApi.verifyWebhookSignature(whKey, cxId, req.body, timestamp, signature)) {
-    console.log(`Signature verified`);
-  } else {
-    console.log(`Signature verification failed`);
+
+  try {
+    if (metriportApi.verifyWebhookSignature(whKey, req.body, signature)) {
+      console.log(`Signature verified`);
+    } else {
+      console.log(`Signature verification failed`);
+    }
+  } catch (error) {
+    console.error(`Error verifying signature: ${error}`);
+    return res.status(500).send({ error: `Error verifying signature: ${error}` });
   }
 
   if (req.body.ping) {

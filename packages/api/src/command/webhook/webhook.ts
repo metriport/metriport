@@ -12,6 +12,7 @@ import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { isDAPIWebhookRequest } from "./devices-util";
 import { updateWebhookRequestStatus } from "./webhook-request";
+import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
 
 const DEFAULT_TIMEOUT_SEND_PAYLOAD_MS = 5_000;
@@ -22,6 +23,7 @@ const log = Util.log(`Webhook`);
 // General
 type WebhookPingPayload = {
   ping: string;
+  meta: WebhookMetadataPayload;
 };
 
 /**
@@ -93,7 +95,7 @@ export const processRequest = async (
     });
   };
 
-  const payload = webhookRequest.payload as Record<string, string>;
+  const payload = webhookRequest.payload;
   try {
     const meta: WebhookMetadataPayload = {
       messageId: webhookRequest.id,
@@ -108,9 +110,7 @@ export const processRequest = async (
         ...payload,
       },
       webhookUrl,
-      webhookKey,
-      cxId,
-      meta.when
+      webhookKey
     );
     // mark this request as successful on the DB
     const status = "success";
@@ -193,24 +193,16 @@ export const sendPayload = async (
   payload: unknown,
   url: string,
   apiKey: string,
-  cxId: string,
-  timestamp: string,
   timeout = DEFAULT_TIMEOUT_SEND_PAYLOAD_MS
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   try {
-    const hmac = crypto
-      .createHmac("sha256", apiKey)
-      .update(cxId)
-      .update(JSON.stringify(payload))
-      .update(timestamp)
-      .digest("hex");
+    const hmac = crypto.createHmac("sha256", apiKey).update(JSON.stringify(payload)).digest("hex");
     const res = await axios.post(url, payload, {
       headers: {
         "x-webhook-key": apiKey,
         "user-agent": "Metriport API",
-        "X-Metriport-Signature": hmac,
-        "X-Metriport-Timestamp": timestamp,
+        "x-metriport-signature": hmac,
       },
       timeout,
       maxRedirects: 0, // disable redirects to prevent SSRF
@@ -222,13 +214,19 @@ export const sendPayload = async (
   }
 };
 
-export const sendTestPayload = async (url: string, key: string, cxId: string): Promise<boolean> => {
+export const sendTestPayload = async (url: string, key: string): Promise<boolean> => {
   const ping = nanoid();
+  const when = dayjs().toISOString();
   const payload: WebhookPingPayload = {
     ping,
+    meta: {
+      messageId: uuidv4(),
+      when,
+      type: "ping",
+    },
   };
-  const timestamp = "0:00";
-  const res = await sendPayload(payload, url, key, cxId, timestamp, DEFAULT_TIMEOUT_SEND_TEST_MS);
+
+  const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
   if (res.pong && res.pong === ping) return true;
   return false;
 };
