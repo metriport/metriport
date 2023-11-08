@@ -7,16 +7,16 @@ import {
   Progress,
 } from "../../../domain/medical/document-query";
 import { Patient } from "../../../domain/medical/patient";
-import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
-import BadRequestError from "../../../errors/bad-request";
+import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../../external/aws/appConfig";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { emptyFunction, Util } from "../../../shared/util";
-import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
+import { Util, emptyFunction } from "../../../shared/util";
+import { SetDocQueryProgress, appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
+import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
@@ -41,33 +41,22 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   override,
+  cxDocumentRequestMetadata,
   forceQuery = false,
 }: {
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
+  cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (facilityId && !isPatientAssociatedWithFacility(patient, facilityId)) {
-    throw new BadRequestError(`Patient not associated with given facility`, undefined, {
-      patientId: patient.id,
-      facilityId,
-    });
-  }
-  if (!facilityId && patient.facilityIds.length > 1) {
-    throw new BadRequestError(
-      `Patient is associated with more than one facility (facilityId is required)`,
-      undefined,
-      {
-        patientId: patient.id,
-        facilityIdCount: patient.facilityIds.length,
-      }
-    );
-  }
+
+  validateOptionalFacilityId(patient, facilityId);
+
   const docQueryProgress = patient.data.documentQueryProgress;
   const requestId = getOrGenerateRequestId(docQueryProgress, forceQuery);
 
@@ -83,11 +72,12 @@ export async function queryDocumentsAcrossHIEs({
   const cwData = externalData as PatientDataCommonwell;
   if (!cwData.patientId) return createQueryResponse("failed");
 
-  const updatedPatient = await updateDocQuery({
-    patient: { id: patient.id, cxId: patient.cxId },
-    downloadProgress: { status: "processing" },
+  const updatedPatient = await storeQueryInit({
+    id: patient.id,
+    cxId: patient.cxId,
+    documentQueryProgress: { download: { status: "processing" } },
     requestId,
-    reset: true,
+    cxDocumentRequestMetadata,
   });
 
   const cxsWithEnhancedCoverageFeatureFlagValue =

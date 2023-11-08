@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.5.8",
+  "version": "1.6.0",
   "description": "",
   "main": "mock-webhook.js",
   "private": true,
@@ -8,6 +8,7 @@
     "clean": "rimraf dist && rimraf node_modules",
     "mock-webhook": "ts-node src/mock-webhook.ts",
     "fhir-uploader": "ts-node src/fhir-uploader.ts",
+    "doc-query": "ts-node src/document/document-query.ts",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",

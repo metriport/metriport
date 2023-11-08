@@ -24,10 +24,17 @@ type WebhookPingPayload = {
   ping: string;
 };
 
+/**
+ * @param {messageId}  - The ID of the webhook request
+ * @param {when}  - The date and time when the webhook request was created
+ * @param {type}  - The type of the webhook request, either document-download or consolidated-request
+ * @param {data}  - Any data the customer pases to the webhook request
+ */
 export type WebhookMetadataPayload = {
   messageId: string;
   when: string;
   type: string;
+  data?: unknown;
 };
 
 async function missingWHSettings(
@@ -66,8 +73,8 @@ function getProductFromWebhookRequest(webhookRequest: WebhookRequest): Product {
 export const processRequest = async (
   webhookRequest: WebhookRequest,
   settings: Settings,
-  cxId: string,
-  additionalWHRequestMeta?: Record<string, string>
+  additionalWHRequestMeta?: Record<string, string>,
+  cxWHRequestMeta?: unknown
 ): Promise<boolean> => {
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
@@ -92,6 +99,7 @@ export const processRequest = async (
       messageId: webhookRequest.id,
       when: dayjs(webhookRequest.createdAt).toISOString(),
       type: webhookRequest.type,
+      data: cxWHRequestMeta,
     };
 
     await sendPayload(
@@ -223,4 +231,10 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
   const res = await sendPayload(payload, url, key, cxId, timestamp, DEFAULT_TIMEOUT_SEND_TEST_MS);
   if (res.pong && res.pong === ping) return true;
   return false;
+};
+
+export const isWebhookDisabled = (meta?: unknown): boolean => {
+  if (!meta) return false;
+  console.log(meta);
+  return Boolean((meta as { disableWHFlag?: string })?.disableWHFlag);
 };

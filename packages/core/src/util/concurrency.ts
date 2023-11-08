@@ -8,14 +8,14 @@ export type ExecuteInChunksOptions = {
   numberOfParallelExecutions?: number;
   /**
    * Maximum jitter in milliseconds before each run. Makes promises
-   * start at slight different times. Defaults to no jitter.
+   * start at slight different times. Defaults to 0, no jitter.
    */
   maxJitterMillis?: number;
   /**
-   * Percentage of the maxJitterMillis to use (number between 0 and 1).
-   * If not set, it will use a random percentage between 0 and 1.
+   * Minimum jitter in milliseconds before each run. Makes promises
+   * start at slight different times. Defaults to 0.
    */
-  jitterPct?: number;
+  minJitterMillis?: number;
 };
 
 export type FunctionType<T> = (
@@ -49,10 +49,6 @@ export type FunctionType<T> = (
  * @param collection array of elements to be processed
  * @param fn the function to be executed asynchronously
  * @param options additional settings
- * @param options.numberOfParallelExecutions the number of executions to run in parallel, defaults
- *    to the length of the collection, which means all elements will be processed at the same time
- * @param options.maxJitterMillis maximum jitter in milliseconds before each run. Makes promises
- *    start at slight different times. Defaults to no jitter.
  */
 export async function executeAsynchronously<T>(
   collection: T[],
@@ -60,20 +56,22 @@ export async function executeAsynchronously<T>(
   {
     numberOfParallelExecutions = collection.length,
     maxJitterMillis = 0,
-    jitterPct,
+    minJitterMillis = 0,
   }: ExecuteInChunksOptions = {}
 ): Promise<void> {
-  if (jitterPct) {
-    if (jitterPct < 0) throw new Error(`maxJitterMillis must be >= 0`);
-    if (jitterPct > 1) throw new Error(`maxJitterMillis must be <= 1`);
+  if (minJitterMillis < 0) throw new Error("minJitterMillis must be >= 0");
+  if (maxJitterMillis < 0) throw new Error("maxJitterMillis must be >= 0");
+  if (minJitterMillis > maxJitterMillis) {
+    throw new Error("minJitterMillis must be <= maxJitterMillis");
   }
+
   const numItemsPerRun = Math.min(collection.length, numberOfParallelExecutions);
   const asyncRuns = chunk(collection, Math.ceil(collection.length / numItemsPerRun));
   const amountOfPromises = asyncRuns.length;
 
   const promises = asyncRuns.map(async (itemsOfPromise, promiseIndex) => {
     // possible jitter before each run so that they don't start at the same time
-    const jitter = Math.floor((jitterPct ?? Math.random()) * maxJitterMillis);
+    const jitter = Math.max(minJitterMillis, Math.random() * maxJitterMillis);
     await sleep(jitter);
 
     await executeSynchronously(itemsOfPromise, fn, promiseIndex, amountOfPromises);

@@ -1,7 +1,9 @@
 import { OperationOutcomeError } from "@medplum/core";
 import {
+  Binary,
   Bundle,
   BundleEntry,
+  DiagnosticReport,
   ExtractResource,
   OperationOutcomeIssue,
   Resource,
@@ -9,6 +11,7 @@ import {
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { chunk } from "lodash";
 import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -17,11 +20,11 @@ import {
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
 import { capture } from "../../../shared/notifications";
-import { emptyFunction, Util } from "../../../shared/util";
-import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
+import { Util, emptyFunction } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
+import { storeQueryInit } from "./query-init";
 
 export async function startConsolidatedQuery({
   cxId,
@@ -30,6 +33,7 @@ export async function startConsolidatedQuery({
   dateFrom,
   dateTo,
   conversionType,
+  cxConsolidatedRequestMetadata,
 }: {
   cxId: string;
   patientId: string;
@@ -37,6 +41,7 @@ export async function startConsolidatedQuery({
   dateFrom?: string;
   dateTo?: string;
   conversionType?: ConsolidationConversionType;
+  cxConsolidatedRequestMetadata?: unknown;
 }): Promise<QueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -46,14 +51,21 @@ export async function startConsolidatedQuery({
   }
 
   const progress: QueryProgress = { status: "processing" };
-  await updateConsolidatedQueryProgress({
-    patient,
-    progress,
-    reset: true,
+
+  const updatedPatient = await storeQueryInit({
+    id: patient.id,
+    cxId: patient.cxId,
+    consolidatedQuery: progress,
+    cxConsolidatedRequestMetadata,
   });
-  getConsolidatedAndSendToCx({ patient, resources, dateFrom, dateTo, conversionType }).catch(
-    emptyFunction
-  );
+
+  getConsolidatedAndSendToCx({
+    patient: updatedPatient,
+    resources,
+    dateFrom,
+    dateTo,
+    conversionType,
+  }).catch(emptyFunction);
   return progress;
 }
 
@@ -76,8 +88,10 @@ async function getConsolidatedAndSendToCx({
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
     let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+    const hasResources = bundle.entry && bundle.entry.length > 0;
+    const shouldCreateMedicalRecord = conversionType && hasResources;
 
-    if (conversionType) {
+    if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.
       bundle = await handleBundleToMedicalRecord({
@@ -175,6 +189,75 @@ export async function getConsolidatedPatientData({
   ]);
 
   const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
+
+  // populate data into DiagnosticReport
+  try {
+    const binaryResourceIds: string[] = [];
+    const successDiagReportIndeces: number[] = [];
+    let index = 0;
+    for (const resource of success) {
+      if (resource.resourceType === "DiagnosticReport") {
+        if (resource.presentedForm && resource.presentedForm[0].url?.startsWith("Binary")) {
+          const url = resource.presentedForm[0].url;
+          const binaryResourceId = url.split("/")[1];
+          if (binaryResourceId) {
+            successDiagReportIndeces.push(index);
+            binaryResourceIds.push(binaryResourceId);
+          }
+        }
+      }
+      index++;
+    }
+    const MAX_CHUNK_SIZE = 150;
+    const binaryChunks = chunk(binaryResourceIds, MAX_CHUNK_SIZE);
+
+    const binarySettled = await Promise.allSettled([
+      ...binaryChunks.map(async chunk => {
+        return searchResources(
+          "Binary",
+          () => fhir.searchResourcePages("Binary", `_id=${chunk.join(",")}`),
+          errorsToReport
+        );
+      }),
+    ]);
+    const binarySuccess: Resource[] = binarySettled.flatMap(s =>
+      s.status === "fulfilled" ? s.value : []
+    );
+    const binaryIdToResource: { [key: string]: Binary } = {};
+    for (const binaryResource of binarySuccess) {
+      binaryIdToResource[binaryResource.id ?? ""] = binaryResource as Binary;
+    }
+
+    for (const diagReportIndex of successDiagReportIndeces) {
+      const diagReport = success[diagReportIndex] as DiagnosticReport;
+      if (diagReport.presentedForm) {
+        const diagReportForm = diagReport.presentedForm[0];
+        if (diagReportForm) {
+          const url = diagReportForm.url;
+          if (url) {
+            const binaryResourceId = url.split("/")[1];
+            if (binaryResourceId) {
+              const binaryResource = binaryIdToResource[binaryResourceId];
+              if (binaryResource) {
+                diagReport.presentedForm[0].data = binaryResource.data;
+                success[diagReportIndex] = diagReport;
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    log(`Failed to populate DiagnosticReport data with error: ${JSON.stringify(error)}`);
+    capture.message(`Failed to get FHIR resources`, {
+      extra: {
+        context: `getConsolidatedPatientData`,
+        patientId,
+        error,
+      },
+      level: "error",
+    });
+  }
 
   const failuresAmount = Object.keys(errorsToReport).length;
   if (failuresAmount > 0) {

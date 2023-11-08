@@ -14,6 +14,7 @@ import { createPatient, PatientCreateCmd } from "../../command/medical/patient/c
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import cwCommands from "../../external/commonwell";
@@ -39,6 +40,7 @@ import {
   schemaCreateToPatient,
   schemaUpdateToPatient,
 } from "./schemas/patient";
+import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -100,13 +102,15 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityIdParam = getFrom("query").optional("facilityId", req);
     const payload = patientUpdateSchema.parse(req.body);
 
     const patient = await getPatientOrFail({ id, cxId });
     if (areDocumentsProcessing(patient)) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
     }
+
+    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     const patientUpdate: PatientUpdateCmd = {
       ...schemaUpdateToPatient(payload, cxId),
@@ -164,7 +168,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
+    const facilityId = getFrom("query").optional("facilityId", req);
 
     const patientDeleteCmd = {
       ...getETag(req),
@@ -273,6 +277,7 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
+ * @param req.body Optional metadata to be sent through Webhook.
  * @return status of querying for the Patient's consolidated data.
  */
 router.post(
@@ -285,6 +290,7 @@ router.post(
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
+    const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const data = await startConsolidatedQuery({
       cxId,
@@ -293,6 +299,7 @@ router.post(
       dateFrom,
       dateTo,
       conversionType,
+      cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
     });
     return res.json(data);
   })
