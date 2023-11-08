@@ -6,7 +6,7 @@ on:
     branches: [master, develop]
 
 jobs:
-  check:
+  fern-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
