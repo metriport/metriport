@@ -58,14 +58,14 @@ export async function queryDocsForPatient({
     baseAddress: apiUrl,
   });
 
-  const metadata = {
+  const disableWHPayload = {
     metadata: {
       disableWHFlag: "true",
     },
   };
 
   async function triggerDocQuery(patientId: string): Promise<void> {
-    const payload = triggerWHNotificationsToCx ? metadata : {};
+    const payload = triggerWHNotificationsToCx ? {} : disableWHPayload;
     await axios.post(`${apiUrl}/internal/docs/query?cxId=${cxId}&patientId=${patientId}`, payload);
   }
 
