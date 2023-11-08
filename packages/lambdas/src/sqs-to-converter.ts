@@ -11,6 +11,7 @@ import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
 import { SQSUtils } from "./shared/sqs";
 import { postToConverter } from "./shared/converter";
+import { Binary, Bundle } from "@medplum/fhirtypes";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -160,6 +161,47 @@ function postProcessSidechainFHIRBundle(
 
   console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
   return JSON.parse(fhirBundleStr);
+}
+function postProcessSidechainFHIRBundleStep2(bundle: Bundle): FHIRBundle {
+  const binaryIdToResource: { [key: string]: Binary } = {};
+  if (bundle.entry) {
+    // first, get all Binary resources into a map for quick lookup,
+    // and remove them from the Bundle - also, remove DocumentReference resources
+    bundle.entry = bundle.entry.filter(entry => {
+      let shouldKeep = true;
+      if (entry.resource?.resourceType === "Binary") {
+        shouldKeep = false;
+        if (entry.resource.id) {
+          binaryIdToResource[entry.resource.id] = entry.resource;
+        }
+      } else if (entry.resource?.resourceType === "DocumentReference") {
+        shouldKeep = false;
+      }
+      return shouldKeep;
+    });
+    // next, populate the DiagnosticReport resources with the content of the Binary
+    for (const entry of bundle.entry) {
+      if (entry.resource?.resourceType === "DiagnosticReport") {
+        if (entry.resource.presentedForm && entry.resource.presentedForm.length > 0) {
+          if (entry.resource.presentedForm[0]) {
+            const url = entry.resource.presentedForm[0].url;
+            if (url) {
+              const binaryResourceId = url.split("/")[1];
+              if (binaryResourceId) {
+                const binaryResource = binaryIdToResource[binaryResourceId];
+                if (binaryResource) {
+                  entry.resource.presentedForm[0].url = undefined;
+                  entry.resource.presentedForm[0].data = binaryResource.data;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return bundle as FHIRBundle;
 }
 
 /* Example of a single message/record in event's `Records` array:
@@ -321,6 +363,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             documentExtension,
             patientId
           );
+          try {
+            conversionResult = postProcessSidechainFHIRBundleStep2(conversionResult as Bundle);
+          } catch (error) {
+            console.log(`Error calling postProcessSidechainFHIRBundleStep2; \n${error}`);
+            capture.error("Error calling postProcessSidechainFHIRBundleStep2", {
+              extra: { error, context: lambdaName },
+            });
+          }
         } else {
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
