@@ -1,11 +1,13 @@
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { sleep } from "../../../util/sleep";
 import { CommonWellManagementAPI } from "./api";
 
 dayjs.extend(duration);
 
 const UPDATE_TIMEOUT = dayjs.duration({ minutes: 2 });
+const TIME_BETWEEN_INCLUDE_LIST_AND_UPDATE_ALL = dayjs.duration({ seconds: 2 });
 
 /**
  * Manages the session on the CommonWell management portal.
@@ -37,6 +39,8 @@ export class LinkPatients {
     cqOrgIds,
   }: LinkPatientsCommand): Promise<void> {
     await this.cwManagementApi.updateIncludeList({ oid: cxOrgOID, careQualityOrgIds: cqOrgIds });
+
+    await sleep(TIME_BETWEEN_INCLUDE_LIST_AND_UPDATE_ALL.asMilliseconds());
 
     console.log(`Calling API /update-all...`);
     await axios.post(

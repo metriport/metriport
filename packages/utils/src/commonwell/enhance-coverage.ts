@@ -171,12 +171,16 @@ export async function main() {
   }
 
   // intentionally asynchronous
-  console.log(`(async) Revert the list of CQ orgs to the original ones...`);
-  props.cwManagementApi
-    .updateIncludeList({ oid: cxOrgOID, careQualityOrgIds: originalOrgs })
-    .catch(error => {
-      console.log(`ERROR - couldn't revert the list of CQ orgs to the original ones`, error);
-    });
+  if (originalOrgs.length > 1) {
+    console.log(`(async) Revert the list of CQ orgs to the original ones...`);
+    props.cwManagementApi
+      .updateIncludeList({ oid: cxOrgOID, careQualityOrgIds: originalOrgs })
+      .catch(error => {
+        console.log(`ERROR - couldn't revert the list of CQ orgs to the original ones`, error);
+      });
+  } else {
+    console.log(`Not reverting the list of CQ orgs b/c it was originally empty.`);
+  }
 
   console.log(
     `################################## Triggering doc query... - started at ${new Date().toISOString()}`

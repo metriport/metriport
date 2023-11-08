@@ -15,7 +15,7 @@ export function log(prefix?: string, suffix?: string) {
 
 export function debug(prefix: string, suffix?: string) {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  if (Config.isCloudEnv()) () => {};
+  if (Config.isCloudEnv()) return () => {};
   return log(prefix, suffix);
 }
 
