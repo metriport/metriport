@@ -367,7 +367,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             conversionResult = postProcessSidechainFHIRBundleStep2(conversionResult as Bundle);
           } catch (error) {
             console.log(`Error calling postProcessSidechainFHIRBundleStep2; \n${error}`);
-            capture.message("Error calling postProcessSidechainFHIRBundleStep2", {
+            capture.error("Error calling postProcessSidechainFHIRBundleStep2", {
               extra: { error, context: lambdaName },
             });
           }
