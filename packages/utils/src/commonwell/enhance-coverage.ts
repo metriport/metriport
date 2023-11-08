@@ -132,7 +132,9 @@ export async function main() {
   };
 
   const cwSession = new SessionManagement(props);
-  await cwSession.keepSessionActive();
+  await cwSession.initSession();
+
+  const originalOrgs = await props.cwManagementApi.getIncludeList({ oid: cxOrgOID });
 
   const linkPatients = new LinkPatients({
     cwManagementApi: props.cwManagementApi,
@@ -166,6 +168,18 @@ export async function main() {
     console.log(
       `################################## Patient linking time: ${Date.now() - startedAt} ms`
     );
+  }
+
+  // intentionally asynchronous
+  if (originalOrgs.length > 1) {
+    console.log(`(async) Revert the list of CQ orgs to the original ones...`);
+    props.cwManagementApi
+      .updateIncludeList({ oid: cxOrgOID, careQualityOrgIds: originalOrgs })
+      .catch(error => {
+        console.log(`ERROR - couldn't revert the list of CQ orgs to the original ones`, error);
+      });
+  } else {
+    console.log(`Not reverting the list of CQ orgs b/c it was originally empty.`);
   }
 
   console.log(

@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+service:
+  auth: true
+  base-path: /user
+  endpoints:
+    getMetriportUserId:
+      display-name: Create User
+      docs: For your specified user ID, returns a Metriport user ID to be used in subsequent requests.
+      path: ""
+      method: POST
+      request:
+        name: GetMetriportUserIdRequest
+        query-parameters:
+          appUserId:
+            type: string
+            docs: The user ID you identify this user with in your app.
+      response: MetriportUserIdResponse
+
+    getConnectToken:
+      display-name: Create Connect Token
+      docs: Returns a token to be used in a Metriport Connect session.
+      path: /connect/token
+      method: GET
+      request:
+        name: GetConnectTokenRequest
+        query-parameters:
+          userId:
+            type: string
+            docs: The Metriport user ID to create a session token for.
+      response: ConnectTokenResponse
+
+    getConnectedProviders:
+      display-name: Get Connected Providers
+      docs: Returns the specified user's connected providers.
+      path: /{userId}/connected-providers
+      method: GET
+      path-parameters:
+        userId:
+          type: string
+          docs: The Metriport user ID to create a session token for.
+      response: ConnectedProvidersResponse
+
+    revokeAccessToProvider:
+      display-name: Revoke Provider Access
+      docs: Revokes the access token for a given provider.
+      method: DELETE
+      path: /{userId}/revoke
+      path-parameters:
+        userId:
+          type: string
+          docs: The Metriport user ID to create a session token for.
+      request:
+        name: RevokeAccessToProviderRequest
+        query-parameters:
+          provider:
+            type: string
+            docs: The provider you would like to revoke access to.
+      response: RevokeAccessToProviderResponse
+
+    delete:
+      display-name: Delete User
+      docs: Revokes access tokens for all providers and deletes the user.
+      method: DELETE
+      path: /{userId}
+      path-parameters:
+        userId:
+          type: string
+          docs: The Metriport user ID to create a session token for.
+      response: DeleteUserResponse
+
+types:
+  MetriportUserIdResponse:
+    properties:
+      userId:
+        type: string
+        docs: The Metriport user ID to be used in subsequent requests for this user.
+
+  ConnectTokenResponse:
+    properties:
+      token:
+        type: string
+        docs: |
+          The temporary token to allow the specified user to access 
+          the Metriport Connect widget.
+          The token will expire 10 minutes after it is created, and 
+          can be reused for the duration of the session.
+
+  ConnectedProvidersResponse:
+    properties:
+      connectedProviders: list<string>
+
+  RevokeAccessToProviderResponse:
+    properties:
+      message:
+        type: string
+        docs: Feedback on successful token revocation.
+
+  DeleteUserResponse:
+    properties:
+      message:
+        type: string
+        docs: Feedback on successful user deletion.

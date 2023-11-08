@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+imports:
+  commons: ../commons.yml
+
+service:
+  base-path: /medical/v1/organization
+  auth: true
+  endpoints:
+    create:
+      display-name: Create Organization
+      docs: Registers your Organization in Metriport.
+      method: POST
+      path: ""
+      request: OrganizationCreate
+      response: Organization
+      examples:
+        - request:
+            name: Metriport Inc.
+            type: ambulatory
+            location: $commons.Address.Example1
+          response:
+            body: $Organization.Example1
+
+    get:
+      display-name: Get Organization
+      docs: Gets the Organization representing your legal corporate entity.
+      method: GET
+      path: ""
+      response: Organization
+      examples:
+        - response:
+            body: $Organization.Example1
+
+    update:
+      display-name: Update Organization
+      docs: Updates your Organization's details.
+      method: PUT
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of your organization.
+      request: 
+        name: OrganizationUpdateRequest
+        headers: 
+          ETag: optional<string>
+        body: 
+          properties: 
+            name:
+              type: string
+              docs: |
+                The name of your organization. 
+                This is usually your legal corporate entity name - 
+                for example `Metriport Inc.`.
+            type:
+              type: OrgType
+              docs: The type of your organization.
+            location: commons.Address
+      response: Organization
+      examples:
+        - path-parameters:
+            id: "12345678"
+          request:
+            name: Metriport Inc.
+            type: ambulatory
+            location: $commons.Address.Example1
+          response:
+            body: $Organization.Example1
+
+types:
+  OrganizationCreate:
+    properties:
+      name:
+        type: string
+        docs: |
+          The name of your organization. 
+          This is usually your legal corporate entity name - 
+          for example `Metriport Inc.`.
+      type:
+        type: OrgType
+        docs: The type of your organization.
+      location: commons.Address
+
+  Organization:
+    extends: OrganizationCreate
+    properties:
+      id:
+        type: string
+        docs: |
+          The ID assigned to your organization. 
+          This ID will be used to uniquely identify your organization in medical documents.
+    examples:
+      - name: Example1
+        value:
+          id: "2.16.840.1.113883.3.666.123"
+          name: Metriport Inc.
+          type: ambulatory
+          location: $commons.Address.Example1
+
+  OrgType:
+    enum:
+      - acuteCare
+      - ambulatory
+      - hospital
+      - labSystems
+      - pharmacy
+      - postAcuteCare

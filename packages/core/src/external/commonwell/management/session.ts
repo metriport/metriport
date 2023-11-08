@@ -116,6 +116,10 @@ export class SessionManagement {
     this.screenshot = params.screenshot ?? (async () => {});
   }
 
+  async initSession(): Promise<void> {
+    return this.keepSessionActive();
+  }
+
   async keepSessionActive(): Promise<void> {
     const log = console.log;
     try {

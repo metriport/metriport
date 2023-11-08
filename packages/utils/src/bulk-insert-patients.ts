@@ -64,6 +64,7 @@ async function main() {
       console.log(`Loaded ${results.length} patients from the CSV file.`);
       if (dryRun) {
         console.log("Dry run, not inserting patients.");
+        console.log(`List of patients: ${JSON.stringify(results, null, 2)}`);
         console.log("Done.");
         return;
       }
@@ -118,8 +119,10 @@ function normalizeName(name: string): string {
 }
 
 const phoneRegex = /^\+?1?\d{10}$/;
-function normalizePhone(phone: string): string {
+
+function normalizePhone(phone: string): string | undefined {
   const trimmedPhone = phone.trim();
+  if (trimmedPhone.length === 0) return undefined;
   if (trimmedPhone.match(phoneRegex)) {
     // removes leading country code +1
     return trimmedPhone.slice(-10);
@@ -135,8 +138,10 @@ function normalizeCity(city: string): string {
   return toTitleCase(city);
 }
 
-function normalizeEmail(email: string): string {
-  return email.toLowerCase().trim();
+function normalizeEmail(email: string): string | undefined {
+  const trimmedEmail = email.trim();
+  if (trimmedEmail.length === 0) return undefined;
+  return trimmedEmail.toLowerCase();
 }
 
 function normalizeZip(zip: string): string {
@@ -175,6 +180,9 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   phone: string;
   email: string;
 }): PatientCreate | undefined => {
+  const phone = normalizePhone(csvPatient.phone);
+  const email = normalizeEmail(csvPatient.email);
+  const contact = phone || email ? { phone, email } : undefined;
   return {
     firstName: normalizeName(csvPatient.firstname),
     lastName: normalizeName(csvPatient.lastname),
@@ -188,7 +196,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
       zip: normalizeZip(csvPatient.zip),
       country: "USA",
     },
-    contact: { phone: normalizePhone(csvPatient.phone), email: normalizeEmail(csvPatient.email) },
+    contact,
   };
 };
 
