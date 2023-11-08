@@ -97,8 +97,11 @@ function postProcessSidechainFHIRBundle(
           bundleEntry.resource.id = newId;
 
           // save the old/new ID pair so we later replace all occurences
-          // of the old one with the new one
-          stringsToReplace.push({ old: idToUse, new: newId });
+          // of the old references with the new references
+          stringsToReplace.push({
+            old: `${bundleEntry.resource.resourceType}/${idToUse}`,
+            new: `${bundleEntry.resource.resourceType}/${newId}`,
+          });
 
           idToUse = newId;
         }
