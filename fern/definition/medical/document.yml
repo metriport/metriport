@@ -1,0 +1,275 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+service:
+  base-path: /medical/v1/document
+  auth: true
+  endpoints:
+    startQuery:
+      display-name: Start Document Query
+      docs: |
+        Triggers a document query for the specified patient across HIEs.
+        When executed, this endpoint triggers an asynchronous document query across HIEs. 
+        This is a two step process where the documents will first be downloaded from 
+        the respective HIE and, if they are C-CDA/XML, then converted to FHIR.
+        Each process (download, conversion) will contain its own `total` and `status` 
+        as well as the count for `successful` operations and `errors`.
+        When the asynchronous document query finishes, it stores new/updated document 
+        references for future requests and updates the status of download to `completed`. 
+        Meanwhile, in the background, files will be converted and the convert count will be 
+        incremented. Once all documents have been converted it too will be marked as `completed`.
+        If there's no document to be converted, the total will be set to zero and 
+        the status to `completed`.
+      method: POST
+      path: /query
+      request:
+        name: StartDocumentQueryRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the Patient for which to list available Documents.
+            type: string
+          facilityId:
+            docs: The ID of the Facility where the patient is receiving care.
+            type: string
+      response: DocumentQuery
+      examples:
+        - name: Example1
+          query-parameters:
+            patientId: "12345678"
+            facilityId: "12345678"
+          response:
+            body: $DocumentQuery.Example1
+
+    getQueryStatus:
+      display-name: Get Document Query Status
+      docs: |
+        Returns the document query status for the specified patient.
+        Can be used in to check the progress when the final status 
+        of the document query is taking longer than expected.
+        See more on [Start Document Query](/medical-api/api-reference/document/start-document-query).
+      method: POST
+      path: /query
+      request:
+        name: GetDocumentQueryStatusRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the Patient for which to list available Documents.
+            type: string
+      response: DocumentQuery
+      examples:
+        - name: Example1
+          query-parameters:
+            patientId: "12345678"
+          response:
+            body: $DocumentQuery.Example1
+
+    list:
+      display-name: List Documents
+      docs: |
+        Lists all Documents that can be retrieved for a Patient.
+        This endpoint returns the document references available 
+        at Metriport which are associated with the given Patient.
+        To start a new document query, see the [Start Document Query endpoint](/api-reference/medical/document/start-query).
+      method: GET
+      path: ""
+      request:
+        name: ListDocumentsRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the Patient for which to list available Documents.
+            type: string
+          facilityId:
+            docs: The ID of the Facility where the patient is receiving care.
+            type: string
+          dateFrom:
+            docs: The start date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no start date filter will be applied.
+            type: optional<string>
+          dateTo:
+            docs: The end date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no end date filter will be applied.
+            type: optional<string>
+      response:
+        type: ListDocumentsResponse
+        docs: An array of objects describing the Documents that can be retrieved for the Patient.
+      examples:
+        - name: Example1
+          query-parameters:
+            patientId: "12345678"
+            facilityId: "12345678"
+          response:
+            body: $ListDocumentsResponse.Example1
+
+    getURL:
+      display-name: Get Document URL
+      docs: |
+        Gets a presigned URL for downloading the specified document.
+        This endpoint returns a URL which you can use to download 
+        the specified document and/or convert using the file name 
+        provided from the [List Documents](/api-reference/medical/document/list) endpoint.
+      method: GET
+      path: /downloadUrl
+      request:
+        name: GetDocumentUrlRequest
+        query-parameters:
+          fileName:
+            type: string
+            docs: The file name of the document
+          conversionType:
+            type: optional<ConversionType>
+            docs: |
+              The doc type to convert to. Either `html` or `pdf`.
+              This parameter should only be used for converting XML/CDA files.
+      response:
+        type: DocumentUrl
+        docs: A json object containing the URL will be returned.
+      examples:
+        - name: Example1
+          query-parameters:
+            fileName: "x-ray"
+            conversionType: "pdf"
+          response:
+            body: $DocumentUrl.Example1
+
+types:
+  DocumentQuery:
+    properties:
+      download: optional<Progress>
+      convert: optional<Progress>
+    examples:
+      - name: Example1
+        value:
+          download: $Progress.Example2
+          convert: $Progress.Example1
+
+  Progress:
+    properties:
+      status:
+        type: DocumentQueryStatus
+        docs: The status of querying document references across HIEs.
+      total:
+        type: optional<integer>
+        docs: The total number of documents to be queried.
+      successful:
+        type: optional<integer>
+        docs: The number of documents successfully downloaded.
+      errors:
+        type: optional<integer>
+        docs: The number of documents that failed to download.
+    examples:
+      - name: Example1
+        value:
+          status: processing
+      - name: Example2
+        value:
+          status: completed
+          total: 100
+          successful: 98
+          errors: 2
+
+  DocumentQueryStatus:
+    enum:
+      - processing
+      - completed
+      - failed
+
+  ConversionType:
+    enum:
+      - html
+      - pdf
+
+  ListDocumentsResponse:
+    properties:
+      documents: list<DocumentReference>
+    examples:
+      - name: Example1
+        value:
+          documents:
+            - $DocumentReference.Example1
+
+  DocumentReference:
+    properties:
+      id:
+        type: string
+        docs: The Document ID.
+      fileName:
+        type: string
+        docs: Name of the file.
+      location:
+        type: string
+        docs: URL that can be used to retrieve the Document.
+      description:
+        type: optional<string>
+        docs: Human-readable description of the Document.
+      status:
+        type: optional<string>
+        docs: Can be one of `current`, `superceded`, or `entered in error`.
+      indexed:
+        type: optional<datetime>
+        docs: When this Document reference was created - formatted to ISO 8601.
+      mimeType:
+        type: optional<string>
+        docs: Document MIME type - usually `application/xml`, or `application/pdf`.
+      size:
+        type: optional<integer>
+        docs: Size of the Document in bytes.
+      type:
+        type: optional<CodeableConcept>
+        docs: What kind of document this is (LOINC if possible).
+    examples:
+      - name: Example1
+        value:
+          id: 1.2.543.1.34.1.34.134
+          fileName: CCDA_Diag.xml
+          location: https://fhir.metriport.com/oauth/fhir/Binary/2.16.840.1.113883.3.777.666.5.700009.969696
+          description: Patient Diagnoses
+          status: current
+          indexed: "2019-09-07T15:50:00.000Z"
+          mimeType: application/xml
+          size: 17344007
+          type:
+            coding:
+              - system: http://snomed.info/sct
+                code: "62479008"
+                display: Diagnoses
+
+  CodeableConcept:
+    properties:
+      coding:
+        type: optional<list<Coding>>
+        docs: Array containing the coding defined by a terminology system.
+      text:
+        type: optional<string>
+        docs: Plain text representation of the concept.
+    examples:
+      - name: Example1
+        value:
+          coding:
+            - $Coding.Example1
+          text: "Diagnoses"
+
+  Coding:
+    properties:
+      system:
+        type: optional<string>
+        docs: Identity of the terminology system.
+      code:
+        type: optional<string>
+        docs: Symbol in syntax defined by the system.
+      display:
+        type: optional<string>
+        docs: Representation defined by the system.
+    examples:
+      - name: Example1
+        value:
+          system: http://snomed.info/sct
+          code: "62479008"
+          display: Diagnoses
+
+  DocumentUrl:
+    docs: A json object containing the URL will be returned.
+    properties:
+      url:
+        type: optional<string>
+        docs: The presigned URL.
+    examples:
+      - name: Example1
+        value:
+          url: abc123-def456

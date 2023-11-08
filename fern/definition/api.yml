@@ -1,0 +1,11 @@
+name: api
+auth: ApiKey
+auth-schemes:
+  ApiKey:
+    header: X-API-Key
+    name: apiKey
+environments: 
+  Production: https://api.metriport.com
+default-environment: Production
+error-discrimination:
+  strategy: status-code
