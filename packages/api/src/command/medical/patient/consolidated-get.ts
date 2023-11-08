@@ -231,14 +231,17 @@ export async function getConsolidatedPatientData({
     for (const diagReportIndex of successDiagReportIndeces) {
       const diagReport = success[diagReportIndex] as DiagnosticReport;
       if (diagReport.presentedForm) {
-        const url = diagReport.presentedForm[0].url;
-        if (url) {
-          const binaryResourceId = url.split("/")[1];
-          if (binaryResourceId) {
-            const binaryResource = binaryIdToResource[binaryResourceId];
-            if (binaryResource) {
-              diagReport.presentedForm[0].data = binaryResource.data;
-              success[diagReportIndex] = diagReport;
+        const diagReportForm = diagReport.presentedForm[0];
+        if (diagReportForm) {
+          const url = diagReportForm.url;
+          if (url) {
+            const binaryResourceId = url.split("/")[1];
+            if (binaryResourceId) {
+              const binaryResource = binaryIdToResource[binaryResourceId];
+              if (binaryResource) {
+                diagReport.presentedForm[0].data = binaryResource.data;
+                success[diagReportIndex] = diagReport;
+              }
             }
           }
         }
