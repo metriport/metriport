@@ -1,3 +1,4 @@
+
 ---
 title: "Webhooks"
 description: "Receive data as soon as it becomes available."
@@ -38,12 +39,11 @@ different messages when they become available - specifically:
 
 ## Signature Verification
 
-When Metriport sends a webhook event, it includes two additional headers: `x-metriport-timestamp` and `x-metriport-signature`. 
+When Metriport sends a webhook event, it includes an `x-metriport-signature` header. 
 
-- `x-metriport-timestamp`: This is a timestamp of when the webhook event was generated.
-- `x-metriport-signature`: This is a [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA256 hash computed using your webhook key, the timestamp, and the body of the webhook event.
+- `x-metriport-signature`: This is a [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA256 hash computed using your webhook key and the body of the webhook event.
 
-You can use these headers to verify that the webhook events sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
+You can use this header to verify that the webhook events sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
 
 <Snippet file="webhook-signature-validation.mdx" />
 
@@ -88,6 +88,11 @@ accept a `POST` request with this body...
 ```json
 {
   "ping": "<random-sequence>"
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "ping"
+  }
 }
 ```
 

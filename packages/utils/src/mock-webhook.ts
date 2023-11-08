@@ -14,13 +14,14 @@ const whKey = getEnvVarOrFail("WH_KEY");
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 
+const metriportApi = new MetriportMedicalApi(apiKey, {
+  baseAddress: apiUrl,
+});
+
 app.post("/", (req: Request, res: Response) => {
   console.log(`BODY: ${JSON.stringify(req.body, undefined, 2)}`);
 
   const signature = req.headers["x-metriport-signature"];
-  const metriportApi = new MetriportMedicalApi(apiKey, {
-    baseAddress: apiUrl,
-  });
 
   try {
     if (metriportApi.verifyWebhookSignature(whKey, req.body, signature)) {

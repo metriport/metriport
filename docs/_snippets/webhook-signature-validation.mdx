@@ -1,17 +1,18 @@
 ```typescript
 
-const timestamp = req.headers["x-metriport-timestamp"];
 const signature = req.headers["x-metriport-signature"];
-const metriportApi = new MetriportMedicalApi(apiKey, {baseAddress: apiUrl});
-if (typeof timestamp !== 'string' || typeof signature !== 'string') {
-    console.log(`Invalid timestamp or signature`);
-    return res.status(400).send({ error: 'Invalid timestamp or signature' });
+  const metriportApi = new MetriportMedicalApi(apiKey, {
+    baseAddress: apiUrl,
+  });
+  try {
+    if (metriportApi.verifyWebhookSignature(whKey, req.body, signature)) {
+      console.log(`Signature verified`);
+    } else {
+      console.log(`Signature verification failed`);
     }
-if (metriportApi.verifyWebhookSignature(whKey, cxId, req.body, timestamp, signature)) {
-    console.log(`Signature verified`);
-    }
-else {
-    console.log(`Signature verification failed`);
-}
+  } catch (error) {
+    console.error(`Error verifying signature: ${error}`);
+    return res.status(500).send({ error: `Error verifying signature: ${error}` });
+  }
 
 ```
