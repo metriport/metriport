@@ -9,9 +9,10 @@ import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
+import { getEnvType } from "@metriport/core/util/env-var";
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
-import { getEnv, getEnvOrFail } from "./shared/env";
+import { getEnv, getEnvOrFail, isProduction } from "./shared/env";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -23,9 +24,8 @@ const region = getEnvOrFail("AWS_REGION");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const cwOrgCertificateSecret = getEnvOrFail("CW_ORG_CERTIFICATE");
 const cwOrgPrivateKeySecret = getEnvOrFail("CW_ORG_PRIVATE_KEY");
-const envType = getEnvOrFail("ENV_TYPE");
 
-const apiMode = envType === "production" ? APIMode.production : APIMode.integration;
+const apiMode = isProduction() ? APIMode.production : APIMode.integration;
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
@@ -33,7 +33,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     capture.setUser({ id: cxId });
     capture.setExtra({ lambdaName });
     console.log(
-      `Running with envType: ${envType}, apiMode: ${apiMode}, region: ${region}, ` +
+      `Running with envType: ${getEnvType()}, apiMode: ${apiMode}, region: ${region}, ` +
         `bucketName: ${bucketName}, orgName: ${orgName}, orgOid: ${orgOid}, ` +
         `npi: ${npi}, cxId: ${cxId}, fileInfo: ${JSON.stringify(fileInfo)}, ` +
         `document: ${JSON.stringify(document)}`

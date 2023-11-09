@@ -54,8 +54,8 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     name: "IHE",
     entry: "ihe",
     layers: [props.lambdaLayers.shared],
+    envType: props.config.environmentType,
     envVars: {
-      ENV_TYPE: props.config.environmentType,
       ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
     },
     vpc: props.vpc,
