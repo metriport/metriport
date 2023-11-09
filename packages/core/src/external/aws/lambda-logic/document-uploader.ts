@@ -85,5 +85,5 @@ async function forwardCallToServer(cxId: string, apiServerURL: string, fileData:
 }
 
 function buildDestinationKey(cxId: string, patientId: string, docId: string): string {
-  return `${cxId}/${patientId}/${UPLOADS_FOLDER}/${docId}`;
+  return `${cxId}/${patientId}/${UPLOADS_FOLDER}/${cxId}_${patientId}_${docId}`;
 }
