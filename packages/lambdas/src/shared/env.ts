@@ -1,5 +1,6 @@
 import {
   EnvType,
+  getEnvType,
   getEnvVar as coreGetEnvVar,
   getEnvVarOrFail as coreGetEnvVarOrFail,
 } from "@metriport/core/util/env-var";
@@ -17,18 +18,14 @@ export function getEnvOrFail(name: string) {
   return coreGetEnvVarOrFail(name);
 }
 
-export function getEnvTypeRaw(): string | undefined {
-  return coreGetEnvVar("ENV_TYPE");
-}
-
 export function isProduction(): boolean {
-  return getEnvTypeRaw() === EnvType.production;
+  return getEnvType() === EnvType.production;
 }
 
 export function isSandbox(): boolean {
-  return getEnvTypeRaw() === EnvType.sandbox;
+  return getEnvType() === EnvType.sandbox;
 }
 
 export function isStaging(): boolean {
-  return getEnvTypeRaw() === EnvType.staging;
+  return getEnvType() === EnvType.staging;
 }

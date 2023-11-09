@@ -1,10 +1,10 @@
 import { Capture } from "@metriport/core/util/capture";
+import { getEnvType, getEnvVar } from "@metriport/core/util/env-var";
 import * as Sentry from "@sentry/serverless";
 import { Extras } from "@sentry/types";
 import { ScopeContext } from "@sentry/types/types/scope";
-import { getEnv, getEnvTypeRaw } from "./env";
 
-const sentryDsn = getEnv("SENTRY_DSN");
+const sentryDsn = getEnvVar("SENTRY_DSN");
 
 export type UserData = Pick<Sentry.AWSLambda.User, "id" | "email">;
 
@@ -26,7 +26,7 @@ export const capture = {
     Sentry.init({
       dsn: sentryDsn,
       enabled: sentryDsn != null,
-      environment: getEnvTypeRaw(),
+      environment: getEnvType(),
       tracesSampleRate,
     });
   },
