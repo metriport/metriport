@@ -34,8 +34,8 @@ export const analyzeRoute = ({
   const headerCxId = getCxIdFromHeaders(req);
   const cxId = reqCxId ?? headerCxId;
 
-  const isMedical = medicalRoutes.some(route => req.baseUrl.includes(route));
-  const isDevices = devicesRoutes.some(route => req.baseUrl.includes(route));
+  const isMedical = medicalRoutes.some(route => url.includes(route));
+  const isDevices = devicesRoutes.some(route => url.includes(route));
 
   const distinctId = cxId ?? "not-available";
   analytics({
