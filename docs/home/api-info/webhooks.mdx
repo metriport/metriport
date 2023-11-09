@@ -37,7 +37,7 @@ different messages when they become available - specifically:
 1. If using the Devices API - accept and process [user data messages](#devices-api-messages).
 1. If using the Medical API - accept and process [patient data messages](#medical-api-messages).
 
-## Signature Verification
+## Authentication
 
 When Metriport sends a webhook event, it includes an `x-metriport-signature` header. 
 
@@ -47,16 +47,10 @@ You can use this header to verify that the webhook events sent to your endpoint 
 
 <Snippet file="webhook-signature-validation.mdx" />
 
-## Authentication
-
-Validate requests to your public endpoint by comparing the webhook key with each request's HTTP header.
-
-The webhook key is accessible on [Developers page](https://dash.metriport.com/developers) in the developer
-dashboard, or via the [Get Settings endpoint](/home/api-reference/settings/get-settings) - see how to enable webhooks on the [overview section](#overview).
-
-The HTTP header will contain a header named `x-webhook-key` - it should contain the webhook key mentioned above.
-Your app is expected to disregard requests if those don't match. We suggest returning a HTTP status code
-`401` with no body in such cases.
+<Warning>
+The previous method of authenticating webhooks, comparing your webhook key with the `x-webhook-key` in each request's HTTP header, is being deprecated on **December 9th, 2023**. 
+Please update your implementation to use the `x-metriport-signature` header for authentication.
+</Warning>
 
 ### Generating a new webhook key
 
