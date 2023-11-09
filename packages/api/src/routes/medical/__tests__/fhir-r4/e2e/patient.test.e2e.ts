@@ -8,7 +8,7 @@ import { api } from "../../../../__tests__/shared";
 
 jest.setTimeout(15000);
 
-const patient = makePatient({ firstName: `${faker.name.firstName()}_${faker.string.nanoid()}` });
+const patient = makePatient({ firstName: `${faker.person.firstName()}_${faker.string.nanoid()}` });
 
 describe("Integration FHIR Patient", () => {
   test("create patient", async () => {
