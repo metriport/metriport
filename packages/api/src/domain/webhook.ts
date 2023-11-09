@@ -15,8 +15,5 @@ export const mapiWebhookType = [
   `${mapiWHPrefix}.consolidated-data`,
 ] as const;
 export type MAPIWebhookType = (typeof mapiWebhookType)[number];
-
-export const PingWebhookType = `${Product.ping}` as const;
-export type PingWebhookType = (typeof PingWebhookType)[number];
-
+export type PingWebhookType = "ping";
 export type WebhookType = DAPIWebhookType | MAPIWebhookType | PingWebhookType;

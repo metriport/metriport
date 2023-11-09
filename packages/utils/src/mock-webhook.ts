@@ -23,15 +23,10 @@ app.post("/", (req: Request, res: Response) => {
 
   const signature = req.headers["x-metriport-signature"];
 
-  try {
-    if (metriportApi.verifyWebhookSignature(whKey, req.body, signature)) {
-      console.log(`Signature verified`);
-    } else {
-      console.log(`Signature verification failed`);
-    }
-  } catch (error) {
-    console.error(`Error verifying signature: ${error}`);
-    return res.status(500).send({ error: `Error verifying signature: ${error}` });
+  if (metriportApi.verifyWebhookSignature(whKey, req.body, String(signature))) {
+    console.log(`Signature verified`);
+  } else {
+    console.log(`Signature verification failed`);
   }
 
   if (req.body.ping) {

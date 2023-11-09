@@ -1,18 +1,14 @@
 ```typescript
 
-const signature = req.headers["x-metriport-signature"];
+  const signature = req.headers["x-metriport-signature"];
   const metriportApi = new MetriportMedicalApi(apiKey, {
     baseAddress: apiUrl,
   });
-  try {
-    if (metriportApi.verifyWebhookSignature(whKey, req.body, signature)) {
-      console.log(`Signature verified`);
-    } else {
-      console.log(`Signature verification failed`);
-    }
-  } catch (error) {
-    console.error(`Error verifying signature: ${error}`);
-    return res.status(500).send({ error: `Error verifying signature: ${error}` });
+  if (metriportApi.verifyWebhookSignature(whKey, req.body, String(signature))) {
+    console.log(`Signature verified`);
+  } else {
+    console.log(`Signature verification failed`);
+  }
   }
 
 ```

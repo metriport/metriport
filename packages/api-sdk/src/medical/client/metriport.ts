@@ -542,15 +542,7 @@ export class MetriportMedicalApi {
    *
    * @returns True if the signature is verified, false otherwise
    */
-  verifyWebhookSignature = (
-    wh_key: string,
-    reqBody: string,
-    signature: string | string[] | undefined
-  ): boolean => {
-    if (typeof signature !== "string") {
-      throw new Error("Invalid signature type. Must be of type string");
-    }
-
+  verifyWebhookSignature = (wh_key: string, reqBody: string, signature: string): boolean => {
     const receivedHash = crypto
       .createHmac("sha256", wh_key)
       .update(JSON.stringify(reqBody))
