@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
-import { MetriportMedicalApi, PatientCreate, PatientDTO } from "@metriport/api-sdk";
+import { MetriportMedicalApi, PatientCreate, PatientDTO, USState } from "@metriport/api-sdk";
 import * as AWS from "aws-sdk";
 import axios from "axios";
 import { seedData } from "../../../api/src/shared/sandbox/sandbox-seed-data";
@@ -48,7 +48,7 @@ async function main() {
         addressLine1: a.addressLine1 ?? "",
         addressLine2: a.addressLine2 ?? "",
         city: a.city ?? "",
-        state: a.state ?? "",
+        state: (a.state as USState) ?? "",
         zip: a.zip ?? "",
         country: "USA",
       })),

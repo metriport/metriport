@@ -164,14 +164,14 @@ function normalizeDate(date: string | undefined): string {
   return trimmedDate;
 }
 
-function normalizeState(state: string | undefined): USState | string {
+function normalizeState(state: string | undefined): USState {
   if (state == undefined) throw new Error(`Missing state`);
   if (Object.values(states).includes(USState[state as keyof typeof USState])) {
     return USState[state as keyof typeof USState];
   } else if (states[state]) {
     return states[state];
   } else if (state === "DC") {
-    return state;
+    return USState.DC;
   }
   throw new Error(`Invalid state ${state}`);
 }
