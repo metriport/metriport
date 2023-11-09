@@ -1,13 +1,14 @@
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.test" });
 // Keep dotenv import and config before everything else
+import { faker } from "@faker-js/faker";
 import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { AxiosResponse } from "axios";
 import { api } from "../../../../__tests__/shared";
 
 jest.setTimeout(15000);
 
-const patient = makePatient();
+const patient = makePatient({ firstName: `${faker.person.firstName()}_${faker.string.nanoid()}` });
 
 describe("Integration FHIR Patient", () => {
   test("create patient", async () => {

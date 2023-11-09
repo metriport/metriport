@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import { faker } from "@faker-js/faker";
 import { OperationOutcome } from "@metriport/commonwell-sdk";
-import { rand } from "@ngneat/falso";
 import { errorCategories, ErrorCategory, groupCWErrors } from "../error-categories";
 
 const makeOperationOutcomeError = (category?: ErrorCategory): OperationOutcome => {
@@ -27,7 +27,7 @@ const makeOperationOutcomeError = (category?: ErrorCategory): OperationOutcome =
 describe("groupCWErrors", () => {
   it("returns categories of each error", async () => {
     const cat1 = "Too many results found";
-    const cat2 = rand(errorCategories.slice(1));
+    const cat2 = faker.helpers.arrayElement(errorCategories.slice(1));
     const errors = [
       makeOperationOutcomeError(cat1),
       makeOperationOutcomeError(cat2),
