@@ -29,6 +29,7 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
+import { EnvType } from "./env-type";
 import { createIHEStack } from "./ihe-stack";
 import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
@@ -252,6 +253,7 @@ export class APIStack extends Stack {
       awsAccount,
       ccdaS3Bucket: medicalDocumentsBucket,
       lambdaLayers,
+      envType: props.config.environmentType,
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
@@ -265,6 +267,7 @@ export class APIStack extends Stack {
     } = fhirConverterConnector.createQueueAndBucket({
       stack: this,
       lambdaLayers,
+      envType: props.config.environmentType,
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
@@ -276,6 +279,7 @@ export class APIStack extends Stack {
     } = sidechainFHIRConverterConnector.createQueueAndBucket({
       stack: this,
       lambdaLayers,
+      envType: props.config.environmentType,
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
@@ -728,7 +732,7 @@ export class APIStack extends Stack {
 
   private setupTestLambda(
     lambdaLayers: LambdaLayers,
-    envType: string,
+    envType: EnvType,
     sentryDsn: string | undefined
   ) {
     return createLambda({
@@ -738,8 +742,8 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       subnets: this.vpc.privateSubnets,
       entry: "tester",
+      envType,
       envVars: {
-        ENV_TYPE: envType,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       architecture: lambda.Architecture.ARM_64,
@@ -752,7 +756,7 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     dynamoDBTokenTable: dynamodb.Table;
-    envType: string;
+    envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }) {
@@ -773,10 +777,10 @@ export class APIStack extends Stack {
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "garmin",
       layers: [lambdaLayers.shared],
+      envType,
       envVars: {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/garmin`,
-        ENV_TYPE: envType,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
@@ -799,7 +803,7 @@ export class APIStack extends Stack {
     baseResource: apig.Resource;
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
-    envType: string;
+    envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }) {
@@ -818,9 +822,9 @@ export class APIStack extends Stack {
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "withings",
       layers: [lambdaLayers.shared, lambdaLayers.dig],
+      envType,
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
-        ENV_TYPE: envType,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
@@ -841,7 +845,7 @@ export class APIStack extends Stack {
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     fitbitClientSecret: string;
     fitbitSubscriberVerificationCode: string;
-    envType: string;
+    envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }) {
@@ -864,9 +868,9 @@ export class APIStack extends Stack {
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fitbit-auth",
       layers: [lambdaLayers.shared],
+      envType,
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/fitbit`,
-        ENV_TYPE: envType,
         FITBIT_CLIENT_SECRET: fitbitClientSecret,
         FITBIT_TIMEOUT_MS: FITBIT_LAMBDA_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -882,8 +886,8 @@ export class APIStack extends Stack {
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fitbit-subscriber-verification",
       layers: [lambdaLayers.shared],
+      envType,
       envVars: {
-        ENV_TYPE: envType,
         FITBIT_SUBSCRIBER_VERIFICATION_CODE: fitbitSubscriberVerificationCode,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
@@ -915,7 +919,7 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     tenoviAuthHeader: string;
-    envType: string;
+    envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }) {
@@ -937,9 +941,9 @@ export class APIStack extends Stack {
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "tenovi",
       layers: [lambdaLayers.shared],
+      envType,
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/tenovi`,
-        ENV_TYPE: envType,
         TENOVI_AUTH_HEADER: tenoviAuthHeader,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
@@ -961,7 +965,7 @@ export class APIStack extends Stack {
   private setupCdaToVisualization(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
-    envType: string;
+    envType: EnvType;
     medicalDocumentsBucket: s3.Bucket;
     sandboxSeedDataBucket: s3.IBucket | undefined;
     sentryDsn: string | undefined;
@@ -982,8 +986,8 @@ export class APIStack extends Stack {
       name: "CdaToVisualization",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "cda-to-visualization",
+      envType,
       envVars: {
-        ENV_TYPE: envType,
         CDA_TO_VIS_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
@@ -1015,7 +1019,7 @@ export class APIStack extends Stack {
     cwOrgCertificate: string;
     cwOrgPrivateKey: string;
     bucketName: string | undefined;
-    envType: string;
+    envType: EnvType;
     sentryDsn: string | undefined;
   }): Lambda {
     const {
@@ -1034,8 +1038,8 @@ export class APIStack extends Stack {
       name: "DocumentDownloader",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "document-downloader",
+      envType,
       envVars: {
-        ENV_TYPE: envType,
         CW_ORG_CERTIFICATE: cwOrgCertificate,
         CW_ORG_PRIVATE_KEY: cwOrgPrivateKey,
         ...(bucketName && {
@@ -1069,7 +1073,7 @@ export class APIStack extends Stack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
-    envType: string;
+    envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
@@ -1083,8 +1087,8 @@ export class APIStack extends Stack {
       name: "FhirToMedicalRecord",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "fhir-to-medical-record",
+      envType,
       envVars: {
-        ENV_TYPE: envType,
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
@@ -1108,7 +1112,7 @@ export class APIStack extends Stack {
     alarmAction: SnsAction | undefined;
     authorizer: apig.IAuthorizer;
     oauthScopes: cognito.OAuthScope[];
-    envType: string;
+    envType: EnvType;
     bucket: s3.Bucket;
   }): Lambda {
     const { baseResource, lambdaLayers, alarmAction, authorizer, oauthScopes, envType, bucket } =
@@ -1121,8 +1125,8 @@ export class APIStack extends Stack {
       entry: "cw-doc-contribution",
       layers: [lambdaLayers.shared],
       alarmSnsAction: alarmAction,
+      envType,
       envVars: {
-        ENV_TYPE: envType,
         ...(bucket && {
           MEDICAL_DOCUMENTS_BUCKET_NAME: bucket.bucketName,
         }),
@@ -1144,7 +1148,7 @@ export class APIStack extends Stack {
     lambdaLayers: LambdaLayers,
     dynamoDBTokenTable: dynamodb.Table,
     alarmAction: SnsAction | undefined,
-    envType: string,
+    envType: EnvType,
     sentryDsn: string | undefined
   ): apig.RequestAuthorizer {
     const tokenAuthLambda = createLambda({
@@ -1153,9 +1157,9 @@ export class APIStack extends Stack {
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "token-auth",
       layers: [lambdaLayers.shared],
+      envType,
       envVars: {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-        ENV_TYPE: envType,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       alarmSnsAction: alarmAction,

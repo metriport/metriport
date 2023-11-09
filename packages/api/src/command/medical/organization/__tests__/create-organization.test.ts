@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { randNumber } from "@ngneat/falso";
+import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 import {
   makeOrganization,
@@ -16,7 +16,7 @@ let createTenantIfNotExistsMock: jest.SpyInstance;
 
 beforeAll(() => {
   jest.restoreAllMocks();
-  const organizationNumber = randNumber();
+  const organizationNumber = faker.number.int();
   createOrganizationId_mock = jest.spyOn(createId, "createOrganizationId").mockResolvedValue({
     oid: makeOrganizationOID(organizationNumber),
     organizationNumber,
@@ -48,7 +48,7 @@ describe("createOrganization", () => {
 
   it("creates org with oid and number from createOrganizationId", async () => {
     OrganizationModel.findOne = jest.fn().mockResolvedValueOnce(undefined);
-    const organizationNumber = randNumber();
+    const organizationNumber = faker.number.int();
     const oid = makeOrganizationOID(organizationNumber);
     createOrganizationId_mock.mockResolvedValueOnce({ oid, organizationNumber });
     const org = makeOrganization({ oid, organizationNumber });
@@ -64,7 +64,7 @@ describe("createOrganization", () => {
 
   it("returns creates org", async () => {
     OrganizationModel.findOne = jest.fn().mockResolvedValueOnce(undefined);
-    const organizationNumber = randNumber();
+    const organizationNumber = faker.number.int();
     const id = makeOrganizationOID(organizationNumber);
     createOrganizationId_mock.mockResolvedValueOnce({ id, organizationNumber });
     const org = makeOrganization({ id, organizationNumber });

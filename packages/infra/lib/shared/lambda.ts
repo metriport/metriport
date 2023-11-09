@@ -8,8 +8,8 @@ import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import {
   Architecture,
   Code,
-  Function as Lambda,
   ILayerVersion,
+  Function as Lambda,
   Runtime,
   SingletonFunction,
 } from "aws-cdk-lib/aws-lambda";
@@ -17,7 +17,8 @@ import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import { FilterPattern } from "aws-cdk-lib/aws-logs";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { getConfig, METRICS_NAMESPACE } from "./config";
+import { EnvType } from "../env-type";
+import { METRICS_NAMESPACE, getConfig } from "./config";
 
 export const DEFAULT_LAMBDA_TIMEOUT = Duration.seconds(30);
 export const MAXIMUM_LAMBDA_TIMEOUT = Duration.minutes(15);
@@ -44,6 +45,7 @@ export interface LambdaProps extends StackProps {
   readonly subnets?: ISubnet[];
   readonly role?: iam.Role;
   readonly envVars?: { [key: string]: string };
+  readonly envType: EnvType;
   readonly timeout?: Duration;
   readonly memory?: number;
   readonly reservedConcurrentExecutions?: number;
@@ -74,7 +76,10 @@ export function createLambda(props: LambdaProps): Lambda {
     memorySize: props.memory,
     reservedConcurrentExecutions: props.reservedConcurrentExecutions,
     role: props.role ?? undefined,
-    environment: props.envVars,
+    environment: {
+      ...props.envVars,
+      ENV_TYPE: props.envType,
+    },
     retryAttempts: props.retryAttempts ?? 0,
     maxEventAge: props.maxEventAge ?? undefined,
     architecture: props.architecture ?? Architecture.X86_64,
