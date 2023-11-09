@@ -123,7 +123,7 @@ function normalizeName(name: string | undefined, propName: string): string {
 const phoneRegex = /^\+?1?\d{10}$/;
 
 function normalizePhone(phone: string | undefined): string | undefined {
-  if (phone == undefined) throw new Error(`Missing phone`);
+  if (phone == undefined) return undefined;
   const trimmedPhone = phone.trim();
   if (trimmedPhone.length === 0) return undefined;
   if (trimmedPhone.match(phoneRegex)) {
@@ -144,7 +144,7 @@ function normalizeCity(city: string | undefined): string {
 }
 
 function normalizeEmail(email: string | undefined): string | undefined {
-  if (email == undefined) throw new Error(`Missing email`);
+  if (email == undefined) return undefined;
   const trimmedEmail = email.trim();
   if (trimmedEmail.length === 0) return undefined;
   return trimmedEmail.toLowerCase();
@@ -189,11 +189,19 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   address2: string | undefined;
   addressLine2: string | undefined;
   phone: string | undefined;
+  phone1: string | undefined;
+  phone2: string | undefined;
   email: string | undefined;
+  email1: string | undefined;
+  email2: string | undefined;
 }): PatientCreate | undefined => {
-  const phone = normalizePhone(csvPatient.phone);
-  const email = normalizeEmail(csvPatient.email);
-  const contact = phone || email ? { phone, email } : undefined;
+  const phone1 = normalizePhone(csvPatient.phone ?? csvPatient.phone1);
+  const email1 = normalizeEmail(csvPatient.email ?? csvPatient.email1);
+  const phone2 = normalizePhone(csvPatient.phone2);
+  const email2 = normalizeEmail(csvPatient.email2);
+  const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
+  const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
+  const contact = [contact1, contact2].flatMap(c => c ?? []);
   return {
     firstName: normalizeName(csvPatient.firstname, "firstname"),
     lastName: normalizeName(csvPatient.lastname, "lastname"),
