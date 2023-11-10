@@ -1,5 +1,5 @@
 import { PatientData } from "../../../../domain/medical/patient";
-import { USState } from "@metriport/api-sdk";
+import { USState } from "@metriport/core/domain/geographic-locations";
 
 export const testPatientData: {
   sampleSearch: PatientData[];

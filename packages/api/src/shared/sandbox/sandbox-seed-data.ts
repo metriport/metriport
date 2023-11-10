@@ -15,7 +15,7 @@ import { ollieDocRefs } from "./sandbox-seed-data-ollie";
 import { roryDocRefs } from "./sandbox-seed-data-rory";
 import { wandaDocRefs } from "./sandbox-seed-data-wanda";
 import { williamDocRefs } from "./sandbox-seed-data-william";
-import { USState } from "@metriport/api-sdk";
+import { USState } from "@metriport/core/domain/geographic-locations";
 
 export function patientMatches(patient: PatientData): boolean {
   const patientData = getSandboxSeedData(patient.firstName);
