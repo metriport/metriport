@@ -1,4 +1,5 @@
 import { PatientData } from "../../../../domain/medical/patient";
+import { USState } from "@metriport/api-sdk";
 
 export const testPatientData: {
   sampleSearch: PatientData[];
@@ -13,8 +14,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94110",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -28,8 +31,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94110",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -41,8 +46,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94136",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -54,8 +61,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94110",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -67,8 +76,10 @@ export const testPatientData: {
       genderAtBirth: "F",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94110",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -80,8 +91,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94116",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -93,8 +106,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94136",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -108,8 +123,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "60290",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -121,8 +138,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94110",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -134,8 +153,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "90031",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -147,8 +168,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94136",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -160,8 +183,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "90031",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -173,8 +198,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94110",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
@@ -186,8 +213,10 @@ export const testPatientData: {
       genderAtBirth: "M",
       address: [
         {
+          addressLine1: "123 Street",
           zip: "94110",
           country: "USA",
+          state: USState.NY,
           city: "NYC",
         },
       ],
