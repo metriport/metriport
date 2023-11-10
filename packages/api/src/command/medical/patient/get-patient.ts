@@ -1,6 +1,6 @@
 import { intersectionWith, isEqual } from "lodash";
 import { Op, Transaction } from "sequelize";
-import { Patient, PatientData } from "../../../domain/medical/patient";
+import { Patient, PatientData, PatientCreate } from "../../../domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
@@ -10,6 +10,8 @@ import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { isMatchingDemographics } from "./calculate-patient-similarity";
+import { blockPatients } from "./block-patients";
+import { normalizePatientData } from "./normalize-patient";
 
 export const getPatients = async ({
   facilityId,
@@ -71,20 +73,19 @@ export const getPatientByDemo = async ({
 }): Promise<Patient | null> => {
   const { log } = Util.out(`getPatientByDemo - cxId ${cxId}`);
 
-  const patients = await PatientModel.findAll({
-    where: {
-      cxId,
-      facilityIds: {
-        [Op.contains]: [facilityId],
-      },
-      data: {
-        dob: demo.dob,
-        genderAtBirth: demo.genderAtBirth,
-      },
-    },
-  });
+  const normalizedDemo = normalizePatientData(demo);
 
-  const matchingPatients = patients.filter(patient => {
+  // TODO this might be bad form to use PatientCreate for this. Also because
+  const blockedPatients = await blockPatients({
+    cxId: cxId,
+    facilityIds: [facilityId],
+    data: {
+      dob: normalizedDemo.dob,
+      genderAtBirth: normalizedDemo.genderAtBirth,
+    },
+  } as PatientCreate);
+
+  const matchingPatients = blockedPatients.filter(patient => {
     // First, check for an ID match - if it's a match, don't bother checking for demo
     if (
       demo.personalIdentifiers &&
