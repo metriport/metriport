@@ -3,11 +3,12 @@ import { AddressStrict } from "../location-address";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
 export const makeAddressStrict = (): AddressStrict => {
+  const randomIndex = Math.floor(Math.random() * Object.keys(USState).length);
   return {
     addressLine1: faker.location.streetAddress(),
     zip: faker.location.zipCode(),
     city: faker.location.city(),
-    state: faker.location.state({ abbreviated: true }) as USState,
+    state: Object.values(USState)[randomIndex],
     country: "US",
   };
 };
