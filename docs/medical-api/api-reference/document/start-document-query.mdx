@@ -37,15 +37,12 @@ If there's no document to be converted, the total will be set to zero and the st
   The ID of the Facility where the patient is receiving care.
 </ParamField>
 
-## Request Body
+## Body
 
 <Snippet file="webhook-request-metadata.mdx" />
 
-## Metadata Usage Examples
 
 <Snippet file="webhook-metadata-post-example.mdx" />
-<Snippet file="webhook-metadata-sdk-example.mdx" />
-
 
 ## Response
 
@@ -67,9 +64,15 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
+const metadata = {
+  youCan: "putAny",
+  stringKeyValue: "pairsHere",
+};
+
 const status = await api.startDocumentQuery(
-"2.16.840.1.113883.3.666.5.2004.4.2005",
-"2.16.840.1.113883.3.666.123",
+  "2.16.840.1.113883.3.666.5.2004.4.2005",
+  "2.16.840.1.113883.3.666.123",
+  metadata
 );
 
 ```
