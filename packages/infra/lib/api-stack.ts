@@ -22,6 +22,7 @@ import { EnvConfig } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
+import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
@@ -199,7 +200,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Multi-purpose bucket
     //-------------------------------------------
-    new s3.Bucket(this, "GeneralBucket", {
+    const generalBucket = new s3.Bucket(this, "GeneralBucket", {
       bucketName: props.config.generalBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
@@ -341,17 +342,18 @@ export class APIStack extends Stack {
       });
     }
 
-    // TODO 1195 Either remove or re-enable this and finish building it
-    // Also consider whether the playwright layer should be kept around
-    // import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
-    // cwEnhancedCoverageConnector.setup({
-    //   stack: this,
-    //   vpc: this.vpc,
-    //   lambdaLayers,
-    //   secrets,
-    //   bucket: generalBucket,
-    //   alarmSnsAction: slackNotification?.alarmAction,
-    // });
+    const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
+      stack: this,
+      vpc: this.vpc,
+      lambdaLayers,
+      envType: props.config.environmentType,
+      secrets,
+      apiAddress: "",
+      bucket: generalBucket,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+    // const cqLinkPatientQueue = cwEnhancedQueryQueues?.linkPatientQueue;
+    const cookieStore = cwEnhancedQueryQueues?.cookieStore;
 
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
@@ -388,7 +390,9 @@ export class APIStack extends Stack {
         appId: appConfigAppId,
         configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
-      }
+      },
+      // cqLinkPatientQueue
+      cookieStore
     );
 
     // Access grant for Aurora DB
@@ -474,6 +478,21 @@ export class APIStack extends Stack {
       apiAddress: apiLoadBalancerAddress,
       alarmSnsAction: slackNotification?.alarmAction,
     });
+
+    // cqLinkPatientQueue &&
+    cookieStore &&
+      cwEnhancedCoverageConnector.setupLambdas({
+        stack: this,
+        vpc: this.vpc,
+        lambdaLayers,
+        envType: props.config.environmentType,
+        secrets,
+        apiAddress: apiLoadBalancerAddress,
+        bucket: generalBucket,
+        alarmSnsAction: slackNotification?.alarmAction,
+        // linkPatientQueue: cqLinkPatientQueue,
+        cookieStore,
+      });
 
     //-------------------------------------------
     // API Gateway

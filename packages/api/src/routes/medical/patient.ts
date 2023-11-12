@@ -242,8 +242,8 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated/query
  *
- * Triggers a patient's consolidated data query. Results are sent through Webhook.
- * If the query is already in progress, just return the current status.
+ * Returns a patient's consolidated data query status.
+ * To trigger a new consolidated query, call POST /patient/:id/consolidated/query.
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.

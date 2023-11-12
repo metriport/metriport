@@ -1,8 +1,8 @@
 import {
   EnvType,
-  getEnvType,
   getEnvVar as coreGetEnvVar,
   getEnvVarOrFail as coreGetEnvVarOrFail,
+  getEnvType,
 } from "@metriport/core/util/env-var";
 
 /**

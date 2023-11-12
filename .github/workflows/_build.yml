@@ -79,9 +79,9 @@ jobs:
         if: ${{ inputs.treat-as-package == false }}
         run: |
           pwd
-          npm run build:cloud -w packages/core
           npm run build:cloud -w packages/commonwell-sdk
           npm run build:cloud -w packages/api-sdk
+          npm run build:cloud -w packages/core
         working-directory: "./"
       - name: Build/compile on sub-folder/package
         if: ${{ inputs.treat-as-package == false }}
