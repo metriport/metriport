@@ -9,9 +9,9 @@ dayjs.extend(duration);
 // To avoid processing patients that haven't finished being sync'ed @ CW
 const MIN_TIME_AFTER_PATIENT_CREATED = dayjs.duration({ minutes: 2 });
 
-export type PatientToLink = {
+type PatientToLink = {
   cxId: string;
-  patientId: string;
+  id: string;
 };
 
 /**
@@ -22,8 +22,9 @@ export async function getPatientsToEnhanceCoverage(cxIds: string[]): Promise<Pat
     .subtract(MIN_TIME_AFTER_PATIENT_CREATED.asMilliseconds(), "milliseconds")
     .toDate();
   const cqLinkStatusNotToLink: CQLinkStatus[] = ["linked", "processing"];
+  const attributesToQuery: (keyof PatientToLink)[] = ["id", "cxId"];
   const patientsWithIds = await PatientModel.findAll({
-    attributes: ["id"],
+    attributes: attributesToQuery,
     where: {
       ...(cxIds.length ? { cxId: { [Op.in]: cxIds } } : {}),
       data: {
@@ -41,5 +42,5 @@ export async function getPatientsToEnhanceCoverage(cxIds: string[]): Promise<Pat
       createdAt: { [Op.lte]: earliestDate },
     },
   });
-  return patientsWithIds.map(p => ({ cxId: p.cxId, patientId: p.id }));
+  return patientsWithIds.map(p => ({ cxId: p.cxId, id: p.id }));
 }

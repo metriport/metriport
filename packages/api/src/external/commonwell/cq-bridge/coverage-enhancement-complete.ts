@@ -11,11 +11,6 @@ dayjs.extend(duration);
 
 const PARALLEL_UPDATES = 10;
 
-export type PatientToLink = {
-  cxId: string;
-  patientId: string;
-};
-
 export const completeEnhancedCoverage = async ({
   cxId,
   patientIds,

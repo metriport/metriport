@@ -1,8 +1,7 @@
-import * as fs from "fs";
 import { chunk } from "lodash";
+import orgs from "./cq-org-list.json";
 
 const CQ_ORG_CHUNK_SIZE = 50;
-const CQ_ORG_FILE_NAME = `${__dirname}/cq-org-list.json`;
 
 export type SimpleOrg = {
   Id: string;
@@ -10,18 +9,11 @@ export type SimpleOrg = {
   States: string[];
 };
 
-// cached in-memory, be mindful about the file size
-let orgs: SimpleOrg[] | undefined = undefined;
-
 /**
  * Return CQ orgs.
  * @returns array of CQ orgs.
  */
 export async function getOrgs(): Promise<SimpleOrg[]> {
-  if (orgs) return orgs;
-  const cqOrgsAsString = fs.readFileSync(CQ_ORG_FILE_NAME, "utf8");
-  orgs = JSON.parse(cqOrgsAsString);
-  if (!Array.isArray(orgs)) throw new Error("Invalid CQ org list");
   return orgs;
 }
 
@@ -51,7 +43,8 @@ export async function getOrgChunksFromPos({
 }: {
   chunkSize?: number | undefined;
   fromPos?: number | undefined;
-}): Promise<{ total: number; chunks: SimpleOrg[][] }> {
+} = {}): Promise<{ total: number; chunks: SimpleOrg[][] }> {
   const { total, chunks } = await getOrgsInChunks(chunkSize);
-  return { total, chunks: chunks.splice(0, fromPos) };
+  chunks.splice(0, Math.max(0, fromPos));
+  return { total, chunks };
 }

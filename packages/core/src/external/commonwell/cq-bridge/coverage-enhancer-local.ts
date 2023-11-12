@@ -75,8 +75,9 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
       console.log(`${this.prefix} Patient linking time: ${Date.now() - startedAt} ms`);
     }
 
-    console.log(`Giving some time for patients to be updated @ CW...`);
-    await sleep(config.waitBetweenLinkingAndDocQuery.asMilliseconds());
+    const waitTime = config.waitBetweenLinkingAndDocQuery.asMilliseconds();
+    console.log(`Giving some time for patients to be updated @ CW... (${waitTime} ms)`);
+    await sleep(waitTime);
 
     console.log(`${this.prefix} Triggering doc query... - started at ${new Date().toISOString()}`);
     const dqStartedAt = Date.now();

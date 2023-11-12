@@ -30,7 +30,7 @@ export async function initEnhancedCoverage(cxIds: string[], fromOrgPos?: number)
     // update the patients to indicate they're being processed
     const updatePatientsPromise = executeAsynchronously(
       patients,
-      async ({ cxId, patientId }) => {
+      async ({ cxId, id: patientId }) => {
         await setCQLinkStatus({ cxId, patientId, cqLinkStatus: cqLinkStatusInitial });
       },
       { numberOfParallelExecutions: parallelPatientUpdates }
@@ -39,7 +39,7 @@ export async function initEnhancedCoverage(cxIds: string[], fromOrgPos?: number)
 
     const [, org] = await Promise.all([updatePatientsPromise, orgPromise]);
 
-    const patientIds = patients.map(p => p.patientId);
+    const patientIds = patients.map(p => p.id);
     await coverageEnhancer.enhanceCoverage({
       cxId,
       orgOID: org.oid,

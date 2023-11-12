@@ -12,11 +12,6 @@ dayjs.extend(duration);
 
 const MAX_EC_DURATON = dayjs.duration({ minutes: 30 });
 
-export type PatientToLink = {
-  cxId: string;
-  patientId: string;
-};
-
 /**
  * Check for patients that have been in processing for too long and force-complete their
  * enhanced coverage.
