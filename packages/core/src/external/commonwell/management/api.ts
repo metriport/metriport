@@ -63,9 +63,12 @@ export class CommonWellManagementAPI {
     log(`Responded w/ ${resp.status} - ${resp.statusText}`);
     if (Array.isArray(resp.data) && resp.data.length > 0) {
       const member = resp.data[0];
-      log(`Member: ${JSON.stringify(member)}`);
+
+      await this.updateCookiesFromResponse(cookies, resp, log);
+
       return { id: member.Id, name: member.Name };
     }
+    log(`No member array available, returning 'undefined'`);
     return undefined;
   }
 
@@ -191,7 +194,7 @@ export class CommonWellManagementAPI {
   ): Promise<void> {
     const respCookies = resp.headers["set-cookie"];
     if (respCookies) {
-      log(`Received cookies, added/updated: ${respCookies.join("; ")}`);
+      log(`Received cookies, added/updated!`);
       await this.updateCookies(cookies, respCookies);
     }
   }

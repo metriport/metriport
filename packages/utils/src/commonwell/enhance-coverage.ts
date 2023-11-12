@@ -21,6 +21,8 @@ dayjs.extend(duration);
 
 // Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
 // import { chromium as runtime } from "playwright";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { sleep } from "@metriport/core/util/sleep";
 import { firefox as runtime } from "playwright";
 
 /**
@@ -67,7 +69,8 @@ const cxOrgOID = getEnvVarOrFail("ORG_OID");
 
 const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 });
 const DOC_QUERIES_IN_PARALLEL = 25;
-const prefix = "###############################";
+const triggerWHNotificationsToCx = true;
+const prefix = "############################### ";
 
 class CodeChallengeFromTerminal implements CodeChallenge {
   async getCode() {
@@ -77,23 +80,19 @@ class CodeChallengeFromTerminal implements CodeChallenge {
 const codeChallenge = new CodeChallengeFromTerminal();
 const cookieManager = new CookieManagerInMemory();
 
-if (cookies) {
-  cookieManager.updateCookies(cookies.split(";").flatMap(c => cookieFromString(c) ?? []));
-}
-
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
-const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(metriportApiBaseUrl);
 const patientUpdater = new PatientUpdaterMetriportAPI(metriportApiBaseUrl);
-const coverageEnhancer = new CoverageEnhancerLocal(
-  cwManagementApi,
-  patientUpdater,
-  triggerAndQueryDocRefs,
-  prefix
-);
+const coverageEnhancer = new CoverageEnhancerLocal(cwManagementApi, patientUpdater, prefix);
+const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(metriportApiBaseUrl);
 
 export async function main() {
   console.log(`Running coverage enhancement... - started at ${new Date().toISOString()}`);
   const startedAt = Date.now();
+
+  if (cookies && cookies.trim().length) {
+    console.log(`Overwritting cookies...`);
+    await cookieManager.updateCookies(cookies.split(";").flatMap(c => cookieFromString(c) ?? []));
+  }
 
   const props: SessionManagementConfig = {
     username: cwUsername,
@@ -116,17 +115,35 @@ export async function main() {
     cxId,
     orgOID: cxOrgOID,
     patientIds,
-    startedAt,
     fromOrgChunkPos: downloadProgressIndex,
-    config: {
-      waitBetweenLinkingAndDocQuery: WAIT_BETWEEN_LINKING_AND_DOC_QUERY,
-      docQueriesInParallel: DOC_QUERIES_IN_PARALLEL,
-    },
   });
+
+  console.log(`Giving some time for patients to be updated @ CW...`);
+  await sleep(WAIT_BETWEEN_LINKING_AND_DOC_QUERY.asMilliseconds());
+  const dqStartedAt = Date.now();
+
+  await executeAsynchronously(
+    patientIds,
+    async (patientId: string) => {
+      const { docsFound } = await triggerAndQueryDocRefs.queryDocsForPatient({
+        cxId: cxId,
+        patientId: patientId,
+        triggerWHNotificationsToCx,
+      });
+      console.log(`Done doc query for patient ${patientId}, found ${docsFound} docs`);
+    },
+    {
+      numberOfParallelExecutions: DOC_QUERIES_IN_PARALLEL,
+      maxJitterMillis: 50,
+      minJitterMillis: 10,
+    }
+  );
+
+  console.log(`${prefix}Doc query time: ${Date.now() - dqStartedAt} ms`);
 
   const duration = Date.now() - startedAt;
   const durationMin = dayjs.duration(duration).asMinutes();
-  console.log(`${prefix} Total time: ${duration} ms / ${durationMin} min`);
+  console.log(`${prefix}Total time: ${duration} ms / ${durationMin} min`);
 
   // for some reason it was hanging when updating this script, this fixes it
   process.exit(0);

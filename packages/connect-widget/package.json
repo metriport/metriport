@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.1.0",
-    "@playwright/test": "^1.37.0",
+    "@playwright/test": "^1.39.0",
     "@tsconfig/create-react-app": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",

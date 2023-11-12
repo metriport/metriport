@@ -9,7 +9,7 @@ dayjs.extend(duration);
 // To avoid processing patients that haven't finished being sync'ed @ CW
 const MIN_TIME_AFTER_PATIENT_CREATED = dayjs.duration({ minutes: 2 });
 
-type PatientToLink = {
+export type PatientToLink = {
   cxId: string;
   id: string;
 };

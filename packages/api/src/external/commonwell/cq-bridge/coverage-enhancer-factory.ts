@@ -1,11 +1,10 @@
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { CoverageEnhancer } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer";
 // import { CoverageEnhancerCloud } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-cloud";
-import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-local";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
-import { TriggerAndQueryDocRefsLocal } from "../../../command/medical/document/trigger-and-query-local";
 import { Config } from "../../../shared/config";
 import { PatientUpdaterCommonWell } from "../patient-updater-commonwell";
+import { CoverageEnhancerApiLocal } from "./coverage-enhancer-api-local";
 
 export function makeCoverageEnhancer(): CoverageEnhancer | undefined {
   // if (Config.isCloudEnv()) {
@@ -32,7 +31,6 @@ export function makeCoverageEnhancer(): CoverageEnhancer | undefined {
     cookieManager,
     baseUrl: cwManagementUrl,
   });
-  const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsLocal();
   const patientUpdater = new PatientUpdaterCommonWell();
-  return new CoverageEnhancerLocal(cwManagementApi, patientUpdater, triggerAndQueryDocRefs);
+  return new CoverageEnhancerApiLocal(cwManagementApi, patientUpdater);
 }
