@@ -7,7 +7,7 @@ export const addressSchema = z.object({
   addressLine1: defaultString.min(1, { message: "Address line must be specified." }),
   addressLine2: defaultOptionalString,
   city: defaultString.min(1, { message: "City must be specified." }),
-  state: usStateSchema.or(defaultString),
+  state: usStateSchema,
   zip: z.coerce
     .string()
     .transform(zipStr => stripNonNumericChars(zipStr))
