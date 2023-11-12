@@ -4,27 +4,23 @@ dotenv.config();
 import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
 import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
+import { TriggerAndQueryDocRefsRemote } from "@metriport/core/domain/document-query/trigger-and-query-remote";
+import { PatientUpdaterMetriportAPI } from "@metriport/core/domain/patient/patient-updater-metriport-api";
+import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-local";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
-import { LinkPatients } from "@metriport/core/external/commonwell/management/link-patients";
 import {
   SessionManagement,
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import * as fs from "fs";
-import { chunk } from "lodash";
 import * as readline from "readline-sync";
-import { queryDocsForPatient } from "./doc-query-shared";
 
 dayjs.extend(duration);
 
 // Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
 // import { chromium as runtime } from "playwright";
-import { sleep } from "@metriport/core/util/sleep";
 import { firefox as runtime } from "playwright";
 
 /**
@@ -68,18 +64,11 @@ const cwPassword = getEnvVarOrFail("CW_PASSWORD");
 const metriportApiBaseUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const cxOrgOID = getEnvVarOrFail("ORG_OID");
-const apiKey = getEnvVarOrFail("API_KEY");
 
-const cqOrgsList = fs.readFileSync(`${__dirname}/cq-org-list.json`, "utf8");
-const CQ_ORG_CHUNK_SIZE = 50;
-const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 }).asMilliseconds();
+const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 });
 const DOC_QUERIES_IN_PARALLEL = 25;
-// We most likely want to send notifications to the CX during the Enhanced Coverage flow
-const triggerWHNotificationsToCx = true;
+const prefix = "###############################";
 
-/**
- * Code to run this on local environment.
- */
 class CodeChallengeFromTerminal implements CodeChallenge {
   async getCode() {
     return readline.question("What's the access code? ");
@@ -87,31 +76,20 @@ class CodeChallengeFromTerminal implements CodeChallenge {
 }
 const codeChallenge = new CodeChallengeFromTerminal();
 const cookieManager = new CookieManagerInMemory();
-/**
- * Code to run this on a cloud environment, like EC2.
- */
-// const region = getEnvVarOrFail("AWS_REGION");
-// const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
-// const cookiesSecretArn = getEnvVarOrFail("CW_COOKIES_SECRET_ARN");
-// const cookieManager = new CookieManagerOnSecrets(cookiesSecretArn, region);
-// const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
-// const codeChallenge = new CodeChallengeFromSecretManager(
-//   codeChallengeSecretArn,
-//   region,
-//   notificationUrl
-// );
 
 if (cookies) {
   cookieManager.updateCookies(cookies.split(";").flatMap(c => cookieFromString(c) ?? []));
 }
 
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
-
-type SimpleOrg = {
-  Id: string;
-  Name: string;
-  States: string[];
-};
+const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(metriportApiBaseUrl);
+const patientUpdater = new PatientUpdaterMetriportAPI(metriportApiBaseUrl);
+const coverageEnhancer = new CoverageEnhancerLocal(
+  cwManagementApi,
+  patientUpdater,
+  triggerAndQueryDocRefs,
+  prefix
+);
 
 export async function main() {
   console.log(`Running coverage enhancement... - started at ${new Date().toISOString()}`);
@@ -134,85 +112,21 @@ export async function main() {
   const cwSession = new SessionManagement(props);
   await cwSession.initSession();
 
-  const originalOrgs = await props.cwManagementApi.getIncludeList({ oid: cxOrgOID });
-
-  const linkPatients = new LinkPatients({
-    cwManagementApi: props.cwManagementApi,
-    apiUrl: metriportApiBaseUrl,
-  });
-
-  try {
-    const orgs: SimpleOrg[] = JSON.parse(cqOrgsList);
-    console.log(`################################## Total CQ orgs: ${orgs.length}`);
-
-    const chunks = chunk(orgs, CQ_ORG_CHUNK_SIZE);
-    chunks.splice(0, downloadProgressIndex);
-
-    for (const [i, orgChunk] of chunks.entries()) {
-      const { log } = out(`CHUNK ${i}/${chunks.length}`);
-      const orgIds = orgChunk.map(org => org.Id);
-      log(`--------------------------------- Starting`);
-      try {
-        await linkPatients.linkPatientToOrgs({
-          cxId,
-          cxOrgOID,
-          patientIds,
-          cqOrgIds: orgIds,
-        });
-      } catch (error) {
-        log(`ERROR - stopped at org chunk ${i + downloadProgressIndex}`, error);
-        throw error;
-      }
-    }
-  } finally {
-    console.log(
-      `################################## Patient linking time: ${Date.now() - startedAt} ms`
-    );
-  }
-
-  // intentionally asynchronous
-  if (originalOrgs.length > 1) {
-    console.log(`(async) Revert the list of CQ orgs to the original ones...`);
-    props.cwManagementApi
-      .updateIncludeList({ oid: cxOrgOID, careQualityOrgIds: originalOrgs })
-      .catch(error => {
-        console.log(`ERROR - couldn't revert the list of CQ orgs to the original ones`, error);
-      });
-  } else {
-    console.log(`Not reverting the list of CQ orgs b/c it was originally empty.`);
-  }
-
-  console.log(
-    `################################## Triggering doc query... - started at ${new Date().toISOString()}`
-  );
-
-  console.log(`Giving some time for patients to be updated @ CW...`);
-  await sleep(WAIT_BETWEEN_LINKING_AND_DOC_QUERY);
-  const dqStartedAt = Date.now();
-
-  await executeAsynchronously(
+  await coverageEnhancer.enhanceCoverage({
+    cxId,
+    orgOID: cxOrgOID,
     patientIds,
-    async (patientId: string) => {
-      const { docsFound } = await queryDocsForPatient({
-        cxId,
-        patientId,
-        apiUrl: metriportApiBaseUrl,
-        triggerWHNotificationsToCx,
-        apiKey,
-      });
-      console.log(`Done doc query for patient ${patientId}, found ${docsFound} docs`);
+    startedAt,
+    fromOrgChunkPos: downloadProgressIndex,
+    config: {
+      waitBetweenLinkingAndDocQuery: WAIT_BETWEEN_LINKING_AND_DOC_QUERY,
+      docQueriesInParallel: DOC_QUERIES_IN_PARALLEL,
     },
-    {
-      numberOfParallelExecutions: DOC_QUERIES_IN_PARALLEL,
-      maxJitterMillis: 50,
-      minJitterMillis: 10,
-    }
-  );
-  console.log(`################################## Doc query time: ${Date.now() - dqStartedAt} ms`);
+  });
 
   const duration = Date.now() - startedAt;
   const durationMin = dayjs.duration(duration).asMinutes();
-  console.log(`################################## Total time: ${duration} ms / ${durationMin} min`);
+  console.log(`${prefix} Total time: ${duration} ms / ${durationMin} min`);
 
   // for some reason it was hanging when updating this script, this fixes it
   process.exit(0);

@@ -1,8 +1,8 @@
+import { errorToString } from "../shared/log";
 import { capture } from "../shared/notifications";
 
 export function getErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
-  return String(error);
+  return errorToString(error);
 }
 
 export function processAsyncError(msg: string) {

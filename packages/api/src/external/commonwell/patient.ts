@@ -41,11 +41,19 @@ export function getCWData(
   return data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell; // TODO validate the type
 }
 
+/**
+ * Returns the status of linking the Patient with CommonWell.
+ */
 export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus {
-  if (!data) return "processing";
-  return getCWData(data)?.status ?? "processing";
+  const defaultStatus: LinkStatus = "processing";
+  if (!data) return defaultStatus;
+  return getCWData(data)?.status ?? defaultStatus;
 }
 
+/**
+ * Returns the status of linking the Patient with CommonWell's CareQuality bridge. Used for
+ * Enhanced Coverage.
+ */
 export function getCQLinkStatus(data: PatientExternalData | undefined): CQLinkStatus {
   const defaultStatus: CQLinkStatus = "unlinked";
   if (!data) return defaultStatus;
