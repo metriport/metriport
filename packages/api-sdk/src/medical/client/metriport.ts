@@ -490,7 +490,7 @@ export class MetriportMedicalApi {
   /**
    * @deprecated - Use createDocumentReference() instead.
    * Returns a URL to upload a file to Metriport and make the document available to other HIEs.
-   * To upload your file contents, execute a PUT request using this Presigned URL with the file contents as the request body.
+   * To upload your file contents, execute a PUT request using this URL with the file contents as the request body.
    * Refer to Metriport Documentation for more details:
    * https://docs.metriport.com/medical-api/api-reference/document/post-upload-url
    *
