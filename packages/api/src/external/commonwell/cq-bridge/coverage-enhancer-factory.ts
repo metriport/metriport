@@ -1,6 +1,6 @@
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { CoverageEnhancer } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer";
-import { CoverageEnhancerCloud } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-cloud";
+// import { CoverageEnhancerCloud } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-cloud";
 import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-local";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { TriggerAndQueryDocRefsLocal } from "../../../command/medical/document/trigger-and-query-local";
@@ -8,14 +8,14 @@ import { Config } from "../../../shared/config";
 import { PatientUpdaterCommonWell } from "../patient-updater-commonwell";
 
 export function makeCoverageEnhancer(): CoverageEnhancer | undefined {
-  if (Config.isCloudEnv()) {
-    const cwPatientLinkQueueUrl = Config.getCWPatientLinkQueueUrl();
-    if (!cwPatientLinkQueueUrl) {
-      console.log(`Could not return a CoverageEnhancer, mising cwPatientLinkQueueUrl`);
-      return undefined;
-    }
-    return new CoverageEnhancerCloud(Config.getAWSRegion(), cwPatientLinkQueueUrl);
-  }
+  // if (Config.isCloudEnv()) {
+  //   const cwPatientLinkQueueUrl = Config.getCWPatientLinkQueueUrl();
+  //   if (!cwPatientLinkQueueUrl) {
+  //     console.log(`Could not return a CoverageEnhancer, mising cwPatientLinkQueueUrl`);
+  //     return undefined;
+  //   }
+  //   return new CoverageEnhancerCloud(Config.getAWSRegion(), cwPatientLinkQueueUrl);
+  // }
 
   const cwManagementUrl = Config.getCWManagementUrl();
   if (!cwManagementUrl) {
