@@ -1,7 +1,7 @@
-import { Patient, PatientCreate, GenderAtBirth } from "../../../domain/medical/patient";
+import { Patient, GenderAtBirth } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
 
-export type BlockData = {
+export type PatientBlock = {
   cxId?: string;
   facilityIds?: string[];
   data?: {
@@ -10,7 +10,7 @@ export type BlockData = {
   };
 };
 
-export const blockPatients = async (criteria: Partial<PatientCreate>): Promise<Patient[]> => {
+export const blockPatients = async (criteria: Partial<PatientBlock>): Promise<Patient[]> => {
   const patients = await PatientModel.findAll({
     where: criteria,
   });

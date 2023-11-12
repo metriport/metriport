@@ -1,12 +1,34 @@
-import { PatientData } from "../../../domain/medical/patient";
+import { intersectionWith, isEqual } from "lodash";
+import { PatientData, Patient } from "../../../domain/medical/patient";
 import jaroWinkler from "jaro-winkler";
 
-const SIMILARITY_THRESHOLD = 0.96;
+// Define a type for the similarity function
+type SimilarityFunction = (
+  patient1: PatientData,
+  patient2: PatientData,
+  threshold: number
+) => boolean;
 
-export const isMatchingDemographics = (patient1: PatientData, patient2: PatientData): boolean => {
-  const similarityScore = calculatePatientSimilarity(patient1, patient2);
-  return similarityScore >= SIMILARITY_THRESHOLD;
+export const matchPatients = (
+  similarityFunction: SimilarityFunction,
+  patients: Patient[],
+  demo: PatientData,
+  threshold: number
+): Patient[] => {
+  return patients.filter(patient => {
+    if (
+      demo.personalIdentifiers &&
+      demo.personalIdentifiers.length > 0 &&
+      intersectionWith(patient.data.personalIdentifiers, demo.personalIdentifiers, isEqual).length >
+        0
+    ) {
+      return true;
+    }
+
+    return similarityFunction(patient.data, demo, threshold);
+  });
 };
+
 /**
  * This function calculates the similarity between two patients using the Jaro-Winkler algorithm.
  * It returns a score between 0 and 1, where 1 means the patients are identical. We calculate scores
@@ -16,10 +38,11 @@ export const isMatchingDemographics = (patient1: PatientData, patient2: PatientD
  * @param patient2
  * @returns The average of the similarity scores for each field.
  */
-export const calculatePatientSimilarity = (
+export const jaroWinklerSimilarity = (
   patient1: PatientData,
-  patient2: PatientData
-): number => {
+  patient2: PatientData,
+  threshold: number
+): boolean => {
   let score = 0;
   let fieldCount = 0;
   const similarityScores: { [key: string]: [number, string?, string?] } = {};
@@ -76,5 +99,5 @@ export const calculatePatientSimilarity = (
   const totalScore = score / fieldCount;
   similarityScores["Total Score"] = [totalScore];
   console.log(similarityScores);
-  return totalScore;
+  return totalScore >= threshold;
 };

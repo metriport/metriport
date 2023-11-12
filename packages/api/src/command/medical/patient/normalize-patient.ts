@@ -1,4 +1,4 @@
-import { PatientData } from "../../../domain/medical/patient";
+import { PatientData, splitName } from "../../../domain/medical/patient";
 
 const commonDomainTypos: { [key: string]: string } = {
   "gamil.com": "gmail.com",
@@ -8,8 +8,9 @@ const commonDomainTypos: { [key: string]: string } = {
 export const normalizePatientData = (patient: PatientData): PatientData => {
   const normalizedPatient: PatientData = {
     ...patient,
-    firstName: patient.firstName.toLowerCase().replace(/['-]/g, ""),
-    lastName: patient.lastName.toLowerCase().replace(/['-]/g, ""),
+    // TODO: Handle the possibility of multiple patient names. right now we are just selecting for the first patient name.
+    firstName: splitName(patient.firstName.toLowerCase().replace(/['-]/g, ""))[0],
+    lastName: splitName(patient.lastName.toLowerCase().replace(/['-]/g, ""))[0],
     contact: patient.contact?.map(contact => ({
       ...contact,
       email: contact.email ? normalizeEmail(contact.email) : contact.email,

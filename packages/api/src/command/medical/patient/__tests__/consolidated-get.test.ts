@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { getConsolidatedPatientData } from "../consolidated-get";
 import * as getPatient from "../get-patient";
-import { isMatchingDemographics } from "../calculate-patient-similarity";
+import { jaroWinklerSimilarity } from "../match-patient";
 import { PatientData } from "../../../../domain/medical/patient";
 import { testPatientData } from "./test_data";
 
@@ -62,14 +62,14 @@ describe("getConsolidatedPatientData", () => {
     const searchPatient: PatientData = testPatientData.sampleSearch[0];
     testPatientData.sampleInclusions.forEach((resultData: PatientData) => {
       const resultPatient: PatientData = resultData;
-      expect(isMatchingDemographics(searchPatient, resultPatient)).toBeTruthy();
+      expect(jaroWinklerSimilarity(searchPatient, resultPatient, 0.95)).toBeTruthy();
     });
   });
 
   it("identifies sampleExclusions as non-matches", async () => {
     const searchPatient: PatientData = testPatientData.sampleSearch[0];
     testPatientData.sampleExclusions.forEach((resultData: PatientData) => {
-      expect(isMatchingDemographics(searchPatient, resultData)).toBeFalsy();
+      expect(jaroWinklerSimilarity(searchPatient, resultData, 0.95)).toBeFalsy();
     });
   });
 });

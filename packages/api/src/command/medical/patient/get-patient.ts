@@ -1,17 +1,17 @@
-import { intersectionWith, isEqual } from "lodash";
 import { Op, Transaction } from "sequelize";
-import { Patient, PatientData, PatientCreate } from "../../../domain/medical/patient";
+import { Patient, PatientData } from "../../../domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { PatientModel } from "../../../models/medical/patient";
-import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import { isMatchingDemographics } from "./calculate-patient-similarity";
-import { blockPatients } from "./block-patients";
+import { matchPatients, jaroWinklerSimilarity } from "./match-patient";
+import { blockPatients, PatientBlock } from "./block-patients";
 import { normalizePatientData } from "./normalize-patient";
+import { mergePatients, mergeWithFirstPatient } from "./merge-patients";
+
+const SIMILARITY_THRESHOLD = 0.96;
 
 export const getPatients = async ({
   facilityId,
@@ -71,52 +71,25 @@ export const getPatientByDemo = async ({
   cxId: string;
   demo: PatientData;
 }): Promise<Patient | null> => {
-  const { log } = Util.out(`getPatientByDemo - cxId ${cxId}`);
-
-  const normalizedDemo = normalizePatientData(demo);
+  const normalizedPatientDemo = normalizePatientData(demo);
 
   // TODO this might be bad form to use PatientCreate for this. Also because
   const blockedPatients = await blockPatients({
     cxId: cxId,
     facilityIds: [facilityId],
     data: {
-      dob: normalizedDemo.dob,
-      genderAtBirth: normalizedDemo.genderAtBirth,
+      dob: normalizedPatientDemo.dob,
+      genderAtBirth: normalizedPatientDemo.genderAtBirth,
     },
-  } as PatientCreate);
+  } as PatientBlock);
 
-  const matchingPatients = blockedPatients.filter(patient => {
-    // First, check for an ID match - if it's a match, don't bother checking for demo
-    if (
-      demo.personalIdentifiers &&
-      demo.personalIdentifiers.length > 0 &&
-      intersectionWith(patient.data.personalIdentifiers, demo.personalIdentifiers, isEqual).length >
-        0
-    ) {
-      return true;
-    }
-
-    if (isMatchingDemographics(patient.data, demo)) return true;
-  });
-  if (matchingPatients.length === 0) return null;
-  if (matchingPatients.length === 1) return matchingPatients[0];
-
-  const chosenOne = matchingPatients[0];
-
-  const msg = `Found more than one patient with the same demo`;
-  log(
-    `${msg}, chose ${chosenOne.id} - list ${matchingPatients.map(p => p.id).join(", ")} - demo: `,
-    demo
+  const matchingPatients = matchPatients(
+    jaroWinklerSimilarity,
+    blockedPatients,
+    normalizedPatientDemo,
+    SIMILARITY_THRESHOLD
   );
-  capture.message(msg, {
-    extra: {
-      chosenOne: chosenOne.id,
-      demographics: demo,
-      patients: matchingPatients.map(p => ({ id: p.id, data: p.data })),
-    },
-  });
-
-  return chosenOne;
+  return mergePatients(mergeWithFirstPatient, matchingPatients, normalizedPatientDemo, cxId);
 };
 
 export type GetPatient = {
