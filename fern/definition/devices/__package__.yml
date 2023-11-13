@@ -1,0 +1,530 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+service: 
+  auth: true
+  base-path: ""
+  endpoints: 
+    getActivityData: 
+      display-name: Get Activity Data
+      docs: Returns activity data from all of the specified users' connected providers.
+      path: /activity
+      method: GET
+      request: 
+        name: GetActivityDataRequest
+        query-parameters:
+          userId: 
+            type: string
+            docs: The Metriport user ID to create a session token for.
+          date: 
+            type: string
+            docs: | 
+              Day for which to pull the data. Formatted YYYY-MM-DD.
+
+              For simplicity, all queries assume the UTC timezone for the
+              specified date starting at 00:00 to 23:59 - unless otherwise
+              specified by the timezoneId parameter.
+          timezoneId: 
+            type: string
+            docs: | 
+              Timezone ID to use for the specified date. If not specified, 
+              the UTC timezone is used. For example this can be valid timezones 
+              like `America/Los_Angeles` or `Europe/Kiev`.
+
+              Valid timezones can be found at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+
+              Support for this parameter is under development, and currently only supported for the Google Fit provider.
+      response: list<Activity>
+  
+    getBiometricsData: 
+      display-name: Get Biometrics Data
+      docs: Returns biometrics data from all of the specified users' connected providers.
+      path: /biometrics
+      method: GET
+      request: 
+        name: GetBiometricsDataRequest
+        query-parameters:
+          userId: 
+            type: string
+            docs: The Metriport user ID to create a session token for.
+          date: 
+            type: string
+            docs: | 
+              Day for which to pull the data. Formatted YYYY-MM-DD.
+
+              For simplicity, all queries assume the UTC timezone for the
+              specified date starting at 00:00 to 23:59 - unless otherwise
+              specified by the timezoneId parameter.
+          timezoneId: 
+            type: string
+            docs: | 
+              Timezone ID to use for the specified date. If not specified, 
+              the UTC timezone is used. For example this can be valid timezones 
+              like `America/Los_Angeles` or `Europe/Kiev`.
+
+              Valid timezones can be found at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+
+              Support for this parameter is under development, and currently only supported for the Google Fit provider.
+      response: list<Biometrics>
+    
+    getBodyData: 
+      display-name: Get Body Data
+      docs: Returns body data from all of the specified users' connected providers.
+      path: /body
+      method: GET
+      request: 
+        name: GetBodyDataRequest
+        query-parameters:
+          userId: 
+            type: string
+            docs: The Metriport user ID to create a session token for.
+          date: 
+            type: string
+            docs: | 
+              Day for which to pull the data. Formatted YYYY-MM-DD.
+
+              For simplicity, all queries assume the UTC timezone for the
+              specified date starting at 00:00 to 23:59 - unless otherwise
+              specified by the timezoneId parameter.
+          timezoneId: 
+            type: string
+            docs: | 
+              Timezone ID to use for the specified date. If not specified, 
+              the UTC timezone is used. For example this can be valid timezones 
+              like `America/Los_Angeles` or `Europe/Kiev`.
+
+              Valid timezones can be found at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+
+              Support for this parameter is under development, and currently only supported for the Google Fit provider.
+      response: list<Body>
+    
+    getNutritionData: 
+      display-name: Get Nutrition Data
+      docs: Returns nutrition data from all of the specified users' connected providers.
+      path: /nutrition
+      method: GET
+      request: 
+        name: GetNutritionDataRequest
+        query-parameters:
+          userId: 
+            type: string
+            docs: The Metriport user ID to create a session token for.
+          date: 
+            type: string
+            docs: | 
+              Day for which to pull the data. Formatted YYYY-MM-DD.
+
+              For simplicity, all queries assume the UTC timezone for the
+              specified date starting at 00:00 to 23:59 - unless otherwise
+              specified by the timezoneId parameter.
+          timezoneId: 
+            type: string
+            docs: | 
+              Timezone ID to use for the specified date. If not specified, 
+              the UTC timezone is used. For example this can be valid timezones 
+              like `America/Los_Angeles` or `Europe/Kiev`.
+
+              Valid timezones can be found at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+
+              Support for this parameter is under development, and currently only supported for the Google Fit provider.
+      response: list<Nutrition>
+
+    getSleepData: 
+      display-name: Get Sleep Data
+      docs: Returns sleep data from all of the specified users' connected providers.
+      path: /sleep
+      method: GET
+      request: 
+        name: GetSleepDataRequest
+        query-parameters:
+          userId: 
+            type: string
+            docs: The Metriport user ID to create a session token for.
+          date: 
+            type: string
+            docs: | 
+              Day for which to pull the data. Formatted YYYY-MM-DD.
+
+              For simplicity, all queries assume the UTC timezone for the
+              specified date starting at 00:00 to 23:59 - unless otherwise
+              specified by the timezoneId parameter.
+          timezoneId: 
+            type: string
+            docs: | 
+              Timezone ID to use for the specified date. If not specified, 
+              the UTC timezone is used. For example this can be valid timezones 
+              like `America/Los_Angeles` or `Europe/Kiev`.
+
+              Valid timezones can be found at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+
+              Support for this parameter is under development, and currently only supported for the Google Fit provider.
+      response: list<Sleep>
+    
+    getUserData: 
+      display-name: Get User Data
+      docs: Returns user info from all of the specified users' connected providers.
+      path: /user
+      method: GET
+      request: 
+        name: GetUserDataRequest
+        query-parameters:
+          userId: 
+            type: string
+            docs: The Metriport user ID to create a session token for.
+          date: 
+            type: string
+            docs: | 
+              Day for which to pull the data. Formatted YYYY-MM-DD.
+
+              For simplicity, all queries assume the UTC timezone for the
+              specified date starting at 00:00 to 23:59 - unless otherwise
+              specified by the timezoneId parameter.
+          timezoneId: 
+            type: string
+            docs: | 
+              Timezone ID to use for the specified date. If not specified, 
+              the UTC timezone is used. For example this can be valid timezones 
+              like `America/Los_Angeles` or `Europe/Kiev`.
+
+              Valid timezones can be found at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+
+              Support for this parameter is under development, and currently only supported for the Google Fit provider.
+      response: list<User>
+    
+    getConnectedUsers: 
+      display-name: Get Connected Users
+      docs: Returns a list of users with their IDs and connected providers.
+      path: /user
+      method: GET
+      response: list<ConnectedUserInfo>
+
+types: 
+  MetriportData: 
+    properties: 
+      metadata: Metadata
+
+  Metadata: 
+    properties: 
+      date: string
+      hour: optional<string>
+      source: ProviderSource
+      data_source: optional<SourceInfo>
+      error: optional<string>
+  
+  ProviderSource: 
+    enum: 
+      - apple
+      - cronometer
+      - dexcom
+      - fitbit
+      - garmin
+      - google
+      - oura
+      - tenovi
+      - whoop
+      - withings
+  
+  SourceInfo: 
+    properties: 
+      source_type: optional<SourceType>
+      id: optional<string>
+      name: optional<string>
+      type: optional<string>
+  
+  SourceType: 
+    enum: 
+      - name: manual
+        value: MANUAL_ENTRY
+      - name: device
+        value: DEVICE
+
+  Activity: 
+    extends: MetriportData
+    properties: 
+      summary: optional<ActivitySummary>
+      activity_logs: optional<list<ActivityLog>>
+  
+  ActivitySummary: 
+    properties: 
+      durations: optional<ActivityDurations>
+      energy_expenditure: optional<EnergyExpenditure>
+      biometrics: optional<Biometrics>
+
+  ActivityDurations: 
+    properties: 
+      active_seconds: optional<integer>
+      intensity: 
+        type: optional<Duration>
+        docs: Also referred to as metabolic-equivalent minutes
+      strain: 
+        type: optional<Duration>
+        docs: Also referred to as stress
+  
+  Body: 
+    extends: MetriportData
+    properties: 
+      body_fat_pct: optional<double>
+      height_cm: optional<double>
+      weight_kg: optional<double>
+      bone_mass_kg: optional<double>
+      muscle_mass_kg: optional<double>
+      lean_mass_kg: optional<double>
+      max_possible_heart_rate_bpm: optional<double>
+      weight_samples_kg: optional<list<Sample>>
+  
+  Duration: 
+    properties: 
+      rest_seconds: optional<integer>
+      very_low_seconds: optional<integer>
+      low_seconds: optional<integer>
+      med_seconds: optional<integer>
+      high_seconds: optional<integer>
+  
+  EnergyExpenditure: 
+    properties: 
+      active_kcal: optional<integer>
+      basal_metabolic_rate_kcal: optional<integer>
+      total_watts: optional<integer>
+      avg_watts: optional<integer>
+
+  Biometrics: 
+    properties: 
+      heart_rate: optional<HeartRate>
+      hrv: optional<HeartRateVariability> 
+      respiration: optional<Respiration>
+  
+  HeartRate:
+    properties:
+      min_bpm: optional<integer>
+      max_bpm: optional<integer>
+      avg_bpm: optional<integer>
+      resting_bpm: optional<integer>
+      samples_bpm: optional<list<Sample>>
+  
+  Sample:
+    properties: 
+      time: string
+      value: integer
+      std_dev: optional<double>
+      data_source: optional<SourceInfo>
+
+  HeartRateVariability: 
+    properties: 
+      rmssd: optional<HeartRateVariabilityMeasurement>
+      sdnn: optional<HeartRateVariabilityMeasurement>
+
+  HeartRateVariabilityMeasurement: 
+    properties: 
+      avg_millis: optional<integer>
+      samples_millis: optional<list<Sample>>
+
+  Respiration: 
+    properties: 
+      vo2_max: optional<integer>
+      spo2: optional<BloodOxygen>
+      avg_breaths_per_minute: optional<integer>
+      peak_flow_L_min: optional<integer>
+      forced_volume_L: optional<integer>
+      samples_breaths_per_minute:  optional<list<Sample>>
+  
+  BloodOxygen: 
+    properties: 
+      min_pct: optional<double>
+      max_pct: optional<double>
+      avg_pct: optional<double>
+      std_dev: optional<double>
+
+  ActivityLog:
+    properties: 
+      metadata: Metadata
+      name: optional<string>
+      type: optional<string>
+      start_time: optional<string>
+      end_time: optional<string>
+      durations: optional<ActivityDurations>
+      energy_expenditure: optional<EnergyExpenditure>
+      movement: optional<ActivityMovement>
+      location: optional<Location>
+      biometrics: optional<Biometrics>
+  
+  ActivityMovement: 
+    properties: 
+      steps_count: optional<integer>
+      floors_count: optional<integer>
+      elevation: optional<Elevation>
+      speed: optional<Speed>
+      avg_cadence: optional<integer>
+      distance_meters: optional<integer>
+  
+  Elevation: 
+    properties: 
+        gain_meters: optional<integer>
+        min_meters: optional<integer>
+        max_meters: optional<integer>
+  
+  Speed: 
+    properties: 
+      max_km_h: optional<double>
+      avg_km_h: optional<double>
+  
+  Location: 
+    properties: 
+      start_lat_lon_deg: optional<LatLon>
+      end_lat_lon_deg: optional<LatLon>
+      polystring: optional<string>
+      city: optional<string>
+      country: optional<string>
+      region: optional<string>
+  
+  LatLon: 
+    properties: 
+      lat: double
+      lon: double
+  
+  Nutrition: 
+    extends: MetriportData
+    properties: 
+      summary: optional<NutritionFacts>
+      foods: optional<list<Food>>
+  
+  Food: 
+    properties: 
+      name: optional<string>
+      brand: optional<string>
+      amount: optional<double>
+      unit: optional<string>
+      nutrition_facts: optional<NutritionFacts>
+  
+  NutritionFacts: 
+    properties: 
+      macros: optional<Macros>
+      micros: optional<Micros>
+      aminos: optional<Aminos>
+  
+  Macros: 
+    properties: 
+      alcohol_g: optional<integer>
+      carbs_g: optional<integer>
+      cholesterol_mg: optional<integer>
+      energy_kcal: optional<integer>
+      fat_g: optional<integer>
+      fiber_g: optional<integer>
+      protein_g: optional<integer>
+      sodium_mg: optional<integer>
+      sugar_g: optional<integer>
+      trans_fat_g: optional<integer>
+      water_ml: optional<integer>
+  
+  Aminos: 
+    properties: 
+      alanine_g: optional<integer>
+      arginine_g: optional<integer>
+      asparagine_g: optional<integer>
+      aspartic_acid_g: optional<integer>
+      cysteine_g: optional<integer>
+      glutamine_g: optional<integer>
+      glutamic_acid_g: optional<integer>
+      glycine_g: optional<integer>
+      histidine_g: optional<integer>
+      isoleucine_g: optional<integer>
+      leucine_g: optional<integer>
+      lysine_g: optional<integer>
+      methionine_g: optional<integer>
+      phenylalanine_g: optional<integer>
+      proline_g: optional<integer>
+      serine_g: optional<integer>
+      threonine_g: optional<integer>
+      tryptophan_g: optional<integer>
+      tyrosine_g: optional<integer>
+      valine_g: optional<integer>
+  
+  Micros: 
+    properties: 
+      biotin_mg: optional<integer>
+      caffeine_mg: optional<integer>
+      calcium_mg: optional<integer>
+      copper_mg: optional<integer>
+      folate_mg: optional<integer>
+      folic_acid_mg: optional<integer>
+      iodine_mg: optional<integer>
+      iron_mg: optional<integer>
+      magnesium_mg: optional<integer>
+      manganese_mg: optional<integer>
+      phosphorus_mg: optional<integer>
+      potassium_mg: optional<integer>
+      selenium_mg: optional<integer>
+      vitamin_A_mg: optional<integer>
+      vitamin_B1_mg: optional<integer>
+      vitamin_B2_mg: optional<integer>
+      vitamin_B3_mg: optional<integer>
+      vitamin_B5_mg: optional<integer>
+      vitamin_B6_mg: optional<integer>
+      vitamin_B12_mg: optional<integer>
+      vitamin_C_mg: optional<integer>
+      vitamin_D_mg: optional<integer>
+      vitamin_E_mg: optional<integer>
+      vitamin_K_mg: optional<integer>
+      zinc_mg: optional<integer>
+  
+  Sleep: 
+    extends: MetriportData
+    properties: 
+      start_time: optional<string>
+      end_time: optional<string>
+      durations: optional<SleepDurations>
+      biometrics: optional<SleepBiometrics>
+      wakeup_frequency: optional<integer>
+
+  SleepDurations: 
+    properties:
+      total_seconds: optional<integer>
+      awake_seconds: optional<integer>
+      deep_seconds: optional<integer>
+      rem_seconds: optional<integer>
+      light_seconds: optional<integer>
+      in_bed_seconds: optional<integer>
+      time_to_fall_asleep_seconds: optional<integer>
+      no_data_seconds: optional<integer>
+
+  SleepBiometrics:
+    properties:
+      heart_rate: optional<HeartRate>
+      hrv: optional<HeartRateVariability>
+      respiration: optional<Respiration>
+      temperature: optional<Temperature>
+
+  Temperature:
+    properties: 
+      core: optional<TemperatureMeasurement>
+      delta_celcius: optional<double>
+      skin: optional<TemperatureMeasurement>
+  
+  TemperatureMeasurement: 
+    properties: 
+      avg_celcius: optional<double>
+      samples_celcius: optional<list<Sample>>
+  
+  User:
+    extends: MetriportData
+    properties: 
+      age: optional<integer>
+      first_name: optional<string>
+      last_name: optional<string>
+      city: optional<string>
+      country: optional<string>
+      date_of_birth: optional<string>
+      email: optional<string>
+      region:
+        type: optional<string> 
+        docs: can be state, province, etc
+      sex: optional<Sex>
+  
+  Sex: 
+    enum: 
+      - male
+      - female
+
+  ConnectedUserInfo:
+    properties: 
+      metriportUserId: string
+      appUserId: string
+      connectedProviders: optional<list<string>>

@@ -28,6 +28,7 @@ export enum FHIRConverterCDATemplate {
 export type ContentMimeType = Pick<Document["content"], "mimeType">;
 
 export function isConvertible(mimeType?: string): boolean {
+  // TODO move to core's isMimeTypeXML()
   return mimeType != null && ["text/xml", "application/xml"].includes(mimeType);
 }
 

@@ -1,3 +1,4 @@
+import { webhookDisableFlagName } from "@metriport/core/domain/webhook/index";
 import Axios from "axios";
 import dayjs from "dayjs";
 import { nanoid } from "nanoid";
@@ -5,7 +6,7 @@ import { Product } from "../../domain/product";
 import WebhookError from "../../errors/webhook";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
-import { analytics, EventTypes } from "../../shared/analytics";
+import { EventTypes, analytics } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
@@ -220,6 +221,6 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
 
 export const isWebhookDisabled = (meta?: unknown): boolean => {
   if (!meta) return false;
-  console.log(meta);
-  return Boolean((meta as { disableWHFlag?: string })?.disableWHFlag);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return Boolean((meta as any)[webhookDisableFlagName]);
 };

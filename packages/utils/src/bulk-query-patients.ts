@@ -2,12 +2,13 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { ConsolidatedCountResponse, MetriportMedicalApi } from "@metriport/api-sdk";
+import { DetailedConfig } from "@metriport/core/domain/document-query/trigger-and-query";
+import { TriggerAndQueryDocRefsRemote } from "@metriport/core/domain/document-query/trigger-and-query-remote";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { sleep } from "@metriport/core/util/sleep";
 import axios from "axios";
 import fs from "fs";
 import { chunk } from "lodash";
-import { queryDocsForPatient as externalQueryDocsForPatient } from "./commonwell/doc-query-shared";
 
 /**
  * This script kicks off document queries in bulk for the configured cx.
@@ -33,14 +34,15 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
 });
+
 // query stuff
 const delayTime = parseInt(getEnvVar("BULK_QUERY_DELAY_TIME") ?? "5000");
 const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "25");
-const detailedConfig = {
+const detailedConfig: DetailedConfig = {
   patientChunkDelayJitterMs: parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER_MS") ?? "1000"),
   queryPollDurationMs: 10_000,
   maxQueryDurationMs: 71_000, // CW has a 70s timeout, so this is the maximum duration any doc query can take
-  maxDocQueryAttemts: 3,
+  maxDocQueryAttempts: 3,
   minDocsToConsiderCompleted: 2,
 };
 
@@ -49,6 +51,8 @@ const csvHeader =
   "patientId,firstName,lastName,state,queryAttemptCount,docCount,fhirResourceCount,fhirResourceDetails,status\n";
 const curDateTime = new Date();
 const csvName = `./${replaceAll(cxName, " ", "").trim()}-DocQuery-${curDateTime.toISOString()}.csv`;
+
+const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(apiUrl);
 
 function replaceAll(string: string, search: string, replace: string): string {
   return string.split(search).join(replace);
@@ -75,11 +79,9 @@ async function queryDocsForPatient(patientId: string) {
       total: 0,
     };
     const docQueryPromise = async () =>
-      externalQueryDocsForPatient({
+      triggerAndQueryDocRefs.queryDocsForPatient({
         cxId,
         patientId,
-        apiUrl,
-        apiKey,
         triggerWHNotificationsToCx,
         config: detailedConfig,
         log: console.log,

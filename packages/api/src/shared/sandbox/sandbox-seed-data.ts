@@ -15,6 +15,7 @@ import { ollieDocRefs } from "./sandbox-seed-data-ollie";
 import { roryDocRefs } from "./sandbox-seed-data-rory";
 import { wandaDocRefs } from "./sandbox-seed-data-wanda";
 import { williamDocRefs } from "./sandbox-seed-data-william";
+import { USState } from "@metriport/core/domain/geographic-locations";
 
 export function patientMatches(patient: PatientData): boolean {
   const patientData = getSandboxSeedData(patient.firstName);
@@ -76,7 +77,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "123 Arsenal St",
           city: "Phoenix",
-          state: "AZ",
+          state: USState.AZ,
           zip: "85300",
           country: "USA",
         },
@@ -94,7 +95,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "201 Armada St",
           city: "Harrisburg",
-          state: "PA",
+          state: USState.PA,
           zip: "15300",
           country: "USA",
         },
@@ -112,7 +113,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "4430 York St",
           city: "Jefferson City",
-          state: "MO",
+          state: USState.MO,
           zip: "64000",
           country: "USA",
         },
@@ -130,7 +131,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "332 16th St",
           city: "Portland",
-          state: "ME",
+          state: USState.ME,
           zip: "04000",
           country: "USA",
         },
@@ -148,7 +149,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "1984 Juniper Way",
           city: "Sacramento",
-          state: "CA",
+          state: USState.CA,
           zip: "95300",
           country: "USA",
         },
@@ -166,7 +167,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "891 E. Galvin Court",
           city: "Ames",
-          state: "IA",
+          state: USState.IA,
           zip: "51500",
           country: "USA",
         },
@@ -184,7 +185,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "85 Hillside Street",
           city: "Springfield",
-          state: "IL",
+          state: USState.IL,
           zip: "62600",
           country: "USA",
         },
@@ -202,7 +203,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "796 Thorne Lane",
           city: "Austin",
-          state: "TX",
+          state: USState.TX,
           zip: "75400",
           country: "USA",
         },
@@ -220,7 +221,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "7028 Stillwater Street",
           city: "Tallahassee",
-          state: "FL",
+          state: USState.FL,
           zip: "34600",
           country: "USA",
         },
@@ -238,7 +239,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "7362 Canterbury Street",
           city: "New Orleans",
-          state: "LA",
+          state: USState.LA,
           zip: "71200",
           country: "USA",
         },
@@ -256,7 +257,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "7517 Cooper Street",
           city: "Santa Fe",
-          state: "NM",
+          state: USState.NM,
           zip: "87400",
           country: "USA",
         },
@@ -274,7 +275,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "1440 Mallard Dr",
           city: "Springfield",
-          state: "IL",
+          state: USState.IL,
           zip: "61200",
           country: "USA",
         },
@@ -292,7 +293,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "9366 Piper Street",
           city: "Denver",
-          state: "CO",
+          state: USState.CO,
           zip: "81300",
           country: "USA",
         },
@@ -310,7 +311,7 @@ export const seedData: Record<string, PatientEntry> = {
         {
           addressLine1: "670 9th Ave",
           city: "Harrisburg",
-          state: "PA",
+          state: USState.PA,
           zip: "15300",
           country: "USA",
         },

@@ -1,9 +1,7 @@
 import { OperationOutcomeError } from "@medplum/core";
 import {
-  Binary,
   Bundle,
   BundleEntry,
-  DiagnosticReport,
   ExtractResource,
   OperationOutcomeIssue,
   Resource,
@@ -11,7 +9,6 @@ import {
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { chunk } from "lodash";
 import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -189,70 +186,6 @@ export async function getConsolidatedPatientData({
   ]);
 
   const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
-
-  // populate data into DiagnosticReport
-  try {
-    const binaryResourceIds: string[] = [];
-    const successDiagReportIndeces: number[] = [];
-    let index = 0;
-    for (const resource of success) {
-      if (resource.resourceType === "DiagnosticReport") {
-        if (resource.presentedForm && resource.presentedForm[0].url?.startsWith("Binary")) {
-          const url = resource.presentedForm[0].url;
-          const binaryResourceId = url.split("/")[1];
-          if (binaryResourceId) {
-            successDiagReportIndeces.push(index);
-            binaryResourceIds.push(binaryResourceId);
-          }
-        }
-      }
-      index++;
-    }
-    const MAX_CHUNK_SIZE = 150;
-    const binaryChunks = chunk(binaryResourceIds, MAX_CHUNK_SIZE);
-
-    const binarySettled = await Promise.allSettled([
-      ...binaryChunks.map(async chunk => {
-        return searchResources(
-          "Binary",
-          () => fhir.searchResourcePages("Binary", `_id=${chunk.join(",")}`),
-          errorsToReport
-        );
-      }),
-    ]);
-    const binarySuccess: Resource[] = binarySettled.flatMap(s =>
-      s.status === "fulfilled" ? s.value : []
-    );
-    const binaryIdToResource: { [key: string]: Binary } = {};
-    for (const binaryResource of binarySuccess) {
-      binaryIdToResource[binaryResource.id ?? ""] = binaryResource as Binary;
-    }
-
-    for (const diagReportIndex of successDiagReportIndeces) {
-      const diagReport = success[diagReportIndex] as DiagnosticReport;
-      if (diagReport.presentedForm) {
-        const url = diagReport.presentedForm[0].url;
-        if (url) {
-          const binaryResourceId = url.split("/")[1];
-          if (binaryResourceId) {
-            const binaryResource = binaryIdToResource[binaryResourceId];
-            diagReport.presentedForm[0].data = binaryResource.data;
-            success[diagReportIndex] = diagReport;
-          }
-        }
-      }
-    }
-  } catch (error) {
-    log(`Failed to populate DiagnosticReport data with error: ${JSON.stringify(error)}`);
-    capture.message(`Failed to get FHIR resources`, {
-      extra: {
-        context: `getConsolidatedPatientData`,
-        patientId,
-        error,
-      },
-      level: "error",
-    });
-  }
 
   const failuresAmount = Object.keys(errorsToReport).length;
   if (failuresAmount > 0) {

@@ -1,11 +1,21 @@
+import { faker } from "@faker-js/faker";
 import { Patient } from "@medplum/fhirtypes";
-import { randFirstName, randLastName, randNumber, randPhoneNumber, randUuid } from "@ngneat/falso";
 
-const defaultId = randUuid();
+const defaultId = () => faker.string.uuid();
 
 export type PatientWithId = Omit<Patient, "id"> & Required<Pick<Patient, "id">>;
 
-export const makePatient = (id = defaultId): PatientWithId => ({
+export const makePatient = ({
+  id = defaultId(),
+  firstName = faker.person.firstName(),
+  lastName = faker.person.lastName(),
+  phoneNumber = faker.phone.number("555-###-###"),
+}: {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+} = {}): PatientWithId => ({
   resourceType: "Patient",
   id,
   extension: [
@@ -71,7 +81,7 @@ export const makePatient = (id = defaultId): PatientWithId => ({
   identifier: [
     {
       system: "https://github.com/synthetichealth/synthea",
-      value: randUuid(),
+      value: faker.string.uuid(),
     },
     {
       type: {
@@ -85,21 +95,21 @@ export const makePatient = (id = defaultId): PatientWithId => ({
         text: "Driver's License",
       },
       system: "urn:oid:2.16.840.1.113883.4.3.49",
-      value: randNumber({ min: 10_000, max: 99_999 }).toString(),
+      value: faker.number.int({ min: 10_000, max: 99_999 }).toString(),
     },
   ],
   name: [
     {
       use: "official",
-      family: randLastName(),
-      given: [randFirstName()],
+      family: lastName,
+      given: [firstName],
       prefix: [],
     },
   ],
   telecom: [
     {
       system: "phone",
-      value: randPhoneNumber(),
+      value: phoneNumber,
       use: "home",
     },
   ],

@@ -1,7 +1,7 @@
-import { rand, randFirstName, randLastName, randPastDate, randUuid } from "@ngneat/falso";
+import { faker } from "@faker-js/faker";
+import { USState } from "@metriport/core/domain/geographic-locations";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../../shared/date";
-import { USState } from "@metriport/core/domain/geographic-locations";
 import { makeBaseDomain } from "../../__tests__/base-domain";
 import { Patient, PatientData, PersonalIdentifier } from "../patient";
 import { makeAddressStrict } from "./location-address";
@@ -9,16 +9,16 @@ import { makeAddressStrict } from "./location-address";
 export const makePersonalIdentifier = (): PersonalIdentifier => {
   return {
     type: "driversLicense",
-    value: randUuid(),
-    state: rand(Object.values(USState)),
+    value: faker.string.uuid(),
+    state: faker.helpers.arrayElement(Object.values(USState)),
   };
 };
 export const makePatientData = (data: Partial<PatientData> = {}): PatientData => {
   return {
-    firstName: data.firstName ?? randFirstName(),
-    lastName: data.lastName ?? randLastName(),
-    dob: data.dob ?? dayjs(randPastDate()).format(ISO_DATE),
-    genderAtBirth: data.genderAtBirth ?? rand(["F", "M"]),
+    firstName: data.firstName ?? faker.person.firstName(),
+    lastName: data.lastName ?? faker.person.lastName(),
+    dob: data.dob ?? dayjs(faker.date.past()).format(ISO_DATE),
+    genderAtBirth: data.genderAtBirth ?? faker.helpers.arrayElement(["F", "M"]),
     personalIdentifiers: data.personalIdentifiers ?? [makePersonalIdentifier()],
     address: data.address ?? [makeAddressStrict()],
     documentQueryProgress: data.documentQueryProgress,
@@ -30,8 +30,8 @@ export const makePatient = (params: Partial<Patient> = {}): Patient => {
   return {
     ...makeBaseDomain(),
     ...(params.id ? { id: params.id } : {}),
-    cxId: params.cxId ?? randUuid(),
-    facilityIds: params.facilityIds ?? [randUuid()],
+    cxId: params.cxId ?? faker.string.uuid(),
+    facilityIds: params.facilityIds ?? [faker.string.uuid()],
     data: makePatientData(params.data),
   };
 };

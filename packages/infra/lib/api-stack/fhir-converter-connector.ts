@@ -51,10 +51,12 @@ function settings() {
 export function createQueueAndBucket({
   stack,
   lambdaLayers,
+  envType,
   alarmSnsAction,
 }: {
   stack: Construct;
   lambdaLayers: LambdaLayers;
+  envType: EnvType;
   alarmSnsAction?: SnsAction;
 }): FHIRConnector {
   const config = getConfig();
@@ -69,6 +71,7 @@ export function createQueueAndBucket({
     maxReceiveCount,
     createRetryLambda: true,
     lambdaLayers: [lambdaLayers.shared],
+    envType,
     alarmSnsAction,
   });
 
@@ -134,9 +137,9 @@ export function createLambda({
     entry: "sqs-to-converter",
     layers: [lambdaLayers.shared],
     memory: lambdaMemory,
+    envType,
     envVars: {
       METRICS_NAMESPACE,
-      ENV_TYPE: envType,
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
