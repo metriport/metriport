@@ -1,26 +1,21 @@
 import { Patient } from "@medplum/fhirtypes";
-import { npiStringSchema, oidStringSchema } from "./shared";
+import { NPIString, oidStringSchema } from "./shared";
 import { z } from "zod";
 
-export type XCPDGateway = {
-  oid: string;
-  url: string;
-};
-
-export const xcpdGatewaySchema = z.array(
+export const xcpdGatewaysSchema = z.array(
   z.object({
     oid: oidStringSchema,
     url: z.string(),
   })
 );
 
-export const principalCareProviderIdsSchema = z.array(npiStringSchema);
+export type XCPDGateways = z.infer<typeof xcpdGatewaysSchema>;
 
 export type XCPDRequest = {
   id: string;
   cxId: string;
-  xcpdGateways: XCPDGateway[];
+  xcpdGateways: XCPDGateways;
   timestamp: string;
-  principalCareProviderIds?: string[];
+  principalCareProviderIds?: NPIString[];
   patientResource: Patient;
 };
