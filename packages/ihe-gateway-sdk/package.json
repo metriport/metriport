@@ -60,6 +60,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
+    "@metriport/core": "file:packages/core",
     "axios": "^1.3.5",
     "zod": "^3.22.1"
   }
