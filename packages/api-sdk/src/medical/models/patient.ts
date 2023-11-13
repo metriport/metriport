@@ -2,7 +2,9 @@ import { z } from "zod";
 import { baseUpdateSchema } from "./common/base-update";
 import { demographicsSchema } from "./demographics";
 
-export const patientCreateSchema = demographicsSchema;
+export const patientCreateSchema = demographicsSchema.extend({
+  externalId: z.string().optional(),
+});
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
 
 export const patientUpdateSchema = patientCreateSchema.merge(baseUpdateSchema);
@@ -10,7 +12,6 @@ export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 
 export const patientSchema = patientUpdateSchema.extend({
   facilityIds: z.array(z.string()),
-  externalId: z.string().optional(),
 });
 export type Patient = z.infer<typeof patientSchema>;
 
