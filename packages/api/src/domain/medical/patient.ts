@@ -76,6 +76,7 @@ export type PatientData = {
 export interface PatientCreate extends BaseDomainCreate {
   cxId: string;
   facilityIds: string[];
+  externalId?: string;
   data: PatientData;
 }
 

@@ -32,6 +32,7 @@ import {
   getFrom,
   getFromParamsOrFail,
   getFromQueryOrFail,
+  getFromQuery,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
@@ -61,6 +62,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const externalId = getFromQuery("externalId", req);
     const payload = patientCreateSchema.parse(req.body);
 
     if (Config.isSandbox()) {
@@ -76,6 +78,7 @@ router.post(
     const patientCreate: PatientCreateCmd = {
       ...schemaCreateToPatient(payload, cxId),
       facilityId,
+      externalId,
     };
 
     const patient = await createPatient(patientCreate);

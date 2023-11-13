@@ -10,6 +10,15 @@ api: "POST /medical/v1/patient"
   The ID of the Facility where the Patient is receiving care.
 </ParamField>
 
+<ParamField query="externalId" type="string">
+  An external Patient ID to associate to a Patient in Metriport.
+</ParamField>
+
+<Info>
+  If the optional externalId param is provided you can expect to see it returned in the responses
+  involving the Patient. It will also be included within the webhook payloads.
+</Info>
+
 ## Body
 
 <Snippet file="patient.mdx" />

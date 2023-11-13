@@ -7,12 +7,12 @@ import { getFacilityOrFail } from "../facility/get-facility";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
 
-type Identifier = Pick<Patient, "cxId"> & { facilityId: string };
+type Identifier = Pick<Patient, "cxId"> & { facilityId: string; externalId?: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
 export const createPatient = async (patient: PatientCreateCmd): Promise<Patient> => {
-  const { cxId, facilityId } = patient;
+  const { cxId, facilityId, externalId } = patient;
 
   const sanitized = sanitize(patient);
   validate(sanitized);
@@ -33,6 +33,7 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
     id: uuidv7(),
     cxId,
     facilityIds: [facilityId],
+    externalId,
     data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
   };
   const newPatient = await PatientModel.create(patientCreate);

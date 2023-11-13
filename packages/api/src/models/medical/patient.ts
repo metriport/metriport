@@ -6,6 +6,7 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
   static NAME = "patient";
   declare cxId: string;
   declare facilityIds: string[];
+  declare externalId?: string;
   declare data: PatientData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -17,6 +18,9 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
         },
         facilityIds: {
           type: DataTypes.ARRAY(DataTypes.STRING),
+        },
+        externalId: {
+          type: DataTypes.STRING,
         },
         data: {
           type: DataTypes.JSONB,

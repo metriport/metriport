@@ -10,6 +10,7 @@ export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 
 export const patientSchema = patientUpdateSchema.extend({
   facilityIds: z.array(z.string()),
+  externalId: z.string().optional(),
 });
 export type Patient = z.infer<typeof patientSchema>;
 
