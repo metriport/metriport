@@ -106,6 +106,7 @@ router.put(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
+    const externalId = getFromQuery("externalId", req);
     const payload = patientUpdateSchema.parse(req.body);
 
     const patient = await getPatientOrFail({ id, cxId });
@@ -119,6 +120,7 @@ router.put(
       ...schemaUpdateToPatient(payload, cxId),
       ...getETag(req),
       id,
+      externalId,
     };
 
     const updatedPatient = await updatePatient(patientUpdate);
