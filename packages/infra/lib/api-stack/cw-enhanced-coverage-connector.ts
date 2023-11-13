@@ -15,7 +15,7 @@ import { createScheduledLambda } from "../shared/lambda-scheduled";
 import { Secrets } from "../shared/secrets";
 // import { createQueue, provideAccessToQueue } from "../shared/sqs";
 import { CWCoverageEnhancementConfig } from "../../config/env-config";
-import { isProd, isStaging } from "../shared/util";
+import { isProd } from "../shared/util";
 
 export type EnhancedCoverageConnectorProps = {
   stack: Construct;
@@ -38,20 +38,8 @@ export function settings(props: EnhancedCoverageConnectorProps) {
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
     scheduleExpression: isProd(config)
-      ? // TODO 1195 Define whether to run Mon-Fri biz hours or other frequency - this will determine the need for someone monitoring for code challenge and when turn off/on EC FeatureFlag
-        // TODO 1195 Define whether to run Mon-Fri biz hours or other frequency - this will determine the need for someone monitoring for code challenge and when turn off/on EC FeatureFlag
-        // TODO 1195 Define whether to run Mon-Fri biz hours or other frequency - this will determine the need for someone monitoring for code challenge and when turn off/on EC FeatureFlag
-        // TODO 1195 Define whether to run Mon-Fri biz hours or other frequency - this will determine the need for someone monitoring for code challenge and when turn off/on EC FeatureFlag
-        // TODO 1195 Define whether to run Mon-Fri biz hours or other frequency - this will determine the need for someone monitoring for code challenge and when turn off/on EC FeatureFlag
-        // TODO 1195 Define whether to run Mon-Fri biz hours or other frequency - this will determine the need for someone monitoring for code challenge and when turn off/on EC FeatureFlag
-        // TODO 1195 Define whether to run Mon-Fri biz hours or other frequency - this will determine the need for someone monitoring for code challenge and when turn off/on EC FeatureFlag
-        // Every 20min, 8am EST thru 8pm PST, Mon-Fri
-        ["0/20 12-3 ? * MON-SAT *"]
-      : isStaging(config)
-      ? // Every hour, 10am EST thru 8pm PST, Mon-Fri
-        ["0/10 14-3 ? * MON-SAT *"]
-      : // No runs otherwise
-        [],
+      ? ["0/20 * ? * * *"] // Every 20min, every day
+      : [],
     memory: 512,
     lambdaTimeout: Duration.minutes(2),
     httpTimeout: Duration.minutes(1),
