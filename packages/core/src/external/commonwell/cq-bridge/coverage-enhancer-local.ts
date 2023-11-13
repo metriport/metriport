@@ -25,6 +25,7 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
     orgOID,
     patientIds,
     fromOrgChunkPos = 0,
+    stopOnErrors = false,
   }: CoverageEnhancementParams) {
     const startedAt = Date.now();
     const { log } = out(`${this.prefix}EC - MAIN - cx ${cxId}`);
@@ -51,11 +52,12 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
             cqOrgIds: orgIds,
           });
         } catch (error) {
-          log(
-            `ERROR - stopped at org chunk ${i} (relative) / ${i + fromOrgChunkPos} (absolute)`,
-            error
-          );
-          throw error;
+          const msg = `ERROR at org chunk ${i} (relative) / ${i + fromOrgChunkPos} (absolute)`;
+          if (stopOnErrors) {
+            log(msg + " - interrupting...", error);
+            throw error;
+          }
+          log(msg + " - continuing...", error);
         }
       }
     } finally {

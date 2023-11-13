@@ -3,6 +3,7 @@ export type CoverageEnhancementParams = {
   orgOID: string;
   patientIds: string[];
   fromOrgChunkPos?: number;
+  stopOnErrors?: boolean;
 };
 
 export abstract class CoverageEnhancer {

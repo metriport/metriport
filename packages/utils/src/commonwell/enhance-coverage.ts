@@ -50,7 +50,6 @@ const downloadProgressIndex = 0;
 
 // If it fails to get the cookie, we might need to run this on a "headed" browser = update this to false:
 const headless = true;
-//const headless = false;
 
 /**
  * You shouldn't need to, but if you want to use existing cookies login to the CW portal and go to
@@ -69,6 +68,8 @@ const cxOrgOID = getEnvVarOrFail("ORG_OID");
 
 const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 });
 const DOC_QUERIES_IN_PARALLEL = 25;
+const maxDocQueryAttempts = 3;
+const minDocsToConsiderCompleted = 2;
 const triggerWHNotificationsToCx = true;
 const prefix = "############################### ";
 
@@ -116,6 +117,7 @@ export async function main() {
     orgOID: cxOrgOID,
     patientIds,
     fromOrgChunkPos: downloadProgressIndex,
+    stopOnErrors: true,
   });
 
   console.log(`Giving some time for patients to be updated @ CW...`);
@@ -129,6 +131,10 @@ export async function main() {
         cxId: cxId,
         patientId: patientId,
         triggerWHNotificationsToCx,
+        config: {
+          maxDocQueryAttempts,
+          minDocsToConsiderCompleted,
+        },
       });
       console.log(`Done doc query for patient ${patientId}, found ${docsFound} docs`);
     },
