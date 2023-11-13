@@ -6,7 +6,6 @@ import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientIds, getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
@@ -19,12 +18,13 @@ import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/
 import { completeEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-complete";
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { cqLinkStatus } from "../../external/commonwell/patient-shared";
+import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { getETag } from "../../shared/http";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { stringToBoolean } from "../../shared/types";
-import { stringIntegerSchema } from "../schemas/shared";
-import { getUUIDFrom, uuiSchema } from "../schemas/uuid";
+import { stringIntegerSchema, stringListFromQuerySchema } from "../schemas/shared";
+import { getUUIDFrom, uuidSchema } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromParamsOrFail } from "../util";
 import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
@@ -309,7 +309,8 @@ router.post(
 );
 
 const initEnhancedCoverageSchema = z.object({
-  cxId: uuiSchema.optional(),
+  cxId: uuidSchema.optional(),
+  patientIds: stringListFromQuerySchema.optional(),
   fromOrgPos: stringIntegerSchema.optional(),
 });
 
@@ -321,6 +322,9 @@ const initEnhancedCoverageSchema = z.object({
  *
  * @param req.query.cxId The customer ID (optional, default to all cxs with the
  *                       respective Feature Flag enabled).
+ * @param req.query.patientIds A list of patient IDs to enhance coverage (optional,
+ *                             default to all elibible patients of the given customers).
+ *                             If set, cxId must also be set.
  * @param req.query.fromOrgPos The position on the array of CQ Orgs to start the
  *                             Enhanced Coverage from. If set, it disables the
  *                             validation/check of Patient's cqLinkStatus
@@ -329,7 +333,11 @@ const initEnhancedCoverageSchema = z.object({
 router.post(
   "/enhance-coverage",
   asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, fromOrgPos } = initEnhancedCoverageSchema.parse(req.query);
+    const { cxId, patientIds, fromOrgPos } = initEnhancedCoverageSchema.parse(req.query);
+
+    if (patientIds && patientIds.length && !cxId) {
+      throw new BadRequestError(`Customer ID is required when patient IDs are set`);
+    }
 
     const cxIds: string[] = cxId ? [cxId] : [];
     if (!cxIds.length) {
@@ -339,17 +347,17 @@ router.post(
     const checkStaleEC = !fromOrgPos || fromOrgPos <= 0;
     if (checkStaleEC) await checkStaleEnhancedCoverage(cxIds);
 
-    const patientIds = await initEnhancedCoverage(cxIds, fromOrgPos);
+    const patientIdsUpdated = await initEnhancedCoverage(cxIds, patientIds, fromOrgPos);
 
-    return res.status(status.OK).json({ patientIds });
+    return res.status(status.OK).json({ patientIds: patientIdsUpdated });
   })
 );
 
 const cqLinkStatusSchema = z.enum(cqLinkStatus);
 
 const completeEnhancedCoverageSchema = z.object({
-  cxId: uuiSchema,
-  patientIds: uuiSchema.array(),
+  cxId: uuidSchema,
+  patientIds: uuidSchema.array(),
   cqLinkStatus: cqLinkStatusSchema,
 });
 

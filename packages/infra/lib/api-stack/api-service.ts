@@ -162,7 +162,7 @@ export function createAPIService(
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
           ...(cookieStore && {
-            CW_MANAGEMENT_COOKIE_ARN: cookieStore.secretArn,
+            CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
           }),
         },
       },
@@ -214,7 +214,10 @@ export function createAPIService(
   //     queue: cqLinkPatientQueue,
   //     resource: fargateService.service.taskDefinition.taskRole,
   //   });
-  cookieStore && cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
+  if (cookieStore) {
+    cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
+    cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
+  }
 
   // Allow access to search services/infra
   provideAccessToQueue({
