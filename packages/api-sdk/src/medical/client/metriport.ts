@@ -185,11 +185,16 @@ export class MetriportMedicalApi {
    *
    * @param data The data to be used to create a new patient.
    * @param facilityId The facility providing the NPI to support this operation.
+   * @param externalId Optional external ID to be associated with the patient.
    * @return The newly created patient.
    */
-  async createPatient(data: PatientCreate, facilityId: string): Promise<PatientDTO> {
+  async createPatient(
+    data: PatientCreate,
+    facilityId: string,
+    externalId?: string
+  ): Promise<PatientDTO> {
     const resp = await this.api.post(`${PATIENT_URL}`, data, {
-      params: { facilityId },
+      params: { facilityId, externalId },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
@@ -212,16 +217,21 @@ export class MetriportMedicalApi {
    *
    * @param patient The patient data to be updated.
    * @param facilityId The facility providing the NPI to support this operation.
+   * @param externalId Optional external ID to be associated with the patient.
    * @return The updated patient.
    */
-  async updatePatient(patient: PatientUpdate, facilityId: string): Promise<PatientDTO> {
+  async updatePatient(
+    patient: PatientUpdate,
+    facilityId: string,
+    externalId?: string
+  ): Promise<PatientDTO> {
     type FieldsToOmit = "id";
     const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...patient,
       id: undefined,
     };
     const resp = await this.api.put(`${PATIENT_URL}/${patient.id}`, payload, {
-      params: { facilityId },
+      params: { facilityId, externalId },
       headers: { ...getETagHeader(patient) },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
