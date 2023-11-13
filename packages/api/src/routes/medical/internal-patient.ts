@@ -1,3 +1,6 @@
+import { out } from "@metriport/core/util/log";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -28,6 +31,8 @@ import { getUUIDFrom, uuidSchema } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromParamsOrFail } from "../util";
 import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
+
+dayjs.extend(duration);
 
 const router = Router();
 
@@ -339,17 +344,27 @@ router.post(
       throw new BadRequestError(`Customer ID is required when patient IDs are set`);
     }
 
-    const cxIds: string[] = cxId ? [cxId] : [];
-    if (!cxIds.length) {
-      cxIds.push(...(await getCxsWithEnhancedCoverageFeatureFlagValue()));
+    const startedAt = Date.now();
+    const { log } = out(`EC endpoint - cx ${cxId ? cxId : "FF-based"}`);
+    log(`Starting at ${new Date().toISOString()}`);
+
+    try {
+      const cxIds: string[] = cxId ? [cxId] : [];
+      if (!cxIds.length) {
+        cxIds.push(...(await getCxsWithEnhancedCoverageFeatureFlagValue()));
+      }
+
+      const checkStaleEC = !fromOrgPos || fromOrgPos <= 0;
+      if (checkStaleEC) await checkStaleEnhancedCoverage(cxIds);
+
+      const patientIdsUpdated = await initEnhancedCoverage(cxIds, patientIds, fromOrgPos);
+
+      return res.status(status.OK).json({ patientIds: patientIdsUpdated });
+    } finally {
+      const duration = Date.now() - startedAt;
+      const durationMin = dayjs.duration(duration).asMinutes();
+      log(`Done, duration: ${duration} ms / ${durationMin} min`);
     }
-
-    const checkStaleEC = !fromOrgPos || fromOrgPos <= 0;
-    if (checkStaleEC) await checkStaleEnhancedCoverage(cxIds);
-
-    const patientIdsUpdated = await initEnhancedCoverage(cxIds, patientIds, fromOrgPos);
-
-    return res.status(status.OK).json({ patientIds: patientIdsUpdated });
   })
 );
 
