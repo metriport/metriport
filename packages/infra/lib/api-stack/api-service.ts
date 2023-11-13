@@ -11,6 +11,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
@@ -20,7 +21,6 @@ import { DnsZones } from "../shared/dns";
 import { Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd } from "../shared/util";
-import * as s3 from "aws-cdk-lib/aws-s3";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
@@ -55,7 +55,9 @@ export function createAPIService(
     appId: string;
     configId: string;
     cxsWithEnhancedCoverageFeatureFlag: string;
-  }
+  },
+  // cqLinkPatientQueue: IQueue | undefined
+  cookieStore: secret.ISecret | undefined
 ): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
@@ -79,6 +81,7 @@ export function createAPIService(
       ? props.config.connectWidgetUrl
       : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
+  const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   // Run some servers on fargate containers
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
     stack,
@@ -152,6 +155,15 @@ export function createAPIService(
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
           CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG:
             appConfigEnvVars.cxsWithEnhancedCoverageFeatureFlag,
+          // ...(cqLinkPatientQueue && {
+          //   CW_CQ_PATIENT_LINK_QUEUE_URL: cqLinkPatientQueue.queueUrl,
+          // }),
+          ...(coverageEnhancementConfig && {
+            CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
+          }),
+          ...(cookieStore && {
+            CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
+          }),
         },
       },
       memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
@@ -196,6 +208,16 @@ export function createAPIService(
       queue: sidechainFHIRConverterDLQ,
       resource: fargateService.service.taskDefinition.taskRole,
     });
+  // cqLinkPatientQueue &&
+  //   provideAccessToQueue({
+  //     accessType: "send",
+  //     queue: cqLinkPatientQueue,
+  //     resource: fargateService.service.taskDefinition.taskRole,
+  //   });
+  if (cookieStore) {
+    cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
+    cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
+  }
 
   // Allow access to search services/infra
   provideAccessToQueue({

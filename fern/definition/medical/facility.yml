@@ -1,0 +1,128 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+imports:
+  commons: ../commons.yml
+
+service:
+  base-path: /medical/v1/facility
+  auth: true
+  endpoints:
+    create:
+      display-name: Create Facility
+      docs: Creates a Facility in Metriport where your patients receive care.
+      method: POST
+      path: ""
+      request:
+        name: FacilityCreate
+        body: BaseFacility
+      response: Facility
+      examples:
+        - name: Example1
+          request:
+            name: Care Facility, LLC
+            npi: "1234567891"
+            address: $commons.Address.Example1
+            tin: "12-3456789"
+            active: true
+          response:
+            body: $Facility.Example1
+
+    get:
+      display-name: Get Facility
+      docs: Get a Facility in Metriport where your patients receive care.
+      method: GET
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: | 
+            The ID assigned to this Facility. This ID will be used 
+            to uniquely identify this Facility in medical documents.
+      response: Facility
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "2.16.840.1.113883.3.666.123"
+          response:
+            body: $Facility.Example1
+
+    update:
+      display-name: Update Facility
+      docs: Updates a Facility in Metriport where your patients receive care.
+      method: PUT
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Facility.
+      request:
+        name: FacilityUpdate
+        body: BaseFacility
+      response: Facility
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "2.16.840.1.113883.3.666.123"
+          request:
+            name: Care Facility, LLC
+            npi: "1234567891"
+            address: $commons.Address.Example1
+            tin: "12-3456789"
+            active: true
+          response:
+            body: $Facility.Example1
+
+    list:
+      display-name: List Facilities
+      docs: Lists all of your Facilities.
+      method: GET
+      path: ""
+      response:
+        type: ListFacilitiesResponse
+        docs: Array of all of the Facilities created under your Organization.
+      examples:
+        - name: Example1
+          response:
+            body:
+              facilities:
+                - $Facility.Example1
+                - $Facility.Example1
+
+types:
+  BaseFacility:
+    properties:
+      name:
+        type: string
+        docs: The name of your Facility. This is the actual address where a patient will receive care (can be virtual) - for example `Care Facility, LLC`.
+      npi:
+        type: string
+        docs: The 10 digit National Provider Identifier (NPI) that will be used to make requests on behalf of the Facility.
+      tin:
+        type: optional<string>
+        docs: The Taxpayer Identification Number (TIN) of the Facility.
+      active:
+        type: optional<boolean>
+        docs: Whether or not this Facility is currently active - this is usually `true`.
+      address: commons.Address
+
+  Facility:
+    extends: BaseFacility
+    properties:
+      id:
+        type: string
+        docs: | 
+          The ID assigned to this Facility. This ID will be used 
+          to uniquely identify this Facility in medical documents.
+    examples:
+      - name: Example1
+        value:
+          id: "2.16.840.1.113883.3.666.123"
+          name: Care Facility, LLC
+          npi: "1234567891"
+          address: $commons.Address.Example1
+          tin: "12-3456789"
+          active: true
+
+  ListFacilitiesResponse:
+    properties:
+      facilities: list<Facility>

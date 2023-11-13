@@ -1,11 +1,11 @@
-import { randUuid } from "@ngneat/falso";
+import { faker } from "@faker-js/faker";
 import { BaseDomain } from "../base-domain";
 
 export const makeBaseDomain = ({ id }: { id?: string } = {}): BaseDomain => {
   return {
-    id: id ?? randUuid(),
+    id: id ?? faker.string.uuid(),
     createdAt: new Date(),
     updatedAt: new Date(),
-    eTag: randUuid(),
+    eTag: faker.string.uuid(),
   };
 };

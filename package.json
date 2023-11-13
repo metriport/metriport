@@ -37,8 +37,8 @@
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
     "packages/react-native-sdk",
-    "packages/core",
     "packages/api-sdk",
+    "packages/core",
     "packages/api",
     "packages/connect-widget",
     "packages/infra",
@@ -47,7 +47,7 @@
   ],
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --max-warnings=0"
+      "./eslint-custom.sh"
     ],
     "*.{ts,tsx,md}": [
       "prettier --list-different"

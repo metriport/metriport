@@ -11,7 +11,6 @@ export type ConnectWidgetConfig = {
 export type CWCoverageEnhancementConfig = {
   managementUrl: string;
   codeChallengeNotificationUrl: string;
-  orgListS3Key: string;
 };
 
 export type EnvConfig = {
@@ -39,8 +38,7 @@ export type EnvConfig = {
     POST_HOG_API_KEY: string;
   };
   commonwell: {
-    // TODO 1195 Either remove or re-enable this and finish building it
-    // coverageEnhancement?: CWCoverageEnhancementConfig;
+    coverageEnhancement?: CWCoverageEnhancementConfig;
     envVars: {
       CW_MEMBER_NAME: string;
       CW_MEMBER_OID: string;

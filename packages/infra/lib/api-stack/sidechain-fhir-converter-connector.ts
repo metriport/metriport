@@ -8,8 +8,8 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { getConfig, METRICS_NAMESPACE } from "../shared/config";
-import { createLambda as defaultCreateLambda, MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { METRICS_NAMESPACE, getConfig } from "../shared/config";
+import { MAXIMUM_LAMBDA_TIMEOUT, createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { FHIRConnector } from "./fhir-converter-connector";
@@ -41,10 +41,12 @@ function settings() {
 export function createQueueAndBucket({
   stack,
   lambdaLayers,
+  envType,
   alarmSnsAction,
 }: {
   stack: Construct;
   lambdaLayers: LambdaLayers;
+  envType: EnvType;
   alarmSnsAction?: SnsAction;
 }): FHIRConnector {
   const config = getConfig();
@@ -53,6 +55,7 @@ export function createQueueAndBucket({
     stack,
     name: connectorName,
     lambdaLayers: [lambdaLayers.shared],
+    envType,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
@@ -130,9 +133,9 @@ export function createLambda({
     entry: "sqs-to-converter",
     layers: [lambdaLayers.shared],
     memory: lambdaMemory,
+    envType,
     envVars: {
       METRICS_NAMESPACE,
-      ENV_TYPE: envType,
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),

@@ -1,19 +1,13 @@
-import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { PatientUpdater } from "../../../domain/patient/patient-updater";
+import { sleep } from "../../../util/sleep";
 import { CommonWellManagementAPI } from "./api";
 
 dayjs.extend(duration);
 
-const UPDATE_TIMEOUT = dayjs.duration({ minutes: 2 });
+const TIME_BETWEEN_INCLUDE_LIST_AND_UPDATE_ALL = dayjs.duration({ seconds: 2 });
 
-/**
- * Manages the session on the CommonWell management portal.
- */
-export type LinkPatientsConfig = {
-  cwManagementApi: CommonWellManagementAPI;
-  apiUrl: string;
-};
 export type LinkPatientsCommand = {
   cxId: string;
   cxOrgOID: string;
@@ -21,16 +15,16 @@ export type LinkPatientsCommand = {
   cqOrgIds: string[];
 };
 
+/**
+ * Updates the include list on CW and triggers an update on our DB.
+ */
 export class LinkPatients {
-  private readonly cwManagementApi: CommonWellManagementAPI;
-  private readonly apiUrl: string;
+  constructor(
+    private readonly cwManagementApi: CommonWellManagementAPI,
+    private readonly patientsUpdater: PatientUpdater
+  ) {}
 
-  constructor(params: LinkPatientsConfig) {
-    this.cwManagementApi = params.cwManagementApi;
-    this.apiUrl = params.apiUrl;
-  }
-
-  async linkPatientToOrgs({
+  async linkPatientsToOrgs({
     cxId,
     cxOrgOID,
     patientIds,
@@ -38,13 +32,9 @@ export class LinkPatients {
   }: LinkPatientsCommand): Promise<void> {
     await this.cwManagementApi.updateIncludeList({ oid: cxOrgOID, careQualityOrgIds: cqOrgIds });
 
-    console.log(`Calling API /update-all...`);
-    await axios.post(
-      `${this.apiUrl}/internal/patient/update-all?cxId=${cxId}`,
-      {
-        patientIds,
-      },
-      { timeout: UPDATE_TIMEOUT.asMilliseconds() }
-    );
+    // Give some time for the cache - if any, on CW's side to catch up
+    await sleep(TIME_BETWEEN_INCLUDE_LIST_AND_UPDATE_ALL.asMilliseconds());
+
+    await this.patientsUpdater.updateAll(cxId, patientIds);
   }
 }

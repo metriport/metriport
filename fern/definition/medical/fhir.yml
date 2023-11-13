@@ -1,0 +1,225 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+service:
+  base-path: /medical/v1
+  auth: true
+  endpoints:
+    startConsolidatedQuery:
+      display-name: Start Consolidated Data Query
+      docs: Trigger a consolidated data query for the given patient
+      method: POST
+      path: /patient/{id}/consolidated/query
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient.
+      request:
+        name: GetPatientConsolidatedData
+        query-parameters:
+          resources:
+            docs: |
+              A comma separated, case sensitive list of resources to be returned. 
+              If none are provided all resources will be included.
+            type: optional<string>
+          dateFrom:
+            docs: |
+              The start date (inclusive) for which to filter returned resources - 
+              formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
+              no start date filter will be applied.
+            type: optional<string>
+          dateTo:
+            docs: |
+              The end date (inclusive) for which to filter returned resources - 
+              formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
+               no end date filter will be applied.
+            type: optional<string>
+      response:
+        type: StartConsolidatedQueryResponse
+        docs: Returns a Bundle that contains a property entry which is simply an array of FHIR resources.
+      examples:
+        - path-parameters:
+            id: "12345678"
+          response:
+            body:
+              status: processing
+
+    getConsolidatedQueryStatus:
+      display-name: Get Consolidated Data Query status
+      docs: Get the status of querying for patient's consolidated data.
+      method: GET
+      path: /patient/{id}/consolidated/query
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient
+      response:
+        type: GetConsolidatedQueryStatusResponse
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "12345678"
+          response:
+            body: $GetConsolidatedQueryStatusResponse.Example0
+
+    countPatientData:
+      display-name: Count Patient Data
+      docs: Get a count of a Patient's data per resource.
+      method: GET
+      path: /patient/{id}/consolidated/count
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient
+      request:
+        name: CountPatientConsolidateData
+        query-parameters:
+          resources:
+            docs: |
+              A comma separated, case sensitive list of resources to be returned. 
+              If none are provided all resources will be included.
+            type: optional<string>
+          dateFrom:
+            docs: |
+              The start date (inclusive) for which to filter returned resources - 
+              formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
+              no start date filter will be applied.
+            type: optional<string>
+          dateTo:
+            docs: |
+              The end date (inclusive) for which to filter returned resources - 
+              formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
+               no end date filter will be applied.
+            type: optional<string>
+      response: ConsolidatedCountResponse
+
+types:
+  StartConsolidatedQueryResponse:
+    properties:
+      status: PatientConsolidatedDataStatus
+
+  PatientConsolidatedDataStatus:
+    enum:
+      - processing
+      - completed
+      - failed
+
+  GetConsolidatedQueryStatusResponse:
+    properties:
+      status: PatientConsolidatedDataStatus
+      message: optional<string>
+    examples:
+      - name: Example0
+        value:
+          status: completed
+          message: Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook
+
+  ConsolidatedCountResponse:
+    properties:
+      total:
+        type: integer
+        docs: The sum of all resource type count.
+      resources:
+        docs: |
+          Object containing resource types as properties and the amount of entries for
+          the resource as the value (integer). Only resource types with amount 
+          of entries higher than one are included.
+        type: map<string, integer>
+      filter:
+        docs: The filters used to perform this operation.
+        type: Filter
+
+  Filter:
+    properties:
+      resources:
+        docs: |
+          Comma-separated list of resource types. If not specified on the 
+          request, this will be `all`.
+        type: string
+      dateFrom:
+        docs: |
+          The start date (inclusive) for which to filter returned resources - 
+          formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
+          no start date filter will be applied.
+        type: optional<string>
+      dateTo:
+        docs: |
+          The end date (inclusive) for which to filter returned resources - 
+          formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
+            no end date filter will be applied.
+        type: optional<string>
+
+  ResourcesSearchableByPatient:
+    enum:
+      - Account
+      - AllergyIntolerance
+      - Appointment
+      - AppointmentResponse
+      - AuditEvent
+      - Basic
+      - BodyStructure
+      - CarePlan
+      - CareTeam
+      - ChargeItem
+      - Claim
+      - ClaimResponse
+      - ClinicalImpression
+      - Communication
+      - CommunicationRequest
+      - Composition
+      - Condition
+      - Consent
+      - Contract
+      - Coverage
+      - CoverageEligibilityRequest
+      - CoverageEligibilityResponse
+      - DetectedIssue
+      - Device
+      - DeviceRequest
+      - DeviceUseStatement
+      - DiagnosticReport
+      - DocumentManifest
+      - DocumentReference
+      - Encounter
+      - EnrollmentRequest
+      - EpisodeOfCare
+      - ExplanationOfBenefit
+      - FamilyMemberHistory
+      - Flag
+      - Goal
+      - GuidanceResponse
+      - ImagingStudy
+      - Immunization
+      - ImmunizationEvaluation
+      - ImmunizationRecommendation
+      - Invoice
+      - List
+      - MeasureReport
+      - Media
+      - MedicationAdministration
+      - MedicationDispense
+      - MedicationRequest
+      - MedicationStatement
+      - MolecularSequence
+      - NutritionOrder
+      - Observation
+      - Person
+      - Procedure
+      - Provenance
+      - QuestionnaireResponse
+      - RelatedPerson
+      - RequestGroup
+      - ResearchSubject
+      - RiskAssessment
+      - ServiceRequest
+      - Specimen
+
+  ResourcesSearchableBySubject:
+    enum:
+      - AdverseEvent
+      - Task
+
+  ResourceTypeForConsolidation:
+    discriminated: false
+    union:
+      - ResourcesSearchableByPatient
+      - ResourcesSearchableBySubject

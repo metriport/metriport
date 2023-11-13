@@ -2,8 +2,10 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
+import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
 import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
+import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import {
   SessionManagement,
@@ -11,6 +13,8 @@ import {
 } from "@metriport/core/external/commonwell/management/session";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as readline from "readline-sync";
+// disables AWS SDK maintainance notif
+require("aws-sdk/lib/maintenance_mode_message").suppress = true; // eslint-disable-line @typescript-eslint/no-var-requires
 
 // Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
 // import { chromium as runtime } from "playwright";
@@ -26,6 +30,9 @@ import { firefox as runtime } from "playwright";
  * Otherwise it will try to login using the credentials on the env vars and ask for the code challenge through
  * the terminal if it's needed.
  */
+
+// Indicates whether to use in-memory cookie manager and terminal-based code challenge (local), or using secrets (non-local)
+const isLocal = false;
 
 // If it fails to get the cookie, we might need to run this on a "headed" browser = update this to false:
 const headless = true;
@@ -48,32 +55,41 @@ class CodeChallengeFromTerminal implements CodeChallenge {
     return readline.question("What's the access code? ");
   }
 }
-const codeChallenge = new CodeChallengeFromTerminal();
-const cookieManager = new CookieManagerInMemory();
 /**
  * Code to run this on a cloud environment, like EC2.
  */
-// const region = getEnvVarOrFail("AWS_REGION");
-// const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
-// const cookiesSecretArn = getEnvVarOrFail("CW_COOKIES_SECRET_ARN");
-// const cookieManager = new CookieManagerOnSecrets(cookiesSecretArn, region);
-// const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
-// const codeChallenge = new CodeChallengeFromSecretManager(
-//   codeChallengeSecretArn,
-//   region,
-//   notificationUrl
-// );
+const region = getEnvVarOrFail("AWS_REGION");
+const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
+
+const buildStores = () => {
+  if (isLocal) {
+    return {
+      codeChallenge: new CodeChallengeFromTerminal(),
+      cookieManager: new CookieManagerInMemory(),
+    };
+  }
+  const cookiesSecretArn = getEnvVarOrFail("CW_MANAGEMENT_COOKIE_SECRET_ARN");
+  const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
+  return {
+    codeChallenge: new CodeChallengeFromSecretManager(
+      codeChallengeSecretArn,
+      region,
+      notificationUrl
+    ),
+    cookieManager: new CookieManagerOnSecrets(cookiesSecretArn, region),
+  };
+};
+const { codeChallenge, cookieManager } = buildStores();
 
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
 
 export async function main() {
-  console.log(`Testing SessionManagement.keepSessionActive()...`);
+  console.log(`Runnning at ${new Date().toISOString()}`);
 
-  const actualCookies = cookies
-    .split(";")
-    .map(i => i.trim())
-    .flatMap(c => cookieFromString(c) ?? []);
-  cookieManager.updateCookies(actualCookies);
+  if (cookies && cookies.trim().length) {
+    console.log(`Overwritting cookies...`);
+    await cookieManager.updateCookies(cookies.split(";").flatMap(c => cookieFromString(c) ?? []));
+  }
 
   const props: SessionManagementConfig = {
     username: cwUsername,
@@ -86,10 +102,12 @@ export async function main() {
       slowMo: 100,
     }),
     errorScreenshotToFileSystem: true,
-    debug: console.log,
+    // debug: console.log,
   };
   const cwSession = new SessionManagement(props);
   await cwSession.keepSessionActive();
+
+  console.log(`Done at ${new Date().toISOString()}`);
 }
 
 main();

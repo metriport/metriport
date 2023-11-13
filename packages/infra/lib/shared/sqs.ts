@@ -6,6 +6,7 @@ import { IGrantable } from "aws-cdk-lib/aws-iam";
 import { ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs/lib/construct";
+import { EnvType } from "../env-type";
 import { DEFAULT_LAMBDA_TIMEOUT, createRetryLambda } from "./lambda";
 
 /**
@@ -35,6 +36,7 @@ export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
         createDLQ?: true | undefined;
         createRetryLambda?: true | undefined;
         lambdaLayers: ILayerVersion[];
+        envType: EnvType;
       }
   );
 
