@@ -5,40 +5,41 @@ function normalizeString(str: string): string {
 }
 
 // Define default values for each field
-// const defaultValues: { [key in keyof PatientData]?: any } = {
-//   address: [{ addressLine1: "123 Main Street", city: "anytown" }],
-//   contact: [{ email: "example@example.com", phone: "000-000-0000" }],
-//   // Add default values for other fields as needed
-// };
+const defaultValues = {
+  firstName: "John",
+  lastName: "Doe",
+  address: [{ addressLine1: "123 Main Street", city: "anytown", zip: "00000" }],
+  contact: [{ email: "example@example.com", phone: "000-000-0000" }],
+};
 
-// function handleDefaultValues(patient: PatientData): PatientData | null {
-//   // Iterate over each property of the patient object
-//   for (const key in patient) {
-//     if (Array.isArray(patient[key])) {
-//       patient[key as keyof PatientData] = patient[key].map((item, index) => {
-//         for (const subKey in item) {
-//           const typedItem = item as { [key: string]: any };
-//           if (defaultValues[key] && defaultValues[key][index] && defaultValues[key][index][subKey] === typedItem[subKey]) {
-//             if (typedItem[subKey] && typedItem[subKey] !== "") {
-//               return null;
-//             }
-//           }
-//         }
-//         return item;
-//       });
-//     } else if (defaultValues[key] && typeof patient[key] === 'string' && defaultValues[key].includes(patient[key])) {
-//       if (patient[key] && patient[key] !== "") {
-//         return null;
-//       } else {
-//         patient[key as keyof PatientData] = "";
-//       }
-//     }
-//   }
+function handleDefaultValues(patient: PatientData): PatientData | null {
+  const isDefaultAddress = patient.address.some(
+    addr =>
+      addr.addressLine1 === defaultValues["address"][0].addressLine1 ||
+      addr.city === defaultValues["address"][0].city ||
+      addr.zip === defaultValues["address"][0].zip
+  );
 
-//   return patient;
-// }
+  const isDefaultName =
+    patient.firstName === defaultValues["firstName"] &&
+    patient.lastName === defaultValues["lastName"];
 
-export const normalizePatientData = (patient: PatientData): PatientData => {
+  if (isDefaultAddress || isDefaultName) {
+    return null;
+  }
+
+  patient.contact = patient.contact?.map(contact => {
+    const defaultContact = defaultValues["contact"][0];
+    return {
+      email: contact.email === defaultContact.email ? "" : contact.email,
+      phone: contact.phone === defaultContact.phone ? "" : contact.phone,
+    };
+  });
+
+  return patient;
+}
+
+export const normalizePatientData = (patient: PatientData): PatientData | null => {
   const normalizedPatient: PatientData = {
     ...patient,
     // TODO: Handle the possibility of multiple patient names. right now we are just selecting for the first patient name.
@@ -61,7 +62,7 @@ export const normalizePatientData = (patient: PatientData): PatientData => {
       zip: addr.zip.slice(0, 5),
     })),
   };
-  return normalizedPatient;
+  return handleDefaultValues(normalizedPatient);
 };
 
 /**
@@ -89,14 +90,3 @@ function normalizePhoneNumber(phoneNumber: string): string {
 
   return normalizedNumber;
 }
-
-// default value detection. Null, John Doe, 000-000-0000
-// override rules:
-// if matching drivers license.
-// should be indexed on this?
-// 123 Main Street
-// anytown
-// N/A
-// example@example.com
-// 000-000-0000
-// 00000 for zip

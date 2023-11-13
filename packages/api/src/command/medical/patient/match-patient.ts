@@ -16,17 +16,33 @@ export const matchPatients = (
   threshold: number
 ): Patient[] => {
   return patients.filter(patient => {
-    if (
-      demo.personalIdentifiers &&
-      demo.personalIdentifiers.length > 0 &&
-      intersectionWith(patient.data.personalIdentifiers, demo.personalIdentifiers, isEqual).length >
-        0
-    ) {
+    if (matchingPersonalIdentifiersRule(demo, patient.data)) {
       return true;
     }
 
     return similarityFunction(patient.data, demo, threshold);
   });
+};
+
+/**
+ * This function checks if the patient has any personal identifiers that match the demo. The idea of having rules
+ * is that rules will override statistical similarity methods. This rule should act as an override.
+ * @param demo
+ * @param patient
+ * @returns true if the patient has any personal identifiers that match the demo.
+ */
+export const matchingPersonalIdentifiersRule = (
+  demo: PatientData,
+  patient: PatientData
+): boolean => {
+  if (
+    demo.personalIdentifiers &&
+    demo.personalIdentifiers.length > 0 &&
+    intersectionWith(patient.personalIdentifiers, demo.personalIdentifiers, isEqual).length > 0
+  ) {
+    return true;
+  }
+  return false;
 };
 
 /**

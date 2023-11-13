@@ -72,6 +72,8 @@ export const getPatientByDemo = async ({
   demo: PatientData;
 }): Promise<Patient | null> => {
   const normalizedPatientDemo = normalizePatientData(demo);
+  // this means that the patient demographics included default values.
+  if (!normalizedPatientDemo) return null;
 
   // TODO this might be bad form to use PatientCreate for this. Also because
   const blockedPatients = await blockPatients({
