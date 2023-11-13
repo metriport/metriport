@@ -1,20 +1,27 @@
 #!/bin/bash
 # File: eslint-custom.sh
-# Usage: ./eslint-custom.sh file1.ts file2.ts ...
 
-# Array of files to lint
-FILES_TO_LINT=("$@")
-
-# Base directory to exclude
+# Directories to exclude
 EXCLUDE_DIR="packages/sdks"
 
-# Loop over the files
-for FILE in "${FILES_TO_LINT[@]}"; do
-  if [[ $FILE != $EXCLUDE_DIR* ]]; then
-    # File is outside the excluded directory, enforce max-warnings=0
-    eslint --max-warnings=0 "$FILE"
+INCLUDED_FILES=()
+EXCLUDED_FILES=()
+
+# Sort files into included and excluded arrays
+for FILE in "$@"; do
+  if [[ "$FILE" != "$EXCLUDE_DIR"* ]]; then
+    INCLUDED_FILES+=("$FILE")
   else
-    # File is inside the excluded directory, run without max-warnings
-    eslint "$FILE"
+    EXCLUDED_FILES+=("$FILE")
   fi
 done
+
+# Run ESLint on included files with max-warnings=0
+if [ ${#INCLUDED_FILES[@]} -ne 0 ]; then
+  eslint --max-warnings=0 "${INCLUDED_FILES[@]}"
+fi
+
+# Run ESLint on excluded files without max-warnings=0
+if [ ${#EXCLUDED_FILES[@]} -ne 0 ]; then
+  eslint "${EXCLUDED_FILES[@]}"
+fi
