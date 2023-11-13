@@ -9,10 +9,9 @@ date
 cd /home/ubuntu/metriport/packages/utils
 
 while true; do
-  #node dist/utils/src/commonwell/session-manager.js;
   /home/ubuntu/.nvm/versions/node/v18.14.2/bin/node dist/utils/src/commonwell/session-manager.js;
   echo "";
   echo "Waiting 5 min...";
-  sleep 600;
+  sleep 300;
   echo "";
 done
