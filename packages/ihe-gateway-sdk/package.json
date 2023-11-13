@@ -53,7 +53,8 @@
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
-    "test": "echo \"No test specified yet\""
+    "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
+    "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"

@@ -1,6 +1,6 @@
 # `ihe-gateway-sdk`
 
-SDK to communicate with other IHE Gateways - by Metriport Inc.
+SDK for use to connect to the Metriport IHE Gateway - by Metriport Inc.
 
 ## Usage
 
