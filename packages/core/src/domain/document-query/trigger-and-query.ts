@@ -2,21 +2,27 @@ import { DocumentQuery } from "@metriport/api-sdk";
 import { sleep } from "../../util/sleep";
 import { webhookDisableFlagName } from "../webhook";
 
+const patientChunkDelayJitterMsDefault = 1000;
+const queryPollDurationMsDefault = 10_000;
+const maxQueryDurationMsDefault = 71_000;
+const maxDocQueryAttemptsDefault = 1;
+const minDocsToConsiderCompletedDefault = 1;
+
 export const disableWHMetadata = {
   [webhookDisableFlagName]: "true",
 };
 
 export type DetailedConfig = {
-  patientChunkDelayJitterMs: number;
-  queryPollDurationMs: number;
-  maxQueryDurationMs: number; // CW has a 70s timeout, so this is the maximum duration any doc query can take
-  maxDocQueryAttempts: number;
+  patientChunkDelayJitterMs?: number | undefined;
+  queryPollDurationMs?: number | undefined;
+  maxQueryDurationMs?: number | undefined; // CW has a 70s timeout, so this is the maximum duration any doc query can take
+  maxDocQueryAttempts?: number | undefined;
   /**
    * If the doc query returns less than this, we want to query again to try and get better
    * coverage. Had situation where we requeried a patient w/ 1 doc ref and it jumped from
    * 1 to 20.
    */
-  minDocsToConsiderCompleted: number;
+  minDocsToConsiderCompleted?: number | undefined;
 };
 
 export type QueryParams = {
@@ -43,13 +49,7 @@ export abstract class TriggerAndQueryDocRefs {
     cxId,
     patientId,
     triggerWHNotificationsToCx,
-    config = {
-      patientChunkDelayJitterMs: 1000,
-      queryPollDurationMs: 10_000,
-      maxQueryDurationMs: 71_000,
-      maxDocQueryAttempts: 3,
-      minDocsToConsiderCompleted: 2,
-    },
+    config = {},
     log = console.log,
   }: QueryParams): Promise<{
     docQueryAttempts: number;
@@ -57,11 +57,11 @@ export abstract class TriggerAndQueryDocRefs {
     queryComplete: boolean;
   }> {
     const {
-      patientChunkDelayJitterMs,
-      queryPollDurationMs,
-      maxQueryDurationMs,
-      maxDocQueryAttempts,
-      minDocsToConsiderCompleted,
+      patientChunkDelayJitterMs = patientChunkDelayJitterMsDefault,
+      queryPollDurationMs = queryPollDurationMsDefault,
+      maxQueryDurationMs = maxQueryDurationMsDefault,
+      maxDocQueryAttempts = maxDocQueryAttemptsDefault,
+      minDocsToConsiderCompleted = minDocsToConsiderCompletedDefault,
     } = config;
     let docsFound = 0;
 
