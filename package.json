@@ -47,7 +47,7 @@
   ],
   "lint-staged": {
     "*.{ts,tsx}": [
-      "./eslint-custom.sh"
+      "eslint --max-warnings=0"
     ],
     "*.{ts,tsx,md}": [
       "prettier --list-different"

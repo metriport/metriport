@@ -537,7 +537,7 @@ export class MetriportMedicalApi {
    *
    * @param wh_key - your webhook key
    * @param cxId - your cxID
-   * @param req.body - the body of the webhook request
+   * @param req.body - the body of the webhook request.
    * @param signature - the signature obtained from the webhook request header.
    *
    * @returns True if the signature is verified, false otherwise
