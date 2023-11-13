@@ -1,0 +1,62 @@
+{
+  "name": "@metriport/shared",
+  "version": "0.1.0",
+  "description": "Common code shared across packages - by Metriport Inc.",
+  "author": "Metriport Inc. <contact@metriport.com>",
+  "homepage": "https://metriport.com/",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./client/*": "./dist/client/*.js",
+    "./models/*": "./dist/models/*.js",
+    "./common/*": "./dist/common/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "/": [
+        "dist/index.d.ts"
+      ],
+      "client/*": [
+        "dist/client/*"
+      ],
+      "models/*": [
+        "dist/models/*"
+      ],
+      "common/*": [
+        "dist/common/*"
+      ]
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "repository": {
+    "url": "https://github.com/metriport/metriport.git",
+    "type": "git",
+    "directory": "packages/ihe-gateway-sdk"
+  },
+  "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
+    "tsc": "tsc",
+    "watch": "tsc --watch",
+    "build": "tsc -p .",
+    "build:cloud": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
+    "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
+  },
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  }
+}

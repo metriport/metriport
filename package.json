@@ -43,6 +43,7 @@
     "packages/api",
     "packages/connect-widget",
     "packages/infra",
+    "packages/shared",
     "packages/utils",
     "packages/tester-node"
   ],
