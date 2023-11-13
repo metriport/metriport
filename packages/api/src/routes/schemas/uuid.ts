@@ -2,10 +2,10 @@ import { Request } from "express";
 import { z } from "zod";
 import { Context, getFrom, GetWithoutParams } from "../util";
 
-export const uuiSchema = z.string().uuid();
+export const uuidSchema = z.string().uuid();
 
 function validateUUID(id: string, propName?: string): string {
-  return uuiSchema.parse(
+  return uuidSchema.parse(
     id,
     propName
       ? {

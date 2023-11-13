@@ -260,7 +260,7 @@ export class Config {
     return getEnvVar("CW_MANAGEMENT_URL");
   }
   static getCWManagementCookieArn(): string | undefined {
-    return getEnvVar("CW_MANAGEMENT_COOKIE_ARN");
+    return getEnvVar("CW_MANAGEMENT_COOKIE_SECRET_ARN");
   }
   static getCWPatientLinkQueueUrl(): string | undefined {
     return getEnvVar("CW_CQ_PATIENT_LINK_QUEUE_URL");

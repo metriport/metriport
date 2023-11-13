@@ -36,7 +36,6 @@ const isLocal = false;
 
 // If it fails to get the cookie, we might need to run this on a "headed" browser = update this to false:
 const headless = true;
-// const headless = false;
 
 /**
  * To get the cookies, login to the CW portal and go to this page: (https://portal.commonwellalliance.org/Organization/List).
@@ -69,7 +68,7 @@ const buildStores = () => {
       cookieManager: new CookieManagerInMemory(),
     };
   }
-  const cookiesSecretArn = getEnvVarOrFail("CW_COOKIES_SECRET_ARN");
+  const cookiesSecretArn = getEnvVarOrFail("CW_MANAGEMENT_COOKIE_SECRET_ARN");
   const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
   return {
     codeChallenge: new CodeChallengeFromSecretManager(
@@ -85,7 +84,7 @@ const { codeChallenge, cookieManager } = buildStores();
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
 
 export async function main() {
-  console.log(`Testing SessionManagement.keepSessionActive()... at ${new Date().toISOString()}`);
+  console.log(`Runnning at ${new Date().toISOString()}`);
 
   if (cookies && cookies.trim().length) {
     console.log(`Overwritting cookies...`);
