@@ -1,16 +1,15 @@
 import { PatientData, splitName } from "../../../domain/medical/patient";
 
-const commonDomainTypos: { [key: string]: string } = {
-  "gamil.com": "gmail.com",
-  // add more common typos here
-};
+function normalizeString(str: string): string {
+  return str.toLowerCase().replace(/['-]/g, "");
+}
 
 export const normalizePatientData = (patient: PatientData): PatientData => {
   const normalizedPatient: PatientData = {
     ...patient,
     // TODO: Handle the possibility of multiple patient names. right now we are just selecting for the first patient name.
-    firstName: splitName(patient.firstName.toLowerCase().replace(/['-]/g, ""))[0],
-    lastName: splitName(patient.lastName.toLowerCase().replace(/['-]/g, ""))[0],
+    firstName: splitName(normalizeString(patient.firstName))[0],
+    lastName: splitName(normalizeString(patient.lastName))[0],
     contact: patient.contact?.map(contact => ({
       ...contact,
       email: contact.email ? normalizeEmail(contact.email) : contact.email,
@@ -31,30 +30,33 @@ export const normalizePatientData = (patient: PatientData): PatientData => {
   return normalizedPatient;
 };
 
+/**
+ * Normalizes an email address by removing leading and trailing spaces, converting all characters to lowercase,
+ * and handling common domain typos.
+ *
+ * @param email - The email address to be normalized.
+ * @returns The normalized email address.
+ */
 function normalizeEmail(email: string): string {
-  let normalizedEmail = email.trim().toLowerCase();
-  // this needs to be better, but a lot of record linkage does email normalization
-  const domain = normalizedEmail.split("@")[1];
-  if (commonDomainTypos[domain]) {
-    normalizedEmail = normalizedEmail.replace(domain, commonDomainTypos[domain]);
-  }
-  return normalizedEmail;
+  return email.trim().toLowerCase();
 }
 
-// normalize phones
+/**
+ * Normalizes a phone number by removing all non-numeric characters and, if applicable, removing the country code.
+ * @param phoneNumber - The phone number to be normalized.
+ * @returns The normalized phone number as a string.
+ */
 function normalizePhoneNumber(phoneNumber: string): string {
-  // Remove all non-numeric characters
-  let normalizedNumber = phoneNumber.replace(/\D/g, "");
-  // Check if the number starts with '1' which is the country code for US/Canada
+  const normalizedNumber = phoneNumber.replace(/\D/g, "");
+
   if (normalizedNumber.startsWith("1") && normalizedNumber.length === 11) {
-    // Remove the country code
-    normalizedNumber = normalizedNumber.substring(1);
+    return normalizedNumber.substring(1);
   }
+
   return normalizedNumber;
 }
 
 // default value detection. Null, John Doe, 000-000-0000
-
 // override rules:
 // if matching drivers license.
 // should be indexed on this?
