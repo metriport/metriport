@@ -13,6 +13,8 @@ import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { isDAPIWebhookRequest } from "./devices-util";
 import { updateWebhookRequestStatus } from "./webhook-request";
+import { v4 as uuidv4 } from "uuid";
+import crypto from "crypto";
 
 const DEFAULT_TIMEOUT_SEND_PAYLOAD_MS = 5_000;
 const DEFAULT_TIMEOUT_SEND_TEST_MS = 2_000;
@@ -22,6 +24,7 @@ const log = Util.log(`Webhook`);
 // General
 type WebhookPingPayload = {
   ping: string;
+  meta: WebhookMetadataPayload;
 };
 
 /**
@@ -101,6 +104,7 @@ export const processRequest = async (
       type: webhookRequest.type,
       data: cxWHRequestMeta,
     };
+
     await sendPayload(
       {
         meta,
@@ -194,10 +198,12 @@ export const sendPayload = async (
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   try {
+    const hmac = crypto.createHmac("sha256", apiKey).update(JSON.stringify(payload)).digest("hex");
     const res = await axios.post(url, payload, {
       headers: {
         "x-webhook-key": apiKey,
         "user-agent": "Metriport API",
+        "x-metriport-signature": hmac,
       },
       timeout,
       maxRedirects: 0, // disable redirects to prevent SSRF
@@ -211,9 +217,16 @@ export const sendPayload = async (
 
 export const sendTestPayload = async (url: string, key: string): Promise<boolean> => {
   const ping = nanoid();
+  const when = dayjs().toISOString();
   const payload: WebhookPingPayload = {
     ping,
+    meta: {
+      messageId: uuidv4(),
+      when,
+      type: "ping",
+    },
   };
+
   const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
   if (res.pong && res.pong === ping) return true;
   return false;

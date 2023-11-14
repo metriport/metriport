@@ -10,23 +10,23 @@ import { getSettingsOrFail } from "./getSettings";
 const log = Util.log(`updateSettings`);
 
 export type UpdateSettingsCommand = {
-  id: string;
+  cxId: string;
   webhookUrl?: string;
 };
 
 export const updateSettings = async ({
-  id,
+  cxId,
   webhookUrl,
 }: UpdateSettingsCommand): Promise<Settings> => {
-  const originalSettings = await getSettingsOrFail({ id });
-  const updateWebhook = getWebhookDataForUpdate(originalSettings, webhookUrl);
+  const originalSettings = await getSettingsOrFail({ id: cxId });
+  const updateWebhook = getWebhookDataForUpdate(originalSettings, cxId, webhookUrl);
   await Settings.update(
     {
       ...updateWebhook,
     },
-    { where: { id } }
+    { where: { id: cxId } }
   );
-  const updatedSettings = await getSettingsOrFail({ id });
+  const updatedSettings = await getSettingsOrFail({ id: cxId });
   return updatedSettings;
 };
 
@@ -51,6 +51,7 @@ export const updateWebhookStatus = async ({
 
 const getWebhookDataForUpdate = (
   settings: Settings,
+  cxId: string,
   newUrl?: string
 ): Pick<Settings, "webhookUrl" | "webhookKey"> => {
   const webhookData = {
