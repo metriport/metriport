@@ -1,9 +1,13 @@
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { PatientUpdater } from "../../../domain/patient/patient-updater";
 import { out } from "../../../util/log";
 import { CommonWellManagementAPI } from "../management/api";
 import { LinkPatients } from "../management/link-patients";
 import { CoverageEnhancementParams, CoverageEnhancer } from "./coverage-enhancer";
 import { getOrgChunksFromPos } from "./get-orgs";
+
+dayjs.extend(duration);
 
 /**
  * Implementation of the Enhanced Coverage flow with the logic running on local environment.
@@ -55,7 +59,9 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
         }
       }
     } finally {
-      log(`Patient linking time: ${Date.now() - startedAt} ms`);
+      const duration = Date.now() - startedAt;
+      const durationMin = dayjs.duration(duration).asMinutes();
+      log(`Patient linking time: ${duration} ms / ${durationMin} min`);
     }
   }
 }
