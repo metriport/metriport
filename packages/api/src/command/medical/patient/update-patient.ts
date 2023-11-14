@@ -5,7 +5,8 @@ import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
-export type PatientUpdateCmd = BaseUpdateCmdWithCustomer & PatientNoExternalData;
+export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
+  PatientNoExternalData & { externalId?: string };
 
 // TODO build unit test to validate the patient is being sent correctly to Sequelize
 // See: document-query.test.ts, "send a modified object to Sequelize"
@@ -30,5 +31,6 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
       address: sanitized.address,
       contact: sanitized.contact,
     },
+    externalId: sanitized.externalId,
   });
 };
