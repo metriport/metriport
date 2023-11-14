@@ -60,10 +60,11 @@ async function getPatientsWithStaleEC(cxIds: string[]): Promise<SimplifiedPatien
 function notifyStaleEC(patients: SimplifiedPatient[]): void {
   if (!patients || !patients.length) return;
 
+  const patientsByCx = groupBy(patients, "cxId");
   const msg = `Found patients with stale enhanced coverage`;
-  console.log(msg + ` - count: ${patients.length}`);
+  console.log(msg + ` - count: ${patients.length}: ${JSON.stringify(patientsByCx)}`);
   capture.message(msg, {
-    extra: { patientsByCx: groupBy(patients, "cxId") },
+    extra: { patientsByCx },
     level: "warning",
   });
 }

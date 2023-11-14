@@ -16,6 +16,7 @@ import { Patient, PatientExternalData } from "../../domain/medical/patient";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
+import { isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { autoUpgradeNetworkLinks } from "./link/shared";
@@ -108,7 +109,12 @@ export async function create(
     const orgOID = organization.oid;
     const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
 
-    const storeIds = getStoreIdsFn(patient.id, patient.cxId, "unlinked");
+    // Patients of cxs that not go through EC should have theis status undefined so they're not picked up later
+    // when we enable it
+    const cqLinkStatus = (await isEnhancedCoverageEnabledForCx(patient.cxId))
+      ? "unlinked"
+      : undefined;
+    const storeIds = getStoreIdsFn(patient.id, patient.cxId, cqLinkStatus);
 
     commonWell = makeCommonWellAPI(orgName, oid(orgOID));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
