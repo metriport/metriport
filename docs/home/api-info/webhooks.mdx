@@ -57,8 +57,10 @@ You can also compute an HMAC in python:
 
 import hmac
 import hashlib
-hmac_object = hmac.new(key, message, digestmod)
-return hmac_object.hexdigest()
+key = b'key'  # The key should be a byte string
+message = b'The quick brown fox jumps over the lazy dog'
+hmac_object = hmac.new(key, message, hashlib.sha256)
+print(hmac_object.hexdigest())
 
 ```
 
