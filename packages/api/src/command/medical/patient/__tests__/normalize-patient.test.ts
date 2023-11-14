@@ -1,5 +1,6 @@
 import { PatientData } from "../../../../domain/medical/patient";
 import { normalizePatientData } from "../normalize-patient";
+import { Address } from "../../../../domain/medical/address";
 
 describe("normalizePatientData", () => {
   // Should return the same patient data if no normalization is needed
@@ -14,7 +15,7 @@ describe("normalizePatientData", () => {
           addressLine1: "123 Elm St",
           city: "New York",
           zip: "10001",
-        },
+        } as Address,
       ],
       contact: [
         {
@@ -34,7 +35,7 @@ describe("normalizePatientData", () => {
           addressLine1: "123 elm st",
           city: "new york",
           zip: "10001",
-        },
+        } as Address,
       ],
       contact: [
         {
