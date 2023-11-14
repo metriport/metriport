@@ -10,7 +10,7 @@ import { completeEnhancedCoverage } from "./coverage-enhancement-complete";
 
 dayjs.extend(duration);
 
-const MAX_EC_DURATON = dayjs.duration({ minutes: 30 });
+const MAX_EC_DURATON = dayjs.duration({ minutes: 40 });
 
 /**
  * Check for patients that have been in processing for too long and force-complete their
@@ -60,10 +60,11 @@ async function getPatientsWithStaleEC(cxIds: string[]): Promise<SimplifiedPatien
 function notifyStaleEC(patients: SimplifiedPatient[]): void {
   if (!patients || !patients.length) return;
 
+  const patientsByCx = groupBy(patients, "cxId");
   const msg = `Found patients with stale enhanced coverage`;
-  console.log(msg + ` - count: ${patients.length}`);
+  console.log(msg + ` - count: ${patients.length}: ${JSON.stringify(patientsByCx)}`);
   capture.message(msg, {
-    extra: { patientsByCx: groupBy(patients, "cxId") },
+    extra: { patientsByCx },
     level: "warning",
   });
 }

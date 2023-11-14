@@ -22,7 +22,7 @@ how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 ### Passing Metadata
 
 You can pass metadata to the [start document query](/medical-api/api-reference/document/start-document-query) or [start consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-post),
-endpoints, and you will receive the meta.data field of the webhook request.
+endpoints, and you will receive the `meta.data` field of the webhook request.
 
 Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. You may use this to attach whatever metadata is relevant for your business use case, i.e. external ids.
 Below is an example payload you could send in the request body of one of those endpoints and how you would use the sdk:
