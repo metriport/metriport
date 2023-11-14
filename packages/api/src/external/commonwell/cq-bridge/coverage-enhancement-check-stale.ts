@@ -10,7 +10,7 @@ import { completeEnhancedCoverage } from "./coverage-enhancement-complete";
 
 dayjs.extend(duration);
 
-const MAX_EC_DURATON = dayjs.duration({ minutes: 30 });
+const MAX_EC_DURATON = dayjs.duration({ minutes: 40 });
 
 /**
  * Check for patients that have been in processing for too long and force-complete their
