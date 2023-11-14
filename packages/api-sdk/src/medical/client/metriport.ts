@@ -212,7 +212,6 @@ export class MetriportMedicalApi {
    *
    * @param patient The patient data to be updated.
    * @param facilityId The facility providing the NPI to support this operation.
-   * @param externalId Optional external ID to be associated with the patient.
    * @return The updated patient.
    */
   async updatePatient(patient: PatientUpdate, facilityId: string): Promise<PatientDTO> {
