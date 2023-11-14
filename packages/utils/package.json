@@ -26,6 +26,7 @@
     "@medplum/fhirtypes": "^2.0.32",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/core": "file:packages/core",
+    "@metriport/shared": "file:packages/shared",
     "@opensearch-project/opensearch": "^2.3.1",
     "@playwright/browser-chromium": "^1.39.0",
     "@playwright/browser-firefox": "^1.39.0",
