@@ -21,6 +21,7 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
         },
         externalId: {
           type: DataTypes.STRING,
+          allowNull: true,
         },
         data: {
           type: DataTypes.JSONB,

@@ -7,7 +7,7 @@ import { getFacilityOrFail } from "../facility/get-facility";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
 
-type Identifier = Pick<Patient, "cxId"> & { facilityId: string; externalId?: string };
+type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
