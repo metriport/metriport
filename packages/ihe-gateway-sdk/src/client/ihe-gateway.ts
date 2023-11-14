@@ -10,6 +10,7 @@ export class IHEGateway {
    * @param cxId The customer ID.
    * @param xcpdGateways The OIDs and XCPD ITI-55 urls of each organization to make a request to.
    * @param principalCareProviderIds The list of NPIs of the practitioners associated with the patient.
+   * @param requestId Optional. Unique id for the request. If not provided, one will be created.
    * @returns an XCPD request to be used with an IHE Gateway.
    */
   createXCPDRequest({
@@ -17,14 +18,16 @@ export class IHEGateway {
     cxId,
     xcpdGateways,
     principalCareProviderIds,
+    requestId,
   }: {
     patient: Patient;
     cxId: string;
     xcpdGateways: XCPDGateways;
     principalCareProviderIds?: string[];
+    requestId?: string;
   }): XCPDRequest {
     const xcpdRequest: XCPDRequest = {
-      id: uuidv4(),
+      id: requestId ?? uuidv4(),
       cxId,
       xcpdGateways: xcpdGatewaysSchema.parse(xcpdGateways),
       timestamp: new Date().toISOString(),

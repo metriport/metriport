@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.0",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -9,20 +9,12 @@
   "typings": "dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./client/*": "./dist/client/*.js",
-    "./models/*": "./dist/models/*.js",
     "./common/*": "./dist/common/*.js"
   },
   "typesVersions": {
     "*": {
       "/": [
         "dist/index.d.ts"
-      ],
-      "client/*": [
-        "dist/client/*"
-      ],
-      "models/*": [
-        "dist/models/*"
       ],
       "common/*": [
         "dist/common/*"
@@ -41,7 +33,7 @@
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
-    "directory": "packages/ihe-gateway-sdk"
+    "directory": "packages/shared"
   },
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
