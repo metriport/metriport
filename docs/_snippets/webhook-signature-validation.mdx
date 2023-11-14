@@ -1,0 +1,14 @@
+```typescript
+
+  const signature = req.headers["x-metriport-signature"];
+  const signatureAsString = // codeToValidateAndConvertToString(signature);
+  const metriportApi = new MetriportMedicalApi(apiKey, {
+    baseAddress: apiUrl,
+  });
+  if (metriportApi.verifyWebhookSignature(whKey, req.body, signatureAsString)) {
+    console.log(`Signature verified`);
+  } else {
+    console.log(`Signature verification failed`);
+  }
+
+```

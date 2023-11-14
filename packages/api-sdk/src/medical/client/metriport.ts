@@ -22,6 +22,7 @@ import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../mode
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import { PatientCreate, PatientUpdate, QueryStatus } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
+import crypto from "crypto";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
@@ -529,4 +530,24 @@ export class MetriportMedicalApi {
     const resp = await this.api.post(url, docRef);
     return resp.data;
   }
+
+  /**
+   * Verifies the signature of a webhook request.
+   * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
+   *
+   * @param wh_key - your webhook key
+   * @param cxId - your cxID.
+   * @param req.body - the body of the webhook request.
+   * @param signature - the signature obtained from the webhook request header.
+   *
+   * @returns True if the signature is verified, false otherwise
+   */
+  verifyWebhookSignature = (wh_key: string, reqBody: string, signature: string): boolean => {
+    const signatureAsString = String(signature);
+    const receivedHash = crypto
+      .createHmac("sha256", wh_key)
+      .update(JSON.stringify(reqBody))
+      .digest("hex");
+    return receivedHash === signatureAsString;
+  };
 }
