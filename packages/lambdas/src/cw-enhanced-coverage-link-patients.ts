@@ -16,13 +16,6 @@ import { getEnv, getEnvOrFail, isProduction } from "./shared/env";
 
 dayjs.extend(duration);
 
-// TODO 1195 Decide whether to keep this lambda and enable it or keep logic on API and remove this
-// TODO 1195 Decide whether to keep this lambda and enable it or keep logic on API and remove this
-// TODO 1195 Decide whether to keep this lambda and enable it or keep logic on API and remove this
-// TODO 1195 Decide whether to keep this lambda and enable it or keep logic on API and remove this
-// TODO 1195 Decide whether to keep this lambda and enable it or keep logic on API and remove this
-// TODO 1195 Decide whether to keep this lambda and enable it or keep logic on API and remove this
-
 // Keep this as early on the file as possible
 capture.init();
 
@@ -91,12 +84,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
     console.log(`Done.`);
   } finally {
-    console.log(`Total time: ${Date.now() - startedAt} ms`);
+    const duration = Date.now() - startedAt;
+    const durationMin = dayjs.duration(duration).asMinutes();
+    console.log(`Total time: ${duration} ms / ${durationMin} min`);
   }
 });
 
 async function completeEnhancedCoverage(cxId: string, patientIds: string[]): Promise<void> {
-  await axios.post(`${metriportBaseUrl}/enhance-coverage/completed`, {
+  await axios.post(`${metriportBaseUrl}/internal/patient/enhance-coverage/completed`, {
     cxId,
     patientIds,
     cqLinkStatus: "linked",
@@ -120,9 +115,13 @@ function recordToEntry(record: SQSRecord): Input {
   if (!cqOrgIds) throw new Error(`Missing cqOrgIds in body`);
   if (Array.isArray(cqOrgIds)) throw new Error(`Invalid cqOrgIds in body`);
 
+  const chunkIndex = body.chunkIndex ? Number(body.chunkIndex) : undefined;
+  const chunkTotal = body.chunkTotal ? Number(body.chunkTotal) : undefined;
+
   const done = body.done;
   if (done == undefined) throw new Error(`Missing 'done' in body`);
 
-  if (done) return { cxId, cxOrgOID, patientIds, done };
-  return { cxId, cxOrgOID, patientIds, cqOrgIds, done };
+  const basePayload = { cxId, cxOrgOID, patientIds, done, chunkIndex, chunkTotal };
+  if (done) return basePayload;
+  return { ...basePayload, cqOrgIds };
 }

@@ -22,21 +22,29 @@ export const completeEnhancedCoverage = async ({
   patientIds: string[];
   cqLinkStatus: CQLinkStatus;
 }): Promise<void> => {
+  const startedAt = Date.now();
   const { log } = out(`EC completer - cx ${cxId}`);
-  log(
-    `Completing EC for ${patientIds.length} patients, to status: ${cqLinkStatus}, and triggering doc queries`
-  );
+  try {
+    log(
+      `Completing EC for ${patientIds.length} patients, to status: ${cqLinkStatus}, ` +
+        `and triggering doc queries - patients: ${patientIds.join(", ")}`
+    );
 
-  // Promise that will be executed for each patient
-  const completeECForPatient = async (patientId: string): Promise<void> => {
-    const { patient, updated } = await setCQLinkStatus({ cxId, patientId, cqLinkStatus });
-    if (!updated) return; // if the status was already set don't do anything else
-    if (cqLinkStatus === "linked") await finishEnhancedCoverage(patient, log);
-  };
+    // Promise that will be executed for each patient
+    const completeECForPatient = async (patientId: string): Promise<void> => {
+      const { patient, updated } = await setCQLinkStatus({ cxId, patientId, cqLinkStatus });
+      if (!updated) return; // if the status was already set don't do anything else
+      if (cqLinkStatus === "linked") await finishEnhancedCoverage(patient, log);
+    };
 
-  await executeAsynchronously(patientIds, completeECForPatient, {
-    numberOfParallelExecutions: PARALLEL_UPDATES,
-  });
+    await executeAsynchronously(patientIds, completeECForPatient, {
+      numberOfParallelExecutions: PARALLEL_UPDATES,
+    });
+  } finally {
+    const duration = Date.now() - startedAt;
+    const durationMin = dayjs.duration(duration).asMinutes();
+    log(`Done, duration: ${duration} ms / ${durationMin} min`);
+  }
 };
 
 /**
@@ -49,17 +57,10 @@ async function finishEnhancedCoverage(patient: Patient, log = console.log): Prom
     throw new MetriportError(`Patient ${patient.id} has no facility`);
   }
 
-  const startedAt = Date.now();
-  try {
-    const triggerDocRefs = new TriggerAndQueryDocRefsLocal();
-    await triggerDocRefs.queryDocsForPatient({
-      cxId: patient.cxId,
-      patientId: patient.id,
-      triggerWHNotificationsToCx,
-    });
-  } finally {
-    const duration = Date.now() - startedAt;
-    const durationMin = dayjs.duration(duration).asMinutes();
-    log(`Done DQ, duration: ${duration} ms / ${durationMin} min`);
-  }
+  const triggerDocRefs = new TriggerAndQueryDocRefsLocal();
+  await triggerDocRefs.queryDocsForPatient({
+    cxId: patient.cxId,
+    patientId: patient.id,
+    triggerWHNotificationsToCx,
+  });
 }
