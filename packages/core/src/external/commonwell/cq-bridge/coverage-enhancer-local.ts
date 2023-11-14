@@ -32,19 +32,13 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
     try {
       const { total, chunks } = await getOrgChunksFromPos({ fromPos: fromOrgChunkPos });
 
-      log(
-        `# of patients: ${patientIds.length}, CQ orgs: ${total}, ` +
-          `total chunks (absolute): ${chunks.length + fromOrgChunkPos}, ` +
-          `chunks to process (relative): ${chunks.length}`
-      );
+      log(`CQ orgs: ${total}, chunks: ${chunks.length}/${chunks.length + fromOrgChunkPos}`);
+      log(`patients: ${patientIds.join(", ")}`);
 
       for (const [i, orgChunk] of chunks.entries()) {
         const orgIds = orgChunk.map(org => org.Id);
         log(`--------------------------------- Starting chunk ${i}/${chunks.length} (relative)`);
         try {
-          // log(
-          //   `==================> would be linking now, mimicking some delay... (${orgIds.length}, linkPatients ${this.linkPatients})`
-          // );
           await this.linkPatients.linkPatientsToOrgs({
             cxId,
             cxOrgOID: orgOID,

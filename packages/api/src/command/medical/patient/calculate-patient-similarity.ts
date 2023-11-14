@@ -1,5 +1,5 @@
-import { PatientData } from "../../../domain/medical/patient";
 import jaroWinkler from "jaro-winkler";
+import { PatientData } from "../../../domain/medical/patient";
 
 const SIMILARITY_THRESHOLD = 0.96;
 
@@ -75,6 +75,6 @@ export const calculatePatientSimilarity = (
 
   const totalScore = score / fieldCount;
   similarityScores["Total Score"] = [totalScore];
-  console.log(similarityScores);
+  console.log(`similarity score: ${JSON.stringify(similarityScores)}`);
   return totalScore;
 };
