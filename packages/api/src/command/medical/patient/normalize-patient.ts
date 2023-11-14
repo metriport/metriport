@@ -39,7 +39,16 @@ function handleDefaultValues(patient: PatientData): PatientData | null {
   return patient;
 }
 
-export const normalizePatientData = (patient: PatientData): PatientData | null => {
+/**
+ * The function `normalizePatientData` takes in patient data and normalizes it by splitting the first
+ * and last names, normalizing email and phone numbers, and formatting the address.
+ * @param {PatientData} patient - The `patient` parameter is an object that represents patient data. It
+ * has the following properties:
+ * @returns a normalized version of the patient data. If the patient data is valid, it will return the
+ * normalized patient data as an object of type `PatientData`. If the patient data is null, it will
+ * return null.
+ */
+export function normalizePatientData(patient: PatientData): PatientData | null {
   const normalizedPatient: PatientData = {
     ...patient,
     // TODO: Handle the possibility of multiple patient names. right now we are just selecting for the first patient name.
@@ -63,7 +72,7 @@ export const normalizePatientData = (patient: PatientData): PatientData | null =
     })),
   };
   return handleDefaultValues(normalizedPatient);
-};
+}
 
 /**
  * Normalizes an email address by removing leading and trailing spaces, converting all characters to lowercase,
