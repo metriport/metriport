@@ -32,7 +32,6 @@ import {
   getFrom,
   getFromParamsOrFail,
   getFromQueryOrFail,
-  getFromQuery,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
