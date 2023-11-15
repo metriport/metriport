@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/api-sdk": "file:packages/api-sdk",
+    "@metriport/api-sdk": "^7.6.1",
     "@metriport/core": "file:packages/core",
     "dotenv": "^16.0.3"
   },
