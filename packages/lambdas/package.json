@@ -27,7 +27,7 @@
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/api-sdk": "^7.2.3-alpha2.0",
+    "@metriport/api-sdk": "^7.7.0",
     "@metriport/commonwell-sdk": "^4.8.17",
     "@opensearch-project/opensearch": "^2.3.1",
     "@sentry/serverless": "^7.46.0",
