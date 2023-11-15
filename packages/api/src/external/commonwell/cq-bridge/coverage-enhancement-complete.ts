@@ -22,7 +22,7 @@ export const completeEnhancedCoverage = async ({
   patientIds: string[];
   cqLinkStatus: CQLinkStatus;
 }): Promise<void> => {
-  const { log } = out(`EC - MAIN - cx ${cxId}`);
+  const { log } = out(`EC completer - cx ${cxId}`);
   log(
     `Completing EC for ${patientIds.length} patients, to status: ${cqLinkStatus}, and triggering doc queries`
   );
@@ -48,10 +48,18 @@ async function finishEnhancedCoverage(patient: Patient, log = console.log): Prom
     log(`Patient ${patient.id} has no facility, skipping update...`);
     throw new MetriportError(`Patient ${patient.id} has no facility`);
   }
-  const triggerDocRefs = new TriggerAndQueryDocRefsLocal();
-  await triggerDocRefs.queryDocsForPatient({
-    cxId: patient.cxId,
-    patientId: patient.id,
-    triggerWHNotificationsToCx,
-  });
+
+  const startedAt = Date.now();
+  try {
+    const triggerDocRefs = new TriggerAndQueryDocRefsLocal();
+    await triggerDocRefs.queryDocsForPatient({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      triggerWHNotificationsToCx,
+    });
+  } finally {
+    const duration = Date.now() - startedAt;
+    const durationMin = dayjs.duration(duration).asMinutes();
+    log(`Done DQ, duration: ${duration} ms / ${durationMin} min`);
+  }
 }

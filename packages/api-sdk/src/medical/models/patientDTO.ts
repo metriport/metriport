@@ -9,6 +9,7 @@ export type PatientDTO = {
   genderAtBirth: "M" | "F";
   personalIdentifiers?: PersonalIdentifier[];
   facilityIds: string[];
+  externalId?: string;
   address: Address | Address[];
   contact?: Contact | Contact[];
 };

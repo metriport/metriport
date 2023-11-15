@@ -353,6 +353,7 @@ router.post(
       if (!cxIds.length) {
         cxIds.push(...(await getCxsWithEnhancedCoverageFeatureFlagValue()));
       }
+      log(`Using these cxIds: ${cxIds.join(", ")}`);
 
       const checkStaleEC = !fromOrgPos || fromOrgPos <= 0;
       if (checkStaleEC) await checkStaleEnhancedCoverage(cxIds);

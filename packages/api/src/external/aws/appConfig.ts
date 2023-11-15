@@ -34,3 +34,8 @@ export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<stri
   }
   return [];
 }
+
+export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithECEnabled = await getCxsWithEnhancedCoverageFeatureFlagValue();
+  return cxIdsWithECEnabled.some(i => i === cxId);
+}
