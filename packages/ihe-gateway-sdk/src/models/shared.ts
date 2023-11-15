@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { validateNPI } from "@metriport/shared/src/common/validate-npi";
+import { validateNPI } from "@metriport/shared";
 
 export const npiStringSchema = z
   .string()

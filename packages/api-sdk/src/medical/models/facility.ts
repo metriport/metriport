@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { addressSchema } from "./common/address";
 import { baseUpdateSchema } from "./common/base-update";
-import { validateNPI } from "@metriport/commonwell-sdk/common/validate-npi";
+import { validateNPI } from "@metriport/shared";
 
 export const facilityCreateSchema = z.object({
   name: z.string().min(1),
