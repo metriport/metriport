@@ -6,7 +6,16 @@
   "homepage": "https://metriport.com/",
   "license": "MIT",
   "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
+  "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
   "exports": {
     ".": "./dist/index.js",
     "./common/*": "./dist/common/*.js"
@@ -21,19 +30,13 @@
       ]
     }
   },
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "package.json"
-  ],
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
     "directory": "packages/shared"
+  },
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
   },
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
@@ -47,8 +50,5 @@
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
-  },
-  "bugs": {
-    "url": "https://github.com/metriport/metriport/issues"
   }
 }
