@@ -1,7 +1,6 @@
 import { intersectionWith, isEqual } from "lodash";
 import { PatientData, Patient } from "../../../domain/medical/patient";
 import jaroWinkler from "jaro-winkler";
-import { PatientData } from "../../../domain/medical/patient";
 
 // Define a type for the similarity function
 type SimilarityFunction = (
@@ -40,6 +39,34 @@ export const matchingPersonalIdentifiersRule = (
     demo.personalIdentifiers &&
     demo.personalIdentifiers.length > 0 &&
     intersectionWith(patient.personalIdentifiers, demo.personalIdentifiers, isEqual).length > 0
+  ) {
+    return true;
+  }
+  return false;
+};
+
+/**
+ * This function checks if the patient has any contact details (phone or email) that match the demo. The idea of this rule
+ * us that contact info is a very strong unique identifier if they do match, but doesn't necessarily mean that the patients
+ * don't match if they don't match.
+ * @param demo
+ * @param patient
+ * @returns true if the patient has any contact details that match the demo.
+ */
+export const matchingContactDetailsRule = (demo: PatientData, patient: PatientData): boolean => {
+  // Check for matching phone numbers
+  if (
+    demo.contact &&
+    demo.contact.length > 0 &&
+    intersectionWith(patient.contact, demo.contact, (a, b) => a.phone === b.phone).length > 0
+  ) {
+    return true;
+  }
+  // Check for matching emails
+  if (
+    demo.contact &&
+    demo.contact.length > 0 &&
+    intersectionWith(patient.contact, demo.contact, (a, b) => a.email === b.email).length > 0
   ) {
     return true;
   }

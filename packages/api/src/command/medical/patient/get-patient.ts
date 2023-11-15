@@ -71,8 +71,9 @@ export const getPatientByDemo = async ({
   cxId: string;
   demo: PatientData;
 }): Promise<Patient | null> => {
+  // TODO this normalization should not be rollled out until we do a migration to normalize all existing patients.
+  // A null normalizaed patient means that the patient demographics included default values.
   const normalizedPatientDemo = normalizePatientData(demo);
-  // this means that the patient demographics included default values.
   if (!normalizedPatientDemo) return null;
 
   // TODO this might be bad form to use PatientCreate for this. Also because
