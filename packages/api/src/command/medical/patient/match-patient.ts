@@ -9,6 +9,14 @@ type SimilarityFunction = (
   threshold: number
 ) => boolean;
 
+/**
+ * `matchPatients` filters patients based on a similarity function and a threshold.
+ * @param {SimilarityFunction} similarityFunction - Determines if a patient is a match.
+ * @param {Patient[]} patients - Array of patients.
+ * @param {PatientData} demo - Patient data to find matches for.
+ * @param {number} threshold - Minimum similarity score for a match.
+ * @returns matched patients.
+ */
 export const matchPatients = (
   similarityFunction: SimilarityFunction,
   patients: Patient[],
