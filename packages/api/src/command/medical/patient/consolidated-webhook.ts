@@ -19,6 +19,7 @@ export type ConsolidatedWebhookStatus = (typeof consolidatedWebhookStatus)[numbe
 type Filters = Record<string, string | undefined>;
 type PayloadPatient = {
   patientId: string;
+  externalId?: string;
   status: ConsolidatedWebhookStatus;
   bundle?: Bundle<Resource>;
   filters?: Filters;
@@ -43,13 +44,13 @@ export const processConsolidatedDataWebhook = async ({
   bundle,
   filters,
 }: {
-  patient: Pick<Patient, "id" | "cxId">;
+  patient: Pick<Patient, "id" | "cxId" | "externalId">;
   status: ConsolidatedWebhookStatus;
   bundle?: Bundle<Resource>;
   filters?: Filters;
 }): Promise<void> => {
   const apiType = Product.medical;
-  const { id: patientId, cxId } = patient;
+  const { id: patientId, cxId, externalId } = patient;
   try {
     const [settings, currentPatient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
@@ -58,7 +59,15 @@ export const processConsolidatedDataWebhook = async ({
 
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
-      patients: [{ patientId, status, bundle, filters }],
+      patients: [
+        {
+          patientId,
+          ...(externalId ? { externalId } : {}),
+          status,
+          bundle,
+          filters,
+        },
+      ],
     };
 
     // send it to the customer and update the WH request status

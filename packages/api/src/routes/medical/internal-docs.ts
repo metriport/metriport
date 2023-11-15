@@ -305,6 +305,27 @@ router.post(
   })
 );
 
+/** ---------------------------------------------------------------------------
+ * GET /internal/docs/query
+ *
+ * Returns the document query status for the specified patient.
+ *
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId Patient ID for which to retrieve document query status.
+ * @return The status of document querying across HIEs.
+ */
+router.get(
+  "/query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getUUIDFrom("query", req, "patientId").orFail();
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    return res.status(httpStatus.OK).json({
+      documentQueryProgress: patient.data.documentQueryProgress,
+    });
+  })
+);
+
 /**
  * POST /internal/docs/query
  *

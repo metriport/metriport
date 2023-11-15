@@ -2,10 +2,10 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
 import { MetriportMedicalApi, PatientCreate, PatientDTO } from "@metriport/api-sdk";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as AWS from "aws-sdk";
 import axios from "axios";
 import { seedData } from "../../../api/src/shared/sandbox/sandbox-seed-data";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { uuidv7 } from "../shared/uuid-v7";
 
 export type Doc = {
@@ -45,11 +45,11 @@ async function main() {
       ...v.demographics,
       address: v.demographics.address.map(a => ({
         ...a,
-        addressLine1: a.addressLine1 ?? "",
+        addressLine1: a.addressLine1,
         addressLine2: a.addressLine2 ?? "",
-        city: a.city ?? "",
-        state: a.state ?? "",
-        zip: a.zip ?? "",
+        city: a.city,
+        state: a.state,
+        zip: a.zip,
         country: "USA",
       })),
     };

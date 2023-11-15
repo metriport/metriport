@@ -8,7 +8,8 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-import { getConfig, METRICS_NAMESPACE } from "../shared/config";
+import { EnvType } from "../env-type";
+import { METRICS_NAMESPACE, getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import OpenSearchConstruct, { OpenSearchConstructProps } from "../shared/open-search-construct";
@@ -58,7 +59,7 @@ export function settings(): {
     },
     connectorName: "CCDAOpenSearch",
     lambda: {
-      memory: 512,
+      memory: isLarge ? 1024 : 512,
       // Number of messages the lambda pull from SQS at once
       batchSize: 1,
       // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
@@ -83,6 +84,7 @@ export function setup({
   vpc,
   ccdaS3Bucket,
   lambdaLayers,
+  envType,
   alarmSnsAction,
 }: {
   stack: Construct;
@@ -90,6 +92,7 @@ export function setup({
   vpc: IVpc;
   ccdaS3Bucket: s3.IBucket;
   lambdaLayers: LambdaLayers;
+  envType: EnvType;
   alarmSnsAction?: SnsAction;
 }): {
   queue: IQueue;
@@ -124,6 +127,7 @@ export function setup({
     visibilityTimeout,
     maxReceiveCount,
     lambdaLayers: [lambdaLayers.shared],
+    envType,
     alarmSnsAction,
   });
 
@@ -138,9 +142,9 @@ export function setup({
     entry: "sqs-to-opensearch-xml",
     layers: [lambdaLayers.shared],
     memory,
+    envType: config.environmentType,
     envVars: {
       METRICS_NAMESPACE,
-      ENV_TYPE: config.environmentType,
       DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       QUEUE_URL: queue.queueUrl,

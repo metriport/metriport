@@ -227,8 +227,9 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
         ${createMRHeader(patient, isAWEinPastYear)}
         <div class="divider"></div>
         <div id="mr-sections">
-          ${createDiagnosticReportsSection(encounters, diagnosticReports, practitioners, aweVisits)}
+          ${createAWESection(encounters, diagnosticReports, practitioners, aweVisits)}
           ${createMedicationSection(medications)}
+          ${createDiagnosticReportsSection(encounters, diagnosticReports, practitioners, aweVisits)}
           ${createConditionSection(conditions)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
@@ -499,7 +500,7 @@ type EncounterSection = {
   };
 };
 
-function createDiagnosticReportsSection(
+function createAWESection(
   encounters: Encounter[],
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
@@ -520,10 +521,7 @@ function createDiagnosticReportsSection(
 
   const AWEreports = buildReports(encounterSections, mappedPractitioners, aweVisits, true);
 
-  const nonAWEreports = buildReports(encounterSections, mappedPractitioners, aweVisits, false);
-
   const hasAWEreports = AWEreports.length > 0;
-  const hasNonAWEreports = nonAWEreports.length > 0;
 
   return `
     <div id="awe" class="section">
@@ -539,6 +537,33 @@ function createDiagnosticReportsSection(
         }
       </div>
     </div>
+  `;
+}
+
+function createDiagnosticReportsSection(
+  encounters: Encounter[],
+  diagnosticReports: DiagnosticReport[],
+  practitioners: Practitioner[],
+  aweVisits: Condition[]
+) {
+  const mappedEncounters = mapResourceToId<Encounter>(encounters);
+  const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
+
+  if (!diagnosticReports) {
+    return "";
+  }
+
+  const encounterSections: EncounterSection = buildEncounterSections(
+    {},
+    mappedEncounters,
+    diagnosticReports
+  );
+
+  const nonAWEreports = buildReports(encounterSections, mappedPractitioners, aweVisits, false);
+
+  const hasNonAWEreports = nonAWEreports.length > 0;
+
+  return `
     <div id="reports" class="section">
       <div class="section-title">
         <h3 id="reports" title="reports">&#x276F; Reports</h3>

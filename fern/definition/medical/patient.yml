@@ -1,0 +1,220 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+imports:
+  commons: ../commons.yml
+
+service:
+  base-path: /medical/v1/patient
+  auth: true
+  endpoints:
+    create:
+      display-name: Create Patient
+      docs: |
+        Creates a Patient in Metriport for the specified Facility where the patient is receiving care.
+        The more demographic info you can provide about a Patient, 
+        the higher chances Metriport will be able to find a match. 
+        For example, nicknames, old addresses, multiple phone numbers, 
+        a pre-marital last name, etc.
+      method: POST
+      path: ""
+      request:
+        name: PatientCreate
+        query-parameters:
+          facilityId:
+            type: string
+            docs: The ID of the Facility where the Patient is receiving care.
+        body: BasePatient
+      response: Patient
+      examples:
+        - query-parameters:
+            facilityId: $FacilityId.Example1
+          request:
+            firstName: Karen
+            lastName: Lynch
+            dob: 1963-12-30
+            genderAtBirth: F
+            personalIdentifiers:
+              - $PersonalIdentifier.Example1
+          response:
+            body: $Patient.Example1
+
+    get:
+      display-name: Get Patient
+      docs: Get a Patient
+      method: GET
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient.
+      response: Patient
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "2.16.840.1.113883.3.666.777"
+          response:
+            body: $Patient.Example1
+
+    update:
+      display-name: Update Patient
+      docs: Updates the specified Patient.
+      method: PUT
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient to update.
+      request:
+        name: PatientUpdate
+        query-parameters:
+          facilityId:
+            type: string
+            docs: The ID of the Facility where the patient is receiving care.
+        body: BasePatient
+      response: Patient
+
+    list:
+      display-name: List Patients at Facility
+      docs: Lists all Patients receiving care at the specified Facility.
+      method: GET
+      path: ""
+      request:
+        name: PatientList
+        query-parameters:
+          facilityId:
+            type: optional<string>
+            docs: The ID of the Facility where the patient is receiving care.
+      response: ListPatientsResponse
+
+    delete:
+      display-name: Delete Patient
+      docs: Removes the specified Patient.
+      method: DELETE
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient to delete.
+      request:
+        name: PatientDelete
+        query-parameters:
+          facilityId:
+            type: optional<string>
+            docs: The ID of the Facility where the patient is receiving care.
+
+types:
+  Addresses:
+    discriminated: false
+    union:
+      - commons.Address
+      - list<commons.Address>
+
+  Contacts:
+    discriminated: false
+    union:
+      - Contact
+
+  PersonalIdentifier:
+    union:
+      driversLicense: DriversLicense
+    examples:
+      - name: Example1
+        value:
+          type: driversLicense
+          state: CA
+          value: "51227265"
+
+  DriversLicense:
+    properties:
+      state:
+        type: commons.USState
+        docs: The 2 letter state acronym where this ID was issued, for example `CA`.
+      value:
+        type: string
+        docs: The ID number.
+      assigner: optional<string>
+      period: optional<Period>
+
+  Period:
+    properties:
+      start: optional<string>
+      end: optional<string>
+
+  Contact:
+    properties:
+      phone:
+        type: optional<string>
+        docs: The Patient's 10 digit phone number, formatted `1234567899`.
+      email:
+        type: optional<string>
+        docs: The Patient's email address.
+      facilityIds:
+        type: list<FacilityId>
+        docs: Array of the IDs of the Facilities where the Patient is receiving care.
+    examples:
+      - name: Example1
+        value:
+          phone: "1234567899"
+          email: karen@cvspharmacy.com
+          facilityIds:
+            - $FacilityId.Example1
+            - $FacilityId.Example2
+
+  FacilityId:
+    type: string
+    examples:
+      - name: Example1
+        value: "2.16.840.1.113883.3.666.5.2004.4.2005"
+      - name: Example2
+        value: "2.16.840.1.113883.3.666.123"
+
+  BasePatient:
+    properties:
+      firstName:
+        type: string
+        docs: |
+          The Patient's first name(s). 
+          You may provide a comma/space delimited string to specify 
+          multiple first and last names. For example, the following inputs 
+          would be equivalent: "John,Jonathan" & "John Jonathan"
+      lastName:
+        type: string
+        docs: The Patient's last name(s).
+      dob:
+        type: string
+        docs: The Patient's date of birth (DOB), formatted `YYYY-MM-DD` as per ISO 8601.
+      genderAtBirth:
+        type: string
+        docs: The Patient's gender at birth, can be one of `M` or `F`.
+      personalIdentifiers:
+        type: optional<list<PersonalIdentifier>>
+        docs: |
+          An array of the Patient's personal IDs, such as a driver's license. 
+          May be empty.
+      address:
+        type: optional<Addresses>
+      contact:
+        type: optional<Contacts>
+
+  Patient:
+    extends: BasePatient
+    properties:
+      id:
+        type: string
+        docs: | 
+          The ID assigned to this Patient. This ID will be used to uniquely 
+          identify this Patient in medical documents.
+    examples:
+      - name: Example1
+        value:
+          id: "2.16.840.1.113883.3.666.777"
+          firstName: Karen
+          lastName: Lynch
+          dob: 1963-12-30
+          genderAtBirth: F
+          personalIdentifiers:
+            - $PersonalIdentifier.Example1
+
+  ListPatientsResponse:
+    properties:
+      patients: list<Patient>

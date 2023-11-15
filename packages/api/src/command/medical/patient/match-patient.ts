@@ -1,6 +1,7 @@
 import { intersectionWith, isEqual } from "lodash";
 import { PatientData, Patient } from "../../../domain/medical/patient";
 import jaroWinkler from "jaro-winkler";
+import { PatientData } from "../../../domain/medical/patient";
 
 // Define a type for the similarity function
 type SimilarityFunction = (

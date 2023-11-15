@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+
+types:
+  Address:
+    properties:
+      addressLine1:
+        type: string
+        docs: The address.
+      addressLine2:
+        type: optional<string>
+        docs: The address details, for example `#4451`
+      city:
+        type: string
+        docs: The city.
+      state:
+        type: USState
+        docs: The 2 letter state acronym, for example `CA`
+      zip:
+        type: string
+        docs: Zip must be a string consisting of 5 numbers.
+      country:
+        type: string
+        docs: Defaults to “USA”
+    examples:
+      - name: Example1
+        value:
+          addressLine1: 2261 Market Street
+          addressLine2: "#4818"
+          city: San Francisco
+          state: CA
+          zip: "94114"
+          country: USA
+
+  USState:
+    enum:
+      - AL
+      - AK
+      - AZ
+      - AR
+      - CA
+      - CO
+      - CT
+      - DE
+      - DC
+      - FL
+      - GA
+      - HI
+      - ID
+      - IL
+      - IN
+      - IA
+      - KS
+      - KY
+      - LA
+      - ME
+      - MD
+      - MA
+      - MI
+      - MN
+      - MS
+      - MO
+      - MT
+      - NE
+      - NV
+      - NH
+      - NJ
+      - NM
+      - NY
+      - NC
+      - ND
+      - OH
+      - OK
+      - OR
+      - PA
+      - RI
+      - SC
+      - SD
+      - TN
+      - TX
+      - UT
+      - VT
+      - VA
+      - WA
+      - WV
+      - WI
+      - WY

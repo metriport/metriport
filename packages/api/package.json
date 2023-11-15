@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.9.0-alpha.0",
+  "version": "1.9.1",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -69,7 +69,6 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
-    "@ngneat/falso": "^6.4.0",
     "@tsconfig/node18": "^1.0.1",
     "@types/convert-units": "^2.3.5",
     "@types/cors": "^2.8.12",

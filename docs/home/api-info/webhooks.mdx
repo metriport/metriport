@@ -1,3 +1,4 @@
+
 ---
 title: "Webhooks"
 description: "Receive data as soon as it becomes available."
@@ -38,13 +39,29 @@ different messages when they become available - specifically:
 
 ## Authentication
 
-When Metriport sends a webhook event, it includes an `x-metriport-signature` header. 
+When Metriport sends a webhook message, it includes an `x-metriport-signature` header. 
 
-- `x-metriport-signature`: This is a [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA256 hash computed using your webhook key and the body of the webhook event.
+- `x-metriport-signature`: This is an [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA-256 hash computed using your webhook key and the body of the webhook message.
 
-You can use this header to verify that the webhook events sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
+At a high level, an HMAC works by taking a secret key and a message, and performing iterative hashes of the two to create 
+a signature. That signature is compared against the signature in the header for equality. If the signatures are equal, you can trust the webhook 
+payload is authentic and has not been tampered with. If they aren't equal, you should throw it awasy. 
+
+You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
 
 <Snippet file="webhook-signature-validation.mdx" />
+
+The important thing is to make sure you use a trusted cryptography library in whatever language you choose to validate the webhook message in. 
+You can also compute an HMAC in python:
+
+```python
+
+import hmac
+import hashlib
+hmac_object = hmac.new(key, message, digestmod)
+return hmac_object.hexdigest()
+
+```
 
 <Warning>
 The previous method of authenticating webhooks, comparing your webhook key with the `x-webhook-key` in each request's HTTP header, is being deprecated on **December 9th, 2023**. 

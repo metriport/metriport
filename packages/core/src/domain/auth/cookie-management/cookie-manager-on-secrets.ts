@@ -14,26 +14,34 @@ export class CookieManagerOnSecrets extends CookieManager {
    * Get Cookies from AWS SecretManager
    */
   async getCookies(): Promise<Cookie[]> {
-    const appSecret = await this.secretManager
-      .getSecretValue({ SecretId: this.secretArn })
-      .promise();
-    const secretAsString = appSecret.SecretString;
-    if (!secretAsString) {
-      throw new MetriportError(`Secret is empty`, undefined, { secretArn: this.secretArn });
+    try {
+      const appSecret = await this.secretManager
+        .getSecretValue({ SecretId: this.secretArn })
+        .promise();
+      const secretAsString = appSecret.SecretString;
+      if (!secretAsString) {
+        throw new MetriportError(`Secret is empty`, undefined, { secretArn: this.secretArn });
+      }
+      const cookies = JSON.parse(secretAsString) as Cookie[];
+      return cookies;
+    } catch (error) {
+      throw new MetriportError(`Error reading cookies/secrets`, error);
     }
-    const cookies = JSON.parse(secretAsString) as Cookie[];
-    return cookies;
   }
 
   /**
    * Store Cookies on AWS SecretManager
    */
   async updateCookies(cookies: Cookie[]): Promise<Cookie[]> {
-    if (!cookies) return [];
-    const cookiesAsString = JSON.stringify(cookies);
-    await this.secretManager
-      .updateSecret({ SecretId: this.secretArn, SecretString: cookiesAsString })
-      .promise();
-    return cookies;
+    try {
+      if (!cookies) return [];
+      const cookiesAsString = JSON.stringify(cookies);
+      await this.secretManager
+        .updateSecret({ SecretId: this.secretArn, SecretString: cookiesAsString })
+        .promise();
+      return cookies;
+    } catch (error) {
+      throw new MetriportError(`Error updating cookies/secrets`, error);
+    }
   }
 }

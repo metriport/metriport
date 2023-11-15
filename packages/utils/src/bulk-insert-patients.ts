@@ -64,6 +64,7 @@ async function main() {
       console.log(`Loaded ${results.length} patients from the CSV file.`);
       if (dryRun) {
         console.log("Dry run, not inserting patients.");
+        console.log(`List of patients: ${JSON.stringify(results, null, 2)}`);
         console.log("Done.");
         return;
       }
@@ -103,7 +104,8 @@ function toTitleCase(str: string): string {
     .trim();
 }
 
-function normalizeGender(gender: string): "M" | "F" {
+function normalizeGender(gender: string | undefined): "M" | "F" {
+  if (gender == undefined) throw new Error(`Missing gender`);
   const lowerGender = gender.toLowerCase().trim();
   if (lowerGender === "male" || lowerGender === "m") {
     return "M";
@@ -113,13 +115,17 @@ function normalizeGender(gender: string): "M" | "F" {
   throw new Error(`Invalid gender ${gender}`);
 }
 
-function normalizeName(name: string): string {
+function normalizeName(name: string | undefined, propName: string): string {
+  if (name == undefined) throw new Error(`Missing ` + propName);
   return toTitleCase(name);
 }
 
 const phoneRegex = /^\+?1?\d{10}$/;
-function normalizePhone(phone: string): string {
+
+function normalizePhone(phone: string | undefined): string | undefined {
+  if (phone == undefined) return undefined;
   const trimmedPhone = phone.trim();
+  if (trimmedPhone.length === 0) return undefined;
   if (trimmedPhone.match(phoneRegex)) {
     // removes leading country code +1
     return trimmedPhone.slice(-10);
@@ -127,23 +133,30 @@ function normalizePhone(phone: string): string {
   throw new Error(`Invalid phone ${phone}`);
 }
 
-function normalizeAddressLine(addressLine: string): string {
+function normalizeAddressLine(addressLine: string | undefined, propName: string): string {
+  if (addressLine == undefined) throw new Error(`Missing ` + propName);
   return toTitleCase(addressLine);
 }
 
-function normalizeCity(city: string): string {
+function normalizeCity(city: string | undefined): string {
+  if (city == undefined) throw new Error(`Missing city`);
   return toTitleCase(city);
 }
 
-function normalizeEmail(email: string): string {
-  return email.toLowerCase().trim();
+function normalizeEmail(email: string | undefined): string | undefined {
+  if (email == undefined) return undefined;
+  const trimmedEmail = email.trim();
+  if (trimmedEmail.length === 0) return undefined;
+  return trimmedEmail.toLowerCase();
 }
 
-function normalizeZip(zip: string): string {
+function normalizeZip(zip: string | undefined): string {
+  if (zip == undefined) throw new Error(`Missing zip`);
   return zip.trim();
 }
 
-function normalizeDate(date: string): string {
+function normalizeDate(date: string | undefined): string {
+  if (date == undefined) throw new Error(`Missing dob`);
   const trimmedDate = date.trim();
   if (!dayjs(trimmedDate, "YYYY-MM-DD", true).isValid()) {
     throw new Error(`Invalid date ${date}`);
@@ -151,44 +164,64 @@ function normalizeDate(date: string): string {
   return trimmedDate;
 }
 
-function normalizeState(state: string): USState | string {
+function normalizeState(state: string | undefined): USState {
+  if (state == undefined) throw new Error(`Missing state`);
   if (Object.values(states).includes(USState[state as keyof typeof USState])) {
     return USState[state as keyof typeof USState];
   } else if (states[state]) {
     return states[state];
   } else if (state === "DC") {
-    return state;
+    return USState.DC;
   }
   throw new Error(`Invalid state ${state}`);
 }
 
 const mapCSVPatientToMetriportPatient = (csvPatient: {
-  firstname: string;
-  lastname: string;
-  dob: string;
-  gender: string;
-  zip: string;
-  city: string;
-  state: string;
-  address1: string;
-  address2: string;
-  phone: string;
-  email: string;
+  firstname: string | undefined;
+  lastname: string | undefined;
+  dob: string | undefined;
+  gender: string | undefined;
+  zip: string | undefined;
+  city: string | undefined;
+  state: string | undefined;
+  address1: string | undefined;
+  addressLine1: string | undefined;
+  address2: string | undefined;
+  addressLine2: string | undefined;
+  phone: string | undefined;
+  phone1: string | undefined;
+  phone2: string | undefined;
+  email: string | undefined;
+  email1: string | undefined;
+  email2: string | undefined;
 }): PatientCreate | undefined => {
+  const phone1 = normalizePhone(csvPatient.phone ?? csvPatient.phone1);
+  const email1 = normalizeEmail(csvPatient.email ?? csvPatient.email1);
+  const phone2 = normalizePhone(csvPatient.phone2);
+  const email2 = normalizeEmail(csvPatient.email2);
+  const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
+  const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
+  const contact = [contact1, contact2].flatMap(c => c ?? []);
   return {
-    firstName: normalizeName(csvPatient.firstname),
-    lastName: normalizeName(csvPatient.lastname),
+    firstName: normalizeName(csvPatient.firstname, "firstname"),
+    lastName: normalizeName(csvPatient.lastname, "lastname"),
     dob: normalizeDate(csvPatient.dob),
     genderAtBirth: normalizeGender(csvPatient.gender),
     address: {
-      addressLine1: normalizeAddressLine(csvPatient.address1),
-      addressLine2: normalizeAddressLine(csvPatient.address2),
+      addressLine1: normalizeAddressLine(
+        csvPatient.address1 ?? csvPatient.addressLine1,
+        "address1 | addressLine1"
+      ),
+      addressLine2: normalizeAddressLine(
+        csvPatient.address2 ?? csvPatient.addressLine2,
+        "address2 | addressLine2"
+      ),
       city: normalizeCity(csvPatient.city),
       state: normalizeState(csvPatient.state),
       zip: normalizeZip(csvPatient.zip),
       country: "USA",
     },
-    contact: { phone: normalizePhone(csvPatient.phone), email: normalizeEmail(csvPatient.email) },
+    contact,
   };
 };
 

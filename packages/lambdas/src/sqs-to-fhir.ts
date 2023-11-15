@@ -7,7 +7,7 @@ import { SQSEvent } from "aws-lambda";
 import fetch from "node-fetch";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
-import { getEnvOrFail } from "./shared/env";
+import { getEnvOrFail, isSandbox } from "./shared/env";
 import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
@@ -22,7 +22,6 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
-const envType = getEnvOrFail("ENV_TYPE");
 const apiURL = getEnvOrFail("API_URL");
 const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
 const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
@@ -32,7 +31,6 @@ const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const maxRetries = 10;
-const isSandbox = envType === "sandbox";
 
 const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
 const s3Utils = new S3Utils(region);
@@ -122,7 +120,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
         log(`Converting payload to JSON, length ${payloadRaw.length}`);
         let payload: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-        if (isSandbox) {
+        if (isSandbox()) {
           const idsReplaced = replaceIds(payloadRaw);
           log(`IDs replaced, length: ${idsReplaced.length}`);
           const placeholderUpdated = idsReplaced.replace(placeholderReplaceRegex, patientId);
