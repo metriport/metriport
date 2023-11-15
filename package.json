@@ -33,6 +33,7 @@
     "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
   },
   "workspaces": [
+    "packages/shared",
     "packages/commonwell-sdk",
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
@@ -43,7 +44,6 @@
     "packages/api",
     "packages/connect-widget",
     "packages/infra",
-    "packages/shared",
     "packages/utils",
     "packages/tester-node"
   ],
