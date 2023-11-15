@@ -21,10 +21,10 @@ how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 
 ### Passing Metadata
 
-You can pass metadata to the [start document query](/medical-api/api-reference/document/start-document-query) or [start consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-post), 
-endpoints, and you will receive the `meta.data` field of the webhook request. 
+You can pass metadata to the [start document query](/medical-api/api-reference/document/start-document-query) or [start consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-post),
+endpoints, and you will receive the `meta.data` field of the webhook request.
 
-Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. You may use this to attach whatever metadata is relevant for your business use case, i.e. external ids. 
+Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. You may use this to attach whatever metadata is relevant for your use-case - for example, external IDs.
 Below is an example payload you could send in the request body of one of those endpoints and how you would use the sdk:
 
 <Snippet file="webhook-metadata-post-example.mdx" />
@@ -60,6 +60,7 @@ These are messages you can expect to receive in the following scenarios:
   "patients": [
     {
       "patientId": "<patient-id-1>",
+      "externalId": "<external-id-1>",
       "type": "document-download",
       "status": "completed",
       "documents": [
@@ -180,6 +181,7 @@ Example payload:
   "patients": [
     {
       "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "externalId": "1234567890",
       "status": "completed",
       "filters": {
         "resources": "DocumentReference,Appointment"
@@ -323,6 +325,7 @@ Example payload:
   "patients": [
     {
       "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "externalId": "1234567890",
       "status": "completed",
       "filters": {
         "resources": "DocumentReference,Appointment"

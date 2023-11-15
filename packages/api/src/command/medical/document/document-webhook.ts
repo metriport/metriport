@@ -20,7 +20,10 @@ type WebhookDocumentDataPayload = {
   documents?: DocumentReferenceDTO[];
   status: MAPIWebhookStatus;
 };
-type WebhookPatientPayload = { patientId: string } & WebhookDocumentDataPayload;
+type WebhookPatientPayload = {
+  patientId: string;
+  externalId?: string;
+} & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
   meta: WebhookMetadataPayload;
   patients: WebhookPatientPayload[];
@@ -50,7 +53,14 @@ export const processPatientDocumentRequest = async (
 
     // create a representation of this request and store on the DB
     const payload: WebhookPatientDataPayloadWithoutMessageId = {
-      patients: [{ patientId, documents, status }],
+      patients: [
+        {
+          patientId,
+          ...(patient.externalId ? { externalId: patient.externalId } : {}),
+          documents,
+          status,
+        },
+      ],
     };
     // send it to the customer and update the request status
     if (!isWebhookDisabled(patient.data.cxDocumentRequestMetadata)) {
