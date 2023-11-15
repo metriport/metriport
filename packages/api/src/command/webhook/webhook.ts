@@ -1,7 +1,9 @@
 import { webhookDisableFlagName } from "@metriport/core/domain/webhook/index";
 import Axios from "axios";
+import crypto from "crypto";
 import dayjs from "dayjs";
 import { nanoid } from "nanoid";
+import { v4 as uuidv4 } from "uuid";
 import { Product } from "../../domain/product";
 import WebhookError from "../../errors/webhook";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
@@ -13,8 +15,6 @@ import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { isDAPIWebhookRequest } from "./devices-util";
 import { updateWebhookRequestStatus } from "./webhook-request";
-import { v4 as uuidv4 } from "uuid";
-import crypto from "crypto";
 
 const DEFAULT_TIMEOUT_SEND_PAYLOAD_MS = 5_000;
 const DEFAULT_TIMEOUT_SEND_TEST_MS = 2_000;
@@ -134,17 +134,9 @@ export const processRequest = async (
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.log(`Failed to process WH request: ${errorToString(error)}`);
-    capture.error(error, {
-      extra: {
-        webhookRequestId: webhookRequest.id,
-        webhookUrl,
-        context: `webhook.processRequest`,
-        error,
-      },
-    });
     const status = "failure";
     try {
-      // mark this request as failed on the DB
+      // mark this individual WH request as failed
       await updateWebhookRequestStatus({
         id: webhookRequest.id,
         status,
@@ -169,7 +161,7 @@ export const processRequest = async (
       webhookStatusDetail = `Internal error: ${error.message}`;
     }
     try {
-      // update the status of this webhook on the DB
+      // update the status of the webhook endpoint on the cx's settings table
       await updateWebhookStatus({
         id: settings.id,
         webhookEnabled: false,
