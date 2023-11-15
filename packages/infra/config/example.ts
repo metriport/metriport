@@ -41,6 +41,10 @@ export const config: EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
+  cqSecretNames: {
+    CQ_ORG_STAGING_CERTIFICATE: "CQ_ORG_STAGING_CERTIFICATE",
+    CQ_STAGING_PRIVATE_KEY: "CQ_STAGING_PRIVATE_KEY",
+  },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
     region: "us-east-1",

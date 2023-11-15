@@ -15,7 +15,7 @@ interface IHEStackProps extends StackProps {
   vpc: ec2.IVpc;
   alarmAction: SnsAction | undefined;
   lambdaLayers: LambdaLayers;
-  certificate: cert.DnsValidatedCertificate;
+  certificate: cert.PrivateCertificate;
   publicZone: r53.IHostedZone;
 }
 

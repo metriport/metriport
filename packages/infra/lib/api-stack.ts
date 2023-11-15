@@ -1,6 +1,7 @@
 import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
+import * as acmpca from "aws-cdk-lib/aws-acmpca";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
@@ -91,6 +92,14 @@ export class APIStack extends Stack {
       subjectAlternativeNames: [`*.${props.config.domain}`],
     });
 
+    const iheCertificate = new cert.PrivateCertificate(this, "IHECert", {
+      domainName: `${props.config.iheSubdomain}.${props.config.domain}`,
+      certificateAuthority: acmpca.CertificateAuthority.fromCertificateAuthorityArn(
+        this,
+        "CA",
+        "<insert-cert-here>"
+      ), // arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/023077d8-2bfa-4eb0-8f22-05c96deade77'),
+    });
     // add error alarming to CDK-generated lambdas
     const certificateRequestorLambda = certificate.node.findChild(
       "CertificateRequestorFunction"
@@ -691,7 +700,7 @@ export class APIStack extends Stack {
         vpc: this.vpc,
         alarmAction: slackNotification?.alarmAction,
         lambdaLayers,
-        certificate,
+        certificate: iheCertificate,
         publicZone,
       });
     }
