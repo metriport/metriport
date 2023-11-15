@@ -1,17 +1,21 @@
 import { PatientData, splitName } from "../../../domain/medical/patient";
 
-function normalizeString(str: string): string {
-  return str.toLowerCase().replace(/['-]/g, "");
-}
-
 // Define default values for each field
 const defaultValues = {
-  firstName: "John",
-  lastName: "Doe",
-  address: [{ addressLine1: "123 Main Street", city: "anytown", zip: "00000" }],
-  contact: [{ email: "example@example.com", phone: "000-000-0000" }],
+  firstName: "john",
+  lastName: "doe",
+  address: [{ addressLine1: "123 main street", city: "anytown", zip: "00000" }],
+  contact: [{ email: "example@example.com", phone: "0000000000" }],
 };
 
+/**
+ * The function checks if a patient's address or name matches the default values and returns null if
+ * they do, otherwise it updates the patient's contact information and returns the modified patient
+ * object.
+ * @param {PatientData} patient - The `patient` parameter is an object of type `PatientData`. It
+ * represents the data of a patient, including their address, name, and contact information.
+ * @returns either a modified `PatientData` object or `null`.
+ */
 function handleDefaultValues(patient: PatientData): PatientData | null {
   const isDefaultAddress = patient.address.some(
     addr =>
@@ -61,17 +65,24 @@ export function normalizePatientData(patient: PatientData): PatientData | null {
     })),
     address: patient.address.map(addr => ({
       ...addr,
-      line1: addr.addressLine1
-        ? addr.addressLine1.toLowerCase().replace(/['-]/g, "")
-        : addr.addressLine1,
-      line2: addr.addressLine2
-        ? addr.addressLine2.toLowerCase().replace(/['-]/g, "")
-        : addr.addressLine2,
-      city: addr.city ? addr.city.toLowerCase().replace(/['-]/g, "").replace(/\s/g, "") : addr.city,
+      addressLine1: addr.addressLine1 ? normalizeAddress(addr.addressLine1) : addr.addressLine1,
+      addressLine2: addr.addressLine2 ? normalizeAddress(addr.addressLine2) : addr.addressLine2,
+      city: addr.city ? normalizeString(addr.city) : addr.city,
       zip: addr.zip.slice(0, 5),
     })),
   };
   return handleDefaultValues(normalizedPatient);
+}
+
+/**
+ * The normalizeString function takes a string as input, removes leading and trailing whitespace,
+ * converts all characters to lowercase, and removes any apostrophes or hyphens.
+ * @param {string} str - The `str` parameter is a string that represents the input string that needs to
+ * be normalized.
+ * @returns a normalized version of the input string.
+ */
+function normalizeString(str: string): string {
+  return str.trim().toLowerCase().replace(/['-]/g, "");
 }
 
 /**
@@ -98,4 +109,37 @@ function normalizePhoneNumber(phoneNumber: string): string {
   }
 
   return normalizedNumber;
+}
+
+/**
+ * The function `normalizeAddress` takes a string representing an address and replaces common street
+ * suffixes with their abbreviated forms.
+ * @param {string} address - The `address` parameter is a string that represents a street address.
+ * @returns The function `normalizeAddress` returns a string.
+ */
+function normalizeAddress(address: string): string {
+  const suffixes: Record<string, string> = {
+    street: "st",
+    avenue: "ave",
+    boulevard: "blvd",
+    drive: "dr",
+    road: "rd",
+    terrace: "ter",
+    place: "pl",
+    lane: "ln",
+    court: "ct",
+    circle: "cir",
+    highway: "hwy",
+    parkway: "pkwy",
+  };
+
+  address = address.trim().toLowerCase().replace(/['-.]/g, "");
+  const words = address.split(" ");
+
+  for (let i = 0; i < words.length; i++) {
+    if (suffixes[words[i]]) {
+      words[i] = suffixes[words[i]];
+    }
+  }
+  return words.join(" ");
 }
