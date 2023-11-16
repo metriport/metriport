@@ -194,11 +194,11 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     try {
       try {
         const respPerson = await commonWell.updatePerson(queryMeta, person, personId);
-        debug(`resp updatePerson: `, () => JSON.stringify(respPerson, null, 2));
+        debug(`resp updatePerson: `, JSON.stringify(respPerson));
 
         if (!respPerson.enrolled) {
           const respReenroll = await commonWell.reenrollPerson(queryMeta, personId);
-          debug(`resp reenrolPerson: `, () => JSON.stringify(respReenroll, null, 2));
+          debug(`resp reenrolPerson: `, JSON.stringify(respReenroll));
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
@@ -251,7 +251,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
           // safe to get the first one, just need to match one of the person's strong IDs
           strongIds.length ? strongIds[0] : undefined
         );
-        debug(`resp patientLink: `, () => JSON.stringify(respLink, null, 2));
+        debug(`resp patientLink: `, JSON.stringify(respLink));
       }
     } catch (err) {
       log(
@@ -297,7 +297,7 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     commonWell = data.commonWell;
 
     const resp = await commonWell.deletePatient(queryMeta, commonwellPatientId);
-    debug(`resp deletePatient: `, () => JSON.stringify(resp, null, 2));
+    debug(`resp deletePatient: `, JSON.stringify(resp));
   } catch (err) {
     console.error(`Failed to delete patient ${patient.id} @ CW: `, err);
     capture.error(err, {
@@ -391,7 +391,7 @@ async function findOrCreatePersonAndLink({
       // safe to get the first one, just need to match one of the person's strong IDs
       strongIds.length ? strongIds[0] : undefined
     );
-    debug(`resp patientLink: `, () => JSON.stringify(respLink, null, 2));
+    debug(`resp patientLink: `, JSON.stringify(respLink));
   } catch (err) {
     log(`Error linking Patient<>Person @ CW - personId: ${personId}`);
     throw err;
@@ -423,8 +423,8 @@ async function registerPatient({
   const debug = Util.debug(fnName);
 
   const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
+  debug(`resp registerPatient: `, JSON.stringify(respPatient));
 
-  debug(`resp registerPatient: `, () => JSON.stringify(respPatient, null, 2));
   const commonwellPatientId = getIdTrailingSlash(respPatient);
   const log = Util.log(`${fnName} - CW patientId ${commonwellPatientId}`);
   if (!commonwellPatientId) {
@@ -469,8 +469,7 @@ async function updatePatient({
     commonwellPatient,
     commonwellPatientId
   );
-
-  debug(`resp updatePatient: `, () => JSON.stringify(respUpdate, null, 2));
+  debug(`resp updatePatient: `, JSON.stringify(respUpdate));
 
   const patientRefLink = respUpdate._links?.self?.href;
   if (!patientRefLink) {
