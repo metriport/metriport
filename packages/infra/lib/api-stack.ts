@@ -97,8 +97,8 @@ export class APIStack extends Stack {
       certificateAuthority: acmpca.CertificateAuthority.fromCertificateAuthorityArn(
         this,
         "CA",
-        "<insert-cert-here>"
-      ), // arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/023077d8-2bfa-4eb0-8f22-05c96deade77'),
+        "arn:aws:acm:us-east-2:463519787594:certificate/10a27170-35eb-4d0e-b232-6e33ca2a7b58"
+      ),
     });
     // add error alarming to CDK-generated lambdas
     const certificateRequestorLambda = certificate.node.findChild(
