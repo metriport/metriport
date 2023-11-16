@@ -128,7 +128,7 @@ dist
 .pnp.*
 
 # use this to write one-off test scripts
-scratch.ts
+scratch*
 
 *.csv
 bulk-insert-patient-ids.txt

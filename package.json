@@ -33,9 +33,11 @@
     "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
   },
   "workspaces": [
+    "packages/shared",
     "packages/commonwell-sdk",
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
+    "packages/ihe-gateway-sdk",
     "packages/react-native-sdk",
     "packages/api-sdk",
     "packages/core",
