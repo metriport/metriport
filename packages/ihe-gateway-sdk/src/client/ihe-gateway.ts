@@ -12,7 +12,9 @@ export class IHEGateway {
    * @param principalCareProviderNPIs The list of NPIs of the practitioners associated with the patient.
    * @param requestId Optional. Unique ID for the request. If not provided, one will be created.
    *
-   * @returns an XCPD request to be used with an IHE Gateway. Throws Zod validation errors when if Organization OIDs or principalCareProviderNPIs don't meet their respective criteria.
+   * @throws ZodError if organization OIDs or principalCareProviderNPIs don't meet their respective criteria.
+   *
+   * @returns an XCPD request to be used with an IHE Gateway.
    */
   createXCPDRequest({
     patient,
