@@ -37,7 +37,7 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
 
   // get the certificate form ACM
   const certificate = cert.Certificate.fromCertificateArn(
-    this,
+    stack,
     "IHECertificate",
     props.config.ihe.CERT_ARN
   );

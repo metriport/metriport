@@ -277,7 +277,7 @@ export class Config {
     return getEnvVarOrFail("CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG");
   }
 
-  static getIheARN(): string | undefined {
-    return getEnvVar("CERT_ARN");
+  static getIheARN(): string {
+    return getEnvVarOrFail("CERT_ARN");
   }
 }
