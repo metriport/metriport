@@ -13,9 +13,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint bin/**/*.ts lib/**/*.ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '{bin,lib}/**/*.ts' --write",
+    "prettier-fix": "npx prettier '{bin,lib,test}/**/*.ts' --write",
     "test": "jest --passWithNoTests",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "run-cert": "ts-node test/run-cert.ts"
   },
   "devDependencies": {
     "@tsconfig/node18": "^1.0.1",
