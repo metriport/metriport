@@ -56,24 +56,24 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
      ```
    - When you concatenate your certs, make sure they look like this:
 
-   ```
-   -----BEGIN CERTIFICATE-----
-   ...
-   -----END CERTIFICATE-----
-   -----BEGIN CERTIFICATE-----
-   ...
-   -----END CERTIFICATE-----
-   ```
+     ```
+     -----BEGIN CERTIFICATE-----
+     ...
+     -----END CERTIFICATE-----
+     -----BEGIN CERTIFICATE-----
+     ...
+     -----END CERTIFICATE-----
+     ```
 
-   and that they don't look like this:
+     and that they don't look like this:
 
-   ```
-   -----BEGIN CERTIFICATE-----
-   ...
-   -----END CERTIFICATE----------BEGIN CERTIFICATE-----
-   ...
-   -----END CERTIFICATE-----
-   ```
+     ```
+     -----BEGIN CERTIFICATE-----
+     ...
+     -----END CERTIFICATE----------BEGIN CERTIFICATE-----
+     ...
+     -----END CERTIFICATE-----
+     ```
 
    - _Alternatively_, you can verify your certs by concatenating your cert and the intermediate cert into `chained_no_root.pe`m:
      ```
