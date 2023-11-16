@@ -5,12 +5,13 @@ on:
     branches:
       - develop
     paths:
-      - "packages/shared/
+      - "packages/shared/**"
       - "packages/api/**"
       - "packages/api-sdk/**"
       - "packages/commonwell-sdk/**"
       - "packages/connect-widget/**"
       - "packages/core/**"
+      - "packages/ihe-gateway-sdk/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
   workflow_dispatch: # manually executed by a user
@@ -44,7 +45,6 @@ jobs:
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
               - "packages/core/**"
-              - "packages/ihe-gateway-sdk/**"
               - "package*.json"
             infra-lambdas:
               - "packages/infra/**"
