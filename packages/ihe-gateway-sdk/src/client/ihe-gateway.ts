@@ -1,6 +1,6 @@
 import { Patient } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
-import { principalCareProviderIdsSchema } from "../models/shared";
+import { NPIStringArray } from "../models/shared";
 import { XCPDGateways, XCPDRequest, xcpdGatewaysSchema } from "../models/xcpd-request";
 
 export class IHEGateway {
@@ -8,22 +8,22 @@ export class IHEGateway {
    * An XCPD request interface
    * @param patient The patient data in FHIR R4 format.
    * @param cxId The customer ID.
-   * @param xcpdGateways The OIDs and XCPD ITI-55 urls of each organization to make a request to.
+   * @param xcpdGateways The OIDs and XCPD ITI-55 URLs of each organization to make a request to.
    * @param principalCareProviderIds The list of NPIs of the practitioners associated with the patient.
-   * @param requestId Optional. Unique id for the request. If not provided, one will be created.
+   * @param requestId Optional. Unique ID for the request. If not provided, one will be created.
    * @returns an XCPD request to be used with an IHE Gateway.
    */
   createXCPDRequest({
     patient,
     cxId,
     xcpdGateways,
-    principalCareProviderIds,
+    principalCareProviderNPIs,
     requestId,
   }: {
     patient: Patient;
     cxId: string;
     xcpdGateways: XCPDGateways;
-    principalCareProviderIds?: string[];
+    principalCareProviderNPIs?: NPIStringArray;
     requestId?: string;
   }): XCPDRequest {
     const xcpdRequest: XCPDRequest = {
@@ -34,9 +34,8 @@ export class IHEGateway {
       patientResource: patient,
     };
 
-    if (principalCareProviderIds) {
-      xcpdRequest.principalCareProviderIds =
-        principalCareProviderIdsSchema.parse(principalCareProviderIds);
+    if (principalCareProviderNPIs) {
+      xcpdRequest.principalCareProviderNPIs = principalCareProviderNPIs;
     }
 
     return xcpdRequest;

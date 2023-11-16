@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { validateNPI } from "@metriport/shared";
+import { validateNPI, normalizeOid } from "@metriport/shared";
 
 export const npiStringSchema = z
   .string()
@@ -8,6 +8,10 @@ export const npiStringSchema = z
 
 export type NPIString = z.infer<typeof npiStringSchema>;
 
-export const principalCareProviderIdsSchema = z.array(npiStringSchema);
+export const npiStringArraySchema = z.array(npiStringSchema);
 
-export const oidStringSchema = z.string().regex(/^[0-9]+(\.[0-9]+)*$/, "OID string invalid");
+export type NPIStringArray = z.infer<typeof npiStringArraySchema>;
+
+export const oidStringSchema = z
+  .string()
+  .refine(oid => normalizeOid(oid), { message: "OID is not valid" });
