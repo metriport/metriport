@@ -7,6 +7,8 @@ import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { getPatients } from "../../command/medical/patient/get-patient";
 
+const maxNumberOfParallelRequestsToCW = 20;
+
 /**
  * Implementation of the PatientUpdater that executes the logic on CommonWell.
  */
@@ -34,7 +36,7 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
     };
     // Execute the promises in parallel
     await executeAsynchronously(patients, async patient => updatePatient(patient), {
-      numberOfParallelExecutions: 10,
+      numberOfParallelExecutions: maxNumberOfParallelRequestsToCW,
     });
 
     return { failedUpdateCount };

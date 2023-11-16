@@ -1,4 +1,3 @@
-
 ---
 title: "Webhooks"
 description: "Receive data as soon as it becomes available."
@@ -58,8 +57,37 @@ You can also compute an HMAC in python:
 
 import hmac
 import hashlib
-hmac_object = hmac.new(key, message, digestmod)
-return hmac_object.hexdigest()
+import json
+
+def compute_hmac(key, message, signature, digestmod=hashlib.sha256):
+    """
+    Verify the HMAC signature for a given message and key.
+
+    :param key: The secret key (string).
+    :param message: The message to be authenticated (string in JSON format).
+    :param signature: The provided HMAC signature to verify against (string).
+    :param digestmod: The hash function to use (defaults to hashlib.sha256).
+    :return: True if signature is verified, False otherwise.
+    """
+    message_bytestring = message.encode()  # Convert the message string to bytes
+    key_bytestring = key.encode()  # Convert the key string to bytes
+    hmac_object = hmac.new(key_bytestring, message_bytestring, digestmod)
+    computed_signature = hmac_object.hexdigest()
+    print(computed_signature)
+    return signature == computed_signature
+
+# Example usage
+key = 'your_secret_key'  # Your key 
+message = '{"webhookUrl": "https://api.app.com/webhook"}'  # The message from the request in JSON format
+signature = 'the-request-signature'  # The signature from the header 
+
+is_signature_valid = compute_hmac(key, message, signature)
+
+if is_signature_valid:
+    print("Signature verified")
+else:
+    print("Signature verification failed")
+
 
 ```
 
