@@ -5,11 +5,13 @@ on:
     branches:
       - master
     paths:
+      - "packages/shared/**"
       - "packages/api/**"
       - "packages/api-sdk/**"
       - "packages/commonwell-sdk/**"
       - "packages/connect-widget/**"
       - "packages/core/**"
+      - "packages/ihe-gateway-sdk/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
   workflow_dispatch: # manually executed by a user
@@ -39,6 +41,7 @@ jobs:
           base: "master"
           filters: |
             api:
+              - "packages/shared/**"
               - "packages/api/**"
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
