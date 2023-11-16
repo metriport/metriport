@@ -15,7 +15,6 @@ interface IHEStackProps extends StackProps {
   vpc: ec2.IVpc;
   alarmAction: SnsAction | undefined;
   lambdaLayers: LambdaLayers;
-  certificate: cert.PrivateCertificate;
   publicZone: r53.IHostedZone;
 }
 
@@ -36,11 +35,18 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     },
   });
 
+  // get the certificate form ACM
+  const certificate = cert.Certificate.fromCertificateArn(
+    this,
+    "IHECertificate",
+    props.config.ihe.CERT_ARN
+  );
+
   // add domain cert + record
   const iheApiUrl = `${props.config.iheSubdomain}.${props.config.domain}`;
   api.addDomainName("IHEAPIDomain", {
     domainName: iheApiUrl,
-    certificate: props.certificate,
+    certificate: certificate,
     securityPolicy: apig.SecurityPolicy.TLS_1_2,
   });
   new r53.ARecord(stack, "IHEAPIDomainRecord", {

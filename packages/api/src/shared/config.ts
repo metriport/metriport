@@ -277,12 +277,7 @@ export class Config {
     return getEnvVarOrFail("CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG");
   }
 
-  // care quality config
-  static getCQCertificate(): string {
-    return getEnvVarOrFail("CQ_ORG_STAGING_CERTIFICATE");
-  }
-
-  static getCQPrivateKey(): string {
-    return getEnvVarOrFail("CQ_STAGING_PRIVATE_KEY");
+  static getIheARN(): string | undefined {
+    return getEnvVar("CERT_ARN");
   }
 }
