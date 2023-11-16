@@ -21,7 +21,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 2. **Decrypt the Key**
 
-   - Decrypt the key using OpenSSL. You will be prompted to enter the passcode stored in 1Password:
+   - Decrypt the key using OpenSSL. You will be prompted to enter the pascode, which in this case you can find stored in 1Password:
      ```
      openssl rsa -in PRIVATEKEY.key -out decrypted_private_key.key
      ```
@@ -30,35 +30,52 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
    - Download the Production / Validation bundle from the Sequoia Project:
      [Sequoia Project Trust Chains](https://directtrust.zohodesk.com/portal/en/kb/articles/installing-sequoia-project-trust-chains)
-   - Run the following OpenSSL command:
+   - Run the following OpenSSL command to convert the file from a pkcs7 file to a pem file:
      ```
      openssl pkcs7 -in sequoiaProject"<Val_or_Prod">TrustBundle.p7b -print_certs -out SubCA2.pem
      ```
 
-4. **Extract Intermediate Certificates**
+4. **Extract Certificates**
 
-   - There will be several different Intermediate Certs inside the file. _First_, identify the cert that corresponds to the intermediate cert that `ihe.staging.metriport.com.pem` points to. You can check this by pasting the cert into [SSL Checker](https://tools.keycdn.com/ssl). Choose the correct cert and store it in `intermediate_cert.pem`:
+   - There will be several different Intermediate Certs inside the file.
+   - _First_, identify the cert that corresponds to the intermediate cert that `ihe.staging.metriport.com.pem` points to. You can check this by pasting the cert into [SSL Checker](https://tools.keycdn.com/ssl). Choose the correct cert and store it in `intermediate_cert.pem`. The format should look like this:
+
      ```
      -----BEGIN CERTIFICATE-----
      ABCDEFG...
      -----END CERTIFICATE-----
      ```
 
-5. **Select Root Certificate**
-
    - _Second_, examine the intermediate cert you chose and note the issuer listed for it. Then select that cert and store it into `root_cert.pem`.
 
-6. **Validate Issued Certificate**
+5. **Validate Issued Certificate**
 
-   - Validate that your issued cert is good by running:
+   - Concatenate your certs and validate that it is good by copy and pasting it into [SSL Checker](https://tools.keycdn.com/ssl):
      ```
      cat ihe.staging.metriport.com.pem intermediate_cert.pem root_cert.pem > chain.pem
      ```
-   - Copy and paste that into [SSL Checker](https://tools.keycdn.com/ssl) to validate that the cert chain is valid.
+   - When you concatenate your certs, make sure they look like this:
 
-7. **Alternative Certificate Verification**
+   ```
+   -----BEGIN CERTIFICATE-----
+   ...
+   -----END CERTIFICATE-----
+   -----BEGIN CERTIFICATE-----
+   ...
+   -----END CERTIFICATE-----
+   ```
 
-   - Alternatively, you can verify your certs by concatenating your cert and the intermediate cert into `chained_no_root.pe`m:
+   and that they don't look like this:
+
+   ```
+   -----BEGIN CERTIFICATE-----
+   ...
+   -----END CERTIFICATE----------BEGIN CERTIFICATE-----
+   ...
+   -----END CERTIFICATE-----
+   ```
+
+   - _Alternatively_, you can verify your certs by concatenating your cert and the intermediate cert into `chained_no_root.pe`m:
      ```
      cat ihe.staging.metriport.com.pem intermediate_cert.pem > chained_no_root.pem
      ```
@@ -70,10 +87,10 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
      ```
      openssl s_client -connect localhost:3000 -servername localhost -root_cert.pem
      ```
-   - If you see "Verify return code: 0 (ok)", then you know the cert is valid.
+   - If you see `Verify return code: 0 (ok)``, then you know the cert is valid.
 
-8. **Import Certificate into AWS ACM**
-   - Finally, import the certificate into AWS ACM with the following command:
+6. **Import Certificate into AWS ACM**
+   - Finally, you are ready to import the certificate into AWS ACM with the following command:
      ```
      aws acm import-certificate --region us-east-2 \
        --certificate fileb://ihe.staging.metriport.com.pem \
