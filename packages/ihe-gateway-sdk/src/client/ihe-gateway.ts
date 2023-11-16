@@ -1,5 +1,5 @@
 import { Patient } from "@medplum/fhirtypes";
-import { v4 as uuidv4 } from "uuid";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NPIStringArray, npiStringArraySchema } from "../models/shared";
 import { XCPDGateways, XCPDRequest, xcpdGatewaysSchema } from "../models/xcpd-request";
 
@@ -11,7 +11,8 @@ export class IHEGateway {
    * @param xcpdGateways The OIDs and XCPD ITI-55 URLs of each organization to make a request to.
    * @param principalCareProviderNPIs The list of NPIs of the practitioners associated with the patient.
    * @param requestId Optional. Unique ID for the request. If not provided, one will be created.
-   * @returns an XCPD request to be used with an IHE Gateway.
+   *
+   * @returns an XCPD request to be used with an IHE Gateway. Throws Zod validation errors when if Organization OIDs or principalCareProviderNPIs don't meet their respective criteria.
    */
   createXCPDRequest({
     patient,
@@ -27,7 +28,7 @@ export class IHEGateway {
     requestId?: string;
   }): XCPDRequest {
     const xcpdRequest: XCPDRequest = {
-      id: requestId ?? uuidv4(),
+      id: requestId ?? uuidv7(),
       cxId,
       xcpdGateways: xcpdGatewaysSchema.parse(xcpdGateways),
       timestamp: new Date().toISOString(),

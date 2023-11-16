@@ -10,8 +10,7 @@
   "exports": {
     ".": "./dist/index.js",
     "./client/*": "./dist/client/*.js",
-    "./models/*": "./dist/models/*.js",
-    "./common/*": "./dist/common/*.js"
+    "./models/*": "./dist/models/*.js"
   },
   "typesVersions": {
     "*": {
@@ -23,9 +22,6 @@
       ],
       "models/*": [
         "dist/models/*"
-      ],
-      "common/*": [
-        "dist/common/*"
       ]
     }
   },
