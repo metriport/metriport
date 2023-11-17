@@ -688,7 +688,7 @@ export class APIStack extends Stack {
     if (props.config.iheSubdomain) {
       createIHEStack(this, {
         config: props.config,
-        secrets: secrets,
+        secrets,
         vpc: this.vpc,
         alarmAction: slackNotification?.alarmAction,
         lambdaLayers,
