@@ -52,7 +52,7 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
   const certificate = cert.Certificate.fromCertificateArn(
     stack,
     "IHECertificate",
-    certificateArnSecret?.secretArn || ""
+    certificateArnSecret?.secretValue.unsafeUnwrap() || ""
   );
 
   // add domain cert + record
