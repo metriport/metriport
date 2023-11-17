@@ -2,6 +2,11 @@ import express from "express";
 import * as https from "https";
 import * as fs from "fs";
 
+/**
+ * Script to test the Certificate issued by Carequality
+ * Run with ts-node run-cert.ts
+ */
+
 const app = express();
 
 // Read the private key and the chain of certificates

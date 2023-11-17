@@ -14,7 +14,6 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
   };
   buildSecrets(config.providerSecretNames);
   buildSecrets(config.cwSecretNames);
-  buildSecrets(config.ihe);
   if (config.analyticsSecretNames) buildSecrets(config.analyticsSecretNames);
   return secrets;
 }

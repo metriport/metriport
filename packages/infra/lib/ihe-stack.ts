@@ -9,11 +9,9 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { Secrets } from "./shared/secrets";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
-  secrets: Secrets;
   vpc: ec2.IVpc;
   alarmAction: SnsAction | undefined;
   lambdaLayers: LambdaLayers;
@@ -24,7 +22,7 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
   //-------------------------------------------
   // API Gateway
   //-------------------------------------------
-  if (!props.config.iheSubdomain) {
+  if (!props.config.ihe.iheSubdomain) {
     throw new Error("Must define iheSubdomain if building the IHE stack!");
   }
 
@@ -37,26 +35,15 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     },
   });
 
-  const iheCertARN = "CERT_ARN";
-  if (!props.secrets[iheCertARN]) {
-    throw new Error(`${iheCertARN} is not defined in config`);
-  }
-  const certificateArnSecret = props.secrets[iheCertARN];
-  if (certificateArnSecret) {
-    console.log("Secret is defined");
-  } else {
-    console.log("Secret is not defined");
-  }
-
   // get the certificate form ACM
   const certificate = cert.Certificate.fromCertificateArn(
     stack,
     "IHECertificate",
-    certificateArnSecret?.secretValue.unsafeUnwrap() || ""
+    props.config.ihe.CERT_ARN
   );
 
   // add domain cert + record
-  const iheApiUrl = `${props.config.iheSubdomain}.${props.config.domain}`;
+  const iheApiUrl = `${props.config.ihe.iheSubdomain}.${props.config.domain}`;
   api.addDomainName("IHEAPIDomain", {
     domainName: iheApiUrl,
     certificate: certificate,
@@ -80,8 +67,6 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     vpc: props.vpc,
     alarmSnsAction: props.alarmAction,
   });
-
-  //props.secrets[iheCertARN].grantRead(iheLambda);
 
   // create the proxy to the lambda
   const proxy = new apig.ProxyResource(stack, `IHE/Proxy`, {

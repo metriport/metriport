@@ -22,7 +22,6 @@ export type EnvConfig = {
   domain: string; // Base domain
   subdomain: string; // API subdomain
   authSubdomain: string; // Authentication subdomain
-  iheSubdomain?: string; // Subdomain for IHE integrations
   dbName: string;
   dbUsername: string;
   loadBalancerDnsName?: string;
@@ -84,6 +83,7 @@ export type EnvConfig = {
   };
   ihe: {
     CERT_ARN: string;
+    iheSubdomain?: string; // Subdomain for IHE integrations
   };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
