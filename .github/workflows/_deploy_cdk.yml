@@ -48,9 +48,6 @@ on:
       SERVICE_PAT:
         required: true
 
-env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 jobs:
   deploy:
     # prevents 2+ devs/workflows trying to deploy to AWS at the same time
@@ -95,7 +92,7 @@ jobs:
       # checkout the internal repo to get configs - feature branch when "branching to staging"
       - name: Determine which internal branch to checkout
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SERVICE_PAT }}
         run: |
           set +e # don't stop on failure
           gh api /repos/metriport/metriport-internal/branches/${{ github.ref_name }} --silent
