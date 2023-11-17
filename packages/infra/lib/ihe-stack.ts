@@ -9,9 +9,11 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
+import { Secrets } from "./shared/secrets";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
+  secrets: Secrets;
   vpc: ec2.IVpc;
   alarmAction: SnsAction | undefined;
   lambdaLayers: LambdaLayers;
@@ -35,11 +37,22 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     },
   });
 
+  const iheCertARN = props.config.ihe.CERT_ARN;
+  if (!props.secrets[iheCertARN]) {
+    throw new Error(`${iheCertARN} is not defined in config`);
+  }
+  const certificateArnSecret = props.secrets[iheCertARN];
+  if (certificateArnSecret) {
+    console.log("Secret is defined");
+  } else {
+    console.log("Secret is not defined");
+  }
+
   // get the certificate form ACM
   const certificate = cert.Certificate.fromCertificateArn(
     stack,
     "IHECertificate",
-    props.config.ihe.CERT_ARN
+    certificateArnSecret?.secretValue.toString() || ""
   );
 
   // add domain cert + record
@@ -67,6 +80,8 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     vpc: props.vpc,
     alarmSnsAction: props.alarmAction,
   });
+
+  //props.secrets[iheCertARN].grantRead(iheLambda);
 
   // create the proxy to the lambda
   const proxy = new apig.ProxyResource(stack, `IHE/Proxy`, {
