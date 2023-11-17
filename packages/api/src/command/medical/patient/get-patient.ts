@@ -132,6 +132,9 @@ export type GetPatient = {
     }
 );
 
+/**
+ * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
+ */
 export const getPatient = async ({
   id,
   cxId,
@@ -146,6 +149,9 @@ export const getPatient = async ({
   return patient ?? undefined;
 };
 
+/**
+ * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
+ */
 export const getPatientOrFail = async (params: GetPatient): Promise<PatientModel> => {
   const patient = await getPatient(params);
   if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });

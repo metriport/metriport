@@ -3,6 +3,8 @@ import duration from "dayjs/plugin/duration";
 import { cloneDeep } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getCQLinkStatus } from "../patient";
 import { CQLinkStatus } from "../patient-shared";
 
@@ -20,26 +22,33 @@ export const setCQLinkStatus = async ({
   patientId: string;
   cqLinkStatus?: CQLinkStatus | undefined;
 }): Promise<{ patient: Patient; updated: boolean }> => {
-  const originalPatient = await getPatientOrFail({ id: patientId, cxId });
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const originalPatient = await getPatientOrFail({
+      id: patientId,
+      cxId,
+      lock: true,
+      transaction,
+    });
 
-  // Important so we don't trigger WH notif if the CQ link was already done
-  const currentCQLinkStatus = getCQLinkStatus(originalPatient.data.externalData);
-  if (currentCQLinkStatus === cqLinkStatus) {
-    console.log(
-      `Patient ${patientId} already has CQ link status ${cqLinkStatus}, skipping update...`
-    );
-    return { patient: originalPatient, updated: false };
-  }
+    // Important so we don't trigger WH notif if the CQ link was already done
+    const currentCQLinkStatus = getCQLinkStatus(originalPatient.data.externalData);
+    if (currentCQLinkStatus === cqLinkStatus) {
+      console.log(
+        `Patient ${patientId} already has CQ link status ${cqLinkStatus}, skipping update...`
+      );
+      return { patient: originalPatient, updated: false };
+    }
 
-  const updatedData = cloneDeep(originalPatient.data);
-  updatedData.externalData = {
-    ...updatedData.externalData,
-    COMMONWELL: {
-      ...updatedData.externalData?.COMMONWELL,
-      cqLinkStatus,
-    },
-  };
-  const updatedPatient = await originalPatient.update({ data: updatedData });
+    const updatedData = cloneDeep(originalPatient.data);
+    updatedData.externalData = {
+      ...updatedData.externalData,
+      COMMONWELL: {
+        ...updatedData.externalData?.COMMONWELL,
+        cqLinkStatus,
+      },
+    };
+    const updatedPatient = await originalPatient.update({ data: updatedData }, { transaction });
 
-  return { patient: updatedPatient, updated: true };
+    return { patient: updatedPatient, updated: true };
+  });
 };
