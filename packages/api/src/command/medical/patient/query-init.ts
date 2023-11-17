@@ -1,6 +1,8 @@
 import { DocumentQueryProgress } from "../../../domain/medical/document-query";
 import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
+import { PatientModel } from "../../../models/medical/patient";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
 
@@ -21,23 +23,33 @@ export type QueryInitCmd = BaseUpdateCmdWithCustomer &
 export const storeQueryInit = async (cmd: QueryInitCmd): Promise<Patient> => {
   const { id, cxId } = cmd;
 
-  const patient = await getPatientOrFail({ id, cxId });
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientOrFail({
+      id,
+      cxId,
+      lock: true,
+      transaction,
+    });
 
-  const update = cmd.documentQueryProgress
-    ? {
-        documentQueryProgress: cmd.documentQueryProgress,
-        requestId: cmd.requestId,
-        cxDocumentRequestMetadata: cmd.cxDocumentRequestMetadata,
-      }
-    : {
-        consolidatedQuery: cmd.consolidatedQuery,
-        cxConsolidatedRequestMetadata: cmd.cxConsolidatedRequestMetadata,
-      };
+    const update = cmd.documentQueryProgress
+      ? {
+          documentQueryProgress: cmd.documentQueryProgress,
+          requestId: cmd.requestId,
+          cxDocumentRequestMetadata: cmd.cxDocumentRequestMetadata,
+        }
+      : {
+          consolidatedQuery: cmd.consolidatedQuery,
+          cxConsolidatedRequestMetadata: cmd.cxConsolidatedRequestMetadata,
+        };
 
-  return patient.update({
-    data: {
-      ...patient.data,
-      ...update,
-    },
+    return patient.update(
+      {
+        data: {
+          ...patient.data,
+          ...update,
+        },
+      },
+      { transaction }
+    );
   });
 };
