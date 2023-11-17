@@ -40,7 +40,7 @@ jobs:
         with:
           filters: |
             api:
-              - "packages/shared/
+              - "packages/shared/**"
               - "packages/api/**"
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
