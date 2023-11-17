@@ -1,17 +1,18 @@
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
+import { FacilityModel } from "../models/medical/facility";
+import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
+import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
+import { CQDirectoryModel } from "./medical/cq-directory";
 import { DocRefMappingModel } from "./medical/docref-mapping";
-import { FacilityModel } from "../models/medical/facility";
 import { MAPIAccess } from "./medical/mapi-access";
-import { OrganizationModel } from "../models/medical/organization";
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -19,6 +20,7 @@ const models: ModelSetup[] = [
   Settings.setup,
   WebhookRequest.setup,
   OrganizationModel.setup,
+  CQDirectoryModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
   MAPIAccess.setup,

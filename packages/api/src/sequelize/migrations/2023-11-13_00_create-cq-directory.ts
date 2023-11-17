@@ -13,57 +13,42 @@ export const up: Migration = async ({ context: queryInterface }) => {
           type: DataTypes.STRING,
           primaryKey: true,
         },
-        // oid: {
-        //   type: DataTypes.STRING,
-        // },
-        // name: {
-        //   type: DataTypes.STRING,
-        //   allowNull: true,
-        // },
-        // urlXCPD: {
-        //   type: DataTypes.STRING,
-        //   field: "url_xcpd",
-        // },
-        // urlDQ: {
-        //   type: DataTypes.STRING,
-        //   allowNull: true,
-        //   field: "url_dq",
-        // },
-        // urlDR: {
-        //   type: DataTypes.STRING,
-        //   allowNull: true,
-        //   field: "url_dr",
-        // },
-        // latitude: {
-        //   type: DataTypes.STRING,
-        //   allowNull: true,
-        // },
-        // longitude: {
-        //   type: DataTypes.STRING,
-        //   allowNull: true,
-        // },
-        // state: {
-        //   type: DataTypes.STRING,
-        //   allowNull: true,
-        // },
-        // data: {
-        //   type: DataTypes.JSONB,
-        //   allowNull: true,
-        // },
-        cxId: {
-          type: DataTypes.UUID,
-          field: "cx_id",
-        },
         oid: {
           type: DataTypes.STRING,
         },
-        organizationNumber: {
-          type: DataTypes.INTEGER,
-          unique: true,
-          field: "organization_number",
+        name: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        urlXCPD: {
+          type: DataTypes.STRING,
+          field: "url_xcpd",
+        },
+        urlDQ: {
+          type: DataTypes.STRING,
+          allowNull: true,
+          field: "url_dq",
+        },
+        urlDR: {
+          type: DataTypes.STRING,
+          allowNull: true,
+          field: "url_dr",
+        },
+        latitude: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        longitude: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        state: {
+          type: DataTypes.STRING,
+          allowNull: true,
         },
         data: {
           type: DataTypes.JSONB,
+          allowNull: true,
         },
       },
       { transaction, addVersion: true }
