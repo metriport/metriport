@@ -37,7 +37,7 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     },
   });
 
-  const iheCertARN = props.config.ihe.CERT_ARN;
+  const iheCertARN = "CERT_ARN";
   if (!props.secrets[iheCertARN]) {
     throw new Error(`${iheCertARN} is not defined in config`);
   }
