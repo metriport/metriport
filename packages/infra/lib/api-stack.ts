@@ -685,7 +685,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // IHE API Gateway
     //-------------------------------------------
-    if (props.config.ihe.iheSubdomain) {
+    if (props.config.ihe) {
       createIHEStack(this, {
         config: props.config,
         vpc: this.vpc,

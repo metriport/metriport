@@ -17,11 +17,11 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 1. **Download Certificate and Private Key**
 
-   - Download your certificate (`ihe.staging.metriport.com.pem`) and private key (`PRIVATEKEY.key`) from their storage location, in this case, our Google Drive.
+   - Download your certificate (for example, `ihe.staging.metriport.com.pem`) and private key (for example, `PRIVATEKEY.key`).
 
 2. **Decrypt the Key**
 
-   - Decrypt the key using OpenSSL. You will be prompted to enter the pascode, which in this case you can find stored in 1Password:
+   - Decrypt the key using OpenSSL. You will be prompted to enter the pascode.
      ```
      openssl rsa -in PRIVATEKEY.key -out decrypted_private_key.key
      ```
@@ -38,7 +38,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 4. **Extract Certificates**
 
    - There will be several different Intermediate Certs inside the file.
-   - _First_, identify the cert that corresponds to the intermediate cert that `ihe.staging.metriport.com.pem` points to. You can check this by pasting the cert into [SSL Checker](https://tools.keycdn.com/ssl). Choose the correct cert and store it in `intermediate_cert.pem`. The format should look like this:
+   - _First_, identify the cert that corresponds to the intermediate cert that `<your_domain_name>.pem` points to. You can check this by pasting the cert into [SSL Checker](https://tools.keycdn.com/ssl). Choose the correct cert and store it in `intermediate_cert.pem`. The format should look like this:
 
      ```
      -----BEGIN CERTIFICATE-----
@@ -52,7 +52,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
    - Concatenate your certs and validate that it is good by copy and pasting it into [SSL Checker](https://tools.keycdn.com/ssl):
      ```
-     cat ihe.staging.metriport.com.pem intermediate_cert.pem root_cert.pem > chain.pem
+     cat <your_domain_name>.pem intermediate_cert.pem root_cert.pem > chain.pem
      ```
    - When you concatenate your certs, make sure they look like this:
 
@@ -77,7 +77,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
    - _Alternatively_, you can verify your certs by concatenating your cert and the intermediate cert into `chained_no_root.pe`m:
      ```
-     cat ihe.staging.metriport.com.pem intermediate_cert.pem > chained_no_root.pem
+     cat <your_domain_name>.pem intermediate_cert.pem > chained_no_root.pem
      ```
    - Fill in the your path to `privateKey` and `certificateChain` in `test/run-cert.ts` and then run:
      ```
@@ -85,15 +85,15 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
      ```
    - Then, use OpenSSL to connect to your server:
      ```
-     openssl s_client -connect localhost:3000 -servername localhost -root_cert.pem
+     openssl s_client -connect localhost:3000 -servername localhost --CAfile root_cert.pem
      ```
    - If you see `Verify return code: 0 (ok)``, then you know the cert is valid.
 
 6. **Import Certificate into AWS ACM**
    - Finally, you are ready to import the certificate into AWS ACM with the following command:
      ```
-     aws acm import-certificate --region us-east-2 \
-       --certificate fileb://ihe.staging.metriport.com.pem \
+     aws acm import-certificate --region <your-aws-region> \
+       --certificate fileb://<your_domain_name>.pem \
        --private-key fileb://decrypted_private_key.key \
        --certificate-chain fileb://intermediate_cert.pem
      ```

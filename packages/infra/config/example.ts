@@ -42,7 +42,8 @@ export const config: EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
   ihe: {
-    CERT_ARN: "<your_cert_arn>",
+    certArn: "<your_cert_arn>",
+    subdomain: "ihe",
   },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
