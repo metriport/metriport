@@ -1,6 +1,8 @@
 import { cloneDeep } from "lodash";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "../../domain/medical/patient";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
 import { getCQLinkStatus } from "./patient";
 import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
@@ -32,20 +34,27 @@ export const setCommonwellId = async ({
   commonwellStatus?: LinkStatus | undefined;
   cqLinkStatus?: CQLinkStatus | undefined;
 }): Promise<Patient> => {
-  const updatedPatient = await getPatientOrFail({ id: patientId, cxId });
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const updatedPatient = await getPatientOrFail({
+      id: patientId,
+      cxId,
+      lock: true,
+      transaction,
+    });
 
-  const updatedCQLinkStatus = cqLinkStatus ?? getCQLinkStatus(updatedPatient.data.externalData);
+    const updatedCQLinkStatus = cqLinkStatus ?? getCQLinkStatus(updatedPatient.data.externalData);
 
-  const updatedData = cloneDeep(updatedPatient.data);
-  updatedData.externalData = {
-    ...updatedData.externalData,
-    COMMONWELL: new PatientDataCommonwell(
-      commonwellPatientId,
-      commonwellPersonId,
-      commonwellStatus,
-      updatedCQLinkStatus
-    ),
-  };
+    const updatedData = cloneDeep(updatedPatient.data);
+    updatedData.externalData = {
+      ...updatedData.externalData,
+      COMMONWELL: new PatientDataCommonwell(
+        commonwellPatientId,
+        commonwellPersonId,
+        commonwellStatus,
+        updatedCQLinkStatus
+      ),
+    };
 
-  return updatedPatient.update({ data: updatedData });
+    return updatedPatient.update({ data: updatedData }, { transaction });
+  });
 };
