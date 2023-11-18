@@ -1,0 +1,18 @@
+name: PR Check - IHE Server
+
+on:
+  pull_request:
+    paths:
+      - "packages/ihe-server/**"
+  merge_group:
+  workflow_dispatch:
+
+jobs:
+  check-commits:
+    uses: ./.github/workflows/_check-commits.yml
+    secrets: inherit
+  check-pr:
+    uses: ./.github/workflows/_build.yml
+    with:
+      path: "packages/ihe-server"
+    secrets: inherit
