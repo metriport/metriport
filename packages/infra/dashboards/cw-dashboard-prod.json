@@ -286,7 +286,7 @@
             "height": 8,
             "width": 10,
             "y": 10,
-            "x": 4,
+            "x": 14,
             "type": "metric",
             "properties": {
                 "metrics": [
@@ -307,14 +307,13 @@
             "height": 8,
             "width": 10,
             "y": 10,
-            "x": 14,
+            "x": 4,
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/RDS", "WriteIOPS", "DBClusterIdentifier", "api-cluster", { "yAxis": "right", "region": "us-west-1" } ],
-                    [ ".", "VolumeWriteIOPs", ".", ".", { "region": "us-west-1", "yAxis": "right" } ],
-                    [ ".", "ReadIOPS", ".", ".", { "region": "us-west-1" } ],
-                    [ ".", "VolumeReadIOPS", ".", ".", { "region": "us-west-1" } ]
+                    [ { "expression": "m2*300", "label": "VolumeReadIOPs", "id": "e1", "region": "us-west-1" } ],
+                    [ "AWS/RDS", "VolumeWriteIOPs", "DBClusterIdentifier", "api-cluster", { "yAxis": "right", "id": "m1", "region": "us-west-1" } ],
+                    [ ".", "VolumeReadIOPs", ".", ".", { "period": 60, "id": "m2", "label": "VolumeReadIOPs-Billable", "visible": false, "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -326,8 +325,8 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 10_000 for 1 datapoints within 5 minutes",
-                            "value": 10000,
+                            "label": "VolumeWriteIOPs >= 50_000 for 1 datapoints within 5 minutes",
+                            "value": 50000,
                             "yAxis": "right"
                         }
                     ]
@@ -374,10 +373,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/RDS", "WriteIOPS", "DBClusterIdentifier", "fhir-server", { "yAxis": "right" } ],
-                    [ ".", "VolumeWriteIOPs", ".", ".", { "region": "us-west-1", "yAxis": "right" } ],
-                    [ ".", "ReadIOPS", ".", "." ],
-                    [ ".", "VolumeReadIOPS", ".", ".", { "region": "us-west-1" } ]
+                    [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "fhir-server", { "region": "us-west-1", "id": "m1", "label": "VolumeReadIOPs-Billable" } ],
+                    [ ".", "VolumeWriteIOPs", ".", ".", { "yAxis": "right", "region": "us-west-1", "id": "m2" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -389,8 +386,8 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 100_000 for 1 datapoints within 5 minutes",
-                            "value": 100000,
+                            "label": "VolumeWriteIOPs >= 300_000 for 1 datapoints within 5 minutes",
+                            "value": 300000,
                             "yAxis": "right"
                         }
                     ]

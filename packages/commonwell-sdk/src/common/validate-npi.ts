@@ -1,4 +1,5 @@
 /**
+ * @deprecated Use @metriport/shared instead.
  * Checks if the specified 10 digit NPI is valid as per ISO standard mod 10 Luhn algorithm.
  *
  * See: https://www.cms.gov/Regulations-and-Guidance/Administrative-Simplification/NationalProvIdentStand/Downloads/NPIcheckdigit.pdf

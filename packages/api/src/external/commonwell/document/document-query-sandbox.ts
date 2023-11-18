@@ -54,6 +54,13 @@ export async function sandboxGetDocRefsAndUpsert({
       reset: true,
       requestId,
     });
+    processPatientDocumentRequest(
+      organization.cxId,
+      patient.id,
+      "medical.document-download",
+      MAPIWebhookStatus.completed,
+      []
+    );
     return [];
   }
 

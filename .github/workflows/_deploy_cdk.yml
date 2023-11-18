@@ -77,6 +77,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: metriport
+
       # checkout the internal repo to get configs - default branches
       - name: Checkout internal default branch
         uses: actions/checkout@v3
@@ -89,12 +90,26 @@ jobs:
           sparse-checkout: |
             config-oss/api-infra
       # checkout the internal repo to get configs - feature branch when "branching to staging"
+      - name: Determine which internal branch to checkout
+        env:
+          GITHUB_TOKEN: ${{ secrets.SERVICE_PAT }}
+        run: |
+          set +e # don't stop on failure
+          gh api /repos/metriport/metriport-internal/branches/${{ github.ref_name }} --silent
+          RESULT=$?
+          if [ $RESULT -eq 0 ]; then
+            INTERNAL_BRANCH=${{ github.ref }}
+          else
+            INTERNAL_BRANCH=develop
+          fi
+          echo "Internal branch for checkout: $INTERNAL_BRANCH"
+          echo "INTERNAL_BRANCH=$INTERNAL_BRANCH" >> $GITHUB_ENV
       - name: Checkout internal feature branch
         uses: actions/checkout@v3
         if: ${{ inputs.is-branch-to-staging == true }}
         with:
           repository: metriport/metriport-internal
-          ref: ${{ github.ref }}
+          ref: ${{ env.INTERNAL_BRANCH }}
           token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
           path: metriport-internal
           sparse-checkout: |
