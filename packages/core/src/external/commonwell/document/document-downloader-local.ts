@@ -236,12 +236,12 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         documentLocation: location,
       };
       if (error instanceof CommonwellError && error.cause?.response?.status === 404) {
-        this.config.capture &&
-          this.config.capture.error(error, { extra: { ...additionalInfo, error } });
         const msg = "CW - Document not found";
         console.log(`${msg} - ${JSON.stringify(additionalInfo)}`);
         throw new NotFoundError(msg, undefined, additionalInfo);
       }
+      this.config.capture &&
+        this.config.capture.error(error, { extra: { ...additionalInfo, error } });
       throw new MetriportError(`CW - Error downloading document`, error, additionalInfo);
     }
   }
