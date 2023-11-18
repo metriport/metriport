@@ -1,0 +1,18 @@
+<pluginMetaData path="datatype-hl7v3">
+	<name>HL7v3 Data Type</name>
+	<author>NextGen Healthcare</author>
+	<pluginVersion>4.4.0</pluginVersion>
+	<mirthVersion>4.4.0</mirthVersion>
+	<url>http://www.nextgen.com</url>
+	<description>This plugin provides support for the HL7v3 data type</description>
+	<serverClasses>
+		<string>com.mirth.connect.plugins.datatypes.hl7v3.HL7V3DataTypeServerPlugin</string>
+	</serverClasses>
+	<clientClasses>
+		<string>com.mirth.connect.plugins.datatypes.hl7v3.HL7V3DataTypeClientPlugin</string>
+	</clientClasses>
+	<templateClassName>com.mirth.connect.plugins.datatypes.hl7v3.HL7V3DataTypeCodeTemplatePlugin</templateClassName>
+	<library type="CLIENT" path="datatype-hl7v3-client.jar" />
+	<library type="SHARED" path="datatype-hl7v3-shared.jar" />
+	<library type="SERVER" path="datatype-hl7v3-server.jar" />
+</pluginMetaData>

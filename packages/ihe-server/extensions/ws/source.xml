@@ -1,0 +1,17 @@
+<connectorMetaData path="ws">
+	<name>Web Service Listener</name>
+	<author>NextGen Healthcare</author>
+	<pluginVersion>4.4.0</pluginVersion>
+	<mirthVersion>4.4.0</mirthVersion>
+	<url>http://www.nextgen.com</url>
+	<description>This connector allows Mirth Connect to listen on an HTTP port for incoming Web Service calls. This connector also provides a WSDL for SOAP clients to use.</description>
+	<clientClassName>com.mirth.connect.connectors.ws.WebServiceListener</clientClassName>
+	<sharedClassName>com.mirth.connect.connectors.ws.WebServiceReceiverProperties</sharedClassName>
+	<serverClassName>com.mirth.connect.connectors.ws.WebServiceReceiver</serverClassName>
+	<transformers></transformers>
+	<protocol>ws</protocol>
+	<type>SOURCE</type>
+	<library type="SERVER" path="ws-server.jar" />
+	<library type="CLIENT" path="ws-client.jar" />
+	<library type="SHARED" path="ws-shared.jar" />
+</connectorMetaData>

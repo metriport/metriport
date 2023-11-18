@@ -1,0 +1,18 @@
+<pluginMetaData path="datatype-delimited">
+	<name>Delimited Data Type</name>
+	<author>NextGen Healthcare</author>
+	<pluginVersion>4.4.0</pluginVersion>
+	<mirthVersion>4.4.0</mirthVersion>
+	<url>http://www.nextgen.com</url>
+	<description>This plugin provides support for the delimited data type</description>
+	<serverClasses>
+		<string>com.mirth.connect.plugins.datatypes.delimited.DelimitedDataTypeServerPlugin</string>
+	</serverClasses>
+	<clientClasses>
+		<string>com.mirth.connect.plugins.datatypes.delimited.DelimitedDataTypeClientPlugin</string>
+	</clientClasses>
+	<templateClassName>com.mirth.connect.plugins.datatypes.delimited.DelimitedDataTypeCodeTemplatePlugin</templateClassName>
+	<library type="CLIENT" path="datatype-delimited-client.jar" />
+	<library type="SHARED" path="datatype-delimited-shared.jar" />
+	<library type="SERVER" path="datatype-delimited-server.jar" />
+</pluginMetaData>

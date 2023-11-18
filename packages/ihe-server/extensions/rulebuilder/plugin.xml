@@ -1,0 +1,13 @@
+<pluginMetaData path="rulebuilder">
+	<name>Rule Builder Filter Rule</name>
+	<author>NextGen Healthcare</author>
+	<pluginVersion>4.4.0</pluginVersion>
+	<mirthVersion>4.4.0</mirthVersion>
+	<url>http://www.nextgen.com</url>
+	<description>This plugin provides a Rule Builder type for Mirth Connect filters</description>
+	<clientClasses>
+		<string>com.mirth.connect.plugins.rulebuilder.RuleBuilderPlugin</string>
+	</clientClasses>
+	<library type="CLIENT" path="rulebuilder-client.jar" />
+	<library type="SHARED" path="rulebuilder-shared.jar" />
+</pluginMetaData>

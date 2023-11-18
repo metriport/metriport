@@ -1,0 +1,13 @@
+<pluginMetaData path="dicomviewer">
+	<name>DICOM Viewer</name>
+	<author>NextGen Healthcare</author>
+	<pluginVersion>4.4.0</pluginVersion>
+	<mirthVersion>4.4.0</mirthVersion>
+	<url>http://www.nextgen.com</url>
+	<description>This plugin provides DICOM attachment viewing capability in message browser</description>
+	<clientClasses>
+		<string>com.mirth.connect.plugins.dicomviewer.DICOMViewer</string>
+	</clientClasses>
+	<library type="CLIENT" path="dicomviewer-client.jar" />
+	<library type="SHARED" path="lib/ij.jar" />
+</pluginMetaData>

@@ -1,0 +1,17 @@
+<connectorMetaData path="tcp">
+	<name>TCP Listener</name>
+	<author>NextGen Healthcare</author>
+	<pluginVersion>4.4.0</pluginVersion>
+	<mirthVersion>4.4.0</mirthVersion>
+	<url>http://www.nextgen.com</url>
+	<description>This connector allows Mirth Connect to listen for incoming messages over a standard TCP connection.</description>
+	<clientClassName>com.mirth.connect.connectors.tcp.TcpListener</clientClassName>
+	<serverClassName>com.mirth.connect.connectors.tcp.TcpReceiver</serverClassName>
+	<sharedClassName>com.mirth.connect.connectors.tcp.TcpReceiverProperties</sharedClassName>
+	<library type="CLIENT" path="tcp-client.jar" />
+	<library type="SHARED" path="tcp-shared.jar" />
+	<library type="SERVER" path="tcp-server.jar" />
+	<transformers/>
+	<protocol>tcp</protocol>
+	<type>SOURCE</type>
+</connectorMetaData>
