@@ -1,6 +1,6 @@
 .env
 # logs
-
+.install4j
 # Compiled class file
 *.class
 
