@@ -22,12 +22,12 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
   //-------------------------------------------
   // API Gateway
   //-------------------------------------------
-  if (!props.config.ihe?.subdomain) {
+  if (!props.config.iheGateway?.subdomain) {
     throw new Error("Must define subdomainmain if building the IHE stack!");
   }
 
-  if (!props.config.ihe?.certArn) {
-    throw new Error("Must define cert arm if building the IHE stack!");
+  if (!props.config.iheGateway?.certArn) {
+    throw new Error("Must define cert arn if building the IHE stack!");
   }
 
   // Create the API Gateway
@@ -43,11 +43,11 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
   const certificate = cert.Certificate.fromCertificateArn(
     stack,
     "IHECertificate",
-    props.config.ihe.certArn
+    props.config.iheGateway.certArn
   );
 
   // add domain cert + record
-  const iheApiUrl = `${props.config.ihe?.subdomain}.${props.config.domain}`;
+  const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
   api.addDomainName("IHEAPIDomain", {
     domainName: iheApiUrl,
     certificate: certificate,
