@@ -757,9 +757,9 @@ async function triggerDownloadDocument({
       ...result,
       isNew: true,
     };
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    if (error.status === httpStatus.NOT_FOUND) {
+    if (error.status === httpStatus.NOT_FOUND || isCommonwellNotFoundError(error)) {
       console.log(`Document not found on CW, skipping - requestId: ${requestId}. Error: ${error}`);
       throw new NotFoundError("Document not found on CW", error, { requestId });
     } else {
@@ -829,4 +829,13 @@ function reportDocQueryUsage(patient: Patient, docQuery = true): void {
     product: Product.medical,
     docQuery,
   });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isCommonwellNotFoundError(error: any): boolean {
+  const info = error.additionalInfo;
+  if (error.status === 500 && info && info.errorDetails.errorType === "NotFoundError") {
+    return true;
+  }
+  return false;
 }
