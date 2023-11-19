@@ -1,4 +1,6 @@
 import { Patient, PatientData } from "../../../domain/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
@@ -17,20 +19,31 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
   const sanitized = sanitize(patientUpdate);
   validate(sanitized);
 
-  const patient = await getPatientOrFail({ id, cxId });
-  validateVersionForUpdate(patient, eTag);
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientOrFail({
+      id,
+      cxId,
+      lock: true,
+      transaction,
+    });
 
-  return patient.update({
-    data: {
-      ...patient.data,
-      firstName: sanitized.firstName,
-      lastName: sanitized.lastName,
-      dob: sanitized.dob,
-      genderAtBirth: sanitized.genderAtBirth,
-      personalIdentifiers: sanitized.personalIdentifiers,
-      address: sanitized.address,
-      contact: sanitized.contact,
-    },
-    externalId: sanitized.externalId,
+    validateVersionForUpdate(patient, eTag);
+
+    return patient.update(
+      {
+        data: {
+          ...patient.data,
+          firstName: sanitized.firstName,
+          lastName: sanitized.lastName,
+          dob: sanitized.dob,
+          genderAtBirth: sanitized.genderAtBirth,
+          personalIdentifiers: sanitized.personalIdentifiers,
+          address: sanitized.address,
+          contact: sanitized.contact,
+        },
+        externalId: sanitized.externalId,
+      },
+      { transaction }
+    );
   });
 };
