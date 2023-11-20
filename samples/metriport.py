@@ -1,10 +1,10 @@
 """"Utility for working with metriport."""
 import logging
-
 import httpx
 import pydantic
 import asyncio
 
+logging.basicConfig(level=logging.INFO)
 
 from backend import gcp
 from backend import env
@@ -18,14 +18,14 @@ class MetriportAuth(httpx.Auth):
         try:
             gcp_instance = gcp.GCP()
             self.api_key = gcp_instance.get_secret("METRIPORT_SECRET_KEY")
-        except Exception as exc:  # pylint: disable=broad-except
-            logging.error("Metriport API key not set. Got error: %s", str(exc))
+        except Exception as exc:
             raise
 
     def auth_flow(self, request: httpx.Request):
         if self.api_key:
             request.headers["x-api-key"] = self.api_key
         yield request
+
 
 
 def default_client() -> httpx.Client:
@@ -89,19 +89,14 @@ async def upload_new_patient(
     )
     return result
 
-async def get_new_patient(
-    metriport_facility_id: str, client=None
+async def get_new_patient(client=None
 ) -> httpx.Response:
     if client is None:
         client = default_async_client()
-
     result = await client.get(
-        "/medical/v1/patient", 
-        params={"facilityId": metriport_facility_id},
+        "/medical/v1/patient",
     )
     return result
-
-
 
 def _already_included(patient: Patient, email_index: dict, phone_index: dict) -> bool:
     for contact in patient.contact:
@@ -147,14 +142,9 @@ async def sync_patients(
 async def main():
     # Instantiate the HTTP client
     client = default_async_client()
+    response = await get_new_patient(client)
 
-    # Define parameters (replace with actual values or obtain them as needed)
-    gcp_instance = gcp.GCP()
-    facilityId = gcp_instance.get_secret("FACILITY_ID")
-
-    # Use get_new_patient to fetch patient data
-    response = await get_new_patient(facilityId, client)
-
+    
     # Handle the response
     if response.status_code == 200:
         patients_data = response.json()
