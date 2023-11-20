@@ -1,4 +1,4 @@
-name: Release Python SDK
+name: Release SDKs
 
 on:
   workflow_call:
