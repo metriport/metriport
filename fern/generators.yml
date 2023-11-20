@@ -1,6 +1,18 @@
 default-group: local
 groups:
-  publish:
+  python-sdk:
+    generators:
+      - name: fernapi/fern-python-sdk
+        version: 0.6.5
+        output:
+          location: pypi
+          package-name: metriport
+          token: ${PYPI_TOKEN}
+        config:
+          client_class_name: Metriport
+        github: 
+          repository: metriport/metriport-python
+  ndoe-sdk:
     generators:
       - name: fernapi/fern-typescript-node-sdk
         version: 0.8.0-rc4
@@ -10,14 +22,10 @@ groups:
           token: ${NPM_TOKEN}
         config:
           namespaceExport: Metriport
-      - name: fernapi/fern-python-sdk
-        version: 0.6.2
-        output:
-          location: pypi
-          package-name: fern-metriport
-          token: ${PYPI_TOKEN}
-        config:
-          client_class_name: Metriport
+        github: 
+          repository: metriport/metriport-node
+  java-sdk:
+    generators:
       - name: fernapi/fern-java-sdk
         version: 0.5.13
         output:
@@ -27,27 +35,5 @@ groups:
           password: ${MAVEN_PASSWORD}
         config:
           client-class-name: Metriport
-  local:
-    generators:
-      - name: fernapi/fern-typescript-node-sdk
-        version: 0.7.2
-        output: 
-          location: local-file-system
-          path: ../packages/sdks/typescript
-        config: 
-          outputSourceFiles: true
-          namespaceExport: Metriport
-      - name: fernapi/fern-python-sdk
-        version: 0.4.4
-        output: 
-          location: local-file-system
-          path: ../packages/sdks/python
-        config:
-          client_class_name: Metriport
-      - name: fernapi/fern-java-sdk
-        version: 0.5.10
-        output: 
-          location: local-file-system
-          path: ../packages/sdks/java
-        config:
-          client-class-name: Metriport
+        github: 
+          repository: metriport/metriport-java
