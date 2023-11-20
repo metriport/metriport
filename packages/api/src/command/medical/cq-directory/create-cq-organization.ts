@@ -25,19 +25,9 @@ export const createOrUpdateCQOrganization = async (
 async function createDirectoryOrganization(
   orgData: CQDirectoryOrganizationData
 ): Promise<CQOrganization> {
-  const { oid, name, urlXCPD, urlDQ, urlDR, state, lat, lon, data } = orgData;
-
   const org = await CQOrganizationModel.create({
     id: uuidv7(),
-    oid,
-    name,
-    urlXCPD,
-    urlDQ,
-    urlDR,
-    lat,
-    lon,
-    state,
-    data,
+    ...orgData,
   });
 
   return org;

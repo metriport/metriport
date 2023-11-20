@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize";
 import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
-const tableName = "cq_directory";
+const tableName = "cq_organization";
 // Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {

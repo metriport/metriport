@@ -48,6 +48,9 @@ export const config: EnvConfig = {
     domain: "myhealthapp.com",
     host: "myhealthapp.com",
   },
+  carequality: {
+    cqApiKey: "CQ_API_KEY",
+  },
   commonwell: {
     envVars: {
       CW_MEMBER_NAME: "Test Org",

@@ -4,7 +4,7 @@ import { BaseModel, ModelSetup } from "../../models/_default";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
 
 export class CQOrganizationModel extends BaseModel<CQOrganizationModel> implements CQOrganization {
-  static NAME = "cq_directory";
+  static NAME = "cq_organization";
   declare oid: string;
   declare name?: string;
   declare urlXCPD: string;

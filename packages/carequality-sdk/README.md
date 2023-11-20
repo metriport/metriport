@@ -1,7 +1,6 @@
 # `carequality-sdk`
 
-SDK to interact with the Carequality directory - by Metriport Inc.
-Built based on the Carequality documentation - https://carequality.org/resources/
+SDK to interact with the [Carequality STU3 directory](https://carequality.org/healthcare-directory/index.html) - by Metriport Inc.
 
 ## Usage
 
