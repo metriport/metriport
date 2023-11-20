@@ -1,15 +1,15 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { CQDirectoryOrganizationData, CQOrganization } from "../../../domain/medical/cq-directory";
-import { CQOrganizationModel } from "../../../models/medical/cq-directory";
+import { CQDirectoryEntryData, CQDirectoryEntry } from "../../../domain/medical/cq-directory";
+import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
 import { getCQOrganization } from "./get-organization";
 import { updateCQDirectoryOrganization } from "./update-organization";
 
-export type CQOrganizationCreateResponse = { org: CQOrganization } & {
+export type CQOrganizationCreateResponse = { org: CQDirectoryEntry } & {
   updated: boolean;
 };
 
 export const createOrUpdateCQOrganization = async (
-  orgData: CQDirectoryOrganizationData
+  orgData: CQDirectoryEntryData
 ): Promise<CQOrganizationCreateResponse> => {
   // ensure we never create more than one entry per cq org
   const existingOrg = await getCQOrganization({ oid: orgData.oid });
@@ -23,9 +23,9 @@ export const createOrUpdateCQOrganization = async (
 };
 
 async function createDirectoryOrganization(
-  orgData: CQDirectoryOrganizationData
-): Promise<CQOrganization> {
-  const org = await CQOrganizationModel.create({
+  orgData: CQDirectoryEntryData
+): Promise<CQDirectoryEntry> {
+  const org = await CQDirectoryEntryModel.create({
     id: uuidv7(),
     ...orgData,
   });

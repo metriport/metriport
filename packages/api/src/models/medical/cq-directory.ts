@@ -1,10 +1,13 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { CQOrganization } from "../../domain/medical/cq-directory";
+import { CQDirectoryEntry } from "../../domain/medical/cq-directory";
 import { BaseModel, ModelSetup } from "../../models/_default";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
 
-export class CQOrganizationModel extends BaseModel<CQOrganizationModel> implements CQOrganization {
-  static NAME = "cq_organization";
+export class CQDirectoryEntryModel
+  extends BaseModel<CQDirectoryEntryModel>
+  implements CQDirectoryEntry
+{
+  static NAME = "cq_directory_entry";
   declare oid: string;
   declare name?: string;
   declare urlXCPD: string;
@@ -16,7 +19,7 @@ export class CQOrganizationModel extends BaseModel<CQOrganizationModel> implemen
   declare state?: string;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    CQOrganizationModel.init(
+    CQDirectoryEntryModel.init(
       {
         ...BaseModel.attributes(),
         oid: {
@@ -52,7 +55,7 @@ export class CQOrganizationModel extends BaseModel<CQOrganizationModel> implemen
       },
       {
         ...BaseModel.modelOptions(sequelize),
-        tableName: CQOrganizationModel.NAME,
+        tableName: CQDirectoryEntryModel.NAME,
       }
     );
   };

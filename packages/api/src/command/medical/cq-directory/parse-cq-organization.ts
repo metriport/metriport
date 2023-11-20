@@ -3,7 +3,7 @@ import { Address } from "@metriport/carequality-sdk/models/address";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
 import { XCPD_STRING, XCA_DQ_STRING, XCA_DR_STRING } from "@metriport/carequality-sdk/common/util";
 import { normalizeOid } from "@metriport/shared";
-import { CQDirectoryOrganizationData } from "../../../domain/medical/cq-directory";
+import { CQDirectoryEntryData } from "../../../domain/medical/cq-directory";
 
 export type XCUrls = {
   urlXCPD: string;
@@ -11,7 +11,7 @@ export type XCUrls = {
   urlDR?: string;
 };
 
-export function parseCQOrganizations(orgsInput: Organization[]): CQDirectoryOrganizationData[] {
+export function parseCQOrganizations(orgsInput: Organization[]): CQDirectoryEntryData[] {
   const orgs = orgsInput.flatMap(org => {
     const orgOid = org?.identifier?.value?.value;
     if (!orgOid) return [];
@@ -28,7 +28,7 @@ export function parseCQOrganizations(orgsInput: Organization[]): CQDirectoryOrga
     const coordinates = getCoordinates(org?.address);
 
     const state = getState(org.address);
-    const orgData: CQDirectoryOrganizationData = {
+    const orgData: CQDirectoryEntryData = {
       oid,
       name: org.name?.value ?? undefined,
       urlXCPD: url.urlXCPD,
