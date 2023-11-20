@@ -3,6 +3,8 @@
 service:
   base-path: /medical/v1/document
   auth: true
+  audiences: 
+    - public
   endpoints:
     startQuery:
       display-name: Start Document Query

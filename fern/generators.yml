@@ -1,5 +1,7 @@
 groups:
   publish:
+    audiences: 
+      - public
     generators:
       - name: fernapi/fern-python-sdk
         version: 0.6.5
@@ -33,6 +35,8 @@ groups:
         github: 
           repository: metriport/metriport-node
   test: # fern generate --group test will locally generate the SDKs for testing
+    audiences: 
+      - public
     generators:
       - name: fernapi/fern-python-sdk
         version: 0.6.5

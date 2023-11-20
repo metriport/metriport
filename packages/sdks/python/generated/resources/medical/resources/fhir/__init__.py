@@ -5,9 +5,6 @@ from .types import (
     Filter,
     GetConsolidatedQueryStatusResponse,
     PatientConsolidatedDataStatus,
-    ResourceTypeForConsolidation,
-    ResourcesSearchableByPatient,
-    ResourcesSearchableBySubject,
     StartConsolidatedQueryResponse,
 )
 
@@ -16,8 +13,5 @@ __all__ = [
     "Filter",
     "GetConsolidatedQueryStatusResponse",
     "PatientConsolidatedDataStatus",
-    "ResourceTypeForConsolidation",
-    "ResourcesSearchableByPatient",
-    "ResourcesSearchableBySubject",
     "StartConsolidatedQueryResponse",
 ]

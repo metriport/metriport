@@ -18,9 +18,6 @@ from .fhir import (
     Filter,
     GetConsolidatedQueryStatusResponse,
     PatientConsolidatedDataStatus,
-    ResourceTypeForConsolidation,
-    ResourcesSearchableByPatient,
-    ResourcesSearchableBySubject,
     StartConsolidatedQueryResponse,
 )
 from .organization import OrgType, Organization, OrganizationCreate
@@ -69,9 +66,6 @@ __all__ = [
     "PersonalIdentifier",
     "PersonalIdentifier_DriversLicense",
     "Progress",
-    "ResourceTypeForConsolidation",
-    "ResourcesSearchableByPatient",
-    "ResourcesSearchableBySubject",
     "StartConsolidatedQueryResponse",
     "document",
     "facility",

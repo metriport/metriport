@@ -24,7 +24,7 @@ public final class ClientOptions {
     this.environment = environment;
     this.headers = new HashMap<>();
     this.headers.putAll(headers);
-    this.headers.putAll(Map.of("X-Fern-SDK-Name", "com.metriport.fern:api-sdk", "X-Fern-SDK-Version", "0.0.48", "X-Fern-Language", "JAVA"));
+    this.headers.putAll(Map.of("X-Fern-SDK-Name", "com.metriport.fern:api-sdk", "X-Fern-SDK-Version", "0.0.55", "X-Fern-Language", "JAVA"));
     this.headerSuppliers = headerSuppliers;
     this.httpClient = httpClient;
     ;
