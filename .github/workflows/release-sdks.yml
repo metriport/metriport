@@ -32,7 +32,7 @@ jobs:
       - name: Download Fern
         run: npm install -g fern-api
 
-      - name: Release Python SDK
+      - name: Release SDKs
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
