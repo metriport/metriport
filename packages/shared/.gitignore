@@ -1,0 +1,6 @@
+node_modules
+lib
+dist
+
+# dotenv environment variable files
+.env

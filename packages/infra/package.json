@@ -1,6 +1,6 @@
 {
   "name": "infrastructure",
-  "version": "1.5.1",
+  "version": "1.5.2-alpha.0",
   "private": true,
   "bin": {
     "infrastructure": "bin/infrastructure.js"
@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint bin/**/*.ts lib/**/*.ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '{bin,lib}/**/*.ts' --write",
+    "prettier-fix": "npx prettier '{bin,lib,test}/**/*.ts' --write",
     "test": "jest --passWithNoTests",
     "cdk": "cdk"
   },

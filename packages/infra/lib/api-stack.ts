@@ -685,13 +685,12 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // IHE API Gateway
     //-------------------------------------------
-    if (props.config.iheSubdomain) {
+    if (props.config.iheGateway) {
       createIHEStack(this, {
         config: props.config,
         vpc: this.vpc,
         alarmAction: slackNotification?.alarmAction,
         lambdaLayers,
-        certificate,
         publicZone,
       });
     }
