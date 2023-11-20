@@ -1,5 +1,9 @@
 import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { Address } from "@metriport/carequality-sdk/models/address";
+import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { XCPD_STRING, XCA_DQ_STRING, XCA_DR_STRING } from "@metriport/carequality-sdk/common/util";
+import { normalizeOid } from "@metriport/shared";
+import { CQDirectoryOrganizationData } from "../../../domain/medical/cq-directory";
 
 export type XCUrls = {
   urlXCPD: string;
@@ -7,19 +11,54 @@ export type XCUrls = {
   urlDR?: string;
 };
 
-export function getUrls(contained: Contained): XCUrls | undefined {
+export function parseCQOrganizations(orgsInput: Organization[]): CQDirectoryOrganizationData[] {
+  const orgs = orgsInput.flatMap(org => {
+    const orgOid = org?.identifier?.value?.value;
+    if (!orgOid) return [];
+
+    const url = getUrls(org?.contained);
+    if (!url?.urlXCPD) return [];
+    let oid = org?.identifier?.value?.value;
+    try {
+      oid = normalizeOid(org?.identifier?.value?.value);
+    } catch (err) {
+      console.log(`Organization ${org.name?.value} has invalid OID: ${oid}`);
+      return [];
+    }
+    const coordinates = getCoordinates(org?.address);
+
+    const state = getState(org.address);
+    const orgData: CQDirectoryOrganizationData = {
+      oid,
+      name: org.name?.value ?? undefined,
+      urlXCPD: url.urlXCPD,
+      urlDQ: url.urlDQ,
+      urlDR: url.urlDR,
+      lat: coordinates?.lat ?? undefined,
+      lon: coordinates?.lon ?? undefined,
+      data: {
+        ...org,
+      },
+      state,
+    };
+    return orgData;
+  });
+  return orgs;
+}
+
+function getUrls(contained: Contained): XCUrls | undefined {
   const endpointMap: Record<string, string> = {};
 
-  contained?.forEach(endpoint => {
-    const ext = endpoint?.Endpoint.extension.extension.find(ext => ext.url === "Transaction");
+  contained?.forEach(c => {
+    const ext = c?.Endpoint.extension.extension.find(ext => ext.url === "Transaction");
     const type = ext?.valueString?.value;
 
-    if (type && endpoint && endpoint.Endpoint.address && endpoint.Endpoint.address.value) {
-      endpointMap[type] = endpoint.Endpoint.address.value;
+    if (type && c?.Endpoint?.address?.value) {
+      endpointMap[type] = c.Endpoint.address.value;
     }
   });
 
-  const urlXCPD = endpointMap["XCPD ITI-55"];
+  const urlXCPD = endpointMap[XCPD_STRING];
 
   if (!urlXCPD) return;
 
@@ -27,27 +66,25 @@ export function getUrls(contained: Contained): XCUrls | undefined {
     urlXCPD,
   };
 
-  if (endpointMap["XCA ITI-38"]) {
-    urls.urlDQ = endpointMap["XCA ITI-38"];
+  if (endpointMap[XCA_DQ_STRING]) {
+    urls.urlDQ = endpointMap[XCA_DQ_STRING];
   }
-  if (endpointMap["XCA ITI-39"]) {
-    urls.urlDR = endpointMap["XCA ITI-39"];
+  if (endpointMap[XCA_DR_STRING]) {
+    urls.urlDR = endpointMap[XCA_DR_STRING];
   }
 
   return urls;
 }
 
-export function getCoordinates(
-  address: Address[] | undefined
-): { latitude: string; longitude: string } | undefined {
+function getCoordinates(address: Address[] | undefined): { lat: string; lon: string } | undefined {
   if (!address) return;
   const coordinates = address.flatMap(a => {
     if (a.extension?.url === "OrgPosition") {
       const position = a.extension?.valueCodeableConcept?.coding?.value?.position;
       if (!position) return [];
       return {
-        latitude: position.latitude.value,
-        longitude: position.longitude.value,
+        lat: position.latitude.value,
+        lon: position.longitude.value,
       };
     }
   })[0];
@@ -55,7 +92,7 @@ export function getCoordinates(
   return coordinates;
 }
 
-export function getState(address: Address[] | undefined): string | undefined {
+function getState(address: Address[] | undefined): string | undefined {
   if (!address) return;
   if (address.length > 0 && address[0].state) return address[0].state.value ?? undefined;
   return;

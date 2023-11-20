@@ -1,27 +1,34 @@
+import { CQDirectoryOrganizationData, CQOrganization } from "../../../domain/medical/cq-directory";
 import { validateVersionForUpdate } from "../../../models/_default";
-import { CQDirectoryModel } from "../../../models/medical/cq-directory";
-import { CQDirectoryOrg } from "./create-cq-organization";
+import { CQOrganizationModel } from "../../../models/medical/cq-directory";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { BaseUpdateCmd } from "../base-update-command";
+import { getCQOrganizationOrFail } from "./get-organization";
 
-export const updateCQDirectoryOrganization = async ({
-  existingOrg,
-  newData,
-}: {
-  existingOrg: CQDirectoryModel;
-  newData: CQDirectoryOrg;
-}): Promise<CQDirectoryModel> => {
-  const { eTag, urlXCPD, urlDQ, urlDR } = existingOrg;
-  const { name, latitude, longitude, state, data } = newData;
+export type CQOrganizationUpdateCmd = BaseUpdateCmd & CQDirectoryOrganizationData;
 
-  validateVersionForUpdate(existingOrg, eTag);
+export const updateCQDirectoryOrganization = async (
+  cqOrganizationUpdate: CQOrganizationUpdateCmd
+): Promise<CQOrganization> => {
+  const { eTag, name, urlXCPD, urlDQ, urlDR, lat, lon, state, data } = cqOrganizationUpdate;
 
-  return existingOrg.update({
-    name,
-    urlXCPD,
-    urlDQ,
-    urlDR,
-    latitude,
-    longitude,
-    state,
-    data,
+  return executeOnDBTx(CQOrganizationModel.prototype, async transaction => {
+    const org = await getCQOrganizationOrFail({ oid: cqOrganizationUpdate.oid });
+
+    validateVersionForUpdate(org, eTag);
+
+    return org.update(
+      {
+        name,
+        urlXCPD,
+        urlDQ,
+        urlDR,
+        lat,
+        lon,
+        state,
+        data,
+      },
+      { transaction }
+    );
   });
 };

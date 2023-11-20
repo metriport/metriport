@@ -1,9 +1,14 @@
 import BadRequestError from "@metriport/core/util/error/bad-request";
-import axios, { AxiosInstance, AxiosResponse, AxiosStatic } from "axios";
-import { Bundle as Stu3Bundle, bundleSchema } from "../models/bundle";
+import axios, { AxiosInstance, AxiosResponse } from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { STU3Bundle, stu3BundleSchema } from "../models/bundle";
 import { OrganizationList } from "../models/organization";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 
-const DEFAULT_AXIOS_TIMEOUT_SECONDS = 120;
+dayjs.extend(duration);
+
+const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds").asMilliseconds();
 const MAX_COUNT = 1000;
 const JSON_FORMAT = "_format=json";
 
@@ -12,28 +17,23 @@ export enum APIMode {
   staging = "stage",
 }
 
-export type Options = {
-  axios?: AxiosStatic; // Set axios if it fails to load
-  timeout?: number;
-};
-
 /**
- * Currently operates on FHIR Stu3 format.
+ * This SDK operates on FHIR STU3 format.
  */
 export class Carequality {
-  static devUrl = "https://dev-dir-ceq.sequoiadns.org/fhir-stu3/1.0.1";
-  static stagingUrl = "https://stage-dir-ceq.sequoiaproject.org/fhir-stu3/1.0.1";
+  private static readonly devUrl = "https://dev-dir-ceq.sequoiadns.org/fhir-stu3/1.0.1";
+  private static readonly stagingUrl = "https://stage-dir-ceq.sequoiaproject.org/fhir-stu3/1.0.1";
 
   // NOTE: These URLs can be used if we migrate to FHIR R4 format.
-  // static devUrl = "https://directory.dev.carequality.org/fhir";
-  // static stagingUrl = "https://directory.stage.carequality.org/fhir";
+  // private static readonly devUrl = "https://directory.dev.carequality.org/fhir";
+  // private static readonly  stagingUrl = "https://directory.stage.carequality.org/fhir";
 
   static ORG_ENDPOINT = "/Organization/";
   readonly api: AxiosInstance;
   readonly apiKey: string;
 
   /**
-   * Creates a new instance of the CommonWell API client pertaining to an
+   * Creates a new instance of the Carequality API client pertaining to an
    * organization to make requests on behalf of.
    *
    * @param apiKey          The API key to use for authentication.
@@ -41,10 +41,23 @@ export class Carequality {
    * @param options         Optional parameters
    * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
    */
-  constructor(apiKey: string, apiMode: string, options: Options = {}) {
+  constructor(apiKey: string, apiMode: string, options: { timeout?: number } = {}) {
+    let baseUrl;
+
+    switch (apiMode) {
+      case APIMode.dev:
+        baseUrl = Carequality.devUrl;
+        break;
+      case APIMode.staging:
+        baseUrl = Carequality.stagingUrl;
+        break;
+      default:
+        throw new Error("API mode not supported.");
+    }
+
     this.api = axios.create({
-      timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT_SECONDS * 1_000,
-      baseURL: apiMode === APIMode.dev ? Carequality.devUrl : Carequality.stagingUrl,
+      timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT,
+      baseURL: baseUrl,
     });
     this.apiKey = apiKey;
   }
@@ -62,24 +75,29 @@ export class Carequality {
 
   /**
    * Lists the indicated number of organizations. Mostly used for testing purposes.
-   * @param count number of organizations to fetch
+   * @param count Optional, number of organizations to fetch.
+   * @param start Optional, the index of the directory to start querying from; optional
    * @returns
    */
-  async listOrganizations(count: number): Promise<OrganizationList> {
-    if (count < 1 || count > 1000)
+  async listOrganizations({
+    count = MAX_COUNT,
+    start = 0,
+  }: {
+    count?: number;
+    start?: number;
+  }): Promise<OrganizationList> {
+    if (count < 1 || count > MAX_COUNT)
       throw new BadRequestError(
-        "Count value must be between 1 and 1000. If you need more, use listDirectories()"
+        `Count value must be between 1 and ${MAX_COUNT}. If you need more, use listAllOrganizations()`
       );
-    const resp = await this.sendGetRequest(
-      `${Carequality.ORG_ENDPOINT}?apikey=${this.apiKey}&${JSON_FORMAT}&_count=${count}`,
-      { "Content-Type": "application/json" }
-    );
 
-    const bundle: Stu3Bundle = bundleSchema.parse(resp.data.Bundle);
+    const url = `${Carequality.ORG_ENDPOINT}?apikey=${this.apiKey}&${JSON_FORMAT}&_count=${count}&_start=${start}`;
+    const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
+
+    const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
     const orgs = bundle.entry.map(e => e.resource.Organization);
-
     return {
-      count: bundle.total.value,
+      count: orgs.length,
       organizations: orgs,
     };
   }
@@ -89,9 +107,8 @@ export class Carequality {
    *
    * @returns organizations list and count
    */
-  async listAllOrganizations(): Promise<OrganizationList> {
-    let start = 0;
-    const baseUrl = `${Carequality.ORG_ENDPOINT}?apikey=${this.apiKey}&${JSON_FORMAT}&_count=${MAX_COUNT}`;
+  async listAllOrganizations(failGracefully = false): Promise<OrganizationList> {
+    let currentPosition = 0;
     const results: OrganizationList = {
       count: 0,
       organizations: [],
@@ -99,25 +116,32 @@ export class Carequality {
     let isDone = false;
 
     while (!isDone) {
-      const url = baseUrl + `&_start=${start}`;
       try {
-        const resp = await this.sendGetRequest(url);
-        const bundle = bundleSchema.parse(resp.data.Bundle);
-        const organs = bundle.entry.map(e => e.resource.Organization);
-        results.organizations.push(...organs);
-        results.count += bundle.total.value;
-        start += MAX_COUNT;
+        console.log(
+          `Querying the next ${MAX_COUNT} organizations, starting from ${currentPosition}`
+        );
+        const resp = await this.listOrganizations({ start: currentPosition });
+        results.organizations.push(...resp.organizations);
+        currentPosition += MAX_COUNT;
 
-        const bundleEntryLength = resp.data.Bundle.entry.length;
-        if (bundleEntryLength <= MAX_COUNT / 2) {
+        const bundleEntryLength = resp.count;
+        console.log(
+          `Received: ${bundleEntryLength} orgs. Continuing: ${!(bundleEntryLength < MAX_COUNT)}`
+        );
+        if (bundleEntryLength < MAX_COUNT) {
           console.log("Reached the end of the CQ directory...");
           isDone = true;
         }
       } catch (error) {
-        console.log(`Failed to list CQ organizations. Cause: ${error}.`);
         isDone = true;
+        const msg = "Failed to list CQ organizations";
+        console.log(`${msg}. Cause: ${error}.`);
+        if (!failGracefully) {
+          throw new MetriportError(msg, error, {});
+        }
       }
     }
+    results.count = results.organizations.length;
     return results;
   }
 }

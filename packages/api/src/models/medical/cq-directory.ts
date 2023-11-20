@@ -3,20 +3,20 @@ import { CQOrganization } from "../../domain/medical/cq-directory";
 import { BaseModel, ModelSetup } from "../../models/_default";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
 
-export class CQDirectoryModel extends BaseModel<CQDirectoryModel> implements CQOrganization {
+export class CQOrganizationModel extends BaseModel<CQOrganizationModel> implements CQOrganization {
   static NAME = "cq_directory";
   declare oid: string;
   declare name?: string;
   declare urlXCPD: string;
   declare urlDQ?: string;
   declare urlDR?: string;
-  declare latitude?: string;
-  declare longitude?: string;
+  declare lat?: string;
+  declare lon?: string;
   declare data?: Organization;
   declare state?: string;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    CQDirectoryModel.init(
+    CQOrganizationModel.init(
       {
         ...BaseModel.attributes(),
         oid: {
@@ -37,10 +37,10 @@ export class CQDirectoryModel extends BaseModel<CQDirectoryModel> implements CQO
           type: DataTypes.STRING,
           field: "url_dr",
         },
-        latitude: {
+        lat: {
           type: DataTypes.STRING,
         },
-        longitude: {
+        lon: {
           type: DataTypes.STRING,
         },
         state: {
@@ -52,7 +52,7 @@ export class CQDirectoryModel extends BaseModel<CQDirectoryModel> implements CQO
       },
       {
         ...BaseModel.modelOptions(sequelize),
-        tableName: CQDirectoryModel.NAME,
+        tableName: CQOrganizationModel.NAME,
       }
     );
   };

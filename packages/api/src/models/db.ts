@@ -7,7 +7,7 @@ import { Config } from "../shared/config";
 import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
-import { CQDirectoryModel } from "./medical/cq-directory";
+import { CQOrganizationModel } from "./medical/cq-directory";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
@@ -20,7 +20,7 @@ const models: ModelSetup[] = [
   Settings.setup,
   WebhookRequest.setup,
   OrganizationModel.setup,
-  CQDirectoryModel.setup,
+  CQOrganizationModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
   MAPIAccess.setup,

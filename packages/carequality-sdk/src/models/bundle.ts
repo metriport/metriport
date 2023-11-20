@@ -1,14 +1,9 @@
 import { z } from "zod";
-import { identifierSchema, meta, objectNumericValue, objectValue } from "./shared";
 import { organizationSchema } from "./organization";
+import { objectNumericValue } from "./shared";
 
-export const bundleSchema = z.object({
-  xmlns: z.string(),
-  id: objectValue,
-  meta,
-  type: objectValue,
+export const stu3BundleSchema = z.object({
   total: objectNumericValue,
-  identifier: identifierSchema.optional(),
   entry: z.array(
     z.object({
       resource: z.object({
@@ -18,4 +13,4 @@ export const bundleSchema = z.object({
   ),
 });
 
-export type Bundle = z.infer<typeof bundleSchema>;
+export type STU3Bundle = z.infer<typeof stu3BundleSchema>;

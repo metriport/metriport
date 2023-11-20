@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { addressSchema } from "./address";
 import { contactSchema } from "./contact";
-import { meta, objectValue, objectValueOptional, type } from "./shared";
 import { containedSchema } from "./contained";
+import { meta, objectValue, objectValueOptional, type } from "./shared";
 
 export const organizationIdentifierSchema = z.object({
   use: objectValueOptional,
@@ -13,7 +13,6 @@ export const organizationIdentifierSchema = z.object({
 
 export const organizationSchema = z
   .object({
-    id: objectValueOptional,
     identifier: organizationIdentifierSchema,
     meta,
     name: objectValueOptional,
