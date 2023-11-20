@@ -1,23 +1,12 @@
 name: Release SDKs
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       version:
         description: "The version of the SDKs that you would like to release"
         required: true
         type: string
-    secrets:
-      MAVEN_USERNAME:
-        required: true
-      MAVEN_PASSWORD:
-        required: true
-      NPM_TOKEN:
-        required: true
-      PYPI_TOKEN:
-        required: true
-      FERN_TOKEN:
-        required: true
 
 jobs:
   release:
