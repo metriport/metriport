@@ -9,3 +9,8 @@ class GCP:
     def get_secret(secret_name: str):
         # Return the secret from environment variables
         return os.getenv(secret_name)
+
+
+    def save_to_big_query(self, data: dict):
+        # Save data to BigQuery
+        pass
