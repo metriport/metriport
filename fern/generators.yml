@@ -52,7 +52,7 @@ groups:
         version: 0.8.7
         output:
           location: local-file-system
-          path: ../packages/sdks/node/generated
+          path: ../packages/sdks/typescript/generated
         config:
           namespaceExport: Metriport
           outputSourceFiles: true
