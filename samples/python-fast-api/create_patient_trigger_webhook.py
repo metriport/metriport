@@ -9,10 +9,10 @@ from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
 
-from backend import gcp
-from backend import env
+import gcp
+import env
 
-_METRIPORT_SANDBOX_URL = "https://api.staging.metriport.com/"
+_METRIPORT_SANDBOX_URL = "https://api.sandbox.metriport.com/"
 _METRIPORT_PROD_URL = "https://api.metriport.com/"
 
 
@@ -43,14 +43,12 @@ def default_async_client() -> httpx.AsyncClient:
         transport=httpx.AsyncHTTPTransport(retries=3),
     )
 
-
 def client(**kwargs) -> httpx.Client:
     return httpx.Client(
         base_url=_METRIPORT_PROD_URL if env.is_prod() else _METRIPORT_SANDBOX_URL,
         auth=MetriportAuth(),
         **kwargs,
     )
-
 
 # An openapispec would make this a lot easier.
 class Address(pydantic.BaseModel):
@@ -193,8 +191,6 @@ async def sync_patients(
         if not _already_included(patient, email_index, phone_index):
             promises.append(upload_new_patient(metriport_facility_id, patient))
     return [await promise for promise in promises]
-
-    
     
 async def main():
     # Instantiate the HTTP client
@@ -227,10 +223,8 @@ async def main():
         client=client,
     )
 
-    print(upload_response.json())
     patient_id = upload_response.json().get('id')
 
-    print("Document Query")
     document_query_response = await post_document_query(
         patient_id=patient_id,
         facility_id=facility_id,

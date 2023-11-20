@@ -1,17 +1,14 @@
 import hmac
 import hashlib
 import json
-import os
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response, status
 from pydantic import BaseModel
 
-from backend import gcp
+import gcp
 from create_patient_trigger_webhook import post_consolidated_query, default_async_client
 
 # Initialize FastAPI app
 app = FastAPI()
-
 # Get environment variables
 gcp_instance = gcp.GCP()
 WH_KEY = gcp_instance.get_secret("METRIPORT_WH_KEY")
@@ -38,8 +35,21 @@ def verify_webhook_signature(key, message, signature, digestmod=hashlib.sha256):
 class WebhookPayload(BaseModel):
     ping: str = None
 
+
 @app.post("/")
 async def webhook(request: Request):
+    """
+    This Python function handles a webhook request by verifying the signature, processing different
+    types of webhook events, and returning an appropriate response. It assumes you only have one patient
+    whose id is queried from the environment variable METRIPORT_PATIENT_ID. The application flow here is 
+    the following:
+    Webhook gets triggered by doucment query request, and once it recieves a document-conversion in the response,
+    it makes a consolidated query request. Once it recieves a consolidated-data in the response, it "saves" the
+    data to BigQuery.
+
+    :param request: The request object.
+    :return: A response object.
+    """
     body = await request.json()
     signature = request.headers.get('x-metriport-signature')
 
