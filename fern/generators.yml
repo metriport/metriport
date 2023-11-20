@@ -12,7 +12,7 @@ groups:
           client_class_name: Metriport
         github: 
           repository: metriport/metriport-python
-  ndoe-sdk:
+  node-sdk:
     generators:
       - name: fernapi/fern-typescript-node-sdk
         version: 0.8.0-rc4
