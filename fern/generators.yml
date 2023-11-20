@@ -35,32 +35,5 @@ groups:
           password: ${MAVEN_PASSWORD}
         config:
           client-class-name: Metriport
-<<<<<<< HEAD
         github: 
           repository: metriport/metriport-java
-=======
-  local:
-    generators:
-      - name: fernapi/fern-typescript-node-sdk
-        version: 0.8.7
-        output: 
-          location: local-file-system
-          path: ../packages/sdks/typescript
-        config: 
-          outputSourceFiles: true
-          namespaceExport: Metriport
-      - name: fernapi/fern-python-sdk
-        version: 0.6.6
-        output: 
-          location: local-file-system
-          path: ../packages/sdks/python
-        config:
-          client_class_name: Metriport
-      - name: fernapi/fern-java-sdk
-        version: 0.5.15
-        output: 
-          location: local-file-system
-          path: ../packages/sdks/java
-        config:
-          client-class-name: Metriport
->>>>>>> fe1cbd22 (generate sdks)
