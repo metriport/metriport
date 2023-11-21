@@ -164,7 +164,6 @@ export function createAPIService(
           ...(cookieStore && {
             CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
           }),
-          CQ_API_KEY: props.config.carequality.cqApiKey,
         },
       },
       memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
