@@ -1,8 +1,8 @@
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { MetriportError } from "../../util/error/metriport-error";
+import NotFoundError from "../../util/error/not-found";
 
 export function makeLambdaClient(region: string) {
   return new AWS.Lambda({ signatureVersion: "v4", region });
