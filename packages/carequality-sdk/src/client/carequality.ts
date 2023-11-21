@@ -4,11 +4,11 @@ import axios, { AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { STU3Bundle, stu3BundleSchema } from "../models/bundle";
-import { OrganizationList } from "../models/organization";
+import { Organization } from "../models/organization";
 
 dayjs.extend(duration);
 
-const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds").asMilliseconds();
+const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds");
 const MAX_COUNT = 1000;
 const JSON_FORMAT = "_format=json";
 
@@ -37,11 +37,15 @@ export class Carequality {
    * organization to make requests on behalf of.
    *
    * @param apiKey          The API key to use for authentication.
-   * @param apiMode         The mode the client will be running.
+   * @param apiMode         Optional, the mode the client will be running. Defaults to staging.
    * @param options         Optional parameters
    * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
    */
-  constructor(apiKey: string, apiMode: string, options: { timeout?: number } = {}) {
+  constructor(
+    apiKey: string,
+    apiMode: APIMode = APIMode.staging,
+    options: { timeout?: number } = {}
+  ) {
     let baseUrl;
 
     switch (apiMode) {
@@ -56,7 +60,7 @@ export class Carequality {
     }
 
     this.api = axios.create({
-      timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT,
+      timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT.asMilliseconds(),
       baseURL: baseUrl,
     });
     this.apiKey = apiKey;
@@ -85,7 +89,7 @@ export class Carequality {
   }: {
     count?: number;
     start?: number;
-  }): Promise<OrganizationList> {
+  }): Promise<Organization[]> {
     if (count < 1 || count > MAX_COUNT)
       throw new BadRequestError(
         `Count value must be between 1 and ${MAX_COUNT}. If you need more, use listAllOrganizations()`
@@ -96,10 +100,8 @@ export class Carequality {
 
     const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
     const orgs = bundle.entry.map(e => e.resource.Organization);
-    return {
-      count: orgs.length,
-      organizations: orgs,
-    };
+
+    return orgs;
   }
 
   /**
@@ -107,12 +109,9 @@ export class Carequality {
    *
    * @returns organizations list and count
    */
-  async listAllOrganizations(failGracefully = false): Promise<OrganizationList> {
+  async listAllOrganizations(failGracefully = false): Promise<Organization[]> {
     let currentPosition = 0;
-    const results: OrganizationList = {
-      count: 0,
-      organizations: [],
-    };
+    const organizations = [];
     let isDone = false;
 
     while (!isDone) {
@@ -120,11 +119,11 @@ export class Carequality {
         console.log(
           `Querying the next ${MAX_COUNT} organizations, starting from ${currentPosition}`
         );
-        const resp = await this.listOrganizations({ start: currentPosition });
-        results.organizations.push(...resp.organizations);
+        const orgs = await this.listOrganizations({ start: currentPosition });
+        organizations.push(...orgs);
         currentPosition += MAX_COUNT;
 
-        const bundleEntryLength = resp.count;
+        const bundleEntryLength = orgs.length;
         console.log(
           `Received: ${bundleEntryLength} orgs. Continuing: ${!(bundleEntryLength < MAX_COUNT)}`
         );
@@ -141,7 +140,6 @@ export class Carequality {
         }
       }
     }
-    results.count = results.organizations.length;
-    return results;
+    return organizations;
   }
 }

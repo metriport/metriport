@@ -29,10 +29,3 @@ export const organizationSchema = z
   .optional();
 
 export type Organization = z.infer<typeof organizationSchema>;
-
-export const organizationListSchema = z.object({
-  count: z.number(),
-  organizations: z.array(organizationSchema),
-});
-
-export type OrganizationList = z.infer<typeof organizationListSchema>;

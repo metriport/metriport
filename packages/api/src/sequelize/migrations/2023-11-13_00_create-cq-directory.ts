@@ -13,10 +13,12 @@ export const up: Migration = async ({ context: queryInterface }) => {
         id: {
           type: DataTypes.STRING,
           primaryKey: true,
+          allowNull: false,
         },
         oid: {
           type: DataTypes.STRING,
           unique: true,
+          allowNull: false,
         },
         name: {
           type: DataTypes.STRING,
@@ -25,6 +27,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
         urlXCPD: {
           type: DataTypes.STRING,
           field: "url_xcpd",
+          allowNull: false,
         },
         urlDQ: {
           type: DataTypes.STRING,
