@@ -29,7 +29,7 @@ import { stringToBoolean } from "../../shared/types";
 import { stringIntegerSchema, stringListFromQuerySchema } from "../schemas/shared";
 import { getUUIDFrom, uuidSchema } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromParamsOrFail } from "../util";
-import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
 
 dayjs.extend(duration);
@@ -352,6 +352,10 @@ router.post(
       const cxIds: string[] = cxId ? [cxId] : [];
       if (!cxIds.length) {
         cxIds.push(...(await getCxsWithEnhancedCoverageFeatureFlagValue()));
+      }
+      if (cxIds.length < 1) {
+        console.log(`No customers to Enhanced Coverage, skipping...`);
+        return res.status(status.OK).json({ patientIds: [] });
       }
       log(`Using these cxIds: ${cxIds.join(", ")}`);
 
