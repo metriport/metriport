@@ -22,8 +22,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     if (!org) {
       return [];
     }
-    const orgOid = org.identifier?.value?.value;
-    const normalizedOid = getOid(org, orgOid);
+    const normalizedOid = getOid(org);
     if (!normalizedOid) return [];
 
     const url = getUrls(org.contained);
@@ -100,7 +99,9 @@ function getState(addresses: Address[] | undefined): string | undefined {
   return;
 }
 
-function getOid(org: Organization, oid: string): string | undefined {
+function getOid(org: Organization): string | undefined {
+  const oid = org?.identifier?.value?.value;
+  if (!oid) return;
   try {
     return normalizeOid(oid);
   } catch (err) {

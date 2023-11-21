@@ -10,6 +10,7 @@ import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/pars
 import { Config } from "../../shared/config";
 import { asyncHandler, getFrom } from "../util";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { capture } from "../../shared/notifications";
 
 const maxNumberOfParallelRequestsToDB = 20;
 const apiKey = Config.getCQApiKey();
@@ -65,8 +66,18 @@ router.get(
     const resp = await cq.listOrganizations({ count: 1, oid });
     const org = parseCQDirectoryEntries(resp);
 
-    const matchingOrganization = org[0] ?? new NotFoundError("Organization not found");
-    return res.status(httpStatus.OK).json(matchingOrganization);
+    if (org.length > 1) {
+      const msg = "More than one organization with the same OID found in the CQ directory";
+      console.log(msg, oid);
+      capture.message(msg, {
+        extra: { context: `carequality.directory`, oid, organizations: org, level: "info" },
+      });
+    }
+
+    const matchingOrg = org[0];
+    if (!matchingOrg) throw new NotFoundError("Organization not found");
+
+    return res.status(httpStatus.OK).json(matchingOrg);
   })
 );
 

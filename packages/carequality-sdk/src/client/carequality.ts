@@ -97,9 +97,12 @@ export class Carequality {
       throw new BadRequestError(
         `Count value must be between 1 and ${MAX_COUNT}. If you need more, use listAllOrganizations()`
       );
+    const query = new URLSearchParams();
+    oid && query.append("_id", oid);
+    const queryString = query.toString();
 
-    let url = `${Carequality.ORG_ENDPOINT}?apikey=${this.apiKey}&${JSON_FORMAT}&_count=${count}&_start=${start}`;
-    if (oid) url += `&_id=${oid}`;
+    const url = `${Carequality.ORG_ENDPOINT}?apikey=${this.apiKey}&${JSON_FORMAT}&_count=${count}&_start=${start}&${queryString}`;
+
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
 
     const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
