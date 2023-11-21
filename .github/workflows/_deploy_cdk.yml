@@ -118,6 +118,7 @@ jobs:
       - name: Log Git Ref
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
+        working-directory: metriport
         shell: bash
 
       # INSTALL DEPENDENCIES

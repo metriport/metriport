@@ -9,6 +9,7 @@
     "mock-webhook": "ts-node src/mock-webhook.ts",
     "fhir-uploader": "ts-node src/fhir-uploader.ts",
     "doc-query": "ts-node src/document/document-query.ts",
+    "cq-cert-check": "ts-node src/carequality/cq-cert-checker.ts",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",
