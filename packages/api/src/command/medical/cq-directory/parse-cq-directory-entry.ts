@@ -23,34 +23,27 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       return [];
     }
     const orgOid = org.identifier?.value?.value;
-    if (!orgOid) return [];
+    const normalizedOid = getOid(org, orgOid);
+    if (!normalizedOid) return [];
 
     const url = getUrls(org.contained);
     if (!url?.urlXCPD) return [];
-    const oid = org.identifier?.value?.value;
-    try {
-      const normalizedOid = normalizeOid(oid);
-      const coordinates = getCoordinates(org.address);
-      const state = getState(org.address);
 
-      const orgData: CQDirectoryEntryData = {
-        oid: normalizedOid,
-        name: org.name?.value ?? undefined,
-        urlXCPD: url.urlXCPD,
-        urlDQ: url.urlDQ,
-        urlDR: url.urlDR,
-        lat: coordinates?.lat ?? undefined,
-        lon: coordinates?.lon ?? undefined,
-        data: {
-          ...org,
-        },
-        state,
-      };
-      return orgData;
-    } catch (err) {
-      console.log(`Organization ${org.name?.value} has invalid OID: ${oid}`);
-      return [];
-    }
+    const coordinates = getCoordinates(org.address);
+    const state = getState(org.address);
+
+    const orgData: CQDirectoryEntryData = {
+      oid: normalizedOid,
+      name: org.name?.value ?? undefined,
+      urlXCPD: url.urlXCPD,
+      urlDQ: url.urlDQ,
+      urlDR: url.urlDR,
+      lat: coordinates?.lat ?? undefined,
+      lon: coordinates?.lon ?? undefined,
+      state,
+      data: org,
+    };
+    return orgData;
   });
   return orgs;
 }
@@ -105,4 +98,12 @@ function getState(addresses: Address[] | undefined): string | undefined {
   if (!addresses) return;
   if (addresses.length > 0 && addresses[0].state) return addresses[0].state.value ?? undefined;
   return;
+}
+
+function getOid(org: Organization, oid: string): string | undefined {
+  try {
+    return normalizeOid(oid);
+  } catch (err) {
+    console.log(`Organization ${org?.name?.value} has invalid OID: ${oid}`);
+  }
 }

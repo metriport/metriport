@@ -80,22 +80,26 @@ export class Carequality {
   /**
    * Lists the indicated number of organizations. Mostly used for testing purposes.
    * @param count Optional, number of organizations to fetch.
-   * @param start Optional, the index of the directory to start querying from; optional
+   * @param start Optional, the index of the directory to start querying from
+   * @param start Optional, the OID of the organization to fetch
    * @returns
    */
   async listOrganizations({
     count = MAX_COUNT,
     start = 0,
+    oid,
   }: {
     count?: number;
     start?: number;
+    oid?: string;
   }): Promise<Organization[]> {
     if (count < 1 || count > MAX_COUNT)
       throw new BadRequestError(
         `Count value must be between 1 and ${MAX_COUNT}. If you need more, use listAllOrganizations()`
       );
 
-    const url = `${Carequality.ORG_ENDPOINT}?apikey=${this.apiKey}&${JSON_FORMAT}&_count=${count}&_start=${start}`;
+    let url = `${Carequality.ORG_ENDPOINT}?apikey=${this.apiKey}&${JSON_FORMAT}&_count=${count}&_start=${start}`;
+    if (oid) url += `&_id=${oid}`;
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
 
     const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);

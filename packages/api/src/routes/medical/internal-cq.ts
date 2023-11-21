@@ -8,24 +8,26 @@ import httpStatus from "http-status";
 import { createOrUpdateCQDirectoryEntry } from "../../command/medical/cq-directory/create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
 import { Config } from "../../shared/config";
-import { asyncHandler } from "../util";
+import { asyncHandler, getFrom } from "../util";
+import NotFoundError from "@metriport/core/util/error/not-found";
 
+const maxNumberOfParallelRequestsToDB = 20;
 const apiKey = Config.getCQApiKey();
+const cq = new Carequality(apiKey);
 
 dayjs.extend(duration);
 
 const router = Router();
 
 /**
- * POST /internal/carequality/rebuild-directory
+ * POST /internal/carequality/directory/rebuild
  *
  * Retrieves organizations from the Carequality Directory and uploads them into our database.
  * @returns Returns the number of organizations fetched, how many are newly-added and how many updated.
  */
 router.post(
-  "/rebuild-directory",
+  "/directory/rebuild",
   asyncHandler(async (req: Request, res: Response) => {
-    const cq = new Carequality(apiKey);
     const resp = await cq.listAllOrganizations();
     const orgs = parseCQDirectoryEntries(resp);
 
@@ -35,13 +37,36 @@ router.post(
       updated: 0,
     };
 
-    const directoryEntryPromises = executeAsynchronously(orgs, async org => {
-      const dbResponse = await createOrUpdateCQDirectoryEntry(org);
-      dbResponse.updated ? response.updated++ : response.added++;
-    });
-    await Promise.all([directoryEntryPromises]);
+    await executeAsynchronously(
+      orgs,
+      async org => {
+        const dbResponse = await createOrUpdateCQDirectoryEntry(org);
+        dbResponse.updated ? response.updated++ : response.added++;
+      },
+      {
+        numberOfParallelExecutions: maxNumberOfParallelRequestsToDB,
+      }
+    );
 
     return res.status(httpStatus.OK).json(response);
+  })
+);
+
+/**
+ * GET /internal/carequality/directory/:oid
+ *
+ * Retrieves the organization with the specified OID from the Carequality Directory.
+ * @returns Returns the organization.
+ */
+router.get(
+  "/directory/:oid",
+  asyncHandler(async (req: Request, res: Response) => {
+    const oid = getFrom("params").orFail("oid", req);
+    const resp = await cq.listOrganizations({ count: 1, oid });
+    const org = parseCQDirectoryEntries(resp);
+
+    const matchingOrganization = org[0] ?? new NotFoundError("Organization not found");
+    return res.status(httpStatus.OK).json(matchingOrganization);
   })
 );
 
