@@ -1,8 +1,9 @@
 version: "3"
 services:
   ihe-server:
-    build: .
-    container_name: ihe-server
+    image: nextgenhealthcare/connect
+    volumes:
+      - ./custom-extensions:/opt/connect/custom-extensions
     depends_on:
       ihe-postgres:
         condition: service_healthy
