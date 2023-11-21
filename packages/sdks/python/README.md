@@ -7,7 +7,7 @@ To run the tests, run the following commands
 ```bash
 # Run cd packages/sdks/python 
 poetry install 
-python main.py
+poetry run pytest tests
 ```
 
 Install the pylance and mypy plugins to get code completion
