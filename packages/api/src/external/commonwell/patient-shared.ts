@@ -78,7 +78,7 @@ export async function findOrCreatePerson({
   } else {
     // Search by demographics
     const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, commonwellPatientId);
-    debug(`resp searchPersonByPatientDemo: `, () => JSON.stringify(respSearch, null, 2));
+    debug(`resp searchPersonByPatientDemo: `, JSON.stringify(respSearch));
     const persons = respSearch._embedded?.person
       ? respSearch._embedded.person
           .flatMap(p => (p && getPersonId(p) ? p : []))
@@ -126,9 +126,9 @@ export async function findOrCreatePerson({
   }
 
   // If not found, enroll/add person
-  debug(`Enrolling this person: `, () => JSON.stringify(person, null, 2));
+  debug(`Enrolling this person: `, JSON.stringify(person));
   const respPerson = await commonWell.enrollPerson(queryMeta, person);
-  debug(`resp enrollPerson: `, () => JSON.stringify(respPerson, null, 2));
+  debug(`resp enrollPerson: `, JSON.stringify(respPerson));
   const personId = getPersonId(respPerson);
   if (!personId) {
     const msg = `Could not get person ID from CW response`;

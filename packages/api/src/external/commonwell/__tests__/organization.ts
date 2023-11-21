@@ -14,7 +14,7 @@ export const getOne = async (orgOid: string): Promise<CWOrganization | undefined
   const cwId = OID_PREFIX.concat(orgOid);
   try {
     const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
-    debug(`resp: `, () => JSON.stringify(resp, null, 2));
+    debug(`resp: `, JSON.stringify(resp));
     return resp;
   } catch (error) {
     const msg = `[E2E]: Failure getting Org @ CW`;
