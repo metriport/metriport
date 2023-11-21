@@ -1,10 +1,10 @@
 import BadRequestError from "@metriport/core/util/error/bad-request";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { STU3Bundle, stu3BundleSchema } from "../models/bundle";
 import { OrganizationList } from "../models/organization";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 
 dayjs.extend(duration);
 

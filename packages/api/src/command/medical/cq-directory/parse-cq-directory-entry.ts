@@ -1,7 +1,7 @@
-import { Contained } from "@metriport/carequality-sdk/models/contained";
+import { XCA_DQ_STRING, XCA_DR_STRING, XCPD_STRING } from "@metriport/carequality-sdk/common/util";
 import { Address } from "@metriport/carequality-sdk/models/address";
+import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
-import { XCPD_STRING, XCA_DQ_STRING, XCA_DR_STRING } from "@metriport/carequality-sdk/common/util";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../../domain/medical/cq-directory";
 
@@ -11,7 +11,7 @@ export type XCUrls = {
   urlDR?: string;
 };
 
-export function parseCQOrganizations(orgsInput: Organization[]): CQDirectoryEntryData[] {
+export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
   const orgs = orgsInput.flatMap(org => {
     const orgOid = org?.identifier?.value?.value;
     if (!orgOid) return [];

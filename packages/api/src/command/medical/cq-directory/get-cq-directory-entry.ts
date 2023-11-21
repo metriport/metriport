@@ -1,8 +1,8 @@
+import NotFoundError from "@metriport/core/util/error/not-found";
 import { CQDirectoryEntry } from "../../../domain/medical/cq-directory";
 import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
-import NotFoundError from "@metriport/core/util/error/not-found";
 
-export const getCQOrganization = async ({
+export const getCQDirectoryEntry = async ({
   oid,
 }: Pick<CQDirectoryEntry, "oid">): Promise<CQDirectoryEntryModel | undefined> => {
   const org = await CQDirectoryEntryModel.findOne({
@@ -11,10 +11,10 @@ export const getCQOrganization = async ({
   return org ?? undefined;
 };
 
-export const getCQOrganizationOrFail = async ({
+export const getCQDirectoryEntryOrFail = async ({
   oid,
 }: Pick<CQDirectoryEntry, "oid">): Promise<CQDirectoryEntryModel> => {
-  const organization = await getCQOrganization({ oid });
+  const organization = await getCQDirectoryEntry({ oid });
   if (!organization) throw new NotFoundError(`Could not find cq organization`, undefined, { oid });
   return organization;
 };
