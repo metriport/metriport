@@ -10,6 +10,7 @@ export { SourceType } from "./devices/models/common/source-type";
 export { Nutrition } from "./devices/models/nutrition";
 export { Sleep } from "./devices/models/sleep";
 export { User } from "./devices/models/user";
+
 // Medical API
 export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Address, addressSchema } from "./medical/models/common/address";
