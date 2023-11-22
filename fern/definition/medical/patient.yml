@@ -196,7 +196,7 @@ types:
       address:
         type: optional<Addresses>
       contact:
-        type: optional<Contacts>
+        type: optional<list<Contact>>
 
   Patient:
     extends: BasePatient
