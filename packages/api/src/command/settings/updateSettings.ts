@@ -31,12 +31,12 @@ export const updateSettings = async ({
 };
 
 export type UpdateWebhookStatusCommand = {
-  id: string;
+  cxId: string;
   webhookEnabled: boolean;
   webhookStatusDetail?: string;
 };
 export const updateWebhookStatus = async ({
-  id,
+  cxId,
   webhookEnabled,
   webhookStatusDetail,
 }: UpdateWebhookStatusCommand): Promise<void> => {
@@ -45,7 +45,7 @@ export const updateWebhookStatus = async ({
       webhookEnabled,
       ...(webhookStatusDetail ? { webhookStatusDetail } : undefined),
     },
-    { where: { id } }
+    { where: { id: cxId } }
   );
 };
 
@@ -68,25 +68,25 @@ const getWebhookDataForUpdate = (
   };
   // if there's a URL, fire a test towards it - intentionally asynchronous
   webhookData.webhookUrl &&
-    testWebhook({ id: settings.id, ...webhookData }).catch(processAsyncError(`testWebhook`));
+    testWebhook({ cxId, ...webhookData }).catch(processAsyncError(`testWebhook`));
   return webhookData;
 };
 
-type TestWebhookCommand = Pick<Settings, "id" | "webhookUrl" | "webhookKey">;
+type TestWebhookCommand = Pick<Settings, "webhookUrl" | "webhookKey"> & { cxId: string };
 
-const testWebhook = async ({ id, webhookUrl, webhookKey }: TestWebhookCommand): Promise<void> => {
+const testWebhook = async ({ cxId, webhookUrl, webhookKey }: TestWebhookCommand): Promise<void> => {
   if (!webhookUrl || !webhookKey) return;
   try {
     const testOK = await sendTestPayload(webhookUrl, webhookKey);
     await updateWebhookStatus({
-      id,
+      cxId,
       webhookEnabled: testOK,
       webhookStatusDetail: testOK ? WEBHOOK_STATUS_OK : WEBHOOK_STATUS_BAD_RESPONSE,
     });
   } catch (err) {
     if (err instanceof WebhookError) {
       await updateWebhookStatus({
-        id,
+        cxId,
         webhookEnabled: false,
         webhookStatusDetail: String(err.cause),
       });
@@ -95,7 +95,7 @@ const testWebhook = async ({ id, webhookUrl, webhookKey }: TestWebhookCommand): 
       capture.error(err, {
         extra: {
           context: "testWebhook",
-          id,
+          cxId,
           webhookUrl,
           webhookKey,
           err,
