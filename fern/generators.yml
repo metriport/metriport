@@ -49,8 +49,9 @@ groups:
         version: 0.5.13
         output:
           location: local-file-system
-          path: ../packages/sdks/java/generated
+          path: ../packages/sdks/java/src/main/java/com/metriport/generated
         config:
+          package-prefix: com.metriport.generated
           client-class-name: Metriport
       - name: fernapi/fern-typescript-node-sdk
         version: 0.8.7
