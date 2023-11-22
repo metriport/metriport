@@ -3,13 +3,15 @@ import os
 from generated.client import Metriport
 from generated import commons
 from generated.resources import medical
-
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
+api_key = os.environ.get("METRIPORT_API_KEY")
+
 def test_client() -> None:
-    client = Metriport(api_key=get_api_key(), base_url="http://localhost:8080")
+    client = Metriport(api_key=api_key, base_url="http://localhost:8080")
     response = client.medical.organization.create(request=medical.OrganizationCreate(
       name="my-org", 
       type=medical.OrgType.ACUTE_CARE, 
@@ -24,10 +26,3 @@ def test_client() -> None:
       )
     )
     print(f"Received response with {response.id}")
-
-
-def get_api_key() -> str:
-    api_key = os.environ.get("METRIPORT_API_KEY")
-    if api_key is None:
-        raise Exception("METRIPORT_API_KEY not found")
-    return api_key

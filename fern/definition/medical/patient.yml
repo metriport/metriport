@@ -108,13 +108,12 @@ types:
   Addresses:
     discriminated: false
     union:
-      - commons.Address
       - list<commons.Address>
 
   Contacts:
     discriminated: false
     union:
-      - Contact
+      - list<Contact>
 
   PersonalIdentifier:
     union:
@@ -150,17 +149,11 @@ types:
       email:
         type: optional<string>
         docs: The Patient's email address.
-      facilityIds:
-        type: list<FacilityId>
-        docs: Array of the IDs of the Facilities where the Patient is receiving care.
     examples:
       - name: Example1
         value:
           phone: "1234567899"
           email: karen@cvspharmacy.com
-          facilityIds:
-            - $FacilityId.Example1
-            - $FacilityId.Example2
 
   FacilityId:
     type: string
@@ -196,8 +189,11 @@ types:
       address:
         type: optional<Addresses>
       contact:
-        type: optional<list<Contact>>
-
+        type: optional<Contacts>
+      externalID:
+        type: optional<string>
+        docs: An external Patient ID to associate to a Patient in Metriport.
+    
   Patient:
     extends: BasePatient
     properties:
@@ -206,6 +202,9 @@ types:
         docs: | 
           The ID assigned to this Patient. This ID will be used to uniquely 
           identify this Patient in medical documents.
+      facilityIds:
+        type: list<FacilityId>
+        docs: Array of the IDs of the Facilities where the Patient is receiving care.
     examples:
       - name: Example1
         value:
@@ -216,6 +215,8 @@ types:
           genderAtBirth: F
           personalIdentifiers:
             - $PersonalIdentifier.Example1
+          facilityIds:
+            - $FacilityId.Example1
 
   ListPatientsResponse:
     properties:

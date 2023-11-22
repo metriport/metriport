@@ -23,7 +23,7 @@ public class GetPatient {
             .url(dotenv.get("BASE_URL"))
             .build();
 
-        var response = metriport.medical().patient().get(dotenv.get("FACILITY_ID"));
+        var response = metriport.medical().patient().get();
         System.out.println("Received response!" + response);
     }
 
