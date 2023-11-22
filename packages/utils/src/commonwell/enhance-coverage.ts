@@ -43,6 +43,11 @@ import { firefox as runtime } from "playwright";
 const patientIds: string[] = [];
 
 /**
+ * Update this, each situation requires a diff value here.
+ */
+const triggerWHNotificationsToCx = false;
+
+/**
  * During the execution, if the cookie gets outdated and the script errors, you'll need to set the index below
  * to the last one that was successful.
  */
@@ -70,7 +75,6 @@ const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 });
 const DOC_QUERIES_IN_PARALLEL = 25;
 const maxDocQueryAttempts = 3;
 const minDocsToConsiderCompleted = 2;
-const triggerWHNotificationsToCx = true;
 const prefix = "############################### ";
 
 class CodeChallengeFromTerminal implements CodeChallenge {
