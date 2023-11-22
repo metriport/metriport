@@ -2,8 +2,7 @@ package com.metriport.test;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import com.metriport.api.Metriport;
-
-public class GetOrg {
+public class GetFacility {
     public static void main(String[] args) {
         Dotenv dotenv = Dotenv.load();
 
@@ -12,7 +11,10 @@ public class GetOrg {
             .url(dotenv.get("BASE_URL"))
             .build();
 
-        var response = metriport.medical().facility().list();
-        System.out.println("Received response!" + response);
+        var response_all = metriport.medical().facility().list();
+        System.out.println("All facilities:" + response_all);
+    
+        var response = metriport.medical().facility().get(dotenv.get("FACILITY_ID"));
+        System.out.println("Specific facility" + response);
     }
 }
