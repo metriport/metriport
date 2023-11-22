@@ -84,7 +84,7 @@ export const create = async (org: Organization): Promise<void> => {
     debug(`resp respAddCert: `, JSON.stringify(respAddCert));
 
     // update the CQ bridge include list
-    await linkOrgToCQFacilities(org.oid);
+    await initCQOrgIncludeList(org.oid);
   } catch (error) {
     const msg = `Failure creating Org @ CW`;
     log(msg, error);
@@ -134,7 +134,7 @@ export const update = async (org: Organization): Promise<void> => {
  * TODO remove this when we disable/remove Enhanced Coverage in favour of CQ integration.
  * This is not sound as it's tying our Orgs to the CW's CQ bridge.
  */
-export async function linkOrgToCQFacilities(orgOID: string): Promise<void> {
+export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
   try {
     const managementApi = makeCommonWellManagementAPI();
     if (!managementApi) {
