@@ -1,8 +1,8 @@
+import { PatientLoader } from "../../../domain/patient/patient-loader";
 import { sha256 } from "../../../util/hash";
 import { SQSClient } from "../../aws/sqs";
 import { CoverageEnhancementParams, CoverageEnhancer } from "./coverage-enhancer";
 import { Input } from "./cq-link-patients";
-import { getOrgChunksFromPos } from "./get-orgs";
 
 /**
  * Implementation of the Enhanced Coverage flow with the logic running on AWS lambdas.
@@ -10,8 +10,12 @@ import { getOrgChunksFromPos } from "./get-orgs";
 export class CoverageEnhancerCloud extends CoverageEnhancer {
   private readonly sqsClient: SQSClient;
 
-  constructor(region: string, private readonly patientLinkQueueUrl: string) {
-    super();
+  constructor(
+    region: string,
+    private readonly patientLinkQueueUrl: string,
+    patientLoader: PatientLoader
+  ) {
+    super({ patientLoader });
     this.sqsClient = new SQSClient({ region });
   }
 
@@ -19,9 +23,9 @@ export class CoverageEnhancerCloud extends CoverageEnhancer {
     cxId,
     orgOID,
     patientIds,
-    fromOrgChunkPos,
+    fromOrgChunkPos = 0,
   }: CoverageEnhancementParams) {
-    const { chunks } = await getOrgChunksFromPos({ fromPos: fromOrgChunkPos });
+    const { chunks } = await this.getCarequalityOrgs({ cxId, patientIds, fromOrgChunkPos });
 
     // Each chunk of CQ orgs
     for (const cqOrgList of chunks) {
@@ -29,7 +33,7 @@ export class CoverageEnhancerCloud extends CoverageEnhancer {
         cxId,
         orgOID,
         patientIds,
-        cqOrgIds: cqOrgList.map(o => o.Id),
+        cqOrgIds: cqOrgList.map(o => o.id),
       });
     }
     await this.sendEnhancedCoverageDone(cxId, patientIds);

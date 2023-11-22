@@ -46,18 +46,10 @@ async function missingWHSettings(
   webhookKey: string | null
 ): Promise<boolean> {
   const product = getProductFromWebhookRequest(webhookRequest);
-  const msg = `[${product}] Missing webhook config, skipping sending it`;
+  const msg = `[${product}] Missing webhook config, skipping sending it, WH req ID ${webhookRequest.id}`;
   const loggableKey = webhookKey ? "<defined>" : "<not-defined>";
   log(msg + ` (url: ${webhookUrl}, key: ${loggableKey}`);
-  capture.message(msg, {
-    extra: {
-      webhookRequestId: webhookRequest.id,
-      webhookUrl,
-      webhookKey: loggableKey,
-      context: `webhook.processRequest`,
-    },
-    level: "info",
-  });
+  // mark this WH request as failed
   await updateWebhookRequestStatus({
     id: webhookRequest.id,
     status: "failure",
@@ -123,7 +115,7 @@ export const processRequest = async (
     // if the webhook was not working before, update the status to successful since we were able to send the payload
     if (!webhookEnabled) {
       await updateWebhookStatus({
-        id: settings.id,
+        cxId: settings.id,
         webhookEnabled: true,
         webhookStatusDetail: WEBHOOK_STATUS_OK,
       });
@@ -163,7 +155,7 @@ export const processRequest = async (
     try {
       // update the status of the webhook endpoint on the cx's settings table
       await updateWebhookStatus({
-        id: settings.id,
+        cxId: settings.id,
         webhookEnabled: false,
         webhookStatusDetail,
       });

@@ -8,7 +8,11 @@ import stringify from "json-stringify-safe";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { getPatientIds, getPatientOrFail } from "../../command/medical/patient/get-patient";
+import {
+  getPatientIds,
+  getPatientOrFail,
+  getPatientStates,
+} from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
@@ -52,6 +56,29 @@ router.get(
     if (facilityId) await getFacilityOrFail({ cxId, id: facilityId });
     const patientIds = await getPatientIds({ cxId, facilityId });
     return res.status(status.OK).json({ patientIds });
+  })
+);
+
+const cxIdAndPatientIdsSchema = z.object({
+  cxId: uuidSchema,
+  patientIds: z.string().array(),
+});
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/states
+ *
+ * Return a list of unique US states from the patients' addresses.
+ *
+ * @param req.body.cxId The customer ID.
+ * @param req.body.patientIds The IDs of patients to get the state from.
+ * @returns 200 with the list of US states on the body under `states`.
+ */
+router.get(
+  "/states",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, patientIds = [] } = cxIdAndPatientIdsSchema.parse(req.body);
+    const states = await getPatientStates({ cxId, patientIds });
+    return res.status(status.OK).json({ states });
   })
 );
 

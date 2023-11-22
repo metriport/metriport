@@ -1,11 +1,11 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { PatientLoader } from "../../../domain/patient/patient-loader";
 import { PatientUpdater } from "../../../domain/patient/patient-updater";
 import { out } from "../../../util/log";
 import { CommonWellManagementAPI } from "../management/api";
 import { LinkPatients } from "../management/link-patients";
 import { CoverageEnhancementParams, CoverageEnhancer } from "./coverage-enhancer";
-import { getOrgChunksFromPos } from "./get-orgs";
 
 dayjs.extend(duration);
 
@@ -17,10 +17,11 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
 
   constructor(
     private readonly cwManagementApi: CommonWellManagementAPI,
+    patientLoader: PatientLoader,
     private readonly patientUpdater: PatientUpdater,
     private readonly prefix = ""
   ) {
-    super();
+    super({ patientLoader });
     this.linkPatients = new LinkPatients(this.cwManagementApi, this.patientUpdater);
   }
 
@@ -34,13 +35,17 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
     const startedAt = Date.now();
     const { log } = out(`${this.prefix}EC - MAIN - cx ${cxId}`);
     try {
-      const { total, chunks } = await getOrgChunksFromPos({ fromPos: fromOrgChunkPos });
+      const { total, chunks } = await this.getCarequalityOrgs({
+        cxId,
+        patientIds,
+        fromOrgChunkPos,
+      });
 
       log(`CQ orgs: ${total}, chunks: ${chunks.length}/${chunks.length + fromOrgChunkPos}`);
       log(`patients: ${patientIds.join(", ")}`);
 
       for (const [i, orgChunk] of chunks.entries()) {
-        const orgIds = orgChunk.map(org => org.Id);
+        const orgIds = orgChunk.map(org => org.id);
         log(`--------------------------------- Starting chunk ${i}/${chunks.length} (relative)`);
         try {
           await this.linkPatients.linkPatientsToOrgs({

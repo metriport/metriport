@@ -3,11 +3,14 @@ import { OrganizationModel } from "../../../models/medical/organization";
 
 type Filter = Pick<OrganizationModel, "cxId"> & Partial<Pick<OrganizationModel, "id">>;
 
-export const getOrganization = async ({ cxId, id }: Filter): Promise<OrganizationModel | null> => {
+export const getOrganization = async ({
+  cxId,
+  id,
+}: Filter): Promise<OrganizationModel | undefined> => {
   const org = await OrganizationModel.findOne({
     where: { cxId, ...(id ? { id } : undefined) },
   });
-  return org;
+  return org ?? undefined;
 };
 
 export const getOrganizationOrFail = async (filter: Filter): Promise<OrganizationModel> => {

@@ -16,6 +16,11 @@ export type ExecuteInChunksOptions = {
    * start at slight different times. Defaults to 0.
    */
   minJitterMillis?: number;
+  /**
+   * Whether to keep executing when an error occurs. Defaults to false, which
+   * means some might finish execution when the error happens - non-deterministic.
+   */
+  keepExecutingOnError?: boolean;
 };
 
 export type FunctionType<T> = (
@@ -57,8 +62,9 @@ export async function executeAsynchronously<T>(
     numberOfParallelExecutions = collection.length,
     maxJitterMillis = 0,
     minJitterMillis = 0,
+    keepExecutingOnError = false,
   }: ExecuteInChunksOptions = {}
-): Promise<void> {
+): Promise<PromiseSettledResult<void>[]> {
   if (minJitterMillis < 0) throw new Error("minJitterMillis must be >= 0");
   if (maxJitterMillis < 0) throw new Error("maxJitterMillis must be >= 0");
   if (minJitterMillis > maxJitterMillis) {
@@ -76,7 +82,10 @@ export async function executeAsynchronously<T>(
 
     await executeSynchronously(itemsOfPromise, fn, promiseIndex, amountOfPromises);
   });
-  await Promise.all(promises);
+  if (keepExecutingOnError) {
+    return await Promise.allSettled(promises);
+  }
+  return (await Promise.all(promises)).map(p => ({ status: "fulfilled", value: p }));
 }
 
 export async function executeSynchronously<T>(
