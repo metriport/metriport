@@ -5,7 +5,7 @@
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
-  "main": "index.js",
+  "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "bin": {
     "cq-cert-runner": "dist/index.js"

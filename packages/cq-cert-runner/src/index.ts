@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { IHEGateway } from "@metriport/ihe-gateway-sdk/src";
 import { Command } from "commander";
 import * as dotenv from "dotenv";
 
@@ -20,7 +21,7 @@ function metriportBanner(): string {
 
         Metriport Inc.
 
-    CommonWell Cert Runner
+    CQ Cert Runner
       `;
 }
 
@@ -43,6 +44,8 @@ async function main() {
   program.parse();
   const options = program.opts();
   dotenv.config({ path: options.envFile });
+
+  console.log(IHEGateway);
 }
 
 main();
