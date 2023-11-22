@@ -9,9 +9,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 api_key = os.environ.get("METRIPORT_API_KEY")
+base_url = os.environ.get("BASE_URL")
 
 def test_client() -> None:
-    client = Metriport(api_key=api_key, base_url="http://localhost:8080")
+    client = Metriport(api_key=api_key, base_url=base_url)
     response = client.medical.organization.create(request=medical.OrganizationCreate(
       name="my-org", 
       type=medical.OrgType.ACUTE_CARE, 
