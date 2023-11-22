@@ -12,6 +12,7 @@ on:
       - "packages/connect-widget/**"
       - "packages/core/**"
       - "packages/ihe-gateway-sdk/**"
+      - "packages/carequality-sdk/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
   workflow_dispatch: # manually executed by a user

@@ -41,6 +41,7 @@
     "packages/react-native-sdk",
     "packages/api-sdk",
     "packages/core",
+    "packages/carequality-sdk",
     "packages/api",
     "packages/connect-widget",
     "packages/infra",

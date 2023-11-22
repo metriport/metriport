@@ -1,12 +1,15 @@
 import { z } from "zod";
-import { isValidISODate } from "../../shared/date";
+import dayjs from "dayjs";
+
+export const ISO_DATE = "YYYY-MM-DD";
+
+export function isValidISODate(date: string): boolean {
+  return dayjs(date, ISO_DATE, true).isValid();
+}
 
 const isValidISODateOptional = (date: string | undefined | null): boolean =>
   date ? isValidISODate(date) : true;
 
-/**
- * @deprecated Use @metriport/shared instead
- */
 export const optionalDateSchema = z
   .string()
   .trim()

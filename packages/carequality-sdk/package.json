@@ -1,14 +1,33 @@
 {
-  "name": "@metriport/commonwell-jwt-maker",
-  "version": "1.7.3-alpha.0",
-  "description": "CLI to create a JWT for use in CommonWell queries - by Metriport Inc.",
+  "name": "@metriport/carequality-sdk",
+  "version": "0.1.1-alpha.0",
+  "description": "SDK to interact with the Carequality directory - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
-  "bin": {
-    "cw-jwt-maker": "dist/index.js"
+  "exports": {
+    ".": "./dist/index.js",
+    "./client/*": "./dist/client/*.js",
+    "./common/*": "./dist/common/*.js",
+    "./models/*": "./dist/models/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "/": [
+        "dist/index.d.ts"
+      ],
+      "client/*": [
+        "dist/client/*"
+      ],
+      "models/*": [
+        "dist/models/*"
+      ],
+      "common/*": [
+        "dist/common/*"
+      ]
+    }
   },
   "publishConfig": {
     "access": "public"
@@ -22,7 +41,7 @@
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
-    "directory": "packages/commonwell-jwt-maker"
+    "directory": "packages/carequality-sdk"
   },
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
@@ -30,7 +49,6 @@
     "watch": "tsc --watch",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
-    "local": "sudo npm i -g && cw-jwt-maker",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
@@ -41,18 +59,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/commonwell-sdk": "^4.9.3-alpha.0",
-    "commander": "^9.5.0"
-  },
-  "devDependencies": {
-    "@tsconfig/recommended": "^1.0.2",
-    "@types/node": "^18.11.18",
-    "@typescript-eslint/eslint-plugin": "^5.49.0",
-    "@typescript-eslint/parser": "^5.49.0",
-    "eslint": "^8.32.0",
-    "eslint-config-prettier": "^8.6.0",
-    "nodemon": "^2.0.20",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.5"
+    "axios": "^1.6.0",
+    "zod": "^3.22.1"
   }
 }

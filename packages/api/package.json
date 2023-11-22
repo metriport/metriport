@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.9.2-alpha.0",
+  "version": "1.9.4-alpha.0",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -30,6 +30,7 @@
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
     "@metriport/api-sdk": "file:packages/api-sdk",
+    "@metriport/carequality-sdk": "file:packages/carequality-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "@metriport/core": "file:packages/core",
     "@metriport/shared": "file:packages/shared",
