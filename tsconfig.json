@@ -3,7 +3,7 @@
     "types": ["jest"],
     "typeRoots": ["./types", "./node_modules/@types"],
     "noErrorTruncation": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
   "exclude": ["node_modules"],
   "files": [],
@@ -22,6 +22,9 @@
     },
     {
       "path": "./packages/commonwell-sdk/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/cq-cert-runner/tsconfig.ref.json"
     },
     {
       "path": "./packages/connect-widget/tsconfig.ref.json"

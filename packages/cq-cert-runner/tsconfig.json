@@ -1,0 +1,28 @@
+{
+  "extends": "@tsconfig/recommended/tsconfig.json",
+  "compilerOptions": {
+    "target": "es2020",
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true, // enables importers to jump to source
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    // START - From @tsconfig/strictest
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "checkJs": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    // END - From @tsconfig/strictest
+    "outDir": "./dist",
+    // #340 Leaving this off bc there was too many fixes to be done - it should be on, though
+    "noUncheckedIndexedAccess": false,
+    // #340 Leaving this off bc not that impactful considering the impact of this package
+    "noPropertyAccessFromIndexSignature": false
+  },
+  "include": ["./src"],
+  "exclude": ["dist", "node_modules", "**/__tests__"]
+}
