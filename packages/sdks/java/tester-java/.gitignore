@@ -4,3 +4,4 @@
 
 # Maven
 target/
+.env
