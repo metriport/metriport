@@ -10,7 +10,7 @@ dayjs.extend(duration);
 
 const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds");
 const MAX_COUNT = 1000;
-const JSON_FORMAT = "_format=json";
+const JSON_FORMAT = "json";
 
 export enum APIMode {
   dev = "dev",
@@ -98,13 +98,15 @@ export class Carequality {
         `Count value must be between 1 and ${MAX_COUNT}. If you need more, use listAllOrganizations()`
       );
     const query = new URLSearchParams();
+    query.append("apikey", this.apiKey);
+    query.append("_format", JSON_FORMAT);
+    query.append("_count", count.toString());
+    query.append("_start", start.toString());
     oid && query.append("_id", oid);
     const queryString = query.toString();
 
-    const url = `${Carequality.ORG_ENDPOINT}?apikey=${this.apiKey}&${JSON_FORMAT}&_count=${count}&_start=${start}&${queryString}`;
-
+    const url = `${Carequality.ORG_ENDPOINT}?${queryString}`;
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
-
     const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
     const orgs = bundle.entry.map(e => e.resource.Organization);
 
