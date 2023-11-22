@@ -53,7 +53,11 @@ async function main() {
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
   fs.createReadStream(path.join(__dirname, inputFileName))
-    .pipe(csv())
+    .pipe(
+      csv({
+        mapHeaders: ({ header }) => header.toLowerCase().replaceAll(" ", ""),
+      })
+    )
     .on("data", async data => {
       const metriportPatient = mapCSVPatientToMetriportPatient(data);
       if (metriportPatient) {

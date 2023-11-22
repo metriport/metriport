@@ -83,6 +83,10 @@ export class Config {
     return getEnvVarOrFail("API_URL");
   }
 
+  static getCQApiKey(): string {
+    return getEnvVarOrFail("CQ_API_KEY");
+  }
+
   static getTokenTableName(): string {
     return getEnvVarOrFail("TOKEN_TABLE_NAME");
   }

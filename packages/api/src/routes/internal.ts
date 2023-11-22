@@ -13,6 +13,7 @@ import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import docsRoutes from "./medical/internal-docs";
 import patientRoutes from "./medical/internal-patient";
+import carequalityRoutes from "./medical/internal-cq";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom } from "./util";
 
@@ -21,6 +22,7 @@ const router = Router();
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
 router.use("/user", userRoutes);
+router.use("/carequality", carequalityRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
