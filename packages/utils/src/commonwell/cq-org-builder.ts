@@ -9,7 +9,7 @@ import {
 } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { sleep } from "@metriport/core/util/sleep";
+import { executeWithRetries } from "@metriport/shared";
 import axios from "axios";
 import { Command } from "commander";
 import fs from "fs";
@@ -43,6 +43,7 @@ const excludeGatewayNames = [
   "Surescripts",
 ];
 
+const RADIUS_FOR_SEQUOIA_QUERY = 30;
 type OrgWithGateway = CQOrg & { gateway: string };
 
 type Params = {
@@ -110,19 +111,20 @@ export async function main() {
 }
 
 async function getInfo(url: string) {
-  return retryFunction(() => axios.get(url), 5, 500);
+  return executeWithRetries(() => axios.get(url), 5, 500);
 }
 
 async function getOrgStatesFromSequoia(orgOID: string): Promise<string[]> {
   if (!orgOID) return [];
-  const url =
-    `${sequoiaQueryURL}` +
-    `?_format=json` +
-    `&_id=${orgOID}` +
-    `&_radius=30` +
-    `&_sort=orgname` +
-    `&_active=true` +
-    `&apikey=${sequoiaApiKey}`;
+
+  const params = new URLSearchParams([
+    ["_id", orgOID],
+    ["_radius", String(RADIUS_FOR_SEQUOIA_QUERY)],
+    ["_sort", "orgname"],
+    ["_active", "true"],
+    ["apikey", sequoiaApiKey],
+  ]);
+  const url = `${sequoiaQueryURL}?${params.toString()}`;
 
   const resp = await getInfo(url);
   if (!resp) return [];
@@ -153,24 +155,5 @@ function getPrio(org: OrgWithGateway): OrgPrio {
   if (priorityOrgs.medium.includes(org.id)) return "medium";
   return "low";
 }
-
-// from API
-const retryFunction = async <K>(fn: () => Promise<K>, maxRetries = 3, waitTime = 3000) => {
-  let count = 0;
-  while (count < maxRetries) {
-    try {
-      return await fn();
-    } catch (e) {
-      const msg = `Error on retryFunction: ${e}, re`;
-      if (count++ < maxRetries) {
-        console.log(`${msg}, retrying...`);
-        await sleep(waitTime);
-        continue;
-      }
-      console.log(`${msg}, gave up.`);
-      throw e;
-    }
-  }
-};
 
 main();

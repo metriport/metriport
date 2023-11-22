@@ -21,6 +21,6 @@
     // END - From @tsconfig/strictest
     "outDir": "./dist"
   },
-  "include": ["./src", "index.ts"],
+  "include": ["./src"],
   "exclude": ["dist", "node_modules"]
 }
