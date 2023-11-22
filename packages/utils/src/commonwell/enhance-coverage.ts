@@ -5,6 +5,7 @@ import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
 import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
 import { TriggerAndQueryDocRefsRemote } from "@metriport/core/domain/document-query/trigger-and-query-remote";
+import { PatientLoaderMetriportAPI } from "@metriport/core/domain/patient/patient-loader-metriport-api";
 import { PatientUpdaterMetriportAPI } from "@metriport/core/domain/patient/patient-updater-metriport-api";
 import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-local";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
@@ -86,8 +87,14 @@ const codeChallenge = new CodeChallengeFromTerminal();
 const cookieManager = new CookieManagerInMemory();
 
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
+const patientLoader = new PatientLoaderMetriportAPI(metriportApiBaseUrl);
 const patientUpdater = new PatientUpdaterMetriportAPI(metriportApiBaseUrl);
-const coverageEnhancer = new CoverageEnhancerLocal(cwManagementApi, patientUpdater, prefix);
+const coverageEnhancer = new CoverageEnhancerLocal(
+  cwManagementApi,
+  patientLoader,
+  patientUpdater,
+  prefix
+);
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(metriportApiBaseUrl);
 
 export async function main() {

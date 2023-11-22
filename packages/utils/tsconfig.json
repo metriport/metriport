@@ -4,6 +4,7 @@
     // Using community best practices with 'extends'
     "outDir": "./dist",
     "esModuleInterop": true,
+    "resolveJsonModule": true
   },
   "include": ["./src"],
   "exclude": ["dist", "node_modules"]

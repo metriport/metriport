@@ -1,10 +1,18 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
+import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { Organization } from "../../domain/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { getCertificate, makeCommonWellAPI, metriportQueryMeta } from "./api";
+import {
+  getCertificate,
+  makeCommonWellAPI,
+  makeCommonWellManagementAPI,
+  metriportQueryMeta,
+} from "./api";
+
+const MAX_HIGH_PRIO_ORGS = 50;
 
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
@@ -74,6 +82,9 @@ export const create = async (org: Organization): Promise<void> => {
       org.oid
     );
     debug(`resp respAddCert: `, JSON.stringify(respAddCert));
+
+    // update the CQ bridge include list
+    await linkOrgToCQFacilities(org.oid);
   } catch (error) {
     const msg = `Failure creating Org @ CW`;
     log(msg, error);
@@ -118,3 +129,28 @@ export const update = async (org: Organization): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * TODO remove this when we disable/remove Enhanced Coverage in favour of CQ integration.
+ * This is not sound as it's tying our Orgs to the CW's CQ bridge.
+ */
+export async function linkOrgToCQFacilities(orgOID: string): Promise<void> {
+  try {
+    const managementApi = makeCommonWellManagementAPI();
+    if (!managementApi) {
+      console.log(`Not linking org ${orgOID} to CQ Bridge b/c no managementAPI is available`);
+      return;
+    }
+    const highPrioOrgs = getOrgsByPrio().high;
+    const cqOrgIds = highPrioOrgs.map(o => o.id);
+    const cqOrgIdsLimited =
+      cqOrgIds.length > MAX_HIGH_PRIO_ORGS ? cqOrgIds.slice(0, MAX_HIGH_PRIO_ORGS) : cqOrgIds;
+    await managementApi.updateIncludeList({ oid: orgOID, careQualityOrgIds: cqOrgIdsLimited });
+  } catch (error) {
+    const additional = { orgOID, error };
+    console.log(`Error while updating CQ include list`, additional);
+    capture.error(error, {
+      extra: additional,
+    });
+  }
+}

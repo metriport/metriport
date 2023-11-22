@@ -3,7 +3,6 @@ import { CoverageEnhancer } from "@metriport/core/external/commonwell/cq-bridge/
 // import { CoverageEnhancerCloud } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-cloud";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { Config } from "../../../shared/config";
-import { PatientUpdaterCommonWell } from "../patient-updater-commonwell";
 import { CoverageEnhancerApiLocal } from "./coverage-enhancer-api-local";
 
 export function makeCoverageEnhancer(): CoverageEnhancer | undefined {
@@ -31,6 +30,5 @@ export function makeCoverageEnhancer(): CoverageEnhancer | undefined {
     cookieManager,
     baseUrl: cwManagementUrl,
   });
-  const patientUpdater = new PatientUpdaterCommonWell();
-  return new CoverageEnhancerApiLocal(cwManagementApi, patientUpdater);
+  return new CoverageEnhancerApiLocal(cwManagementApi);
 }
