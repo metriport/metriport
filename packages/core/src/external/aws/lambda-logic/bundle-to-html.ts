@@ -55,7 +55,6 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
   }
 
   const aweVisits = getAnnualWellnessVisits(conditions);
-  const isAWEinPastYear = aweVisits.length > 0;
 
   const htmlPage = `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -224,7 +223,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
       </head>
 
       <body>
-        ${createMRHeader(patient, isAWEinPastYear)}
+        ${createMRHeader(patient)}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createAWESection(encounters, diagnosticReports, practitioners, aweVisits)}
@@ -364,7 +363,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   };
 }
 
-function createMRHeader(patient: Patient, isAWEinPastYear: boolean) {
+function createMRHeader(patient: Patient) {
   return `
     <div id="mr-header">
       <div class='logo-container'>
@@ -399,15 +398,6 @@ function createMRHeader(patient: Patient, isAWEinPastYear: boolean) {
             </table>
           </div>
           <div>
-          <h4>Annual Wellness Exam</h4>
-          <table class="header-table-author">
-            <tbody>
-            ${createHeaderTableRow(
-              "Status",
-              isAWEinPastYear ? "Likely Present: Please Review and Confirm" : "May Not Be Present"
-            )}
-            </tbody>
-          </table>
         </div>
         </div>
         <div class="header-table">
