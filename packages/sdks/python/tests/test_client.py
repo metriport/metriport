@@ -4,9 +4,12 @@ from generated.client import Metriport
 from generated import commons
 from generated.resources import medical
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def test_client() -> None:
-    client = Metriport(api_key=get_api_key())
+    client = Metriport(api_key=get_api_key(), base_url="http://localhost:8080")
     response = client.medical.organization.create(request=medical.OrganizationCreate(
       name="my-org", 
       type=medical.OrgType.ACUTE_CARE, 
