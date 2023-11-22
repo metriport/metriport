@@ -6,7 +6,7 @@ import { CQOrgHydrated } from "@metriport/core/external/commonwell/cq-bridge/get
 import { makeSimpleOrg } from "@metriport/core/external/commonwell/cq-bridge/__tests__/cq-orgs";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import * as api from "../api";
-import { linkOrgToCQFacilities } from "../organization";
+import { initCQOrgIncludeList } from "../organization";
 jest.mock("@metriport/core/external/commonwell/management/api");
 jest.mock("@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory");
 
@@ -28,12 +28,12 @@ beforeEach(() => {
 });
 
 describe("organization", () => {
-  describe("linkOrgToCQFacilities", () => {
+  describe("initCQOrgIncludeList", () => {
     it("dont update if no managementApi", async () => {
       const orgOID = faker.string.uuid();
       makeCommonWellManagementAPI_mock.mockImplementationOnce(() => undefined);
 
-      await linkOrgToCQFacilities(orgOID);
+      await initCQOrgIncludeList(orgOID);
 
       expect(updateIncludeList_mock).not.toHaveBeenCalled();
     });
@@ -41,7 +41,7 @@ describe("organization", () => {
     it("updates if when managementApi is present", async () => {
       const orgOID = faker.string.uuid();
 
-      await linkOrgToCQFacilities(orgOID);
+      await initCQOrgIncludeList(orgOID);
 
       expect(updateIncludeList_mock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -56,7 +56,7 @@ describe("organization", () => {
       const expectedCQOrgIds = orgs.map(o => o.id);
       getOrgsByPrio_mock.mockReturnValueOnce({ high: orgs });
 
-      await linkOrgToCQFacilities(orgOID);
+      await initCQOrgIncludeList(orgOID);
 
       expect(updateIncludeList_mock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -70,7 +70,7 @@ describe("organization", () => {
       expect(orgs.length).toEqual(100);
       getOrgsByPrio_mock.mockReturnValueOnce({ high: orgs });
 
-      await linkOrgToCQFacilities(faker.string.uuid());
+      await initCQOrgIncludeList(faker.string.uuid());
 
       const param = updateIncludeList_mock.mock.calls[0][0];
       expect(param).toBeTruthy();
@@ -83,7 +83,7 @@ describe("organization", () => {
       updateIncludeList_mock.mockImplementationOnce(() => {
         throw new Error("test error");
       });
-      await expect(linkOrgToCQFacilities(faker.string.uuid())).resolves.not.toThrow();
+      await expect(initCQOrgIncludeList(faker.string.uuid())).resolves.not.toThrow();
     });
   });
 });
