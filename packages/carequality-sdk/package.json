@@ -1,0 +1,65 @@
+{
+  "name": "@metriport/carequality-sdk",
+  "version": "0.1.1-alpha.0",
+  "description": "SDK to interact with the Carequality directory - by Metriport Inc.",
+  "author": "Metriport Inc. <contact@metriport.com>",
+  "homepage": "https://metriport.com/",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./client/*": "./dist/client/*.js",
+    "./common/*": "./dist/common/*.js",
+    "./models/*": "./dist/models/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "/": [
+        "dist/index.d.ts"
+      ],
+      "client/*": [
+        "dist/client/*"
+      ],
+      "models/*": [
+        "dist/models/*"
+      ],
+      "common/*": [
+        "dist/common/*"
+      ]
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "repository": {
+    "url": "https://github.com/metriport/metriport.git",
+    "type": "git",
+    "directory": "packages/carequality-sdk"
+  },
+  "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
+    "tsc": "tsc",
+    "watch": "tsc --watch",
+    "build": "tsc -p .",
+    "build:cloud": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "echo \"No test specified yet\""
+  },
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "zod": "^3.22.1"
+  }
+}

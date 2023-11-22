@@ -2,6 +2,7 @@ import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
 import { MetriportError } from "../../util/error/metriport-error";
+import NotFoundError from "../../util/error/not-found";
 
 export function makeLambdaClient(region: string) {
   return new AWS.Lambda({ signatureVersion: "v4", region });
@@ -88,9 +89,13 @@ export function getLambdaResultPayload({
   }
   if (isLambdaError(result)) {
     const msg = `Error calling lambda ${lambdaName}`;
-    const errorDetails = JSON.stringify(getLambdaError(result));
+    const lambdaError = getLambdaError(result);
+    const errorDetails = JSON.stringify(lambdaError);
     log(`${msg} - ${errorDetails}`);
     if (failGracefuly) return undefined;
+    if (lambdaError?.errorType === "NotFoundError") {
+      throw new NotFoundError(msg, undefined, { lambdaName, errorDetails });
+    }
     throw new MetriportError(msg, undefined, { lambdaName, errorDetails });
   }
   return result.Payload.toString();

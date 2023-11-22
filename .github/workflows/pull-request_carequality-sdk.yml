@@ -1,0 +1,18 @@
+name: PR Check - Carequality SDK
+
+on:
+  pull_request:
+    paths:
+      - "packages/carequality-sdk/**"
+  merge_group:
+  workflow_dispatch:
+
+jobs:
+  check-commits:
+    uses: ./.github/workflows/_check-commits.yml
+    secrets: inherit
+  check-pr:
+    uses: ./.github/workflows/_build.yml
+    with:
+      path: "packages/carequality-sdk"
+    secrets: inherit

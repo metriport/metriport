@@ -69,7 +69,7 @@ def compute_hmac(key, message, signature, digestmod=hashlib.sha256):
     :param digestmod: The hash function to use (defaults to hashlib.sha256).
     :return: True if signature is verified, False otherwise.
     """
-    message_bytestring = message.encode()  # Convert the message string to bytes
+    message_bytestring = json.dumps(message, separators=(',', ':')).encode()  # Convert the message string to bytes
     key_bytestring = key.encode()  # Convert the key string to bytes
     hmac_object = hmac.new(key_bytestring, message_bytestring, digestmod)
     computed_signature = hmac_object.hexdigest()
