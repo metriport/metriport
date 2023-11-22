@@ -1,7 +1,8 @@
 import os
-from metriport.client import Metriport
-from metriport import commons
-from metriport.resources import medical
+
+from generated.client import Metriport
+from generated import commons
+from generated.resources import medical
 
 from dotenv import load_dotenv
 
@@ -30,7 +31,3 @@ def get_api_key() -> str:
     if api_key is None:
         raise Exception("METRIPORT_API_KEY not found")
     return api_key
-
-
-if __name__ == "__main__":
-    test_client()
