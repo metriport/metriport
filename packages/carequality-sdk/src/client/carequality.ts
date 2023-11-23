@@ -5,12 +5,14 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { STU3Bundle, stu3BundleSchema } from "../models/bundle";
 import { Organization } from "../models/organization";
+import { CarequalityAPI } from "./carequality-api";
 
 dayjs.extend(duration);
 
 const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds");
 const MAX_COUNT = 1000;
 const JSON_FORMAT = "json";
+const XML_FORMAT = "xml";
 
 export enum APIMode {
   dev = "dev",
@@ -20,7 +22,7 @@ export enum APIMode {
 /**
  * This SDK operates on FHIR STU3 format.
  */
-export class Carequality {
+export class Carequality implements CarequalityAPI {
   private static readonly devUrl = "https://dev-dir-ceq.sequoiadns.org/fhir-stu3/1.0.1";
   private static readonly stagingUrl = "https://stage-dir-ceq.sequoiaproject.org/fhir-stu3/1.0.1";
 
@@ -28,7 +30,7 @@ export class Carequality {
   // private static readonly devUrl = "https://directory.dev.carequality.org/fhir";
   // private static readonly  stagingUrl = "https://directory.stage.carequality.org/fhir";
 
-  static ORG_ENDPOINT = "/Organization/";
+  static ORG_ENDPOINT = "/Organization";
   readonly api: AxiosInstance;
   readonly apiKey: string;
 
@@ -78,7 +80,8 @@ export class Carequality {
   }
 
   /**
-   * Lists the indicated number of organizations. Mostly used for testing purposes.
+   * Lists the indicated number of organizations.
+   *
    * @param count Optional, number of organizations to fetch.
    * @param start Optional, the index of the directory to start querying from
    * @param start Optional, the OID of the organization to fetch
@@ -150,5 +153,22 @@ export class Carequality {
       }
     }
     return organizations;
+  }
+
+  /**
+   * Registers an organization with the Carequality directory.
+   *
+   * @param org string containing the organization resource (in XML format)
+   */
+  async registerOrganization(org: string): Promise<void> {
+    console.log("Registering organization with CQ...");
+    const query = new URLSearchParams();
+    query.append("apikey", this.apiKey);
+    query.append("_format", XML_FORMAT);
+
+    const url = `${Carequality.ORG_ENDPOINT}?${query.toString()}`;
+    await this.api.post(url, org, {
+      headers: { "Content-Type": "text/xml" },
+    });
   }
 }

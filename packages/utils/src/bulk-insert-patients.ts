@@ -154,6 +154,13 @@ function normalizeEmail(email: string | undefined): string | undefined {
   return trimmedEmail.toLowerCase();
 }
 
+function normalizeExternalId(id: string | undefined): string | undefined {
+  if (id == undefined) return undefined;
+  const trimmedId = id.trim();
+  if (trimmedId.length === 0) return undefined;
+  return trimmedId.toLowerCase();
+}
+
 function normalizeZip(zip: string | undefined): string {
   if (zip == undefined) throw new Error(`Missing zip`);
   return zip.trim();
@@ -181,6 +188,7 @@ function normalizeState(state: string | undefined): USState {
 }
 
 const mapCSVPatientToMetriportPatient = (csvPatient: {
+  id: string | undefined;
   firstname: string | undefined;
   lastname: string | undefined;
   dob: string | undefined;
@@ -206,7 +214,9 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
   const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
   const contact = [contact1, contact2].flatMap(c => c ?? []);
+  const externalId = normalizeExternalId(csvPatient.id);
   return {
+    externalId,
     firstName: normalizeName(csvPatient.firstname, "firstname"),
     lastName: normalizeName(csvPatient.lastname, "lastname"),
     dob: normalizeDate(csvPatient.dob),
