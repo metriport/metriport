@@ -166,9 +166,15 @@ router.get(
 router.post(
   "/cq-include-list/reset",
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const org = await getOrganizationOrFail({ cxId });
-    await initCQOrgIncludeList(org.oid);
+    const getOID = async (): Promise<string> => {
+      const cxId = getUUIDFrom("query", req, "cxId").optional();
+      if (cxId) return (await getOrganizationOrFail({ cxId })).oid;
+      const orgOID = getFrom("query").optional("orgOID", req);
+      if (orgOID) return orgOID;
+      throw new BadRequestError(`Either cxId or orgOID must be provided`);
+    };
+    const orgOID = await getOID();
+    await initCQOrgIncludeList(orgOID);
     return res.sendStatus(httpStatus.OK);
   })
 );
