@@ -1,7 +1,7 @@
 version: "3"
 services:
   ihe-server:
-    image: nextgenhealthcare/connect
+    image: nextgenhealthcare/connect:4.4.2
     volumes:
       - ./custom-extensions:/opt/connect/custom-extensions
     depends_on:
@@ -32,7 +32,7 @@ services:
       POSTGRES_USER: "admin"
       POSTGRES_PASSWORD: "admin"
     ports:
-      - "5435:5432"
+      - "5436:5432"
     volumes:
       - ihe-postgres:/var/lib/postgresql/data
     healthcheck:
