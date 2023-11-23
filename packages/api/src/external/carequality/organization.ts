@@ -31,3 +31,15 @@ export async function registerCQOrganization(): Promise<void> {
     throw new BadRequestError(msg, error);
   }
 }
+
+export async function updateCQOrganization(): Promise<void> {
+  const cqOrg = buildOrganizationFromTemplate(cqOrgDetails);
+  const cq = makeCarequalityAPI();
+  try {
+    await cq.updateOrganization(cqOrg, cqOrgDetails.orgOID);
+  } catch (error) {
+    const msg = `Failure updating org @ CQ Directory`;
+    console.log(msg);
+    throw new BadRequestError(msg, error);
+  }
+}

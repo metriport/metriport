@@ -11,5 +11,6 @@ export interface CarequalityAPI {
     oid?: string;
   }): Promise<Organization[]>;
   listAllOrganizations(failGracefully?: boolean): Promise<Organization[]>;
-  registerOrganization(org: string): Promise<void>;
+  registerOrganization(org: string): Promise<string>;
+  updateOrganization(org: string, oid: string): Promise<string>;
 }

@@ -43,11 +43,7 @@ export class Carequality implements CarequalityAPI {
    * @param options         Optional parameters
    * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
    */
-  constructor(
-    apiKey: string,
-    apiMode: APIMode = APIMode.staging,
-    options: { timeout?: number } = {}
-  ) {
+  constructor(apiKey: string, apiMode: APIMode = APIMode.dev, options: { timeout?: number } = {}) {
     let baseUrl;
 
     switch (apiMode) {
@@ -160,15 +156,35 @@ export class Carequality implements CarequalityAPI {
    *
    * @param org string containing the organization resource (in XML format)
    */
-  async registerOrganization(org: string): Promise<void> {
+  async registerOrganization(org: string): Promise<string> {
     console.log("Registering organization with CQ...");
     const query = new URLSearchParams();
     query.append("apikey", this.apiKey);
     query.append("_format", XML_FORMAT);
 
     const url = `${Carequality.ORG_ENDPOINT}?${query.toString()}`;
-    await this.api.post(url, org, {
+    const resp = await this.api.post(url, org, {
       headers: { "Content-Type": "text/xml" },
     });
+    return resp.data;
+  }
+
+  /**
+   * Updates an organization with the Carequality directory.
+   *
+   * @param org string containing the organization resource (in XML format)
+   * @param oid string containing the organization OID
+   */
+  async updateOrganization(org: string, oid: string): Promise<string> {
+    console.log("Updating organization with CQ...");
+    const query = new URLSearchParams();
+    query.append("apikey", this.apiKey);
+    query.append("_format", XML_FORMAT);
+
+    const url = `${Carequality.ORG_ENDPOINT}/${oid}?${query.toString()}`;
+    const resp = await this.api.put(url, org, {
+      headers: { "Content-Type": "application/xml" },
+    });
+    return resp.data;
   }
 }

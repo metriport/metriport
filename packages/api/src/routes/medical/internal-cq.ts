@@ -11,7 +11,10 @@ import { Config } from "../../shared/config";
 import { asyncHandler, getFrom } from "../util";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { capture } from "../../shared/notifications";
-import { registerCQOrganization } from "../../external/carequality/organization";
+import {
+  registerCQOrganization,
+  updateCQOrganization,
+} from "../../external/carequality/organization";
 
 const maxNumberOfParallelRequestsToDB = 20;
 const apiKey = Config.getCQApiKey();
@@ -92,6 +95,19 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     await registerCQOrganization();
     return res.sendStatus(httpStatus.CREATED);
+  })
+);
+
+/**
+ * PUT /internal/carequality/directory
+ *
+ * Updates the organization with the Carequality Directory.
+ */
+router.put(
+  "/directory",
+  asyncHandler(async (req: Request, res: Response) => {
+    await updateCQOrganization();
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
