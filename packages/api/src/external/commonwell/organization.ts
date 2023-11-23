@@ -130,10 +130,6 @@ export const update = async (org: Organization): Promise<void> => {
   }
 };
 
-/**
- * TODO remove this when we disable/remove Enhanced Coverage in favour of CQ integration.
- * This is not sound as it's tying our Orgs to the CW's CQ bridge.
- */
 export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
   try {
     const managementApi = makeCommonWellManagementAPI();
@@ -145,6 +141,9 @@ export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
     const cqOrgIds = highPrioOrgs.map(o => o.id);
     const cqOrgIdsLimited =
       cqOrgIds.length > MAX_HIGH_PRIO_ORGS ? cqOrgIds.slice(0, MAX_HIGH_PRIO_ORGS) : cqOrgIds;
+    console.log(
+      `Updating CQ include list for org ${orgOID} with ${cqOrgIdsLimited.length} high prio orgs`
+    );
     await managementApi.updateIncludeList({ oid: orgOID, careQualityOrgIds: cqOrgIdsLimited });
   } catch (error) {
     const additional = { orgOID, error };

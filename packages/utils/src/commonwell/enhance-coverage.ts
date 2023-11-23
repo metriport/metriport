@@ -22,6 +22,8 @@ dayjs.extend(duration);
 
 // Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
 // import { chromium as runtime } from "playwright";
+import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
+import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/core/util/sleep";
 import { firefox as runtime } from "playwright";
@@ -54,6 +56,12 @@ const triggerWHNotificationsToCx = false;
  */
 const downloadProgressIndex = 0;
 
+/**
+ * Whether to run session manager and code challenger using local implementations or to use the ones that rely
+ * on Secrets on AWS.
+ */
+const useLocalImplementations = false;
+
 // If it fails to get the cookie, we might need to run this on a "headed" browser = update this to false:
 const headless = true;
 
@@ -78,13 +86,31 @@ const maxDocQueryAttempts = 3;
 const minDocsToConsiderCompleted = 2;
 const prefix = "############################### ";
 
-class CodeChallengeFromTerminal implements CodeChallenge {
-  async getCode() {
-    return readline.question("What's the access code? ");
+function getConnectors() {
+  if (useLocalImplementations) {
+    class CodeChallengeFromTerminal implements CodeChallenge {
+      async getCode() {
+        return readline.question("What's the access code? ");
+      }
+    }
+    const codeChallenge = new CodeChallengeFromTerminal();
+    const cookieManager = new CookieManagerInMemory();
+    return { codeChallenge, cookieManager };
   }
+  const awsRegion = getEnvVarOrFail("AWS_REGION");
+  const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
+  const codeChallengeNotifUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
+  const codeChallenge = new CodeChallengeFromSecretManager(
+    codeChallengeSecretArn,
+    awsRegion,
+    codeChallengeNotifUrl
+  );
+  const sessionManagementSecretArn = getEnvVarOrFail("CW_MANAGEMENT_COOKIE_SECRET_ARN");
+  const cookieManager = new CookieManagerOnSecrets(sessionManagementSecretArn, awsRegion);
+  return { codeChallenge, cookieManager };
 }
-const codeChallenge = new CodeChallengeFromTerminal();
-const cookieManager = new CookieManagerInMemory();
+
+const { codeChallenge, cookieManager } = getConnectors();
 
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
 const patientLoader = new PatientLoaderMetriportAPI(metriportApiBaseUrl);
@@ -120,8 +146,10 @@ export async function main() {
     debug: console.log,
   };
 
-  const cwSession = new SessionManagement(props);
-  await cwSession.initSession();
+  if (useLocalImplementations) {
+    const cwSession = new SessionManagement(props);
+    await cwSession.initSession();
+  }
 
   await coverageEnhancer.enhanceCoverage({
     cxId,
