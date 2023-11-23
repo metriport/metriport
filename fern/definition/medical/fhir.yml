@@ -35,6 +35,16 @@ service:
               formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
                no end date filter will be applied.
             type: optional<string>
+          conversionType:
+            docs: |
+              The doc type to convert to. Either html or pdf.
+            type: optional<string>
+        body:
+          docs: |
+            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+            This metadata will be returned in the webhook response.
+          type: optional<map<string, string>>
+
       response:
         type: StartConsolidatedQueryResponse
         docs: Returns a Bundle that contains a property entry which is simply an array of FHIR resources.
@@ -62,6 +72,24 @@ service:
             id: "12345678"
           response:
             body: $GetConsolidatedQueryStatusResponse.Example0
+
+    createPatientConsolidated:
+      display-name: Create Patient's Consolidated Data
+      docs: Create Patient's Consolidated Data with a FHIR Bundle.
+      method: PUT
+      path: /patient/{id}/consolidated
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient
+      response:
+        type: TransactionResponse
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "12345678"
+          response:
+            body: $TransactionResponse.Example0
 
     countPatientData:
       display-name: Count Patient Data
@@ -149,6 +177,28 @@ types:
           formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
             no end date filter will be applied.
         type: optional<string>
+
+  TransactionResponse:
+    properties:
+      resourceType:
+        type: string
+        docs: The type of the FHIR resource. For a transaction response, this is always "Bundle".
+      id:
+        type: string
+        docs: A unique identifier for this transaction response.
+      type:
+        type: string
+        docs: The type of the bundle, which is "transaction-response" in this case.
+      entry:
+        type: list<map<string, unknown>>
+        docs: An array of responses for each transaction in the bundle. Each entry can be any arbitrary JSON object. 
+    examples:
+      - name: Example0
+        value:
+          resourceType: "Bundle"
+          id: "12345"
+          type: "transaction-response"
+          entry: [{ "resourceId": "abc123", "status": "created", "details": "Resource created successfully" }]
 
   ResourcesSearchableByPatient:
     enum:

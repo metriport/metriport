@@ -32,16 +32,22 @@ service:
           facilityId:
             docs: The ID of the Facility where the patient is receiving care.
             type: string
+        body:
+          docs: |
+            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+            This metadata will be returned in the webhook response.
+          type: optional<map<string, string>>
       response: DocumentQuery
       examples:
         - name: Example1
           query-parameters:
             patientId: "12345678"
             facilityId: "12345678"
+          request: {"youCan": "putAny", "stringKeyValue": "pairsHere"}
           response:
             body: $DocumentQuery.Example1
 
-    getQueryStatus:
+    getQueryStatus:  
       display-name: Get Document Query Status
       docs: |
         Returns the document query status for the specified patient.
