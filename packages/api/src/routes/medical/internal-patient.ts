@@ -59,11 +59,6 @@ router.get(
   })
 );
 
-const cxIdAndPatientIdsSchema = z.object({
-  cxId: uuidSchema,
-  patientIds: z.string().array(),
-});
-
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/states
  *
@@ -76,7 +71,9 @@ const cxIdAndPatientIdsSchema = z.object({
 router.get(
   "/states",
   asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, patientIds = [] } = cxIdAndPatientIdsSchema.parse(req.body);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientIdsRaw = getFrom("query").optional("patientIds", req);
+    const patientIds = patientIdsRaw?.split(",") ?? [];
     const states = await getPatientStates({ cxId, patientIds });
     return res.status(status.OK).json({ states });
   })
