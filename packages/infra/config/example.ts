@@ -56,6 +56,22 @@ export const config: EnvConfig = {
     secretNames: {
       CQ_API_KEY: "CQ_API_KEY",
     },
+    envVars: {
+      CQ_ORG_NAME: "Test org",
+      CQ_ORG_OID: "1.2.3.1.4.1.11.12.29.2022.1234",
+      CQ_ADDRESS_LINE_1: "123 Main St",
+      CQ_CITY: "Phoenix",
+      CQ_STATE: "AZ",
+      CQ_POSTAL_CODE: "12345",
+      CQ_LATITUDE: "33.12345",
+      CQ_LONGITUDE: "-112.12345",
+      CQ_URL_XCPD: "https://api.myhealthapp.com/xcpd",
+      CQ_URL_DQ: "https://api.myhealthapp.com/xca-dq",
+      CQ_URL_DR: "https://api.myhealthapp.com/xca-dr",
+      CQ_TECHNICAL_CONTACT_NAME: "Engineering",
+      CQ_TECHNICAL_CONTACT_PHONE: "(123)-123-1234",
+      CQ_TECHNICAL_CONTACT_EMAIL: "support@healthapp.com",
+    },
   },
   commonwell: {
     envVars: {

@@ -36,9 +36,25 @@ export type EnvConfig = {
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
   };
-  carequality: {
-    secretNames: {
-      CQ_API_KEY: string;
+  carequality?: {
+    secretNames?: {
+      CQ_API_KEY?: string;
+    };
+    envVars?: {
+      CQ_ORG_NAME?: string;
+      CQ_ORG_OID?: string;
+      CQ_ADDRESS_LINE_1?: string;
+      CQ_CITY?: string;
+      CQ_STATE?: string;
+      CQ_POSTAL_CODE?: string;
+      CQ_LATITUDE?: string;
+      CQ_LONGITUDE?: string;
+      CQ_URL_XCPD?: string;
+      CQ_URL_DQ?: string;
+      CQ_URL_DR?: string;
+      CQ_TECHNICAL_CONTACT_NAME?: string;
+      CQ_TECHNICAL_CONTACT_PHONE?: string;
+      CQ_TECHNICAL_CONTACT_EMAIL?: string;
     };
   };
   commonwell: {
