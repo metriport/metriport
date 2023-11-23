@@ -7,13 +7,15 @@ import {
 } from "../command/medical/admin/populate-fhir";
 import { redriveSidechainDLQ } from "../command/medical/admin/redrive-dlq";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
+import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import BadRequestError from "../errors/bad-request";
+import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResources } from "../external/fhir/patient/count-resources";
 import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
+import carequalityRoutes from "./medical/internal-cq";
 import docsRoutes from "./medical/internal-docs";
 import patientRoutes from "./medical/internal-patient";
-import carequalityRoutes from "./medical/internal-cq";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom } from "./util";
 
@@ -153,6 +155,27 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const result = await countResources({ patient: { cxId } });
     return res.json(result);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/cq-include-list/reset
+ *
+ * Resets the CQ include list on CW for the given customer.
+ */
+router.post(
+  "/cq-include-list/reset",
+  asyncHandler(async (req: Request, res: Response) => {
+    const getOID = async (): Promise<string> => {
+      const cxId = getUUIDFrom("query", req, "cxId").optional();
+      if (cxId) return (await getOrganizationOrFail({ cxId })).oid;
+      const orgOID = getFrom("query").optional("orgOID", req);
+      if (orgOID) return orgOID;
+      throw new BadRequestError(`Either cxId or orgOID must be provided`);
+    };
+    const orgOID = await getOID();
+    await initCQOrgIncludeList(orgOID);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

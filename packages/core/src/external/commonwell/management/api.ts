@@ -13,7 +13,7 @@ import { safeStringify } from "../../../util/string";
 dayjs.extend(duration);
 
 const DEFAULT_TIMEOUT_GET_MEMBER = dayjs.duration({ seconds: 20 });
-const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ minutes: 3 });
+const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ minutes: 5 });
 
 export const userAgent =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
