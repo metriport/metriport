@@ -3,6 +3,7 @@ import { CoverageEnhancer } from "@metriport/core/external/commonwell/cq-bridge/
 import { CoverageEnhancerCloud } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-cloud";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { Config } from "../../../shared/config";
+import { PatientLoaderLocal } from "../patient-loader-local";
 import { CoverageEnhancerApiLocal } from "./coverage-enhancer-api-local";
 
 export function makeCoverageEnhancer(): CoverageEnhancer | undefined {
@@ -12,7 +13,11 @@ export function makeCoverageEnhancer(): CoverageEnhancer | undefined {
       console.log(`Could not return a CoverageEnhancer, mising cwPatientLinkQueueUrl`);
       return undefined;
     }
-    return new CoverageEnhancerCloud(Config.getAWSRegion(), cwPatientLinkQueueUrl);
+    return new CoverageEnhancerCloud(
+      Config.getAWSRegion(),
+      cwPatientLinkQueueUrl,
+      new PatientLoaderLocal()
+    );
   }
 
   const cwManagementUrl = Config.getCWManagementUrl();
