@@ -10,8 +10,5 @@ import { Carequality, APIMode } from "@metriport/carequality-sdk";
 export function makeCarequalityAPI(apiKey?: string, dev = false): Carequality {
   const cqApiKey = apiKey ?? Config.getCQApiKey();
   if (dev) return new Carequality(cqApiKey, APIMode.dev);
-  if (Config.isSandbox()) {
-    return new Carequality(cqApiKey, APIMode.staging);
-  }
   return new Carequality(cqApiKey);
 }
