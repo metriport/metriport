@@ -141,6 +141,9 @@ types:
     properties:
       download: optional<Progress>
       convert: optional<Progress>
+      requestId:
+        type: optional<string>
+        docs: The ID of the Document Query.
     examples:
       - name: Example1
         value:
