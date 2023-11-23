@@ -85,14 +85,15 @@ service:
           patientId:
             docs: The ID of the Patient for which to list available Documents.
             type: string
-          facilityId:
-            docs: The ID of the Facility where the patient is receiving care.
-            type: string
           dateFrom:
             docs: The start date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no start date filter will be applied.
             type: optional<string>
           dateTo:
             docs: The end date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no end date filter will be applied.
+            type: optional<string>
+          content:
+            docs: |
+              Value to search on the document reference (minimum 3 chars).
             type: optional<string>
       response:
         type: ListDocumentsResponse
@@ -135,6 +136,8 @@ service:
             conversionType: "pdf"
           response:
             body: $DocumentUrl.Example1
+
+    
 
 types:
   DocumentQuery:
