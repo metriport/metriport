@@ -37,6 +37,8 @@ service:
             genderAtBirth: F
             personalIdentifiers:
               - $PersonalIdentifier.Example1
+            address: 
+              - $commons.Address.Example1
           response:
             body: $Patient.Example1
 
@@ -124,12 +126,7 @@ types:
         type: string
         docs: The ID number.
       assigner: optional<string>
-      period: optional<Period>
-
-  Period:
-    properties:
-      start: optional<string>
-      end: optional<string>
+      period: optional<commons.Period>
 
   Contact:
     properties:
@@ -205,6 +202,8 @@ types:
           genderAtBirth: F
           personalIdentifiers:
             - $PersonalIdentifier.Example1
+          address:
+            - $commons.Address.Example1
           facilityIds:
             - $FacilityId.Example1
 

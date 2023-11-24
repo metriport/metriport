@@ -6,54 +6,54 @@ service:
   audiences: 
     - public
   endpoints:
-    startConsolidatedQuery:
-      display-name: Start Consolidated Data Query
-      docs: Trigger a consolidated data query for the given patient
-      method: POST
-      path: /patient/{id}/consolidated/query
-      path-parameters:
-        id:
-          type: string
-          docs: The ID of the Patient.
-      request:
-        name: GetPatientConsolidatedData
-        query-parameters:
-          resources:
-            docs: |
-              A comma separated, case sensitive list of resources to be returned. 
-              If none are provided all resources will be included.
-            type: optional<string>
-          dateFrom:
-            docs: |
-              The start date (inclusive) for which to filter returned resources - 
-              formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
-              no start date filter will be applied.
-            type: optional<string>
-          dateTo:
-            docs: |
-              The end date (inclusive) for which to filter returned resources - 
-              formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
-               no end date filter will be applied.
-            type: optional<string>
-          conversionType:
-            docs: |
-              The doc type to convert to. Either html or pdf.
-            type: optional<string>
-        body:
-          docs: |
-            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
-            This metadata will be returned in the webhook response.
-          type: optional<map<string, string>>
+    # startConsolidatedQuery:
+    #   display-name: Start Consolidated Data Query
+    #   docs: Trigger a consolidated data query for the given patient
+    #   method: POST
+    #   path: /patient/{id}/consolidated/query
+    #   path-parameters:
+    #     id:
+    #       type: string
+    #       docs: The ID of the Patient.
+    #   request:
+    #     name: GetPatientConsolidatedData
+    #     query-parameters:
+    #       resources:
+    #         docs: |
+    #           A comma separated, case sensitive list of resources to be returned. 
+    #           If none are provided all resources will be included.
+    #         type: optional<string>
+    #       dateFrom:
+    #         docs: |
+    #           The start date (inclusive) for which to filter returned resources - 
+    #           formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
+    #           no start date filter will be applied.
+    #         type: optional<string>
+    #       dateTo:
+    #         docs: |
+    #           The end date (inclusive) for which to filter returned resources - 
+    #           formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
+    #            no end date filter will be applied.
+    #         type: optional<string>
+    #       conversionType:
+    #         docs: |
+    #           The doc type to convert to. Either html or pdf.
+    #         type: optional<string>
+    #     body:
+    #       docs: |
+    #         Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+    #         This metadata will be returned in the webhook response.
+    #       type: optional<map<string, string>>
 
-      response:
-        type: StartConsolidatedQueryResponse
-        docs: Returns a Bundle that contains a property entry which is simply an array of FHIR resources.
-      examples:
-        - path-parameters:
-            id: "12345678"
-          response:
-            body:
-              status: processing
+    #   response:
+    #     type: StartConsolidatedQueryResponse
+    #     docs: Returns a Bundle that contains a property entry which is simply an array of FHIR resources.
+    #   examples:
+    #     - path-parameters:
+    #         id: "12345678"
+    #       response:
+    #         body:
+    #           status: processing
 
     getConsolidatedQueryStatus:
       display-name: Get Consolidated Data Query status

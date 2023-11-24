@@ -1,4 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+imports:
+  commons: ../commons.yml
 
 service:
   base-path: /medical/v1/document
@@ -98,13 +100,6 @@ service:
       response:
         type: MedplumDocumentReference
         docs: An array of objects describing the Documents that can be retrieved for the Patient.
-      examples:
-        - name: Example1
-          query-parameters:
-            patientId: "12345678"
-            facilityId: "12345678"
-          response:
-            body: $MedplumDocumentReference.Example1
 
     getURL:
       display-name: Get Document URL
@@ -154,15 +149,15 @@ service:
             A FHIR DocumentReference.
           type: UploadDocumentReference
       response: 
-        type: UploadDocumentRespnse
-        docs: The DocumentReference ID and a URL to be used for file upload.
+        type: UploadDocumentResponse
+        docs: The DocumentReference ID and a URL to be used for file upload.   
       examples:
         - name: Example1
           query-parameters:
             patientId: "12345678"
-          body: $UploadDocumentReference.Example1
+          request: $UploadDocumentReference.Example1
           response:
-            body: $UploadDocumentResponse.Example1    
+            body: $UploadDocumentResponse.Example1 
 
 types:
   DocumentQuery:
@@ -216,75 +211,7 @@ types:
 
   MedplumDocumentReference:
     properties:
-      documents: list<<map<string, unknown>>
-    examples:
-      - name: Example1
-        value:
-          documents:
-            - resourceType: DocumentReference
-              id: 018a875a-3181-74e8-8aa4-40c59ed7e1b2
-              meta:
-                versionId: "1"
-                lastUpdated: "2023-09-01T14:31:57.025+00:00"
-                source: "#vK8lyyAta8eKkbPO"
-              contained:
-                - resourceType: Organization
-                  id: org522
-                  name: Hospital 522
-                - resourceType: Practitioner
-                  id: auth925
-                  name:
-                    - text: John Snow
-                      family: Snow
-                      given: 
-                        - John
-              extension:
-                - url: "https://public.metriport.com/fhir/StructureDefinition/data-source.json"
-                  valueCoding:
-                    system: "https://public.metriport.com/fhir/StructureDefinition/data-source.json"
-                    code: METRIPORT
-              masterIdentifier:
-                system: urn:ietf:rfc:3986
-                value: 018a875a-3181-74e8-8aa4-40c59ed7e1b2
-              identifier:
-                - use: official
-                  system: urn:ietf:rfc:3986
-                  value: 018a875a-3181-74e8-8aa4-40c59ed7e1b2
-              status: current
-              type:
-                coding:
-                  - system: http://loinc.org/
-                    code: 34133-9
-                    display: Summarization of episode note
-              subject:
-                reference: Patient/018a5164-c0ac-79e2-99cc-9cf951c26d94
-                type: Patient
-              date: "2023-08-15T03:05:58.090Z"
-              author:
-                - reference: "#org522"
-                  type: Organization
-              description: C-CDA R2.1 Patient Record
-              content:
-                - extension:
-                    - url: "https://public.metriport.com/fhir/StructureDefinition/data-source.json"
-                      valueCoding:
-                        system: "https://public.metriport.com/fhir/StructureDefinition/data-source.json"
-                        code: METRIPORT
-                  attachment:
-                    contentType: application/pdf
-                    url: "http://api.metriport.com/doc-contribution/commonwell/?fileName=965f9957-34ac-442b-9a17-fa09c76c16da/018a5164-c0ac-79e2-99cc-9cf951c26d94/965f9957-34ac-442b-9a17-fa09c76c16da_018a5164-c0ac-79e2-99cc-9cf951c26d94_018a875a-3181-74e8-8aa4-40c59ed7e1b2"
-                    size: 1080416
-                    title: 965f9957-34ac-442b-9a17-fa09c76c16da/018a5164-c0ac-79e2-99cc-9cf951c26d94/965f9957-34ac-442b-9a17-fa09c76c16da_018a5164-c0ac-79e2-99cc-9cf951c26d94_018a875a-3181-74e8-8aa4-40c59ed7e1b2
-                    creation: "2023-08-14T22:05:58-05:00"
-                  format:
-                    code: urn:ihe:pcc:xphr:2007
-              context:
-                period:
-                  start: "2023-08-15T02:05:58.090Z"
-                  end: "2023-08-15T03:05:58.090Z"
-                sourcePatientInfo:
-                  reference: Patient/018a5164-c0ac-79e2-99cc-9cf951c26d94
-                  type: Patient
+      documents: list<map<string, unknown>>
 
   DocumentReferenceDocumentWebhook:
     properties:
@@ -374,8 +301,8 @@ types:
       type:
         type: CodeableConcept
         docs: A CodeableConcept of the document type.
-      content:
-        type: list<UploadDocumentReferenceContent>
+      context:
+        type: list<DocumentReferenceContext>
         docs: Context of the document content.
     examples:
       - name: Example1
@@ -387,26 +314,25 @@ types:
               - code: "100556-0"
                 system: "http://loinc.org"
                 display: "Burn management Hospital Progress note"
-          context:
-            period:
-              start: "2023-10-10T14:14:17Z"
-              end: "2023-10-10T15:30:30Z"
-            facilityType:
-              text: "John Snow Clinic - Acute Care Centre"
+          context: [$DocumentReferenceContext.Example1]
+            
 
   DocumentReferenceContext:
     properties:
       period: 
-        type: optional<Period>
+        type: optional<commons.Period>
         docs: The time period over which the document was created.
       facilityType:
         type: optional<CodeableConcept>
         docs: The kind of facility where the patient was seen.
-
-  Period:
-    properties:
-      start: optional<string>
-      end: optional<string>
+    examples:
+      - name: Example1
+        value:
+          period:
+              start: "2023-10-10T14:14:17Z"
+              end: "2023-10-10T15:30:30Z"
+          facilityType:
+            text: "John Snow Clinic - Acute Care Centre"
 
   UploadDocumentResponse:
     properties:
