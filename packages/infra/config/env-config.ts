@@ -41,22 +41,7 @@ export type EnvConfig = {
       CQ_API_KEY?: string;
     };
     envVars?: {
-      CQ_ORG_DETAILS?: {
-        orgName: string;
-        orgOid: string;
-        addressLine1: string;
-        city: string;
-        state: string;
-        zip: string;
-        lat: string;
-        lon: string;
-        urlXCPD: string;
-        urlDQ: string;
-        urlDR: string;
-        contactName: string;
-        phone: string;
-        email: string;
-      };
+      CQ_ORG_DETAILS?: string;
     };
   };
   commonwell: {
