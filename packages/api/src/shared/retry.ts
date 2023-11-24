@@ -1,5 +1,8 @@
 import { Util } from "./util";
 
+/**
+ * @deprecated Use `executeWithRetries` from @metriport/shared instead.
+ */
 export const retryFunction = async <K>(
   fn: () => Promise<K>,
   maxRetries = 3,

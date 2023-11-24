@@ -1,0 +1,44 @@
+version: "3"
+services:
+  ihe-gateway:
+    image: nextgenhealthcare/connect:4.4.2
+    volumes:
+      - ./custom-extensions:/opt/connect/custom-extensions
+    depends_on:
+      ihe-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE: "postgres"
+      DATABASE_USERNAME: "admin"
+      DATABASE_PASSWORD: "admin"
+      DATABASE_URL: "jdbc:postgresql://ihe-postgres:5432/db"
+      LICENSE_KEY: ${LICENSE_KEY}
+    restart: on-failure
+    ports:
+      - "8443:8443"
+      - "8081:8081"
+      - "8082:8082"
+      - "8100:8100"
+      - "23067:23067"
+      - "16850:16850"
+      - "16852:16852"
+      - "16853:16853"
+  ihe-postgres:
+    image: postgres:14.4-alpine
+    container_name: ihe-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: "db"
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "admin"
+    ports:
+      - "5436:5432"
+    volumes:
+      - ihe-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 2s
+      timeout: 2s
+      retries: 2
+volumes:
+  ihe-postgres:

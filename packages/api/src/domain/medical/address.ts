@@ -8,3 +8,7 @@ export type Address = {
   zip: string;
   country?: string;
 };
+
+export function getState(address: Address): USState {
+  return address.state;
+}
