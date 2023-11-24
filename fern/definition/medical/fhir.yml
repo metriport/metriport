@@ -82,12 +82,15 @@ service:
         id:
           type: string
           docs: The ID of the Patient
+      request:
+        body: ConsolidatedBundleUpload
       response:
         type: TransactionResponse
       examples:
         - name: Example1
           path-parameters:
             id: "12345678"
+          request: $ConsolidatedBundleUpload.Example1
           response:
             body: $TransactionResponse.Example0
 
@@ -178,6 +181,24 @@ types:
             no end date filter will be applied.
         type: optional<string>
 
+  ConsolidatedBundleUpload:
+    properties:
+      resourceType:
+        type: string
+        docs: The resource needs to be “Bundle”
+      type:
+        type: string
+        docs: The type needs to be “collection”
+      entry:
+        type: list<map<string, unknown>>
+        docs: The entry needs to be an array of FHIR resources.
+    examples:
+      - name: Example1
+        value:
+          resourceType: "Bundle"
+          type: "collection"
+          entry: [{"resource": {"resourceType": "Appointment", "status": "booked", "participant": [{"actor": {"reference": "Patient/${patientId}", "display": "John Doe"}, "status": "accepted", "period": {"start": "2021-05-24T13:21:28.527Z", "end": "2021-05-24T13:21:28.527Z"}}], "meta": {"versionId": "12345", "lastUpdated": "2023-05-24T13:21:28.527Z"}}}]
+
   TransactionResponse:
     properties:
       resourceType:
@@ -198,7 +219,7 @@ types:
           resourceType: "Bundle"
           id: "12345"
           type: "transaction-response"
-          entry: [{ "resourceId": "abc123", "status": "created", "details": "Resource created successfully" }]
+          entry: [{"response": {"status": "201 Created", "location": "Appointment/3/_history/1", "etag": "1", "lastModified": "2023-07-27T21:29:31.491+00:00", "outcome": {"resourceType": "OperationOutcome", "issue": [{"severity": "information", "code": "informational", "details": {"coding": [{"system": "https://public.metriport.com/fhir/StructureDefinition/operation-outcome", "code": "SUCCESSFUL_CREATE", "display": "Create succeeded."}]}, "diagnostics": "Successfully created resource \"Appointment/3/_history/1\". Took 7ms."}]}}}]
 
   ResourcesSearchableByPatient:
     enum:
