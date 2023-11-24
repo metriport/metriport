@@ -43,7 +43,11 @@ export class Carequality implements CarequalityAPI {
    * @param options         Optional parameters
    * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
    */
-  constructor(apiKey: string, apiMode: APIMode = APIMode.dev, options: { timeout?: number } = {}) {
+  constructor(
+    apiKey: string,
+    apiMode: APIMode = APIMode.staging,
+    options: { timeout?: number } = {}
+  ) {
     let baseUrl;
 
     switch (apiMode) {
@@ -78,9 +82,9 @@ export class Carequality implements CarequalityAPI {
   /**
    * Lists the indicated number of organizations.
    *
-   * @param count Optional, number of organizations to fetch.
-   * @param start Optional, the index of the directory to start querying from
-   * @param start Optional, the OID of the organization to fetch
+   * @param count Optional, number of organizations to fetch. Defaults to 1000.
+   * @param start Optional, the index of the directory to start querying from. Defaults to 0.
+   * @param oid Optional, the OID of the organization to fetch.
    * @returns
    */
   async listOrganizations({
@@ -155,9 +159,9 @@ export class Carequality implements CarequalityAPI {
    * Registers an organization with the Carequality directory.
    *
    * @param org string containing the organization resource (in XML format)
+   * @returns an XML string containing an OperationOutcome resource - see Carequality documentation for details - https://carequality.org/healthcare-directory/OperationOutcome-create-success-example2.xml.html
    */
   async registerOrganization(org: string): Promise<string> {
-    console.log("Registering organization with CQ...");
     const query = new URLSearchParams();
     query.append("apikey", this.apiKey);
     query.append("_format", XML_FORMAT);
@@ -174,9 +178,9 @@ export class Carequality implements CarequalityAPI {
    *
    * @param org string containing the organization resource (in XML format)
    * @param oid string containing the organization OID
+   * @returns an XML string containing an OperationOutcome resource - see Carequality documentation for details - https://carequality.org/healthcare-directory/OperationOutcome-create-success-example2.xml.html
    */
   async updateOrganization(org: string, oid: string): Promise<string> {
-    console.log("Updating organization with CQ...");
     const query = new URLSearchParams();
     query.append("apikey", this.apiKey);
     query.append("_format", XML_FORMAT);

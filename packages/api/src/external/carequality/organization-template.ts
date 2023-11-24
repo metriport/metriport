@@ -1,4 +1,9 @@
-import { XCPD_STRING, XCA_DQ_STRING, XCA_DR_STRING } from "@metriport/carequality-sdk/common/util";
+import {
+  XCPD_STRING,
+  XCA_DQ_STRING,
+  XCA_DR_STRING,
+  ChannelUrl,
+} from "@metriport/carequality-sdk/common/util";
 
 export function buildOrganizationFromTemplate({
   orgName,
@@ -7,8 +12,8 @@ export function buildOrganizationFromTemplate({
   city,
   state,
   postalCode,
-  longitude,
-  latitude,
+  lat,
+  lon,
   urlXCPD,
   urlDQ,
   urlDR,
@@ -22,8 +27,8 @@ export function buildOrganizationFromTemplate({
   city: string;
   state: string;
   postalCode: string;
-  longitude: string;
-  latitude: string;
+  lat: string;
+  lon: string;
   urlXCPD: string;
   urlDQ: string;
   urlDR: string;
@@ -38,7 +43,6 @@ export function buildOrganizationFromTemplate({
 
   return `
   <Organization>
-<!--This is the XCA/XCPD HomeCommunityID OID in URN format-->
 <identifier>
     <use value="official"/>
     <system value="http://www.hl7.org/oid/"/>
@@ -52,7 +56,6 @@ export function buildOrganizationFromTemplate({
         <code value="Implementer"/> 
     </coding>
 </type>
-<!--The contact object is repeated for each person listed in the directory-->
 <contact>
     <purpose value="Operations"/>
     <name>
@@ -69,7 +72,6 @@ export function buildOrganizationFromTemplate({
         <value value="${phone}"/>
         <use value="work"/>
     </telecom>
-    <!--General address for this specific person-->
     <address>
         <use value="work"/>
         <type value="both"/>
@@ -79,7 +81,6 @@ export function buildOrganizationFromTemplate({
         <country value="USA"/>
     </address>
 </contact>
-<!--General organizational physical and mailing address-->
 <address>
     <use value="work"/>
     <type value="both"/>
@@ -94,19 +95,14 @@ export function buildOrganizationFromTemplate({
                 <system value="https://sequoiaproject.org/StructureDefinition/Address/Position/1.0.0"/>
                 <value>
                     <position>
-                        <longitude value="${longitude}"/>
-                        <latitude value="${latitude}"/>
+                        <longitude value="${lon}"/>
+                        <latitude value="${lat}"/>
                     </position>
                 </value>
             </coding>
         </valueCodeableConcept>
     </extension>
 </address>
-<!--If this is a Carequality Connection, then the partOf object points to the Carequality Implementer-->
-<!--If this is a eHealth Exchange Sub-Participant, then the partOf object points to the eHealth Exchange Participant-->
-<!--If this is a lower-level organization, then the partOf object points to the immediate parent organization-->
-<!--If this is a top-level organization, then the partOf object is not specified-->
-<!--The Endpoints are represented as contained resources and are repeated as needed-->
 ${endpointXCPD}
 ${endpointDQ}
 ${endpointDR}
@@ -116,9 +112,9 @@ ${endpointDR}
 function getEndpoint(
   oid: string,
   url: string,
-  urlType: string,
-  channelType: string,
-  channelName: string
+  urlType: ChannelUrl,
+  channelType: "ihe-xcpd" | "ihe-xca",
+  channelName: "Patient Discovery" | "Query for Documents" | "Retrieve Documents"
 ) {
   return `<contained>
     <Endpoint>
@@ -152,7 +148,6 @@ function getEndpoint(
             <extension url="Transaction">
                 <valueString value="${urlType}"/>
             </extension>
-            <!--Is this gateway an initiator or responder actor-->
             <extension url="Actor">
                 <valueCodeableConcept>
                     <coding>
@@ -161,7 +156,6 @@ function getEndpoint(
                     </coding>
                 </valueCodeableConcept>
             </extension>
-            <!--Version of the service as per the eHealth Exchange specifications-->
             <extension url="Version">
                 <valueCodeableConcept>
                     <coding>
@@ -170,7 +164,6 @@ function getEndpoint(
                     </coding>
                 </valueCodeableConcept>
             </extension>
-            <!--Initiative specific list of use cases supported-->
             <extension url="UseCases">
                 <valueCodeableConcept>
                     <coding>
@@ -179,7 +172,6 @@ function getEndpoint(
                     </coding>
                 </valueCodeableConcept>
             </extension>
-            <!--PurposesOfUse Value Set for SAML header and/or access control-->
             <extension url="PurposesOfUse">
                 <valueCodeableConcept>
                     <coding>
@@ -188,7 +180,6 @@ function getEndpoint(
                     </coding>
                 </valueCodeableConcept>
             </extension>
-            <!--Roles Value Set for SAML header and/or access control-->
             <extension url="Roles">
                 <valueCodeableConcept>
                     <coding>
@@ -197,7 +188,6 @@ function getEndpoint(
                     </coding>
                 </valueCodeableConcept>
             </extension>
-            <!--IPAs of gateway, may repeat-->
             <extension url="IPA">
                 <valueCodeableConcept>
                     <coding>

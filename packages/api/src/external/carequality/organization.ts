@@ -1,45 +1,46 @@
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { makeCarequalityAPI } from "./api";
 import { buildOrganizationFromTemplate } from "./organization-template";
-import BadRequestError from "@metriport/core/util/error/bad-request";
 
-const cqOrgDetails = {
-  orgName: getEnvVarOrFail("CQ_ORG_NAME"),
-  orgOID: getEnvVarOrFail("CQ_ORG_OID"),
-  addressLine1: getEnvVarOrFail("CQ_ADDRESS_LINE_1"),
-  city: getEnvVarOrFail("CQ_CITY"),
-  state: getEnvVarOrFail("CQ_STATE"),
-  postalCode: getEnvVarOrFail("CQ_POSTAL_CODE"),
-  latitude: getEnvVarOrFail("CQ_LATITUDE"),
-  longitude: getEnvVarOrFail("CQ_LONGITUDE"),
-  urlXCPD: getEnvVarOrFail("CQ_URL_XCPD"),
-  urlDQ: getEnvVarOrFail("CQ_URL_DQ"),
-  urlDR: getEnvVarOrFail("CQ_URL_DR"),
-  contactName: getEnvVarOrFail("CQ_TECHNICAL_CONTACT_NAME"),
-  phone: getEnvVarOrFail("CQ_TECHNICAL_CONTACT_PHONE"),
-  email: getEnvVarOrFail("CQ_TECHNICAL_CONTACT_EMAIL"),
+const cq = makeCarequalityAPI();
+
+type CQOrgDetails = {
+  orgName: string;
+  orgOID: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  lat: string;
+  lon: string;
+  urlXCPD: string;
+  urlDQ: string;
+  urlDR: string;
+  contactName: string;
+  phone: string;
+  email: string;
 };
+
+const cqOrgDetails: CQOrgDetails = JSON.parse(getEnvVarOrFail("CQ_ORG_DETAILS"));
 
 export async function registerCQOrganization(): Promise<void> {
   const cqOrg = buildOrganizationFromTemplate(cqOrgDetails);
-  const cq = makeCarequalityAPI();
   try {
+    console.log(`Registering org in the CQ Directory...`);
     await cq.registerOrganization(cqOrg);
   } catch (error) {
-    const msg = `Failure registering org @ CQ Directory`;
-    console.log(msg);
-    throw new BadRequestError(msg, error);
+    console.log(`Failure registering org @ CQ Directory. Cause: ${error}`);
+    throw error;
   }
 }
 
 export async function updateCQOrganization(): Promise<void> {
+  console.log(`Updating org in the CQ Directory...`);
   const cqOrg = buildOrganizationFromTemplate(cqOrgDetails);
-  const cq = makeCarequalityAPI();
   try {
     await cq.updateOrganization(cqOrg, cqOrgDetails.orgOID);
   } catch (error) {
-    const msg = `Failure updating org @ CQ Directory`;
-    console.log(msg);
-    throw new BadRequestError(msg, error);
+    console.log(`Failure updating org @ CQ Directory. Cause: ${error}`);
+    throw error;
   }
 }
