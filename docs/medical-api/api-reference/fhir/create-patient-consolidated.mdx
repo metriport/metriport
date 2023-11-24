@@ -20,7 +20,7 @@ api: "PUT /medical/v1/patient/{id}/consolidated"
   The type needs to be "collection"
 </ParamField>
 
-<ParamField body="entry" type="array" required>
+<ParamField body="entry" type="object[]" required>
   The entry needs to be an array of [FHIR resources](/medical-api/fhir/resources).
 </ParamField>
 

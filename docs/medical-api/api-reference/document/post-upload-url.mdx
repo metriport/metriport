@@ -27,15 +27,15 @@ To use this endpoint, you will need to follow these steps:
 ## Body
 
     A FHIR [DocumentReference](/medical-api/fhir/resources/documentreference).
-    <ParamField body="type" type="CodeableConcept" required>
+    <ParamField body="type" type="object" required>
       A [CodeableConcept](/medical-api/fhir/data-types/codeableconcept) of the document type.
       <Expandable title="Type properties">
         <ParamField body="text" type="string" required>
           Plain text representation of the document kind - for example `Burn management Hospital Progress note`
         </ParamField>
 
-        <ParamField body="coding" type="Coding[]">
-          A [Coding](/medical-api/fhir/data-types/coding) property, which is a reference to a code defined by a terminology system (such as [LOINC](https://loinc.org/)) - for example `[{ code: "100556-0", system: "http://loinc.org", display: "Burn management Hospital Progress note"}]`
+        <ParamField body="coding" type="object[]">
+          A [Coding](/medical-api/fhir/data-types/coding) property of type `Coding[]`, which is a reference to a code defined by a terminology system (such as [LOINC](https://loinc.org/)) - for example `[{ code: "100556-0", system: "http://loinc.org", display: "Burn management Hospital Progress note"}]`
         </ParamField>
       </Expandable>
     </ParamField>
@@ -44,16 +44,16 @@ To use this endpoint, you will need to follow these steps:
       A brief description of the document - for example `Discharge Summary`.
     </ParamField>
 
-    <ParamField body="context" type="DocumentReferenceContext[]" required>
-      Context of the document content.
+    <ParamField body="context" type="object[]" required>
+      Context of the document content of type `DocumentReferenceContext[]`.
       <Expandable title="Context properties">
-        <ParamField body="period" type="Period" required>
-          A time [Period](/medical-api/fhir/data-types/period) property including ISO 8601 timestamp(s) - for example
+        <ParamField body="period" type="object" required>
+          A time [Period](/medical-api/fhir/data-types/period) property of type `Period` including ISO 8601 timestamp(s) - for example
           `{ start: "2023-10-10T14:14:17Z" },`
         </ParamField>
 
-        <ParamField body="facilityType" type="CodeableConcept">
-          An object that represents the facility type.
+        <ParamField body="facilityType" type="object">
+          An object of type `CodeableConcept` that represents the facility type.
             <Expandable title="Facility type properties">
               <ParamField body="text" type="string">
                 Plain text with the facility name and type - for example `John Snow Clinic - Acute Care Centre`.

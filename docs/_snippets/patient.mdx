@@ -26,7 +26,7 @@
   The Patient's gender at birth, can be one of `M` or `F`.
 </ParamField>
 
-<ParamField body="personalIdentifiers" type="PersonalIdentifier[]" optional>
+<ParamField body="personalIdentifiers" type="object[]" optional>
   An array of the Patient's personal IDs, such as a driver's license. May be empty.
 
   <Expandable title="PersonalIdentifier properties">
@@ -45,13 +45,13 @@
   </Expandable>
 </ParamField>
 
-<ParamField body="address" type="Address[]" required>
+<ParamField body="address" type="object[]" required>
   An array of `Address` objects, representing the Patient's current and/or previous addresses. May
   be empty.
   <Snippet file="patient-address.mdx" />
 </ParamField>
 
-<ParamField body="contact" type="Contact[]">
+<ParamField body="contact" type="object[]">
   An array of `Contact` objects, representing the Patient's current and/or previous contact information. May be empty.
   <Expandable title="Contact properties">
     <ParamField body="phone" type="string">
