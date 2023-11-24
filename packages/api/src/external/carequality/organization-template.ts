@@ -4,42 +4,30 @@ import {
   XCA_DR_STRING,
   ChannelUrl,
 } from "@metriport/carequality-sdk/common/util";
+import { CQOrgDetails } from "./organization";
 
-export function buildOrganizationFromTemplate({
-  orgName,
-  orgOID,
-  addressLine1,
-  city,
-  state,
-  postalCode,
-  lat,
-  lon,
-  urlXCPD,
-  urlDQ,
-  urlDR,
-  contactName,
-  phone,
-  email,
-}: {
-  orgName: string;
-  orgOID: string;
-  addressLine1: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  lat: string;
-  lon: string;
-  urlXCPD: string;
-  urlDQ: string;
-  urlDR: string;
-  contactName: string;
-  phone: string;
-  email: string;
-}) {
+export function buildOrganizationFromTemplate(orgDetails: CQOrgDetails) {
+  const {
+    orgName,
+    orgOID,
+    addressLine1,
+    city,
+    state,
+    postalCode,
+    lat,
+    lon,
+    urlXCPD,
+    urlDQ,
+    urlDR,
+    contactName,
+    phone,
+    email,
+  } = orgDetails;
+
   const oid = "urn:oid:" + orgOID;
-  const endpointXCPD = getEndpoint(oid, urlXCPD, XCPD_STRING, "ihe-xcpd", "Patient Discovery");
-  const endpointDQ = getEndpoint(oid, urlDQ, XCA_DQ_STRING, "ihe-xca", "Query for Documents");
-  const endpointDR = getEndpoint(oid, urlDR, XCA_DR_STRING, "ihe-xca", "Retrieve Documents");
+  const endpointXCPD = getEndpoint(oid, urlXCPD, XCPD_STRING);
+  const endpointDQ = getEndpoint(oid, urlDQ, XCA_DQ_STRING);
+  const endpointDR = getEndpoint(oid, urlDR, XCA_DR_STRING);
 
   return `
   <Organization>
@@ -109,13 +97,15 @@ ${endpointDR}
 </Organization>`;
 }
 
-function getEndpoint(
-  oid: string,
-  url: string,
-  urlType: ChannelUrl,
-  channelType: "ihe-xcpd" | "ihe-xca",
-  channelName: "Patient Discovery" | "Query for Documents" | "Retrieve Documents"
-) {
+function getEndpoint(oid: string, url: string, urlType: ChannelUrl) {
+  const channelType = urlType === XCPD_STRING ? "ihe-xcpd" : "ihe-xca";
+  const channelName =
+    urlType === XCPD_STRING
+      ? "Patient Discovery"
+      : urlType === XCA_DQ_STRING
+      ? "Query for Documents"
+      : "Retrieve Documents";
+
   return `<contained>
     <Endpoint>
         <!--Home Community ID-->

@@ -4,7 +4,7 @@ import { buildOrganizationFromTemplate } from "./organization-template";
 
 const cq = makeCarequalityAPI();
 
-type CQOrgDetails = {
+export type CQOrgDetails = {
   orgName: string;
   orgOID: string;
   addressLine1: string;
@@ -23,24 +23,34 @@ type CQOrgDetails = {
 
 const cqOrgDetails: CQOrgDetails = JSON.parse(getEnvVarOrFail("CQ_ORG_DETAILS"));
 
-export async function registerCQOrganization(): Promise<void> {
+export async function createOrUpdateCQOrganization(): Promise<void> {
   const cqOrg = buildOrganizationFromTemplate(cqOrgDetails);
   try {
-    console.log(`Registering org in the CQ Directory...`);
+    const org = await cq.listOrganizations({ count: 1, oid: cqOrgDetails.orgOID });
+    if (org.length > 0) {
+      await updateCQOrganization(cqOrg);
+      return;
+    }
+  } catch (error) {
+    console.log(`Failed to check if organization exists in the CQ Directory. Cause: ${error}`);
+    throw error;
+  }
+
+  try {
+    console.log(`Registering organization in the CQ Directory...`);
     await cq.registerOrganization(cqOrg);
   } catch (error) {
-    console.log(`Failure registering org @ CQ Directory. Cause: ${error}`);
+    console.log(`Failed to register organization in the CQ Directory. Cause: ${error}`);
     throw error;
   }
 }
 
-export async function updateCQOrganization(): Promise<void> {
+async function updateCQOrganization(cqOrg: string): Promise<void> {
   console.log(`Updating org in the CQ Directory...`);
-  const cqOrg = buildOrganizationFromTemplate(cqOrgDetails);
   try {
     await cq.updateOrganization(cqOrg, cqOrgDetails.orgOID);
   } catch (error) {
-    console.log(`Failure updating org @ CQ Directory. Cause: ${error}`);
+    console.log(`Failed to update organization in the CQ Directory. Cause: ${error}`);
     throw error;
   }
 }
