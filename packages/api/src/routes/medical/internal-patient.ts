@@ -32,7 +32,7 @@ import { capture } from "../../shared/notifications";
 import { stringToBoolean } from "../../shared/types";
 import { stringIntegerSchema, stringListFromQuerySchema } from "../schemas/shared";
 import { getUUIDFrom, uuidSchema } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromParamsOrFail } from "../util";
+import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryAsArrayOrFail } from "../util";
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { linkCreateSchema } from "./schemas/link";
 
@@ -72,8 +72,7 @@ router.get(
   "/states",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientIdsRaw = getFrom("query").optional("patientIds", req);
-    const patientIds = patientIdsRaw?.split(",") ?? [];
+    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
     const states = await getPatientStates({ cxId, patientIds });
     return res.status(status.OK).json({ states });
   })
