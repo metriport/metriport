@@ -30,7 +30,7 @@ const pathToCerts = getEnvVarOrFail("ORG_CERTS_FOLDER");
 const cert = fs.readFileSync(`${pathToCerts}/cert1.pem`, "utf8");
 const privkey = fs.readFileSync(`${pathToCerts}/privkey1.pem`, "utf8");
 
-const apiKey = getEnvVarOrFail("API_KEY");
+const cxId = getEnvVarOrFail("CX_ID");
 
 /**
  * Only need to provide the facilityId if the CX has more than one facility.
@@ -218,8 +218,7 @@ Docs downloaded but errored: ${downloadDocs ? docRetrieveErrCnt : "skipped"}
 }
 
 async function main() {
-  // const { npi, orgName, orgOID } = await getCxData(apiKey, patientIds, includeAllPatients);
-  const { npi, orgName, orgOID } = await getCxData(apiKey, facilityId.trim());
+  const { npi, orgName, orgOID } = await getCxData(cxId, facilityId.trim());
 
   const cwApi = new CommonWell(cert, privkey, orgName, "urn:oid:" + orgOID, cwApiMode);
   const base = {

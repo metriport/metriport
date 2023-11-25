@@ -84,9 +84,7 @@ const cwUsername = getEnvVarOrFail("CW_USERNAME");
 const cwPassword = getEnvVarOrFail("CW_PASSWORD");
 
 const metriportApiBaseUrl = getEnvVarOrFail("API_URL");
-const apiKey = getEnvVarOrFail("API_KEY");
 const cxId = getEnvVarOrFail("CX_ID");
-// const cxOrgOID = getEnvVarOrFail("ORG_OID");
 
 const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 });
 const DOC_QUERIES_IN_PARALLEL = 25;
@@ -132,7 +130,7 @@ const coverageEnhancer = new CoverageEnhancerLocal(
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(metriportApiBaseUrl);
 
 export async function main() {
-  const { orgOID: cxOrgOID } = await getCxData(apiKey, facilityId);
+  const { orgOID: cxOrgOID } = await getCxData(cxId, facilityId);
 
   console.log(`Running coverage enhancement... - started at ${new Date().toISOString()}`);
   const startedAt = Date.now();

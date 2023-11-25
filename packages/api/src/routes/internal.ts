@@ -6,6 +6,7 @@ import {
   PopulateFhirServerResponse,
 } from "../command/medical/admin/populate-fhir";
 import { redriveSidechainDLQ } from "../command/medical/admin/redrive-dlq";
+import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import BadRequestError from "../errors/bad-request";
@@ -176,6 +177,39 @@ router.post(
     const orgOID = await getOID();
     await initCQOrgIncludeList(orgOID);
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/cx-data
+ *
+ * Returns the cx data used for internal scripts
+ */
+router.get(
+  "/cx-data",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const org = await getOrganizationOrFail({ cxId });
+
+    const facilities = await getFacilities({ cxId: org.cxId });
+
+    const response = {
+      cxId: org.cxId,
+      org: {
+        id: org.id,
+        oid: org.oid,
+        name: org.data.name,
+        type: org.data.type,
+      },
+      facilities: facilities.map(f => ({
+        id: f.id,
+        name: f.data.name,
+        npi: f.data.npi,
+        tin: f.data.tin,
+        active: f.data.active,
+      })),
+    };
+    return res.status(httpStatus.OK).json(response);
   })
 );
 
