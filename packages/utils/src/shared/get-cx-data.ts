@@ -7,7 +7,7 @@ import { Facility, MetriportMedicalApi } from "@metriport/api-sdk";
 export async function getCxData(
   apiKey: string,
   facilityId?: string | undefined
-): Promise<{ npi: string; orgName: string; orgOID: string }> {
+): Promise<{ facilityId: string; npi: string; orgName: string; orgOID: string }> {
   console.log(`>>> Getting customer data...`);
 
   // get data from the api using the api-sdk
@@ -29,6 +29,7 @@ export async function getCxData(
   const facility = await getFacility();
 
   const res = {
+    facilityId: facility.id,
     npi: facility.npi,
     orgName: org.name,
     orgOID: org.oid,

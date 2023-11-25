@@ -9,6 +9,7 @@ import csv from "csv-parser";
 import dayjs from "dayjs";
 import fs from "fs";
 import path from "path";
+import { getCxData } from "./shared/get-cx-data";
 
 /**
  * This script will read patients from a .csv file and insert them into the Metriport API.
@@ -22,9 +23,13 @@ import path from "path";
  * Either set the env vars below on the OS or create a .env file in the root folder of this package.
  */
 
-// TODO update these to use `getCxData()` instead
+/**
+ * Only need to provide the facilityId if the CX has more than one facility.
+ * Used to determine the NPI used to query CW.
+ */
+const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-inferrable-types
+
 const apiKey = getEnvVarOrFail("API_KEY");
-const facilityId = getEnvVarOrFail("FACILITY_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
 const delayTime = parseInt(getEnvVar("BULK_INSERT_DELAY_TIME") ?? "200");
 const inputFileName = "bulk-insert-patients.csv";
@@ -51,6 +56,8 @@ async function main() {
 
   if (!dryRun) initPatientIdRepository();
 
+  const { facilityId: localFacilityId } = await getCxData(apiKey, facilityId);
+
   const results: PatientCreate[] = [];
   const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];
 
@@ -59,7 +66,7 @@ async function main() {
   fs.createReadStream(path.join(__dirname, inputFileName))
     .pipe(
       csv({
-        mapHeaders: ({ header }) => header.toLowerCase().replaceAll(" ", ""),
+        mapHeaders: ({ header }) => header.toLowerCase().replaceAll(" ", "").replaceAll("*", ""),
       })
     )
     .on("data", async data => {
@@ -80,7 +87,7 @@ async function main() {
       for (const [i, patient] of results.entries()) {
         try {
           await sleep(delayTime);
-          const createdPatient = await metriportAPI.createPatient(patient, facilityId);
+          const createdPatient = await metriportAPI.createPatient(patient, localFacilityId);
           successfulCount++;
           console.log(i + 1, createdPatient);
           storePatientId(createdPatient.id);
@@ -214,7 +221,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   email1: string | undefined;
   email2: string | undefined;
   id: string | undefined;
-  externalid: string | undefined;
+  externalId: string | undefined;
 }): PatientCreate | undefined => {
   const phone1 = normalizePhone(csvPatient.phone ?? csvPatient.phone1);
   const email1 = normalizeEmail(csvPatient.email ?? csvPatient.email1);
@@ -225,7 +232,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   const contact = [contact1, contact2].flatMap(c => c ?? []);
   const externalId = csvPatient.id
     ? normalizeExternalId(csvPatient.id)
-    : normalizeExternalId(csvPatient.externalid) ?? undefined;
+    : normalizeExternalId(csvPatient.externalId) ?? undefined;
   return {
     externalId,
     firstName: normalizeName(csvPatient.firstname, "firstname"),
