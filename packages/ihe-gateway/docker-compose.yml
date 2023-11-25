@@ -1,7 +1,19 @@
 version: "3"
 services:
   ihe-gateway:
-    image: nextgenhealthcare/connect:4.4.2
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ARTIFACT: "${artifact_url}"
+        STOREPASS: "${storepass}"
+        KEYSTOREPASS: "${keystorepass}"
+        KEYSTORENAME: "${keystorename}"
+        ZULUKEY: "${zulukey}"
+      x-bake:
+        platforms:
+          - linux/amd64    
+          - linux/arm64
     volumes:
       - ./custom-extensions:/opt/connect/custom-extensions
     depends_on:
@@ -23,6 +35,8 @@ services:
       - "16850:16850"
       - "16852:16852"
       - "16853:16853"
+    secrets:
+      - mirth_properties
   ihe-postgres:
     image: postgres:14.4-alpine
     container_name: ihe-postgres
@@ -42,3 +56,6 @@ services:
       retries: 2
 volumes:
   ihe-postgres:
+secrets:
+  mirth_properties:
+    file: ./secret.properties
