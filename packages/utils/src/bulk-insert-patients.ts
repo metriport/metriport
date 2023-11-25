@@ -22,12 +22,14 @@ import path from "path";
  * Either set the env vars below on the OS or create a .env file in the root folder of this package.
  */
 
+// TODO update these to use `getCxData()` instead
 const apiKey = getEnvVarOrFail("API_KEY");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
 const delayTime = parseInt(getEnvVar("BULK_INSERT_DELAY_TIME") ?? "200");
 const inputFileName = "bulk-insert-patients.csv";
-const outputFileName = "bulk-insert-patient-ids.txt";
+const outputFileName = "./runs/bulk-insert-patient-ids.txt";
+const ISO_DATE = "YYYY-MM-DD";
 
 type Params = {
   dryrun?: boolean;
@@ -46,6 +48,8 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 async function main() {
   program.parse();
   const { dryrun: dryRun } = program.opts<Params>();
+
+  if (!dryRun) initPatientIdRepository();
 
   const results: PatientCreate[] = [];
   const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];
@@ -95,6 +99,9 @@ async function main() {
     });
 }
 
+function initPatientIdRepository() {
+  fs.writeFileSync(path.join(__dirname, outputFileName), "");
+}
 function storePatientId(patientId: string) {
   fs.appendFileSync(path.join(__dirname, outputFileName), patientId + "\n");
 }
@@ -128,7 +135,7 @@ const phoneRegex = /^\+?1?\d{10}$/;
 
 function normalizePhone(phone: string | undefined): string | undefined {
   if (phone == undefined) return undefined;
-  const trimmedPhone = phone.trim();
+  const trimmedPhone = phone.trim().replaceAll("-", "");
   if (trimmedPhone.length === 0) return undefined;
   if (trimmedPhone.match(phoneRegex)) {
     // removes leading country code +1
@@ -169,10 +176,11 @@ function normalizeZip(zip: string | undefined): string {
 function normalizeDate(date: string | undefined): string {
   if (date == undefined) throw new Error(`Missing dob`);
   const trimmedDate = date.trim();
-  if (!dayjs(trimmedDate, "YYYY-MM-DD", true).isValid()) {
+  const parsedDate = dayjs(trimmedDate, ISO_DATE, true);
+  if (!parsedDate.isValid()) {
     throw new Error(`Invalid date ${date}`);
   }
-  return trimmedDate;
+  return parsedDate.format(ISO_DATE);
 }
 
 function normalizeState(state: string | undefined): USState {
