@@ -1,7 +1,7 @@
 version: "3"
 services:
   ihe-gateway:
-    image: nextgenhealthcare/connect:4.4.2
+    build: .
     volumes:
       - ./custom-extensions:/opt/connect/custom-extensions
     depends_on:
@@ -15,14 +15,14 @@ services:
       LICENSE_KEY: ${LICENSE_KEY}
     restart: on-failure
     ports:
-      - "8443:8443"
-      - "8081:8081"
-      - "8082:8082"
-      - "8100:8100"
-      - "23067:23067"
-      - "16850:16850"
-      - "16852:16852"
-      - "16853:16853"
+      - "8443:8443/tcp"
+      - "8081:8081/tcp"
+      - "8082:8082/tcp"
+      - "8100:8100/tcp"
+      - "23067:23067/tcp"
+      - "16850:16850/tcp"
+      - "16852:16852/tcp"
+      - "16853:16853/tcp"
   ihe-postgres:
     image: postgres:14.4-alpine
     container_name: ihe-postgres
