@@ -1,4 +1,4 @@
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { Config } from "../../shared/config";
 import { makeCarequalityAPI } from "./api";
 import { buildOrganizationFromTemplate } from "./organization-template";
 
@@ -21,14 +21,19 @@ export type CQOrgDetails = {
   email: string;
 };
 
-const cqOrgDetails: CQOrgDetails = JSON.parse(getEnvVarOrFail("CQ_ORG_DETAILS"));
-
 export async function createOrUpdateCQOrganization(): Promise<void> {
+  const cqOrgDetailsString = Config.getCQOrgDetails();
+  const cqOrgDetails = cqOrgDetailsString ? JSON.parse(cqOrgDetailsString) : undefined;
+  if (!cqOrgDetails) {
+    const msg = "No CQ Organization details found. Skipping...";
+    console.log(msg);
+    throw new Error(msg);
+  }
   const cqOrg = buildOrganizationFromTemplate(cqOrgDetails);
   try {
     const org = await cq.listOrganizations({ count: 1, oid: cqOrgDetails.orgOID });
     if (org.length > 0) {
-      await updateCQOrganization(cqOrg);
+      await updateCQOrganization(cqOrg, cqOrgDetails.orgOID);
       return;
     }
   } catch (error) {
@@ -45,10 +50,10 @@ export async function createOrUpdateCQOrganization(): Promise<void> {
   }
 }
 
-async function updateCQOrganization(cqOrg: string): Promise<void> {
+async function updateCQOrganization(cqOrg: string, oid: string): Promise<void> {
   console.log(`Updating org in the CQ Directory...`);
   try {
-    await cq.updateOrganization(cqOrg, cqOrgDetails.orgOID);
+    await cq.updateOrganization(cqOrg, oid);
   } catch (error) {
     console.log(`Failed to update organization in the CQ Directory. Cause: ${error}`);
     throw error;
