@@ -11,6 +11,7 @@ import { Config } from "../../shared/config";
 import { asyncHandler, getFrom } from "../util";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { capture } from "../../shared/notifications";
+import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 
 const maxNumberOfParallelRequestsToDB = 20;
 const apiKey = Config.getCQApiKey();
@@ -54,13 +55,13 @@ router.post(
 );
 
 /**
- * GET /internal/carequality/directory/:oid
+ * GET /internal/carequality/directory/organization/:oid
  *
  * Retrieves the organization with the specified OID from the Carequality Directory.
  * @returns Returns the organization.
  */
 router.get(
-  "/directory/:oid",
+  "/directory/organization/:oid",
   asyncHandler(async (req: Request, res: Response) => {
     const oid = getFrom("params").orFail("oid", req);
     const resp = await cq.listOrganizations({ count: 1, oid });
@@ -78,6 +79,19 @@ router.get(
     if (!matchingOrg) throw new NotFoundError("Organization not found");
 
     return res.status(httpStatus.OK).json(matchingOrg);
+  })
+);
+
+/**
+ * POST /internal/carequality/directory/organization
+ *
+ * Creates or updates the organization in the Carequality Directory.
+ */
+router.post(
+  "/directory/organization",
+  asyncHandler(async (req: Request, res: Response) => {
+    await createOrUpdateCQOrganization();
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

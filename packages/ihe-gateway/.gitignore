@@ -1,4 +1,6 @@
 .env
+secret.properties
+certs/
 # logs
 .install4j
 # Compiled class file
