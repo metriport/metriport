@@ -29,7 +29,7 @@ import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom } from "../util";
+import { asyncHandler, getFrom, getFromQueryAsArray } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -198,8 +198,7 @@ router.post(
 router.post(
   "/check-doc-queries",
   asyncHandler(async (req: Request, res: Response) => {
-    const patientIdsRaw = getFrom("query").optional("patientIds", req);
-    const patientIds = patientIdsRaw?.split(",") ?? [];
+    const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
     checkDocumentQueries(patientIds);
     return res.sendStatus(httpStatus.ACCEPTED);
   })
