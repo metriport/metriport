@@ -8,13 +8,13 @@ import { Patient } from "../../domain/medical/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
-import { getCQLinkStatus } from "./patient";
+import { getLinkStatusCQ, getLinkStatusCW } from "./patient";
 import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
 
 dayjs.extend(duration);
 
-const maxAttemptsToGetPatientCWData = 5;
-const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(5, "seconds");
+const maxAttemptsToGetPatientCWData = 3;
+const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(2, "seconds");
 
 export type PatientWithCWData = Patient & {
   data: { externalData: { COMMONWELL: PatientDataCommonwell } };
@@ -26,13 +26,8 @@ export async function getPatientWithCWData(patient: Patient): Promise<PatientWit
       id: patient.id,
       cxId: patient.cxId,
     });
-    const externalData = patientDB.data.externalData?.COMMONWELL;
-    if (!externalData) {
-      throw new MetriportError(`Missing CW data on patient record`);
-    }
-    const cwData = externalData as PatientDataCommonwell;
-    if (!cwData.patientId) {
-      throw new MetriportError(`Missing CW patientId on patient record`);
+    if (getLinkStatusCW(patientDB.data.externalData) !== "completed") {
+      throw new MetriportError(`Patient is not linked to CW`);
     }
     return patientDB as PatientWithCWData;
   };
@@ -79,7 +74,7 @@ export const setCommonwellId = async ({
       transaction,
     });
 
-    const updatedCQLinkStatus = cqLinkStatus ?? getCQLinkStatus(updatedPatient.data.externalData);
+    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(updatedPatient.data.externalData);
 
     const updatedData = cloneDeep(updatedPatient.data);
     updatedData.externalData = {
