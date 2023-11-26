@@ -1,4 +1,4 @@
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { Config } from "../../shared/config";
 import { makeCarequalityAPI } from "./api";
 import { buildOrganizationFromTemplate } from "./organization-template";
 
@@ -21,9 +21,15 @@ export type CQOrgDetails = {
   email: string;
 };
 
-const cqOrgDetails: CQOrgDetails = JSON.parse(getEnvVarOrFail("CQ_ORG_DETAILS"));
+const cqOrgDetailsString = Config.getCQOrgDetails();
+const cqOrgDetails = cqOrgDetailsString ? JSON.parse(cqOrgDetailsString) : undefined;
 
 export async function createOrUpdateCQOrganization(): Promise<void> {
+  if (!cqOrgDetails) {
+    const msg = "No CQ Organization details found. Skipping...";
+    console.log(msg);
+    throw new Error(msg);
+  }
   const cqOrg = buildOrganizationFromTemplate(cqOrgDetails);
   try {
     const org = await cq.listOrganizations({ count: 1, oid: cqOrgDetails.orgOID });
