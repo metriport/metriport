@@ -2,6 +2,7 @@ groups:
   publish:
     audiences: 
       - public
+      - internal
     generators:
       - name: fernapi/fern-python-sdk
         version: 0.6.5

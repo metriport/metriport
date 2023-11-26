@@ -97,6 +97,12 @@ service:
             docs: |
               Value to search on the document reference (minimum 3 chars).
             type: optional<string>
+          output:
+            docs: |
+              The output format of the document. Either `fhir` or `dto`.
+            type: optional<string>
+            audiences: 
+              - internal
       response:
         type: MedplumDocumentReference
         docs: An array of objects describing the Documents that can be retrieved for the Patient.
