@@ -150,6 +150,9 @@ export function createAPIService(
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
+          ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
+            CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
+          }),
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
