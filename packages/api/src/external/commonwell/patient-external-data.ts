@@ -1,3 +1,7 @@
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { executeWithRetries } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { cloneDeep } from "lodash";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "../../domain/medical/patient";
@@ -6,6 +10,39 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
 import { getCQLinkStatus } from "./patient";
 import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
+
+dayjs.extend(duration);
+
+const maxAttemptsToGetPatientCWData = 5;
+const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(5, "seconds");
+
+export type PatientWithCWData = Patient & {
+  data: { externalData: { COMMONWELL: PatientDataCommonwell } };
+};
+
+export async function getPatientWithCWData(patient: Patient): Promise<PatientWithCWData> {
+  const getPatientWithCWDataOrFail = async () => {
+    const patientDB: Patient = await getPatientOrFail({
+      id: patient.id,
+      cxId: patient.cxId,
+    });
+    const externalData = patientDB.data.externalData?.COMMONWELL;
+    if (!externalData) {
+      throw new MetriportError(`Missing CW data on patient record`);
+    }
+    const cwData = externalData as PatientDataCommonwell;
+    if (!cwData.patientId) {
+      throw new MetriportError(`Missing CW patientId on patient record`);
+    }
+    return patientDB as PatientWithCWData;
+  };
+
+  return executeWithRetries(
+    getPatientWithCWDataOrFail,
+    maxAttemptsToGetPatientCWData - 1,
+    waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds()
+  );
+}
 
 /**
  * Sets the CommonWell (CW) IDs and integration status on the patient.
