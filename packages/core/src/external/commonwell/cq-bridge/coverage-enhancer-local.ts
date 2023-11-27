@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { PatientLoader } from "../../../domain/patient/patient-loader";
 import { PatientUpdater } from "../../../domain/patient/patient-updater";
+import { Capture, emptyCapture } from "../../../util/capture";
 import { out } from "../../../util/log";
 import { CommonWellManagementAPI } from "../management/api";
 import { LinkPatients } from "../management/link-patients";
@@ -19,6 +20,7 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
     private readonly cwManagementApi: CommonWellManagementAPI,
     patientLoader: PatientLoader,
     private readonly patientUpdater: PatientUpdater,
+    private readonly capture: Capture = emptyCapture,
     private readonly prefix = ""
   ) {
     super({ patientLoader });
@@ -46,7 +48,9 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
 
       for (const [i, orgChunk] of chunks.entries()) {
         const orgIds = orgChunk.map(org => org.id);
-        log(`--------------------------------- Starting chunk ${i}/${chunks.length} (relative)`);
+        log(
+          `--------------------------------- Starting chunk ${i}/${chunks.length - 1} (relative)`
+        );
         try {
           await this.linkPatients.linkPatientsToOrgs({
             cxId,
@@ -56,6 +60,10 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
           });
         } catch (error) {
           const msg = `ERROR at org chunk ${i} (relative) / ${i + fromOrgChunkPos} (absolute)`;
+          this.capture.message(`Error processing Enhance Coverage chunk`, {
+            extra: { msg, cxId, orgOID, continuing: !stopOnErrors },
+            level: "warning",
+          });
           if (stopOnErrors) {
             log(msg + " - interrupting...", error);
             throw error;
