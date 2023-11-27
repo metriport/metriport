@@ -58,3 +58,38 @@ export const setCommonwellId = async ({
     return updatedPatient.update({ data: updatedData }, { transaction });
   });
 };
+
+/**
+ * Updates the commonwell status of the patient to failed
+ *
+ * @param patientId The patient ID @ Metriport.
+ * @param cxId The customer ID @ Metriport.
+ * @returns
+ */
+export const setCommonwellLinkStatusToFailed = async ({
+  patientId,
+  cxId,
+}: {
+  patientId: string;
+  cxId: string;
+}): Promise<Patient> => {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const updatedPatient = await getPatientOrFail({
+      id: patientId,
+      cxId,
+      lock: true,
+      transaction,
+    });
+
+    const updatedData = cloneDeep(updatedPatient.data);
+    updatedPatient.data.externalData = {
+      ...updatedPatient.data.externalData,
+      COMMONWELL: {
+        ...(updatedPatient.data.externalData?.COMMONWELL as PatientDataCommonwell),
+        status: "failed",
+      },
+    };
+
+    return updatedPatient.update({ data: updatedData }, { transaction });
+  });
+};

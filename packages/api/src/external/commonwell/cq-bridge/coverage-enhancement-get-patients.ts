@@ -17,6 +17,8 @@ export type PatientToLink = {
 /**
  * Get the list of patients to have coverage enhanced through link with CareQuality Orgs.
  */
+
+// modfiy to check for status completed and not 2 min timeout
 export async function getPatientsToEnhanceCoverage(cxIds: string[]): Promise<PatientToLink[]> {
   const earliestDate = dayjs()
     .subtract(MIN_TIME_AFTER_PATIENT_CREATED.asMilliseconds(), "milliseconds")

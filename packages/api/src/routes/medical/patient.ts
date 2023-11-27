@@ -80,6 +80,7 @@ router.post(
     };
 
     const patient = await createPatient(patientCreate);
+    console.log("patient created", patient.id, patient.data.lastName, patient.data.firstName);
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
