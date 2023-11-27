@@ -119,6 +119,7 @@ const coverageEnhancer = new CoverageEnhancerLocal(
   cwManagementApi,
   patientLoader,
   patientUpdater,
+  undefined,
   prefix
 );
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(metriportApiBaseUrl);
