@@ -31,7 +31,7 @@ import { Gateway } from "./cq-org-types";
  */
 
 const resultFilename = `../../packages/core/src/external/commonwell/cq-bridge/cq-org-list.json`;
-const outputFailedFilename = `cq-org-builder.failed`;
+const outputFailedFilename = `./runs/cq-org-builder.failed`;
 
 const sequoiaApiKey = getEnvVarOrFail("SEQUOIA_API_KEY");
 const sequoiaQueryURL = `https://wpapi.sequoiaproject.org/fhir-stu3/1.0.0/Organization`;

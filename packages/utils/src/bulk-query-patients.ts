@@ -28,6 +28,7 @@ const triggerWHNotificationsToCx = false;
 
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
+// TODO update these to use `getCxData()` instead
 const cxName = getEnvVarOrFail("CX_NAME");
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -50,13 +51,11 @@ const detailedConfig: DetailedConfig = {
 const csvHeader =
   "patientId,firstName,lastName,state,queryAttemptCount,docCount,fhirResourceCount,fhirResourceDetails,status\n";
 const curDateTime = new Date();
-const csvName = `./${replaceAll(cxName, " ", "").trim()}-DocQuery-${curDateTime.toISOString()}.csv`;
+const csvName = `./runs/${cxName
+  .replaceAll(" ", "")
+  .trim()}-DocQuery-${curDateTime.toISOString()}.csv`;
 
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(apiUrl);
-
-function replaceAll(string: string, search: string, replace: string): string {
-  return string.split(search).join(replace);
-}
 
 function initCsv() {
   fs.writeFileSync(csvName, csvHeader);
@@ -109,11 +108,9 @@ async function queryDocsForPatient(patientId: string) {
       csvName,
       `${patient.id},${patient.firstName},${
         patient.lastName
-      },${state},${docQueryAttempts},${docCount},${totalFhirResourceCount},${replaceAll(
-        JSON.stringify(fhirResourceTypesToCounts),
-        ",",
-        " "
-      )},${status}\n`
+      },${state},${docQueryAttempts},${docCount},${totalFhirResourceCount},${JSON.stringify(
+        fhirResourceTypesToCounts
+      ).replaceAll(",", " ")},${status}\n`
     );
     console.log(`>>> Done doc query for patient ${patient.id} with status ${status}...`);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
