@@ -33,7 +33,7 @@ const sqlQuery = `SELECT * FROM webhook_request WHERE cx_id = '${cxId}' AND type
 
 async function main() {
   let latestWebhookId = "";
-  fs.mkdirSync(`./${DIR_NAME}`);
+  fs.mkdirSync(`./${DIR_NAME}`, { recursive: true });
 
   for (const patientId of patientIds) {
     try {
