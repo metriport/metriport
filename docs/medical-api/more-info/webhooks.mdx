@@ -16,6 +16,8 @@ This is the usual flow to obtain Patient data:
    - depending on the amount of data this can take some time to crunch together, so results are sent through a webhook message:
      [patient consolidated data](#patient-consolidated-data)
 
+You should expect to get more than one Webhook message per patient per request (document query and/or consolidated data).
+
 To enable this integration approach with Metriport, and for some prerequesite reading to understand
 how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 

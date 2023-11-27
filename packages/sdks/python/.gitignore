@@ -1,0 +1,4 @@
+**/generated/
+**/__pycache__/
+*.env
+*.pytest_cache/

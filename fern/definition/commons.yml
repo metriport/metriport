@@ -19,7 +19,7 @@ types:
         type: string
         docs: Zip must be a string consisting of 5 numbers.
       country:
-        type: string
+        type: optional<string>
         docs: Defaults to “USA”
     examples:
       - name: Example1
@@ -84,3 +84,8 @@ types:
       - WV
       - WI
       - WY
+
+  Period:
+    properties:
+      start: optional<string>
+      end: optional<string>

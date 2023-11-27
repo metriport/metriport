@@ -3,45 +3,57 @@
 service:
   base-path: /medical/v1
   auth: true
+  audiences: 
+    - public
   endpoints:
-    startConsolidatedQuery:
-      display-name: Start Consolidated Data Query
-      docs: Trigger a consolidated data query for the given patient
-      method: POST
-      path: /patient/{id}/consolidated/query
-      path-parameters:
-        id:
-          type: string
-          docs: The ID of the Patient.
-      request:
-        name: GetPatientConsolidatedData
-        query-parameters:
-          resources:
-            docs: |
-              A comma separated, case sensitive list of resources to be returned. 
-              If none are provided all resources will be included.
-            type: optional<string>
-          dateFrom:
-            docs: |
-              The start date (inclusive) for which to filter returned resources - 
-              formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
-              no start date filter will be applied.
-            type: optional<string>
-          dateTo:
-            docs: |
-              The end date (inclusive) for which to filter returned resources - 
-              formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
-               no end date filter will be applied.
-            type: optional<string>
-      response:
-        type: StartConsolidatedQueryResponse
-        docs: Returns a Bundle that contains a property entry which is simply an array of FHIR resources.
-      examples:
-        - path-parameters:
-            id: "12345678"
-          response:
-            body:
-              status: processing
+    # startConsolidatedQuery:
+    #   display-name: Start Consolidated Data Query
+    #   docs: Trigger a consolidated data query for the given patient
+    #   method: POST
+    #   path: /patient/{id}/consolidated/query
+    #   path-parameters:
+    #     id:
+    #       type: string
+    #       docs: The ID of the Patient.
+    #   request:
+    #     name: GetPatientConsolidatedData
+    #     query-parameters:
+    #       resources:
+    #         docs: |
+    #           A comma separated, case sensitive list of resources to be returned. 
+    #           If none are provided all resources will be included.
+    #         type: optional<string>
+    #       dateFrom:
+    #         docs: |
+    #           The start date (inclusive) for which to filter returned resources - 
+    #           formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
+    #           no start date filter will be applied.
+    #         type: optional<string>
+    #       dateTo:
+    #         docs: |
+    #           The end date (inclusive) for which to filter returned resources - 
+    #           formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
+    #            no end date filter will be applied.
+    #         type: optional<string>
+    #       conversionType:
+    #         docs: |
+    #           The doc type to convert to. Either html or pdf.
+    #         type: optional<string>
+    #     body:
+    #       docs: |
+    #         Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+    #         This metadata will be returned in the webhook response.
+    #       type: optional<map<string, string>>
+
+    #   response:
+    #     type: StartConsolidatedQueryResponse
+    #     docs: Returns a Bundle that contains a property entry which is simply an array of FHIR resources.
+    #   examples:
+    #     - path-parameters:
+    #         id: "12345678"
+    #       response:
+    #         body:
+    #           status: processing
 
     getConsolidatedQueryStatus:
       display-name: Get Consolidated Data Query status
@@ -60,6 +72,27 @@ service:
             id: "12345678"
           response:
             body: $GetConsolidatedQueryStatusResponse.Example0
+
+    createPatientConsolidated:
+      display-name: Create Patient's Consolidated Data
+      docs: Create Patient's Consolidated Data with a FHIR Bundle.
+      method: PUT
+      path: /patient/{id}/consolidated
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient
+      request:
+        body: ConsolidatedBundleUpload
+      response:
+        type: TransactionResponse
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "12345678"
+          request: $ConsolidatedBundleUpload.Example1
+          response:
+            body: $TransactionResponse.Example0
 
     countPatientData:
       display-name: Count Patient Data
@@ -147,6 +180,46 @@ types:
           formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
             no end date filter will be applied.
         type: optional<string>
+
+  ConsolidatedBundleUpload:
+    properties:
+      resourceType:
+        type: string
+        docs: The resource needs to be “Bundle”
+      type:
+        type: string
+        docs: The type needs to be “collection”
+      entry:
+        type: list<map<string, unknown>>
+        docs: The entry needs to be an array of FHIR resources.
+    examples:
+      - name: Example1
+        value:
+          resourceType: "Bundle"
+          type: "collection"
+          entry: [{"resource": {"resourceType": "Appointment", "status": "booked", "participant": [{"actor": {"reference": "Patient/${patientId}", "display": "John Doe"}, "status": "accepted", "period": {"start": "2021-05-24T13:21:28.527Z", "end": "2021-05-24T13:21:28.527Z"}}], "meta": {"versionId": "12345", "lastUpdated": "2023-05-24T13:21:28.527Z"}}}]
+
+  TransactionResponse:
+    properties:
+      resourceType:
+        type: string
+        docs: The type of the FHIR resource. For a transaction response, this is always "Bundle".
+      id:
+        type: string
+        docs: A unique identifier for this transaction response.
+      type:
+        type: string
+        docs: The type of the bundle, which is "transaction-response" in this case.
+      entry:
+        type: list<map<string, unknown>>
+        docs: An array of responses for each transaction in the bundle. Each entry can be any arbitrary JSON object. 
+    examples:
+      - name: Example0
+        value:
+          resourceType: "Bundle"
+          id: "12345"
+          type: "transaction-response"
+          entry: [{"response": {"status": "201 Created", "location": "Appointment/3/_history/1", "etag": "1", "lastModified": "2023-07-27T21:29:31.491+00:00", "outcome": {"resourceType": "OperationOutcome", "issue": [{"severity": "information", "code": "informational", "details": {"coding": [{"system": "https://public.metriport.com/fhir/StructureDefinition/operation-outcome", "code": "SUCCESSFUL_CREATE", "display": "Create succeeded."}]}, "diagnostics": "Successfully created resource \"Appointment/3/_history/1\". Took 7ms."}]}}}]
 
   ResourcesSearchableByPatient:
     enum:

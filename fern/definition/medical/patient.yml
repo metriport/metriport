@@ -7,6 +7,8 @@ imports:
 service:
   base-path: /medical/v1/patient
   auth: true
+  audiences: 
+    - public
   endpoints:
     create:
       display-name: Create Patient
@@ -36,6 +38,8 @@ service:
             genderAtBirth: F
             personalIdentifiers:
               - $PersonalIdentifier.Example1
+            address: 
+              - $commons.Address.Example1
           response:
             body: $Patient.Example1
 
@@ -76,7 +80,7 @@ service:
 
     list:
       display-name: List Patients at Facility
-      docs: Lists all Patients receiving care at the specified Facility.
+      docs: Lists all Patients receiving care at the specified Facility, or all Patients if no Facility is specified.
       method: GET
       path: ""
       request:
@@ -104,17 +108,6 @@ service:
             docs: The ID of the Facility where the patient is receiving care.
 
 types:
-  Addresses:
-    discriminated: false
-    union:
-      - commons.Address
-      - list<commons.Address>
-
-  Contacts:
-    discriminated: false
-    union:
-      - Contact
-
   PersonalIdentifier:
     union:
       driversLicense: DriversLicense
@@ -144,17 +137,11 @@ types:
       email:
         type: optional<string>
         docs: The Patient's email address.
-      facilityIds:
-        type: list<FacilityId>
-        docs: Array of the IDs of the Facilities where the Patient is receiving care.
     examples:
       - name: Example1
         value:
           phone: "1234567899"
           email: karen@cvspharmacy.com
-          facilityIds:
-            - $FacilityId.Example1
-            - $FacilityId.Example2
 
   FacilityId:
     type: string
@@ -188,10 +175,13 @@ types:
           An array of the Patient's personal IDs, such as a driver's license. 
           May be empty.
       address:
-        type: optional<Addresses>
+        type: list<commons.Address>
       contact:
-        type: optional<Contacts>
-
+        type: optional<list<Contact>>
+      externalID:
+        type: optional<string>
+        docs: An external Patient ID to associate to a Patient in Metriport.
+    
   Patient:
     extends: BasePatient
     properties:
@@ -200,6 +190,9 @@ types:
         docs: | 
           The ID assigned to this Patient. This ID will be used to uniquely 
           identify this Patient in medical documents.
+      facilityIds:
+        type: list<FacilityId>
+        docs: Array of the IDs of the Facilities where the Patient is receiving care.
     examples:
       - name: Example1
         value:
@@ -210,6 +203,10 @@ types:
           genderAtBirth: F
           personalIdentifiers:
             - $PersonalIdentifier.Example1
+          address:
+            - $commons.Address.Example1
+          facilityIds:
+            - $FacilityId.Example1
 
   ListPatientsResponse:
     properties:

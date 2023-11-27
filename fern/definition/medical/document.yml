@@ -1,8 +1,12 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+imports:
+  commons: ../commons.yml
 
 service:
   base-path: /medical/v1/document
   auth: true
+  audiences: 
+    - public
   endpoints:
     startQuery:
       display-name: Start Document Query
@@ -30,16 +34,22 @@ service:
           facilityId:
             docs: The ID of the Facility where the patient is receiving care.
             type: string
+        body:
+          docs: |
+            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+            This metadata will be returned in the webhook response.
+          type: optional<map<string, string>>
       response: DocumentQuery
       examples:
         - name: Example1
           query-parameters:
             patientId: "12345678"
             facilityId: "12345678"
+          request: {"youCan": "putAny", "stringKeyValue": "pairsHere"}
           response:
             body: $DocumentQuery.Example1
 
-    getQueryStatus:
+    getQueryStatus:  
       display-name: Get Document Query Status
       docs: |
         Returns the document query status for the specified patient.
@@ -77,25 +87,19 @@ service:
           patientId:
             docs: The ID of the Patient for which to list available Documents.
             type: string
-          facilityId:
-            docs: The ID of the Facility where the patient is receiving care.
-            type: string
           dateFrom:
             docs: The start date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no start date filter will be applied.
             type: optional<string>
           dateTo:
             docs: The end date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no end date filter will be applied.
             type: optional<string>
+          content:
+            docs: |
+              Value to search on the document reference (minimum 3 chars).
+            type: optional<string>
       response:
-        type: ListDocumentsResponse
+        type: MedplumDocumentReference
         docs: An array of objects describing the Documents that can be retrieved for the Patient.
-      examples:
-        - name: Example1
-          query-parameters:
-            patientId: "12345678"
-            facilityId: "12345678"
-          response:
-            body: $ListDocumentsResponse.Example1
 
     getURL:
       display-name: Get Document URL
@@ -127,12 +131,42 @@ service:
             conversionType: "pdf"
           response:
             body: $DocumentUrl.Example1
+    
+    createDocumentReference:
+      display-name: Upload Document
+      docs: |
+        Creates a DocumentReference and returns its ID and a URL to use for a medical document upload to our servers.
+      method: POST
+      path: /upload
+      request:
+        name: UploadDocumentRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the Patient for which to list available Documents.
+            type: string
+        body:
+          docs: |
+            A FHIR DocumentReference.
+          type: UploadDocumentReference
+      response: 
+        type: UploadDocumentResponse
+        docs: The DocumentReference ID and a URL to be used for file upload.   
+      examples:
+        - name: Example1
+          query-parameters:
+            patientId: "12345678"
+          request: $UploadDocumentReference.Example1
+          response:
+            body: $UploadDocumentResponse.Example1 
 
 types:
   DocumentQuery:
     properties:
       download: optional<Progress>
       convert: optional<Progress>
+      requestId:
+        type: optional<string>
+        docs: The ID of the Document Query.
     examples:
       - name: Example1
         value:
@@ -175,16 +209,11 @@ types:
       - html
       - pdf
 
-  ListDocumentsResponse:
+  MedplumDocumentReference:
     properties:
-      documents: list<DocumentReference>
-    examples:
-      - name: Example1
-        value:
-          documents:
-            - $DocumentReference.Example1
+      documents: list<map<string, unknown>>
 
-  DocumentReference:
+  DocumentReferenceDocumentWebhook:
     properties:
       id:
         type: string
@@ -262,6 +291,62 @@ types:
           system: http://snomed.info/sct
           code: "62479008"
           display: Diagnoses
+
+
+  UploadDocumentReference:
+    properties:
+      description:
+        type: string
+        docs: A brief description of the document - for example Discharge Summary
+      type:
+        type: CodeableConcept
+        docs: A CodeableConcept of the document type.
+      context:
+        type: list<DocumentReferenceContext>
+        docs: Context of the document content.
+    examples:
+      - name: Example1
+        value:
+          description: "Third degree wrist burn treatment"
+          type:
+            text: "Burn management Hospital Progress note"
+            coding:
+              - code: "100556-0"
+                system: "http://loinc.org"
+                display: "Burn management Hospital Progress note"
+          context: [$DocumentReferenceContext.Example1]
+            
+
+  DocumentReferenceContext:
+    properties:
+      period: 
+        type: optional<commons.Period>
+        docs: The time period over which the document was created.
+      facilityType:
+        type: optional<CodeableConcept>
+        docs: The kind of facility where the patient was seen.
+    examples:
+      - name: Example1
+        value:
+          period:
+              start: "2023-10-10T14:14:17Z"
+              end: "2023-10-10T15:30:30Z"
+          facilityType:
+            text: "John Snow Clinic - Acute Care Centre"
+
+  UploadDocumentResponse:
+    properties:
+      documentReferenceId:
+        type: string
+        docs: The ID of the DocumentReference.
+      uploadUrl:
+        type: string
+        docs: The URL to use for uploading the document.
+    examples:
+      - name: Example1
+        value:
+          documentReferenceId: "<DocumentReference-ID-string>"
+          uploadUrl: "<url-string>"
 
   DocumentUrl:
     docs: A json object containing the URL will be returned.

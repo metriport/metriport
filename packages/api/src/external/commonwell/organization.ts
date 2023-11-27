@@ -67,13 +67,13 @@ export const create = async (org: Organization): Promise<void> => {
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
-    debug(`resp respCreate: `, () => JSON.stringify(respCreate, null, 2));
+    debug(`resp respCreate: `, JSON.stringify(respCreate));
     const respAddCert = await commonWell.addCertificateToOrg(
       metriportQueryMeta,
       getCertificate(),
       org.oid
     );
-    debug(`resp respAddCert: `, () => JSON.stringify(respAddCert, null, 2));
+    debug(`resp respAddCert: `, JSON.stringify(respAddCert));
   } catch (error) {
     const msg = `Failure creating Org @ CW`;
     log(msg, error);
@@ -96,7 +96,7 @@ export const update = async (org: Organization): Promise<void> => {
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
-    debug(`resp respUpdate: `, () => JSON.stringify(respUpdate, null, 2));
+    debug(`resp respUpdate: `, JSON.stringify(respUpdate));
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {

@@ -36,6 +36,11 @@ export type EnvConfig = {
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
   };
+  carequality: {
+    secretNames: {
+      CQ_API_KEY: string;
+    };
+  };
   commonwell: {
     coverageEnhancement?: CWCoverageEnhancementConfig;
     envVars: {

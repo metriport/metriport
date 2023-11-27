@@ -1,0 +1,7 @@
+python-dotenv
+httpx
+pydantic
+asyncio
+fern-metriport
+fastapi
+uvicorn
