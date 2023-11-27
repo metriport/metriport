@@ -46,6 +46,18 @@
       The assigning entity
     </ParamField>
 
+    <ParamField body="period" type="object" optional>
+       The start and/or end date for the id. You must supply either the start or the end date. 
+      <Expandable title="Period properties">     
+          <ParamField body="start" type="string" optional>
+            The start date, formatted `YYYY-MM-DD` as per ISO 8601.
+          </ParamField>      
+          <ParamField body="end" type="string" optional>
+            The end date, formatted `YYYY-MM-DD` as per ISO 8601.
+          </ParamField>      
+      </Expandable> 
+    </ParamField>
+
   </Expandable>
 </ParamField>
 
