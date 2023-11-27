@@ -24,10 +24,12 @@ import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
 
 export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
+export const cwLinkStatus = ["failed", "processing", "complete"] as const;
 /**
  * Status of the patient's link to CareQuality.
  */
 export type CQLinkStatus = (typeof cqLinkStatus)[number];
+export type CWLinkStatus = (typeof cwLinkStatus)[number];
 
 export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(

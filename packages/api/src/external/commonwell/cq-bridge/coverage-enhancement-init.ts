@@ -3,9 +3,12 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { groupBy } from "lodash";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { getPatients } from "../../../command/medical/patient/get-patient";
-import { getPatientsToEnhanceCoverage } from "./coverage-enhancement-get-patients";
+import { getPatientsToEnhanceCoverage, PatientToLink } from "./coverage-enhancement-get-patients";
 import { makeCoverageEnhancer } from "./coverage-enhancer-factory";
 import { setCQLinkStatus } from "./cq-link-status";
+import { capture } from "../../../shared/notifications";
+import { Patient } from "../../../domain/medical/patient";
+import { CWLinkStatus, PatientDataCommonwell } from "../patient-shared";
 
 const cqLinkStatusInitial = "processing";
 const parallelPatientUpdates = 20;
@@ -36,12 +39,34 @@ export async function initEnhancedCoverage(
     return getPatientsToEnhanceCoverage(cxIds);
   };
 
-  const patients = await getPatientsToProcess();
-  // check cw link status and run the same relinking logic on any failed patients.
-  // for patients that are failed, exclude from patient list and notify
-  // look at notifyStaleEC logic for this
-  const patientsByCx = groupBy(patients, "cxId");
+  const getCWLinkStatus = (patient: Patient): string => {
+    return (patient.data.externalData?.COMMONWELL as PatientDataCommonwell).status as CWLinkStatus;
+  };
 
+  let patients = await getPatientsToProcess();
+
+  // TODO run the same relinking logic on any failed patients?
+  // for patient in patients, if cw link status is failed, notify sentry
+  let failedPatients: (PatientToLink | Patient)[] = [];
+  if (patients.length > 0) {
+    if ("cwLinkStatus" in patients[0]) {
+      // patients are of type PatientToLink
+      failedPatients = (patients as PatientToLink[]).filter(
+        patient => patient.cwLinkStatus === "failed"
+      );
+      patients = (patients as PatientToLink[]).filter(patient => patient.cwLinkStatus !== "failed");
+    } else {
+      failedPatients = (patients as Patient[]).filter(
+        patient => getCWLinkStatus(patient) === "failed"
+      );
+      patients = (patients as Patient[]).filter(patient => getCWLinkStatus(patient) !== "failed");
+    }
+  }
+  if (failedPatients.length > 0) {
+    notifyCWUnlinked(failedPatients);
+  }
+
+  const patientsByCx = groupBy(patients, "cxId");
   const entries = Object.entries(patientsByCx);
   for (const [cxId, patients] of entries) {
     console.log(`CX ${cxId} has ${patients.length} patients to run Enhanced Coverage`);
@@ -49,7 +74,7 @@ export async function initEnhancedCoverage(
   for (const [cxId, patients] of entries) {
     // update the patients to indicate they're being processed
     const updatePatientsPromise = executeAsynchronously(
-      patients,
+      patients as Patient[],
       async ({ cxId, id: patientId }) => {
         await setCQLinkStatus({ cxId, patientId, cqLinkStatus: cqLinkStatusInitial });
       },
@@ -59,7 +84,7 @@ export async function initEnhancedCoverage(
 
     const [, org] = await Promise.all([updatePatientsPromise, orgPromise]);
 
-    const patientIds = patients.map(p => p.id);
+    const patientIds = (patients as Patient[]).map(p => p.id);
     await coverageEnhancer.enhanceCoverage({
       cxId,
       orgOID: org.oid,
@@ -67,4 +92,16 @@ export async function initEnhancedCoverage(
       fromOrgChunkPos: fromOrgPos,
     });
   }
+}
+
+function notifyCWUnlinked(patients: PatientToLink[] | Patient[]): void {
+  if (!patients || !patients.length) return;
+
+  const patientsByCx = groupBy(patients, "cxId");
+  const msg = `Found patients with stale enhanced coverage`;
+  console.log(msg + ` - count: ${patients.length}: ${JSON.stringify(patientsByCx)}`);
+  capture.message(msg, {
+    extra: { patientsByCx },
+    level: "warning",
+  });
 }

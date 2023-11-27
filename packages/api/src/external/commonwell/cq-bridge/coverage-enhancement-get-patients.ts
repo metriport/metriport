@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Op } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
-import { CQLinkStatus } from "../patient-shared";
+import { CQLinkStatus, CWLinkStatus, PatientDataCommonwell } from "../patient-shared";
 
 dayjs.extend(duration);
 
@@ -12,6 +12,7 @@ const MIN_TIME_AFTER_PATIENT_CREATED = dayjs.duration({ minutes: 2 });
 export type PatientToLink = {
   cxId: string;
   id: string;
+  cwLinkStatus?: CWLinkStatus;
 };
 
 /**
@@ -44,5 +45,9 @@ export async function getPatientsToEnhanceCoverage(cxIds: string[]): Promise<Pat
       createdAt: { [Op.lte]: earliestDate },
     },
   });
-  return patientsWithIds.map(p => ({ cxId: p.cxId, id: p.id }));
+  return patientsWithIds.map(p => ({
+    cxId: p.cxId,
+    id: p.id,
+    cwLinkStatus: (p.data.externalData?.COMMONWELL as PatientDataCommonwell).status as CWLinkStatus,
+  }));
 }
