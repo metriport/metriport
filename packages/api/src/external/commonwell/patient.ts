@@ -152,6 +152,77 @@ export async function create(
   }
 }
 
+export async function retryLinking(patient: Patient, facilityId: string): Promise<boolean> {
+  let commonWell: CommonWellAPI | undefined;
+  try {
+    const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
+
+    const { organization, facility } = await getPatientData(patient, facilityId);
+    const orgName = organization.data.name;
+    const orgOID = organization.oid;
+    const facilityNPI = facility.data["npi"] as string;
+
+    // Patients of cxs that not go through EC should have theis status undefined so they're not picked up later
+    // when we enable it
+    const cqLinkStatus = (await isEnhancedCoverageEnabledForCx(patient.cxId))
+      ? "unlinked"
+      : undefined;
+    const storeIds = getStoreIdsFn(patient.id, patient.cxId, cqLinkStatus);
+
+    commonWell = makeCommonWellAPI(orgName, oid(orgOID));
+
+    const commonwellData = getCWData(patient.data.externalData);
+
+    if (!commonwellData) {
+      const msg = `The patient does not have external data`;
+      debug(
+        `ERR - ${msg} - Patient not registered to commonwell - ` +
+          `respUpdate: ${JSON.stringify(commonwellData)}`
+      );
+      throw new Error(msg);
+    }
+
+    const commonwellPatientId = commonwellData?.patientId;
+    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+    const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
+
+    const respGet = await commonWell.getPatient(queryMeta, commonwellPatientId);
+    debug(`resp updatePatient: `, JSON.stringify(respGet));
+    const patientRefLink = respGet._links?.self?.href;
+    if (!patientRefLink) {
+      const msg = `Could not determine the patient ref link`;
+      debug(
+        `ERR - ${msg} - Patient retry did not occur because failed to get refLink - ` +
+          `respUpdate: ${JSON.stringify(respGet)}`
+      );
+      await storeIds({ commonwellPatientId, status: "failed" });
+      throw new Error(msg);
+    }
+
+    await findOrCreatePersonAndLink({
+      commonWell,
+      queryMeta,
+      commonwellPatient,
+      commonwellPatientId,
+      patientRefLink,
+      storeIds,
+    });
+
+    return true;
+  } catch (err) {
+    console.error(`Failure while attempting to relink patient ${patient.id} @ CW: `, err);
+    capture.error(err, {
+      extra: {
+        facilityId,
+        patientId: patient.id,
+        cwReference: commonWell?.lastReferenceHeader,
+        context: createContext,
+      },
+    });
+    return false;
+  }
+}
+
 export async function update(patient: Patient, facilityId: string): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
   try {
@@ -362,6 +433,8 @@ async function findOrCreatePersonAndLink({
   const { log, debug } = Util.out(
     `CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`
   );
+  await storeIds({ commonwellPatientId, status: "processing" });
+
   let findOrCreateResponse: FindOrCreatePersonResponse;
   try {
     findOrCreateResponse = await findOrCreatePerson({
@@ -378,8 +451,6 @@ async function findOrCreatePersonAndLink({
   if (!findOrCreateResponse) throw new MetriportError("Programming error: unexpected state");
   const { personId, person } = findOrCreateResponse;
 
-  await storeIds({ commonwellPatientId, personId, status: "completed" });
-
   // Link Person to Patient
   try {
     const strongIds = getMatchingStrongIds(person, commonwellPatient);
@@ -394,16 +465,25 @@ async function findOrCreatePersonAndLink({
     debug(`resp patientLink: `, JSON.stringify(respLink));
   } catch (err) {
     log(`Error linking Patient<>Person @ CW - personId: ${personId}`);
+    await storeIds({ commonwellPatientId, status: "failed" });
     throw err;
   }
 
-  await autoUpgradeNetworkLinks(
-    commonWell,
-    queryMeta,
-    commonwellPatientId,
-    personId,
-    createContext
-  );
+  try {
+    await autoUpgradeNetworkLinks(
+      commonWell,
+      queryMeta,
+      commonwellPatientId,
+      personId,
+      createContext
+    );
+  } catch (err) {
+    log(`Error upgrading network links @ CW - personId: ${personId}`);
+    await storeIds({ commonwellPatientId, status: "failed" });
+    throw err;
+  }
+  // actually completed all CW calls
+  await storeIds({ commonwellPatientId, personId, status: "completed" });
 
   return personId;
 }

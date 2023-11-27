@@ -37,6 +37,9 @@ export async function initEnhancedCoverage(
   };
 
   const patients = await getPatientsToProcess();
+  // check cw link status and run the same relinking logic on any failed patients.
+  // for patients that are failed, exclude from patient list and notify
+  // look at notifyStaleEC logic for this
   const patientsByCx = groupBy(patients, "cxId");
 
   const entries = Object.entries(patientsByCx);
