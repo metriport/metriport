@@ -1,4 +1,6 @@
 import { PatientCreate, patientCreateSchema } from "@metriport/api-sdk";
+import { defaultDateString } from "./shared";
+
 import { z } from "zod";
 import { driversLicenseType, generalTypes } from "../../../domain/medical/patient";
 import { USState } from "@metriport/core/domain/geographic-locations";
@@ -9,13 +11,13 @@ export const basePersonalIdentifierSchema = z.object({
   value: z.string(),
   period: z
     .object({
-      start: z.string(),
-      end: z.string().optional(),
+      start: defaultDateString,
+      end: defaultDateString.optional(),
     })
     .or(
       z.object({
-        start: z.string().optional(),
-        end: z.string(),
+        start: defaultDateString.optional(),
+        end: defaultDateString,
       })
     )
     .optional(),
