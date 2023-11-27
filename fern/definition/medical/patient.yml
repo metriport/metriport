@@ -2,6 +2,7 @@
 
 imports:
   commons: ../commons.yml
+  fhir: ../fhir/__package__.yml
 
 service:
   base-path: /medical/v1/patient
@@ -126,7 +127,7 @@ types:
         type: string
         docs: The ID number.
       assigner: optional<string>
-      period: optional<commons.Period>
+      period: optional<fhir.Period>
 
   Contact:
     properties:
