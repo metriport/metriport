@@ -13,6 +13,7 @@ import {
   FileInfo,
 } from "./document-downloader";
 import NotFoundError from "../../../util/error/not-found";
+import { FileTypeDetectingStream } from "./document-file-type-detector";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -196,7 +197,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       bucket: uploadResult.Bucket,
       location: uploadResult.Location,
       size,
-      contentType,
+      contentType: contentType,
     };
   }
 
@@ -207,7 +208,28 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
   }
 
   protected getUploadStreamToS3(s3FileName: string, s3FileLocation: string, contentType?: string) {
-    const pass = new stream.PassThrough();
+    let pass: stream.PassThrough | FileTypeDetectingStream;
+    let uploadContentType: string;
+
+    const acceptedContentTypes = [
+      "image/tiff",
+      "image/tif",
+      "text/xml",
+      "application/xml",
+      "application/pdf",
+    ];
+
+    if (contentType && acceptedContentTypes.includes(contentType)) {
+      console.log(`Content type provided: ${contentType}`);
+      pass = new stream.PassThrough();
+      uploadContentType = contentType;
+    } else {
+      console.log(`No content type provided. Will try to detect it from the file header`);
+      pass = new FileTypeDetectingStream();
+      uploadContentType = (pass as FileTypeDetectingStream).getDetectedFileType();
+    }
+    console.log(`Upload content type: ${uploadContentType}`);
+
     return {
       writeStream: pass,
       promise: this.s3client
@@ -215,7 +237,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
           Bucket: s3FileLocation,
           Key: s3FileName,
           Body: pass,
-          ContentType: contentType ? contentType : "text/xml",
+          ContentType: uploadContentType,
         })
         .promise(),
     };
