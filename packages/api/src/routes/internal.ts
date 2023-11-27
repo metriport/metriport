@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
+import { checkApiQuota } from "../command/medical/admin/api";
 import { peekIntoSidechainDLQ } from "../command/medical/admin/peek-dlq";
 import {
   populateFhirServer,
@@ -210,6 +211,19 @@ router.get(
       })),
     };
     return res.status(httpStatus.OK).json(response);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/check-api-quota
+ *
+ * Check API Gateway quota for each API Key and send a notification if it's below a threshold.
+ */
+router.post(
+  "/check-api-quota",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxsWithLowQuota = await checkApiQuota();
+    return res.status(httpStatus.OK).json({ cxsWithLowQuota });
   })
 );
 
