@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 
-export const xcadrPayloadSchema = z.array(
+export const xcaIti39PayloadSchema = z.array(
   z.object({
     homeCommunityId: z.string(),
     repositoryUniqueId: z.string(),
@@ -12,4 +12,4 @@ export const xcadrPayloadSchema = z.array(
   })
 );
 
-export type XCADRRequest = z.infer<typeof xcadrPayloadSchema>;
+export type XCA_ITI_39Request = z.infer<typeof xcaIti39PayloadSchema>;

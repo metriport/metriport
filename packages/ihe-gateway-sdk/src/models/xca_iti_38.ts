@@ -1,8 +1,11 @@
 import { z } from "zod";
 
-export const xcadqPayloadSchema = z.array(
+export const xcaIti38RequestSchema = z.array(
   z.object({
-    orgOid: z.string(),
+    id: z.string(),
+    cxId: z.string(),
+    homeCommunityId: z.string(),
+    urlDQ: z.string(),
     patientIdentifier: z.object({ orgOid: z.string(), id: z.string() }),
     classCode: z
       .object({
@@ -35,4 +38,4 @@ export const xcadqPayloadSchema = z.array(
   })
 );
 
-export type XCADQRequest = z.infer<typeof xcadqPayloadSchema>;
+export type XCA_ITI_38Request = z.infer<typeof xcaIti38RequestSchema>;
