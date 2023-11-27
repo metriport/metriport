@@ -1,7 +1,10 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+// keep that ^ on top
 import fs from "fs";
 import https from "https";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { Sequelize } from "sequelize";
 import { sleep } from "@metriport/core/util/sleep";
 
@@ -9,6 +12,9 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const apiKey = getEnvVarOrFail("API_KEY");
 const cxId = getEnvVarOrFail("CX_ID");
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
+const orgName = getEnvVar("ORG_NAME");
+
+const DIR_NAME = `${orgName}_MR_Summaries`;
 
 const patientIds: string[] = [];
 
@@ -27,6 +33,7 @@ const sqlQuery = `SELECT * FROM webhook_request WHERE cx_id = '${cxId}' AND type
 
 async function main() {
   let latestWebhookId = "";
+  fs.mkdirSync(`./${DIR_NAME}`);
 
   for (const patientId of patientIds) {
     try {
@@ -59,6 +66,7 @@ async function main() {
 async function recursiveWebhook(
   latestWebhookId: string
 ): Promise<{ url: string | null; webhookId: string }> {
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   const webhooks: any = await sequelize.query(sqlQuery);
 
   const webhookId = webhooks[0][0].id;
@@ -86,9 +94,9 @@ async function recursiveWebhook(
 }
 
 async function downloadFile(url: string, patientId: string) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     https.get(url, res => {
-      const fileStream = fs.createWriteStream(`./pdfs/${patientId}.pdf`);
+      const fileStream = fs.createWriteStream(`./${DIR_NAME}/${patientId}.pdf`);
       res.pipe(fileStream);
 
       fileStream.on("finish", () => {
