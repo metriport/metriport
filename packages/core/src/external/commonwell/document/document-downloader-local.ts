@@ -71,17 +71,15 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       (document.mimeType && !acceptedContentTypes.includes(document.mimeType))
     ) {
       // If not, update the content type in S3
-      console.log(`Updating content type in S3`);
+      console.log(`Updating content type in S3 ${fileInfo.name}`);
       const detectedFileType = detectFileType(Buffer.from(downloadedDocument));
       await this.updateContentTypeInS3(downloadResult.bucket, downloadResult.key, detectedFileType);
-      const fileInfo = await this.s3Utils.getFileInfoFromS3(
+      const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(
         downloadResult.key,
         downloadResult.bucket
       );
-      downloadResult = { ...downloadResult, ...fileInfo };
+      downloadResult = { ...downloadResult, ...fileDetailsUpdated };
     }
-
-    console.log(`downloadResult: ${JSON.stringify(downloadResult)}`);
 
     const newlyDownloadedFile: DownloadResult = {
       bucket: downloadResult.bucket,

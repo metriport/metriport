@@ -10,6 +10,7 @@
  * @returns The function `detectFileType` returns a string representing the detected file type.
  */
 export function detectFileType(fileBuffer: Buffer): string {
+  console.log(`Detecting file type for file: ${fileBuffer.slice(0, 10).toString("hex")}`);
   if (
     (fileBuffer[0] === 0x49 &&
       fileBuffer[1] === 0x49 &&
@@ -20,6 +21,7 @@ export function detectFileType(fileBuffer: Buffer): string {
       fileBuffer[2] === 0x00 &&
       fileBuffer[3] === 0x2a)
   ) {
+    console.log(`Detected file type: image/tiff`);
     return "image/tiff";
   } else if (
     fileBuffer[0] === 0x25 &&
@@ -28,6 +30,7 @@ export function detectFileType(fileBuffer: Buffer): string {
     fileBuffer[3] === 0x46 &&
     fileBuffer[4] === 0x2d
   ) {
+    console.log(`Detected file type: application/pdf`);
     return "application/pdf";
   } else if (
     fileBuffer[0] === 0x3c &&
@@ -37,6 +40,7 @@ export function detectFileType(fileBuffer: Buffer): string {
     fileBuffer[4] === 0x6c &&
     fileBuffer[5] === 0x20
   ) {
+    console.log(`Detected file type: text/xml`);
     return "application/xml";
   } else if (
     fileBuffer[0] === 0x89 &&
@@ -44,8 +48,10 @@ export function detectFileType(fileBuffer: Buffer): string {
     fileBuffer[2] === 0x4e &&
     fileBuffer[3] === 0x47
   ) {
+    console.log(`Detected file type: image/png`);
     return "image/png";
   } else if (fileBuffer[0] === 0xff && fileBuffer[1] === 0xd8 && fileBuffer[2] === 0xff) {
+    console.log(`Detected file type: image/jpeg`);
     return "image/jpeg";
   } else {
     throw new Error(`Unknown file type. Cannot convert document: ${fileBuffer.slice(0, 10)}`);
