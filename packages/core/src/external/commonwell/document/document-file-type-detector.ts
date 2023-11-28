@@ -11,7 +11,7 @@ import { Document } from "./document-downloader";
  * identify the file type.
  * @returns The function `detectFileType` returns a string representing the detected file type.
  */
-export function detectFileType(fileBuffer: Buffer): string {
+export function detectFileType(fileBuffer: Buffer, document: Document): string {
   console.log(`Detecting file type for file: ${fileBuffer.slice(0, 10).toString("hex")}`);
   if (
     (fileBuffer[0] === 0x49 &&
@@ -59,7 +59,7 @@ export function detectFileType(fileBuffer: Buffer): string {
     console.log(`Detected file type: image/bmp`);
     return "image/bmp";
   } else {
-    throw new Error(`Unknown file type. Cannot convert document: ${fileBuffer.slice(0, 10)}`);
+    throw new Error(`Could not determine file type for document: ${document.id}`);
   }
 }
 /**

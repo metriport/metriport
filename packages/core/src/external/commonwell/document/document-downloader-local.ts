@@ -59,7 +59,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       console.log(
         `Updating content type in S3 ${fileInfo.name} for previous mimeType: ${document.mimeType}`
       );
-      const detectedFileType = detectFileType(Buffer.from(downloadedDocument));
+      const detectedFileType = detectFileType(Buffer.from(downloadedDocument), document);
       await this.updateContentTypeInS3(downloadResult.bucket, downloadResult.key, detectedFileType);
       const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(
         downloadResult.key,
@@ -227,7 +227,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
           Bucket: s3FileLocation,
           Key: s3FileName,
           Body: pass,
-          ContentType: contentType ? contentType : "",
+          ContentType: contentType || "",
         })
         .promise(),
     };
