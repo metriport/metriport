@@ -13,11 +13,13 @@ import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { Util, emptyFunction } from "../../../shared/util";
 import { SetDocQueryProgress, appendDocQueryProgress } from "../patient/append-doc-query-progress";
-import { getPatientOrFail, getPatientWithDependencies } from "../patient/get-patient";
+import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
-import { setCommonwellLinkStatusToFailed } from "../../../external/commonwell/patient-external-data";
-import cwCommands from "../../../external/commonwell";
+import {
+  handleCWLinkingStatus,
+  setCommonwellLinkStatusToFailed,
+} from "../../../external/commonwell/patient-external-data";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -74,59 +76,23 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
-  const cwLinkingStatus = cwData.status;
-  if (cwLinkingStatus === "processing") {
-    log(`Patient ${patientId} is already 'processing', waiting for timeout ...`);
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    const patientPostTimeout = await getPatientOrFail({ id: patientId, cxId });
-
-    const cwLinkingStatusPostTimeout = (
-      patientPostTimeout.data.externalData?.COMMONWELL as PatientDataCommonwell
-    ).status;
-    if (cwLinkingStatusPostTimeout === "processing" || cwLinkingStatusPostTimeout === "failed") {
-      log(
-        `Patient ${patientId} is still 'processing' after timeout, setting DQ and cwLinking status to failed`
-      );
-      await setCommonwellLinkStatusToFailed({ patientId, cxId });
-      const failedPatient = await storeQueryInit({
-        id: patient.id,
-        cxId: patient.cxId,
-        documentQueryProgress: { download: { status: "failed" } },
-        requestId,
-        cxDocumentRequestMetadata,
-      });
-      return createQueryResponse("failed", failedPatient);
-    } else {
-      log(`Patient ${patientId} is linked after timeout, continuing with DQ`);
-    }
-  } else if (cwLinkingStatus === "failed") {
-    log(`Patient ${patientId} is already 'failed', retrying linking...`);
-    const { facilities } = await getPatientWithDependencies({ id: patientId, cxId });
-    facilityId = facilityId ?? facilities[0].id;
-
-    // retry linking
-    try {
-      await Promise.race([
-        cwCommands.patient.retryLinking(patient, facilityId),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000)), // timeout after 5000 ms or 5 seconds
-      ]);
-      log(`Patient ${patientId} retry linking successful, continuing with DQ`);
-    } catch (error) {
-      log(
-        `Patient ${patientId} retry linking failed or timed out, setting DQ and cwLinking status to failed`
-      );
-      await setCommonwellLinkStatusToFailed({ patientId, cxId });
-      const failedPatient = await storeQueryInit({
-        id: patient.id,
-        cxId: patient.cxId,
-        documentQueryProgress: { download: { status: "failed" } },
-        requestId,
-        cxDocumentRequestMetadata,
-      });
-      return createQueryResponse("failed", failedPatient);
-    }
+  // If we can get the CW linkins status, then we can continue with the DQ
+  // If not, we will set statuses to failed and return a failed response.
+  try {
+    handleCWLinkingStatus(patientId, cxId);
+  } catch (error) {
+    await setCommonwellLinkStatusToFailed({ patientId, cxId });
+    const failedPatient = await storeQueryInit({
+      id: patient.id,
+      cxId: patient.cxId,
+      documentQueryProgress: { download: { status: "failed" } },
+      requestId,
+      cxDocumentRequestMetadata,
+    });
+    return createQueryResponse("failed", failedPatient);
   }
-  // if cwLinkingStatus is completed then continue with DQ
+  // if cwLinkingStatus is completed then continue with DQ and we know
+  // that the patient is linked to CW.
 
   getDocumentsFromCW({
     patient,

@@ -48,7 +48,7 @@ import { getAllPages } from "../../fhir/shared/paginated";
 import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
+import { PatientWithCWData } from "../patient-external-data";
 import { getPatientDataWithSingleFacility } from "../patient-shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
@@ -83,7 +83,7 @@ type File = DownloadResult & { isNew: boolean };
  * CW for them (optional) - see `downloadDocsAndUpsertFHIR()` for the default value
  */
 export async function queryAndProcessDocuments({
-  patient: patientParam,
+  patient,
   facilityId,
   forceQuery = false,
   forceDownload,
@@ -99,11 +99,12 @@ export async function queryAndProcessDocuments({
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<number> {
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
+  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
 
   try {
-    const patient = await getPatientWithCWData(patientParam);
-    const cwData = patient.data.externalData.COMMONWELL;
+    // if queryAndProcess was called, then we verified that the patient is linked
+    // and so this casting is safe.
+    const cwData = (patient as PatientWithCWData).data.externalData.COMMONWELL;
 
     const isWaitingForEnhancedCoverage =
       (await isEnhancedCoverageEnabledForCx(patient.cxId)) &&
@@ -124,7 +125,11 @@ export async function queryAndProcessDocuments({
       return documentsSandbox.length;
     } else {
       log(`Querying for documents of patient ${patient.id}...`);
-      const cwDocuments = await internalGetDocuments({ patient, organization, facility });
+      const cwDocuments = await internalGetDocuments({
+        patient: patient as PatientWithCWData,
+        organization,
+        facility,
+      });
       log(`Got ${cwDocuments.length} documents from CW`);
 
       const fhirDocRefs = await downloadDocsAndUpsertFHIR({
@@ -151,13 +156,13 @@ export async function queryAndProcessDocuments({
   } catch (error) {
     console.log(`Error: ${errorToString(error)}`);
     processPatientDocumentRequest(
-      patientParam.cxId,
-      patientParam.id,
+      patient.cxId,
+      patient.id,
       "medical.document-download",
       MAPIWebhookStatus.failed
     );
     await appendDocQueryProgress({
-      patient: { id: patientParam.id, cxId: patientParam.cxId },
+      patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
       requestId,
     });
@@ -165,7 +170,7 @@ export async function queryAndProcessDocuments({
       extra: {
         context: `cw.queryAndProcessDocuments`,
         error,
-        patientId: patientParam.id,
+        patientId: patient.id,
         facilityId,
         forceDownload,
         requestId,
@@ -511,6 +516,9 @@ export async function downloadDocsAndUpsertFHIR({
                 );
                 const facilityNPI = facility.data["npi"] as string; // TODO #414 move
 
+                console.log(
+                  `JONAH DOCUMENT MIME TYPE: ${doc.content.mimeType}, ${doc.id}, ${doc.content.location}`
+                );
                 const newFile = triggerDownloadDocument({
                   doc,
                   fileInfo,
