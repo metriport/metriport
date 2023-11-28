@@ -40,7 +40,6 @@ export async function initEnhancedCoverage(
   };
   let patients = await getPatientsToProcess();
 
-  // TODO run the same relinking logic on any failed patients?
   // for patient in patients, if cw link status is failed, notify sentry
   let failedPatients: (PatientToLink | Patient)[] = [];
   if (patients.length > 0 && patients[0] !== undefined) {

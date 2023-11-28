@@ -515,10 +515,6 @@ export async function downloadDocsAndUpsertFHIR({
                   facilityId
                 );
                 const facilityNPI = facility.data["npi"] as string; // TODO #414 move
-
-                console.log(
-                  `JONAH DOCUMENT MIME TYPE: ${doc.content.mimeType}, ${doc.id}, ${doc.content.location}`
-                );
                 const newFile = triggerDownloadDocument({
                   doc,
                   fileInfo,

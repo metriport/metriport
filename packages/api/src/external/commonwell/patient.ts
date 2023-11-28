@@ -155,7 +155,7 @@ export async function create(
 export async function retryLinking(patient: Patient, facilityId: string): Promise<boolean> {
   let commonWell: CommonWellAPI | undefined;
   try {
-    const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
+    const { debug } = Util.out(`CW retry linking - M patientId ${patient.id}`);
 
     const { organization, facility } = await getPatientData(patient, facilityId);
     const orgName = organization.data.name;

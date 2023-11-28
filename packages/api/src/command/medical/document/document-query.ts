@@ -79,7 +79,7 @@ export async function queryDocumentsAcrossHIEs({
   // If we can get the CW linkins status, then we can continue with the DQ
   // If not, we will set statuses to failed and return a failed response.
   try {
-    handleCWLinkingStatus(patientId, cxId);
+    await handleCWLinkingStatus(patientId, cxId);
   } catch (error) {
     await setCommonwellLinkStatusToFailed({ patientId, cxId });
     const failedPatient = await storeQueryInit({

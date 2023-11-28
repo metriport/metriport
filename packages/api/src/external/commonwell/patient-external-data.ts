@@ -18,7 +18,7 @@ import { Util } from "../..//shared/util";
 
 dayjs.extend(duration);
 
-const maxAttemptsToGetPatientCWData = 3;
+const maxAttemptsToGetPatientCWData = 4;
 const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(2, "seconds");
 
 export type PatientWithCWData = Patient & {
