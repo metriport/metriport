@@ -1,3 +1,5 @@
+import { Document } from "./document-downloader";
+
 /**
  * The function `detectFileType` uses magic numbers to determine the file type of a given file.
  * Magic numbers are unique sequences of bytes that identify the file format or protocol.
@@ -5,7 +7,7 @@
  * matches it against known file type headers.
  *
  * @param {Buffer} fileBuffer - The `fileBuffer` parameter is a `Buffer` object that represents the
- * contents of a file. The first 5 bytes of this buffer, which form the magic number, are used to
+ * contents of a file. The first 5 bytes of this buffer, which generally contain the magic number, are used to
  * identify the file type.
  * @returns The function `detectFileType` returns a string representing the detected file type.
  */
@@ -56,4 +58,25 @@ export function detectFileType(fileBuffer: Buffer): string {
   } else {
     throw new Error(`Unknown file type. Cannot convert document: ${fileBuffer.slice(0, 10)}`);
   }
+}
+/**
+ * The function checks if the MIME type of a document is accepted based on a predefined list of
+ * accepted content types. Returns true if accepted
+ * @param {Document} document - A document object that contains the MIME type of the document.
+ * @returns The function isContentTypeAccepted is returning a boolean value.
+ */
+
+export function isContentTypeAccepted(document: Document): boolean {
+  const acceptedContentTypes = [
+    "image/tiff",
+    "image/tif",
+    "text/xml",
+    "application/xml",
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+  ];
+
+  return !!document.mimeType && acceptedContentTypes.includes(document.mimeType);
 }

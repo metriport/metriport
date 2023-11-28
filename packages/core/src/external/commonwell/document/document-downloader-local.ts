@@ -13,7 +13,7 @@ import {
   FileInfo,
 } from "./document-downloader";
 import NotFoundError from "../../../util/error/not-found";
-import { detectFileType } from "./document-file-type-detector";
+import { detectFileType, isContentTypeAccepted } from "./document-file-type-detector";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -53,25 +53,12 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     };
     let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
 
-    console.log(`contentType: ${document.mimeType}`);
     // Check if the detected file type is in the accepted content types
-    const acceptedContentTypes = [
-      "image/tiff",
-      "image/tif",
-      "text/xml",
-      "application/xml",
-      "application/pdf",
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-    ];
-
-    if (
-      !document.mimeType ||
-      (document.mimeType && !acceptedContentTypes.includes(document.mimeType))
-    ) {
+    if (!isContentTypeAccepted(document)) {
       // If not, update the content type in S3
-      console.log(`Updating content type in S3 ${fileInfo.name}`);
+      console.log(
+        `Updating content type in S3 ${fileInfo.name} for previous mimeType: ${document.mimeType}`
+      );
       const detectedFileType = detectFileType(Buffer.from(downloadedDocument));
       await this.updateContentTypeInS3(downloadResult.bucket, downloadResult.key, detectedFileType);
       const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(
@@ -221,7 +208,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       bucket: uploadResult.Bucket,
       location: uploadResult.Location,
       size,
-      contentType: contentType,
+      contentType,
     };
   }
 
