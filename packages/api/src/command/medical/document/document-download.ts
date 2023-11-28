@@ -12,7 +12,7 @@ import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 import dayjs from "dayjs";
 
-const SIGNED_URL_EXPIRATION_MINUTES = 5;
+const URL_EXPIRATION_TIME = dayjs.duration(5, "minutes");
 const s3client = makeS3Client();
 const lambdaClient = makeLambdaClient();
 const conversionLambdaName = Config.getConvertDocLambdaName();
@@ -121,9 +121,7 @@ const doesObjExist = async ({
 };
 
 export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string> => {
-  const expirationTimeSeconds = dayjs
-    .duration(SIGNED_URL_EXPIRATION_MINUTES, "minutes")
-    .asSeconds();
+  const expirationTimeSeconds = URL_EXPIRATION_TIME.asSeconds();
 
   const url = s3client.getSignedUrl("getObject", {
     // TODO 760 Fix this
