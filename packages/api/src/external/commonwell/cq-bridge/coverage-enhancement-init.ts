@@ -8,7 +8,7 @@ import { makeCoverageEnhancer } from "./coverage-enhancer-factory";
 import { setCQLinkStatus } from "./cq-link-status";
 import { capture } from "../../../shared/notifications";
 import { Patient } from "../../../domain/medical/patient";
-import { CWLinkStatus, PatientDataCommonwell } from "../patient-shared";
+import { getLinkStatusCW } from "../patient";
 
 const cqLinkStatusInitial = "processing";
 const parallelPatientUpdates = 20;
@@ -38,17 +38,12 @@ export async function initEnhancedCoverage(
     }
     return getPatientsToEnhanceCoverage(cxIds);
   };
-
-  const getCWLinkStatus = (patient: Patient): string => {
-    return (patient.data.externalData?.COMMONWELL as PatientDataCommonwell).status as CWLinkStatus;
-  };
-
   let patients = await getPatientsToProcess();
 
   // TODO run the same relinking logic on any failed patients?
   // for patient in patients, if cw link status is failed, notify sentry
   let failedPatients: (PatientToLink | Patient)[] = [];
-  if (patients.length > 0) {
+  if (patients.length > 0 && patients[0] !== undefined) {
     if ("cwLinkStatus" in patients[0]) {
       // patients are of type PatientToLink
       failedPatients = (patients as PatientToLink[]).filter(
@@ -56,10 +51,13 @@ export async function initEnhancedCoverage(
       );
       patients = (patients as PatientToLink[]).filter(patient => patient.cwLinkStatus !== "failed");
     } else {
+      // patients are of type Patient
       failedPatients = (patients as Patient[]).filter(
-        patient => getCWLinkStatus(patient) === "failed"
+        patient => getLinkStatusCW(patient.data.externalData) === "failed"
       );
-      patients = (patients as Patient[]).filter(patient => getCWLinkStatus(patient) !== "failed");
+      patients = (patients as Patient[]).filter(
+        patient => getLinkStatusCW(patient.data.externalData) !== "failed"
+      );
     }
   }
   if (failedPatients.length > 0) {
