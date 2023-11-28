@@ -1,4 +1,3 @@
-import { Transform } from "stream";
 /**
  * The function `detectFileType` uses magic numbers to determine the file type of a given file.
  * Magic numbers are unique sequences of bytes that identify the file format or protocol.
@@ -10,8 +9,7 @@ import { Transform } from "stream";
  * identify the file type.
  * @returns The function `detectFileType` returns a string representing the detected file type.
  */
-function detectFileType(fileBuffer: Buffer): string {
-  console.log(`fileBuffer bytes: ${fileBuffer.toString("hex")}`);
+export function detectFileType(fileBuffer: Buffer): string {
   if (
     (fileBuffer[0] === 0x49 &&
       fileBuffer[1] === 0x49 &&
@@ -51,35 +49,5 @@ function detectFileType(fileBuffer: Buffer): string {
     return "image/jpeg";
   } else {
     throw new Error(`Unknown file type. Cannot convert document: ${fileBuffer.slice(0, 10)}`);
-  }
-}
-
-export class FileTypeDetectingStream extends Transform {
-  private header = "";
-  private detectedFileType = "";
-
-  override _transform(
-    chunk: Buffer,
-    encoding: string,
-    callback: (error?: Error | null, data?: Buffer) => void
-  ) {
-    if (!this.detectedFileType) {
-      this.header += chunk.toString();
-      if (this.header.length >= 5) {
-        try {
-          this.detectedFileType = detectFileType(Buffer.from(this.header.slice(0, 5)));
-        } catch (error: unknown) {
-          if (error instanceof Error) {
-            return callback(error);
-          }
-          return callback(new Error("An unexpected error occurred"));
-        }
-      }
-    }
-    callback(null, chunk);
-  }
-
-  getDetectedFileType() {
-    return this.detectedFileType;
   }
 }

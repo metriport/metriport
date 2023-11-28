@@ -13,7 +13,7 @@ import {
   FileInfo,
 } from "./document-downloader";
 import NotFoundError from "../../../util/error/not-found";
-import { FileTypeDetectingStream } from "./document-file-type-detector";
+import { detectFileType } from "./document-file-type-detector";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -51,12 +51,37 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const onEnd = () => {
       console.log("Finished downloading document");
     };
-    const downloadResult = await this.downloadFromCommonwellIntoS3(
-      document,
-      fileInfo,
-      onData,
-      onEnd
-    );
+    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
+
+    console.log(`contentType: ${document.mimeType}`);
+    // Check if the detected file type is in the accepted content types
+    const acceptedContentTypes = [
+      "image/tiff",
+      "image/tif",
+      "text/xml",
+      "application/xml",
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+    ];
+
+    if (
+      !document.mimeType ||
+      (document.mimeType && !acceptedContentTypes.includes(document.mimeType))
+    ) {
+      // If not, update the content type in S3
+      console.log(`Updating content type in S3`);
+      const detectedFileType = detectFileType(Buffer.from(downloadedDocument));
+      await this.updateContentTypeInS3(downloadResult.bucket, downloadResult.key, detectedFileType);
+      const fileInfo = await this.s3Utils.getFileInfoFromS3(
+        downloadResult.key,
+        downloadResult.bucket
+      );
+      downloadResult = { ...downloadResult, ...fileInfo };
+    }
+
+    console.log(`downloadResult: ${JSON.stringify(downloadResult)}`);
 
     const newlyDownloadedFile: DownloadResult = {
       bucket: downloadResult.bucket,
@@ -179,18 +204,12 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     onDataFn && writeStream.on("data", onDataFn);
     onEndFn && writeStream.on("end", onEndFn);
 
-    console.log(`Downloading ${document.id} from CommonWell`);
-
     await this.downloadDocumentFromCW({
       location: document.location,
       stream: writeStream,
     });
 
-    console.log(`Finished downloading ${document.id} from CommonWell`);
-
     const uploadResult = await promise;
-
-    console.log(`uploadResult: ${JSON.stringify(uploadResult)}`);
 
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
 
@@ -199,8 +218,6 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       uploadResult.Bucket
     );
 
-    console.log(`File size: ${size} bytes`);
-    console.log(`Content type: ${contentType}`);
     return {
       key: uploadResult.Key,
       bucket: uploadResult.Bucket,
@@ -216,75 +233,18 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     return fileNameParts.join(".") + "." + newExtension;
   }
 
-  /*
-  This method creates a FileTypeDetectingStream if no content type is provided. This stream will detect the file type as data is written to it. 
-  The method returns the stream and a promise that resolves when the upload to S3 is complete. 
-  The content type for the upload is set when the stream finishes writing data (when the 'finish' event is emitted).
-  */
   protected getUploadStreamToS3(s3FileName: string, s3FileLocation: string, contentType?: string) {
-    let pass: stream.PassThrough | FileTypeDetectingStream;
-    let uploadContentType: string;
-
-    const acceptedContentTypes = [
-      "image/tiff",
-      "image/tif",
-      "text/xml",
-      "application/xml",
-      "application/pdf",
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-    ];
-
-    if (contentType && acceptedContentTypes.includes(contentType)) {
-      console.log(`Content type provided: ${contentType}`);
-      pass = new stream.PassThrough();
-      uploadContentType = contentType;
-    } else {
-      console.log(`No content type provided. Will try to detect it from the file header`);
-      pass = new FileTypeDetectingStream();
-    }
-
-    let upload: AWS.S3.ManagedUpload;
-    const finishPromise: Promise<AWS.S3.ManagedUpload.SendData> = new Promise((resolve, reject) => {
-      pass.on("finish", async () => {
-        if (pass instanceof FileTypeDetectingStream) {
-          uploadContentType = pass.getDetectedFileType();
-          console.log(`Upload content type: ${uploadContentType}`);
-        }
-        console.log(`Starting S3 upload...`);
-        upload = this.s3client.upload({
+    const pass = new stream.PassThrough();
+    return {
+      writeStream: pass,
+      promise: this.s3client
+        .upload({
           Bucket: s3FileLocation,
           Key: s3FileName,
           Body: pass,
-          ContentType: uploadContentType,
-        });
-
-        console.log(`S3 upload initialized, awaiting upload promise...`);
-        upload.promise().then(
-          data => {
-            console.log(`Upload succeeded: ${JSON.stringify(data)}`);
-            resolve(data);
-          },
-          error => {
-            console.error(`Upload failed: ${error}`);
-            reject(error);
-          }
-        );
-      });
-
-      pass.on("error", err => {
-        reject(err); // Handle stream errors
-      });
-
-      pass.on("end", () => {
-        console.log(`Stream end event fired`);
-      });
-    });
-
-    return {
-      writeStream: pass,
-      promise: finishPromise,
+          ContentType: contentType ? contentType : "",
+        })
+        .promise(),
     };
   }
 
@@ -311,5 +271,23 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         this.config.capture.error(error, { extra: { ...additionalInfo, error } });
       throw new MetriportError(`CW - Error downloading document`, error, additionalInfo);
     }
+  }
+
+  protected async updateContentTypeInS3(
+    bucket: string,
+    key: string,
+    newContentType: string
+  ): Promise<void> {
+    const copySource = encodeURIComponent(bucket + "/" + key);
+
+    await this.s3client
+      .copyObject({
+        Bucket: bucket,
+        Key: key,
+        CopySource: copySource,
+        ContentType: newContentType,
+        MetadataDirective: "REPLACE", // This is important to replace the metadata
+      })
+      .promise();
   }
 }
