@@ -11,21 +11,46 @@ import { Transform } from "stream";
  * @returns The function `detectFileType` returns a string representing the detected file type.
  */
 function detectFileType(fileBuffer: Buffer): string {
-  const header = fileBuffer.slice(0, 5).toString();
-  console.log(`Detected file type: ${header}`);
-  switch (header) {
-    case "%PDF":
-      return "pdf";
-    case "\u0089PNG":
-      return "png";
-    case "GIF8":
-      return "gif";
-    case "<?xm":
-      return "xml";
-    case "II*(":
-      return "tiff";
-    default:
-      throw new Error(`Unknown file type. Cannot convert document: ${header}`);
+  console.log(`fileBuffer bytes: ${fileBuffer.toString("hex")}`);
+  if (
+    (fileBuffer[0] === 0x49 &&
+      fileBuffer[1] === 0x49 &&
+      fileBuffer[2] === 0x2a &&
+      fileBuffer[3] === 0x00) ||
+    (fileBuffer[0] === 0x4d &&
+      fileBuffer[1] === 0x4d &&
+      fileBuffer[2] === 0x00 &&
+      fileBuffer[3] === 0x2a)
+  ) {
+    return "image/tiff";
+  } else if (
+    fileBuffer[0] === 0x25 &&
+    fileBuffer[1] === 0x50 &&
+    fileBuffer[2] === 0x44 &&
+    fileBuffer[3] === 0x46 &&
+    fileBuffer[4] === 0x2d
+  ) {
+    return "application/pdf";
+  } else if (
+    fileBuffer[0] === 0x3c &&
+    fileBuffer[1] === 0x3f &&
+    fileBuffer[2] === 0x78 &&
+    fileBuffer[3] === 0x6d &&
+    fileBuffer[4] === 0x6c &&
+    fileBuffer[5] === 0x20
+  ) {
+    return "application/xml";
+  } else if (
+    fileBuffer[0] === 0x89 &&
+    fileBuffer[1] === 0x50 &&
+    fileBuffer[2] === 0x4e &&
+    fileBuffer[3] === 0x47
+  ) {
+    return "image/png";
+  } else if (fileBuffer[0] === 0xff && fileBuffer[1] === 0xd8 && fileBuffer[2] === 0xff) {
+    return "image/jpeg";
+  } else {
+    throw new Error(`Unknown file type. Cannot convert document: ${fileBuffer.slice(0, 10)}`);
   }
 }
 

@@ -179,12 +179,18 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     onDataFn && writeStream.on("data", onDataFn);
     onEndFn && writeStream.on("end", onEndFn);
 
+    console.log(`Downloading ${document.id} from CommonWell`);
+
     await this.downloadDocumentFromCW({
       location: document.location,
       stream: writeStream,
     });
 
+    console.log(`Finished downloading ${document.id} from CommonWell`);
+
     const uploadResult = await promise;
+
+    console.log(`uploadResult: ${JSON.stringify(uploadResult)}`);
 
     console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
 
@@ -192,6 +198,9 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       uploadResult.Key,
       uploadResult.Bucket
     );
+
+    console.log(`File size: ${size} bytes`);
+    console.log(`Content type: ${contentType}`);
     return {
       key: uploadResult.Key,
       bucket: uploadResult.Bucket,
@@ -207,6 +216,11 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     return fileNameParts.join(".") + "." + newExtension;
   }
 
+  /*
+  This method creates a FileTypeDetectingStream if no content type is provided. This stream will detect the file type as data is written to it. 
+  The method returns the stream and a promise that resolves when the upload to S3 is complete. 
+  The content type for the upload is set when the stream finishes writing data (when the 'finish' event is emitted).
+  */
   protected getUploadStreamToS3(s3FileName: string, s3FileLocation: string, contentType?: string) {
     let pass: stream.PassThrough | FileTypeDetectingStream;
     let uploadContentType: string;
@@ -217,6 +231,9 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       "text/xml",
       "application/xml",
       "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
     ];
 
     if (contentType && acceptedContentTypes.includes(contentType)) {
@@ -226,20 +243,48 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     } else {
       console.log(`No content type provided. Will try to detect it from the file header`);
       pass = new FileTypeDetectingStream();
-      uploadContentType = (pass as FileTypeDetectingStream).getDetectedFileType();
     }
-    console.log(`Upload content type: ${uploadContentType}`);
 
-    return {
-      writeStream: pass,
-      promise: this.s3client
-        .upload({
+    let upload: AWS.S3.ManagedUpload;
+    const finishPromise: Promise<AWS.S3.ManagedUpload.SendData> = new Promise((resolve, reject) => {
+      pass.on("finish", async () => {
+        if (pass instanceof FileTypeDetectingStream) {
+          uploadContentType = pass.getDetectedFileType();
+          console.log(`Upload content type: ${uploadContentType}`);
+        }
+        console.log(`Starting S3 upload...`);
+        upload = this.s3client.upload({
           Bucket: s3FileLocation,
           Key: s3FileName,
           Body: pass,
           ContentType: uploadContentType,
-        })
-        .promise(),
+        });
+
+        console.log(`S3 upload initialized, awaiting upload promise...`);
+        upload.promise().then(
+          data => {
+            console.log(`Upload succeeded: ${JSON.stringify(data)}`);
+            resolve(data);
+          },
+          error => {
+            console.error(`Upload failed: ${error}`);
+            reject(error);
+          }
+        );
+      });
+
+      pass.on("error", err => {
+        reject(err); // Handle stream errors
+      });
+
+      pass.on("end", () => {
+        console.log(`Stream end event fired`);
+      });
+    });
+
+    return {
+      writeStream: pass,
+      promise: finishPromise,
     };
   }
 
