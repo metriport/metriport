@@ -5,7 +5,10 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
 import { z } from "zod";
-import { downloadDocument } from "../../command/medical/document/document-download";
+import {
+  downloadDocument,
+  triggerBulkUrlSigning,
+} from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -182,6 +185,25 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const url = await getDownloadUrl(req);
     return res.status(OK).json({ url });
+  })
+);
+
+/**
+ * POST /document/bulk-download-url
+ *
+ * Triggers a wh payload containing the list of presigned urls for all the patients document stored in s3.
+ *
+ * @param req.query.patientId Patient ID for which to retrieve document metadata.
+ * @returns The status of the bulk signing process
+ */
+
+router.post(
+  "/bulk-download-url",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const urls = await triggerBulkUrlSigning(cxId, patientId);
+    return res.status(OK).json(urls);
   })
 );
 

@@ -10,10 +10,14 @@ import NotFoundError from "../../../errors/not-found";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
+import { searchDocuments } from "../../../external/fhir/document/search-documents";
+import { chunk } from "lodash";
 
+const BATCH_SIZE = 100;
 const s3client = makeS3Client();
 const lambdaClient = makeLambdaClient();
 const conversionLambdaName = Config.getConvertDocLambdaName();
+const bulkSigningLambdaName = Config.getBulkSigningLambdaName();
 
 export const downloadDocument = async ({
   fileName,
@@ -133,4 +137,37 @@ export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<
 
   // TODO try to remove this, moved here b/c this was being done upstream
   return url.replace(/['"]+/g, "");
+};
+
+export const triggerBulkUrlSigning = async (cxId: string, patientId: string): Promise<string[]> => {
+  if (!bulkSigningLambdaName) throw new Error("Bulk Signing Lambda Name is undefined");
+
+  const documents = await searchDocuments({ cxId, patientId });
+  console.log("Doc Ref Payload", documents[0]);
+  // Chunk documents into batches
+  const batches = chunk(documents, BATCH_SIZE);
+
+  // Process each batch
+  const urls = [];
+  for (const batch of batches) {
+    const payload = {
+      documents: batch.map(doc => doc.id),
+    };
+
+    // Invoke the lambda function
+    const result = await lambdaClient
+      .invoke({
+        FunctionName: bulkSigningLambdaName,
+        InvocationType: "RequestResponse",
+        Payload: JSON.stringify(payload),
+      })
+      .promise();
+
+    const resultPayload = getLambdaResultPayload({ result, lambdaName: bulkSigningLambdaName });
+    const parsedResult = JSON.parse(resultPayload);
+    // Collect the URLs
+    urls.push(...parsedResult.urls);
+  }
+
+  return urls;
 };
