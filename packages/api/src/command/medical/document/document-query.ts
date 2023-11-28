@@ -8,9 +8,7 @@ import {
 } from "../../../domain/medical/document-query";
 import { Patient } from "../../../domain/medical/patient";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
-import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../../external/aws/appConfig";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
-import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { Util, emptyFunction } from "../../../shared/util";
@@ -67,12 +65,6 @@ export async function queryDocumentsAcrossHIEs({
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
   }
-
-  const externalData = patient.data.externalData?.COMMONWELL;
-  if (!externalData) return createQueryResponse("failed");
-
-  const cwData = externalData as PatientDataCommonwell;
-  if (!cwData.patientId) return createQueryResponse("failed");
 
   const updatedPatient = await storeQueryInit({
     id: patient.id,
@@ -136,17 +128,13 @@ export async function queryDocumentsAcrossHIEs({
   }
   // if cwLinkingStatus is completed then continue with DQ
 
-  const cxsWithEnhancedCoverageFeatureFlagValue =
-    await getCxsWithEnhancedCoverageFeatureFlagValue();
-  if (forceQuery || !cxsWithEnhancedCoverageFeatureFlagValue.includes(patient.cxId)) {
-    // kick off document query unless the cx has the enhanced coverage feature enabled
-    getDocumentsFromCW({
-      patient,
-      facilityId,
-      forceDownload: override,
-      requestId,
-    }).catch(emptyFunction);
-  }
+  getDocumentsFromCW({
+    patient,
+    facilityId,
+    forceDownload: override,
+    forceQuery,
+    requestId,
+  }).catch(emptyFunction);
 
   return createQueryResponse("processing", updatedPatient);
 }

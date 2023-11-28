@@ -43,6 +43,7 @@ const examCode = "Z00";
 const patientIds: string[] = [];
 
 const apiUrl = getEnvVarOrFail("API_URL");
+// TODO update these to use `getCxData()` instead
 const apiKey = getEnvVarOrFail("API_KEY");
 const cxName = getEnvVarOrFail("CX_NAME");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
@@ -50,8 +51,8 @@ const minJitterMillis = 100;
 const maxJitterMillis = 300;
 const numberOfParallelExecutions = parseInt(getEnvVar("PARALLEL_QUERIES") ?? "5");
 const curDateTime = new Date();
-const runName = `${cxName}`;
-const baseDir = `./${runName}`;
+const runName = `${cxName.replaceAll(" ", "-")}_Exams_${curDateTime.toISOString()}`;
+const baseDir = `./runs/${runName}`;
 const patientCsvHeader = "id,records,medications,exams\n";
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {

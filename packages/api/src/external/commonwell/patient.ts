@@ -1,12 +1,12 @@
 import {
   CommonWellAPI,
-  Patient as CommonwellPatient,
+  getIdTrailingSlash,
   LOLA,
+  organizationQueryMeta,
+  Patient as CommonwellPatient,
   Person,
   RequestMetadata,
   StrongId,
-  getIdTrailingSlash,
-  organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { MedicalDataSource } from "..";
@@ -24,11 +24,11 @@ import { makePersonForPatient, patientToCommonwell } from "./patient-conversion"
 import { setCommonwellId } from "./patient-external-data";
 import {
   CQLinkStatus,
-  FindOrCreatePersonResponse,
-  PatientDataCommonwell,
   findOrCreatePerson,
+  FindOrCreatePersonResponse,
   getMatchingStrongIds,
   getPatientData,
+  PatientDataCommonwell,
 } from "./patient-shared";
 
 const createContext = "cw.patient.create";
@@ -45,7 +45,7 @@ export function getCWData(
 /**
  * Returns the status of linking the Patient with CommonWell.
  */
-export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus {
+export function getLinkStatusCW(data: PatientExternalData | undefined): LinkStatus {
   const defaultStatus: LinkStatus = "processing";
   if (!data) return defaultStatus;
   return getCWData(data)?.status ?? defaultStatus;
@@ -55,7 +55,7 @@ export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus
  * Returns the status of linking the Patient with CommonWell's CareQuality bridge. Used for
  * Enhanced Coverage.
  */
-export function getCQLinkStatus(data: PatientExternalData | undefined): CQLinkStatus {
+export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkStatus {
   const defaultStatus: CQLinkStatus = "unlinked";
   if (!data) return defaultStatus;
   return getCWData(data)?.cqLinkStatus ?? defaultStatus;
