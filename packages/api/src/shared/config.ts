@@ -244,8 +244,8 @@ export class Config {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
-  static getBulkSigningLambdaName(): string | undefined {
-    return getEnvVar("BULK_SIGNING_LAMBDA_NAME");
+  static getBulkUrlSigningLambdaName(): string | undefined {
+    return getEnvVar("BULK_URL_SIGNING_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {

@@ -17,7 +17,7 @@ const BATCH_SIZE = 100;
 const s3client = makeS3Client();
 const lambdaClient = makeLambdaClient();
 const conversionLambdaName = Config.getConvertDocLambdaName();
-const bulkSigningLambdaName = Config.getBulkSigningLambdaName();
+const bulkSigningLambdaName = Config.getBulkUrlSigningLambdaName();
 
 export const downloadDocument = async ({
   fileName,

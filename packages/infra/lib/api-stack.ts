@@ -343,6 +343,14 @@ export class APIStack extends Stack {
       });
     }
 
+    const bulkUrlSigningLambda = this.setupBulkUrlSigningLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      bucketName: medicalDocumentsBucket.bucketName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+    });
+
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
       stack: this,
       vpc: this.vpc,
@@ -383,6 +391,7 @@ export class APIStack extends Stack {
       documentDownloaderLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
+      bulkUrlSigningLambda,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -1078,6 +1087,41 @@ export class APIStack extends Stack {
     secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
 
     return documentDownloaderLambda;
+  }
+
+  /**
+   * We are intentionally not setting an alarm action for this lambda, as many issues
+   * may be caused outside of our system. To eliminate noise, we will not alarm on this
+   * lambda.
+   */
+  private setupBulkUrlSigningLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    bucketName: string | undefined;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, bucketName, sentryDsn, envType } = ownProps;
+
+    const bulkUrlSigningLambda = createLambda({
+      stack: this,
+      name: "BulkUrlSigning",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "bulk-url-signing",
+      envType,
+      envVars: {
+        ...(bucketName && {
+          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+        }),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+    });
+
+    return bulkUrlSigningLambda;
   }
 
   private setupFhirToMedicalRecordLambda(ownProps: {
