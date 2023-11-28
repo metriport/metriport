@@ -55,6 +55,9 @@ export function detectFileType(fileBuffer: Buffer): string {
   } else if (fileBuffer[0] === 0xff && fileBuffer[1] === 0xd8 && fileBuffer[2] === 0xff) {
     console.log(`Detected file type: image/jpeg`);
     return "image/jpeg";
+  } else if (fileBuffer[0] === 0x42 && fileBuffer[1] === 0x4d) {
+    console.log(`Detected file type: image/bmp`);
+    return "image/bmp";
   } else {
     throw new Error(`Unknown file type. Cannot convert document: ${fileBuffer.slice(0, 10)}`);
   }
@@ -76,6 +79,9 @@ export function isContentTypeAccepted(document: Document): boolean {
     "image/png",
     "image/jpeg",
     "image/jpg",
+    "image/bmp",
+    "application/json",
+    "text/html",
   ];
 
   return !!document.mimeType && acceptedContentTypes.includes(document.mimeType);
