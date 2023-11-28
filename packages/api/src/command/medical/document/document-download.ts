@@ -10,7 +10,9 @@ import NotFoundError from "../../../errors/not-found";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
+import dayjs from "dayjs";
 
+const SIGNED_URL_EXPIRATION_MINUTES = 5;
 const s3client = makeS3Client();
 const lambdaClient = makeLambdaClient();
 const conversionLambdaName = Config.getConvertDocLambdaName();
@@ -119,7 +121,9 @@ const doesObjExist = async ({
 };
 
 export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string> => {
-  const seconds = 60;
+  const expirationTimeSeconds = dayjs
+    .duration(SIGNED_URL_EXPIRATION_MINUTES, "minutes")
+    .asSeconds();
 
   const url = s3client.getSignedUrl("getObject", {
     // TODO 760 Fix this
@@ -128,7 +132,7 @@ export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<
         Config.getSandboxSeedBucketName()!
       : Config.getMedicalDocumentsBucketName(),
     Key: fileName,
-    Expires: seconds,
+    Expires: expirationTimeSeconds,
   });
 
   // TODO try to remove this, moved here b/c this was being done upstream
