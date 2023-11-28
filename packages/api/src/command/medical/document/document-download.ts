@@ -12,6 +12,7 @@ import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 import { searchDocuments } from "../../../external/fhir/document/search-documents";
 import { chunk } from "lodash";
+// import { getSignedUrls } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
 const BATCH_SIZE = 100;
 const s3client = makeS3Client();
@@ -148,10 +149,10 @@ export const triggerBulkUrlSigning = async (cxId: string, patientId: string): Pr
   const batches = chunk(documents, BATCH_SIZE);
 
   // Process each batch
-  const urls = [];
+  let urls = [];
   for (const batch of batches) {
     const payload = {
-      documents: batch.map(doc => doc.id),
+      filenames: batch.map(doc => doc.content[0].attachment.title),
     };
 
     // Invoke the lambda function
@@ -165,8 +166,11 @@ export const triggerBulkUrlSigning = async (cxId: string, patientId: string): Pr
 
     const resultPayload = getLambdaResultPayload({ result, lambdaName: bulkSigningLambdaName });
     const parsedResult = JSON.parse(resultPayload);
+
+    // const parsedResult: string = await getSignedUrls(payload.documents, Config.getMedicalDocumentsBucketName(), "us-east-2");
+    // console.log("Parsed Result", parsedResult);
     // Collect the URLs
-    urls.push(...parsedResult.urls);
+    urls = urls.concat(parsedResult);
   }
 
   return urls;
