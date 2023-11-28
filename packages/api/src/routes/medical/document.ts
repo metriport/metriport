@@ -121,6 +121,10 @@ router.post(
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
     });
 
+    if (docQueryProgress.download?.status === "failed") {
+      return res.status(500).json({ error: "Patient Linking to CW failed" });
+    }
+
     return res.status(OK).json(docQueryProgress);
   })
 );
