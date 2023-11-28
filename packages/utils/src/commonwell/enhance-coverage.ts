@@ -27,6 +27,7 @@ import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-manag
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/core/util/sleep";
 import { firefox as runtime } from "playwright";
+import { getCxData } from "../shared/get-cx-data";
 
 /**
  * Script to run on local environment the code that enhances coverage @ CommonWell.
@@ -43,13 +44,19 @@ import { firefox as runtime } from "playwright";
  * Try to limit the impact on the infrastructure by providing a list of patient IDs below.
  */
 
+/**
+ * Only need to provide the facilityId if the CX has more than one facility.
+ * Used to determine the NPI used to query CW.
+ */
+const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-inferrable-types
+/**
+ * List of patients to check coverage for.
+ */
 const patientIds: string[] = [];
-
 /**
  * Update this, each situation requires a diff value here.
  */
 const triggerWHNotificationsToCx = false;
-
 /**
  * During the execution, if the cookie gets outdated and the script errors, you'll need to set the index below
  * to the last one that was successful.
@@ -78,7 +85,6 @@ const cwPassword = getEnvVarOrFail("CW_PASSWORD");
 
 const metriportApiBaseUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
-const cxOrgOID = getEnvVarOrFail("ORG_OID");
 
 const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 });
 const DOC_QUERIES_IN_PARALLEL = 25;
@@ -125,6 +131,8 @@ const coverageEnhancer = new CoverageEnhancerLocal(
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(metriportApiBaseUrl);
 
 export async function main() {
+  const { orgOID: cxOrgOID } = await getCxData(cxId, facilityId);
+
   console.log(`Running coverage enhancement... - started at ${new Date().toISOString()}`);
   const startedAt = Date.now();
 

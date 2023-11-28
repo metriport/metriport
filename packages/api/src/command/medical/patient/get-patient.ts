@@ -1,7 +1,7 @@
 import { USState } from "@metriport/core/domain/geographic-locations";
 import { intersectionWith, isEqual, uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
-import { Patient, PatientData, getStatesFromAddresses } from "../../../domain/medical/patient";
+import { getStatesFromAddresses, Patient, PatientData } from "../../../domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
