@@ -11,10 +11,10 @@ import originalPayloadFromCW from "./cq-org-list-original.json";
  */
 
 const orgsCSVHeader = "id\tname\t# of states\tgateway\n";
-const orgsCSVName = `./cq-orgs.csv`;
+const orgsCSVName = `./runs/cq-orgs.csv`;
 
 const gwCSVHeader = "id\tgateway\t# of orgs\n";
-const gwCSVName = `./cq-orgs-by-gateway.csv`;
+const gwCSVName = `./runs/cq-orgs-by-gateway.csv`;
 
 function initCSVs() {
   fs.writeFileSync(orgsCSVName, orgsCSVHeader);

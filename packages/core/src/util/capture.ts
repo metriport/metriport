@@ -20,3 +20,8 @@ export type Capture = {
    */
   message: (message: string, captureContext?: Partial<ScopeContext>) => string;
 };
+
+export const emptyCapture: Capture = {
+  error: () => "",
+  message: () => "",
+};

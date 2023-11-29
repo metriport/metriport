@@ -20,6 +20,7 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
+import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
@@ -690,6 +691,13 @@ export class APIStack extends Stack {
         publicZone,
       });
     }
+
+    createScheduledAPIQuotaChecker({
+      stack: this,
+      lambdaLayers,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+    });
 
     //-------------------------------------------
     // Output

@@ -5,6 +5,7 @@ import { out } from "@metriport/core/util/log";
 import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { capture } from "../../../shared/notifications";
 import { PatientLoaderLocal } from "../patient-loader-local";
 import { PatientUpdaterCommonWell } from "../patient-updater-commonwell";
 import { completeEnhancedCoverage } from "./coverage-enhancement-complete";
@@ -19,7 +20,13 @@ const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 });
  */
 export class CoverageEnhancerApiLocal extends CoverageEnhancerLocal {
   constructor(cwManagementApi: CommonWellManagementAPI, prefix?: string | undefined) {
-    super(cwManagementApi, new PatientLoaderLocal(), new PatientUpdaterCommonWell(), prefix);
+    super(
+      cwManagementApi,
+      new PatientLoaderLocal(),
+      new PatientUpdaterCommonWell(),
+      capture,
+      prefix
+    );
   }
 
   public override async enhanceCoverage({
