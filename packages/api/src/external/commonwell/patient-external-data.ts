@@ -13,29 +13,29 @@ import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
 
 dayjs.extend(duration);
 
-const maxAttemptsToGetPatientCWData = 3;
+const maxAttemptsToGetPatientCWData = 5;
 const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(2, "seconds");
 
 export type PatientWithCWData = Patient & {
   data: { externalData: { COMMONWELL: PatientDataCommonwell } };
 };
 
+const getPatientWithCWDataOrFail = async ({ id, cxId }: Pick<Patient, "id" | "cxId">) => {
+  const patientDB: Patient = await getPatientOrFail({
+    id,
+    cxId,
+  });
+
+  const cwData = getCWData(patientDB.data.externalData);
+  if (!cwData) throw new MetriportError(`Missing CW data on patient`);
+  if (!cwData.patientId) throw new MetriportError(`Missing CW patientId`);
+
+  return patientDB as PatientWithCWData;
+};
+
 export async function getPatientWithCWData(patient: Patient): Promise<PatientWithCWData> {
-  const getPatientWithCWDataOrFail = async () => {
-    const patientDB: Patient = await getPatientOrFail({
-      id: patient.id,
-      cxId: patient.cxId,
-    });
-
-    const cwData = getCWData(patient.data.externalData);
-    if (!cwData) throw new MetriportError(`Missing CW data on patient`);
-    if (!cwData.patientId) throw new MetriportError(`Missing CW patientId`);
-
-    return patientDB as PatientWithCWData;
-  };
-
   return executeWithRetries(
-    getPatientWithCWDataOrFail,
+    () => getPatientWithCWDataOrFail(patient),
     maxAttemptsToGetPatientCWData - 1,
     waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds()
   );
