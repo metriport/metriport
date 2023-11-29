@@ -91,15 +91,16 @@ async function getUsage(): Promise<Usage[]> {
   }
 
   const items = Object.entries(usage.items);
-  const promises = items.map(async ([id, value]) => {
-    const key = await apiGw.getApiKey({ apiKey: id, includeValue: true }).promise();
+  const promises = items.map(async ([apiKey, usageRaw]) => {
+    const key = await apiGw.getApiKey({ apiKey, includeValue: true }).promise();
 
-    const dailyUsage = value[0];
-    if (!dailyUsage) throw new MetriportError(`Missing dailyUsage`, undefined, { key: id });
+    const dailyUsage = usageRaw[0];
+    if (!dailyUsage) throw new MetriportError(`Missing dailyUsage`, undefined, { apiKey });
     const quotaUsed = dailyUsage[0];
-    if (!quotaUsed) throw new MetriportError(`Missing quotaUsed`, undefined, { key: id });
+    if (quotaUsed == null) throw new MetriportError(`Missing quotaUsed`, undefined, { apiKey });
     const quotaRemaining = dailyUsage[1];
-    if (!quotaRemaining) throw new MetriportError(`Missing quotaRemaining`, undefined, { key: id });
+    if (quotaRemaining == null)
+      throw new MetriportError(`Missing quotaRemaining`, undefined, { apiKey });
 
     const quotaTotal = quotaUsed + quotaRemaining;
     const cxId =
