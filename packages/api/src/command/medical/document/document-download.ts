@@ -12,7 +12,14 @@ import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 import { searchDocuments } from "../../../external/fhir/document/search-documents";
 import { chunk } from "lodash";
-// import { getSignedUrls } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+import { processPatientDocumentRequest, MAPIWebhookStatus } from "./document-webhook";
+import {
+  DocumentBulkDownloadDTO,
+  toDTO,
+} from "../../../routes/medical/dtos/document-bulk-downloadDTO";
+
+import { DocumentBulkDownloadProgress } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+import { getSignedUrls } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
 const BATCH_SIZE = 100;
 const s3client = makeS3Client();
@@ -140,38 +147,75 @@ export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<
   return url.replace(/['"]+/g, "");
 };
 
-export const triggerBulkUrlSigning = async (cxId: string, patientId: string): Promise<string[]> => {
+export const triggerBulkUrlSigning = async (
+  cxId: string,
+  patientId: string
+): Promise<DocumentBulkDownloadProgress> => {
   if (!bulkSigningLambdaName) throw new Error("Bulk Signing Lambda Name is undefined");
 
   const documents = await searchDocuments({ cxId, patientId });
+  // Todo remove this
   console.log("Doc Ref Payload", documents[0]);
-  // Chunk documents into batches
+
   const batches = chunk(documents, BATCH_SIZE);
 
+  const documentBulkDownloadProgress: DocumentBulkDownloadProgress = {};
+  documentBulkDownloadProgress.download = {
+    status: "processing",
+    total: documents.length,
+  };
+
   // Process each batch
-  let urls = [];
   for (const batch of batches) {
+    const dtos: DocumentBulkDownloadDTO[] = [];
     const payload = {
-      filenames: batch.map(doc => doc.content[0].attachment.title),
+      filenames: batch
+        .map(doc => {
+          if (doc.content && doc.content[0] && doc.content[0].attachment) {
+            return doc.content[0].attachment.title;
+          }
+          return undefined;
+        })
+        .filter((filename): filename is string => filename !== undefined),
     };
 
     // Invoke the lambda function
-    const result = await lambdaClient
-      .invoke({
-        FunctionName: bulkSigningLambdaName,
-        InvocationType: "RequestResponse",
-        Payload: JSON.stringify(payload),
-      })
-      .promise();
+    // const result = await lambdaClient
+    //   .invoke({
+    //     FunctionName: bulkSigningLambdaName,
+    //     InvocationType: "RequestResponse",
+    //     Payload: JSON.stringify(payload),
+    //   })
+    //   .promise();
 
-    const resultPayload = getLambdaResultPayload({ result, lambdaName: bulkSigningLambdaName });
-    const parsedResult = JSON.parse(resultPayload);
+    // const resultPayload = getLambdaResultPayload({ result, lambdaName: bulkSigningLambdaName });
+    // const parsedResult = JSON.parse(resultPayload);
 
-    // const parsedResult: string = await getSignedUrls(payload.documents, Config.getMedicalDocumentsBucketName(), "us-east-2");
-    // console.log("Parsed Result", parsedResult);
+    const parsedResult: string[] = await getSignedUrls(
+      payload.filenames,
+      Config.getMedicalDocumentsBucketName(),
+      "us-east-2"
+    );
+    console.log("Parsed Result", parsedResult);
+
+    // Create DTOs for each signed URL
+    for (let i = 0; i < parsedResult.length; i++) {
+      const signedUrl = parsedResult[i];
+      const doc = batch[i];
+      const dto = toDTO(doc, signedUrl);
+      if (dto) {
+        dtos.push(dto);
+      }
+    }
+
     // Collect the URLs
-    urls = urls.concat(parsedResult);
+    processPatientDocumentRequest(
+      cxId,
+      patientId,
+      "medical.document-bulk-download",
+      MAPIWebhookStatus.completed,
+      dtos
+    );
   }
-
-  return urls;
+  return documentBulkDownloadProgress;
 };

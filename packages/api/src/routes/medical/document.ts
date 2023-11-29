@@ -202,8 +202,8 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const urls = await triggerBulkUrlSigning(cxId, patientId);
-    return res.status(OK).json(urls);
+    const documentBulkDownloadProgress = await triggerBulkUrlSigning(cxId, patientId);
+    return res.status(OK).json(documentBulkDownloadProgress);
   })
 );
 
