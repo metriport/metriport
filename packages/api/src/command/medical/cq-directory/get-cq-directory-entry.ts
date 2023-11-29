@@ -18,3 +18,7 @@ export const getCQDirectoryEntryOrFail = async ({
   if (!organization) throw new NotFoundError(`Could not find CQ organization`, undefined, { oid });
   return organization;
 };
+
+export const getAllCQDirectoryEntries = async (): Promise<CQDirectoryEntryModel[]> => {
+  return await CQDirectoryEntryModel.findAll();
+};

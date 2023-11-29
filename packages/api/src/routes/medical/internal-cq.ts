@@ -8,6 +8,10 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createOrUpdateCQDirectoryEntry } from "../../command/medical/cq-directory/create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
+import {
+  DEFAULT_RADIUS_IN_MILES,
+  searchNearbyCQOrganizations,
+} from "../../command/medical/cq-directory/search-cq-directory";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
@@ -58,6 +62,7 @@ router.post(
  * GET /internal/carequality/directory/organization/:oid
  *
  * Retrieves the organization with the specified OID from the Carequality Directory.
+ * @param req.params.oid The OID of the organization to retrieve.
  * @returns Returns the organization.
  */
 router.get(
@@ -95,6 +100,30 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     await createOrUpdateCQOrganization();
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * GET /internal/carequality/directory/local
+ *
+ * Retrieves the organizations within a specified radius from the patient's address.
+ * @param req.query.cxId The ID of the customer organization.
+ * @param req.query.patientId The ID of the patient.
+ * @param req.query.radius Optional, the radius in miles within which to search for organizations. Defaults to 50 miles.
+ *
+ * @returns Returns the CQ organizations within a radius of the patient's address.
+ */
+router.get(
+  "/directory/local",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const radiusQuery = getFrom("query").optional("radius", req);
+    const radius = radiusQuery ? parseInt(radiusQuery) : DEFAULT_RADIUS_IN_MILES;
+
+    const orgs = await searchNearbyCQOrganizations({ cxId, patientId, radiusInMiles: radius });
+
+    return res.status(httpStatus.OK).json(orgs);
   })
 );
 

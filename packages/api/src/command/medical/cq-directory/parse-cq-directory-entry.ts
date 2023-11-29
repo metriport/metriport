@@ -37,8 +37,8 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       urlXCPD: url.urlXCPD,
       urlDQ: url.urlDQ,
       urlDR: url.urlDR,
-      lat: coordinates?.lat ?? undefined,
-      lon: coordinates?.lon ?? undefined,
+      lat: coordinates?.lat ? parseFloat(coordinates?.lat) : undefined,
+      lon: coordinates?.lon ? parseFloat(coordinates?.lon) : undefined,
       state,
       data: org,
     };

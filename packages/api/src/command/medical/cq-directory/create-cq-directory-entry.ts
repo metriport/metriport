@@ -18,13 +18,11 @@ export const createOrUpdateCQDirectoryEntry = async (
     return { org: updOrg, updated: true };
   }
 
-  const org = await createDirectoryDirectoryEntry(orgData);
+  const org = await createCQDirectoryEntry(orgData);
   return { org, updated: false };
 };
 
-async function createDirectoryDirectoryEntry(
-  orgData: CQDirectoryEntryData
-): Promise<CQDirectoryEntry> {
+async function createCQDirectoryEntry(orgData: CQDirectoryEntryData): Promise<CQDirectoryEntry> {
   return await CQDirectoryEntryModel.create({
     id: uuidv7(),
     ...orgData,

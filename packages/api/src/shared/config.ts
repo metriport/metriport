@@ -90,6 +90,10 @@ export class Config {
     return getEnvVarOrFail("CQ_API_KEY");
   }
 
+  static getPlaceIndexName(): string {
+    return getEnvVarOrFail("PLACE_INDEX_NAME");
+  }
+
   static getTokenTableName(): string {
     return getEnvVarOrFail("TOKEN_TABLE_NAME");
   }

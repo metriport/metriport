@@ -1,15 +1,15 @@
 import {
-  XCPD_STRING,
+  ChannelUrl,
   XCA_DQ_STRING,
   XCA_DR_STRING,
-  ChannelUrl,
+  XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
 import { CQOrgDetails } from "./organization";
 
 export function buildOrganizationFromTemplate(orgDetails: CQOrgDetails) {
   const {
-    orgName,
-    orgOID,
+    name,
+    oid,
     addressLine1,
     city,
     state,
@@ -24,20 +24,20 @@ export function buildOrganizationFromTemplate(orgDetails: CQOrgDetails) {
     email,
   } = orgDetails;
 
-  const oid = "urn:oid:" + orgOID;
-  const endpointXCPD = getEndpoint(oid, urlXCPD, XCPD_STRING);
-  const endpointDQ = getEndpoint(oid, urlDQ, XCA_DQ_STRING);
-  const endpointDR = getEndpoint(oid, urlDR, XCA_DR_STRING);
+  const urnOid = "urn:oid:" + oid;
+  const endpointXCPD = getEndpoint(urnOid, urlXCPD, XCPD_STRING);
+  const endpointDQ = urlDQ ? getEndpoint(urnOid, urlDQ, XCA_DQ_STRING) : "";
+  const endpointDR = urlDR ? getEndpoint(urnOid, urlDR, XCA_DR_STRING) : "";
 
   return `
   <Organization>
 <identifier>
     <use value="official"/>
     <system value="http://www.hl7.org/oid/"/>
-    <value value="${oid}"/>
+    <value value="${urnOid}"/>
 </identifier>
 <active value="true"/>
-<name value="${orgName}"/>
+<name value="${name}"/>
 <type>
     <coding>
         <system value="http://hl7.org/fhir/organization-type"/>

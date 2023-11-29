@@ -7,8 +7,8 @@ export type CQDirectoryEntryData = {
   urlXCPD: string;
   urlDQ?: string;
   urlDR?: string;
-  lat?: string;
-  lon?: string;
+  lat?: number;
+  lon?: number;
   state?: string;
   data?: Organization;
 };

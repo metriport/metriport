@@ -13,8 +13,8 @@ export class CQDirectoryEntryModel
   declare urlXCPD: string;
   declare urlDQ?: string;
   declare urlDR?: string;
-  declare lat?: string;
-  declare lon?: string;
+  declare lat?: number;
+  declare lon?: number;
   declare data?: Organization;
   declare state?: string;
 
@@ -41,10 +41,10 @@ export class CQDirectoryEntryModel
           field: "url_dr",
         },
         lat: {
-          type: DataTypes.STRING,
+          type: DataTypes.FLOAT,
         },
         lon: {
-          type: DataTypes.STRING,
+          type: DataTypes.FLOAT,
         },
         state: {
           type: DataTypes.STRING,
