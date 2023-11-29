@@ -1,5 +1,6 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import NotFoundError from "@metriport/core/util/error/not-found";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -7,16 +8,12 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createOrUpdateCQDirectoryEntry } from "../../command/medical/cq-directory/create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
-import { Config } from "../../shared/config";
-import { asyncHandler, getFrom } from "../util";
-import NotFoundError from "@metriport/core/util/error/not-found";
-import { capture } from "../../shared/notifications";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
+import { Config } from "../../shared/config";
+import { capture } from "../../shared/notifications";
+import { asyncHandler, getFrom } from "../util";
 
 const maxNumberOfParallelRequestsToDB = 20;
-const apiKey = Config.getCQApiKey();
-const cq = new Carequality(apiKey);
-
 dayjs.extend(duration);
 
 const router = Router();
@@ -30,6 +27,9 @@ const router = Router();
 router.post(
   "/directory/rebuild",
   asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    const apiKey = Config.getCQApiKey();
+    const cq = new Carequality(apiKey);
     const resp = await cq.listAllOrganizations();
     const orgs = parseCQDirectoryEntries(resp);
 
@@ -63,6 +63,9 @@ router.post(
 router.get(
   "/directory/organization/:oid",
   asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    const apiKey = Config.getCQApiKey();
+    const cq = new Carequality(apiKey);
     const oid = getFrom("params").orFail("oid", req);
     const resp = await cq.listOrganizations({ count: 1, oid });
     const org = parseCQDirectoryEntries(resp);

@@ -37,6 +37,7 @@ import { mapDocRefToMetriport } from "../../../shared/external";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
+import { isEnhancedCoverageEnabledForCx } from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -47,7 +48,8 @@ import { getAllPages } from "../../fhir/shared/paginated";
 import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getPatientDataWithSingleFacility, PatientDataCommonwell } from "../patient-shared";
+import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
+import { getPatientDataWithSingleFacility } from "../patient-shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
@@ -81,8 +83,9 @@ type File = DownloadResult & { isNew: boolean };
  * CW for them (optional) - see `downloadDocsAndUpsertFHIR()` for the default value
  */
 export async function queryAndProcessDocuments({
-  patient,
+  patient: patientParam,
   facilityId,
+  forceQuery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
@@ -90,13 +93,26 @@ export async function queryAndProcessDocuments({
 }: {
   patient: Patient;
   facilityId?: string | undefined;
+  forceQuery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<number> {
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
+  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
+
   try {
+    const patient = await getPatientWithCWData(patientParam);
+    const cwData = patient.data.externalData.COMMONWELL;
+
+    const isWaitingForEnhancedCoverage =
+      (await isEnhancedCoverageEnabledForCx(patient.cxId)) &&
+      cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
+      cwData.cqLinkStatus !== "linked";
+
+    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage;
+    if (!isTriggerDQ) return 0;
+
     const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
 
     if (Config.isSandbox()) {
@@ -135,13 +151,13 @@ export async function queryAndProcessDocuments({
   } catch (error) {
     console.log(`Error: ${errorToString(error)}`);
     processPatientDocumentRequest(
-      patient.cxId,
-      patient.id,
+      patientParam.cxId,
+      patientParam.id,
       "medical.document-download",
       MAPIWebhookStatus.failed
     );
     await appendDocQueryProgress({
-      patient: { id: patient.id, cxId: patient.cxId },
+      patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
     });
@@ -149,7 +165,7 @@ export async function queryAndProcessDocuments({
       extra: {
         context: `cw.queryAndProcessDocuments`,
         error,
-        patientId: patient.id,
+        patientId: patientParam.id,
         facilityId,
         forceDownload,
         requestId,
@@ -171,19 +187,14 @@ export async function internalGetDocuments({
   organization,
   facility,
 }: {
-  patient: Patient;
+  patient: PatientWithCWData;
   organization: Organization;
   facility: Facility;
 }): Promise<Document[]> {
   const context = "cw.queryDocument";
   const { log } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
 
-  const externalData = patient.data.externalData?.COMMONWELL;
-  if (!externalData) {
-    log(`No external data found for patient ${patient.id}, not querying for docs`);
-    return [];
-  }
-  const cwData = externalData as PatientDataCommonwell;
+  const cwData = patient.data.externalData.COMMONWELL;
 
   const reportDocQueryMetric = (queryStart: number) => {
     const queryDuration = Date.now() - queryStart;
