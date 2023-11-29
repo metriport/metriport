@@ -5,10 +5,8 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
 import { z } from "zod";
-import {
-  downloadDocument,
-  triggerBulkUrlSigning,
-} from "../../command/medical/document/document-download";
+import { downloadDocument } from "../../command/medical/document/document-download";
+import { triggerBulkUrlSigning } from "../../command/medical/document/document-bulk-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
