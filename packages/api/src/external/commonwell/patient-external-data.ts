@@ -8,7 +8,7 @@ import { Patient } from "../../domain/medical/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
-import { getLinkStatusCQ, getLinkStatusCW } from "./patient";
+import { getCWData, getLinkStatusCQ } from "./patient";
 import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
 
 dayjs.extend(duration);
@@ -26,9 +26,11 @@ export async function getPatientWithCWData(patient: Patient): Promise<PatientWit
       id: patient.id,
       cxId: patient.cxId,
     });
-    if (getLinkStatusCW(patientDB.data.externalData) !== "completed") {
-      throw new MetriportError(`Patient is not linked to CW`);
-    }
+
+    const cwData = getCWData(patient.data.externalData);
+    if (!cwData) throw new MetriportError(`Missing CW data on patient`);
+    if (!cwData.patientId) throw new MetriportError(`Missing CW patientId`);
+
     return patientDB as PatientWithCWData;
   };
 
