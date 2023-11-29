@@ -80,15 +80,11 @@ async function getOrgs(cxIds: string[]): Promise<Organization[]> {
 }
 
 async function getUsage(): Promise<Usage[]> {
+  const usagePlanId = Config.getApiGatewayUsagePlanId();
+  if (!usagePlanId) return [];
   const today = dayjs().format(ISO_DATE);
-  const usage = await apiGw
-    .getUsage({
-      usagePlanId: "vcoak3",
-      startDate: today,
-      endDate: today,
-    })
-    .promise();
 
+  const usage = await apiGw.getUsage({ usagePlanId, startDate: today, endDate: today }).promise();
   if (!usage.items) {
     console.log(`No usage items found for this run`);
     return [];
