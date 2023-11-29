@@ -46,6 +46,15 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
       log(`CQ orgs: ${total}, chunks: ${chunks.length}/${chunks.length + fromOrgChunkPos}`);
       log(`patients: ${patientIds.join(", ")}`);
 
+      const originalOrgs =
+        (await this.cwManagementApi.getIncludeList({ oid: orgOID }).catch(error => {
+          // intentionally ignoring the error so we can keep trying to EC
+          log(`ERROR - couldn't revert the list of CQ orgs to the original ones`, error);
+          this.capture.message("Error trying to store original CW CQ include list", {
+            extra: { cxId, orgOID, patientIds, error },
+          });
+        })) ?? [];
+
       for (const [i, orgChunk] of chunks.entries()) {
         const orgIds = orgChunk.map(org => org.id);
         log(
@@ -70,6 +79,18 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
           }
           log(msg + " - continuing...", error);
         }
+      }
+
+      // intentionally asynchronous
+      if (originalOrgs.length > 1) {
+        log(`(async) Revert the list of CQ orgs to the original ones...`);
+        this.cwManagementApi
+          .updateIncludeList({ oid: orgOID, careQualityOrgIds: originalOrgs })
+          .catch(error => {
+            log(`ERROR - couldn't revert the list of CQ orgs to the original ones`, error);
+          });
+      } else {
+        log(`Not reverting the list of CQ orgs b/c it was originally empty.`);
       }
     } finally {
       const duration = Date.now() - startedAt;
