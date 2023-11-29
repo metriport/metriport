@@ -49,10 +49,10 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
       const originalOrgs =
         (await this.cwManagementApi.getIncludeList({ oid: orgOID }).catch(error => {
           // intentionally ignoring the error so we can keep trying to EC
-          log(`ERROR - couldn't revert the list of CQ orgs to the original ones`, error);
-          this.capture.message("Error trying to store original CW CQ include list", {
-            extra: { cxId, orgOID, patientIds, error },
-          });
+          const msg = "Error trying to load original CW CQ include list";
+          const extra = { cxId, orgOID, patientIds, error };
+          log(msg, extra, error);
+          this.capture.message(msg, { extra, level: "error" });
         })) ?? [];
 
       for (const [i, orgChunk] of chunks.entries()) {
@@ -87,7 +87,10 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
         this.cwManagementApi
           .updateIncludeList({ oid: orgOID, careQualityOrgIds: originalOrgs })
           .catch(error => {
-            log(`ERROR - couldn't revert the list of CQ orgs to the original ones`, error);
+            const msg = "Error trying to RESTORE the original CW CQ include list";
+            const extra = { cxId, orgOID, patientIds, error };
+            log(msg, extra, error);
+            this.capture.message(msg, { extra, level: "error" });
           });
       } else {
         log(`Not reverting the list of CQ orgs b/c it was originally empty.`);
