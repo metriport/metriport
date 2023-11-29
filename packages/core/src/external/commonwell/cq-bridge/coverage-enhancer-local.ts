@@ -66,6 +66,7 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
             cxOrgOID: orgOID,
             patientIds,
             cqOrgIds: orgIds,
+            log,
           });
         } catch (error) {
           const msg = `ERROR at org chunk ${i} (relative) / ${i + fromOrgChunkPos} (absolute)`;
