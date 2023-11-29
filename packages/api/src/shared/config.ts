@@ -74,13 +74,16 @@ export class Config {
     if (this.isCloudEnv()) {
       return `${Config.getApiUrl()}/token/connect`;
     }
-
     // Garmin requires an internet accessible address - use a proxy like NGrok or similar
     return `${Config.getApiUrl()}/connect`;
   }
 
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
+  }
+
+  static getApiGatewayUsagePlanId(): string | undefined {
+    return getEnvVar("API_GW_USAGE_PLAN_ID");
   }
 
   static getCQApiKey(): string {
