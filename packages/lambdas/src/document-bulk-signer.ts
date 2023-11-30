@@ -7,27 +7,42 @@ import {
   DocumentBulkSignerLambdaResponse,
 } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 import { capture } from "./shared/capture";
+import { apiClientBulkDownloadWebhook } from "./shared/oss-api";
+import { prefixedLog } from "./shared/log";
 
 // Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 
+const apiURL = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
 export const handler = Sentry.AWSLambda.wrapHandler(
-  async (req: DocumentBulkSignerLambdaRequest): Promise<DocumentBulkSignerLambdaResponse[]> => {
-    const { patientId, cxId, documents } = req;
+  async (req: DocumentBulkSignerLambdaRequest) => {
+    const { patientId, cxId, requestId } = req;
     capture.setExtra({ lambdaName: lambdaName });
     console.log(
       `Running with envType: ${getEnvType()}, region: ${region}, ` +
-        `bucketName: ${bucketName}, cxId: ${cxId}, patientId: ${patientId} `
+        `bucketName: ${bucketName}, cxId: ${cxId}, patientId: ${patientId}, requestId: ${requestId} `
     );
 
     const response: DocumentBulkSignerLambdaResponse[] = await getSignedUrls(
-      documents,
+      patientId,
+      cxId,
       bucketName,
       region
     );
-    return response;
+
+    const log = prefixedLog(`patient ${patientId}, requestId ${requestId}`);
+    const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
+    ossApiClient.triggerWebhook(
+      {
+        cxId: cxId,
+        patientId: patientId,
+        requestId: requestId,
+        dtos: response,
+      },
+      log
+    );
   }
 );

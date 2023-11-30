@@ -1,9 +1,4 @@
 import { Config } from "../../../shared/config";
-import { searchDocuments } from "../../../external/fhir/document/search-documents";
-import { chunk } from "lodash";
-import { processPatientDocumentRequest, MAPIWebhookStatus } from "./document-webhook";
-import { DocumentBulkDownloadDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
-
 import {
   DocumentBulkDownloadProgress,
   isDocBulkDownloadProcessing,
@@ -15,16 +10,9 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkDownloadQueryInit } from "../patient/query-init";
-import { appendDocBulkDownloadProgress } from "../patient/append-bulk-doc-download-progress";
-import { DocumentReference } from "@medplum/fhirtypes";
 import { makeLambdaClient } from "../../../external/aws/lambda";
-import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
-import {
-  DocumentBulkSignerLambdaRequest,
-  DocumentBulkSignerLambdaResponse,
-} from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
-const BATCH_SIZE = 100;
 const lambdaClient = makeLambdaClient();
 const bulkSigningLambdaName = Config.getBulkUrlSigningLambdaName();
 
@@ -54,74 +42,25 @@ export const startBulkGetDocumentUrls = async (
     return createBulkDownloadQueryResponse("processing", patient);
   }
 
-  const documents = await searchDocuments({ cxId, patientId });
-
-  let updatedPatient = await storeBulkDownloadQueryInit({
+  const updatedPatient = await storeBulkDownloadQueryInit({
     id: patient.id,
     cxId: patient.cxId,
     documentBulkDownloadProgress: { download: { status: "processing" } },
     requestId,
-    totalDocuments: documents.length,
   });
 
-  let successes = 0;
-  const errors = 0;
-  // Process each batch
-  const batches = chunk(documents, BATCH_SIZE);
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex] as DocumentReference[];
-    let dtos: DocumentBulkDownloadDTO[] = [];
+  const payload: DocumentBulkSignerLambdaRequest = {
+    patientId: patientId,
+    cxId: cxId,
+    requestId: requestId,
+  };
 
-    const payload: DocumentBulkSignerLambdaRequest = {
-      patientId: patientId,
-      cxId: cxId,
-      documents: batch,
-    };
+  lambdaClient.invoke({
+    FunctionName: bulkSigningLambdaName,
+    InvocationType: "RequestResponse",
+    Payload: JSON.stringify(payload),
+  });
 
-    //Invoke the lambda function
-    const result = await lambdaClient
-      .invoke({
-        FunctionName: bulkSigningLambdaName,
-        InvocationType: "RequestResponse",
-        Payload: JSON.stringify(payload),
-      })
-      .promise();
-
-    //TODO error handling logic and incrementing error count
-    const resultPayload = getLambdaResultPayload({ result, lambdaName: bulkSigningLambdaName });
-    const parsedResult: DocumentBulkSignerLambdaResponse[] = JSON.parse(resultPayload.toString());
-
-    // // local testing code
-    // const parsedResult: DocumentBulkSignerLambdaResponse[] = await getSignedUrls(
-    //   payload.documents,
-    //   Config.getMedicalDocumentsBucketName(),
-    //   "us-east-2"
-    // );
-
-    // Create DTOs for each signed URL
-    successes += parsedResult.length;
-    dtos = parsedResult as DocumentBulkDownloadDTO[];
-
-    const isLastBatch = batchIndex === batches.length - 1;
-    const status = isLastBatch ? "completed" : "processing";
-
-    updatedPatient = await appendDocBulkDownloadProgress({
-      patient,
-      successful: successes,
-      errors,
-      status: status,
-      requestId,
-    });
-
-    // trigger the webhook
-    processPatientDocumentRequest(
-      cxId,
-      patientId,
-      "medical.document-bulk-download",
-      MAPIWebhookStatus.completed,
-      dtos
-    );
-  }
   return createBulkDownloadQueryResponse("processing", updatedPatient);
 };
 

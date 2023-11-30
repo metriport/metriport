@@ -1,12 +1,14 @@
 import { S3Utils } from "../s3";
+import { z } from "zod";
 import { DocumentReference } from "@medplum/fhirtypes";
+import { searchDocuments } from "@metriport/core/src/external/opensearch/search-documents";
 
 const SIGNED_URL_DURATION_SECONDS = 3600; // longer since a lot of docs
 
 export type DocumentBulkSignerLambdaRequest = {
   patientId: string;
   cxId: string;
-  documents: DocumentReference[];
+  requestId: string;
 };
 
 export type DocumentBulkSignerLambdaResponse = {
@@ -20,11 +22,14 @@ export type DocumentBulkSignerLambdaResponse = {
 };
 
 export async function getSignedUrls(
-  documents: DocumentReference[],
+  cxId: string,
+  patientId: string,
   bucketName: string,
   region: string
 ): Promise<DocumentBulkSignerLambdaResponse[]> {
   const s3Utils = new S3Utils(region);
+
+  const documents: DocumentReference[] = await searchDocuments({ cxId, patientId });
 
   const urls = await Promise.all(
     documents.map(async doc => {
@@ -61,3 +66,17 @@ export async function getSignedUrls(
 
   return urls.filter(url => url !== undefined) as DocumentBulkSignerLambdaResponse[];
 }
+
+export const DocumentBulkSignerLambdaResponseSchema = z.object({
+  id: z.string(),
+  fileName: z.string(),
+  description: z.string().optional(),
+  status: z.string().optional(),
+  mimeType: z.string().optional(),
+  size: z.number().optional(),
+  signedUrl: z.string(),
+});
+
+export const DocumentBulkSignerLambdaResponseArraySchema = z.array(
+  DocumentBulkSignerLambdaResponseSchema
+);

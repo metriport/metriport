@@ -2,12 +2,12 @@ import {
   sendAlert as coreSendAlert,
   sendNotification as coreSendNotification,
   SlackMessage as CoreSlackMessage,
-} from "@metriport/core/external/slack/index";
-import { Capture } from "@metriport/core/util/capture";
+} from "../external/slack/index";
+import { Capture } from "./capture";
 import * as Sentry from "@sentry/node";
 import { Extras, ScopeContext } from "@sentry/types";
 import stringify from "json-stringify-safe";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { MetriportError } from "./error/metriport-error";
 
 /**
  * @deprecated Use core's instead

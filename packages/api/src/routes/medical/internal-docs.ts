@@ -32,6 +32,12 @@ import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { appendDocBulkDownloadProgress } from "../../command/medical/patient/append-bulk-doc-download-progress";
+
+import {
+  DocumentBulkSignerLambdaResponse,
+  DocumentBulkSignerLambdaResponseArraySchema,
+} from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
 const router = Router();
 const upload = multer();
@@ -356,3 +362,43 @@ router.post(
 );
 
 export default router;
+
+/**
+ * POST /internal/docs/triggerBulkDownloadWebhook
+ *
+ * Endpoint called by the bulk download lambda to trigger the webhook.
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The customer/account's ID.
+ * @param req.query.requestId - The id of the request
+ * @param req.body The DocumentBulkSignerLambdaResponse object.
+ * @return updated document query progress
+ */
+router.post(
+  "/triggerBulkDownloadWebhook",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const requestId = getFrom("query").orFail("requestId", req);
+    const dtos: DocumentBulkSignerLambdaResponse[] =
+      DocumentBulkSignerLambdaResponseArraySchema.parse(req.body);
+
+    const updatedPatient = await appendDocBulkDownloadProgress({
+      patient: { id: patientId, cxId },
+      successful: dtos.length,
+      errors: 0,
+      status: "completed",
+      requestId: requestId,
+    });
+
+    // trigger the webhook
+    processPatientDocumentRequest(
+      cxId,
+      patientId,
+      "medical.document-bulk-download",
+      MAPIWebhookStatus.completed,
+      dtos
+    );
+
+    return res.status(httpStatus.OK).json(updatedPatient.data.documentBulkDownloadProgress);
+  })
+);

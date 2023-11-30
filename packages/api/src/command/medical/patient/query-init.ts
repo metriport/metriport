@@ -58,7 +58,7 @@ export const storeQueryInit = async (cmd: QueryInitCmd): Promise<Patient> => {
 export type BulkDownloadQueryInitCmd = BaseUpdateCmdWithCustomer & {
   documentBulkDownloadProgress: Required<Pick<DocumentBulkDownloadProgress, "download">>;
   requestId: string;
-  totalDocuments: number;
+  totalDocuments?: number;
 };
 
 /**
