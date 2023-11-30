@@ -3,4 +3,4 @@
 # https://github.com/fern-api/fern/tree/main/fern/fhir
 
 dependencies:
-  "@fern/fhir": "0.0.0" 
+  "@fern/fhir": "0.0.0-1" 
