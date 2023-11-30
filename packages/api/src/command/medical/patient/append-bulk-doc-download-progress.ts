@@ -13,8 +13,10 @@ export type SetDocBulkDownloadProgress = {
 };
 
 /**
- * Appends the given properties of a patient's document bulk download progress.
- * @returns
+ * The function `appendDocBulkDownloadProgress` updates the progress of a bulk document download to a
+ * patient's data.
+ * @param {SetDocBulkDownloadProgress}  - - A cmd argument type to update the progress of a bulk document download.
+ * @returns a Promise that resolves to a Patient object.
  */
 export async function appendDocBulkDownloadProgress({
   patient,

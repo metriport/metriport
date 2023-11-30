@@ -1,20 +1,34 @@
 import * as Sentry from "@sentry/serverless";
-import * as lambda from "aws-lambda";
-import { getEnvOrFail } from "./shared/env";
-import { getSignedUrls } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+import { getEnvOrFail, getEnv } from "./shared/env";
+import { getEnvType } from "@metriport/core/util/env-var";
+import {
+  getSignedUrls,
+  DocumentBulkSignerLambdaRequest,
+  DocumentBulkSignerLambdaResponse,
+} from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+import { capture } from "./shared/capture";
 
-const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+// Automatically set by AWS
+const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: lambda.APIGatewayProxyEvent) => {
-  const body = JSON.parse(event.body || "{}");
-  const fileNames = body.fileNames;
+const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
-  const urls: string[] = await getSignedUrls(fileNames, bucketName, region);
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify({ urls }),
-  };
+export const handler = Sentry.AWSLambda.wrapHandler(
+  async (req: DocumentBulkSignerLambdaRequest): Promise<DocumentBulkSignerLambdaResponse[]> => {
+    const { patientId, cxId, documents } = req;
 
-  return response;
-});
+    capture.setExtra({ lambdaName: lambdaName });
+    console.log(
+      `Running with envType: ${getEnvType()}, region: ${region}, ` +
+        `bucketName: ${bucketName}, cxId: ${cxId}, patientId: ${patientId} `
+    );
+
+    const response: DocumentBulkSignerLambdaResponse[] = await getSignedUrls(
+      documents,
+      bucketName,
+      region
+    );
+    return response;
+  }
+);

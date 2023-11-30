@@ -61,6 +61,11 @@ export type BulkDownloadQueryInitCmd = BaseUpdateCmdWithCustomer & {
   totalDocuments: number;
 };
 
+/**
+ * The function `storeBulkDownloadQueryInit` initalizes the `documentBulkDownloadProgress`field in a patient's data.
+ * @param {BulkDownloadQueryInitCmd} cmd - The `cmd` argument type to initialize the `documentBulkDownloadProgress` field
+ * @returns a Promise that resolves to a Patient object.
+ */
 export const storeBulkDownloadQueryInit = async (
   cmd: BulkDownloadQueryInitCmd
 ): Promise<Patient> => {

@@ -2,10 +2,7 @@ import { Config } from "../../../shared/config";
 import { searchDocuments } from "../../../external/fhir/document/search-documents";
 import { chunk } from "lodash";
 import { processPatientDocumentRequest, MAPIWebhookStatus } from "./document-webhook";
-import {
-  DocumentBulkDownloadDTO,
-  toDTO,
-} from "../../../routes/medical/dtos/document-bulk-downloadDTO";
+import { DocumentBulkDownloadDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 
 import {
   DocumentBulkDownloadProgress,
@@ -22,6 +19,10 @@ import { appendDocBulkDownloadProgress } from "../patient/append-bulk-doc-downlo
 import { DocumentReference } from "@medplum/fhirtypes";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
+import {
+  DocumentBulkSignerLambdaRequest,
+  DocumentBulkSignerLambdaResponse,
+} from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 // import { getSignedUrls } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
 const BATCH_SIZE = 100;
@@ -70,20 +71,15 @@ export const triggerBulkUrlSigning = async (
   const batches = chunk(documents, BATCH_SIZE);
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
     const batch = batches[batchIndex] as DocumentReference[];
-    const dtos: DocumentBulkDownloadDTO[] = [];
+    let dtos: DocumentBulkDownloadDTO[] = [];
 
-    const payload = {
-      filenames: batch
-        .map(doc => {
-          if (doc.content && doc.content[0] && doc.content[0].attachment) {
-            return doc.content[0].attachment.title;
-          }
-          return undefined;
-        })
-        .filter((filename): filename is string => filename !== undefined),
+    const payload: DocumentBulkSignerLambdaRequest = {
+      patientId: patientId,
+      cxId: cxId,
+      documents: batch,
     };
 
-    // Invoke the lambda function
+    //Invoke the lambda function
     const result = await lambdaClient
       .invoke({
         FunctionName: bulkSigningLambdaName,
@@ -92,29 +88,22 @@ export const triggerBulkUrlSigning = async (
       })
       .promise();
 
-    // TODO error handling logic and incrementing error count
+    //TODO error handling logic and incrementing error count
     const resultPayload = getLambdaResultPayload({ result, lambdaName: bulkSigningLambdaName });
-    const parsedResult: string[] = JSON.parse(resultPayload);
+    const parsedResult: DocumentBulkSignerLambdaResponse[] = JSON.parse(resultPayload.toString());
 
-    // local testing code
-    // const parsedResult: string[] = await getSignedUrls(
-    //   payload.filenames,
+    // // local testing code
+    // const parsedResult: DocumentBulkSignerLambdaResponse[] = await getSignedUrls(
+    //   payload.documents,
     //   Config.getMedicalDocumentsBucketName(),
     //   "us-east-2"
     // );
 
     // Create DTOs for each signed URL
-    for (let i = 0; i < parsedResult.length; i++) {
-      const signedUrl = parsedResult[i];
-      const doc = batch[i];
-      if (signedUrl) {
-        const dto = toDTO(doc, signedUrl);
-        if (dto) {
-          dtos.push(dto);
-        }
-        successes++;
-      }
-    }
+    // TODO: just cast to DocumentBulkDownloadDTO[] from DocumentBulkSignerLambdaResponse
+
+    successes += parsedResult.length;
+    dtos = parsedResult as DocumentBulkDownloadDTO[];
 
     const isLastBatch = batchIndex === batches.length - 1;
     const status = isLastBatch ? "completed" : "processing";

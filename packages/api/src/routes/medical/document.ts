@@ -186,10 +186,11 @@ router.get(
   })
 );
 
-/**
+/** ---------------------------------------------------------------------------
  * POST /document/bulk-download-url
  *
  * Triggers a wh payload containing the list of presigned urls for all the patients document stored in s3.
+ * Returns the status of the bulk signing process.
  *
  * @param req.query.patientId Patient ID for which to retrieve document metadata.
  * @returns The status of the bulk signing process

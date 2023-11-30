@@ -18,6 +18,11 @@ export function isProcessingStatus(status?: DocumentDownloadStatus | undefined):
   return status === "processing";
 }
 
+/**
+ * The function checks if a document bulk download is currently being processed.
+ * @param {Progress | undefined} [progress] - the progress of a bulk download operation.
+ * @returns a boolean value.
+ */
 export function isDocBulkDownloadProcessing(progress?: Progress | undefined): boolean {
   if (!progress) return false;
   return isProcessingStatus(progress?.status);

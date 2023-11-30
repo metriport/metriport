@@ -1090,11 +1090,6 @@ export class APIStack extends Stack {
     return documentDownloaderLambda;
   }
 
-  /**
-   * We are intentionally not setting an alarm action for this lambda, as many issues
-   * may be caused outside of our system. To eliminate noise, we will not alarm on this
-   * lambda.
-   */
   private setupBulkUrlSigningLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
