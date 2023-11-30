@@ -359,3 +359,46 @@ Example payload:
   ]
 }
 ```
+
+#### Bulk Document Download
+
+While you can download specified documents using the [get document url endpoint](/medical-api/api-reference/document/bulk-document-download), 
+patients can have a large number of documents, and it can be tedious to download one at a time. 
+
+Instead trigger a [bulk document download query](/medical-api/api-reference/document/bulk-document-download) - one query per patient at any given time;
+When the result is ready, we’ll send a webhook message with all the signed urls for all the patients documents.
+Example payload:
+
+```json
+{
+"meta": {
+    "messageId": "bd4184dd-3b35-4c60-8130-447d1d528fea",
+    "when": "2023-11-30T05:05:12.215Z",
+    "type": "medical.document-bulk-download"
+  },
+  "patients": [
+    {
+      "status": "completed",
+      "documents": [
+        {
+          "id": "018c1b94-57dc-7950-b564-f74ab9b56cc4",
+          "size": 40670,
+          "status": "current",
+          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f74ab9b56cc4.bin",
+          "mimeType": "application/xml",
+          "signedUrl": "<a-signed-url>"
+        },
+        {
+          "id": "018c1b94-57dc-7950-b564-f749bcf9be3e",
+          "size": 77093,
+          "status": "current",
+          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f749bcf9be3e.bin",
+          "mimeType": "application/pdf",
+          "signedUrl": "<a-signed-url>"
+        }
+      ],
+      "patientId": "018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16"
+    }
+  ]
+}
+```
