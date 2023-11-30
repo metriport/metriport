@@ -18,9 +18,11 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkDownloadQueryInit } from "../patient/query-init";
+import { appendDocBulkDownloadProgress } from "../patient/append-bulk-doc-download-progress";
+import { DocumentReference } from "@medplum/fhirtypes";
 //import { makeLambdaClient } from "../../../external/aws/lambda";
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 1;
 //const lambdaClient = makeLambdaClient();
 const bulkSigningLambdaName = Config.getBulkUrlSigningLambdaName();
 
@@ -45,8 +47,6 @@ export const triggerBulkUrlSigning = async (
 
   const documents = await searchDocuments({ cxId, patientId });
 
-  const batches = chunk(documents, BATCH_SIZE);
-
   const updatedPatient = await storeBulkDownloadQueryInit({
     id: patient.id,
     cxId: patient.cxId,
@@ -55,8 +55,15 @@ export const triggerBulkUrlSigning = async (
     totalDocuments: documents.length,
   });
 
+  // sleep for 20 seconds to allow the webhook to be processed
+  await new Promise(resolve => setTimeout(resolve, 30000));
+
+  let successes = 0;
+  const errors = 0;
   // Process each batch
-  for (const batch of batches) {
+  const batches = chunk(documents, BATCH_SIZE);
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex] as DocumentReference[];
     const dtos: DocumentBulkDownloadDTO[] = [];
     const payload = {
       filenames: batch
@@ -97,8 +104,21 @@ export const triggerBulkUrlSigning = async (
         if (dto) {
           dtos.push(dto);
         }
+        successes++;
       }
     }
+
+    const isLastBatch = batchIndex === batches.length - 1;
+    const status = isLastBatch ? "completed" : "processing";
+
+    appendDocBulkDownloadProgress({
+      patient,
+      successful: successes,
+      errors,
+      status: status,
+      requestId,
+    });
+
     // trigger the webhook
     processPatientDocumentRequest(
       cxId,
