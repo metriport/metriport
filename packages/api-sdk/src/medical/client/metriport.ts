@@ -11,12 +11,14 @@ import {
 import { getETagHeader } from "../models/common/base-update";
 import {
   DocumentQuery,
+  DocumentBulkDownloadQuery,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
   documentListSchema,
   documentQuerySchema,
+  documentBulkDownloadSchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -450,6 +452,23 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return documentQuerySchema.parse(resp.data);
+  }
+
+  /**
+   * Start a bulk document download for a given patient, with the payload returnd to webhook.
+   *
+   * @param patientId Patient ID for which to retrieve document urls.
+   * @return The document query request ID, progress & status indicating whether its being executed or not, and
+   * the total number of documents to be downloaded.
+   */
+  async startBulkDocumenDownload(patientId: string): Promise<DocumentBulkDownloadQuery> {
+    const resp = await this.api.post(`${DOCUMENT_URL}/bulk-download-url`, {
+      params: {
+        patientId,
+      },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return documentBulkDownloadSchema.parse(resp.data);
   }
 
   /**

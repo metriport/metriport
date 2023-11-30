@@ -42,6 +42,13 @@ export const documentQuerySchema = z.object({
   requestId: z.string().optional(),
 });
 
+export const documentBulkDownloadSchema = z.object({
+  download: progressSchema.optional(),
+  requestId: z.string().optional(),
+  total: z.number().optional(),
+});
+
+export type DocumentBulkDownloadQuery = z.infer<typeof documentBulkDownloadSchema>;
 export type DocumentQuery = z.infer<typeof documentQuerySchema>;
 
 export const documentListSchema = z.object({
