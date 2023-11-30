@@ -9,6 +9,7 @@ import {
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { emptyFunction } from "@metriport/shared";
 import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -17,7 +18,7 @@ import {
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
 import { capture } from "../../../shared/notifications";
-import { Util, emptyFunction } from "../../../shared/util";
+import { Util } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";

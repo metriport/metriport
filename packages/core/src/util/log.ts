@@ -1,3 +1,4 @@
+import { emptyFunction } from "@metriport/shared";
 import { Config } from "./config";
 
 type LogParamBasic = string | number | boolean | unknown | null | undefined;
@@ -14,8 +15,7 @@ export function log(prefix?: string, suffix?: string) {
 }
 
 export function debug(prefix: string, suffix?: string) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  if (Config.isCloudEnv()) return () => {};
+  if (Config.isCloudEnv()) return emptyFunction;
   return log(prefix, suffix);
 }
 

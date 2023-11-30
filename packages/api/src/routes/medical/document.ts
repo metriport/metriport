@@ -1,5 +1,5 @@
-import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { UploadDocumentResult } from "@metriport/api-sdk";
+import { createS3FileName, S3Utils } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -9,6 +9,7 @@ import { downloadDocument } from "../../command/medical/document/document-downlo
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import BadRequestError from "../../errors/bad-request";
 import ForbiddenError from "../../errors/forbidden";
 import {
   composeDocumentReference,
@@ -16,6 +17,7 @@ import {
 } from "../../external/fhir/document/draft-update-document-reference";
 import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
+import { PaginatedFHIRRequestParams } from "../../external/fhir/shared/paginated";
 import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
 import { sanitize } from "../helpers/string";
@@ -31,12 +33,43 @@ const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
 
-const getDocSchema = z.object({
-  dateFrom: optionalDateSchema,
-  dateTo: optionalDateSchema,
-  content: z.string().min(3).nullish(),
-  output: z.enum(["fhir", "dto"]).nullish(),
+// TODO 1032 move to a shared place
+const fhirPaginationSchema = z.object({
+  paginationId: z.string().nullish(),
+  offset: z.number().nullish(),
+  itemsPerPage: z.number().nullish(),
 });
+
+const getDocSchema = z
+  .object({
+    dateFrom: optionalDateSchema,
+    dateTo: optionalDateSchema,
+    content: z.string().min(3).nullish(),
+    output: z.enum(["fhir", "dto"]).nullish(),
+  })
+  .merge(fhirPaginationSchema);
+
+// TODO 1032 externalize
+function getPagination(
+  pagination?:
+    | {
+        paginationId?: string | null;
+        offset?: number | null;
+        itemsPerPage?: number | null;
+      }
+    | undefined
+): PaginatedFHIRRequestParams | undefined {
+  if (!pagination) return undefined;
+  const { paginationId, offset, itemsPerPage } = pagination;
+  if (!paginationId)
+    throw new BadRequestError("Invalid pagination data (paginationId is required)");
+  if (offset == null) throw new BadRequestError("Invalid pagination data (offset is required)");
+  return {
+    paginationId,
+    offset,
+    itemsPerPage: itemsPerPage != null ? itemsPerPage : undefined,
+  };
+}
 
 /** ---------------------------------------------------------------------------
  * GET /document
@@ -52,14 +85,22 @@ const getDocSchema = z.object({
  *    (partial match and case insentitive, minimum 3 chars).
  * @param req.query.output Optional value indicating the output format, fhir or dto.
  *    (default: fhir)
+ * @param req.query.pagination Optional value indicating the output format, fhir or dto.
+ *    (default: fhir)
  * @return The available documents, including query status and progress - as applicable.
  */
 router.get(
   "/",
+  // asyncHandler(async (req: Request, res: Response, _, paginate: PaginateFunction) => {
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const { dateFrom, dateTo, content, output } = getDocSchema.parse(req.query);
+    const { dateFrom, dateTo, content, output, ...paginationFromQuery } = getDocSchema.parse(
+      req.query
+    );
+
+    // validate pagination and return the type we use within the App
+    const pagination = getPagination(paginationFromQuery);
 
     // Confirm the CX can access this patient
     await getPatientOrFail({ cxId, id: patientId });
@@ -69,9 +110,18 @@ router.get(
       patientId,
       dateRange: { from: dateFrom ?? undefined, to: dateTo ?? undefined },
       contentFilter: content ? sanitize(content) : undefined,
+      pagination,
     });
 
-    return res.status(OK).json({ documents: output === "dto" ? toDTO(documents) : documents });
+    // TODO 1032
+    // const next = buildNextPageUrl(documents);
+    return (
+      res
+        .status(OK)
+        // TODO 1032
+        // .json(paginate({ documents: output === "dto" ? toDTO(documents.data) : documents }));
+        .json({ documents: output === "dto" ? toDTO(documents.data) : documents })
+    );
   })
 );
 

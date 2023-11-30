@@ -2,7 +2,7 @@ import { createS3FileName, S3Utils } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import httpStatus from "http-status";
+import httpStatus, { OK } from "http-status";
 import multer from "multer";
 import { z } from "zod";
 import {
@@ -23,6 +23,7 @@ import {
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
+import { getDocuments } from "../../external/fhir/document/get-documents";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
@@ -322,6 +323,21 @@ router.get(
     return res.status(httpStatus.OK).json({
       documentQueryProgress: patient.data.documentQueryProgress,
     });
+  })
+);
+router.get(
+  "/executenow",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = "287cbce7-ffe4-4ce7-9eaa-255c1e2a9543";
+    const patientId = "018aaaf5-94e6-7e3e-94ec-049b707a792e";
+    // const { dateFrom, dateTo, content, output } = getDocSchema.parse(req.query);
+    const docs = await getDocuments({
+      cxId,
+      patientId,
+      // dateRange: { from: dateFrom ?? undefined, to: dateTo ?? undefined },
+      // contentFilter: content ? sanitize(content) : undefined,
+    });
+    return res.status(OK).json({ documents: docs });
   })
 );
 
