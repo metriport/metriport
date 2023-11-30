@@ -10,3 +10,23 @@ export const getAllPages = async <K extends ExtractResource<ResourceType>>(
   }
   return pages;
 };
+
+export type PaginatedFHIRRequestParams = {
+  paginationId: string;
+  offset: number;
+  itemsPerPage?: number;
+};
+
+export type PaginatedFHIRRequest<T> = T & {
+  pagination?: PaginatedFHIRRequestParams;
+};
+
+export type PaginatedFHIRResponse<T> = {
+  data: T;
+  pagination: {
+    paginationId?: string;
+    nextOffset?: number;
+    previousOffset?: number;
+    itemsPerPage?: number;
+  };
+};
