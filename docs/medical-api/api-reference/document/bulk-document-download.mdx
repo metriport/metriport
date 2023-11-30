@@ -1,19 +1,19 @@
 ---
-title: "Bulk Download URL"
-description: "Triggers a payload containing the list of presigned URLs for all the patient's documents stored in S3."
+title: "Bulk Download URL Generation"
+description: "Triggers a payload containing a list of downloadabl URLs for all the patient's documents."
 api: "POST /medical/v1/document/bulk-download-url"
 ---
 
-When executed, this endpoint triggers an asynchronous process to generate presigned URLs for all the patient's documents stored in S3. 
+When executed, this endpoint triggers an asynchronous process to generate download URLs for all the patient's documents. 
 
 The status of the bulk signing process is returned in the response. 
 
 <Tip>
-  To get updates about the bulk signing process, check out our [webhooks guide](/medical-api/more-info/webhooks). Note that the webhooks will only contain updates for new data fetched in the current bulk signing process.
+  To get updates about the bulk download process, check out our [webhooks guide](/medical-api/more-info/webhooks). Note that webhooks right now will return all available documents for a given patient.
 </Tip>
 
 <Warning>
-  If you were to trigger this endpoint again while the process is still running, you will get a response that reflects the current progress. So essentially, only a single bulk signing process will be running for a patient at any given time.
+  If you were to trigger this endpoint again while the process is still running, you will get a response that reflects the current progress. So essentially, only a single bulk download process will be running for a patient at any given time.
 </Warning>
 
 ## Query Params
@@ -49,7 +49,7 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
 
-const status = await api.startBulkDownload(
+const status = await api.startBulkGetDocumentUrl(
   "<your-patient-id>",
 );
 

@@ -17,7 +17,6 @@ const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: DocumentBulkSignerLambdaRequest): Promise<DocumentBulkSignerLambdaResponse[]> => {
     const { patientId, cxId, documents } = req;
-
     capture.setExtra({ lambdaName: lambdaName });
     console.log(
       `Running with envType: ${getEnvType()}, region: ${region}, ` +

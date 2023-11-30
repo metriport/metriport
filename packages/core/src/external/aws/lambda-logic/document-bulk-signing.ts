@@ -41,10 +41,10 @@ export async function getSignedUrls(
         return;
       }
 
-      const signedUrl = await s3Utils.s3.getSignedUrl("getObject", {
-        Bucket: bucketName,
-        Key: fileName,
-        Expires: SIGNED_URL_DURATION_SECONDS,
+      const signedUrl = await s3Utils.getSignedUrl({
+        bucketName,
+        fileName,
+        durationSeconds: SIGNED_URL_DURATION_SECONDS,
       });
 
       return {
