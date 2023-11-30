@@ -251,6 +251,11 @@ export function createAPIService(
           ],
           resources: ["*"],
         }),
+        new iam.PolicyStatement({
+          actions: ["geo:SearchPlaceIndexForText"],
+          resources: [`arn:aws:geo:*`], // Perhaps, need to be more specific with the exact resource here
+          effect: iam.Effect.ALLOW,
+        }),
       ],
     })
   );
