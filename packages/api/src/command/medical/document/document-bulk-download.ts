@@ -28,6 +28,13 @@ const BATCH_SIZE = 100;
 const lambdaClient = makeLambdaClient();
 const bulkSigningLambdaName = Config.getBulkUrlSigningLambdaName();
 
+/**
+ * The function `triggerBulkUrlSigning` triggers the bulk signing process lambda for a patient's documents and
+ * returns the progress of the bulk download. It also triggers the webhook for the bulk download.
+ * @param {string} cxId - cxId
+ * @param {string} patientId - patientId
+ * @returns a Promise that resolves to a DocumentBulkDownloadProgress object.
+ */
 export const triggerBulkUrlSigning = async (
   cxId: string,
   patientId: string
@@ -133,11 +140,12 @@ export const triggerBulkUrlSigning = async (
 };
 
 /**
- * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.
- *
- * @param DocumentBulkDownloadProgress Progress of the previous query
- * @returns uuidv7 string ID for the request
+ * The function `getOrGenerateRequestId` returns the request ID from `docBulkDownloadProgress` if it
+ * exists, otherwise it generates a new request ID.
+ * @param {DocumentBulkDownloadProgress | undefined} docBulkDownloadProgress - Represents the document download progress.
+ * @returns a string representing the request ID.
  */
+
 export function getOrGenerateRequestId(
   docBulkDownloadProgress: DocumentBulkDownloadProgress | undefined
 ): string {
@@ -153,6 +161,15 @@ export function getOrGenerateRequestId(
 
 const generateRequestId = (): string => uuidv7();
 
+/**
+ * The function creates a response object for a bulk download query with a given status and patient
+ * information.
+ * @param {DocumentDownloadStatus} status - The status parameter is of type DocumentDownloadStatus. It
+ * represents the status of the document bulk download.
+ * @param {Patient} [patient] - The `patient` parameter is an optional parameter of type `Patient`. It
+ * represents the patient for whom the document bulk download progress is being created.
+ * @returns a DocumentBulkDownloadProgress object.
+ */
 export const createBulkDownloadQueryResponse = (
   status: DocumentDownloadStatus,
   patient?: Patient

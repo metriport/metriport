@@ -349,6 +349,7 @@ export class APIStack extends Stack {
       bucketName: medicalDocumentsBucket.bucketName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
     });
 
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
@@ -1027,6 +1028,11 @@ export class APIStack extends Stack {
     return cdaToVisualizationLambda;
   }
 
+  /**
+   * We are intentionally not setting an alarm action for this lambda, as many issues
+   * may be caused outside of our system. To eliminate noise, we will not alarm on this
+   * lambda.
+   */
   private setupDocumentDownloader(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -1036,7 +1042,6 @@ export class APIStack extends Stack {
     bucketName: string | undefined;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }): Lambda {
     const {
       lambdaLayers,
@@ -1047,7 +1052,6 @@ export class APIStack extends Stack {
       bucketName,
       envType,
       sentryDsn,
-      alarmAction,
     } = ownProps;
 
     const documentDownloaderLambda = createLambda({
@@ -1068,7 +1072,6 @@ export class APIStack extends Stack {
       memory: 512,
       timeout: Duration.minutes(5),
       vpc,
-      alarmSnsAction: alarmAction,
     });
 
     // granting secrets read access to lambda
@@ -1098,8 +1101,9 @@ export class APIStack extends Stack {
     bucketName: string | undefined;
     envType: EnvType;
     sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, bucketName, sentryDsn, envType } = ownProps;
+    const { lambdaLayers, vpc, bucketName, sentryDsn, alarmAction, envType } = ownProps;
 
     const bulkUrlSigningLambda = createLambda({
       stack: this,
@@ -1117,6 +1121,7 @@ export class APIStack extends Stack {
       memory: 512,
       timeout: Duration.minutes(5),
       vpc,
+      alarmSnsAction: alarmAction,
     });
 
     return bulkUrlSigningLambda;
