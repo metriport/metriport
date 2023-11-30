@@ -229,32 +229,6 @@ export class MetriportMedicalApi {
     return resp.data as PatientDTO;
   }
 
-  // TODO #870 remove this
-  /** ---------------------------------------------------------------------------
-   * Returns a patient's consolidated data.
-   * @deprecated Use startConsolidatedQuery() and getConsolidatedQueryStatus() instead.
-   *
-   * Note if only patientId is provided the endpoint may take long to respond as its
-   * fetching all the resources for the patient.
-   *
-   * @param patientId The ID of the patient whose data is to be returned.
-   * @param resources Optional array of resources to be returned.
-   * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
-   * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
-   * @return Patient's consolidated data.
-   */
-  async getPatientConsolidated(
-    patientId: string,
-    resources?: string[],
-    dateFrom?: string,
-    dateTo?: string
-  ): Promise<Bundle<Resource>> {
-    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated`, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo },
-    });
-    return resp.data;
-  }
-
   /** ---------------------------------------------------------------------------
    * Start a query for the patient's consolidated data (FHIR resources).
    * The results are sent through Webhook (see https://docs.metriport.com/medical-api/more-info/webhooks).
