@@ -6,6 +6,7 @@ export const xcpdGatewaysSchema = z.array(
   z.object({
     oid: oidStringSchema,
     url: z.string(),
+    id: z.string(),
   })
 );
 

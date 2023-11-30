@@ -43,33 +43,32 @@ export class IHEGateway {
 
   /**
    * Patient Discovery (XCPD ITI-55) request.
-   * @param patient The patient data in FHIR R4 format.
-   * @param cxId The customer ID.
-   * @param xcpdGateways The OIDs and XCPD ITI-55 URLs of each organization to make a request to.
-   * @param principalCareProviderNPIs The list of NPIs of the practitioners associated with the patient.
-   * @param requestId Optional. Unique ID for the request. If not provided, one will be created.
+   * @param xcpdIti55Request An array of patient discovery transaction requests.
+   * @param xcpdIti55Request[].patient The patient data in FHIR R4 format.
+   * @param xcpdIti55Request[].cxId The customer ID.
+   * @param xcpdIti55Request[].xcpdGateways The OIDs and XCPD ITI-55 URLs of each organization to make a request to.
+   * @param xcpdIti55Request[].principalCareProviderNPIs The list of NPIs of the practitioners associated with the patient.
+   * @param xcpdIti55Request[].requestId Optional. Unique ID for the request. If not provided, one will be created.
    *
    * @returns an XCPD request to be used with an IHE Gateway.
    *
    * @throws {@link ZodError}
    * Thrown if organization OIDs or principalCareProviderNPIs don't meet their respective criteria.
    */
-  async getPatient({
-    patient,
-    cxId,
-    xcpdGateways,
-    principalCareProviderNPIs,
-    requestId,
-  }: XCPDPayload): Promise<XCPDResponse> {
-    const xcpdRequest = this.createXCPDRequest({
-      patient,
-      cxId,
-      xcpdGateways,
-      principalCareProviderNPIs,
-      requestId,
-    });
+  async getPatient(xcpdIti55Request: XCPDPayload[]): Promise<XCPDResponse> {
+    const xcpdRequests = xcpdIti55Request.map(
+      ({ patient, cxId, xcpdGateways, principalCareProviderNPIs, requestId }) => {
+        return this.createXCPDRequest({
+          patient,
+          cxId,
+          xcpdGateways,
+          principalCareProviderNPIs,
+          requestId,
+        });
+      }
+    );
 
-    const resp = await this.api.post(IHEGateway.XCPD_ENDPOINT, xcpdRequest);
+    const resp = await this.api.post(IHEGateway.XCPD_ENDPOINT, xcpdRequests);
 
     return xcpdResponseSchema.parse(resp);
   }
@@ -143,10 +142,3 @@ export class IHEGateway {
     return xcpdRequest;
   }
 }
-
-// XCPD BULK 8081
-// XCPD 8082
-// XCA 38 BULK 8083
-// XCA 38 8084
-// XCA 39 BULK 8085
-// XCA 39 8086

@@ -1,2 +1,2 @@
 export { IHEGateway, APIMode } from "./client/ihe-gateway";
-export { XCPDRequest, XCPDGateways } from "./models/xcpd";
+export { XCPDRequest, XCPDGateways, XCPDPayload } from "./models/xcpd";
