@@ -10,7 +10,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: lambda.APIGate
   const body = JSON.parse(event.body || "{}");
   const fileNames = body.fileNames;
 
-  const urls = await getSignedUrls(fileNames, bucketName, region);
+  const urls: string[] = await getSignedUrls(fileNames, bucketName, region);
   const response = {
     statusCode: 200,
     body: JSON.stringify({ urls }),

@@ -12,7 +12,7 @@ import {
   isDocBulkDownloadProcessing,
   DocumentDownloadStatus,
 } from "../../../domain/medical/document-bulk-download";
-import { getSignedUrls } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+//import { getSignedUrls } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
@@ -20,10 +20,12 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkDownloadQueryInit } from "../patient/query-init";
 import { appendDocBulkDownloadProgress } from "../patient/append-bulk-doc-download-progress";
 import { DocumentReference } from "@medplum/fhirtypes";
-//import { makeLambdaClient } from "../../../external/aws/lambda";
+import { makeLambdaClient } from "../../../external/aws/lambda";
+import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
+// import { getSignedUrls } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
-const BATCH_SIZE = 1;
-//const lambdaClient = makeLambdaClient();
+const BATCH_SIZE = 100;
+const lambdaClient = makeLambdaClient();
 const bulkSigningLambdaName = Config.getBulkUrlSigningLambdaName();
 
 export const triggerBulkUrlSigning = async (
@@ -47,7 +49,7 @@ export const triggerBulkUrlSigning = async (
 
   const documents = await searchDocuments({ cxId, patientId });
 
-  const updatedPatient = await storeBulkDownloadQueryInit({
+  let updatedPatient = await storeBulkDownloadQueryInit({
     id: patient.id,
     cxId: patient.cxId,
     documentBulkDownloadProgress: { download: { status: "processing" } },
@@ -56,7 +58,6 @@ export const triggerBulkUrlSigning = async (
   });
 
   // sleep for 20 seconds to allow the webhook to be processed
-  await new Promise(resolve => setTimeout(resolve, 30000));
 
   let successes = 0;
   const errors = 0;
@@ -65,6 +66,7 @@ export const triggerBulkUrlSigning = async (
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
     const batch = batches[batchIndex] as DocumentReference[];
     const dtos: DocumentBulkDownloadDTO[] = [];
+
     const payload = {
       filenames: batch
         .map(doc => {
@@ -77,23 +79,24 @@ export const triggerBulkUrlSigning = async (
     };
 
     // Invoke the lambda function
-    // const result = await lambdaClient
-    //   .invoke({
-    //     FunctionName: bulkSigningLambdaName,
-    //     InvocationType: "RequestResponse",
-    //     Payload: JSON.stringify(payload),
-    //   })
-    //   .promise();
+    const result = await lambdaClient
+      .invoke({
+        FunctionName: bulkSigningLambdaName,
+        InvocationType: "RequestResponse",
+        Payload: JSON.stringify(payload),
+      })
+      .promise();
 
-    // const resultPayload = getLambdaResultPayload({ result, lambdaName: bulkSigningLambdaName });
-    // const parsedResult = JSON.parse(resultPayload);
+    // TODO error handling logic and incrementing error count
+    const resultPayload = getLambdaResultPayload({ result, lambdaName: bulkSigningLambdaName });
+    const parsedResult: string[] = JSON.parse(resultPayload);
 
-    const parsedResult: string[] = await getSignedUrls(
-      payload.filenames,
-      Config.getMedicalDocumentsBucketName(),
-      "us-east-2"
-    );
-    console.log("Parsed Result", parsedResult);
+    // local testing code
+    // const parsedResult: string[] = await getSignedUrls(
+    //   payload.filenames,
+    //   Config.getMedicalDocumentsBucketName(),
+    //   "us-east-2"
+    // );
 
     // Create DTOs for each signed URL
     for (let i = 0; i < parsedResult.length; i++) {
@@ -110,8 +113,9 @@ export const triggerBulkUrlSigning = async (
 
     const isLastBatch = batchIndex === batches.length - 1;
     const status = isLastBatch ? "completed" : "processing";
+    console.log("Status", status);
 
-    appendDocBulkDownloadProgress({
+    updatedPatient = await appendDocBulkDownloadProgress({
       patient,
       successful: successes,
       errors,
