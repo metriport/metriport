@@ -1,2 +1,5 @@
-tester-local
-generated
+.idea/
+generated/
+build/
+*.iml
+.gradle
