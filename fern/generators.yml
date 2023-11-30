@@ -4,7 +4,7 @@ groups:
       - public
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.6.5
+        version: 0.6.7
         output:
           location: pypi
           package-name: metriport
@@ -39,7 +39,7 @@ groups:
       - public
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.6.5
+        version: 0.6.7
         output:
           location: local-file-system
           path: ../packages/sdks/python/generated

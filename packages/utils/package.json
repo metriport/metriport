@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.7.5",
+  "version": "1.7.6",
   "description": "",
   "main": "mock-webhook.js",
   "private": true,
@@ -10,6 +10,9 @@
     "fhir-uploader": "ts-node src/fhir-uploader.ts",
     "doc-query": "ts-node src/document/document-query.ts",
     "cq-cert-check": "ts-node src/carequality/cq-cert-checker.ts",
+    "bulk-insert": "ts-node src/bulk-insert-patients",
+    "coverage-assessment": "ts-node src/commonwell/coverage-assessment",
+    "enhance-coverage": "ts-node src/commonwell/enhance-coverage",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",
@@ -39,6 +42,7 @@
     "express": "^4.18.1",
     "express-promise-router": "^4.1.1",
     "lodash": "^4.17.21",
+    "mime-types": "^2.1.35",
     "playwright": "^1.39.0",
     "readline-sync": "^1.4.10",
     "sequelize": "^6.31.0"

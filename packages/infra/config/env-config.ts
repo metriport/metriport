@@ -25,6 +25,7 @@ export type EnvConfig = {
   dbName: string;
   dbUsername: string;
   loadBalancerDnsName?: string;
+  apiGatewayUsagePlanId?: string; // optional since we need to create the stack first, then update this and redeploy
   usageReportUrl?: string;
   fhirServerUrl: string;
   fhirServerQueueUrl?: string;
@@ -36,9 +37,12 @@ export type EnvConfig = {
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
   };
-  carequality: {
-    secretNames: {
-      CQ_API_KEY: string;
+  carequality?: {
+    secretNames?: {
+      CQ_API_KEY?: string;
+    };
+    envVars?: {
+      CQ_ORG_DETAILS?: string;
     };
   };
   commonwell: {

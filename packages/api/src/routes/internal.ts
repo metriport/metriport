@@ -1,11 +1,13 @@
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
+import { checkApiQuota } from "../command/medical/admin/api";
 import { peekIntoSidechainDLQ } from "../command/medical/admin/peek-dlq";
 import {
   populateFhirServer,
   PopulateFhirServerResponse,
 } from "../command/medical/admin/populate-fhir";
 import { redriveSidechainDLQ } from "../command/medical/admin/redrive-dlq";
+import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import BadRequestError from "../errors/bad-request";
@@ -166,10 +168,62 @@ router.get(
 router.post(
   "/cq-include-list/reset",
   asyncHandler(async (req: Request, res: Response) => {
+    const getOID = async (): Promise<string> => {
+      const cxId = getUUIDFrom("query", req, "cxId").optional();
+      if (cxId) return (await getOrganizationOrFail({ cxId })).oid;
+      const orgOID = getFrom("query").optional("orgOID", req);
+      if (orgOID) return orgOID;
+      throw new BadRequestError(`Either cxId or orgOID must be provided`);
+    };
+    const orgOID = await getOID();
+    await initCQOrgIncludeList(orgOID);
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/cx-data
+ *
+ * Returns the cx data used for internal scripts
+ */
+router.get(
+  "/cx-data",
+  asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const org = await getOrganizationOrFail({ cxId });
-    await initCQOrgIncludeList(org.oid);
-    return res.sendStatus(httpStatus.OK);
+
+    const facilities = await getFacilities({ cxId: org.cxId });
+
+    const response = {
+      cxId: org.cxId,
+      org: {
+        id: org.id,
+        oid: org.oid,
+        name: org.data.name,
+        type: org.data.type,
+      },
+      facilities: facilities.map(f => ({
+        id: f.id,
+        name: f.data.name,
+        npi: f.data.npi,
+        tin: f.data.tin,
+        active: f.data.active,
+      })),
+    };
+    return res.status(httpStatus.OK).json(response);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/check-api-quota
+ *
+ * Check API Gateway quota for each API Key and send a notification if it's below a threshold.
+ */
+router.post(
+  "/check-api-quota",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxsWithLowQuota = await checkApiQuota();
+    return res.status(httpStatus.OK).json({ cxsWithLowQuota });
   })
 );
 

@@ -133,3 +133,4 @@ scratch*
 *.csv
 bulk-insert-patient-ids.txt
 screenshot*
+runs

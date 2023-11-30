@@ -37,7 +37,12 @@
     <dependency>
       <groupId>com.metriport</groupId>
       <artifactId>metriport-java</artifactId>
-      <version>0.1.8</version>
+      <version>8.0.0-alpha1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.cdimascio</groupId>
+      <artifactId>java-dotenv</artifactId>
+      <version>5.2.2</version>
     </dependency>
   </dependencies>
 

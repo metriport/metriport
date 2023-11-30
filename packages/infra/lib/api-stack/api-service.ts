@@ -108,6 +108,9 @@ export function createAPIService(
           AWS_REGION: props.config.region,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
+          ...(props.config.apiGatewayUsagePlanId
+            ? { API_GW_USAGE_PLAN_ID: props.config.apiGatewayUsagePlanId }
+            : {}),
           CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
           SYSTEM_ROOT_OID: props.config.systemRootOID,
           ...props.config.commonwell.envVars,
@@ -150,6 +153,9 @@ export function createAPIService(
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
+          ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
+            CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
+          }),
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
@@ -236,6 +242,7 @@ export function createAPIService(
             "appconfig:StartConfigurationSession",
             "appconfig:GetLatestConfiguration",
             "appconfig:GetConfiguration",
+            "apigateway:GET",
           ],
           resources: ["*"],
         }),

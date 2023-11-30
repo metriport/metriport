@@ -4,3 +4,5 @@
 
 # Maven
 target/
+.env
+generated/

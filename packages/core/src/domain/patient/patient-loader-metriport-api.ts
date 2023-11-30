@@ -11,9 +11,11 @@ export class PatientLoaderMetriportAPI extends PatientLoader {
   }
 
   public async getStatesFromPatientIds(cxId: string, patientIds: string[]): Promise<string[]> {
-    const resp = await axios.post(`${this.apiUrl}/internal/patient/states`, {
-      cxId,
-      patientIds,
+    const resp = await axios.get(`${this.apiUrl}/internal/patient/states`, {
+      params: {
+        cxId,
+        patientIds: patientIds.join(","),
+      },
     });
     return resp.data.states;
   }

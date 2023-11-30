@@ -20,7 +20,7 @@ under "Developers".
 
 ## Building
 
-Run `./mvn clean package` and check the `target` folder.
+Run `./mvnw clean package` and check the `target` folder.
 
 ## Running
 
@@ -29,3 +29,4 @@ Run `java -Dapi_key=YOUR-KEY -jar target/metriport-test-1.0.jar` and:
 - replace `YOUR-KEY` with the vale of your API key
 - replace the version with whatever version defined on `pom.xml` (the default one is `1.0`, which doesn't
   require any changes)
+- note that Dapi_key is not related to DAPI (devices API). It is java syntax to add the -D with no space
