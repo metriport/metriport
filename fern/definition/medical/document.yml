@@ -102,7 +102,7 @@ service:
     getURL:
       display-name: Get Document URL
       docs: |
-        Gets a presigned URL for downloading the specified document.
+        Gets a downloadable URL for downloading the specified document.
         This endpoint returns a URL which you can use to download 
         the specified document and/or convert using the file name 
         provided from the [List Documents](/api-reference/medical/document/list) endpoint.

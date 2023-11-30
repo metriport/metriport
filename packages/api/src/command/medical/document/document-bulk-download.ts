@@ -35,7 +35,7 @@ const bulkSigningLambdaName = Config.getBulkUrlSigningLambdaName();
  * @param {string} patientId - patientId
  * @returns a Promise that resolves to a DocumentBulkDownloadProgress object.
  */
-export const triggerBulkUrlSigning = async (
+export const startBulkGetDocumentUrls = async (
   cxId: string,
   patientId: string
 ): Promise<DocumentBulkDownloadProgress> => {
