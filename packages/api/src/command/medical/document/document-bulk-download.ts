@@ -44,7 +44,7 @@ export const triggerBulkUrlSigning = async (
     log(
       `Patient ${patientId}, Request ${requestId}, docBulkDownloadProgress is already 'processing', skipping...`
     );
-    return createQueryResponse("processing", patient);
+    return createBulkDownloadQueryResponse("processing", patient);
   }
 
   const documents = await searchDocuments({ cxId, patientId });
@@ -56,8 +56,6 @@ export const triggerBulkUrlSigning = async (
     requestId,
     totalDocuments: documents.length,
   });
-
-  // sleep for 20 seconds to allow the webhook to be processed
 
   let successes = 0;
   const errors = 0;
@@ -113,7 +111,6 @@ export const triggerBulkUrlSigning = async (
 
     const isLastBatch = batchIndex === batches.length - 1;
     const status = isLastBatch ? "completed" : "processing";
-    console.log("Status", status);
 
     updatedPatient = await appendDocBulkDownloadProgress({
       patient,
@@ -132,7 +129,7 @@ export const triggerBulkUrlSigning = async (
       dtos
     );
   }
-  return createQueryResponse("processing", updatedPatient);
+  return createBulkDownloadQueryResponse("processing", updatedPatient);
 };
 
 /**
@@ -156,7 +153,7 @@ export function getOrGenerateRequestId(
 
 const generateRequestId = (): string => uuidv7();
 
-export const createQueryResponse = (
+export const createBulkDownloadQueryResponse = (
   status: DocumentDownloadStatus,
   patient?: Patient
 ): DocumentBulkDownloadProgress => {
