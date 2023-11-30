@@ -4,17 +4,38 @@ import { Config } from "../shared/config";
 import { errorToString } from "../shared/log";
 import { capture } from "../shared/notifications";
 
+// TODO 1032 Consider something this this for our regular "list" endpoints so we can paginate them with the least effort
+// export type PaginateFunction = (payload: {}) => PaginatedResponse;
+// export type PaginatedResponse = {
+//   url: string;
+//   next?: string;
+//   previous?: string;
+// } & Record<string, object>;
+// function buildPaginateFunction(req: Request): PaginateFunction {
+//   const url = req.baseUrl + req.path;
+//   return (payload: {}): PaginatedResponse => ({
+//     url,
+//     next: "next",
+//     previous: "previous",
+//     ...payload,
+//   });
+// }
+
 export const asyncHandler =
   (
     f: (
       req: Request,
       res: Response,
       next: NextFunction
+      // TODO 1032 Consider something this this for our regular "list" endpoints so we can paginate them with the least effort
+      // paginate: PaginateFunction
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) => Promise<Response<any, Record<string, any>> | void>
   ) =>
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      // TODO 1032 Consider something this this for our regular "list" endpoints so we can paginate them with the least effort
+      // await f(req, res, next, buildPaginateFunction(req));
       await f(req, res, next);
     } catch (err) {
       if (Config.isCloudEnv()) console.error(errorToString(err));

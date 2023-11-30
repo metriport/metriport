@@ -5,20 +5,26 @@ import { capture } from "../../../shared/notifications";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
 import { isMetriportExtension } from "../shared/extensions/metriport";
-import { getDocuments } from "./get-documents";
+import { PaginatedFHIRRequest, PaginatedFHIRResponse } from "../shared/paginated";
+import { getDocuments, getDocumentsPaginated } from "./get-documents";
 
 export async function searchDocuments({
   cxId,
   patientId,
   dateRange: { from, to } = {},
   contentFilter,
-}: {
+  pagination,
+}: PaginatedFHIRRequest<{
   cxId: string;
   patientId: string;
   dateRange?: { from?: string; to?: string };
   contentFilter?: string;
-}): Promise<DocumentReference[]> {
-  const fhirDocs = await getDocuments({ cxId, patientId, from, to });
+}>): Promise<PaginatedFHIRResponse<DocumentReference[]>> {
+  const fhirDocs = pagination
+    ? await getDocumentsPaginated({ cxId, patientId, from, to, pagination })
+    : await getDocuments({ cxId, patientId, from, to });
+
+  // TODO 1032 from here onwards
 
   const docs = await Promise.allSettled([
     searchOnCCDAFiles(fhirDocs, cxId, patientId, contentFilter),
