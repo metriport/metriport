@@ -23,9 +23,7 @@ export type CQOrgDetails = {
 
 export async function createOrUpdateCQOrganization(): Promise<void> {
   const cqOrgDetailsString = Config.getCQOrgDetails();
-  if (!cq) {
-    throw new Error("CQ is not enabled in this environment");
-  }
+  if (!cq) return;
   const cqOrgDetails: CQOrgDetails = cqOrgDetailsString
     ? JSON.parse(cqOrgDetailsString)
     : undefined;
@@ -58,9 +56,7 @@ export async function createOrUpdateCQOrganization(): Promise<void> {
 
 async function updateCQOrganization(cqOrg: string, oid: string): Promise<void> {
   console.log(`Updating org in the CQ Directory...`);
-  if (!cq) {
-    throw new Error("CQ is not enabled in this environment");
-  }
+  if (!cq) return;
   try {
     await cq.updateOrganization(cqOrg, oid);
   } catch (error) {

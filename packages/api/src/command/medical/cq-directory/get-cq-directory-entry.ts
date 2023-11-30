@@ -19,6 +19,20 @@ export const getCQDirectoryEntryOrFail = async ({
   return organization;
 };
 
+export const getCQDirectoryEntriesByOids = async (oids: string[]): Promise<CQDirectoryEntry[]> => {
+  try {
+    const entries = await CQDirectoryEntryModel.findAll({
+      where: {
+        oid: oids,
+      },
+    });
+    return entries;
+  } catch (error) {
+    console.error("Error fetching CQDirectoryEntries by OIDs:", error);
+    throw error;
+  }
+};
+
 export const getAllCQDirectoryEntries = async (): Promise<CQDirectoryEntryModel[]> => {
   return await CQDirectoryEntryModel.findAll();
 };
