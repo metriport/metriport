@@ -92,6 +92,8 @@ export const triggerBulkUrlSigning = async (
     const resultPayload = getLambdaResultPayload({ result, lambdaName: bulkSigningLambdaName });
     const parsedResult: DocumentBulkSignerLambdaResponse[] = JSON.parse(resultPayload.toString());
 
+    console.log("parsedResult", parsedResult);
+
     // // local testing code
     // const parsedResult: DocumentBulkSignerLambdaResponse[] = await getSignedUrls(
     //   payload.documents,
@@ -115,6 +117,8 @@ export const triggerBulkUrlSigning = async (
       status: status,
       requestId,
     });
+
+    console.log("updatedPatient", updatedPatient);
 
     // trigger the webhook
     processPatientDocumentRequest(

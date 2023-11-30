@@ -14,9 +14,9 @@ const whKey = getEnvVarOrFail("WH_KEY");
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 
-function mockDownload(url: string) {
+function mockDownload(name: string) {
   // Here you can simulate a download by making a GET request to the URL
-  console.log(`Downloaded file from ${url}`);
+  console.log(`Downloaded file: ${name}`);
 }
 
 const metriportApi = new MetriportMedicalApi(apiKey, {
@@ -37,7 +37,7 @@ app.post("/", (req: Request, res: Response) => {
   if (req.body.meta && req.body.meta.type === "medical.document-bulk-download") {
     for (const patient of req.body.patients) {
       for (const document of patient.documents) {
-        mockDownload(document.signedUrl);
+        mockDownload(document.fileName);
       }
     }
   }
