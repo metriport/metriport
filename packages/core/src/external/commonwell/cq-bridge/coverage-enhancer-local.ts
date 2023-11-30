@@ -1,11 +1,12 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { PatientLoader } from "../../../domain/patient/patient-loader";
 import { PatientUpdater } from "../../../domain/patient/patient-updater";
+import { Capture, emptyCapture } from "../../../util/capture";
 import { out } from "../../../util/log";
 import { CommonWellManagementAPI } from "../management/api";
 import { LinkPatients } from "../management/link-patients";
 import { CoverageEnhancementParams, CoverageEnhancer } from "./coverage-enhancer";
-import { getOrgChunksFromPos } from "./get-orgs";
 
 dayjs.extend(duration);
 
@@ -17,10 +18,12 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
 
   constructor(
     private readonly cwManagementApi: CommonWellManagementAPI,
+    patientLoader: PatientLoader,
     private readonly patientUpdater: PatientUpdater,
+    private readonly capture: Capture = emptyCapture,
     private readonly prefix = ""
   ) {
-    super();
+    super({ patientLoader });
     this.linkPatients = new LinkPatients(this.cwManagementApi, this.patientUpdater);
   }
 
@@ -34,14 +37,29 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
     const startedAt = Date.now();
     const { log } = out(`${this.prefix}EC - MAIN - cx ${cxId}`);
     try {
-      const { total, chunks } = await getOrgChunksFromPos({ fromPos: fromOrgChunkPos });
+      const { total, chunks } = await this.getCarequalityOrgs({
+        cxId,
+        patientIds,
+        fromOrgChunkPos,
+      });
 
       log(`CQ orgs: ${total}, chunks: ${chunks.length}/${chunks.length + fromOrgChunkPos}`);
       log(`patients: ${patientIds.join(", ")}`);
 
+      const originalOrgs =
+        (await this.cwManagementApi.getIncludeList({ oid: orgOID }).catch(error => {
+          // intentionally ignoring the error so we can keep trying to EC
+          const msg = "Error trying to load original CW CQ include list";
+          const extra = { cxId, orgOID, patientIds, error };
+          log(msg, extra, error);
+          this.capture.message(msg, { extra, level: "error" });
+        })) ?? [];
+
       for (const [i, orgChunk] of chunks.entries()) {
-        const orgIds = orgChunk.map(org => org.Id);
-        log(`--------------------------------- Starting chunk ${i}/${chunks.length} (relative)`);
+        const orgIds = orgChunk.map(org => org.id);
+        log(
+          `--------------------------------- Starting chunk ${i}/${chunks.length - 1} (relative)`
+        );
         try {
           await this.linkPatients.linkPatientsToOrgs({
             cxId,
@@ -51,12 +69,31 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
           });
         } catch (error) {
           const msg = `ERROR at org chunk ${i} (relative) / ${i + fromOrgChunkPos} (absolute)`;
+          this.capture.message(`Error processing Enhance Coverage chunk`, {
+            extra: { msg, cxId, orgOID, continuing: !stopOnErrors },
+            level: "warning",
+          });
           if (stopOnErrors) {
             log(msg + " - interrupting...", error);
             throw error;
           }
           log(msg + " - continuing...", error);
         }
+      }
+
+      // intentionally asynchronous
+      if (originalOrgs.length > 1) {
+        log(`(async) Revert the list of CQ orgs to the original ones...`);
+        this.cwManagementApi
+          .updateIncludeList({ oid: orgOID, careQualityOrgIds: originalOrgs })
+          .catch(error => {
+            const msg = "Error trying to RESTORE the original CW CQ include list";
+            const extra = { cxId, orgOID, patientIds, error };
+            log(msg, extra, error);
+            this.capture.message(msg, { extra, level: "error" });
+          });
+      } else {
+        log(`Not reverting the list of CQ orgs b/c it was originally empty.`);
       }
     } finally {
       const duration = Date.now() - startedAt;

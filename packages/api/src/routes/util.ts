@@ -44,10 +44,32 @@ export const httpResponseBody = ({
   };
 };
 
-export const getFromQuery = (prop: string, req: Request): string | undefined =>
-  req.query[prop] as string | undefined;
+export const getFromQuery = (prop: string, req: Request): string | undefined => {
+  const value = req.query[prop];
+  if (typeof value === "string") return value;
+  if (value == undefined) return undefined;
+  throw new BadRequestError(`Invalid ${prop} query param - must be string`);
+};
 export const getFromQueryOrFail = (prop: string, req: Request): string => {
   const value = getFromQuery(prop, req);
+  if (!value) throw new BadRequestError(`Missing ${prop} query param`);
+  return value;
+};
+
+export const getFromQueryAsArray = (prop: string, req: Request): string[] | undefined => {
+  const value = req.query[prop];
+  if (value == undefined) return undefined;
+  if (typeof value === "string") return value.trim().split(",");
+  if (Array.isArray(value)) {
+    value.forEach(v => {
+      if (typeof v !== "string") throw new BadRequestError(`Invalid ${prop} query param`);
+    });
+    return value as string[];
+  }
+  throw new BadRequestError(`Invalid ${prop} query param - must be array`);
+};
+export const getFromQueryAsArrayOrFail = (prop: string, req: Request) => {
+  const value = getFromQueryAsArray(prop, req);
   if (!value) throw new BadRequestError(`Missing ${prop} query param`);
   return value;
 };

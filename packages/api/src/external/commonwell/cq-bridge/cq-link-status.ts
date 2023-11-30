@@ -5,7 +5,7 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { getCQLinkStatus } from "../patient";
+import { getLinkStatusCQ } from "../patient";
 import { CQLinkStatus } from "../patient-shared";
 
 dayjs.extend(duration);
@@ -31,7 +31,7 @@ export const setCQLinkStatus = async ({
     });
 
     // Important so we don't trigger WH notif if the CQ link was already done
-    const currentCQLinkStatus = getCQLinkStatus(originalPatient.data.externalData);
+    const currentCQLinkStatus = getLinkStatusCQ(originalPatient.data.externalData);
     if (currentCQLinkStatus === cqLinkStatus) {
       console.log(
         `Patient ${patientId} already has CQ link status ${cqLinkStatus}, skipping update...`

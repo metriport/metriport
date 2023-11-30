@@ -1,6 +1,7 @@
-import { intersectionWith, isEqual } from "lodash";
+import { USState } from "@metriport/core/domain/geographic-locations";
+import { intersectionWith, isEqual, uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
-import { Patient, PatientData } from "../../../domain/medical/patient";
+import { getStatesFromAddresses, Patient, PatientData } from "../../../domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
@@ -173,4 +174,17 @@ export const getPatientWithDependencies = async ({
   const facilities = await getFacilities({ cxId, ids: patient.facilityIds });
   const organization = await getOrganizationOrFail({ cxId });
   return { patient, facilities, organization };
+};
+
+export const getPatientStates = async ({
+  cxId,
+  patientIds,
+}: {
+  cxId: string;
+  patientIds: string[];
+}): Promise<USState[]> => {
+  if (!patientIds || !patientIds.length) return [];
+  const patients = await getPatients({ cxId, patientIds });
+  const nonUniqueStates = patients.flatMap(getStatesFromAddresses).filter(s => s);
+  return uniq(nonUniqueStates);
 };

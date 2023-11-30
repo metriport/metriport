@@ -20,6 +20,7 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
+import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
@@ -32,9 +33,9 @@ import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-con
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { createIHEStack } from "./ihe-stack";
-import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { Secrets, getSecrets } from "./shared/secrets";
+import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
@@ -602,7 +603,6 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     this.setupWithingsWebhookAuth({
@@ -612,7 +612,6 @@ export class APIStack extends Stack {
       fargateService: apiService,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     this.setupFitbitWebhook({
@@ -626,7 +625,6 @@ export class APIStack extends Stack {
         props.config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     this.setupTenoviWebhookAuth({
@@ -638,7 +636,6 @@ export class APIStack extends Stack {
       tenoviAuthHeader: props.config.providerSecretNames.TENOVI_AUTH_HEADER,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     // add webhook path for apple health clients
@@ -694,6 +691,13 @@ export class APIStack extends Stack {
         publicZone,
       });
     }
+
+    createScheduledAPIQuotaChecker({
+      stack: this,
+      lambdaLayers,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+    });
 
     //-------------------------------------------
     // Output
@@ -776,7 +780,6 @@ export class APIStack extends Stack {
     dynamoDBTokenTable: dynamodb.Table;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }) {
     const {
       lambdaLayers,
@@ -786,7 +789,6 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       envType,
       sentryDsn,
-      alarmAction,
     } = ownProps;
 
     const garminLambda = createLambda({
@@ -802,7 +804,6 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
-      alarmSnsAction: alarmAction,
     });
 
     // Grant lambda access to the DynamoDB token table
@@ -823,7 +824,6 @@ export class APIStack extends Stack {
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }) {
     const {
       lambdaLayers,
@@ -865,7 +865,6 @@ export class APIStack extends Stack {
     fitbitSubscriberVerificationCode: string;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }) {
     const {
       lambdaLayers,
@@ -877,7 +876,6 @@ export class APIStack extends Stack {
       fitbitSubscriberVerificationCode,
       envType,
       sentryDsn,
-      alarmAction,
     } = ownProps;
 
     const fitbitAuthLambda = createLambda({
@@ -894,7 +892,6 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
-      alarmSnsAction: alarmAction,
       timeout: FITBIT_LAMBDA_TIMEOUT,
     });
 
@@ -910,7 +907,6 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
-      alarmSnsAction: alarmAction,
     });
 
     // granting secrets read access to both lambdas
@@ -939,7 +935,6 @@ export class APIStack extends Stack {
     tenoviAuthHeader: string;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }) {
     const {
       lambdaLayers,
@@ -950,7 +945,6 @@ export class APIStack extends Stack {
       tenoviAuthHeader,
       envType,
       sentryDsn,
-      alarmAction,
     } = ownProps;
 
     const tenoviAuthLambda = createLambda({
@@ -966,7 +960,6 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
-      alarmSnsAction: alarmAction,
     });
 
     const tenoviAuthHeaderSecretKey = "TENOVI_AUTH_HEADER";
