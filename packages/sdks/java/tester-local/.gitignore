@@ -3,3 +3,4 @@ generated/
 build/
 *.iml
 .gradle
+bin/
