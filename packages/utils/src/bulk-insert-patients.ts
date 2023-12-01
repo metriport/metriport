@@ -56,7 +56,8 @@ async function main() {
 
   if (!dryRun) initPatientIdRepository();
 
-  const { facilityId: localFacilityId } = await getCxData(apiKey, facilityId);
+  const { facilityId: localFacilityId } = await getCxData(apiKey, facilityId.trim());
+  if (!localFacilityId) throw new Error("No facility found");
 
   const results: PatientCreate[] = [];
   const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];

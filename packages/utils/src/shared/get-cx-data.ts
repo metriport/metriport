@@ -10,8 +10,14 @@ const apiUrl = getEnvVarOrFail("API_URL");
 // Write a function to get the env vars from the customer data using the api sdk
 export async function getCxData(
   cxId: string,
-  facilityId?: string | undefined
-): Promise<{ facilityId: string; npi: string; orgName: string; orgOID: string }> {
+  facilityId?: string | undefined,
+  includeFacility = true
+): Promise<{
+  facilityId: string | undefined;
+  npi: string | undefined;
+  orgName: string;
+  orgOID: string;
+}> {
   console.log(`>>> Getting customer data...`);
 
   const respCxData = await axios.get(apiUrl + "/internal/cx-data", {
@@ -37,11 +43,11 @@ export async function getCxData(
     if (facilities.length > 1) throw new Error("Got more than one facility");
     return facilities[0];
   };
-  const facility = await getFacility();
+  const facility = includeFacility ? await getFacility() : undefined;
 
   const res = {
-    facilityId: facility.id,
-    npi: facility.npi,
+    facilityId: facility?.id,
+    npi: facility?.npi,
     orgName: org.name,
     orgOID: org.oid,
   };
