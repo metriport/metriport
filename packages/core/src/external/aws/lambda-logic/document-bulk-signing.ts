@@ -4,6 +4,7 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { searchDocuments } from "../../opensearch/search-documents";
 import axios from "axios";
 import { capture } from "../../../util/notifications";
+import { getEnvVarOrFail } from "../../../util/env-var";
 const ossApi = axios.create();
 
 const SIGNED_URL_DURATION_SECONDS = 3000; // longer since a lot of docs
@@ -31,9 +32,13 @@ export async function getSignedUrls(
   region: string,
   apiURL: string
 ) {
+  console.log(`DEBUGGING: fhir_server: ${getEnvVarOrFail("FHIR_SERVER_URL")}`);
+  //`search_endpoint: ${getEnvVarOrFail("SEARCH_ENDPOINT")}, search_index: ${getEnvVarOrFail("SEARCH_INDEX")}, search_username: ${getEnvVarOrFail("SEARCH_USERNAME")}, search_password: ${getEnvVarOrFail("PASSWORD")} `);
   const s3Utils = new S3Utils(region);
 
   const documents: DocumentReference[] = await searchDocuments({ cxId, patientId });
+
+  console.log(`Found ${documents}`);
 
   const urls = await Promise.all(
     documents.map(async doc => {
@@ -68,13 +73,16 @@ export async function getSignedUrls(
   );
 
   const response = urls.filter(url => url !== undefined) as DocumentBulkSignerLambdaResponse[];
+
+  console.log(`Signed URLs: ${JSON.stringify(response)}`);
   const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
-  ossApiClient.triggerWebhook({
+  const confirmation = await ossApiClient.callInternalEndpoint({
     cxId: cxId,
     patientId: patientId,
     requestId: requestId,
     dtos: response,
   });
+  console.log(`Confirmation: ${JSON.stringify(confirmation)}`);
 }
 
 export const DocumentBulkSignerLambdaResponseSchema = z.object({
@@ -102,12 +110,13 @@ export function apiClientBulkDownloadWebhook(apiURL: string) {
   const sendBulkDownloadUrl = `${apiURL}/internal/docs/triggerBulkDownloadWebhook`;
 
   return {
-    triggerWebhook: async function (params: BulkDownloadWebhookParams) {
+    callInternalEndpoint: async function (params: BulkDownloadWebhookParams) {
       try {
         console.log(`Trigger API on ${sendBulkDownloadUrl} w/ ${JSON.stringify(params)}`);
         await ossApi.post(sendBulkDownloadUrl, params.dtos, {
           params: { cxId: params.cxId, patientId: params.patientId, requestId: params.requestId },
         });
+        console.log(`Successfully triggered API on ${sendBulkDownloadUrl}`);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         const msg = "Error notifying API";

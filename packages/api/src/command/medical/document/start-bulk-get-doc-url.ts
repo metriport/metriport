@@ -11,7 +11,6 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-progress";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
-//import { getSignedUrls } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
 const lambdaClient = makeLambdaClient();
 const bulkSigningLambdaName = Config.getBulkUrlSigningLambdaName();
@@ -64,11 +63,17 @@ export const startBulkGetDocumentUrls = async (
     requestId: requestId,
   };
 
-  lambdaClient.invoke({
-    FunctionName: bulkSigningLambdaName,
-    InvocationType: "RequestResponse",
-    Payload: JSON.stringify(payload),
-  });
+  try {
+    lambdaClient
+      .invoke({
+        FunctionName: bulkSigningLambdaName,
+        InvocationType: "RequestResponse",
+        Payload: JSON.stringify(payload),
+      })
+      .promise();
+  } catch (e) {
+    console.log("Lambda error:", e);
+  }
 
   return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
 };
