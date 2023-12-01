@@ -4,8 +4,9 @@ import { createMockCQOrganization } from "../../../external/carequality/organiza
 import { Config } from "../../../shared/config";
 import { createOrUpdateCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
+import { capture } from "../../../shared/notifications";
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 300;
 
 type CQDirectoryRebuildResponse = {
   totalFetched: number;
@@ -41,27 +42,23 @@ export const rebuildCQDirectory = async (
       const resp = await cq.listAllOrganizations();
       orgs = parseCQDirectoryEntries(resp);
     }
-    console.log("ORGS LENGTH", orgs.length);
     if (!orgs) return response;
 
     response.totalFetched = orgs.length;
 
     console.log("Orgs parsed", orgs.length);
 
-    const updResults = [];
     for (let i = 0; i <= orgs.length; i += BATCH_SIZE) {
       const batch = orgs.slice(i, i + BATCH_SIZE);
-      updResults.push(await createOrUpdateCQDirectoryEntries(batch));
-      await sleep(500);
+      const updResults = await createOrUpdateCQDirectoryEntries(batch);
+      response.added += updResults.added;
+      response.updated += updResults.updated;
+      await sleep(750);
     }
-
-    updResults.forEach(result => {
-      result.forEach(org => {
-        org.updated ? response.updated++ : response.added++;
-      });
-    });
   } catch (error) {
-    console.log("ERROR", error);
+    const msg = `Failed rebuilding the CQ directory`;
+    console.log(`${msg}, ${error}`);
+    capture.error(error, { extra: { context: `rebuildCQDirectory` } });
   }
   return response;
 };

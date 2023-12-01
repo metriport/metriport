@@ -8,6 +8,8 @@ export type CQOrganizationCreateResponse = { org: CQDirectoryEntry } & {
   updated: boolean;
 };
 
+export type CQOrganizatioBulkCreateResponse = { updated: number; added: number };
+
 export type CQDirectoryEntryDataWithId = CQDirectoryEntryData & { id: string };
 
 export const createOrUpdateCQDirectoryEntry = async (
@@ -24,68 +26,57 @@ export const createOrUpdateCQDirectoryEntry = async (
   return { org, updated: false };
 };
 
-async function createCQDirectoryEntry(orgData: CQDirectoryEntryData): Promise<CQDirectoryEntry> {
+const createCQDirectoryEntry = async (orgData: CQDirectoryEntryData): Promise<CQDirectoryEntry> => {
   return await CQDirectoryEntryModel.create({
     id: uuidv7(),
     ...orgData,
   });
-}
+};
 
 export const createOrUpdateCQDirectoryEntries = async (
   orgDataArray: CQDirectoryEntryData[]
-): Promise<CQOrganizationCreateResponse[]> => {
+): Promise<CQOrganizatioBulkCreateResponse> => {
   const oids = orgDataArray.map(data => data.oid);
-  const existingEntries = await getCQDirectoryEntriesByOids(oids);
+  const existingEntries = await getCQDirectoryEntriesByOids(oids); // could break this up further and parallilze
 
   const newEntries: CQDirectoryEntryData[] = [];
   const updateEntries: CQDirectoryEntryDataWithId[] = [];
   orgDataArray.forEach(orgData => {
-    const existingEntry = existingEntries.find(entry => entry.oid === orgData.oid);
+    const existingEntry = existingEntries.find(entry => entry === orgData.oid);
     if (existingEntry) {
-      updateEntries.push({ ...orgData, id: existingEntry.id });
+      const orgDataWithId = orgData as CQDirectoryEntryDataWithId;
+      orgDataWithId.id = existingEntry;
+      updateEntries.push(orgDataWithId);
     } else {
       newEntries.push(orgData);
     }
   });
 
-  const createdEntries = newEntries.length > 0 ? await createCQDirectoryEntries(newEntries) : [];
+  const numNewEntries = newEntries.length;
+  const numUpdEntries = updateEntries.length;
 
-  const updatedEntries =
-    updateEntries.length > 0 ? await updateCQDirectoryEntries(updateEntries) : [];
+  if (numNewEntries) await createCQDirectoryEntries(newEntries);
+  if (numUpdEntries) await updateCQDirectoryEntries(updateEntries);
 
-  return [
-    ...createdEntries.map(org => ({ org, updated: false })),
-    ...updatedEntries.map(org => ({ org, updated: true })),
-  ];
+  return { added: numNewEntries, updated: numUpdEntries };
 };
 
-const createCQDirectoryEntries = async (
-  orgDataArray: CQDirectoryEntryData[]
-): Promise<CQDirectoryEntry[]> => {
+const createCQDirectoryEntries = async (orgDataArray: CQDirectoryEntryData[]): Promise<void> => {
   const entriesWithIds = orgDataArray.map(orgData => ({
     id: uuidv7(),
     ...orgData,
   }));
 
-  return await CQDirectoryEntryModel.bulkCreate(entriesWithIds);
+  await CQDirectoryEntryModel.bulkCreate(entriesWithIds);
 };
 
 const updateCQDirectoryEntries = async (
   updateEntries: CQDirectoryEntryDataWithId[]
-): Promise<CQDirectoryEntry[]> => {
-  const updatedEntries = [];
-
+): Promise<void> => {
   for (const entry of updateEntries) {
-    const updated = await CQDirectoryEntryModel.update(entry, {
+    await CQDirectoryEntryModel.update(entry, {
       where: { id: entry.id },
       returning: true,
     });
-
-    // The updated object is typically the second element in the returned array from Sequelize update method
-    if (updated && updated[1] && updated[1][0]) {
-      updatedEntries.push(updated[1][0]);
-    }
   }
-
-  return updatedEntries;
 };

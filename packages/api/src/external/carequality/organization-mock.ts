@@ -26,8 +26,8 @@ export function createMockCQOrganization(): string {
 }
 
 function generateRandomOID() {
-  const parts = [];
-  const length = Math.floor(Math.random() * 10) + 1;
+  const parts = [2, 16];
+  const length = Math.floor(Math.random() * 6) + 4;
 
   for (let i = 0; i < length; i++) {
     parts.push(Math.floor(Math.random() * 10000));

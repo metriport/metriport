@@ -71,20 +71,20 @@ export function getLambdaResultPayload(params: {
 export function getLambdaResultPayload({
   result,
   lambdaName = "<unknown-name>",
-  failGracefuly = false,
+  failGracefully = false,
   log = console.log,
 }: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;
-  failGracefuly?: boolean;
+  failGracefully?: boolean;
   log?: typeof console.log;
 }): string | undefined {
   if (result.StatusCode !== 200) {
-    if (failGracefuly) return undefined;
+    if (failGracefully) return undefined;
     throw new MetriportError("Lambda invocation failed", undefined, { lambdaName });
   }
   if (!result.Payload) {
-    if (failGracefuly) return undefined;
+    if (failGracefully) return undefined;
     throw new MetriportError("Lambda payload is undefined", undefined, { lambdaName });
   }
   if (isLambdaError(result)) {
@@ -92,7 +92,7 @@ export function getLambdaResultPayload({
     const lambdaError = getLambdaError(result);
     const errorDetails = JSON.stringify(lambdaError);
     log(`${msg} - ${errorDetails}`);
-    if (failGracefuly) return undefined;
+    if (failGracefully) return undefined;
     if (lambdaError?.errorType === "NotFoundError") {
       throw new NotFoundError(msg, undefined, { lambdaName, errorDetails });
     }

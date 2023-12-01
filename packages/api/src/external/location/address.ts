@@ -4,11 +4,7 @@ import {
   makeLocationClient,
 } from "@metriport/core/external/aws/location";
 import { Config } from "../../shared/config";
-
-export type Coordinates = {
-  lat: number;
-  lon: number;
-};
+import { Coordinates } from "@metriport/core/external/aws/location";
 
 type AddressWithoutCountry = Omit<Address, "country"> & { country?: string | undefined };
 

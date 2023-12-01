@@ -1,6 +1,7 @@
+import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
-import { Coordinates, getCoordinates } from "../../../external/location/address";
+import { getCoordinates } from "../../../external/location/address";
 import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
 import { getPatientOrFail } from "../patient/get-patient";
 

@@ -128,27 +128,18 @@ export class Carequality implements CarequalityAPI {
 
     while (!isDone) {
       try {
-        console.log(
-          `Querying the next ${MAX_COUNT} organizations, starting from ${currentPosition}`
-        );
         const orgs = await this.listOrganizations({ start: currentPosition });
         organizations.push(...orgs);
         currentPosition += MAX_COUNT;
 
         const bundleEntryLength = orgs.length;
-        console.log(
-          `Received: ${bundleEntryLength} orgs. Continuing: ${!(bundleEntryLength < MAX_COUNT)}`
-        );
         if (bundleEntryLength < MAX_COUNT) {
-          console.log("Reached the end of the CQ directory...");
           isDone = true;
         }
       } catch (error) {
         isDone = true;
-        const msg = "Failed to list CQ organizations";
-        console.log(`${msg}. Cause: ${error}.`);
         if (!failGracefully) {
-          throw new MetriportError(msg, error, {});
+          throw new MetriportError("Failed to list CQ organizations", error, {});
         }
       }
     }
