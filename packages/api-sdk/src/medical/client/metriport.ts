@@ -11,14 +11,14 @@ import {
 import { getETagHeader } from "../models/common/base-update";
 import {
   DocumentQuery,
-  DocumentBulkDownloadQuery,
+  BulkGetDocumentUrlQuery,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
   documentListSchema,
   documentQuerySchema,
-  documentBulkDownloadSchema,
+  bulkGetDocumentUrlQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -461,14 +461,14 @@ export class MetriportMedicalApi {
    * @return The document query request ID, progress & status indicating whether its being executed or not, and
    * the total number of documents to be downloaded.
    */
-  async startBulkGetDocumentUrl(patientId: string): Promise<DocumentBulkDownloadQuery> {
-    const resp = await this.api.post(`${DOCUMENT_URL}/bulk-download-url`, {
+  async startBulkGetDocumentUrl(patientId: string): Promise<BulkGetDocumentUrlQuery> {
+    const resp = await this.api.post(`${DOCUMENT_URL}/bulk-get-documents`, {
       params: {
         patientId,
       },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return documentBulkDownloadSchema.parse(resp.data);
+    return bulkGetDocumentUrlQuerySchema.parse(resp.data);
   }
 
   /**

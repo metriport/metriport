@@ -1,7 +1,7 @@
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
-import { DocumentBulkDownloadDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
+import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
@@ -18,7 +18,7 @@ export enum MAPIWebhookStatus {
 }
 
 type WebhookDocumentDataPayload = {
-  documents?: DocumentReferenceDTO[] | DocumentBulkDownloadDTO[];
+  documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[];
   status: MAPIWebhookStatus;
 };
 type WebhookPatientPayload = {
@@ -44,7 +44,7 @@ export const processPatientDocumentRequest = async (
   patientId: string,
   whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
-  documents?: DocumentReferenceDTO[] | DocumentBulkDownloadDTO[]
+  documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
 ): Promise<void> => {
   try {
     const [settings, patient] = await Promise.all([

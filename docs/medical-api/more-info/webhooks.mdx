@@ -365,8 +365,8 @@ Example payload:
 While you can download specified documents using the [get document url endpoint](/medical-api/api-reference/document/bulk-document-download), 
 patients can have a large number of documents, and it can be tedious to download one at a time. 
 
-Instead trigger a [bulk document download query](/medical-api/api-reference/document/bulk-document-download) - one query per patient at any given time;
-When the result is ready, we’ll send a webhook message with all the signed urls for all the patients documents.
+Instead trigger a [bulk get document url](/medical-api/api-reference/document/bulk-document-download) query - one query per patient at any given time;
+When the result is ready, we’ll send a webhook message with all the downloadable urls for all the patients documents.
 Example payload:
 
 ```json

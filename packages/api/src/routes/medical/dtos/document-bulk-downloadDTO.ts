@@ -1,4 +1,4 @@
-export type DocumentBulkDownloadDTO = {
+export type DocumentBulkUrlDTO = {
   id: string;
   fileName: string;
   description?: string;

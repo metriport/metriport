@@ -75,7 +75,6 @@ export async function getSignedUrls(
     requestId: requestId,
     dtos: response,
   });
-  console.log("internal called");
 }
 
 export const DocumentBulkSignerLambdaResponseSchema = z.object({

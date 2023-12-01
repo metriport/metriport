@@ -1,34 +1,33 @@
 import {
-  DocumentDownloadStatus,
-  DocumentBulkDownloadProgress,
-} from "../../../domain/medical/document-bulk-download";
+  BulkGetDocUrlStatus,
+  BulkGetDocumentsUrlProgress,
+} from "../../../domain/medical/bulk-get-document-url";
 import { Patient } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
 
-export type SetDocBulkDownloadProgress = {
+export type SetBulkGetDocUrlProgress = {
   patient: Pick<Patient, "id" | "cxId">;
   successful?: number;
   errors?: number;
-  status?: DocumentDownloadStatus;
+  status?: BulkGetDocUrlStatus;
   requestId?: string;
 };
 
 /**
- * The function `appendDocBulkDownloadProgress` updates the progress of a bulk document download to a
- * patient's data.
- * @param {SetDocBulkDownloadProgress}  - - A cmd argument type to update the progress of a bulk document download.
+ * The function `appendBulkGetDocUrlProgress` updates the progress of a BulkGetDocumentsUrl query to a patient's data.
+ * @param {SetBulkGetDocUrlProgress}  - - A cmd argument type to update the progress of a bulk get doc url query.
  * @returns a Promise that resolves to a Patient object.
  */
-export async function appendDocBulkDownloadProgress({
+export async function appendBulkGetDocUrlProgress({
   patient: { id, cxId },
   successful,
   errors,
   status,
   requestId,
-}: SetDocBulkDownloadProgress): Promise<Patient> {
+}: SetBulkGetDocUrlProgress): Promise<Patient> {
   const patientFilter = {
     id: id,
     cxId: cxId,
@@ -40,23 +39,22 @@ export async function appendDocBulkDownloadProgress({
       transaction,
     });
 
-    const documentBulkDownloadProgress = existingPatient.data?.documentBulkDownloadProgress || {};
+    const BulkGetDocumentsUrlProgress = existingPatient.data?.bulkGetDocumentsUrlProgress || {};
 
-    // Initialize download object if not present
-    if (documentBulkDownloadProgress.urlGeneration) {
+    if (BulkGetDocumentsUrlProgress.urlGeneration) {
       // Updating only if the properties are not undefined
       if (successful) {
-        documentBulkDownloadProgress.urlGeneration.successful = successful;
+        BulkGetDocumentsUrlProgress.urlGeneration.successful = successful;
       }
       if (errors) {
-        documentBulkDownloadProgress.urlGeneration.errors = errors;
+        BulkGetDocumentsUrlProgress.urlGeneration.errors = errors;
       }
       // Ensure status is only assigned if not undefined
       if (status) {
-        documentBulkDownloadProgress.urlGeneration.status = status;
+        BulkGetDocumentsUrlProgress.urlGeneration.status = status;
       }
       if (requestId) {
-        documentBulkDownloadProgress.requestId = requestId;
+        BulkGetDocumentsUrlProgress.requestId = requestId;
       }
     }
 
@@ -64,7 +62,7 @@ export async function appendDocBulkDownloadProgress({
       ...existingPatient,
       data: {
         ...existingPatient.data,
-        documentBulkDownloadProgress,
+        BulkGetDocumentsUrlProgress,
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
@@ -72,19 +70,19 @@ export async function appendDocBulkDownloadProgress({
   });
 }
 
-export type BulkDownloadQueryInitCmd = BaseUpdateCmdWithCustomer & {
-  documentBulkDownloadProgress: Required<Pick<DocumentBulkDownloadProgress, "urlGeneration">>;
+export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
+  bulkGetDocumentsUrlProgress: Required<Pick<BulkGetDocumentsUrlProgress, "urlGeneration">>;
   requestId: string;
   totalDocuments?: number;
 };
 
 /**
- * The function `storeBulkDownloadQueryInit` initalizes the `documentBulkDownloadProgress`field in a patient's data.
- * @param {BulkDownloadQueryInitCmd} cmd - The `cmd` argument type to initialize the `documentBulkDownloadProgress` field
+ * The function `storeBulkGetDocumentUrlQueryInit` initalizes the `BulkGetDocumentsUrlProgress`field in a patient's data.
+ * @param {BulkGetDocUrlQueryInitCmd} cmd - The `cmd` argument type to initialize the `BulkGetDocumentsUrlProgress` field
  * @returns a Promise that resolves to a Patient object.
  */
-export const storeBulkDownloadQueryInit = async (
-  cmd: BulkDownloadQueryInitCmd
+export const storeBulkGetDocumentUrlQueryInit = async (
+  cmd: BulkGetDocUrlQueryInitCmd
 ): Promise<Patient> => {
   const { id, cxId, totalDocuments } = cmd;
 
@@ -97,8 +95,8 @@ export const storeBulkDownloadQueryInit = async (
     });
 
     const update = {
-      documentBulkDownloadProgress: {
-        ...cmd.documentBulkDownloadProgress,
+      bulkGetDocumentsUrlProgress: {
+        ...cmd.bulkGetDocumentsUrlProgress,
         total: totalDocuments,
       },
       requestId: cmd.requestId,

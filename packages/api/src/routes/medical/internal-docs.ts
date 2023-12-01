@@ -32,7 +32,7 @@ import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { appendDocBulkDownloadProgress } from "../../command/medical/patient/bulk-doc-download-progress";
+import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 
 import {
   DocumentBulkSignerLambdaResponse,
@@ -366,7 +366,7 @@ export default router;
 /**
  * POST /internal/docs/triggerBulkDownloadWebhook
  *
- * Endpoint called by the bulk download lambda to trigger the webhook.
+ * Endpoint called by the bulk signer lambda to trigger the webhook.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.requestId - The id of the request
@@ -382,7 +382,7 @@ router.post(
     const dtos: DocumentBulkSignerLambdaResponse[] =
       DocumentBulkSignerLambdaResponseArraySchema.parse(req.body);
 
-    const updatedPatient = await appendDocBulkDownloadProgress({
+    const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
       successful: dtos.length,
       errors: 0,
@@ -399,6 +399,6 @@ router.post(
       dtos
     );
 
-    return res.status(httpStatus.OK).json(updatedPatient.data.documentBulkDownloadProgress);
+    return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
   })
 );

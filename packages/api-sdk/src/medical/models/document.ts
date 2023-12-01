@@ -42,12 +42,12 @@ export const documentQuerySchema = z.object({
   requestId: z.string().optional(),
 });
 
-export const documentBulkDownloadSchema = z.object({
+export const bulkGetDocumentUrlQuerySchema = z.object({
   urlGeneration: progressSchema.optional(),
   requestId: z.string().optional(),
 });
 
-export type DocumentBulkDownloadQuery = z.infer<typeof documentBulkDownloadSchema>;
+export type BulkGetDocumentUrlQuery = z.infer<typeof bulkGetDocumentUrlQuerySchema>;
 export type DocumentQuery = z.infer<typeof documentQuerySchema>;
 
 export const documentListSchema = z.object({
