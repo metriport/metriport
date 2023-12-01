@@ -347,9 +347,14 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       bucketName: medicalDocumentsBucket.bucketName,
+      fhirServerUrl: props.config.fhirServerUrl,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
+      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchIndex: ccdaSearchIndexName,
+      searchUserName: ccdaSearchUserName,
+      searchPassword: ccdaSearchSecret,
     });
 
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
@@ -1095,11 +1100,28 @@ export class APIStack extends Stack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     bucketName: string | undefined;
+    fhirServerUrl: string | undefined;
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    searchEndpoint: string | undefined;
+    searchIndex: string | undefined;
+    searchUserName: string | undefined;
+    searchPassword: string | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, bucketName, sentryDsn, alarmAction, envType } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      bucketName,
+      fhirServerUrl,
+      sentryDsn,
+      alarmAction,
+      envType,
+      searchEndpoint,
+      searchIndex,
+      searchUserName,
+      searchPassword,
+    } = ownProps;
 
     const bulkUrlSigningLambda = createLambda({
       stack: this,
@@ -1110,6 +1132,11 @@ export class APIStack extends Stack {
       envVars: {
         ...(bucketName && {
           MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+          FHIR_SERVER_URL: fhirServerUrl,
+          SEARCH_ENDPOINT: searchEndpoint,
+          SEARCH_INDEX: searchIndex,
+          SEARCH_USERNAME: searchUserName,
+          SEARCH_PASSWORD: searchPassword,
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
