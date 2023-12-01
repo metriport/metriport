@@ -279,6 +279,7 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
+ *        Accepts "pdf" or "html". Defaults to no conversion.
  * @param req.body Optional metadata to be sent through Webhook.
  * @return status of querying for the Patient's consolidated data.
  */
