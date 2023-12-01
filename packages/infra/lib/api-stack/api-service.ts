@@ -47,7 +47,6 @@ export function createAPIService(
   documentDownloaderLambda: ILambda,
   medicalDocumentsUploadBucket: s3.Bucket,
   fhirToMedicalRecordLambda: ILambda | undefined,
-  bulkUrlSigningLambda: ILambda,
   searchIngestionQueue: IQueue,
   searchEndpoint: string,
   searchAuth: { userName: string; secret: ISecret },
@@ -130,7 +129,6 @@ export function createAPIService(
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
-          BULK_URL_SIGNING_LAMBDA_NAME: bulkUrlSigningLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
@@ -195,7 +193,7 @@ export function createAPIService(
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  bulkUrlSigningLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  //bulkUrlSigningLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

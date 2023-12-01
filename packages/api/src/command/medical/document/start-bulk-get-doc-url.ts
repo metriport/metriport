@@ -1,4 +1,3 @@
-import { Config } from "../../../shared/config";
 import {
   BulkGetDocumentsUrlProgress,
   isBulkGetDocUrlProcessing,
@@ -13,7 +12,7 @@ import { makeLambdaClient } from "../../../external/aws/lambda";
 import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
 const lambdaClient = makeLambdaClient();
-const bulkSigningLambdaName = Config.getBulkUrlSigningLambdaName();
+const bulkSigningLambdaName = "BulkUrlSigningLambda";
 
 /**
  * The function `startBulkGetDocumentUrls` triggers the bulk signing process lambda for a patient's documents and

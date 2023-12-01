@@ -343,20 +343,6 @@ export class APIStack extends Stack {
       });
     }
 
-    const bulkUrlSigningLambda = this.setupBulkUrlSigningLambda({
-      lambdaLayers,
-      vpc: this.vpc,
-      bucketName: medicalDocumentsBucket.bucketName,
-      fhirServerUrl: props.config.fhirServerUrl,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
-      searchEndpoint: ccdaSearchDomain.domainEndpoint,
-      searchIndex: ccdaSearchIndexName,
-      searchUserName: ccdaSearchUserName,
-      searchPassword: ccdaSearchSecret.secretValue.unsafeUnwrap(),
-    });
-
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
       stack: this,
       vpc: this.vpc,
@@ -397,7 +383,6 @@ export class APIStack extends Stack {
       documentDownloaderLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
-      bulkUrlSigningLambda,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -484,7 +469,6 @@ export class APIStack extends Stack {
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
-    medicalDocumentsBucket.grantReadWrite(bulkUrlSigningLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
     sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
 
@@ -609,6 +593,21 @@ export class APIStack extends Stack {
       medicalDocumentsBucket,
       medicalDocumentsUploadBucket,
       sentryDsn: props.config.lambdasSentryDSN,
+    });
+
+    this.setupBulkUrlSigningLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      medicalDocumentsBucket: medicalDocumentsBucket,
+      fhirServerUrl: props.config.fhirServerUrl,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchIndex: ccdaSearchIndexName,
+      searchUserName: ccdaSearchUserName,
+      searchPassword: ccdaSearchSecret.secretValue.unsafeUnwrap(),
+      apiService: apiService,
     });
 
     this.setupGarminWebhookAuth({
@@ -1099,20 +1098,21 @@ export class APIStack extends Stack {
   private setupBulkUrlSigningLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
-    bucketName: string | undefined;
-    fhirServerUrl: string | undefined;
+    medicalDocumentsBucket: s3.Bucket;
+    fhirServerUrl: string;
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    searchEndpoint: string | undefined;
-    searchIndex: string | undefined;
-    searchUserName: string | undefined;
-    searchPassword: string | undefined;
+    searchEndpoint: string;
+    searchIndex: string;
+    searchUserName: string;
+    searchPassword: string;
+    apiService: ecs_patterns.NetworkLoadBalancedFargateService;
   }): Lambda {
     const {
       lambdaLayers,
       vpc,
-      bucketName,
+      medicalDocumentsBucket,
       fhirServerUrl,
       sentryDsn,
       alarmAction,
@@ -1121,6 +1121,7 @@ export class APIStack extends Stack {
       searchIndex,
       searchUserName,
       searchPassword,
+      apiService,
     } = ownProps;
 
     const bulkUrlSigningLambda = createLambda({
@@ -1130,14 +1131,13 @@ export class APIStack extends Stack {
       entry: "document-bulk-signer",
       envType,
       envVars: {
-        ...(bucketName && {
-          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
-          FHIR_SERVER_URL: fhirServerUrl,
-          SEARCH_ENDPOINT: searchEndpoint,
-          SEARCH_INDEX: searchIndex,
-          SEARCH_USERNAME: searchUserName,
-          SEARCH_PASSWORD: searchPassword,
-        }),
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        FHIR_SERVER_URL: fhirServerUrl,
+        SEARCH_ENDPOINT: searchEndpoint,
+        SEARCH_INDEX: searchIndex,
+        SEARCH_USERNAME: searchUserName,
+        SEARCH_PASSWORD: searchPassword,
+        API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}`,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -1146,6 +1146,8 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    medicalDocumentsBucket.grantReadWrite(bulkUrlSigningLambda);
 
     return bulkUrlSigningLambda;
   }
