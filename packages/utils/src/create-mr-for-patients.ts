@@ -1,110 +1,87 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { Bundle, DocumentReference } from "@medplum/fhirtypes";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import axios from "axios";
 import fs from "fs";
 import https from "https";
-import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { Sequelize } from "sequelize";
-import { sleep } from "@metriport/core/util/sleep";
+import { getCxData } from "./shared/get-cx-data";
+
+/**
+ * Utility to generate Medical Records for a subset of a customer's patients.
+ *
+ * This will:
+ *    - create a new folder in the "runs" dir for the customer, with "MR-Summaries" as prefix
+ *    - get each patient's consolidated data as PDF
+ *    - store each PDF in the "MR-Summaries"
+ *
+ * Update the respective env variables and run `npm run create-medical-records`
+ */
+
+/**
+ * List of patients to generate Medical Records for.
+ */
+const patientIds: string[] = [""];
+
+const conversionType = "pdf";
 
 const apiUrl = getEnvVarOrFail("API_URL");
-const apiKey = getEnvVarOrFail("API_KEY");
 const cxId = getEnvVarOrFail("CX_ID");
-const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
-const orgName = getEnvVar("ORG_NAME");
 
-const DIR_NAME = `${orgName}_MR_Summaries`;
-
-const patientIds: string[] = [];
-
-const metriportAPI = new MetriportMedicalApi(apiKey, {
-  baseAddress: apiUrl,
-});
-
-const dbCreds = JSON.parse(sqlDBCreds);
-const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
-  host: dbCreds.host,
-  port: dbCreds.port,
-  dialect: dbCreds.engine,
-});
-
-const sqlQuery = `SELECT * FROM webhook_request WHERE cx_id = '${cxId}' AND type = 'medical.consolidated-data' ORDER BY created_at DESC LIMIT 10;`;
+const getDirName = (orgName: string) => `./runs/${orgName?.replaceAll(" ", "-")}_MR-Summaries`;
 
 async function main() {
-  let latestWebhookId = "";
-  fs.mkdirSync(`./${DIR_NAME}`, { recursive: true });
+  const startedAt = Date.now();
 
+  const { orgName } = await getCxData(cxId, undefined, false);
+  const dirName = getDirName(orgName);
+  fs.mkdirSync(`./${dirName}`, { recursive: true });
+
+  console.log(`>>> Starting with ${patientIds.length} patient IDs...`);
   for (const patientId of patientIds) {
     try {
-      await metriportAPI.startConsolidatedQuery(patientId, [], undefined, undefined, "pdf", {
-        disableWHFlag: "true",
-      });
-
-      await sleep(10000);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { url, webhookId } = await recursiveWebhook(latestWebhookId);
-
-      latestWebhookId = webhookId;
-
+      console.log(`>>> Getting MR for patient ${patientId}...`);
+      const url = await getMedicalRecordURL(patientId);
       if (!url) {
+        console.log(`No Medical Record URL for patient ${patientId}, skipping...`);
         continue;
       }
 
-      await downloadFile(url, patientId);
+      console.log(`>>> Downloading the MR file of ${patientId}...`);
+      await downloadFile(url, patientId, dirName);
 
-      console.log("Completed", patientId);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.log(error);
+      console.log(">>> Completed patient ", patientId);
+    } catch (error) {
+      console.log(`Error downloading MR for patient ${patientId}: ${error}`);
     }
   }
+  console.log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);
 }
 
-async function recursiveWebhook(
-  latestWebhookId: string
-): Promise<{ url: string | null; webhookId: string }> {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const webhooks: any = await sequelize.query(sqlQuery);
-
-  const webhookId = webhooks[0][0].id;
-
-  if (latestWebhookId === webhookId) {
-    await sleep(10000);
-    return recursiveWebhook(latestWebhookId);
-  }
-
-  const bundle = webhooks[0][0]?.payload.patients[0].bundle;
-
-  if (bundle.total > 0) {
-    const url = bundle.entry[0].resource.content[0].attachment.url;
-
-    return {
-      url,
-      webhookId,
-    };
-  } else {
-    return {
-      url: null,
-      webhookId,
-    };
-  }
+async function getMedicalRecordURL(patientId: string): Promise<string | undefined> {
+  const params = new URLSearchParams({
+    patientId,
+    cxId,
+    conversionType,
+  });
+  const resp = await axios.get(`${apiUrl}/internal/patient/consolidated?${params}`);
+  const bundle = resp.data.bundle as Bundle<DocumentReference>;
+  return bundle.entry?.[0]?.resource?.content?.[0]?.attachment?.url;
 }
 
-async function downloadFile(url: string, patientId: string) {
+async function downloadFile(url: string, patientId: string, dirName: string) {
   return new Promise(resolve => {
     https.get(url, res => {
-      const fileStream = fs.createWriteStream(`./${DIR_NAME}/${patientId}.pdf`);
+      const fileStream = fs.createWriteStream(`./${dirName}/${patientId}.pdf`);
       res.pipe(fileStream);
 
       fileStream.on("finish", () => {
         fileStream.close();
-        console.log("Download finished");
         resolve("success");
       });
     });
   });
 }
+
 main();
