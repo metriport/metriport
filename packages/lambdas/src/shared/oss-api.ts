@@ -1,7 +1,6 @@
 import axios from "axios";
 import { capture } from "./capture";
 import { Log } from "./log";
-import { DocumentBulkSignerLambdaResponse } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
@@ -40,39 +39,6 @@ export function apiClient(apiURL: string) {
         }
       }
       throw new Error(`Too many errors from API`);
-    },
-  };
-}
-
-export type BulkDownloadWebhookParams = {
-  cxId: string;
-  patientId: string;
-  requestId: string;
-  dtos: DocumentBulkSignerLambdaResponse[];
-};
-
-export function apiClientBulkDownloadWebhook(apiURL: string) {
-  const sendBulkDownloadUrl = `${apiURL}/internal/docs/triggerBulkDownloadWebhook`;
-
-  return {
-    triggerWebhook: async function (params: BulkDownloadWebhookParams, log: Log) {
-      try {
-        log(`Trigger API on ${sendBulkDownloadUrl} w/ ${JSON.stringify(params)}`);
-        await ossApi.post(sendBulkDownloadUrl, params.dtos, {
-          params: { cxId: params.cxId, patientId: params.patientId, requestId: params.requestId },
-        });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        const msg = "Error notifying API";
-        const extra = {
-          url: sendBulkDownloadUrl,
-          statusCode: error.response?.status,
-          error,
-        };
-        log(msg, extra);
-        capture.message(msg, { extra, level: "info" });
-        throw new Error(`Error from API: ${error.message}`);
-      }
     },
   };
 }

@@ -49,6 +49,15 @@ export const startBulkGetDocumentUrls = async (
     requestId,
   });
 
+  //   getSignedUrls(
+  //     cxId,
+  //     patientId,
+  //     requestId,
+  //     "medical-documents-staging",
+  //     "us-east-2",
+  //     "http://localhost:8080",
+  //   )
+
   const payload: DocumentBulkSignerLambdaRequest = {
     patientId: patientId,
     cxId: cxId,

@@ -4,11 +4,8 @@ import { getEnvType } from "@metriport/core/util/env-var";
 import {
   getSignedUrls,
   DocumentBulkSignerLambdaRequest,
-  DocumentBulkSignerLambdaResponse,
 } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 import { capture } from "./shared/capture";
-import { apiClientBulkDownloadWebhook } from "./shared/oss-api";
-import { prefixedLog } from "./shared/log";
 
 // Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
@@ -26,23 +23,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         `bucketName: ${bucketName}, cxId: ${cxId}, patientId: ${patientId}, requestId: ${requestId} `
     );
 
-    const response: DocumentBulkSignerLambdaResponse[] = await getSignedUrls(
-      patientId,
-      cxId,
-      bucketName,
-      region
-    );
-
-    const log = prefixedLog(`patient ${patientId}, requestId ${requestId}`);
-    const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
-    ossApiClient.triggerWebhook(
-      {
-        cxId: cxId,
-        patientId: patientId,
-        requestId: requestId,
-        dtos: response,
-      },
-      log
-    );
+    await getSignedUrls(cxId, patientId, requestId, bucketName, region, apiURL);
   }
 );
