@@ -32,7 +32,7 @@ import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { appendDocBulkDownloadProgress } from "../../command/medical/patient/append-bulk-doc-download-progress";
+import { appendDocBulkDownloadProgress } from "../../command/medical/patient/bulk-doc-download-progress";
 
 import {
   DocumentBulkSignerLambdaResponse,

@@ -9,7 +9,7 @@ import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { storeBulkDownloadQueryInit } from "../patient/query-init";
+import { storeBulkDownloadQueryInit } from "../patient/bulk-doc-download-progress";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 
@@ -27,25 +27,25 @@ export const startBulkGetDocumentUrls = async (
   cxId: string,
   patientId: string
 ): Promise<DocumentBulkDownloadProgress> => {
-  if (!bulkSigningLambdaName) throw new Error("Bulk Signing Lambda Name is undefined");
   const { log } = Util.out(`triggerBulkSigning - M patient ${patientId}`);
-
+  if (!bulkSigningLambdaName) throw new Error("Bulk Signing Lambda Name is undefined");
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const docBulkDownloadProgress = patient.data.documentBulkDownloadProgress;
-  const requestId = getOrGenerateRequestId(docBulkDownloadProgress);
 
   if (isDocBulkDownloadProcessing(docBulkDownloadProgress?.urlGeneration)) {
     log(
-      `Patient ${patientId}, Request ${requestId}, docBulkDownloadProgress is already 'processing', skipping...`
+      `Patient ${patientId}, Request ${docBulkDownloadProgress?.requestId}, docBulkDownloadProgress is already 'processing', skipping...`
     );
     return createBulkDownloadQueryResponse("processing", patient);
   }
 
+  const requestId = getOrGenerateRequestId(docBulkDownloadProgress);
+
   const updatedPatient = await storeBulkDownloadQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    documentBulkDownloadProgress: { download: { status: "processing" } },
+    documentBulkDownloadProgress: { urlGeneration: { status: "processing" } },
     requestId,
   });
 
