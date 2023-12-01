@@ -9,7 +9,7 @@ export type Progress = {
 };
 
 export type DocumentBulkDownloadProgress = {
-  download?: Progress;
+  urlGeneration?: Progress;
   requestId?: string;
 };
 

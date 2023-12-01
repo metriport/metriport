@@ -39,17 +39,17 @@ export async function appendDocBulkDownloadProgress({
     const documentBulkDownloadProgress = existingPatient.data?.documentBulkDownloadProgress || {};
 
     // Initialize download object if not present
-    if (documentBulkDownloadProgress.download) {
+    if (documentBulkDownloadProgress.urlGeneration) {
       // Updating only if the properties are not undefined
       if (successful) {
-        documentBulkDownloadProgress.download.successful = successful;
+        documentBulkDownloadProgress.urlGeneration.successful = successful;
       }
       if (errors) {
-        documentBulkDownloadProgress.download.errors = errors;
+        documentBulkDownloadProgress.urlGeneration.errors = errors;
       }
       // Ensure status is only assigned if not undefined
       if (status) {
-        documentBulkDownloadProgress.download.status = status;
+        documentBulkDownloadProgress.urlGeneration.status = status;
       }
       if (requestId) {
         documentBulkDownloadProgress.requestId = requestId;

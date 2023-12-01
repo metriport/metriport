@@ -1,9 +1,9 @@
 import { S3Utils } from "../s3";
 import { z } from "zod";
 import { DocumentReference } from "@medplum/fhirtypes";
-import { searchDocuments } from "@metriport/core/src/external/opensearch/search-documents";
+import { searchDocuments } from "../../opensearch/search-documents";
 
-const SIGNED_URL_DURATION_SECONDS = 3600; // longer since a lot of docs
+const SIGNED_URL_DURATION_SECONDS = 3000; // longer since a lot of docs
 
 export type DocumentBulkSignerLambdaRequest = {
   patientId: string;
@@ -15,7 +15,6 @@ export type DocumentBulkSignerLambdaResponse = {
   id: string;
   fileName: string;
   description?: string;
-  status?: string;
   mimeType?: string;
   size?: number; // bytes
   signedUrl: string;
@@ -56,7 +55,6 @@ export async function getSignedUrls(
         id: doc.id,
         fileName: fileName,
         description: doc.description,
-        status: doc.status,
         mimeType: attachment.contentType,
         size: attachment.size,
         signedUrl: signedUrl,

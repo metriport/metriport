@@ -35,7 +35,7 @@ export const startBulkGetDocumentUrls = async (
   const docBulkDownloadProgress = patient.data.documentBulkDownloadProgress;
   const requestId = getOrGenerateRequestId(docBulkDownloadProgress);
 
-  if (isDocBulkDownloadProcessing(docBulkDownloadProgress?.download)) {
+  if (isDocBulkDownloadProcessing(docBulkDownloadProgress?.urlGeneration)) {
     log(
       `Patient ${patientId}, Request ${requestId}, docBulkDownloadProgress is already 'processing', skipping...`
     );
@@ -75,7 +75,7 @@ export function getOrGenerateRequestId(
   docBulkDownloadProgress: DocumentBulkDownloadProgress | undefined
 ): string {
   if (
-    isDocBulkDownloadProcessing(docBulkDownloadProgress?.download) &&
+    isDocBulkDownloadProcessing(docBulkDownloadProgress?.urlGeneration) &&
     docBulkDownloadProgress?.requestId
   ) {
     return docBulkDownloadProgress.requestId;
@@ -100,9 +100,9 @@ export const createBulkDownloadQueryResponse = (
   patient?: Patient
 ): DocumentBulkDownloadProgress => {
   return {
-    download: {
+    urlGeneration: {
       status,
-      ...patient?.data.documentBulkDownloadProgress?.download,
+      ...patient?.data.documentBulkDownloadProgress?.urlGeneration,
     },
     ...patient?.data.documentBulkDownloadProgress,
   };

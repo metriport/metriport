@@ -43,9 +43,8 @@ export const documentQuerySchema = z.object({
 });
 
 export const documentBulkDownloadSchema = z.object({
-  download: progressSchema.optional(),
+  urlGeneration: progressSchema.optional(),
   requestId: z.string().optional(),
-  total: z.number().optional(),
 });
 
 export type DocumentBulkDownloadQuery = z.infer<typeof documentBulkDownloadSchema>;
