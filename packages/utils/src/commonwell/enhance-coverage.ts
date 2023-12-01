@@ -45,11 +45,6 @@ import { getCxData } from "../shared/get-cx-data";
  */
 
 /**
- * Only need to provide the facilityId if the CX has more than one facility.
- * Used to determine the NPI used to query CW.
- */
-const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-inferrable-types
-/**
  * List of patients to check coverage for.
  */
 const patientIds: string[] = [];
@@ -131,7 +126,7 @@ const coverageEnhancer = new CoverageEnhancerLocal(
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(metriportApiBaseUrl);
 
 export async function main() {
-  const { orgOID: cxOrgOID } = await getCxData(cxId, facilityId);
+  const { orgOID: cxOrgOID } = await getCxData(cxId, undefined, false);
 
   console.log(`Running coverage enhancement... - started at ${new Date().toISOString()}`);
   const startedAt = Date.now();
