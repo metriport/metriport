@@ -64,19 +64,11 @@ export const startBulkGetDocumentUrls = async (
     requestId: requestId,
   };
 
-  try {
-    const response = await lambdaClient
-      .invoke({
-        FunctionName: bulkSigningLambdaName,
-        InvocationType: "RequestResponse",
-        Payload: JSON.stringify(payload),
-      })
-      .promise();
-
-    console.log("Lambda response:", response);
-  } catch (error) {
-    console.error("Error invoking lambda:", error);
-  }
+  lambdaClient.invoke({
+    FunctionName: bulkSigningLambdaName,
+    InvocationType: "RequestResponse",
+    Payload: JSON.stringify(payload),
+  });
 
   return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
 };
