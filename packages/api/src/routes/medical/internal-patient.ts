@@ -1,3 +1,4 @@
+import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -7,6 +8,7 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
@@ -26,6 +28,7 @@ import { completeEnhancedCoverage } from "../../external/commonwell/cq-bridge/co
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
+import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
@@ -34,6 +37,7 @@ import { stringIntegerSchema, stringListFromQuerySchema } from "../schemas/share
 import { getUUIDFrom, uuidSchema } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryAsArrayOrFail } from "../util";
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 
 dayjs.extend(duration);
@@ -440,6 +444,47 @@ router.post(
     });
 
     return res.status(status.OK).json({ status: status[status.OK] });
+  })
+);
+
+const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/consolidated
+ *
+ * Returns a patient's consolidated data.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.query.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.resources Optional comma-separated list of resources to be returned.
+ * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
+ *        Accepts "pdf" or "html". Defaults to no conversion.
+ * @return Patient's consolidated data.
+ */
+router.get(
+  "/consolidated",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("query").orFail("patientId", req);
+    const resources = getResourcesQueryParam(req);
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const typeRaw = getFrom("query").optional("conversionType", req);
+    const conversionType = typeRaw
+      ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
+      : undefined;
+
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const data = await getConsolidated({
+      patient,
+      resources,
+      dateFrom,
+      dateTo,
+      conversionType,
+    });
+    return res.json(data);
   })
 );
 
