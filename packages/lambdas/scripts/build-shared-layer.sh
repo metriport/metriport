@@ -1,18 +1,23 @@
 #!/bin/bash
 
+addPackageToLayer() {
+   package=$1
+   package_folder="../$package"
+   package_on_layer="./layers/shared/nodejs/node_modules/@metriport/$package"
+   echo "Copying $package_folder to shared layer..."
+   mkdir $package_on_layer
+   cp $package_folder/package.json $package_on_layer
+   rsync -a $package_folder/dist $package_on_layer --exclude *.ts --exclude *.ts.map --exclude __tests__
+}
+
 main() {
    mkdir -p ./layers/shared/nodejs
 
    echo "Copying lambdas dependencies to shared layer..."
    cp -r node_modules ./layers/shared/nodejs/
 
-   core="../core"
-   core_on_layer="./layers/shared/nodejs/node_modules/@metriport/core"
-   echo "Copying $core to shared layer..."
-   # TODO 1148 this can become a function when we want to move all lambda dependencies to local packages to local filesystem instead of NPM
-   mkdir $core_on_layer
-   cp $core/package.json $core_on_layer
-   rsync -a $core/dist $core_on_layer --exclude *.ts --exclude *.ts.map --exclude __tests__
+   addPackageToLayer "shared"
+   addPackageToLayer "core"
 
    pushd ./layers/shared
 
