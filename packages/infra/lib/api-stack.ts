@@ -354,7 +354,7 @@ export class APIStack extends Stack {
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchIndex: ccdaSearchIndexName,
       searchUserName: ccdaSearchUserName,
-      searchPassword: ccdaSearchSecret,
+      searchPassword: ccdaSearchSecret.secretValue.toString(),
     });
 
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
