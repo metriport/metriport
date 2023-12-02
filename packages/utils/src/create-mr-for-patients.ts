@@ -22,12 +22,14 @@ import { getCxData } from "./shared/get-cx-data";
 /**
  * List of patients to generate Medical Records for.
  */
-const patientIds: string[] = [""];
+const patientIds: string[] = [];
 
 const conversionType = "pdf";
 
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
+
+const endpointUrl = `${apiUrl}/internal/patient/consolidated`;
 
 const getDirName = (orgName: string) => `./runs/${orgName?.replaceAll(" ", "-")}_MR-Summaries`;
 
@@ -65,7 +67,7 @@ async function getMedicalRecordURL(patientId: string): Promise<string | undefine
     cxId,
     conversionType,
   });
-  const resp = await axios.get(`${apiUrl}/internal/patient/consolidated?${params}`);
+  const resp = await axios.get(`${endpointUrl}?${params}`);
   const bundle = resp.data.bundle as Bundle<DocumentReference>;
   return bundle.entry?.[0]?.resource?.content?.[0]?.attachment?.url;
 }
