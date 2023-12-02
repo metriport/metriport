@@ -13,7 +13,7 @@
     "package": "npm run prep-deploy",
     "install-deps": "npm ci --ignore-scripts --no-fund && SCRIPT='ci --ignore-scripts --no-fund' npm run lambdas:no-run",
     "build": "npm run build --workspaces && SCRIPT='build' npm run lambdas",
-    "build:cloud": "npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
+    "build:cloud": "npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas && npm run sentry:sourcemaps",
     "build:staging": "ENV_TYPE='staging' npm run build:cloud --workspaces && SCRIPT='build:cloud' npm run lambdas",
     "typecheck": "npm run typecheck --workspaces --if-present && SCRIPT='typecheck' npm run lambdas",
     "lint": "npm run lint --workspaces --if-present && SCRIPT='lint' npm run lambdas",
@@ -30,7 +30,8 @@
     "publish:alpha:ignore": "npm run build && npx lerna publish --dist-tag next --ignore-changes '**'",
     "publish:prod": "npm run build && npx lerna publish",
     "publish:prod:ignore": "npm run build && npx lerna publish --ignore-changes '**'",
-    "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
+    "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org metriport-inc --project api-oss ./packages/api/dist && sentry-cli sourcemaps upload --org metriport-inc --project api-oss ./packages/api/dist"
   },
   "workspaces": [
     "packages/shared",
@@ -77,5 +78,8 @@
     "lint-staged": "^13.1.0",
     "semantic-release": "^20.0.2",
     "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "@sentry/cli": "^2.21.5"
   }
 }

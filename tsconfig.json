@@ -3,7 +3,7 @@
     "types": ["jest"],
     "typeRoots": ["./types", "./node_modules/@types"],
     "noErrorTruncation": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
   "exclude": ["node_modules"],
   "files": [],
@@ -30,10 +30,16 @@
       "path": "./packages/core/tsconfig.ref.json"
     },
     {
+      "path": "./packages/core/tsconfig.ref.json"
+    },
+    {
       "path": "./packages/infra/tsconfig.ref.json"
     },
     {
       "path": "./packages/react-native-sdk/tsconfig.ref.json"
+    },
+    {
+      "path": "./packages/shared/tsconfig.ref.json"
     },
     {
       "path": "./packages/utils/tsconfig.ref.json"

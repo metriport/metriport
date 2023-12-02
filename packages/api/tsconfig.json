@@ -24,7 +24,16 @@
     // "noUnusedParameters": true,
     // END - From @tsconfig/strictest
 
-    "sourceMap": false /* Create source map files for emitted JavaScript files. */,
+    "sourceMap": true,
+    "inlineSources": true,
+    // GOTTA VALIDATE THIS
+    // GOTTA VALIDATE THIS
+    // GOTTA VALIDATE THIS
+    // GOTTA VALIDATE THIS
+    // GOTTA VALIDATE THIS
+    // GOTTA VALIDATE THIS
+    // GOTTA VALIDATE THIS
+    "sourceRoot": "/", 
     "rootDir": "./src" /* Specify the root folder within your source files. */,
     "outDir": "./dist" /* Specify an output folder for all emitted files. */,
     "noErrorTruncation": true,
