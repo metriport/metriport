@@ -1148,6 +1148,7 @@ export class APIStack extends Stack {
     });
 
     medicalDocumentsBucket.grantReadWrite(bulkUrlSigningLambda);
+    bulkUrlSigningLambda.grantInvoke(apiService.taskDefinition.taskRole);
 
     return bulkUrlSigningLambda;
   }
