@@ -457,7 +457,7 @@ export class MetriportMedicalApi {
   /**
    * Start a bulk document download for a given patient, with the payload returnd to webhook.
    *
-   * @param patientId Patient ID for which to retrieve document urls.
+   * @param patientId Patient ID for which to retrieve document URLs.
    * @return The document query request ID, progress & status indicating whether its being executed or not
    */
   async startBulkGetDocumentUrl(patientId: string): Promise<BulkGetDocumentUrlQuery> {

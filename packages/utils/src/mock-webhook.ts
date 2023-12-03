@@ -34,7 +34,7 @@ app.post("/", (req: Request, res: Response) => {
     console.log(`Signature verification failed`);
   }
 
-  if (req.body.meta && req.body.meta.type === "medical.document-bulk-download") {
+  if (req.body.meta && req.body.meta.type === "medical.document-bulk-download-urls") {
     for (const patient of req.body.patients) {
       for (const document of patient.documents) {
         mockDownload(document.fileName);

@@ -16,7 +16,7 @@ export type SetBulkGetDocUrlProgress = {
 
 /**
  * The function `appendBulkGetDocUrlProgress` updates the progress of a BulkGetDocumentsUrl query to a patient's data.
- * @param {SetBulkGetDocUrlProgress}  - - A cmd argument type to update the progress of a bulk get doc url query.
+ * @param SetBulkGetDocUrlProgress - A cmd argument type to update the progress of a bulk get doc URL query.
  * @returns a Promise that resolves to a Patient object.
  */
 export async function appendBulkGetDocUrlProgress({
@@ -64,7 +64,7 @@ export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
 
 /**
  * The function `storeBulkGetDocumentUrlQueryInit` initalizes the `BulkGetDocumentsUrlProgress`field in a patient's data.
- * @param {BulkGetDocUrlQueryInitCmd} cmd - The `cmd` argument type to initialize the `BulkGetDocumentsUrlProgress` field
+ * @param cmd - The `cmd` argument type to initialize the `BulkGetDocumentsUrlProgress` field
  * @returns a Promise that resolves to a Patient object.
  */
 export const storeBulkGetDocumentUrlQueryInit = async (

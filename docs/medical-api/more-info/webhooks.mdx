@@ -360,13 +360,13 @@ Example payload:
 }
 ```
 
-#### Bulk Document Download
+### Bulk Document Download URLs
 
-While you can download specified documents using the [get document url endpoint](/medical-api/api-reference/document/bulk-document-download), 
-patients can have a large number of documents, and it can be tedious to download one at a time. 
+While you can download indiviudal specified documents using the [get document url endpoint](/medical-api/api-reference/document/get-document), 
+patients might have a large number of documents. 
 
-Instead trigger a [bulk get document url](/medical-api/api-reference/document/bulk-document-download) query - one query per patient at any given time;
-When the result is ready, we’ll send a webhook message with all the downloadable urls for all the patients documents.
+If you want to download all of a patient's documents, especially when they have a large volume of documents, you can instead start a [Bulk Get Document URL query](/medical-api/api-reference/document/bulk-get-document-url) - we’ll send a webhook message with all the downloadable URLs for all the patients documents.
+
 Here is an example payload:
 
 ```json
@@ -379,24 +379,24 @@ Here is an example payload:
   "patients": [
     {
       "status": "completed",
+      "patientId": "<patient-id-1>",
+      "externalId": "<external-id-1>",
       "documents": [
         {
           "id": "018c1b94-57dc-7950-b564-f74ab9b56cc4",
           "size": 40670,
-          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f74ab9b56cc4.bin",
+          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f74ab9b56cc4.xml",
           "mimeType": "application/xml",
           "signedUrl": "<a-signed-url>"
         },
         {
           "id": "018c1b94-57dc-7950-b564-f749bcf9be3e",
           "size": 77093,
-          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f749bcf9be3e.bin",
+          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f749bcf9be3e.pdf",
           "mimeType": "application/pdf",
           "signedUrl": "<a-signed-url>"
         }
       ],
-      "patientId": "<patient-id-1>",
-      "externalId": "<external-id-1>",
     }
   ]
 }

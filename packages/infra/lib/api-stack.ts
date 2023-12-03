@@ -1147,7 +1147,7 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    medicalDocumentsBucket.grantReadWrite(bulkUrlSigningLambda);
+    medicalDocumentsBucket.grantRead(bulkUrlSigningLambda);
     bulkUrlSigningLambda.grantInvoke(apiService.taskDefinition.taskRole);
 
     return bulkUrlSigningLambda;

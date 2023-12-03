@@ -392,7 +392,7 @@ router.post(
     processPatientDocumentRequest(
       cxId,
       patientId,
-      "medical.document-bulk-download",
+      "medical.document-bulk-download-urls",
       MAPIWebhookStatus.completed,
       dtos
     );

@@ -5,9 +5,12 @@ import { searchDocuments } from "../../opensearch/search-documents";
 import axios from "axios";
 import { capture } from "../../../util/notifications";
 import { getEnvVarOrFail } from "../../../util/env-var";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 const ossApi = axios.create();
+dayjs.extend(duration);
 
-const SIGNED_URL_DURATION_SECONDS = 3000; // longer since a lot of docs
+const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 3 }).asSeconds();
 
 export type DocumentBulkSignerLambdaRequest = {
   patientId: string;
@@ -21,7 +24,7 @@ export type DocumentBulkSignerLambdaResponse = {
   description?: string;
   mimeType?: string;
   size?: number; // bytes
-  signedUrl: string;
+  url: string;
 };
 
 export async function getSignedUrls(
@@ -67,7 +70,7 @@ export async function getSignedUrls(
         description: doc.description,
         mimeType: attachment.contentType,
         size: attachment.size,
-        signedUrl: signedUrl,
+        url: signedUrl,
       };
     })
   );
@@ -92,7 +95,7 @@ export const DocumentBulkSignerLambdaResponseSchema = z.object({
   status: z.string().optional(),
   mimeType: z.string().optional(),
   size: z.number().optional(),
-  signedUrl: z.string(),
+  url: z.string(),
 });
 
 export const DocumentBulkSignerLambdaResponseArraySchema = z.array(

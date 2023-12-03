@@ -1,6 +1,6 @@
 ---
 title: "Get Document URL"
-description: "Gets a presigned URL for downloading the specified document."
+description: "Gets a downloadable URL for downloading the specified document."
 api: "GET /medical/v1/document/downloadUrl"
 ---
 
@@ -25,8 +25,12 @@ This endpoint returns a URL which you can use to download the specified document
 A json object containing the URL will be returned.
 
 <ResponseField name="url" type="string">
-  The presigned URL.
+  The downloadable URL.
 </ResponseField>
+
+<Tip>
+  For patients with a large volume documents, you can use the [Bulk URL Generation endpoint](/medical-api/api-reference/document/bulk-get-document-url) to get all download URLs, instead of doing it one at a time
+</Tip>
 
 <ResponseExample>
 
@@ -35,7 +39,7 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
-const presignedUrl = await metriportClient.getDocumentUrl("abc123-def456");
+const downloadableUrl = await metriportClient.getDocumentUrl("abc123-def456");
 ```
 
 </ResponseExample>

@@ -4,5 +4,5 @@ export type DocumentBulkUrlDTO = {
   description?: string;
   mimeType?: string;
   size?: number; // bytes
-  signedUrl: string;
+  url: string;
 };

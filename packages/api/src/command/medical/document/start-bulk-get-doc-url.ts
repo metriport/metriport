@@ -10,6 +10,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-progress";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+import { appendBulkGetDocUrlProgress } from "../patient/bulk-get-doc-url-progress";
 
 const lambdaClient = makeLambdaClient();
 const bulkSigningLambdaName = "BulkUrlSigningLambda";
@@ -17,15 +18,15 @@ const bulkSigningLambdaName = "BulkUrlSigningLambda";
 /**
  * The function `startBulkGetDocumentUrls` triggers the bulk signing process lambda for a patient's documents and
  * returns the progress of the bulk signing.
- * @param {string} cxId - cxId
- * @param {string} patientId - patientId
+ * @param cxId - cxId
+ * @param patientId - patientId
  * @returns a Promise that resolves to a BulkGetDocumentsUrlProgress object.
  */
 export const startBulkGetDocumentUrls = async (
   cxId: string,
   patientId: string
 ): Promise<BulkGetDocumentsUrlProgress> => {
-  const { log } = Util.out(`triggerBulkSigning - M patient ${patientId}`);
+  const { log } = Util.out(`startBulkGetDocumentUrls - M patient ${patientId}`);
   if (!bulkSigningLambdaName) throw new Error("Bulk Signing Lambda Name is undefined");
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
@@ -47,17 +48,6 @@ export const startBulkGetDocumentUrls = async (
     requestId,
   });
 
-  console.log("updatedPatient", JSON.stringify(updatedPatient));
-
-  // getSignedUrls(
-  //     cxId,
-  //     patientId,
-  //     requestId,
-  //     "medical-documents-staging",
-  //     "us-east-2",
-  //     "http://localhost:8080",
-  //   )
-
   const payload: DocumentBulkSignerLambdaRequest = {
     patientId: patientId,
     cxId: cxId,
@@ -73,7 +63,13 @@ export const startBulkGetDocumentUrls = async (
       })
       .promise();
   } catch (e) {
-    console.log("Lambda error:", e);
+    appendBulkGetDocUrlProgress({
+      patient: { id: patientId, cxId: cxId },
+      status: "failed",
+      requestId: requestId,
+    });
+    console.log("Error invoking lambda", e);
+    return createBulkGetDocumentUrlQueryResponse("failed", updatedPatient);
   }
 
   return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
@@ -82,7 +78,7 @@ export const startBulkGetDocumentUrls = async (
 /**
  * The function `getOrGenerateRequestId` returns the request ID from `docBulkDownloadProgress` if it
  * exists, otherwise it generates a new request ID.
- * @param {BulkGetDocumentsUrlProgress | undefined} BulkGetDocumentsUrlProgress - Represents the document url getting progress.
+ * @param BulkGetDocumentsUrlProgress - Represents the document URL getting progress.
  * @returns a string representing the request ID.
  */
 
@@ -102,10 +98,10 @@ export function getOrGenerateRequestId(
 const generateRequestId = (): string => uuidv7();
 
 /**
- * The function creates a response object for a bulk get documents urls query with a given status and patient
+ * The function creates a response object for a bulk get documents URLs query with a given status and patient
  * information.
- * @param {BulkGetDocUrlStatus} status - The the status of the bulk get documents url .
- * @param {Patient} [patient] - The the patient for whom the `BulkGetDocumentsUrlProgress` is being created.
+ * @param status - The  status of the bulk get documents URLs.
+ * @param patient - The patient for whom the `BulkGetDocumentsUrlProgress` is being created.
  * @returns a BulkGetDocumentsUrlProgress object.
  */
 export const createBulkGetDocumentUrlQueryResponse = (
