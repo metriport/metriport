@@ -251,7 +251,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
 };
 
 function formatDateForDisplay(date?: string | undefined): string {
-  return date && date.length > 0 ? dayjs(date).format(ISO_DATE) : "";
+  return date ? dayjs(date).format(ISO_DATE) : "";
 }
 
 function extractFhirTypesFromBundle(bundle: Bundle): {
