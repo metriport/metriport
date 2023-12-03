@@ -129,17 +129,16 @@ service:
             conversionType: "pdf"
           response:
             body: $DocumentUrl.Example1
-    bulkGetUrl:
+    startBulkGetDocumentUrl:
       display-name: Start Bulk Get Document URL
       docs: |
         Triggers a process to generate a list of download URLs for all of the patient's documents.
         The status of the process is returned in the response. Initially, it will be `processing`, 
         and when the process is finished, the status will be updated to `completed` or `failed`.
         If you trigger this endpoint again while the process is still running, you will get a response 
-        that reflects the current progress. Essentially, only a single bulk download process will be 
-        running for a patient at any given time.
+        that reflects the current progress.
       method: POST
-      path: /bulk-download-url
+      path: /bulk-get-documents
       request:
         name: StartBulkGetDocumentUrlRequest
         query-parameters:
@@ -155,8 +154,6 @@ service:
             patientId: "12345678"
           response:
             body: $BulkGetDocumentUrlQuery.Example1
-
-
 
 types:
   DocumentQuery:
