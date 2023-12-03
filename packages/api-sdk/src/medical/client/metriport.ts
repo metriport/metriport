@@ -461,11 +461,15 @@ export class MetriportMedicalApi {
    * @return The document query request ID, progress, and status indicating whether it's being executed or not.
    */
   async startBulkGetDocumentUrl(patientId: string): Promise<BulkGetDocumentUrlQuery> {
-    const resp = await this.api.post(`${DOCUMENT_URL}/bulk-get-documents`, {
-      params: {
-        patientId,
-      },
-    });
+    const resp = await this.api.post(
+      `${DOCUMENT_URL}/bulk-get-documents`,
+      {},
+      {
+        params: {
+          patientId,
+        },
+      }
+    );
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return bulkGetDocumentUrlQuerySchema.parse(resp.data);
   }

@@ -9,6 +9,7 @@
     "mock-webhook": "ts-node src/mock-webhook.ts",
     "fhir-uploader": "ts-node src/fhir-uploader.ts",
     "doc-query": "ts-node src/document/document-query.ts",
+    "bulk-get-docs": "ts-node src/document/document-bulk-url.ts",
     "cq-cert-check": "ts-node src/carequality/cq-cert-checker.ts",
     "bulk-insert": "ts-node src/bulk-insert-patients",
     "coverage-assessment": "ts-node src/commonwell/coverage-assessment",
