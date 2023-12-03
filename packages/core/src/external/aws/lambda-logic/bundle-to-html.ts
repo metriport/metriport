@@ -250,6 +250,10 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
   return htmlPage;
 };
 
+function formatDateForDisplay(date?: string | undefined): string {
+  return date && date.length > 0 ? dayjs(date).format(ISO_DATE) : "";
+}
+
 function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
@@ -580,10 +584,9 @@ function buildEncounterSections(
 
     if (encounterRefId) {
       const encounterDate = mappedEncounters[encounterRefId]?.period?.start;
+      const formattedDate = formatDateForDisplay(encounterDate);
 
-      if (encounterDate) {
-        const formattedDate = dayjs(encounterDate).format(ISO_DATE);
-
+      if (formattedDate) {
         if (!encounterSections[formattedDate]) {
           encounterSections[formattedDate] = {};
         }
@@ -714,7 +717,7 @@ function buildReports(
         <div id="report">
           <div class="header">
             <h3 class="title">Encounter</h3>
-            <span>Date: ${dayjs(key).format(ISO_DATE) ?? ""}</span>
+            <span>Date: ${formatDateForDisplay(key) ?? ""}</span>
           </div>
           <div>
           ${
@@ -951,7 +954,7 @@ function createSectionInMedications(medicationRequests: MedicationRequest[], tit
               <td>${medicationRequest.dispenseRequest?.numberOfRepeatsAllowed ?? ""}</td>
               <td>${medicationRequest.status ?? ""}</td>
               <td>${code ?? ""}</td>
-              <td>${dayjs(medicationRequest.authoredOn).format(ISO_DATE) ?? ""}</td>
+              <td>${formatDateForDisplay(medicationRequest.authoredOn)}</td>
             </tr>
           `;
         })
@@ -1044,8 +1047,8 @@ function createConditionSection(conditions: Condition[]) {
             <tr>
               <td>${condition.name}</td>
               <td>${condition.code ?? ""}</td>
-              <td>${dayjs(condition.firstSeen).format(ISO_DATE) ?? ""}</td>
-              <td>${dayjs(condition.lastSeen).format(ISO_DATE) ?? ""}</td>
+              <td>${formatDateForDisplay(condition.firstSeen)}</td>
+              <td>${formatDateForDisplay(condition.lastSeen)}</td>
               <td>${condition.clinicalStatus}</td>
             </tr>
           `;
@@ -1167,8 +1170,8 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
               <td>${allergy.name}</td>
               <td>${blacklistManifestation ? "" : allergy.manifestation}</td>
               <td>${allergy.code}</td>
-              <td>${dayjs(allergy.firstSeen).format(ISO_DATE) ?? ""}</td>
-              <td>${dayjs(allergy.lastSeen).format(ISO_DATE) ?? ""}</td>
+              <td>${formatDateForDisplay(allergy.firstSeen)}</td>
+              <td>${formatDateForDisplay(allergy.lastSeen)}</td>
               <td>${allergy.clinicalStatus}</td>
             </tr>
           `;
@@ -1223,7 +1226,7 @@ function createProcedureSection(procedures: Procedure[]) {
             <tr>
               <td>${procedure.code?.text ?? ""}</td>
               <td>${code ?? ""}</td>
-              <td>${dayjs(procedure.performedDateTime).format(ISO_DATE) ?? ""}</td>
+              <td>${formatDateForDisplay(procedure.performedDateTime)}</td>
               <td>${procedure.status ?? ""}</td>
             </tr>
           `;
@@ -1273,7 +1276,7 @@ function createObservationSocialHistorySection(observations: Observation[]) {
     .reduce((acc, observation) => {
       const display = observation.code?.coding?.[0]?.display ?? "";
       const value = renderSocialHistoryValue(observation) ?? "";
-      const observationDate = dayjs(observation.effectiveDateTime).format(ISO_DATE);
+      const observationDate = formatDateForDisplay(observation.effectiveDateTime);
       const lastItemInArray = acc[acc.length - 1];
 
       if (lastItemInArray) {
@@ -1336,7 +1339,7 @@ function createObservationSocialHistorySection(observations: Observation[]) {
               <td>${observation.display}</td>
               <td>${observation.value}</td>
               <td>${observation.code ?? ""}</td>
-              <td>${date}</td>
+              <td>${formatDateForDisplay(date)}</td>
             </tr>
           `;
         })
@@ -1392,7 +1395,7 @@ function createObservationVitalsSection(observations: Observation[]) {
 
 function createVitalsByDate(observations: Observation[]): string {
   const filteredObservations = observations.reduce((acc, observation) => {
-    const observationDate = dayjs(observation.effectiveDateTime).format(ISO_DATE);
+    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
     const existingObservation = acc.find(observation => observation.date === observationDate);
 
     if (existingObservation) {
@@ -1488,7 +1491,7 @@ function createObservationsByDate(observations: Observation[]): string {
   const blacklistReferenceRangeText = ["unknown", "not detected"];
 
   const filteredObservations = observations.reduce((acc, observation) => {
-    const observationDate = dayjs(observation.effectiveDateTime).format(ISO_DATE);
+    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
     const existingObservation = acc.find(observation => observation.date === observationDate);
 
     if (existingObservation) {
@@ -1584,7 +1587,7 @@ function createOtherObservationsSection(observations: Observation[]) {
 
 function createOtherObservationsByDate(observations: Observation[]): string {
   const filteredObservations = observations.reduce((acc, observation) => {
-    const observationDate = dayjs(observation.effectiveDateTime).format(ISO_DATE);
+    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
     const existingObservation = acc.find(observation => observation.date === observationDate);
 
     if (existingObservation) {
@@ -1701,7 +1704,7 @@ function createImmunizationSection(immunizations: Immunization[]) {
               <td>${immunization.vaccineCode?.text ?? ""}</td>
               <td>${code ?? ""}</td>
               <td>${immunization.manufacturer?.display ?? ""}</td>
-              <td>${dayjs(immunization.occurrenceDateTime).format(ISO_DATE) ?? ""}</td>
+              <td>${formatDateForDisplay(immunization.occurrenceDateTime)}</td>
               <td>${immunization.status ?? ""}</td>
             </tr>
           `;
@@ -1901,7 +1904,7 @@ function createTaskSection(tasks: Task[]) {
               <td>${task.reasonCode?.coding?.[0]?.display ?? ""}</td>
               <td>${code ?? ""}</td>
               <td>${task.note?.[0]?.text ?? ""}</td>
-              <td>${dayjs(task.authoredOn).format(ISO_DATE) ?? ""}</td>
+              <td>${formatDateForDisplay(task.authoredOn)}</td>
             </tr>
           `;
         })
@@ -1955,8 +1958,8 @@ function createEncountersSection(encounters: Encounter[]) {
               <td>${encounter.reasonCode?.[0]?.text ?? ""}</td>
               <td>${encounter.location?.[0]?.location?.display ?? ""}</td>
               <td>${renderClassDisplay(encounter)}</td>
-              <td>${dayjs(encounter.period?.start).format(ISO_DATE) ?? ""}</td>
-              <td>${dayjs(encounter.period?.end).format(ISO_DATE) ?? ""}</td>
+              <td>${formatDateForDisplay(encounter.period?.start)}</td>
+              <td>${formatDateForDisplay(encounter.period?.end)}</td>
             </tr>
           `;
         })
@@ -2009,8 +2012,8 @@ function createCoverageSection(coverages: Coverage[]) {
               <td>${coverage.class?.[0]?.value ?? ""}</td>
               <td>${coverage.identifier?.[0]?.value ?? ""}</td>
               <td>${coverage.status ?? ""}</td>
-              <td>${dayjs(coverage.period?.start).format(ISO_DATE) ?? ""}</td>
-              <td>${dayjs(coverage.period?.end).format(ISO_DATE) ?? ""}</td>
+              <td>${formatDateForDisplay(coverage.period?.start)}</td>
+              <td>${formatDateForDisplay(coverage.period?.end)}</td>
             </tr>
           `;
         })
