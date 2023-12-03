@@ -368,10 +368,10 @@ export default router;
  *
  * Endpoint called by the bulk signer lambda to trigger the webhook.
  * @param req.query.cxId - The customer/account's ID.
- * @param req.query.patientId - The customer/account's ID.
- * @param req.query.requestId - The id of the request
+ * @param req.query.patientId - The patient's ID.
+ * @param req.query.requestId - The ID of the request.
  * @param req.body The DocumentBulkSignerLambdaResponse object.
- * @return updated document query progress
+ * @return Updated bulk download query progress.
  */
 router.post(
   "/triggerBulkDownloadWebhook",

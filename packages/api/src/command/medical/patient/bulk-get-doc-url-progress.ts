@@ -63,7 +63,7 @@ export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
 };
 
 /**
- * The function `storeBulkGetDocumentUrlQueryInit` initalizes the `BulkGetDocumentsUrlProgress`field in a patient's data.
+ * The function `storeBulkGetDocumentUrlQueryInit` initializes the `BulkGetDocumentsUrlProgress` field in a patient's data.
  * @param cmd - The `cmd` argument type to initialize the `BulkGetDocumentsUrlProgress` field
  * @returns a Promise that resolves to a Patient object.
  */

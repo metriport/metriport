@@ -58,34 +58,38 @@ export async function getSignedUrls(
         return;
       }
 
-      const signedUrl = await s3Utils.getSignedUrl({
-        bucketName,
-        fileName,
-        durationSeconds: SIGNED_URL_DURATION_SECONDS,
-      });
-
-      return {
-        id: doc.id,
-        fileName: fileName,
-        description: doc.description,
-        mimeType: attachment.contentType,
-        size: attachment.size,
-        url: signedUrl,
-      };
+      try {
+        const signedUrl = await s3Utils.getSignedUrl({
+          bucketName,
+          fileName,
+          durationSeconds: SIGNED_URL_DURATION_SECONDS,
+        });
+        return {
+          id: doc.id,
+          fileName: fileName,
+          description: doc.description,
+          mimeType: attachment.contentType,
+          size: attachment.size,
+          url: signedUrl,
+        };
+      } catch (error) {
+        capture.error(error, {
+          extra: { patientId, context: `bulkUrlSigningLambda.getSignedUrls`, error },
+        });
+        return;
+      }
     })
   );
 
   const response = urls.filter(url => url !== undefined) as DocumentBulkSignerLambdaResponse[];
 
-  console.log(`Signed URLs: ${JSON.stringify(response)}`);
   const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
-  const confirmation = await ossApiClient.callInternalEndpoint({
+  await ossApiClient.callInternalEndpoint({
     cxId: cxId,
     patientId: patientId,
     requestId: requestId,
     dtos: response,
   });
-  console.log(`Confirmation: ${JSON.stringify(confirmation)}`);
 }
 
 export const DocumentBulkSignerLambdaResponseSchema = z.object({
@@ -115,11 +119,9 @@ export function apiClientBulkDownloadWebhook(apiURL: string) {
   return {
     callInternalEndpoint: async function (params: BulkDownloadWebhookParams) {
       try {
-        console.log(`Trigger API on ${sendBulkDownloadUrl} w/ ${JSON.stringify(params)}`);
         await ossApi.post(sendBulkDownloadUrl, params.dtos, {
           params: { cxId: params.cxId, patientId: params.patientId, requestId: params.requestId },
         });
-        console.log(`Successfully triggered API on ${sendBulkDownloadUrl}`);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         const msg = "Error notifying API";

@@ -15,21 +15,21 @@ This endpoint returns a URL which you can use to download the specified document
 </ParamField>
 
 <ParamField query="conversionType" type="string">
-  The doc type to convert to. Either `html` or `pdf`.
+  The document type to convert to. Either `html` or `pdf`.
 
   <Info>This parameter should only be used for converting XML/CDA files.</Info>
 </ParamField>
 
 ## Response
 
-A json object containing the URL will be returned.
+A JSON object containing the URL will be returned.
 
 <ResponseField name="url" type="string">
   The downloadable URL.
 </ResponseField>
 
 <Tip>
-  For patients with a large volume documents, you can use the [Bulk URL Generation endpoint](/medical-api/api-reference/document/bulk-get-document-url) to get all download URLs, instead of doing it one at a time
+  For patients with a large volume documents, you can use the [Bulk Get Document URL](/medical-api/api-reference/document/bulk-get-document-url) to get all download URLs, instead of doing it one at a time.
 </Tip>
 
 <ResponseExample>

@@ -53,7 +53,7 @@ These are messages you can expect to receive in the following scenarios:
   "meta": {
     "messageId": "<message-id>",
     "when": "<date-time-in-utc>",
-    "type": "medical.document-download"
+    "type": "medical.document-bulk-download-urls"
     "data": {
         youCan: "putAny",
         stringKeyValue: "pairsHere",
@@ -362,10 +362,10 @@ Example payload:
 
 ### Bulk Document Download URLs
 
-While you can download indiviudal specified documents using the [get document url endpoint](/medical-api/api-reference/document/get-document), 
+While you can download individual specified documents using the [Get Document URL endpoint](/medical-api/api-reference/document/get-document), 
 patients might have a large number of documents. 
 
-If you want to download all of a patient's documents, especially when they have a large volume of documents, you can instead start a [Bulk Get Document URL query](/medical-api/api-reference/document/bulk-get-document-url) - we’ll send a webhook message with all the downloadable URLs for all the patients documents.
+If you want to download all of a patient's documents, especially when they have a large volume of documents, you can instead start a [Bulk Get Document URL query](/medical-api/api-reference/document/bulk-get-document-url). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
 
 Here is an example payload:
 

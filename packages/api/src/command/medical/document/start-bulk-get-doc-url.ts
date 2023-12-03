@@ -11,6 +11,7 @@ import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-pr
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 import { appendBulkGetDocUrlProgress } from "../patient/bulk-get-doc-url-progress";
+import { capture } from "../../../shared/notifications";
 
 const lambdaClient = makeLambdaClient();
 const bulkSigningLambdaName = "BulkUrlSigningLambda";
@@ -62,13 +63,15 @@ export const startBulkGetDocumentUrls = async (
         Payload: JSON.stringify(payload),
       })
       .promise();
-  } catch (e) {
+  } catch (error) {
     appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId: cxId },
       status: "failed",
       requestId: requestId,
     });
-    console.log("Error invoking lambda", e);
+    capture.error(error, {
+      extra: { patientId, context: `startBulkGetDocumentUrls`, error },
+    });
     return createBulkGetDocumentUrlQueryResponse("failed", updatedPatient);
   }
 
@@ -76,12 +79,11 @@ export const startBulkGetDocumentUrls = async (
 };
 
 /**
- * The function `getOrGenerateRequestId` returns the request ID from `docBulkDownloadProgress` if it
+ * The function `getOrGenerateRequestId` returns the request ID from `bulkGetDocumentsUrlProgress` if it
  * exists, otherwise it generates a new request ID.
- * @param BulkGetDocumentsUrlProgress - Represents the document URL getting progress.
+ * @param bulkGetDocumentsUrlProgress - Represents the document URL getting progress.
  * @returns a string representing the request ID.
  */
-
 export function getOrGenerateRequestId(
   bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress | undefined
 ): string {
@@ -100,7 +102,7 @@ const generateRequestId = (): string => uuidv7();
 /**
  * The function creates a response object for a bulk get documents URLs query with a given status and patient
  * information.
- * @param status - The  status of the bulk get documents URLs.
+ * @param status - The status of the bulk get documents URLs.
  * @param patient - The patient for whom the `BulkGetDocumentsUrlProgress` is being created.
  * @returns a BulkGetDocumentsUrlProgress object.
  */
