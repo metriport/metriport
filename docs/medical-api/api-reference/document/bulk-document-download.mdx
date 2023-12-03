@@ -24,20 +24,14 @@ The status of the bulk download process is returned in the response.
 
 ## Response
 
-<Snippet file="document-progress-download.mdx" />
-<Snippet file="request-id.mdx" />
-
-<ResponseField name="total" type="number">
-  The total number of documents a patient has that can be downloaded
+<ResponseField name="status" type="string" required>
+      The status of the url generation process`.
 </ResponseField>
+<Snippet file="request-id.mdx" />
 
 ```json
 {
-    "download": {
-        "status": "completed",
-        "successful": 6
-    },
-    "total": 6,
+    "status": "processing"
     "requestId": "018c1e9d-dfce-70cb-8c0e-edfbbd2a7f5f"
 }
 ```

@@ -367,7 +367,7 @@ patients can have a large number of documents, and it can be tedious to download
 
 Instead trigger a [bulk get document url](/medical-api/api-reference/document/bulk-document-download) query - one query per patient at any given time;
 When the result is ready, we’ll send a webhook message with all the downloadable urls for all the patients documents.
-Example payload:
+Here is an example payload:
 
 ```json
 {
@@ -383,7 +383,6 @@ Example payload:
         {
           "id": "018c1b94-57dc-7950-b564-f74ab9b56cc4",
           "size": 40670,
-          "status": "current",
           "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f74ab9b56cc4.bin",
           "mimeType": "application/xml",
           "signedUrl": "<a-signed-url>"
@@ -391,7 +390,6 @@ Example payload:
         {
           "id": "018c1b94-57dc-7950-b564-f749bcf9be3e",
           "size": 77093,
-          "status": "current",
           "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f749bcf9be3e.bin",
           "mimeType": "application/pdf",
           "signedUrl": "<a-signed-url>"

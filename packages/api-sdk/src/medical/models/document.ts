@@ -31,7 +31,6 @@ export type DocumentQueryStatus = z.infer<typeof documentQueryStatusSchema>;
 
 export const progressSchema = z.object({
   status: documentQueryStatusSchema,
-  total: z.number().optional(),
   successful: z.number().optional(),
   errors: z.number().optional(),
 });
@@ -43,7 +42,7 @@ export const documentQuerySchema = z.object({
 });
 
 export const bulkGetDocumentUrlQuerySchema = z.object({
-  urlGeneration: progressSchema.optional(),
+  status: documentQueryStatusSchema,
   requestId: z.string().optional(),
 });
 

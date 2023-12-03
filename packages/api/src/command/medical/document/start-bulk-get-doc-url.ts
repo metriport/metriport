@@ -31,7 +31,7 @@ export const startBulkGetDocumentUrls = async (
 
   const bulkGetDocUrlProgress = patient.data.bulkGetDocumentsUrlProgress;
 
-  if (isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.urlGeneration)) {
+  if (isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)) {
     log(
       `Patient ${patientId}, Request ${bulkGetDocUrlProgress?.requestId}, bulkGetDocUrlProgress is already 'processing', skipping...`
     );
@@ -43,9 +43,11 @@ export const startBulkGetDocumentUrls = async (
   const updatedPatient = await storeBulkGetDocumentUrlQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    bulkGetDocumentsUrlProgress: { urlGeneration: { status: "processing" } },
+    bulkGetDocumentsUrlProgress: { status: "processing" },
     requestId,
   });
+
+  console.log("updatedPatient", JSON.stringify(updatedPatient));
 
   // getSignedUrls(
   //     cxId,
@@ -88,7 +90,7 @@ export function getOrGenerateRequestId(
   bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress | undefined
 ): string {
   if (
-    isBulkGetDocUrlProcessing(bulkGetDocumentsUrlProgress?.urlGeneration) &&
+    isBulkGetDocUrlProcessing(bulkGetDocumentsUrlProgress?.status) &&
     bulkGetDocumentsUrlProgress?.requestId
   ) {
     return bulkGetDocumentsUrlProgress.requestId;
@@ -111,10 +113,7 @@ export const createBulkGetDocumentUrlQueryResponse = (
   patient?: Patient
 ): BulkGetDocumentsUrlProgress => {
   return {
-    urlGeneration: {
-      status,
-      ...patient?.data.bulkGetDocumentsUrlProgress?.urlGeneration,
-    },
-    ...patient?.data.bulkGetDocumentsUrlProgress,
+    status,
+    requestId: patient?.data.bulkGetDocumentsUrlProgress?.requestId,
   };
 };

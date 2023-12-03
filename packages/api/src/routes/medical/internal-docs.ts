@@ -384,8 +384,6 @@ router.post(
 
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
-      successful: dtos.length,
-      errors: 0,
       status: "completed",
       requestId: requestId,
     });

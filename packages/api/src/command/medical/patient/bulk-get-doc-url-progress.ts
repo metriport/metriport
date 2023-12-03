@@ -10,8 +10,6 @@ import { getPatientOrFail } from "./get-patient";
 
 export type SetBulkGetDocUrlProgress = {
   patient: Pick<Patient, "id" | "cxId">;
-  successful?: number;
-  errors?: number;
   status?: BulkGetDocUrlStatus;
   requestId?: string;
 };
@@ -23,8 +21,6 @@ export type SetBulkGetDocUrlProgress = {
  */
 export async function appendBulkGetDocUrlProgress({
   patient: { id, cxId },
-  successful,
-  errors,
   status,
   requestId,
 }: SetBulkGetDocUrlProgress): Promise<Patient> {
@@ -39,30 +35,21 @@ export async function appendBulkGetDocUrlProgress({
       transaction,
     });
 
-    const BulkGetDocumentsUrlProgress = existingPatient.data?.bulkGetDocumentsUrlProgress || {};
+    const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = existingPatient.data
+      ?.bulkGetDocumentsUrlProgress || { status: "processing" };
 
-    if (BulkGetDocumentsUrlProgress.urlGeneration) {
-      // Updating only if the properties are not undefined
-      if (successful) {
-        BulkGetDocumentsUrlProgress.urlGeneration.successful = successful;
-      }
-      if (errors) {
-        BulkGetDocumentsUrlProgress.urlGeneration.errors = errors;
-      }
-      // Ensure status is only assigned if not undefined
-      if (status) {
-        BulkGetDocumentsUrlProgress.urlGeneration.status = status;
-      }
-      if (requestId) {
-        BulkGetDocumentsUrlProgress.requestId = requestId;
-      }
+    if (status) {
+      bulkGetDocumentsUrlProgress.status = status;
+    }
+    if (requestId) {
+      bulkGetDocumentsUrlProgress.requestId = requestId;
     }
 
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
-        BulkGetDocumentsUrlProgress,
+        bulkGetDocumentsUrlProgress,
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
@@ -71,9 +58,8 @@ export async function appendBulkGetDocUrlProgress({
 }
 
 export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
-  bulkGetDocumentsUrlProgress: Required<Pick<BulkGetDocumentsUrlProgress, "urlGeneration">>;
+  bulkGetDocumentsUrlProgress: Required<Pick<BulkGetDocumentsUrlProgress, "status">>;
   requestId: string;
-  totalDocuments?: number;
 };
 
 /**
@@ -84,7 +70,7 @@ export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
 export const storeBulkGetDocumentUrlQueryInit = async (
   cmd: BulkGetDocUrlQueryInitCmd
 ): Promise<Patient> => {
-  const { id, cxId, totalDocuments } = cmd;
+  const { id, cxId } = cmd;
 
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
@@ -96,10 +82,10 @@ export const storeBulkGetDocumentUrlQueryInit = async (
 
     const update = {
       bulkGetDocumentsUrlProgress: {
+        ...patient.data.bulkGetDocumentsUrlProgress,
         ...cmd.bulkGetDocumentsUrlProgress,
-        total: totalDocuments,
+        requestId: cmd.requestId,
       },
-      requestId: cmd.requestId,
     };
 
     return patient.update(
