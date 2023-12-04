@@ -1,10 +1,10 @@
 import { faker } from "@faker-js/faker";
-import { executeWithRetries } from "../retry";
+import { executeWithRetriesOrFail } from "../retry";
 
 describe("executeWithRetries", () => {
   it("returns the first successful execution", async () => {
     const fn = jest.fn();
-    await executeWithRetries(fn, undefined, 1);
+    await executeWithRetriesOrFail(fn, undefined, 1);
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
@@ -14,7 +14,7 @@ describe("executeWithRetries", () => {
     fn.mockImplementationOnce(() => {
       throw new Error("test error");
     });
-    const resp = await executeWithRetries<string>(fn, undefined, 1);
+    const resp = await executeWithRetriesOrFail<string>(fn, undefined, 1);
     expect(resp).toBeTruthy();
     expect(resp).toEqual(expectedResponse);
     expect(fn).toHaveBeenCalledTimes(2);
@@ -26,6 +26,6 @@ describe("executeWithRetries", () => {
     fn.mockImplementation(() => {
       throw new Error(errorMsg);
     });
-    await expect(executeWithRetries<string>(fn, undefined, 1)).rejects.toThrow(errorMsg);
+    await expect(executeWithRetriesOrFail<string>(fn, undefined, 1)).rejects.toThrow(errorMsg);
   });
 });

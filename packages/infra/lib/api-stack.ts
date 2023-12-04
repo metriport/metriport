@@ -595,6 +595,21 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
+    this.setupBulkUrlSigningLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      medicalDocumentsBucket: medicalDocumentsBucket,
+      fhirServerUrl: props.config.fhirServerUrl,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchIndex: ccdaSearchIndexName,
+      searchUserName: ccdaSearchUserName,
+      searchPassword: ccdaSearchSecret.secretValue.unsafeUnwrap(),
+      apiService: apiService,
+    });
+
     this.setupGarminWebhookAuth({
       lambdaLayers,
       baseResource: webhookResource,
@@ -1040,8 +1055,8 @@ export class APIStack extends Stack {
       cwOrgCertificate,
       cwOrgPrivateKey,
       bucketName,
-      sentryDsn,
       envType,
+      sentryDsn,
     } = ownProps;
 
     const documentDownloaderLambda = createLambda({
@@ -1078,6 +1093,64 @@ export class APIStack extends Stack {
     secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
 
     return documentDownloaderLambda;
+  }
+
+  private setupBulkUrlSigningLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    medicalDocumentsBucket: s3.Bucket;
+    fhirServerUrl: string;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    searchEndpoint: string;
+    searchIndex: string;
+    searchUserName: string;
+    searchPassword: string;
+    apiService: ecs_patterns.NetworkLoadBalancedFargateService;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      medicalDocumentsBucket,
+      fhirServerUrl,
+      sentryDsn,
+      alarmAction,
+      envType,
+      searchEndpoint,
+      searchIndex,
+      searchUserName,
+      searchPassword,
+      apiService,
+    } = ownProps;
+
+    const bulkUrlSigningLambda = createLambda({
+      stack: this,
+      name: "BulkUrlSigning",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "document-bulk-signer",
+      envType,
+      envVars: {
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        FHIR_SERVER_URL: fhirServerUrl,
+        SEARCH_ENDPOINT: searchEndpoint,
+        SEARCH_INDEX: searchIndex,
+        SEARCH_USERNAME: searchUserName,
+        SEARCH_PASSWORD: searchPassword,
+        API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}`,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    medicalDocumentsBucket.grantRead(bulkUrlSigningLambda);
+    bulkUrlSigningLambda.grantInvoke(apiService.taskDefinition.taskRole);
+
+    return bulkUrlSigningLambda;
   }
 
   private setupFhirToMedicalRecordLambda(ownProps: {

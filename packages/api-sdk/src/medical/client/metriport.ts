@@ -11,12 +11,14 @@ import {
 import { getETagHeader } from "../models/common/base-update";
 import {
   DocumentQuery,
+  BulkGetDocumentUrlQuery,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
   documentListSchema,
   documentQuerySchema,
+  bulkGetDocumentUrlQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -453,6 +455,26 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Start a bulk document download for a given patient, with the payload returned to the webhook.
+   *
+   * @param patientId Patient ID for which to retrieve document URLs.
+   * @return The document query request ID, progress, and status indicating whether it's being executed or not.
+   */
+  async startBulkGetDocumentUrl(patientId: string): Promise<BulkGetDocumentUrlQuery> {
+    const resp = await this.api.post(
+      `${DOCUMENT_URL}/download-url/bulk`,
+      {},
+      {
+        params: {
+          patientId,
+        },
+      }
+    );
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return bulkGetDocumentUrlQuerySchema.parse(resp.data);
+  }
+
+  /**
    * Returns the document query status for the specified patient.
    *
    * @param patientId Patient ID for which to retrieve document query status.
@@ -478,7 +500,7 @@ export class MetriportMedicalApi {
     fileName: string,
     conversionType?: "html" | "pdf"
   ): Promise<{ url: string }> {
-    const resp = await this.api.get(`${DOCUMENT_URL}/downloadUrl`, {
+    const resp = await this.api.get(`${DOCUMENT_URL}/download-url`, {
       params: {
         fileName,
         conversionType,
