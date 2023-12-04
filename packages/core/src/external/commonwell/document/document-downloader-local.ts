@@ -215,7 +215,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
           Bucket: s3FileLocation,
           Key: s3FileName,
           Body: pass,
-          ContentType: contentType ? contentType : "text/xml",
+          ...(contentType && { ContentType: contentType }),
         })
         .promise(),
     };
