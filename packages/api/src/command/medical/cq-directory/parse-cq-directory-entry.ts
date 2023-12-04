@@ -37,10 +37,11 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       urlXCPD: url.urlXCPD,
       urlDQ: url.urlDQ,
       urlDR: url.urlDR,
-      lat: coordinates?.lat ? parseFloat(coordinates?.lat) : undefined,
-      lon: coordinates?.lon ? parseFloat(coordinates?.lon) : undefined,
+      lat: coordinates ? coordinates.lat : undefined,
+      lon: coordinates ? coordinates.lon : undefined,
       state,
       data: org,
+      lastUpdated: org.meta.lastUpdated.value,
     };
     return orgData;
   });
@@ -77,16 +78,17 @@ function getUrls(contained: Contained): XCUrls | undefined {
   return urls;
 }
 
-function getCoordinates(address: Address[] | undefined): { lat: string; lon: string } | undefined {
+function getCoordinates(address: Address[] | undefined): { lat: number; lon: number } | undefined {
   if (!address) return;
   const coordinates = address.flatMap(a => {
     if (a.extension?.url === ORG_POSITION) {
       const position = a.extension?.valueCodeableConcept?.coding?.value?.position;
       if (!position) return [];
-      return {
-        lat: position.latitude.value,
-        lon: position.longitude.value,
-      };
+      const lat = parseFloat(position.latitude.value);
+      const lon = parseFloat(position.longitude.value);
+      if (lat < -90 || lat > 90) return [];
+      if (lon < -180 || lon > 180) return [];
+      return { lat, lon };
     }
   })[0];
 

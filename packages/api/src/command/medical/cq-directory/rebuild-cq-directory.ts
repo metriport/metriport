@@ -35,7 +35,6 @@ export const rebuildCQDirectory = async (
       }
       orgs = parseCQDirectoryEntries(mockOrganizations);
       response.totalFetched = orgs.length;
-      console.log(`Total fetched: ${response.totalFetched}`);
     } else {
       const apiKey = Config.getCQApiKey();
       const cq = new Carequality(apiKey);
@@ -45,8 +44,7 @@ export const rebuildCQDirectory = async (
     if (!orgs) return response;
 
     response.totalFetched = orgs.length;
-
-    console.log("Orgs parsed", orgs.length);
+    console.log("Parsed", orgs.length, "organizations for the CQ directory.");
 
     for (let i = 0; i <= orgs.length; i += BATCH_SIZE) {
       const batch = orgs.slice(i, i + BATCH_SIZE);

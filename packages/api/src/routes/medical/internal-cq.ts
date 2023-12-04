@@ -1,13 +1,10 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { createOrUpdateCQDirectoryEntry } from "../../command/medical/cq-directory/create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../command/medical/cq-directory/rebuild-cq-directory";
 import {
@@ -15,13 +12,11 @@ import {
   searchNearbyCQOrganizations,
 } from "../../command/medical/cq-directory/search-cq-directory";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
-import { createMockCQOrganization } from "../../external/carequality/organization-mock";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
 
 dayjs.extend(duration);
-const maxNumberOfParallelRequestsToDB = 20;
 
 const router = Router();
 
@@ -109,43 +104,6 @@ router.get(
     const orgs = await searchNearbyCQOrganizations({ cxId, patientId, radiusInMiles: radius });
 
     return res.status(httpStatus.OK).json(orgs);
-  })
-);
-
-router.post(
-  "/directory/create-mock",
-  asyncHandler(async (req: Request, res: Response) => {
-    const mockOrganizations = [];
-
-    for (let j = 0; j < 40; j++) {
-      for (let i = 0; i < 1000; i++) {
-        // perhaps can put this logic into execute asynchronously
-        const fakeOrg = createMockCQOrganization();
-        const mockOrgJson = JSON.parse(fakeOrg);
-        mockOrganizations.push(mockOrgJson);
-      }
-      const orgs = parseCQDirectoryEntries(mockOrganizations);
-
-      const response = {
-        totalFetched: orgs.length,
-        added: 0,
-        updated: 0,
-      };
-
-      await executeAsynchronously(
-        orgs,
-        async org => {
-          const dbResponse = await createOrUpdateCQDirectoryEntry(org);
-          dbResponse.updated ? response.updated++ : response.added++;
-        },
-        {
-          numberOfParallelExecutions: maxNumberOfParallelRequestsToDB,
-        }
-      );
-      await sleep(10000); // perhaps not useful altho could be
-    }
-
-    return res.sendStatus(httpStatus.OK);
   })
 );
 

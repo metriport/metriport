@@ -26,6 +26,15 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
     await queryInterface.renameColumn(tableName, "lat_temp", "lat", { transaction });
     await queryInterface.renameColumn(tableName, "lon_temp", "lon", { transaction });
+
+    await queryInterface.addColumn(tableName, "point", { type: "CUBE" }, { transaction });
+
+    await queryInterface.addColumn(
+      tableName,
+      "last_updated",
+      { type: DataTypes.STRING },
+      { transaction }
+    );
   });
 };
 
@@ -53,5 +62,9 @@ export const down: Migration = ({ context: queryInterface }) => {
 
     await queryInterface.renameColumn(tableName, "lat_temp", "lat", { transaction });
     await queryInterface.renameColumn(tableName, "lon_temp", "lon", { transaction });
+
+    await queryInterface.removeColumn(tableName, "point", { transaction });
+
+    await queryInterface.removeColumn(tableName, "last_updated", { transaction });
   });
 };

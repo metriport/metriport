@@ -11,6 +11,8 @@ export type CQDirectoryEntryData = {
   lon?: number;
   state?: string;
   data?: Organization;
+  point?: string;
+  lastUpdated: string;
 };
 
 export interface CQDirectoryEntryCreate extends BaseDomainCreate, CQDirectoryEntryData {}

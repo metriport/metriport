@@ -13,10 +13,12 @@ export class CQDirectoryEntryModel
   declare urlXCPD: string;
   declare urlDQ?: string;
   declare urlDR?: string;
+  declare lastUpdated: string;
   declare lat?: number;
   declare lon?: number;
-  declare data?: Organization;
+  declare point?: string;
   declare state?: string;
+  declare data?: Organization;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CQDirectoryEntryModel.init(
@@ -51,6 +53,13 @@ export class CQDirectoryEntryModel
         },
         data: {
           type: DataTypes.JSONB,
+        },
+        point: {
+          type: "CUBE",
+        },
+        lastUpdated: {
+          type: DataTypes.STRING,
+          field: "last_updated",
         },
       },
       {

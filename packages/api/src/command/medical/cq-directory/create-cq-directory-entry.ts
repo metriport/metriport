@@ -3,6 +3,24 @@ import { CQDirectoryEntry, CQDirectoryEntryData } from "../../../domain/medical/
 import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
 import { getCQDirectoryEntry, getCQDirectoryEntriesByOids } from "./get-cq-directory-entry";
 import { updateCQDirectoryEntry } from "./update-cq-directory-entry";
+import { QueryTypes, Sequelize } from "sequelize";
+import { Config } from "../../../shared/config";
+import { z } from "zod";
+
+const QueryResultSchema = z.array(
+  z.object({
+    point: z.string(),
+  })
+);
+
+const sqlDBCreds = Config.getDBCreds();
+const dbCreds = JSON.parse(sqlDBCreds);
+
+const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
+  host: dbCreds.host,
+  port: dbCreds.port,
+  dialect: dbCreds.engine,
+});
 
 export type CQOrganizationCreateResponse = { org: CQDirectoryEntry } & {
   updated: boolean;
@@ -37,16 +55,19 @@ export const createOrUpdateCQDirectoryEntries = async (
   orgDataArray: CQDirectoryEntryData[]
 ): Promise<CQOrganizatioBulkCreateResponse> => {
   const oids = orgDataArray.map(data => data.oid);
-  const existingEntries = await getCQDirectoryEntriesByOids(oids); // could break this up further and parallilze
+  const existingEntries = await getCQDirectoryEntriesByOids(oids); // could break this up further and parallelize
 
   const newEntries: CQDirectoryEntryData[] = [];
   const updateEntries: CQDirectoryEntryDataWithId[] = [];
   orgDataArray.forEach(orgData => {
-    const existingEntry = existingEntries.find(entry => entry === orgData.oid);
+    const existingEntry = existingEntries.find(entry => entry.oid === orgData.oid);
     if (existingEntry) {
-      const orgDataWithId = orgData as CQDirectoryEntryDataWithId;
-      orgDataWithId.id = existingEntry;
-      updateEntries.push(orgDataWithId);
+      const latestVersion = existingEntry.lastUpdated === orgData.lastUpdated;
+      if (!latestVersion) {
+        const orgDataWithId = orgData as CQDirectoryEntryDataWithId;
+        orgDataWithId.id = existingEntry.id;
+        updateEntries.push(orgDataWithId);
+      }
     } else {
       newEntries.push(orgData);
     }
@@ -61,12 +82,29 @@ export const createOrUpdateCQDirectoryEntries = async (
   return { added: numNewEntries, updated: numUpdEntries };
 };
 
+async function computeEarthPoint(orgData: CQDirectoryEntryData): Promise<string | undefined> {
+  if (orgData.lat && orgData.lon) {
+    const query = "SELECT ll_to_earth(:lat, :lon) as point";
+    const pointQueryResult = await sequelize.query(query, {
+      replacements: { lat: orgData.lat, lon: orgData.lon },
+      type: QueryTypes.SELECT,
+    });
+    const point = QueryResultSchema.parse(pointQueryResult);
+    return point[0].point;
+  }
+  return;
+}
+
 const createCQDirectoryEntries = async (orgDataArray: CQDirectoryEntryData[]): Promise<void> => {
+  for (const orgData of orgDataArray) {
+    const point = await computeEarthPoint(orgData);
+    orgData.point = point;
+  }
+
   const entriesWithIds = orgDataArray.map(orgData => ({
     id: uuidv7(),
     ...orgData,
   }));
-
   await CQDirectoryEntryModel.bulkCreate(entriesWithIds);
 };
 

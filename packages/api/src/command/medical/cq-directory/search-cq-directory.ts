@@ -63,22 +63,21 @@ export const searchCQDirectoriesByRadius = async ({
 }): Promise<CQDirectoryEntryModel[]> => {
   const orgs = [];
 
-  // TODO: MAKE SURE LAT LON WITHIN RANGE
   for (const coord of coordinates) {
     const orgsForAddress = await CQDirectoryEntryModel.findAll({
       attributes: {
         include: [
           [
             Sequelize.literal(
-              `ROUND(earth_distance(ll_to_earth(${coord.lat}, ${coord.lon}), ll_to_earth(lat, lon))::NUMERIC, 2)`
+              `ROUND(earth_distance(ll_to_earth(${coord.lat}, ${coord.lon}), point)::NUMERIC, 2)`
             ),
             "distance",
           ],
         ],
       },
       where:
-        Sequelize.literal(`earth_box(ll_to_earth (${coord.lat}, ${coord.lon}), ${radiusInMeters}) @> ll_to_earth (lat, lon)
-        AND earth_distance(ll_to_earth (${coord.lat}, ${coord.lon}), ll_to_earth (lat, lon)) < ${radiusInMeters}`),
+        Sequelize.literal(`earth_box(ll_to_earth (${coord.lat}, ${coord.lon}), ${radiusInMeters}) @> point
+        AND earth_distance(ll_to_earth (${coord.lat}, ${coord.lon}), point) < ${radiusInMeters}`),
       order: Sequelize.literal("distance"),
     });
 
