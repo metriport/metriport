@@ -1,9 +1,8 @@
 ---
 title: "Start Bulk Get Document URL"
 description: "Triggers a process to generate a list of download URLs for all of the patient's documents."
-api: "POST /medical/v1/document/bulk-download-url"
+api: "POST /medical/v1/document/download-url/bulk"
 ---
-
 When executed, this endpoint triggers a process to generate all download URLs for a patient's documents, which will then be delivered via webhook message.
 
 The status of the process is returned in the response. Initially, it will be `processing`, and when the process is finished, the status will be updated to `completed` or `failed`.
