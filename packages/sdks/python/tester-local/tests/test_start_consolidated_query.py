@@ -17,14 +17,14 @@ def test_start_consolidated_query():
     query_status = client.medical.fhir.get_consolidated_query_status(id=patient_id)
     print(f"queryStatus: {query_status}")
 
-    # print("Calling start_consolidated_query...")
-    # response = client.medical.fhir.start_consolidated_query(
-    #     id=patient_id,
-    #     resources="DocumentReference,Appointment",
-    #     date_from="2021-03-01",
-    #     date_to="2023-04-23"
-    # )
-    # print(f"response: {json.dumps(response.dict(), indent=2)}")
+    print("Calling start_consolidated_query...")
+    response = client.medical.fhir.start_consolidated_query(
+        id=patient_id,
+        resources="DocumentReference,Appointment",
+        date_from="2021-03-01",
+        date_to="2023-04-23"
+    )
+    print(f"response: {json.dumps(response.dict(), indent=2)}")
 
     print("Now, calling get_consolidated_query_status...")
     query_status = client.medical.fhir.get_consolidated_query_status(id=patient_id)

@@ -15,6 +15,9 @@ dependencies {
     api 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.3'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    implementation 'io.github.cdimascio:java-dotenv:5.2.0'
+    implementation group: 'org.json', name: 'json', version: '20231013'
+
 }
 
 java {

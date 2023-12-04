@@ -4,3 +4,4 @@ build/
 *.iml
 .gradle
 bin/
+.env
