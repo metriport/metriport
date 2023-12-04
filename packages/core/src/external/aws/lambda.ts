@@ -4,8 +4,12 @@ import { base64ToString } from "../../util/base64";
 import { MetriportError } from "../../util/error/metriport-error";
 import NotFoundError from "../../util/error/not-found";
 
-export function makeLambdaClient(region: string) {
-  return new AWS.Lambda({ signatureVersion: "v4", region });
+export function makeLambdaClient(region: string, timeoutInMillis?: number) {
+  return new AWS.Lambda({
+    signatureVersion: "v4",
+    region,
+    ...(timeoutInMillis ? { httpOptions: { timeout: timeoutInMillis } } : {}),
+  });
 }
 
 export function logResultToString(logResult: string | undefined): string | undefined {

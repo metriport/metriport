@@ -13,6 +13,7 @@ export const mapiWebhookType = [
   `${mapiWHPrefix}.document-download`,
   `${mapiWHPrefix}.document-conversion`,
   `${mapiWHPrefix}.consolidated-data`,
+  `${mapiWHPrefix}.document-bulk-download-urls`,
 ] as const;
 export type MAPIWebhookType = (typeof mapiWebhookType)[number];
 export type PingWebhookType = "ping";

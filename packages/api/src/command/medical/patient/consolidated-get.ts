@@ -9,6 +9,7 @@ import {
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { emptyFunction } from "@metriport/shared";
 import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -17,11 +18,28 @@ import {
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
 import { capture } from "../../../shared/notifications";
-import { Util, emptyFunction } from "../../../shared/util";
+import { Util } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
+
+export type GetConsolidatedFilters = {
+  resources?: ResourceTypeForConsolidation[];
+  dateFrom?: string;
+  dateTo?: string;
+  conversionType?: ConsolidationConversionType;
+};
+
+export type GetConsolidatedParams = {
+  patient: Pick<Patient, "id" | "cxId" | "data">;
+} & GetConsolidatedFilters;
+
+export type ConsolidatedQueryParams = {
+  cxId: string;
+  patientId: string;
+  cxConsolidatedRequestMetadata?: unknown;
+} & GetConsolidatedFilters;
 
 export async function startConsolidatedQuery({
   cxId,
@@ -31,16 +49,8 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-}: {
-  cxId: string;
-  patientId: string;
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-  conversionType?: ConsolidationConversionType;
-  cxConsolidatedRequestMetadata?: unknown;
-}): Promise<QueryProgress> {
-  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
+}: ConsolidatedQueryParams): Promise<QueryProgress> {
+  const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
   if (patient.data.consolidatedQuery?.status === "processing") {
     log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
@@ -63,25 +73,46 @@ export async function startConsolidatedQuery({
     dateTo,
     conversionType,
   }).catch(emptyFunction);
+
   return progress;
 }
 
-async function getConsolidatedAndSendToCx({
+async function getConsolidatedAndSendToCx(params: GetConsolidatedParams): Promise<void> {
+  const { patient, resources, dateFrom, dateTo, conversionType } = params;
+  try {
+    const { bundle, filters } = await getConsolidated(params);
+    // trigger WH call
+    processConsolidatedDataWebhook({
+      patient,
+      status: "completed",
+      bundle,
+      filters,
+    }).catch(emptyFunction);
+  } catch (error) {
+    processConsolidatedDataWebhook({
+      patient,
+      status: "failed",
+      filters: {
+        resources: resources ? resources.join(", ") : undefined,
+        dateFrom,
+        dateTo,
+        conversionType,
+      },
+    }).catch(emptyFunction);
+  }
+}
+
+export async function getConsolidated({
   patient,
   resources,
   dateFrom,
   dateTo,
   conversionType,
-}: {
-  patient: Pick<Patient, "id" | "cxId" | "data">;
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-  conversionType?: ConsolidationConversionType;
-}): Promise<void> {
-  const { log } = Util.out(
-    `getConsolidatedAndSendToCx - cxId ${patient.cxId}, patientId ${patient.id}`
-  );
+}: GetConsolidatedParams): Promise<{
+  bundle: Bundle<Resource>;
+  filters: Record<string, string | undefined>;
+}> {
+  const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
     let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
@@ -100,34 +131,18 @@ async function getConsolidatedAndSendToCx({
         conversionType,
       });
     }
-
-    // trigger WH call
-    processConsolidatedDataWebhook({
-      patient,
-      status: "completed",
-      bundle,
-      filters,
-    }).catch(emptyFunction);
+    return { bundle, filters };
   } catch (error) {
     log(`Failed to get FHIR resources: ${JSON.stringify(filters)}`);
-    processConsolidatedDataWebhook({
-      patient,
-      status: "failed",
-      filters: {
-        resources: resources ? resources.join(", ") : undefined,
-        dateFrom,
-        dateTo,
-        conversionType,
-      },
-    }).catch(emptyFunction);
     capture.error(error, {
       extra: {
-        context: `getConsolidatedAndSendToCx`,
+        context: `getConsolidated`,
         patientId: patient.id,
         filters,
         error,
       },
     });
+    throw error;
   }
 }
 

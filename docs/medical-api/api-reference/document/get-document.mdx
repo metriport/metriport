@@ -1,7 +1,7 @@
 ---
 title: "Get Document URL"
-description: "Gets a presigned URL for downloading the specified document."
-api: "GET /medical/v1/document/downloadUrl"
+description: "Gets a downloadable URL for downloading the specified document."
+api: "GET /medical/v1/document/download-url"
 ---
 
 This endpoint returns a URL which you can use to download the specified document and/or convert using the file name provided from the [List Documents endpoint](/medical-api/api-reference/document/list-documents).
@@ -15,18 +15,22 @@ This endpoint returns a URL which you can use to download the specified document
 </ParamField>
 
 <ParamField query="conversionType" type="string">
-  The doc type to convert to. Either `html` or `pdf`.
+  The document type to convert to. Either `html` or `pdf`.
 
   <Info>This parameter should only be used for converting XML/CDA files.</Info>
 </ParamField>
 
 ## Response
 
-A json object containing the URL will be returned.
+A JSON object containing the URL will be returned.
 
 <ResponseField name="url" type="string">
-  The presigned URL.
+  The downloadable URL.
 </ResponseField>
+
+<Tip>
+  For patients with a large volume documents, you can use the [Bulk Get Document URL](/medical-api/api-reference/document/download-url-bulk to get all download URLs, instead of doing it one at a time.
+</Tip>
 
 <ResponseExample>
 
@@ -35,7 +39,7 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
-const presignedUrl = await metriportClient.getDocumentUrl("abc123-def456");
+const downloadableUrl = await metriportClient.getDocumentUrl("abc123-def456");
 ```
 
 </ResponseExample>

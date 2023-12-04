@@ -14,6 +14,11 @@ const whKey = getEnvVarOrFail("WH_KEY");
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 
+function mockDownload(name: string) {
+  // Here you can simulate a download by making a GET request to the URL
+  console.log(`Downloaded file: ${name}`);
+}
+
 const metriportApi = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
 });
@@ -27,6 +32,14 @@ app.post("/", (req: Request, res: Response) => {
     console.log(`Signature verified`);
   } else {
     console.log(`Signature verification failed`);
+  }
+
+  if (req.body.meta && req.body.meta.type === "medical.document-bulk-download-urls") {
+    for (const patient of req.body.patients) {
+      for (const document of patient.documents) {
+        mockDownload(document.fileName);
+      }
+    }
   }
 
   if (req.body.ping) {
