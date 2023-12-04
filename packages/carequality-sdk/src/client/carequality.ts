@@ -1,5 +1,3 @@
-import BadRequestError from "@metriport/core/util/error/bad-request";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -97,7 +95,7 @@ export class Carequality implements CarequalityAPI {
     oid?: string;
   }): Promise<Organization[]> {
     if (count < 1 || count > MAX_COUNT)
-      throw new BadRequestError(
+      throw new Error(
         `Count value must be between 1 and ${MAX_COUNT}. If you need more, use listAllOrganizations()`
       );
     const query = new URLSearchParams();
@@ -139,7 +137,7 @@ export class Carequality implements CarequalityAPI {
       } catch (error) {
         isDone = true;
         if (!failGracefully) {
-          throw new MetriportError("Failed to list CQ organizations", error, {});
+          throw error;
         }
       }
     }
