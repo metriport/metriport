@@ -53,9 +53,15 @@ export enum USState {
   WI = "WI",
   WY = "WY",
 }
+
+const USStateMapping = Object.fromEntries(
+  Object.values(USState).map(state => [state, state])
+) as Record<string, USState>;
+
 export const usStateSchema = z
   .string()
   .transform(str => str.toUpperCase())
-  .refine(value => Object.values(USState).includes(value as USState), {
+  .transform(str => USStateMapping[str])
+  .refine(value => value !== undefined, {
     message: "Invalid US state",
   });
