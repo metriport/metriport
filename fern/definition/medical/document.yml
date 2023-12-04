@@ -138,7 +138,7 @@ service:
         If you trigger this endpoint again while the process is still running, you will get a response 
         that reflects the current progress.
       method: POST
-      path: /bulk-get-documents
+      path: /download-url/bulk
       request:
         name: StartBulkGetDocumentUrlRequest
         query-parameters:

@@ -187,7 +187,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /document/bulk-get-documents
+ * POST /document/download-url/bulk
  *
  * Triggers a wh payload containing the list of downloadable urls  for all the patients documents.
  * Returns the status of the bulk signing process.
@@ -197,7 +197,7 @@ router.get(
  */
 
 router.post(
-  "/bulk-get-documents",
+  "/download-url/bulk",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);

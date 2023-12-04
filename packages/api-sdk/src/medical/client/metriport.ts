@@ -462,7 +462,7 @@ export class MetriportMedicalApi {
    */
   async startBulkGetDocumentUrl(patientId: string): Promise<BulkGetDocumentUrlQuery> {
     const resp = await this.api.post(
-      `${DOCUMENT_URL}/bulk-get-documents`,
+      `${DOCUMENT_URL}/download-url/bulk`,
       {},
       {
         params: {
