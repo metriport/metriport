@@ -9,6 +9,7 @@ export const tenoviMetricTypes = [
   "blood_glucose",
   "peak_expiratory_flow",
   "forced_expiratory_volume",
+  "battery_percentage",
 ] as const;
 
 export type TenoviMetricTypes = (typeof tenoviMetricTypes)[number];
