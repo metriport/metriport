@@ -125,7 +125,7 @@ The format follows:
 
     <ResponseField name="type" type="string" required>
       The type of the Medical API webhook data message. Can be one of: `medical.document-download`, `medical.document-conversion`,
-      `medical.consolidated-data`.
+      `medical.consolidated-data`, `medical.document-bulk-download-urls`.
     </ResponseField>
 
   </Expandable>
@@ -363,6 +363,7 @@ Example payload:
 ### Bulk Document Download URLs
 
 If you want to download all of a patient's documents, especially when they have a large volume of documents, you can start a [Bulk Get Document URL query](/medical-api/api-reference/document/bulk-get-document-url). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
+You can use the value of the `url` property in the returned `documents` objects to download the files.
 
 Here is an example payload:
 
@@ -425,3 +426,40 @@ Here is an example payload:
   ]
 }
 ```
+
+The format is as follows:
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+
+  <Expandable title="Details of the 'meta' type property">
+
+    <ResponseField name="type" type="string" required>
+      The type of the Medical API webhook data message. In this case, it will be `medical.document-bulk-download-urls`.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="patients" type="DocumentBulkDownloadUrls[]" required>
+  An array of Document bulk download URLs, where each item corresponds to the queried patient.
+
+  <Expandable title="DocumentBulkDownloadUrl properties">
+
+    <ResponseField name="patientId" type="string" required>
+      The Patient ID.
+    </ResponseField>
+
+    <ResponseField name="status" type="string" required>
+      The outcome of the step corresponding to `type` - can be one of `completed` | `failed`.
+    </ResponseField>
+
+    <ResponseField name="documents" type="DocumentReferenceWithURL[]">
+      An array of objects describing the Documents that can be retrieved for the Patient along with the downloadable url to retrieve them.
+      <Expandable title="DocumentReference properties">
+        <Snippet file="document-reference-bulk-document-response.mdx" />
+      </Expandable>
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
