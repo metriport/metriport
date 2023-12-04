@@ -53,4 +53,9 @@ export enum USState {
   WI = "WI",
   WY = "WY",
 }
-export const usStateSchema = z.nativeEnum(USState);
+export const usStateSchema = z
+  .string()
+  .transform(str => str.toUpperCase())
+  .refine(value => Object.values(USState).includes(value as USState), {
+    message: "Invalid US state",
+  });
