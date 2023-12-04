@@ -1,10 +1,9 @@
 import { z } from "zod";
-import { tenoviMetricTypes } from "./constants";
 
 // https://tenovi.com/api-docs/#:~:text=Measurement%20Webhooks-,Measurement%20Webhooks,-The%20Tenovi%20Logistics
 
 export const tenoviMeasurementSchema = z.object({
-  metric: z.enum(tenoviMetricTypes),
+  metric: z.string(),
   device_name: z.string(),
   hwi_device_id: z.string(),
   patient_id: z.string(),
