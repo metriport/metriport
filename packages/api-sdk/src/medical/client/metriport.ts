@@ -500,7 +500,7 @@ export class MetriportMedicalApi {
     fileName: string,
     conversionType?: "html" | "pdf"
   ): Promise<{ url: string }> {
-    const resp = await this.api.get(`${DOCUMENT_URL}/downloadUrl`, {
+    const resp = await this.api.get(`${DOCUMENT_URL}/download-url`, {
       params: {
         fileName,
         conversionType,

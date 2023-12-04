@@ -107,7 +107,7 @@ service:
         the specified document and/or convert using the file name 
         provided from the [List Documents](/api-reference/medical/document/list) endpoint.
       method: GET
-      path: /downloadUrl
+      path: /download-url
       request:
         name: GetDocumentUrlRequest
         query-parameters:
