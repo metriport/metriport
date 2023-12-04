@@ -97,7 +97,7 @@ app.listen(port, "0.0.0.0", async () => {
 });
 
 async function downloadFile(url: string, fileName: string, conversionType: string) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     https.get(url, res => {
       const fileStream = fs.createWriteStream(`./${fileName}.${conversionType}`);
       res.pipe(fileStream);
