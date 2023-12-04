@@ -362,10 +362,7 @@ Example payload:
 
 ### Bulk Document Download URLs
 
-While you can download individual specified documents using the [Get Document URL endpoint](/medical-api/api-reference/document/get-document), 
-patients might have a large number of documents. 
-
-If you want to download all of a patient's documents, especially when they have a large volume of documents, you can instead start a [Bulk Get Document URL query](/medical-api/api-reference/document/bulk-get-document-url). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
+If you want to download all of a patient's documents, especially when they have a large volume of documents, you can start a [Bulk Get Document URL query](/medical-api/api-reference/document/bulk-get-document-url). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
 
 Here is an example payload:
 
@@ -386,15 +383,42 @@ Here is an example payload:
           "id": "018c1b94-57dc-7950-b564-f74ab9b56cc4",
           "size": 40670,
           "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f74ab9b56cc4.xml",
+          "description": "Patient Diagnoses",
+          "status": "current",
+          "indexed": "2019-09-07T15:50:00.000Z",
           "mimeType": "application/xml",
-          "signedUrl": "<a-signed-url>"
+          "size": 40670,
+          "type": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "62479008",
+                "display": "Diagnoses"
+              }
+            ],
+            "text": "Diagnoses"
+          }
+          "url": "<a-document-url>"
         },
         {
           "id": "018c1b94-57dc-7950-b564-f749bcf9be3e",
-          "size": 77093,
           "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f749bcf9be3e.pdf",
+          "description": "Patient Diagnoses",
+          "status": "current",
+          "indexed": "2019-09-07T15:50:00.000Z",
           "mimeType": "application/pdf",
-          "signedUrl": "<a-signed-url>"
+          "size": 77093,
+          "type": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "62479008",
+                "display": "Diagnoses"
+              }
+            ],
+            "text": "Diagnoses"
+          }
+          "url": "<another-document-url>"
         }
       ],
     }

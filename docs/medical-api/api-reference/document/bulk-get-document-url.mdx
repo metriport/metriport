@@ -4,6 +4,8 @@ description: "Triggers a process to generate a list of download URLs for all of 
 api: "POST /medical/v1/document/bulk-download-url"
 ---
 
+When executed, this endpoint triggers a process to generate all download URLs for a patient's documents, which will then be delivered via webhook message.
+
 The status of the process is returned in the response. Initially, it will be `processing`, and when the process is finished, the status will be updated to `completed` or `failed`.
 
 <Tip>
@@ -11,7 +13,7 @@ The status of the process is returned in the response. Initially, it will be `pr
 </Tip>
 
 <Warning>
-  If you trigger this endpoint again while the process is still running, you will get a response that reflects the current progress. Essentially, only a single bulk download process will be running for a patient at any given time.
+  If you trigger this endpoint again while the process is still running, you will get a response that reflects the current progress. Essentially, only a single bulk URL generation process will be running for a patient at any given time.
 </Warning>
 
 ## Query Params
@@ -23,7 +25,7 @@ The status of the process is returned in the response. Initially, it will be `pr
 ## Response
 
 <ResponseField name="status" type="string" required>
-      The status of the URL generation process.
+      The status of the URL generation process - can be `processing`, `completed`, or `failed`.
 </ResponseField>
 <Snippet file="request-id.mdx" />
 

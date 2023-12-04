@@ -33,11 +33,12 @@ import { asyncHandler, getFrom, getFromQueryAsArray } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
+import { BulkGetDocUrlStatus } from "../../domain/medical/bulk-get-document-url";
 
 import {
   DocumentBulkSignerLambdaResponse,
   DocumentBulkSignerLambdaResponseArraySchema,
-} from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+} from "@metriport/core/domain/document-bulk-signer-response";
 
 const router = Router();
 const upload = multer();
@@ -379,12 +380,13 @@ router.post(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const requestId = getFrom("query").orFail("requestId", req);
+    const status = getFrom("query").orFail("status", req);
     const dtos: DocumentBulkSignerLambdaResponse[] =
       DocumentBulkSignerLambdaResponseArraySchema.parse(req.body);
 
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
-      status: "completed",
+      status: status as BulkGetDocUrlStatus,
       requestId: requestId,
     });
 
@@ -393,7 +395,7 @@ router.post(
       cxId,
       patientId,
       "medical.document-bulk-download-urls",
-      MAPIWebhookStatus.completed,
+      status as MAPIWebhookStatus,
       dtos
     );
 

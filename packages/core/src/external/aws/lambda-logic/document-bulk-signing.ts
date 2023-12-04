@@ -1,12 +1,11 @@
 import { S3Utils } from "../s3";
-import { z } from "zod";
 import { DocumentReference } from "@medplum/fhirtypes";
 import { searchDocuments } from "../../opensearch/search-documents";
 import axios from "axios";
 import { capture } from "../../../util/notifications";
-import { getEnvVarOrFail } from "../../../util/env-var";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { DocumentBulkSignerLambdaResponse } from "../../../domain/document-bulk-signer-response";
 const ossApi = axios.create();
 dayjs.extend(duration);
 
@@ -18,15 +17,6 @@ export type DocumentBulkSignerLambdaRequest = {
   requestId: string;
 };
 
-export type DocumentBulkSignerLambdaResponse = {
-  id: string;
-  fileName: string;
-  description?: string;
-  mimeType?: string;
-  size?: number; // bytes
-  url: string;
-};
-
 export async function getSignedUrls(
   cxId: string,
   patientId: string,
@@ -35,35 +25,33 @@ export async function getSignedUrls(
   region: string,
   apiURL: string
 ) {
-  console.log(`DEBUGGING: fhir_server: ${getEnvVarOrFail("FHIR_SERVER_URL")}`);
-  //`search_endpoint: ${getEnvVarOrFail("SEARCH_ENDPOINT")}, search_index: ${getEnvVarOrFail("SEARCH_INDEX")}, search_username: ${getEnvVarOrFail("SEARCH_USERNAME")}, search_password: ${getEnvVarOrFail("PASSWORD")} `);
   const s3Utils = new S3Utils(region);
 
   const documents: DocumentReference[] = await searchDocuments({ cxId, patientId });
+  const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
 
-  console.log(`Found ${documents}`);
+  try {
+    const urls = await Promise.all(
+      documents.map(async doc => {
+        // Check if content and attachment exist
+        if (!doc.content || !doc.content[0] || !doc.content[0].attachment) {
+          return;
+        }
 
-  const urls = await Promise.all(
-    documents.map(async doc => {
-      // Check if content and attachment exist
-      if (!doc.content || !doc.content[0] || !doc.content[0].attachment) {
-        return;
-      }
+        const attachment = doc.content[0].attachment;
 
-      const attachment = doc.content[0].attachment;
+        // Check if fileName is defined
+        const fileName = attachment.title;
+        if (!fileName) {
+          return;
+        }
 
-      // Check if fileName is defined
-      const fileName = attachment.title;
-      if (!fileName) {
-        return;
-      }
-
-      try {
         const signedUrl = await s3Utils.getSignedUrl({
           bucketName,
           fileName,
           durationSeconds: SIGNED_URL_DURATION_SECONDS,
         });
+
         return {
           id: doc.id,
           fileName: fileName,
@@ -71,46 +59,42 @@ export async function getSignedUrls(
           mimeType: attachment.contentType,
           size: attachment.size,
           url: signedUrl,
+          status: doc.status,
+          indexed: attachment.creation,
+          type: doc.type,
         };
-      } catch (error) {
-        capture.error(error, {
-          extra: { patientId, context: `bulkUrlSigningLambda.getSignedUrls`, error },
-        });
-        return;
-      }
-    })
-  );
+      })
+    );
 
-  const response = urls.filter(url => url !== undefined) as DocumentBulkSignerLambdaResponse[];
+    const response = urls.filter(url => url !== undefined) as DocumentBulkSignerLambdaResponse[];
 
-  const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
-  await ossApiClient.callInternalEndpoint({
-    cxId: cxId,
-    patientId: patientId,
-    requestId: requestId,
-    dtos: response,
-  });
+    await ossApiClient.callInternalEndpoint({
+      cxId: cxId,
+      patientId: patientId,
+      requestId: requestId,
+      dtos: response,
+      status: "completed",
+    });
+  } catch (error) {
+    capture.error(error, {
+      extra: { patientId, context: `bulkUrlSigningLambda.getSignedUrls`, error },
+    });
+    await ossApiClient.callInternalEndpoint({
+      cxId: cxId,
+      patientId: patientId,
+      requestId: requestId,
+      dtos: [],
+      status: "failed",
+    });
+  }
 }
-
-export const DocumentBulkSignerLambdaResponseSchema = z.object({
-  id: z.string(),
-  fileName: z.string(),
-  description: z.string().optional(),
-  status: z.string().optional(),
-  mimeType: z.string().optional(),
-  size: z.number().optional(),
-  url: z.string(),
-});
-
-export const DocumentBulkSignerLambdaResponseArraySchema = z.array(
-  DocumentBulkSignerLambdaResponseSchema
-);
 
 export type BulkDownloadWebhookParams = {
   cxId: string;
   patientId: string;
   requestId: string;
   dtos: DocumentBulkSignerLambdaResponse[];
+  status: string;
 };
 
 export function apiClientBulkDownloadWebhook(apiURL: string) {
@@ -120,7 +104,12 @@ export function apiClientBulkDownloadWebhook(apiURL: string) {
     callInternalEndpoint: async function (params: BulkDownloadWebhookParams) {
       try {
         await ossApi.post(sendBulkDownloadUrl, params.dtos, {
-          params: { cxId: params.cxId, patientId: params.patientId, requestId: params.requestId },
+          params: {
+            cxId: params.cxId,
+            patientId: params.patientId,
+            requestId: params.requestId,
+            status: params.status,
+          },
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
