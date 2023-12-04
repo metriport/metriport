@@ -12,7 +12,7 @@ import {
   updateBiometricsWithSPO2,
   updateBiometricsWithTemperature,
 } from "../../mappings/tenovi/biometrics";
-import { tenoviMetricTypes } from "../../mappings/tenovi/constants";
+import { TenoviMetricTypes, tenoviMetricTypes } from "../../mappings/tenovi/constants";
 import { ConnectedUser } from "../../models/connected-user";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
@@ -90,7 +90,7 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
       weight_kg: formatNumber(convert(numValue).from("lb").to("kg")),
     };
     payload.body = [body];
-  } else if (!tenoviMetricTypes.includes(metric)) {
+  } else if (!tenoviMetricTypes.includes(metric as TenoviMetricTypes)) {
     const msg = `Tenovi webhook sent a new metric type`;
     console.log(`${msg} - ${metric}: ${JSON.stringify(data)}`);
     capture.message(`Tenovi webhook sent a new metric type`, {
