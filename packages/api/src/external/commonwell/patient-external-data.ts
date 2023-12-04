@@ -20,7 +20,10 @@ export type PatientWithCWData = Patient & {
   data: { externalData: { COMMONWELL: PatientDataCommonwell } };
 };
 
-const getPatientWithCWDataOrFail = async ({ id, cxId }: Pick<Patient, "id" | "cxId">) => {
+const _getPatientWithCWData = async ({
+  id,
+  cxId,
+}: Pick<Patient, "id" | "cxId">): Promise<PatientWithCWData | undefined> => {
   const patientDB: Patient = await getPatientOrFail({
     id,
     cxId,
@@ -33,9 +36,11 @@ const getPatientWithCWDataOrFail = async ({ id, cxId }: Pick<Patient, "id" | "cx
   return patientDB as PatientWithCWData;
 };
 
-export async function getPatientWithCWData(patient: Patient): Promise<PatientWithCWData> {
+export async function getPatientWithCWData(
+  patient: Patient
+): Promise<PatientWithCWData | undefined> {
   return executeWithRetries(
-    () => getPatientWithCWDataOrFail(patient),
+    () => _getPatientWithCWData(patient),
     maxAttemptsToGetPatientCWData - 1,
     waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds()
   );
