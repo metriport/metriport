@@ -12,7 +12,7 @@ import {
   updateBiometricsWithSPO2,
   updateBiometricsWithTemperature,
 } from "../../mappings/tenovi/biometrics";
-import { tenoviMetricTypes } from "../../mappings/tenovi/constants";
+import { TenoviMetricTypes, tenoviMetricTypes } from "../../mappings/tenovi/constants";
 import { ConnectedUser } from "../../models/connected-user";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
@@ -44,7 +44,7 @@ export const processMeasurementData = async (data: TenoviMeasurement): Promise<v
     );
 
     const userData = mapData(data);
-    createAndSendPayload(connectedUsers, userData);
+    if (userData) createAndSendPayload(connectedUsers, userData);
   } catch (error) {
     console.log(`Failed to process Tenovi WH - error: ${errorToString(error)}`);
     capture.error(error, {
@@ -59,7 +59,7 @@ export const processMeasurementData = async (data: TenoviMeasurement): Promise<v
  * @param {TenoviMeasurement} data Patient data from a Tenovi webhook
  * @returns
  */
-export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
+export function mapData(data: TenoviMeasurement): WebhookUserDataPayload | undefined {
   const payload: WebhookUserDataPayload = {};
 
   const { metric, device_name, hwi_device_id, value_1, value_2, created, timestamp } = data; // Available, but unused properties: sensor_code, timezone_offset, estimated_timestamp
@@ -90,10 +90,10 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
       weight_kg: formatNumber(convert(numValue).from("lb").to("kg")),
     };
     payload.body = [body];
-  } else if (!tenoviMetricTypes.includes(metric)) {
+  } else if (!tenoviMetricTypes.includes(metric as TenoviMetricTypes)) {
     const msg = `Tenovi webhook sent a new metric type`;
     console.log(`${msg} - ${metric}: ${JSON.stringify(data)}`);
-    capture.message(`Tenovi webhook sent a new metric type`, {
+    capture.message(msg, {
       extra: {
         content: `webhook.tenovi.mapData`,
         data,
@@ -101,6 +101,7 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload {
       },
       level: "warning",
     });
+    return;
   }
 
   return payload;

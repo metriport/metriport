@@ -12,6 +12,7 @@ import fs from "fs";
 import { orderBy } from "lodash";
 
 const fromDate = "2022-10-12"; // TODO make this dynamic, maybe number of months, with a default of 6 months?
+// TODO update these to use `getCxData()` instead
 const apiUrl = getEnvVarOrFail("API_URL");
 const apiKey = getEnvVarOrFail("API_KEY");
 const cxName = getEnvVarOrFail("CX_NAME");
@@ -24,8 +25,8 @@ const dateFormat = "YYYY-MM-DD";
 const patientCsvHeader = "date,status,medication,dosage,quantity\n";
 const consolidatedCsvHeader = "id,firstName,lastName,dob,genderAtBirth," + patientCsvHeader;
 const curDateTime = new Date();
-const runName = `${cxName}-${curDateTime.toISOString()}`;
-const baseDir = `./${runName}`;
+const runName = `${cxName.replaceAll(" ", "-")}_Medications_${curDateTime.toISOString()}`;
+const baseDir = `./runs/${runName}`;
 
 const patientIds: string[] = [];
 

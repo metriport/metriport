@@ -6,6 +6,7 @@ import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
 import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
+import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -182,6 +183,26 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const url = await getDownloadUrl(req);
     return res.status(OK).json({ url });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /document/download-url/bulk
+ *
+ * Triggers a wh payload containing the list of downloadable urls  for all the patients documents.
+ * Returns the status of the bulk signing process.
+ *
+ * @param req.query.patientId Patient ID for which to retrieve document metadata.
+ * @returns The status of the bulk signing process
+ */
+
+router.post(
+  "/download-url/bulk",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFromQueryOrFail("patientId", req);
+    const BulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls(cxId, patientId);
+    return res.status(OK).json(BulkGetDocumentsUrlProgress);
   })
 );
 

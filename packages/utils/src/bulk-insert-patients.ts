@@ -9,6 +9,7 @@ import csv from "csv-parser";
 import dayjs from "dayjs";
 import fs from "fs";
 import path from "path";
+import { getCxData } from "./shared/get-cx-data";
 
 /**
  * This script will read patients from a .csv file and insert them into the Metriport API.
@@ -22,12 +23,18 @@ import path from "path";
  * Either set the env vars below on the OS or create a .env file in the root folder of this package.
  */
 
+/**
+ * Only need to provide the facilityId if the CX has more than one facility.
+ * Used to determine the NPI used to query CW.
+ */
+const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-inferrable-types
+
 const apiKey = getEnvVarOrFail("API_KEY");
-const facilityId = getEnvVarOrFail("FACILITY_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
 const delayTime = parseInt(getEnvVar("BULK_INSERT_DELAY_TIME") ?? "200");
 const inputFileName = "bulk-insert-patients.csv";
-const outputFileName = "bulk-insert-patient-ids.txt";
+const outputFileName = "./runs/bulk-insert-patient-ids.txt";
+const ISO_DATE = "YYYY-MM-DD";
 
 type Params = {
   dryrun?: boolean;
@@ -47,6 +54,11 @@ async function main() {
   program.parse();
   const { dryrun: dryRun } = program.opts<Params>();
 
+  if (!dryRun) initPatientIdRepository();
+
+  const { facilityId: localFacilityId } = await getCxData(apiKey, facilityId.trim());
+  if (!localFacilityId) throw new Error("No facility found");
+
   const results: PatientCreate[] = [];
   const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];
 
@@ -55,7 +67,7 @@ async function main() {
   fs.createReadStream(path.join(__dirname, inputFileName))
     .pipe(
       csv({
-        mapHeaders: ({ header }) => header.toLowerCase().replaceAll(" ", ""),
+        mapHeaders: ({ header }) => header.toLowerCase().replaceAll(" ", "").replaceAll("*", ""),
       })
     )
     .on("data", async data => {
@@ -76,7 +88,7 @@ async function main() {
       for (const [i, patient] of results.entries()) {
         try {
           await sleep(delayTime);
-          const createdPatient = await metriportAPI.createPatient(patient, facilityId);
+          const createdPatient = await metriportAPI.createPatient(patient, localFacilityId);
           successfulCount++;
           console.log(i + 1, createdPatient);
           storePatientId(createdPatient.id);
@@ -95,6 +107,9 @@ async function main() {
     });
 }
 
+function initPatientIdRepository() {
+  fs.writeFileSync(path.join(__dirname, outputFileName), "");
+}
 function storePatientId(patientId: string) {
   fs.appendFileSync(path.join(__dirname, outputFileName), patientId + "\n");
 }
@@ -128,7 +143,7 @@ const phoneRegex = /^\+?1?\d{10}$/;
 
 function normalizePhone(phone: string | undefined): string | undefined {
   if (phone == undefined) return undefined;
-  const trimmedPhone = phone.trim();
+  const trimmedPhone = phone.trim().replaceAll("-", "");
   if (trimmedPhone.length === 0) return undefined;
   if (trimmedPhone.match(phoneRegex)) {
     // removes leading country code +1
@@ -169,10 +184,11 @@ function normalizeZip(zip: string | undefined): string {
 function normalizeDate(date: string | undefined): string {
   if (date == undefined) throw new Error(`Missing dob`);
   const trimmedDate = date.trim();
-  if (!dayjs(trimmedDate, "YYYY-MM-DD", true).isValid()) {
+  const parsedDate = dayjs(trimmedDate, ISO_DATE, true);
+  if (!parsedDate.isValid()) {
     throw new Error(`Invalid date ${date}`);
   }
-  return trimmedDate;
+  return parsedDate.format(ISO_DATE);
 }
 
 function normalizeState(state: string | undefined): USState {
@@ -206,7 +222,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   email1: string | undefined;
   email2: string | undefined;
   id: string | undefined;
-  externalid: string | undefined;
+  externalId: string | undefined;
 }): PatientCreate | undefined => {
   const phone1 = normalizePhone(csvPatient.phone ?? csvPatient.phone1);
   const email1 = normalizeEmail(csvPatient.email ?? csvPatient.email1);
@@ -217,7 +233,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   const contact = [contact1, contact2].flatMap(c => c ?? []);
   const externalId = csvPatient.id
     ? normalizeExternalId(csvPatient.id)
-    : normalizeExternalId(csvPatient.externalid) ?? undefined;
+    : normalizeExternalId(csvPatient.externalId) ?? undefined;
   return {
     externalId,
     firstName: normalizeName(csvPatient.firstname, "firstname"),

@@ -7,7 +7,7 @@ import { Capture } from "@metriport/core/util/capture";
 import * as Sentry from "@sentry/node";
 import { Extras, ScopeContext } from "@sentry/types";
 import stringify from "json-stringify-safe";
-import MetriportError from "../errors/metriport-error";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 
 /**
  * @deprecated Use core's instead

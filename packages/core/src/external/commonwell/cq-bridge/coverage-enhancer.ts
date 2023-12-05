@@ -2,7 +2,7 @@ import { PatientLoader } from "../../../domain/patient/patient-loader";
 import { CQOrgHydrated, getOrgChunksFromPos, getOrgsByPrio, OrgPrio } from "./get-orgs";
 
 // Try to keep it even to make testing easier
-export const defaultMaxOrgsToProcess = 300;
+export const defaultMaxOrgsToProcess = 350;
 
 export type CoverageEnhancementParams = {
   cxId: string;
@@ -70,6 +70,7 @@ export abstract class CoverageEnhancer {
     // Definition of priority of orgs to be included in the CQ orgs list.
     // The order here matters!
     const orgRetrievers = [
+      this.getHigh(orgs),
       this.getMedium(orgs, states, "Epic"),
       this.getMedium(orgs, states),
       this.getMedium(orgs),
@@ -109,6 +110,9 @@ export abstract class CoverageEnhancer {
           : orgsByGateway;
       return orgsByStates;
     };
+  }
+  protected getHigh(orgs: CQOrgHydrated[]) {
+    return this.getOrgsBy("high", orgs);
   }
   protected getMedium(orgs: CQOrgHydrated[], states?: string[], gateway?: string) {
     return this.getOrgsBy("medium", orgs, states, gateway);

@@ -48,6 +48,8 @@ jobs:
               - "packages/core/**"
               - "package*.json"
             infra-lambdas:
+              - "packages/shared/**"
+              - "packages/core/**"
               - "packages/infra/**"
               - "packages/lambdas/**"
               - "package*.json"

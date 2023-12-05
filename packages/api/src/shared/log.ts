@@ -18,8 +18,12 @@ export function debug(msg: string, ...optionalParams: any[]): void {
     console.log(msg);
   }
 }
+
 export type ErrorToStringOptions = { detailed: boolean };
 
+/**
+ * @deprecated Use @metriport/shared instead
+ */
 export function errorToString(
   err: unknown,
   options: ErrorToStringOptions = { detailed: true }
