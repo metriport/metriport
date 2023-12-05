@@ -53,4 +53,8 @@ export enum USState {
   WI = "WI",
   WY = "WY",
 }
-export const usStateSchema = z.nativeEnum(USState);
+
+export const usStateSchema = z.preprocess(
+  val => (typeof val === "string" ? val.toUpperCase() : val),
+  z.nativeEnum(USState)
+);
