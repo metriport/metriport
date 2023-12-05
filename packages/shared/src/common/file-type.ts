@@ -1,4 +1,27 @@
-import { Document } from "./document-downloader";
+function isLikelyTextFile(fileBuffer: Buffer): boolean {
+  let readableChars = 0;
+  let nonReadableChars = 0;
+
+  for (let i = 0; i < fileBuffer.length; i++) {
+    const char = fileBuffer[i];
+    if (
+      char !== undefined &&
+      ((char >= 32 && char <= 126) || char === 9 || char === 10 || char === 13)
+    ) {
+      // Common ASCII characters and whitespace/control characters (tab, line feed, carriage return)
+      readableChars++;
+    } else {
+      nonReadableChars++;
+    }
+  }
+
+  const totalChars = readableChars + nonReadableChars;
+  const threshold = 0.85; // 85% of the characters should be readable
+  console.log(
+    `readableChars: ${readableChars}, nonReadableChars: ${nonReadableChars}, totalChars: ${totalChars}`
+  );
+  return readableChars / totalChars > threshold;
+}
 
 /**
  * The function `detectFileType` uses magic numbers to determine the file type of a given file.
@@ -6,12 +29,12 @@ import { Document } from "./document-downloader";
  * In this case, the function reads the first 5 bytes (the magic number) of the file buffer and
  * matches it against known file type headers.
  *
- * @param {Buffer} fileBuffer - The `fileBuffer` parameter is a `Buffer` object that represents the
+ * @param fileBuffer - The `fileBuffer` parameter is a `Buffer` object that represents the
  * contents of a file. The first 5 bytes of this buffer, which generally contain the magic number, are used to
  * identify the file type.
  * @returns The function `detectFileType` returns a string representing the detected file type.
  */
-export function detectFileType(fileBuffer: Buffer, document: Document): [string, string] {
+export function detectFileType(fileBuffer: Buffer): [string, string] {
   if (
     (fileBuffer[0] === 0x49 &&
       fileBuffer[1] === 0x49 &&
@@ -51,31 +74,33 @@ export function detectFileType(fileBuffer: Buffer, document: Document): [string,
     return ["image/jpeg", ".jpeg"];
   } else if (fileBuffer[0] === 0x42 && fileBuffer[1] === 0x4d) {
     return ["image/bmp", ".bmp"];
+  } else if (isLikelyTextFile(fileBuffer)) {
+    return ["text/plain", ".txt"];
   } else {
-    throw new Error(`Could not determine file type for document: ${document.id}`);
+    throw new Error(`Could not determine file type}`);
   }
 }
 /**
  * The function checks if the MIME type of a document is accepted based on a predefined list of
  * accepted content types. Returns true if accepted
- * @param {Document} document - A document object that contains the MIME type of the document.
+ * @param document - A document object that contains the MIME type of the document.
  * @returns The function isContentTypeAccepted is returning a boolean value.
  */
 
-export function isContentTypeAccepted(document: Document): boolean {
+export function isContentTypeAccepted(mimeType: string | undefined): boolean {
   const acceptedContentTypes = [
-    "image/tiff",
-    "image/tif",
-    "text/xml",
-    "application/xml",
+    "application/json",
     "application/pdf",
-    "image/png",
+    "application/xml",
+    "image/bmp",
     "image/jpeg",
     "image/jpg",
-    "image/bmp",
-    "application/json",
+    "image/png",
+    "image/tif",
+    "image/tiff",
     "text/html",
+    "text/xml",
   ];
 
-  return !!document.mimeType && acceptedContentTypes.includes(document.mimeType);
+  return !!mimeType && acceptedContentTypes.includes(mimeType);
 }

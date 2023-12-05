@@ -13,8 +13,7 @@ import {
   FileInfo,
 } from "./document-downloader";
 import NotFoundError from "../../../util/error/not-found";
-import { detectFileType, isContentTypeAccepted } from "./document-file-type-detector";
-import { capture } from "../../../util/notifications";
+import { detectFileType, isContentTypeAccepted } from "@metriport/shared";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -55,19 +54,16 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
 
     // Check if the detected file type is in the accepted content types
-    if (!isContentTypeAccepted(document)) {
+    if (!isContentTypeAccepted(document.mimeType)) {
       // If not, update the content type in S3
       console.log(
         `Updating content type in S3 ${fileInfo.name} for previous mimeType: ${document.mimeType}`
       );
-      const [detectedFileType, detectedExtension] = detectFileType(
-        Buffer.from(downloadedDocument),
-        document
-      );
+      const [detectedFileType, detectedExtension] = detectFileType(Buffer.from(downloadedDocument));
       console.log(
         `Detected file type: ${fileInfo.name}, ${detectedFileType}, ${detectedExtension}`
       );
-      const newKey = await this.updateContentTypeInS3(
+      const newKey = await this.s3Utils.updateContentTypeInS3(
         downloadResult.bucket,
         downloadResult.key,
         detectedFileType,
@@ -278,52 +274,5 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         this.config.capture.error(error, { extra: { ...additionalInfo, error } });
       throw new MetriportError(`CW - Error downloading document`, error, additionalInfo);
     }
-  }
-
-  protected async updateContentTypeInS3(
-    bucket: string,
-    key: string,
-    newContentType: string,
-    newExtension: string
-  ): Promise<string> {
-    const copySource = encodeURIComponent(bucket + "/" + key);
-
-    // Extract the file name without the old extension
-    const fileNameWithoutExtension = key.split(".").slice(0, -1).join(".");
-
-    // Append the new extension to the file name
-    // Ensure there is no leading period in the newExtension
-    const newKey = `${fileNameWithoutExtension}.${newExtension.replace(/^\.+/, "")}`;
-
-    await this.s3client
-      .copyObject({
-        Bucket: bucket,
-        Key: newKey,
-        CopySource: copySource,
-        ContentType: newContentType,
-        MetadataDirective: "REPLACE", // This is important to replace the metadata
-      })
-      .promise();
-
-    // Delete the original file
-    try {
-      await this.s3client
-        .deleteObject({
-          Bucket: bucket,
-          Key: key,
-        })
-        .promise();
-    } catch (error) {
-      capture.error(error, {
-        extra: {
-          bucket,
-          key,
-          context: `document-downloader-local.updateContentTypeInS3.delete`,
-          error,
-        },
-      });
-    }
-
-    return newKey;
   }
 }
