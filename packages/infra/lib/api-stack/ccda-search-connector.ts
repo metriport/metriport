@@ -59,7 +59,7 @@ export function settings(): {
     },
     connectorName: "CCDAOpenSearch",
     lambda: {
-      memory: isLarge ? 1024 : 512,
+      memory: isLarge ? 2048 : 512,
       // Number of messages the lambda pull from SQS at once
       batchSize: 1,
       // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
