@@ -1,11 +1,13 @@
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { QueryTypes, Sequelize } from "sequelize";
+import { z } from "zod";
 import { CQDirectoryEntry, CQDirectoryEntryData } from "../../../domain/medical/cq-directory";
 import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
-import { getCQDirectoryEntry, getCQDirectoryEntriesByOids } from "./get-cq-directory-entry";
-import { updateCQDirectoryEntry } from "./update-cq-directory-entry";
-import { QueryTypes, Sequelize } from "sequelize";
 import { Config } from "../../../shared/config";
-import { z } from "zod";
+import {
+  getCQDirectoryEntriesIdsAndLastUpdated,
+  getCQDirectoryEntry,
+} from "./get-cq-directory-entry";
+import { updateCQDirectoryEntry } from "./update-cq-directory-entry";
 
 const QueryResultSchema = z.array(
   z.object({
@@ -22,18 +24,16 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
   dialect: dbCreds.engine,
 });
 
-export type CQOrganizationCreateResponse = { org: CQDirectoryEntry } & {
-  updated: boolean;
-};
-
+export type CQOrganizationCreateResponse = { org: CQDirectoryEntry } & { updated: boolean };
 export type CQOrganizatioBulkCreateResponse = { updated: number; added: number };
-
-export type CQDirectoryEntryDataWithId = CQDirectoryEntryData & { id: string };
+export type CQDirectoryEntryDataWithUpdateAndId = CQDirectoryEntryData & {
+  update?: boolean;
+  new?: boolean;
+};
 
 export const createOrUpdateCQDirectoryEntry = async (
   orgData: CQDirectoryEntryData
 ): Promise<CQOrganizationCreateResponse> => {
-  // ensure we never create more than one entry per cq org
   const existingOrg = await getCQDirectoryEntry({ oid: orgData.oid });
   if (existingOrg) {
     const updOrg = await updateCQDirectoryEntry({ ...orgData, id: existingOrg.id });
@@ -45,39 +45,36 @@ export const createOrUpdateCQDirectoryEntry = async (
 };
 
 const createCQDirectoryEntry = async (orgData: CQDirectoryEntryData): Promise<CQDirectoryEntry> => {
-  return await CQDirectoryEntryModel.create({
-    id: uuidv7(),
-    ...orgData,
-  });
+  return await CQDirectoryEntryModel.create(orgData);
 };
 
 export const createOrUpdateCQDirectoryEntries = async (
-  orgDataArray: CQDirectoryEntryData[]
+  orgDataArray: CQDirectoryEntryDataWithUpdateAndId[]
 ): Promise<CQOrganizatioBulkCreateResponse> => {
   const oids = orgDataArray.map(data => data.oid);
-  const existingEntries = await getCQDirectoryEntriesByOids(oids); // could break this up further and parallelize
+  const existingEntries = await getCQDirectoryEntriesIdsAndLastUpdated(oids); // TODO: could parallelize this
 
-  const newEntries: CQDirectoryEntryData[] = [];
-  const updateEntries: CQDirectoryEntryDataWithId[] = [];
   orgDataArray.forEach(orgData => {
     const existingEntry = existingEntries.find(entry => entry.oid === orgData.oid);
     if (existingEntry) {
       const latestVersion = existingEntry.lastUpdated === orgData.lastUpdated;
       if (!latestVersion) {
-        const orgDataWithId = orgData as CQDirectoryEntryDataWithId;
-        orgDataWithId.id = existingEntry.id;
-        updateEntries.push(orgDataWithId);
+        orgData.id = existingEntry.id;
+        orgData.update = true;
       }
     } else {
-      newEntries.push(orgData);
+      orgData.new = true;
     }
   });
 
+  const newEntries = orgDataArray.filter(org => org.new);
   const numNewEntries = newEntries.length;
-  const numUpdEntries = updateEntries.length;
+
+  const updEntries = orgDataArray.filter(org => org.update);
+  const numUpdEntries = updEntries.length;
 
   if (numNewEntries) await createCQDirectoryEntries(newEntries);
-  if (numUpdEntries) await updateCQDirectoryEntries(updateEntries);
+  if (numUpdEntries) await updateCQDirectoryEntries(updEntries);
 
   return { added: numNewEntries, updated: numUpdEntries };
 };
@@ -88,6 +85,7 @@ async function computeEarthPoint(orgData: CQDirectoryEntryData): Promise<string 
     const pointQueryResult = await sequelize.query(query, {
       replacements: { lat: orgData.lat, lon: orgData.lon },
       type: QueryTypes.SELECT,
+      logging: false,
     });
     const point = QueryResultSchema.parse(pointQueryResult);
     return point[0].point;
@@ -101,15 +99,11 @@ const createCQDirectoryEntries = async (orgDataArray: CQDirectoryEntryData[]): P
     orgData.point = point;
   }
 
-  const entriesWithIds = orgDataArray.map(orgData => ({
-    id: uuidv7(),
-    ...orgData,
-  }));
-  await CQDirectoryEntryModel.bulkCreate(entriesWithIds);
+  await CQDirectoryEntryModel.bulkCreate(orgDataArray);
 };
 
 const updateCQDirectoryEntries = async (
-  updateEntries: CQDirectoryEntryDataWithId[]
+  updateEntries: CQDirectoryEntryDataWithUpdateAndId[]
 ): Promise<void> => {
   for (const entry of updateEntries) {
     await CQDirectoryEntryModel.update(entry, {

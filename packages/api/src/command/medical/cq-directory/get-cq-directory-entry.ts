@@ -19,11 +19,19 @@ export const getCQDirectoryEntryOrFail = async ({
   return organization;
 };
 
-export const getCQDirectoryEntriesByOids = async (oids: string[]): Promise<CQDirectoryEntry[]> => {
+export const getCQDirectoryEntriesIdsAndLastUpdated = async (
+  oids: string[]
+): Promise<{ id: string; oid: string; lastUpdated: string }[]> => {
   const entries = await CQDirectoryEntryModel.findAll({
     where: {
       oid: oids,
     },
   });
-  return entries.map(entry => entry.dataValues);
+  return entries.map(entry => {
+    return {
+      id: entry.id,
+      oid: entry.oid,
+      lastUpdated: entry.lastUpdated,
+    };
+  });
 };

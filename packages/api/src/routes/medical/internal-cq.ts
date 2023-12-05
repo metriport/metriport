@@ -84,7 +84,8 @@ router.post(
 );
 
 /**
- * GET /internal/carequality/directory/local
+ * GET /internal/carequality/directory/nearby-organizations
+ 
  *
  * Retrieves the organizations within a specified radius from the patient's address.
  * @param req.query.cxId The ID of the customer organization.
@@ -94,7 +95,7 @@ router.post(
  * @returns Returns the CQ organizations within a radius of the patient's address.
  */
 router.get(
-  "/directory/local",
+  "/directory/nearby-organizations",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);

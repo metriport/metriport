@@ -10,6 +10,7 @@ import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../../domain/medical/cq-directory";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 export type XCUrls = {
   urlXCPD: string;
@@ -19,9 +20,8 @@ export type XCUrls = {
 
 export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
   const orgs = orgsInput.flatMap(org => {
-    if (!org) {
-      return [];
-    }
+    if (!org) return [];
+
     const normalizedOid = getOid(org);
     if (!normalizedOid) return [];
 
@@ -32,6 +32,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     const state = getState(org.address);
 
     const orgData: CQDirectoryEntryData = {
+      id: uuidv7(),
       oid: normalizedOid,
       name: org.name?.value ?? undefined,
       urlXCPD: url.urlXCPD,

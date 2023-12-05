@@ -24,7 +24,6 @@ export function getLocationResultPayload({
     if (failGracefully) return undefined;
     throw new Error("Failed to get location coordinates");
   }
-  // TODO: Need to write better error handling here
   return result.Results;
 }
 
@@ -34,12 +33,15 @@ export function getCoordinatesFromLocation({
   result: PromiseResult<AWS.Location.SearchPlaceIndexForTextResponse, AWS.AWSError>;
 }): Coordinates {
   const resp = getLocationResultPayload({ result });
-  const topSuggestion = resp ? resp[0]?.Place?.Geometry?.Point : undefined;
-
+  const topSuggestion = resp ? resp[0] : undefined;
   if (topSuggestion) {
-    const lon = topSuggestion[0];
-    const lat = topSuggestion[1];
-    if (lon && lat) return { lon, lat };
+    const point = topSuggestion.Place?.Geometry?.Point;
+
+    if (point) {
+      const lon = point[0];
+      const lat = point[1];
+      if (lon && lat) return { lon, lat };
+    }
   }
 
   throw new Error("No location found");
