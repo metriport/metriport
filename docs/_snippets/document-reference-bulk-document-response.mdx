@@ -1,0 +1,56 @@
+<ResponseField name="id" type="string" required>
+  The Document ID.
+</ResponseField>
+
+<ResponseField name="url" type="string" required>
+  The URL for downloading the document.
+</ResponseField>
+
+<ResponseField name="fileName" type="string" required>
+  Name of the file.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Human-readable description of the Document.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Can be one of `current`, `superceded`, or `entered in error`.
+</ResponseField>
+
+<ResponseField name="indexed" type="string">
+  When this Document reference was created - formatted to ISO 8601.
+</ResponseField>
+
+<ResponseField name="mimeType" type="string">
+    Document MIME type - usually `application/xml`, or `application/pdf`.
+</ResponseField>
+
+<ResponseField name="size" type="string">
+  Size of the Document in bytes.
+</ResponseField>
+
+<ResponseField name="type" type="CodableConcept">
+    What kind of document this is (LOINC if possible).
+    <Expandable title="CodableConcept properties">
+        <ResponseField name="coding" type="Coding[]">
+            Array containing the coding defined by a terminology system.
+            <Expandable title="Coding properties">
+                <ResponseField name="system" type="string">
+                    Identity of the terminology system.
+                </ResponseField>
+                <ResponseField name="code" type="string">
+                    Symbol in syntax defined by the system.
+                </ResponseField>
+                <ResponseField name="display" type="string">
+                    Representation defined by the system.
+                </ResponseField>
+            </Expandable>
+        </ResponseField>
+        <ResponseField name="text" type="string">
+            Plain text representation of the concept.
+        </ResponseField>
+    </Expandable>
+
+</ResponseField>
+

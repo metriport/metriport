@@ -102,12 +102,12 @@ service:
     getURL:
       display-name: Get Document URL
       docs: |
-        Gets a presigned URL for downloading the specified document.
+        Gets a downloadable URL for downloading the specified document.
         This endpoint returns a URL which you can use to download 
         the specified document and/or convert using the file name 
         provided from the [List Documents](/api-reference/medical/document/list) endpoint.
       method: GET
-      path: /downloadUrl
+      path: /download-url
       request:
         name: GetDocumentUrlRequest
         query-parameters:
@@ -129,6 +129,31 @@ service:
             conversionType: "pdf"
           response:
             body: $DocumentUrl.Example1
+    startBulkGetDocumentUrl:
+      display-name: Start Bulk Get Document URL
+      docs: |
+        Triggers a process to generate a list of download URLs for all of the patient's documents.
+        The status of the process is returned in the response. Initially, it will be `processing`, 
+        and when the process is finished, the status will be updated to `completed` or `failed`.
+        If you trigger this endpoint again while the process is still running, you will get a response 
+        that reflects the current progress.
+      method: POST
+      path: /download-url/bulk
+      request:
+        name: StartBulkGetDocumentUrlRequest
+        query-parameters:
+          patientId:
+            docs: The ID of the patient for which to initiate the bulk URL generation.
+            type: string
+      response:
+        type: BulkGetDocumentUrlQuery
+        docs: The status of the URL generation process and the request ID.
+      examples:
+        - name: Example1
+          query-parameters:
+            patientId: "12345678"
+          response:
+            body: $BulkGetDocumentUrlQuery.Example1
 
 types:
   DocumentQuery:
@@ -275,3 +300,17 @@ types:
       - name: Example1
         value:
           url: abc123-def456
+
+  BulkGetDocumentUrlQuery:
+    properties:
+      status:
+        type: DocumentQueryStatus
+        docs: The status of the URL generation process.
+      requestId:
+        type: optional<string>
+        docs: The ID of the request.
+    examples:
+      - name: Example1
+        value:
+          status: processing
+          requestId: "018c1e9d-dfce-70cb-8c0e-edfbbd2a7f5f"

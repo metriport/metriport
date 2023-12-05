@@ -66,9 +66,10 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
             cxOrgOID: orgOID,
             patientIds,
             cqOrgIds: orgIds,
+            log,
           });
         } catch (error) {
-          const msg = `ERROR at org chunk ${i} (relative) / ${i + fromOrgChunkPos} (absolute)`;
+          const msg = `ERROR at org chunk (relative): ${i}, (absolute): ${i + fromOrgChunkPos}`;
           this.capture.message(`Error processing Enhance Coverage chunk`, {
             extra: { msg, cxId, orgOID, continuing: !stopOnErrors },
             level: "warning",
