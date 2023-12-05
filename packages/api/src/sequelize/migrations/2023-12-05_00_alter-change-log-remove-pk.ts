@@ -1,22 +1,27 @@
-import { Sequelize } from "sequelize";
+import { DataTypes } from "sequelize";
 import type { Migration } from "..";
 
 const tableName = "change_log";
-const indexName = "change_log_data_id_idx";
+const pkColumnName = "id";
 
 // Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.addIndex(tableName, {
-      name: indexName,
-      fields: [Sequelize.literal("(\"new_val\"->>'id')")],
-      transaction,
-    });
+    await queryInterface.removeColumn(tableName, pkColumnName, { transaction });
   });
 };
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.removeIndex(tableName, indexName, { transaction });
+    await queryInterface.addColumn(
+      tableName,
+      pkColumnName,
+      {
+        type: DataTypes.BIGINT,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      { transaction }
+    );
   });
 };
