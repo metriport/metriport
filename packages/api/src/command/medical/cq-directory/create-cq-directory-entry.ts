@@ -1,4 +1,4 @@
-import { QueryTypes, Sequelize } from "sequelize";
+import { Sequelize } from "sequelize";
 import { z } from "zod";
 import { CQDirectoryEntry, CQDirectoryEntryData } from "../../../domain/medical/cq-directory";
 import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
@@ -9,12 +9,9 @@ import {
 } from "./get-cq-directory-entry";
 import { updateCQDirectoryEntry } from "./update-cq-directory-entry";
 
-const QueryResultSchema = z.array(
-  z.object({
-    point: z.string(),
-  })
-);
-
+const QueryResultSchema = z.object({
+  point: z.string(),
+});
 const sqlDBCreds = Config.getDBCreds();
 const dbCreds = JSON.parse(sqlDBCreds);
 
@@ -81,23 +78,22 @@ export const createOrUpdateCQDirectoryEntries = async (
 
 async function computeEarthPoint(orgData: CQDirectoryEntryData): Promise<string | undefined> {
   if (orgData.lat && orgData.lon) {
-    const query = "SELECT ll_to_earth(:lat, :lon) as point";
-    const pointQueryResult = await sequelize.query(query, {
-      replacements: { lat: orgData.lat, lon: orgData.lon },
-      type: QueryTypes.SELECT,
-      logging: false,
+    const pointQueryResult = await CQDirectoryEntryModel.findOne({
+      attributes: [[sequelize.fn("ll_to_earth", orgData.lat, orgData.lon), "point"]],
+      raw: true,
     });
     const point = QueryResultSchema.parse(pointQueryResult);
-    return point[0].point;
+    return point.point;
   }
   return;
 }
 
 const createCQDirectoryEntries = async (orgDataArray: CQDirectoryEntryData[]): Promise<void> => {
-  for (const orgData of orgDataArray) {
-    const point = await computeEarthPoint(orgData);
-    orgData.point = point;
-  }
+  await Promise.all(
+    orgDataArray.map(async orgData => {
+      orgData.point = await computeEarthPoint(orgData);
+    })
+  );
 
   await CQDirectoryEntryModel.bulkCreate(orgDataArray);
 };
@@ -105,10 +101,12 @@ const createCQDirectoryEntries = async (orgDataArray: CQDirectoryEntryData[]): P
 const updateCQDirectoryEntries = async (
   updateEntries: CQDirectoryEntryDataWithUpdateAndId[]
 ): Promise<void> => {
-  for (const entry of updateEntries) {
-    await CQDirectoryEntryModel.update(entry, {
-      where: { id: entry.id },
-      returning: true,
-    });
-  }
+  await Promise.allSettled(
+    updateEntries.map(async entry => {
+      await CQDirectoryEntryModel.update(entry, {
+        where: { id: entry.id },
+        returning: true,
+      });
+    })
+  );
 };

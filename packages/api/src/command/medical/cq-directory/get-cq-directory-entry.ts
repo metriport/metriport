@@ -2,6 +2,8 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { CQDirectoryEntry } from "../../../domain/medical/cq-directory";
 import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
 
+type CQDirectoryEntryIdsAndLastUpdated = { id: string; oid: string; lastUpdated: string };
+
 export const getCQDirectoryEntry = async ({
   oid,
 }: Pick<CQDirectoryEntry, "oid">): Promise<CQDirectoryEntryModel | undefined> => {
@@ -21,8 +23,9 @@ export const getCQDirectoryEntryOrFail = async ({
 
 export const getCQDirectoryEntriesIdsAndLastUpdated = async (
   oids: string[]
-): Promise<{ id: string; oid: string; lastUpdated: string }[]> => {
+): Promise<CQDirectoryEntryIdsAndLastUpdated[]> => {
   const entries = await CQDirectoryEntryModel.findAll({
+    attributes: ["id", "oid", "lastUpdated"],
     where: {
       oid: oids,
     },

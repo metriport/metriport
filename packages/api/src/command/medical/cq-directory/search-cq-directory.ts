@@ -1,7 +1,7 @@
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
-import { getCoordinates } from "../../../external/location/address";
+import { geocodeAddresses } from "../../../external/aws/address";
 import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
 import { getPatientOrFail } from "../patient/get-patient";
 
@@ -37,7 +37,7 @@ export const searchNearbyCQOrganizations = async ({
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const coordinates = await getCoordinates(patient.data.address);
+  const coordinates = await geocodeAddresses(patient.data.address);
 
   const orgs = await searchCQDirectoriesByRadius({
     coordinates,

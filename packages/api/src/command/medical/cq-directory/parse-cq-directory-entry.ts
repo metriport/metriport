@@ -11,6 +11,7 @@ import { Organization } from "@metriport/carequality-sdk/models/organization";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../../domain/medical/cq-directory";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { Coordinates } from "@metriport/core/external/aws/location";
 
 export type XCUrls = {
   urlXCPD: string;
@@ -28,7 +29,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     const url = getUrls(org.contained);
     if (!url?.urlXCPD) return [];
 
-    const coordinates = getCoordinates(org.address);
+    const coordinates = org.address ? getCoordinates(org.address) : undefined;
     const state = getState(org.address);
 
     const orgData: CQDirectoryEntryData = {
@@ -79,21 +80,16 @@ function getUrls(contained: Contained): XCUrls | undefined {
   return urls;
 }
 
-function getCoordinates(address: Address[] | undefined): { lat: number; lon: number } | undefined {
-  if (!address) return;
-  const coordinates = address.flatMap(a => {
-    if (a.extension?.url === ORG_POSITION) {
-      const position = a.extension?.valueCodeableConcept?.coding?.value?.position;
-      if (!position) return [];
-      const lat = parseFloat(position.latitude.value);
-      const lon = parseFloat(position.longitude.value);
-      if (lat < -90 || lat > 90) return [];
-      if (lon < -180 || lon > 180) return [];
-      return { lat, lon };
-    }
-  })[0];
-
-  return coordinates;
+function getCoordinates(address: Address[]): Coordinates | undefined {
+  const orgPosition = address.find(a => a.extension?.url === ORG_POSITION);
+  const position = orgPosition?.extension?.valueCodeableConcept?.coding?.value?.position;
+  if (!position) return;
+  const lat = parseFloat(position.latitude.value);
+  const lon = parseFloat(position.longitude.value);
+  if (lat < -90 || lat > 90) return;
+  if (lon < -180 || lon > 180) return;
+  if (isNaN(lat) || isNaN(lon)) return;
+  return { lat, lon };
 }
 
 function getState(addresses: Address[] | undefined): string | undefined {

@@ -65,7 +65,7 @@ const initDB = async (): Promise<void> => {
       acquire: 30000,
       idle: 10000,
     },
-    logging: false,
+    logging: logDBOperations,
     logQueryParameters: logDBOperations,
   });
   try {

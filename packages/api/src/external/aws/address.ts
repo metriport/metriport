@@ -13,7 +13,7 @@ type AddressWithoutCountry = Omit<Address, "country"> & { country?: string | und
  * @param addresses
  * @returns
  */
-export async function getCoordinates(addresses: AddressWithoutCountry[]): Promise<Coordinates[]> {
+export async function geocodeAddresses(addresses: AddressWithoutCountry[]): Promise<Coordinates[]> {
   const indexName = Config.getPlaceIndexName();
   const awsRegion = Config.getAWSRegion();
   const client = makeLocationClient(awsRegion);
@@ -21,8 +21,7 @@ export async function getCoordinates(addresses: AddressWithoutCountry[]): Promis
   const coords = [];
 
   for (const address of addresses) {
-    const addressText =
-      address.addressLine1 + ", " + address.city + ", " + address.state + " " + address.zip;
+    const addressText = `${address.addressLine1}, ${address.city}, ${address.state} ${address.zip}`;
 
     const params = {
       Text: addressText,
