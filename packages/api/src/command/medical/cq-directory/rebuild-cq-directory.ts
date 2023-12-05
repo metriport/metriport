@@ -1,13 +1,12 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import { sleep } from "@metriport/core/util/sleep";
-import { createMockCQOrganization } from "../../../external/carequality/organization-mock";
 import { Config } from "../../../shared/config";
+import { capture } from "../../../shared/notifications";
 import {
   CQDirectoryEntryDataWithUpdateAndId,
   createOrUpdateCQDirectoryEntries,
 } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
-import { capture } from "../../../shared/notifications";
 
 const BATCH_SIZE = 300;
 
@@ -17,9 +16,7 @@ type CQDirectoryRebuildResponse = {
   updated: number;
 };
 
-export const rebuildCQDirectory = async (
-  mockNumber: number | undefined
-): Promise<CQDirectoryRebuildResponse | undefined> => {
+export const rebuildCQDirectory = async (): Promise<CQDirectoryRebuildResponse | undefined> => {
   let orgs;
   const response: CQDirectoryRebuildResponse = {
     totalFetched: 0,
@@ -28,22 +25,11 @@ export const rebuildCQDirectory = async (
   };
 
   try {
-    if (mockNumber) {
-      const mockOrganizations = [];
+    const apiKey = Config.getCQApiKey();
+    const cq = new Carequality(apiKey);
+    const resp = await cq.listAllOrganizations();
+    orgs = parseCQDirectoryEntries(resp);
 
-      for (let j = 0; j < mockNumber; j++) {
-        const fakeOrg = createMockCQOrganization();
-        const mockOrgJson = JSON.parse(fakeOrg);
-        mockOrganizations.push(mockOrgJson);
-      }
-      orgs = parseCQDirectoryEntries(mockOrganizations);
-      response.totalFetched = orgs.length;
-    } else {
-      const apiKey = Config.getCQApiKey();
-      const cq = new Carequality(apiKey);
-      const resp = await cq.listAllOrganizations();
-      orgs = parseCQDirectoryEntries(resp);
-    }
     if (!orgs) return response;
 
     response.totalFetched = orgs.length;
