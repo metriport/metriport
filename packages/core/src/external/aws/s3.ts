@@ -167,13 +167,12 @@ export class S3Utils {
     newContentType: string,
     newExtension: string
   ): Promise<string> {
-    const copySource = encodeURIComponent(bucket + "/" + key);
-
+    const copySource = encodeURIComponent(`${bucket}/${key}`);
     // Extract the file name without the old extension
-    const fileNameWithoutExtension = key.split(".").slice(0, -1).join(".");
+    const lastDotIndex = key.lastIndexOf(".");
+    const fileNameWithoutExtension = key.substring(0, lastDotIndex);
 
     // Append the new extension to the file name
-    // Ensure there is no leading period in the newExtension
     const newKey = `${fileNameWithoutExtension}.${newExtension.replace(/^\.+/, "")}`;
 
     const copyObjectCommand = new CopyObjectCommand({

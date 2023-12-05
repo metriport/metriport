@@ -56,12 +56,10 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     // Check if the detected file type is in the accepted content types
     if (!isContentTypeAccepted(document.mimeType)) {
       // If not, update the content type in S3
-      console.log(
-        `Updating content type in S3 ${fileInfo.name} for previous mimeType: ${document.mimeType}`
-      );
       const [detectedFileType, detectedExtension] = detectFileType(Buffer.from(downloadedDocument));
       console.log(
-        `Detected file type: ${fileInfo.name}, ${detectedFileType}, ${detectedExtension}`
+        `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType}
+         to detected mimeType ${detectedFileType} and ${detectedExtension}`
       );
       const newKey = await this.s3Utils.updateContentTypeInS3(
         downloadResult.bucket,
@@ -69,13 +67,11 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         detectedFileType,
         detectedExtension
       );
+      const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
       const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(
         newKey,
         downloadResult.bucket
       );
-      console.log(`Updated file type: ${fileInfo.name}, ${JSON.stringify(fileDetailsUpdated)}`);
-      const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
-
       downloadResult = {
         ...downloadResult,
         ...fileDetailsUpdated,
@@ -83,9 +79,6 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         location: newLocation,
       };
     }
-
-    console.log(`download result: ${JSON.stringify(downloadResult)}`);
-
     const newlyDownloadedFile: DownloadResult = {
       bucket: downloadResult.bucket,
       key: downloadResult.key,
