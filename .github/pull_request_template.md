@@ -1,4 +1,4 @@
-Ref: #_[ticket-number]_
+Ticket: #_[ticket-number]_
 
 ### Dependencies
 
@@ -9,10 +9,31 @@ Ref: #_[ticket-number]_
 
 _[Document your changes, give context for reviewers, add images/videos of UI changes]_
 
+### Testing
+
+- Local
+   - [x] _[Indicate how you tested this, on local or staging]_
+   - [x] ...
+- Staging
+   - [ ] _testing step 1_
+   - [ ] _testing step 2_
+- Production
+   - [ ] _testing step 1_
+   - [ ] _testing step 2_
+
+
 ### Release Plan
 
-_[Document your release plan to minimize downtime]_
+_[This is the release plan for production]_
 
+_[You should execute the exact same steps when releasing to staging to validate it works]_
+
+_[Add and remove items below accordingly]_
+
+- [ ] :warning: This contains a DB migration
+   - _step1_
+   - _step2_
 - [ ] Upstream dependencies are met
-- [ ] _[action 1]_
-- [ ] _[action 2]_
+- [ ] Release NPM packages
+- [ ] _[action n-1]_
+- [ ] _[action n]_
