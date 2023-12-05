@@ -107,7 +107,8 @@ export async function create(
     const { organization, facility } = patientData ?? (await getPatientData(patient, facilityId));
     const orgName = organization.data.name;
     const orgOID = organization.oid;
-    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
+
+    const facilityNPI: string = facility.data["npi"];
 
     // Patients of cxs that not go through EC should have theis status undefined so they're not picked up later
     // when we enable it
@@ -160,7 +161,7 @@ export async function retryLinking(patient: Patient, facilityId: string): Promis
     const { organization, facility } = await getPatientData(patient, facilityId);
     const orgName = organization.data.name;
     const orgOID = organization.oid;
-    const facilityNPI = facility.data["npi"] as string;
+    const facilityNPI: string = facility.data["npi"];
 
     // Patients of cxs that not go through EC should have theis status undefined so they're not picked up later
     // when we enable it

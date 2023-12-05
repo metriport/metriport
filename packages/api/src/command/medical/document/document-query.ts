@@ -16,10 +16,6 @@ import { SetDocQueryProgress, appendDocQueryProgress } from "../patient/append-d
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
-import {
-  handleCWLinkingStatus,
-  setCommonwellLinkStatusToFailed,
-} from "../../../external/commonwell/patient-external-data";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -75,24 +71,6 @@ export async function queryDocumentsAcrossHIEs({
     requestId,
     cxDocumentRequestMetadata,
   });
-
-  // If we can get the CW linkins status, then we can continue with the DQ
-  // If not, we will set statuses to failed and return a failed response.
-  try {
-    await handleCWLinkingStatus(patientId, cxId);
-  } catch (error) {
-    await setCommonwellLinkStatusToFailed({ patientId, cxId });
-    const failedPatient = await storeQueryInit({
-      id: patient.id,
-      cxId: patient.cxId,
-      documentQueryProgress: { download: { status: "failed" } },
-      requestId,
-      cxDocumentRequestMetadata,
-    });
-    return createQueryResponse("failed", failedPatient);
-  }
-  // if cwLinkingStatus is completed then continue with DQ and we know
-  // that the patient is linked to CW.
 
   getDocumentsFromCW({
     patient,

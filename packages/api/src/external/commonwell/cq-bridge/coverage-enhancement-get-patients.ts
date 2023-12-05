@@ -2,7 +2,9 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Op } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
-import { CQLinkStatus, CWLinkStatus, PatientDataCommonwell } from "../patient-shared";
+import { CQLinkStatus } from "../patient-shared";
+import { getLinkStatusCW } from "../patient";
+import { LinkStatus } from "../../../external/patient-link";
 
 dayjs.extend(duration);
 
@@ -12,14 +14,13 @@ const MIN_TIME_AFTER_PATIENT_CREATED = dayjs.duration({ minutes: 2 });
 export type PatientToLink = {
   cxId: string;
   id: string;
-  cwLinkStatus?: CWLinkStatus;
+  cwLinkStatus?: LinkStatus;
 };
 
 /**
  * Get the list of patients to have coverage enhanced through link with CareQuality Orgs.
  */
 
-// modfiy to check for status completed and not 2 min timeout
 export async function getPatientsToEnhanceCoverage(cxIds: string[]): Promise<PatientToLink[]> {
   const earliestDate = dayjs()
     .subtract(MIN_TIME_AFTER_PATIENT_CREATED.asMilliseconds(), "milliseconds")
@@ -48,6 +49,6 @@ export async function getPatientsToEnhanceCoverage(cxIds: string[]): Promise<Pat
   return patientsWithIds.map(p => ({
     cxId: p.cxId,
     id: p.id,
-    cwLinkStatus: (p.data.externalData?.COMMONWELL as PatientDataCommonwell).status as CWLinkStatus,
+    cwLinkStatus: getLinkStatusCW(p.data.externalData),
   }));
 }

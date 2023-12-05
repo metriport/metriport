@@ -15,6 +15,7 @@ import { getLinkStatusCQ, getLinkStatusCW } from "./patient";
 import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
 import cwCommands from "./index";
 import { Util } from "../..//shared/util";
+import { processAsyncError } from "../../errors";
 
 dayjs.extend(duration);
 
@@ -25,20 +26,33 @@ export type PatientWithCWData = Patient & {
   data: { externalData: { COMMONWELL: PatientDataCommonwell } };
 };
 
-export async function handleCWLinkingStatus(patientId: string, cxId: string): Promise<void> {
-  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
-  const processLinkingStatus = async () => {
-    const patient = await getPatientOrFail({ id: patientId, cxId });
+export async function getPatientWithCWDataAndRetryLinking({
+  patient: { id, cxId },
+  facilityId,
+}: {
+  patient: Patient;
+  facilityId?: string;
+}): Promise<PatientWithCWData> {
+  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${id}`);
+  const processLinkingStatus = async (): Promise<PatientWithCWData> => {
+    const patient: Patient = await getPatientOrFail({ id, cxId });
+    if (!patient.data.externalData) {
+      if (!facilityId) {
+        throw new Error("Facility ID is required to attempt relinking link patient");
+      }
+      await cwCommands.patient
+        .create(patient, facilityId)
+        .catch(processAsyncError(`cw.patient.create`));
+    }
     const cwLinkingStatus = getLinkStatusCW(patient.data.externalData);
 
     switch (cwLinkingStatus) {
       case "processing":
-        throw new MetriportError(`Patient ${patientId} is 'processing', retrying after timeout...`);
-
+        throw new MetriportError(`Patient ${id} is 'processing', retrying after timeout...`);
       case "failed": {
-        log(`Patient ${patientId} is already 'failed', retrying linking...`);
-        const { facilities } = await getPatientWithDependencies({ id: patientId, cxId });
-        // should never happen, but just for tyope checking
+        log(`Patient ${id} is already 'failed', retrying linking...`);
+        const { facilities } = await getPatientWithDependencies({ id: id, cxId });
+        // should never happen, but just for type checking
         if (!facilities[0]) {
           throw new Error("No facilities found for the patient");
         }
@@ -47,25 +61,27 @@ export async function handleCWLinkingStatus(patientId: string, cxId: string): Pr
 
         // retry linking without waiting for it to complete
         cwCommands.patient.retryLinking(patient, facilityId);
-        log(`Patient ${patientId} retry linking initiated, rechecking status...`);
-        throw new MetriportError(
-          `Retry linking initiated for patient ${patientId}, rechecking status...`
-        ); // throw error to be caught by executeWithRetries
+        log(`Patient ${id} retry linking initiated, rechecking status...`);
+        throw new MetriportError(`Retry linking initiated for patient ${id}, rechecking status...`); // throw error to be caught by executeWithRetries
       }
       case "completed":
-        log(`Patient ${patientId} is linked, continuing with DQ`);
+        log(`Patient ${id} is linked, continuing with DQ`);
         break;
 
       default:
         throw new Error(`Unknown status: ${cwLinkingStatus}`);
     }
+    return patient as PatientWithCWData;
   };
 
   return executeWithRetries(
     processLinkingStatus,
     maxAttemptsToGetPatientCWData - 1,
     waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds()
-  );
+  ).catch(async () => {
+    await setCommonwellLinkStatusToFailed({ patientId: id, cxId });
+    throw new Error(`Retry linking failed after ${maxAttemptsToGetPatientCWData}`);
+  });
 }
 
 /**

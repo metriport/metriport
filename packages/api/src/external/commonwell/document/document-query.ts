@@ -58,6 +58,7 @@ import {
   DocumentWithMetriportId,
   getFileName,
 } from "./shared";
+import { getPatientWithCWDataAndRetryLinking } from "../../../external/commonwell/patient-external-data";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -83,7 +84,7 @@ type File = DownloadResult & { isNew: boolean };
  * CW for them (optional) - see `downloadDocsAndUpsertFHIR()` for the default value
  */
 export async function queryAndProcessDocuments({
-  patient,
+  patient: patientParam,
   facilityId,
   forceQuery = false,
   forceDownload,
@@ -92,19 +93,23 @@ export async function queryAndProcessDocuments({
   requestId,
 }: {
   patient: Patient;
-  facilityId?: string | undefined;
+  facilityId?: string;
   forceQuery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<number> {
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
+  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
 
   try {
-    // if queryAndProcess was called, then we verified that the patient is linked
-    // and so this casting is safe.
-    const cwData = (patient as PatientWithCWData).data.externalData.COMMONWELL;
+    // If we can get the CW linkins status, then we can continue with the DQ
+    // If not, we will set statuses to failed and return a failed response.
+    const patient = await getPatientWithCWDataAndRetryLinking({
+      patient: patientParam,
+      facilityId,
+    });
+    const cwData = patient.data.externalData.COMMONWELL;
 
     const isWaitingForEnhancedCoverage =
       (await isEnhancedCoverageEnabledForCx(patient.cxId)) &&
@@ -156,13 +161,13 @@ export async function queryAndProcessDocuments({
   } catch (error) {
     console.log(`Error: ${errorToString(error)}`);
     processPatientDocumentRequest(
-      patient.cxId,
-      patient.id,
+      patientParam.cxId,
+      patientParam.id,
       "medical.document-download",
       MAPIWebhookStatus.failed
     );
     await appendDocQueryProgress({
-      patient: { id: patient.id, cxId: patient.cxId },
+      patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
     });
@@ -170,7 +175,7 @@ export async function queryAndProcessDocuments({
       extra: {
         context: `cw.queryAndProcessDocuments`,
         error,
-        patientId: patient.id,
+        patientId: patientParam.id,
         facilityId,
         forceDownload,
         requestId,

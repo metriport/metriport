@@ -41,6 +41,5 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
   // TODO: #393 declarative, event-based integration
   // Intentionally asynchronous - it takes too long to perform
   cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
-
   return newPatient;
 };
