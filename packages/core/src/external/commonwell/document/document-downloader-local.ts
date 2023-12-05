@@ -14,6 +14,7 @@ import {
 } from "./document-downloader";
 import NotFoundError from "../../../util/error/not-found";
 import { detectFileType, isContentTypeAccepted } from "./document-file-type-detector";
+import { capture } from "../../../util/notifications";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -59,14 +60,35 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       console.log(
         `Updating content type in S3 ${fileInfo.name} for previous mimeType: ${document.mimeType}`
       );
-      const detectedFileType = detectFileType(Buffer.from(downloadedDocument), document);
-      await this.updateContentTypeInS3(downloadResult.bucket, downloadResult.key, detectedFileType);
-      const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(
+      const [detectedFileType, detectedExtension] = detectFileType(
+        Buffer.from(downloadedDocument),
+        document
+      );
+      console.log(
+        `Detected file type: ${fileInfo.name}, ${detectedFileType}, ${detectedExtension}`
+      );
+      const newKey = await this.updateContentTypeInS3(
+        downloadResult.bucket,
         downloadResult.key,
+        detectedFileType,
+        detectedExtension
+      );
+      const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(
+        newKey,
         downloadResult.bucket
       );
-      downloadResult = { ...downloadResult, ...fileDetailsUpdated };
+      console.log(`Updated file type: ${fileInfo.name}, ${JSON.stringify(fileDetailsUpdated)}`);
+      const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
+
+      downloadResult = {
+        ...downloadResult,
+        ...fileDetailsUpdated,
+        key: newKey,
+        location: newLocation,
+      };
     }
+
+    console.log(`download result: ${JSON.stringify(downloadResult)}`);
 
     const newlyDownloadedFile: DownloadResult = {
       bucket: downloadResult.bucket,
@@ -196,7 +218,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
     const uploadResult = await promise;
 
-    console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
+    console.log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
 
     const { size, contentType } = await this.s3Utils.getFileInfoFromS3(
       uploadResult.Key,
@@ -261,18 +283,47 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
   protected async updateContentTypeInS3(
     bucket: string,
     key: string,
-    newContentType: string
-  ): Promise<void> {
+    newContentType: string,
+    newExtension: string
+  ): Promise<string> {
     const copySource = encodeURIComponent(bucket + "/" + key);
+
+    // Extract the file name without the old extension
+    const fileNameWithoutExtension = key.split(".").slice(0, -1).join(".");
+
+    // Append the new extension to the file name
+    // Ensure there is no leading period in the newExtension
+    const newKey = `${fileNameWithoutExtension}.${newExtension.replace(/^\.+/, "")}`;
 
     await this.s3client
       .copyObject({
         Bucket: bucket,
-        Key: key,
+        Key: newKey,
         CopySource: copySource,
         ContentType: newContentType,
         MetadataDirective: "REPLACE", // This is important to replace the metadata
       })
       .promise();
+
+    // Delete the original file
+    try {
+      await this.s3client
+        .deleteObject({
+          Bucket: bucket,
+          Key: key,
+        })
+        .promise();
+    } catch (error) {
+      capture.error(error, {
+        extra: {
+          bucket,
+          key,
+          context: `document-downloader-local.updateContentTypeInS3.delete`,
+          error,
+        },
+      });
+    }
+
+    return newKey;
   }
 }

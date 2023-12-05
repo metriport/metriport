@@ -11,8 +11,7 @@ import { Document } from "./document-downloader";
  * identify the file type.
  * @returns The function `detectFileType` returns a string representing the detected file type.
  */
-export function detectFileType(fileBuffer: Buffer, document: Document): string {
-  console.log(`Detecting file type for file: ${fileBuffer.slice(0, 10).toString("hex")}`);
+export function detectFileType(fileBuffer: Buffer, document: Document): [string, string] {
   if (
     (fileBuffer[0] === 0x49 &&
       fileBuffer[1] === 0x49 &&
@@ -23,8 +22,7 @@ export function detectFileType(fileBuffer: Buffer, document: Document): string {
       fileBuffer[2] === 0x00 &&
       fileBuffer[3] === 0x2a)
   ) {
-    console.log(`Detected file type: image/tiff`);
-    return "image/tiff";
+    return ["image/tiff", ".tiff"];
   } else if (
     fileBuffer[0] === 0x25 &&
     fileBuffer[1] === 0x50 &&
@@ -32,8 +30,7 @@ export function detectFileType(fileBuffer: Buffer, document: Document): string {
     fileBuffer[3] === 0x46 &&
     fileBuffer[4] === 0x2d
   ) {
-    console.log(`Detected file type: application/pdf`);
-    return "application/pdf";
+    return ["application/pdf", ".pdf"];
   } else if (
     fileBuffer[0] === 0x3c &&
     fileBuffer[1] === 0x3f &&
@@ -42,22 +39,18 @@ export function detectFileType(fileBuffer: Buffer, document: Document): string {
     fileBuffer[4] === 0x6c &&
     fileBuffer[5] === 0x20
   ) {
-    console.log(`Detected file type: text/xml`);
-    return "application/xml";
+    return ["application/xml", ".xml"];
   } else if (
     fileBuffer[0] === 0x89 &&
     fileBuffer[1] === 0x50 &&
     fileBuffer[2] === 0x4e &&
     fileBuffer[3] === 0x47
   ) {
-    console.log(`Detected file type: image/png`);
-    return "image/png";
+    return ["image/png", ".png"];
   } else if (fileBuffer[0] === 0xff && fileBuffer[1] === 0xd8 && fileBuffer[2] === 0xff) {
-    console.log(`Detected file type: image/jpeg`);
-    return "image/jpeg";
+    return ["image/jpeg", ".jpeg"];
   } else if (fileBuffer[0] === 0x42 && fileBuffer[1] === 0x4d) {
-    console.log(`Detected file type: image/bmp`);
-    return "image/bmp";
+    return ["image/bmp", ".bmp"];
   } else {
     throw new Error(`Could not determine file type for document: ${document.id}`);
   }
