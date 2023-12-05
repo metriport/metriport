@@ -1,13 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { npiStringArraySchema } from "../models/shared";
-import {
-  XCPDPayload,
-  XCPDRequest,
-  xcpdGatewaysSchema,
-  XCPDResponse,
-  xcpdResponseSchema,
-} from "../models/xcpd";
+import { XCPDPayload, XCPDRequest, xcpdGatewaysSchema, XCPDResponse } from "../models/xcpd";
 import { XCA_ITI_38Request } from "../models/xca_iti_38";
 import { XCA_ITI_39Request } from "../models/xca_iti_39";
 
@@ -43,34 +37,21 @@ export class IHEGateway {
 
   /**
    * Patient Discovery (XCPD ITI-55) request.
+   * https://profiles.ihe.net/ITI/TF/Volume2/ITI-55.html
+   *
    * @param xcpdIti55Request An array of patient discovery transaction requests.
-   * @param xcpdIti55Request[].patient The patient data in FHIR R4 format.
+   * @param xcpdIti55Request[].id Unique ID for the request.
    * @param xcpdIti55Request[].cxId The customer ID.
+   * @param xcpdIti55Request[].timestamp The timestamp of the request.
    * @param xcpdIti55Request[].xcpdGateways The OIDs and XCPD ITI-55 URLs of each organization to make a request to.
    * @param xcpdIti55Request[].principalCareProviderNPIs The list of NPIs of the practitioners associated with the patient.
-   * @param xcpdIti55Request[].requestId Optional. Unique ID for the request. If not provided, one will be created.
+   * @param xcpdIti55Request[].samlAttributes The SAML attributes of the org making the request.
+   * @param xcpdIti55Request[].patient The patient data in FHIR R4 format.
    *
-   * @returns an XCPD request to be used with an IHE Gateway.
-   *
-   * @throws {@link ZodError}
-   * Thrown if organization OIDs or principalCareProviderNPIs don't meet their respective criteria.
+   * @returns 202 Accepted if the request was successful.
    */
-  async getPatient(xcpdIti55Request: XCPDPayload[]): Promise<XCPDResponse> {
-    const xcpdRequests = xcpdIti55Request.map(
-      ({ patient, cxId, xcpdGateways, principalCareProviderNPIs, requestId }) => {
-        return this.createXCPDRequest({
-          patient,
-          cxId,
-          xcpdGateways,
-          principalCareProviderNPIs,
-          requestId,
-        });
-      }
-    );
-
-    const resp = await this.api.post(IHEGateway.XCPD_ENDPOINT, xcpdRequests);
-
-    return xcpdResponseSchema.parse(resp);
+  async getPatient(xcpdIti55Request: XCPDRequest[]): Promise<void> {
+    return await this.api.post(IHEGateway.XCPD_ENDPOINT, xcpdIti55Request);
   }
 
   /**
@@ -80,22 +61,21 @@ export class IHEGateway {
    * @param xcaIti38Request An array of document query transaction requests.
    * @param xcaIti38Request[].id Unique ID for the request.
    * @param xcaIti38Request[].cxId The customer ID.
+   * @param xcaIti38Request[].timestamp The timestamp of the request.
    * @param xcaIti38Request[].homeCommunityId The OID of the organization to make a request to.
-   * @param xcaIti38Request[].urlDQ The XCA ITI-38 endpoint of the organization to make a request to.
-   * @param xcaIti38Request[].patientIdentifier The patient identifier.
+   * @param xcaIti38Request[].xcpdPatientId The patient identifier.
+   * @param xcaIti38Request[].xcpdGateway The XCA ITI-38 endpoint of the organization to make a request to.
+   * @param xcaIti38Request[].samlAttributes The SAML attributes of the org making the request.
    * @param xcaIti38Request[].classCode Optional. The class code of the document.
    * @param xcaIti38Request[].practiceSettingCode Optional. The practice setting code of the document.
    * @param xcaIti38Request[].facilityTypeCode Optional. The facility type code of the document.
    * @param xcaIti38Request[].documentCreationDate Optional. The document creation date.
    * @param xcaIti38Request[].serviceDate Optional. The service date.
    *
-   *
-   * @returns an XCPD request to be used with an IHE Gateway.
+   * @returns 202 Accepted if the request was successful.
    */
-  async getDocuments(xcaIti38Request: XCA_ITI_38Request): Promise<XCPDResponse> {
-    const resp = await this.api.post(IHEGateway.XCA_ITI_38_ENDPOINT, xcaIti38Request);
-
-    return xcpdResponseSchema.parse(resp);
+  async getDocuments(xcaIti38Request: XCA_ITI_38Request): Promise<void> {
+    return await this.api.post(IHEGateway.XCA_ITI_38_ENDPOINT, xcaIti38Request);
   }
 
   /**
@@ -109,30 +89,40 @@ export class IHEGateway {
    * @param xcaIti39Request[].repositoryUniqueId The unique ID of the repository.
    * @param xcaIti39Request[].documentUniqueId The unique ID of the document.
    *
-   * @returns an XCPD request to be used with an IHE Gateway.
+   * @returns 202 Accepted if the request was successful.
    */
   async retrieveDocument(xcaIti39Request: XCA_ITI_39Request): Promise<XCPDResponse> {
-    const resp = await this.api.post(IHEGateway.XCA_ITI_39_ENDPOINT, xcaIti39Request);
-
-    return xcpdResponseSchema.parse(resp);
+    return await this.api.post(IHEGateway.XCA_ITI_39_ENDPOINT, xcaIti39Request);
   }
 
-  //--------------------------------------------------------------------------------------------
-  // Private Methods
-  //--------------------------------------------------------------------------------------------
-  private createXCPDRequest({
+  createXCPDRequest({
     patient,
     cxId,
     xcpdGateways,
     principalCareProviderNPIs,
     requestId,
+    org,
   }: XCPDPayload): XCPDRequest {
+    const user = `${org.name} System User`;
+    const defaultSubjectRole = {
+      display: "Administrative AND/OR managerial worker",
+      code: "106331006",
+    };
+
     const xcpdRequest: XCPDRequest = {
-      id: requestId ?? uuidv4(), // #1263 TODO: need to change this to UUIDv7
+      id: requestId ?? uuidv4(),
       cxId,
-      xcpdGateways: xcpdGatewaysSchema.parse(xcpdGateways),
       timestamp: new Date().toISOString(),
+      xcpdGateways: xcpdGatewaysSchema.parse(xcpdGateways),
       patientResource: patient,
+      samlAttributes: {
+        subjectId: user,
+        subjectRole: defaultSubjectRole,
+        organization: org.name,
+        organizationId: org.oid,
+        homeCommunityId: org.oid,
+        purposeOfUse: "TREATMENT",
+      },
     };
 
     if (principalCareProviderNPIs) {
