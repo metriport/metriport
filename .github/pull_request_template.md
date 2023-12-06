@@ -30,10 +30,14 @@ _[You should execute the exact same steps when releasing to staging to validate 
 
 _[Add and remove items below accordingly]_
 
+- [ ] :warning: Points to `master`
 - [ ] :warning: This contains a DB migration
    - _step1_
    - _step2_
+- [ ] Added to [monthly product update](https://www.notion.so/metriport/Customer-Updates-21b4e9d3ad5f4fd68db587a11db28cff?pvs=4) (deprecates a feature that needs to be communicated with customers)
+- [ ] Added to [monthly product update](https://www.notion.so/metriport/Customer-Updates-21b4e9d3ad5f4fd68db587a11db28cff?pvs=4) (introduce a feature that would be useful customers)
 - [ ] Upstream dependencies are met
 - [ ] Release NPM packages
 - [ ] _[action n-1]_
 - [ ] _[action n]_
+- [ ] Merge this
