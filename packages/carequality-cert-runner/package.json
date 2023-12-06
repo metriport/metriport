@@ -42,6 +42,6 @@
   },
   "dependencies": {
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
-    "@metriport/core": "file:packages/core"
+    "@metriport/core": "1.6.7"
   }
 }
