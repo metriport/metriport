@@ -1,19 +1,15 @@
-import { documentReference, baseRequestSchema, baseResponseSchema } from "./shared";
+import { BaseRequest, DocumentReference, baseResponseSchema } from "./shared";
 
 import { z } from "zod";
 
-export const documentRetrievalRequestSchema = z.array(
-  baseRequestSchema.extend({
-    gateway: z.object({
-      xcaHomeCommunityId: z.string(),
-      xcaUrl: z.string(),
-    }),
-    patientId: z.string(),
-    documentReference: z.array(documentReference),
-  })
-);
-
-export type DocumentRetrievalRequest = z.infer<typeof documentRetrievalRequestSchema>;
+export type DocumentRetrievalRequest = BaseRequest & {
+  gateway: {
+    xcaHomeCommunityId: string;
+    xcaUrl: string;
+  };
+  patientId: string;
+  documentReference: DocumentReference[];
+};
 
 export const docFileReference = z.object({
   fileName: z.string(),

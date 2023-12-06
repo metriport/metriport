@@ -44,8 +44,8 @@ export class IHEGateway {
    * @param patientDiscoveryRequest A patient discovery transaction request to Ihe Gateway.
    *
    */
-  async getPatient(patientDiscoveryRequest: PatientDiscoveryRequest): Promise<void> {
-    return await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, patientDiscoveryRequest);
+  async startPatientDiscovery(patientDiscoveryRequest: PatientDiscoveryRequest): Promise<void> {
+    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, patientDiscoveryRequest);
   }
 
   /**
@@ -55,8 +55,8 @@ export class IHEGateway {
    * @param documentQueryRequest An array of document query transaction requests.
    *
    */
-  async getDocuments(documentQueryRequest: DocumentQueryRequest): Promise<void> {
-    return await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequest);
+  async startDocumentsQuery(documentQueryRequest: DocumentQueryRequest): Promise<void> {
+    await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequest);
   }
 
   /**
@@ -66,7 +66,7 @@ export class IHEGateway {
    * @param documentRetrieval An array of document retrieval transaction requests.
    *
    */
-  async retrieveDocument(documentRetrieval: DocumentRetrievalRequest): Promise<void> {
-    return await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrieval);
+  async startDocumentsRetrieval(documentRetrieval: DocumentRetrievalRequest): Promise<void> {
+    await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrieval);
   }
 }

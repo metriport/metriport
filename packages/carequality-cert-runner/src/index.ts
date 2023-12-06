@@ -4,7 +4,6 @@ import { getEnvVarOrFail } from "@metriport/core/src/util/env-var";
 import * as dotenv from "dotenv";
 import { Command } from "commander";
 import { generatePatient } from "./payloads";
-// import * as dotenv from "dotenv";
 
 function metriportBanner(): string {
   return `
@@ -35,6 +34,7 @@ program
   .requiredOption(
     `--env-file <file-path>`,
     `Absolute path to the .env file containing required config. Example required file contents:
+    // TODO: UPDATE THIS EXAMPLE
 "
     `
   )

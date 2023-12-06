@@ -1,31 +1,30 @@
-import { baseResponseSchema, documentReference, baseRequestSchema } from "./shared";
+import { BaseRequest, baseResponseSchema, documentReference } from "./shared";
 import { z } from "zod";
 
-export const code = z.object({
-  system: z.string(),
-  code: z.string(),
-});
+export type Code = {
+  system: string;
+  code: string;
+};
 
-export const dateRange = z.object({
-  dateFrom: z.string(),
-  dateTo: z.string(),
-});
+export type DateRange = {
+  dateFrom: string;
+  dateTo: string;
+};
 
-export const documentQueryRequestSchema = z.array(
-  baseRequestSchema.extend({
-    xcaHomeCommunityId: z.string(),
-    xcpdPatientId: z.object({ id: z.string(), system: z.string() }),
-    patientId: z.string().nullable(),
-    xcaGateway: z.string(),
-    classCode: z.array(code).nullable(),
-    practiceSettingCode: z.array(code).nullable(),
-    facilityTypeCode: z.array(code).nullable(),
-    documentCreationDate: dateRange.nullable(),
-    serviceDate: dateRange.nullable(),
-  })
-);
-
-export type DocumentQueryRequest = z.infer<typeof documentQueryRequestSchema>;
+export type DocumentQueryRequest = BaseRequest & {
+  xcaHomeCommunityId: string;
+  xcpdPatientId: {
+    id: string;
+    system: string;
+  };
+  patientId?: string;
+  xcaGateway: string;
+  classCode?: Code[];
+  practiceSettingCode?: Code[];
+  facilityTypeCode?: Code[];
+  documentCreationDate?: DateRange;
+  serviceDate?: DateRange;
+};
 
 export const documentQueryResponseSchema = baseResponseSchema.extend({
   documentReference: z.array(documentReference).nullable(),

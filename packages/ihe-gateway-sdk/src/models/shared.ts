@@ -16,19 +16,24 @@ export const oidStringSchema = z
   .string()
   .refine(oid => normalizeOid(oid), { message: "OID is not valid" });
 
-export const samlAttributes = z.object({
-  subjectId: z.string(),
-  subjectRole: z.object({
-    display: z.string(),
-    code: z.string(),
-  }),
-  organization: z.string(),
-  organizationId: z.string(),
-  homeCommunityId: z.string(),
-  purposeOfUse: z.string(),
-});
+export type SamlAttributes = {
+  subjectId: string;
+  subjectRole: {
+    display: string;
+    code: string;
+  };
+  organization: string;
+  organizationId: string;
+  homeCommunityId: string;
+  purposeOfUse: string;
+};
 
-export type SamlAttributes = z.infer<typeof samlAttributes>;
+export type BaseRequest = {
+  id: string;
+  cxId: string;
+  timestamp: string;
+  samlAttributes: SamlAttributes;
+};
 
 export const documentReference = z.object({
   homeCommunityId: z.string(),
@@ -52,15 +57,6 @@ export const operationOutcome = z.object({
   resourceType: z.string(),
   id: z.string(),
   issue: z.array(issue),
-});
-
-export type OperationOutcome = z.infer<typeof operationOutcome>;
-
-export const baseRequestSchema = z.object({
-  id: z.string(),
-  cxId: z.string(),
-  timestamp: z.string(),
-  samlAttributes,
 });
 
 export const baseResponseSchema = z.object({
