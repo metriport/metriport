@@ -3,7 +3,6 @@ import { Organization } from "@metriport/carequality-sdk/models/organization";
 
 export type CQDirectoryEntryData = {
   id: string;
-  oid: string;
   name?: string;
   urlXCPD: string;
   urlDQ?: string;

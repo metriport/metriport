@@ -8,10 +8,11 @@ import {
 import { Address } from "@metriport/carequality-sdk/models/address";
 import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { Coordinates } from "@metriport/core/external/aws/location";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../../domain/medical/cq-directory";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { Coordinates } from "@metriport/core/external/aws/location";
+
+const EARTH_RADIUS = 6378168;
 
 export type XCUrls = {
   urlXCPD: string;
@@ -20,7 +21,8 @@ export type XCUrls = {
 };
 
 export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
-  const orgs = orgsInput.flatMap(org => {
+  // Use Promise.all to wait for all promises to resolve
+  const parsedOrgs = orgsInput.flatMap(org => {
     if (!org) return [];
 
     const normalizedOid = getOid(org);
@@ -30,24 +32,47 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     if (!url?.urlXCPD) return [];
 
     const coordinates = org.address ? getCoordinates(org.address) : undefined;
+    const lat = coordinates ? coordinates.lat : undefined;
+    const lon = coordinates ? coordinates.lon : undefined;
+    const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
+
     const state = getState(org.address);
 
     const orgData: CQDirectoryEntryData = {
-      id: uuidv7(),
-      oid: normalizedOid,
+      id: normalizedOid,
       name: org.name?.value ?? undefined,
       urlXCPD: url.urlXCPD,
       urlDQ: url.urlDQ,
       urlDR: url.urlDR,
-      lat: coordinates ? coordinates.lat : undefined,
-      lon: coordinates ? coordinates.lon : undefined,
+      lat,
+      lon,
+      point,
       state,
       data: org,
       lastUpdated: org.meta.lastUpdated.value,
     };
     return orgData;
   });
-  return orgs;
+
+  return parsedOrgs;
+}
+
+/**
+ * Computes the Earth point for a coordinate pair. Built based on this logic: https://github.com/postgres/postgres/blob/4d0cf0b05defcee985d5af38cb0db2b9c2f8dbae/contrib/earthdistance/earthdistance--1.1.sql#L50-L55C15
+ * @returns Earth 3D point
+ */
+export function computeEarthPoint(lat: number, lon: number) {
+  const latRad = convertDegreesToRadians(lat);
+  const lonRad = convertDegreesToRadians(lon);
+
+  const x = EARTH_RADIUS * Math.cos(latRad) * Math.cos(lonRad);
+  const y = EARTH_RADIUS * Math.cos(latRad) * Math.sin(lonRad);
+  const z = EARTH_RADIUS * Math.sin(latRad);
+  return `(${x}, ${y}, ${z})`;
+}
+
+function convertDegreesToRadians(degrees: number) {
+  return (degrees * Math.PI) / 180;
 }
 
 function getUrls(contained: Contained): XCUrls | undefined {

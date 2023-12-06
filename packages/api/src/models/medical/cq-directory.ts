@@ -9,7 +9,6 @@ export class CQDirectoryEntryModel
 {
   static NAME = "cq_directory_entry";
   declare id: string;
-  declare oid: string;
   declare name?: string;
   declare urlXCPD: string;
   declare urlDQ?: string;
@@ -25,9 +24,6 @@ export class CQDirectoryEntryModel
     CQDirectoryEntryModel.init(
       {
         ...BaseModel.attributes(),
-        oid: {
-          type: DataTypes.STRING,
-        },
         name: {
           type: DataTypes.STRING,
         },

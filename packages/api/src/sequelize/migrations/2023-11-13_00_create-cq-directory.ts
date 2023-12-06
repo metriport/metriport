@@ -15,11 +15,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
           primaryKey: true,
           allowNull: false,
         },
-        oid: {
-          type: DataTypes.STRING,
-          unique: true,
-          allowNull: false,
-        },
         name: {
           type: DataTypes.STRING,
           allowNull: true,

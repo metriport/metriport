@@ -1,4 +1,4 @@
-import { Address } from "@metriport/api-sdk";
+import { Address } from "../../domain/medical/address";
 import {
   getCoordinatesFromLocation,
   makeLocationClient,
@@ -6,14 +6,12 @@ import {
 import { Config } from "../../shared/config";
 import { Coordinates } from "@metriport/core/external/aws/location";
 
-type AddressWithoutCountry = Omit<Address, "country"> & { country?: string | undefined };
-
 /**
  * Geocodes a list of addresses using Amazon Location Services.
  * @param addresses
  * @returns
  */
-export async function geocodeAddresses(addresses: AddressWithoutCountry[]): Promise<Coordinates[]> {
+export async function geocodeAddresses(addresses: Address[]): Promise<Coordinates[]> {
   const indexName = Config.getPlaceIndexName();
   const awsRegion = Config.getAWSRegion();
   const client = makeLocationClient(awsRegion);

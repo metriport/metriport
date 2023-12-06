@@ -9,7 +9,7 @@ export const DEFAULT_RADIUS_IN_MILES = 50;
 
 export type CQOrgBasicDetails = {
   name: string | undefined;
-  oid: string;
+  id: string;
   lon: number | undefined;
   lat: number | undefined;
   urlXCPD: string;
@@ -93,7 +93,7 @@ export const pickBasicOrganizationAttributes = (
   const orgDetails = orgs.map(org => {
     return {
       name: org.name,
-      oid: org.oid,
+      id: org.id,
       lon: org.lon,
       lat: org.lat,
       urlXCPD: org.urlXCPD,

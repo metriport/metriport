@@ -24,14 +24,17 @@ const router = Router();
  * POST /internal/carequality/directory/rebuild
  *
  * Retrieves organizations from the Carequality Directory and uploads them into our database.
+ * @param mockNumber Temporary and Optional, the number of mock organizations to create. If specified, mock organizations will be created instead of fetching from the Carequality Directory.
  * @returns Returns the number of organizations fetched, how many are newly-added and how many updated.
  */
 router.post(
   "/directory/rebuild",
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const response = await rebuildCQDirectory();
-    return res.status(httpStatus.OK).json(response);
+    const mockNumberString = getFrom("query").optional("mockNumber", req);
+    const mockNumber = mockNumberString ? parseInt(mockNumberString) : undefined;
+    await rebuildCQDirectory(mockNumber);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
