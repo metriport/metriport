@@ -3,32 +3,23 @@ import duration from "dayjs/plugin/duration";
 import { Op } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { CQLinkStatus } from "../patient-shared";
-import { getLinkStatusCW } from "../patient";
-import { LinkStatus } from "../../../external/patient-link";
+import { Patient } from "../../../domain/medical/patient";
 
 dayjs.extend(duration);
 
 // To avoid processing patients that haven't finished being sync'ed @ CW
 const MIN_TIME_AFTER_PATIENT_CREATED = dayjs.duration({ minutes: 2 });
 
-export type PatientToLink = {
-  cxId: string;
-  id: string;
-  cwLinkStatus?: LinkStatus;
-};
-
 /**
  * Get the list of patients to have coverage enhanced through link with CareQuality Orgs.
  */
 
-export async function getPatientsToEnhanceCoverage(cxIds: string[]): Promise<PatientToLink[]> {
+export async function getPatientsToEnhanceCoverage(cxIds: string[]): Promise<Patient[]> {
   const earliestDate = dayjs()
     .subtract(MIN_TIME_AFTER_PATIENT_CREATED.asMilliseconds(), "milliseconds")
     .toDate();
   const cqLinkStatusNotToLink: CQLinkStatus[] = ["linked", "processing"];
-  const attributesToQuery: (keyof PatientToLink)[] = ["id", "cxId"];
-  const patientsWithIds = await PatientModel.findAll({
-    attributes: attributesToQuery,
+  const patientsWithIds: Patient[] = await PatientModel.findAll({
     where: {
       ...(cxIds.length ? { cxId: { [Op.in]: cxIds } } : {}),
       data: {
@@ -46,9 +37,5 @@ export async function getPatientsToEnhanceCoverage(cxIds: string[]): Promise<Pat
       createdAt: { [Op.lte]: earliestDate },
     },
   });
-  return patientsWithIds.map(p => ({
-    cxId: p.cxId,
-    id: p.id,
-    cwLinkStatus: getLinkStatusCW(p.data.externalData),
-  }));
+  return patientsWithIds;
 }
