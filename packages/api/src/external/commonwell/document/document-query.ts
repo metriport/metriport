@@ -644,7 +644,7 @@ export async function downloadDocsAndUpsertFHIR({
         } catch (error) {
           errorCount++;
 
-          log(`Error processing doc: ${error}`, doc);
+          log(`Error processing doc: ${error}; doc ${JSON.stringify(doc)}`);
           if (!errorReported && !(error instanceof NotFoundError)) {
             capture.error(error, {
               extra: {

@@ -4,12 +4,7 @@ import { identifierSchema } from "./identifier";
 import { linkSchema, networkLinkSchema } from "./link";
 import { facilitySchema } from "./facility";
 import { patientLinkSchema } from "./person";
-
-export const patientOrganizationSchema = z.object({
-  type: z.string().optional().nullable(),
-  reference: z.string().optional().nullable(),
-  display: z.string().optional().nullable(),
-});
+import { patientOrganizationSchema } from "./patient-organization";
 
 export const patientLinksSchema = z.object({
   self: linkSchema,

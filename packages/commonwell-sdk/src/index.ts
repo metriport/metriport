@@ -4,6 +4,7 @@ export { CommonwellError } from "./common/commonwell-error";
 export { downloadFile } from "./common/fileDownload";
 export { makeJwt } from "./common/make-jwt";
 export {
+  baseQueryMeta,
   getDemographics,
   getId,
   getIdTrailingSlash,
@@ -12,7 +13,6 @@ export {
   getPersonIdFromSearchByPatientDemo,
   getPersonIdFromUrl,
   organizationQueryMeta,
-  baseQueryMeta,
 } from "./common/util";
 export { validateNPI } from "./common/validate-npi";
 export { Address, AddressUseCodes } from "./models/address";
@@ -32,6 +32,7 @@ export {
   LOLA,
   NetworkLink,
   PatientLinkProxy,
+  PatientNetworkLink,
 } from "./models/link";
 export { Organization, OrganizationList } from "./models/organization";
 export {
