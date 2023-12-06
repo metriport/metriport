@@ -38,9 +38,11 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
   override async download({
     document,
     fileInfo,
+    patientId,
   }: {
     document: Document;
     fileInfo: FileInfo;
+    patientId: string;
   }): Promise<DownloadResult> {
     let downloadedDocument = "";
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,6 +67,10 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       contentType: downloadResult.contentType,
     };
 
+    if (isMimeTypeXML(document.mimeType)) {
+      downloadedDocument = this.modifyXmlRemoveNullId(downloadedDocument, patientId);
+    }
+
     if (downloadedDocument && isMimeTypeXML(document.mimeType)) {
       return this.parseXmlFile({
         ...newlyDownloadedFile,
@@ -73,6 +79,32 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       });
     }
     return newlyDownloadedFile;
+  }
+
+  /**
+   * Modifies an XML string by removing the nullFlavor attribute from certain id elements and adding new attributes to them.
+   *
+   * @param xml - The XML string to be modified.
+   * @param patientId - The ID of the patient.
+   * @returns The modified XML string.
+   */
+  protected modifyXmlRemoveNullId(xml: string, patientId: string): string {
+    const parser = new DOMParser();
+    const document = parser.parseFromString(xml, "text/xml");
+
+    const idElements = Array.from(document.getElementsByTagName("id")).filter(el =>
+      el.hasAttribute("nullFlavor")
+    );
+
+    idElements.forEach(idElement => {
+      idElement.removeAttribute("nullFlavor");
+      idElement.setAttribute("assigningAuthorityName", "VOID");
+      idElement.setAttribute("root", "1.2.840");
+      idElement.setAttribute("extension", patientId);
+    });
+
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(document);
   }
 
   /**

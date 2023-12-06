@@ -29,7 +29,7 @@ const apiMode = isProduction() ? APIMode.production : APIMode.integration;
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
-    const { orgName, orgOid, npi, cxId, fileInfo, document } = req;
+    const { orgName, orgOid, npi, cxId, fileInfo, document, patientId } = req;
     capture.setUser({ id: cxId });
     capture.setExtra({ lambdaName });
     console.log(
@@ -61,7 +61,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       },
       capture,
     });
-    const result = await docDownloader.download({ document, fileInfo });
+    const result = await docDownloader.download({ document, fileInfo, patientId });
 
     console.log(`Done - ${JSON.stringify(result)}`);
     return result;

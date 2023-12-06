@@ -32,9 +32,11 @@ export abstract class DocumentDownloader {
     document,
     fileInfo,
     cxId,
+    patientId,
   }: {
     document: Document;
     fileInfo: FileInfo;
     cxId: string;
+    patientId: string;
   }): Promise<DownloadResult>;
 }

@@ -533,6 +533,7 @@ export async function downloadDocsAndUpsertFHIR({
                   facilityNPI,
                   cxId,
                   requestId,
+                  patientId: patient.id,
                 });
 
                 return newFile;
@@ -754,6 +755,7 @@ async function triggerDownloadDocument({
   facilityNPI,
   cxId,
   requestId,
+  patientId,
 }: {
   doc: DocumentWithLocation;
   fileInfo: S3Info;
@@ -761,6 +763,7 @@ async function triggerDownloadDocument({
   facilityNPI: string;
   cxId: string;
   requestId: string;
+  patientId: string;
 }): Promise<File> {
   const docDownloader = makeDocumentDownloader({
     orgName: organization.data.name,
@@ -778,7 +781,12 @@ async function triggerDownloadDocument({
   };
 
   try {
-    const result = await docDownloader.download({ document, fileInfo: adjustedFileInfo, cxId });
+    const result = await docDownloader.download({
+      document,
+      fileInfo: adjustedFileInfo,
+      cxId,
+      patientId,
+    });
     return {
       ...result,
       isNew: true,

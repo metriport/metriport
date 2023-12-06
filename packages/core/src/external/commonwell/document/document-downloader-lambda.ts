@@ -18,6 +18,7 @@ export type DocumentDownloaderLambdaRequest = {
   document: Document;
   fileInfo: FileInfo;
   cxId: string;
+  patientId: string;
 };
 
 export class DocumentDownloaderLambda extends DocumentDownloader {
@@ -40,10 +41,12 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
     document,
     fileInfo,
     cxId,
+    patientId,
   }: {
     document: Document;
     fileInfo: FileInfo;
     cxId: string;
+    patientId: string;
   }): Promise<DownloadResult> {
     const payload: DocumentDownloaderLambdaRequest = {
       document,
@@ -52,6 +55,7 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
       orgName: this.orgName,
       orgOid: this.orgOid,
       npi: this.npi,
+      patientId: patientId,
     };
 
     const lambdaResult = await this.lambdaClient

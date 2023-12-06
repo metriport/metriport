@@ -8,12 +8,14 @@ class DocumentDownloaderLambdaForTest extends DocumentDownloaderLambda {
     document,
     fileInfo,
     cxId,
+    patientId,
   }: {
     document: Document;
     fileInfo: FileInfo;
     cxId: string;
+    patientId: string;
   }): Promise<DownloadResult> {
-    return super.download({ document, fileInfo, cxId });
+    return super.download({ document, fileInfo, cxId, patientId });
   }
 }
 
@@ -59,6 +61,7 @@ describe.skip("document-downloader", () => {
           location: bucketName,
         },
         cxId,
+        patientId: "1234567890",
       })
     ).rejects.toThrowError(new MetriportError(`Error calling lambda ${lambdaName}`));
   });
