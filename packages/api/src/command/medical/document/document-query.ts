@@ -1,4 +1,5 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import {
   ConvertResult,
@@ -11,7 +12,7 @@ import { validateOptionalFacilityId } from "../../../domain/medical/patient-faci
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { Util, emptyFunction } from "../../../shared/util";
+import { Util } from "../../../shared/util";
 import { SetDocQueryProgress, appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";

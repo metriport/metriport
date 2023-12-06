@@ -105,14 +105,26 @@ export async function queryAndProcessDocuments({
   try {
     // If we can get the CW linkins status, then we can continue with the DQ
     // If not, we will set statuses to failed and return a failed response.
-    const patient = await getPatientWithCWDataAndRetryLinking({
-      patient: patientParam,
-      facilityId,
-    });
+    const [patient, isECEnabledForThisCx] = await Promise.all([
+      getPatientWithCWDataAndRetryLinking({ patient: patientParam, facilityId }),
+      isEnhancedCoverageEnabledForCx(patientParam.cxId),
+    ]);
+
+    if (!patient && isECEnabledForThisCx) {
+      log(`Couldn't get CW Data for Patient, but EC is enabled for CX, skipping DQ.`);
+      return 0;
+    }
+    if (!patient) {
+      const msg = `Couldn't get CW Data for Patient`;
+      throw new MetriportError(msg, undefined, {
+        cxId: patientParam.cxId,
+        patientId: patientParam.id,
+      });
+    }
     const cwData = patient.data.externalData.COMMONWELL;
 
     const isWaitingForEnhancedCoverage =
-      (await isEnhancedCoverageEnabledForCx(patient.cxId)) &&
+      isECEnabledForThisCx &&
       cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
       cwData.cqLinkStatus !== "linked";
 

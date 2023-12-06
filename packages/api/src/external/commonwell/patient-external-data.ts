@@ -32,7 +32,7 @@ export async function getPatientWithCWDataAndRetryLinking({
 }: {
   patient: Patient;
   facilityId?: string;
-}): Promise<PatientWithCWData> {
+}): Promise<PatientWithCWData | undefined> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${id}`);
   const processLinkingStatus = async (): Promise<PatientWithCWData> => {
     const patient: Patient = await getPatientOrFail({ id, cxId });
@@ -82,6 +82,7 @@ export async function getPatientWithCWDataAndRetryLinking({
   ).catch(async () => {
     await setCommonwellLinkStatusToFailed({ patientId: id, cxId });
     throw new Error(`Retry linking failed after ${maxAttemptsToGetPatientCWData}`);
+    // typescript thinks the return type is PatientWithCWData | undefined
   });
 }
 

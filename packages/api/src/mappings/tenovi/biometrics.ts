@@ -4,7 +4,6 @@ import convert from "convert-units";
 import { TenoviMeasurementData } from ".";
 import { PROVIDER_TENOVI } from "../../shared/constants";
 import { getFloatValue } from "../../shared/numbers";
-import { TenoviMetricTypes } from "./constants";
 
 export const mapToBiometrics = (
   date: string,
@@ -49,7 +48,7 @@ export const mapToBiometrics = (
  */
 export function updateBiometricsWithBP(
   biometrics: Biometrics,
-  metric: TenoviMetricTypes,
+  metric: string,
   timestamp: string,
   value: number,
   value2: number | undefined,
@@ -89,7 +88,7 @@ export function updateBiometricsWithBP(
  */
 export function updateBiometricsWithHR(
   biometrics: Biometrics,
-  metric: TenoviMetricTypes,
+  metric: string,
   timestamp: string,
   value: number,
   value2: number | undefined,
@@ -114,7 +113,7 @@ export function updateBiometricsWithHR(
  */
 export function updateBiometricsWithSPO2(
   biometrics: Biometrics,
-  metric: TenoviMetricTypes,
+  metric: string,
   value: number,
   value2: number | undefined
 ): void {
@@ -134,7 +133,7 @@ export function updateBiometricsWithSPO2(
  */
 export function updateBiometricsWithPerfIndex(
   biometrics: Biometrics,
-  metric: TenoviMetricTypes,
+  metric: string,
   value: number
 ) {
   if (metric === "perfusion_index") {
@@ -147,7 +146,7 @@ export function updateBiometricsWithPerfIndex(
  */
 export function updateBiometricsWithTemperature(
   biometrics: Biometrics,
-  metric: TenoviMetricTypes,
+  metric: string,
   timestamp: string,
   value: number,
   sourceInfo?: SourceInfo
@@ -172,7 +171,7 @@ export function updateBiometricsWithTemperature(
  */
 export function updateBiometricsWithBloodGluc(
   biometrics: Biometrics,
-  metric: TenoviMetricTypes,
+  metric: string,
   timestamp: string,
   value: number,
   sourceInfo?: SourceInfo
@@ -195,7 +194,7 @@ export function updateBiometricsWithBloodGluc(
  */
 export function updateBiometricsWithPeakFlow(
   biometrics: Biometrics,
-  metric: TenoviMetricTypes,
+  metric: string,
   value: number
 ) {
   if (metric === "peak_expiratory_flow") {
@@ -211,7 +210,7 @@ export function updateBiometricsWithPeakFlow(
  */
 export function updateBiometricsWithForcedExpVol(
   biometrics: Biometrics,
-  metric: TenoviMetricTypes,
+  metric: string,
   value: number
 ) {
   if (metric === "forced_expiratory_volume") {

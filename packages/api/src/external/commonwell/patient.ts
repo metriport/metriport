@@ -182,8 +182,11 @@ export async function retryLinking(patient: Patient, facilityId: string): Promis
       throw new Error(msg);
     }
 
-    const commonwellPatientId = commonwellData?.patientId;
-    const commonwellPersonId = commonwellData?.personId;
+    const commonwellPatientId = commonwellData.patientId;
+    const commonwellPersonId = commonwellData.personId;
+    if (!commonwellPersonId) {
+      throw new Error("Commonwell person ID is undefined");
+    }
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
     const respGet = await commonWell.getPatient(queryMeta, commonwellPatientId);
@@ -199,11 +202,7 @@ export async function retryLinking(patient: Patient, facilityId: string): Promis
       throw new Error(msg);
     }
 
-    const link = await commonWell.addPatientLink(
-      queryMeta,
-      commonwellPersonId,
-      respGet._links.self.href
-    );
+    const link = await commonWell.addPatientLink(queryMeta, commonwellPersonId, patientRefLink);
 
     await setCommonwellId({
       patientId: patient.id,

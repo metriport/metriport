@@ -80,30 +80,27 @@ async function getOrgs(cxIds: string[]): Promise<Organization[]> {
 }
 
 async function getUsage(): Promise<Usage[]> {
+  const usagePlanId = Config.getApiGatewayUsagePlanId();
+  if (!usagePlanId) return [];
   const today = dayjs().format(ISO_DATE);
-  const usage = await apiGw
-    .getUsage({
-      usagePlanId: "vcoak3",
-      startDate: today,
-      endDate: today,
-    })
-    .promise();
 
+  const usage = await apiGw.getUsage({ usagePlanId, startDate: today, endDate: today }).promise();
   if (!usage.items) {
     console.log(`No usage items found for this run`);
     return [];
   }
 
   const items = Object.entries(usage.items);
-  const promises = items.map(async ([id, value]) => {
-    const key = await apiGw.getApiKey({ apiKey: id, includeValue: true }).promise();
+  const promises = items.map(async ([apiKey, usageRaw]) => {
+    const key = await apiGw.getApiKey({ apiKey, includeValue: true }).promise();
 
-    const dailyUsage = value[0];
-    if (!dailyUsage) throw new MetriportError(`Missing dailyUsage`, undefined, { key: id });
+    const dailyUsage = usageRaw[0];
+    if (!dailyUsage) throw new MetriportError(`Missing dailyUsage`, undefined, { apiKey });
     const quotaUsed = dailyUsage[0];
-    if (!quotaUsed) throw new MetriportError(`Missing quotaUsed`, undefined, { key: id });
+    if (quotaUsed == null) throw new MetriportError(`Missing quotaUsed`, undefined, { apiKey });
     const quotaRemaining = dailyUsage[1];
-    if (!quotaRemaining) throw new MetriportError(`Missing quotaRemaining`, undefined, { key: id });
+    if (quotaRemaining == null)
+      throw new MetriportError(`Missing quotaRemaining`, undefined, { apiKey });
 
     const quotaTotal = quotaUsed + quotaRemaining;
     const cxId =

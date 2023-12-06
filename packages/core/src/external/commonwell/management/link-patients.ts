@@ -13,6 +13,7 @@ export type LinkPatientsCommand = {
   cxOrgOID: string;
   patientIds: string[];
   cqOrgIds: string[];
+  log?: typeof console.log;
 };
 
 /**
@@ -29,8 +30,13 @@ export class LinkPatients {
     cxOrgOID,
     patientIds,
     cqOrgIds,
+    log,
   }: LinkPatientsCommand): Promise<void> {
-    await this.cwManagementApi.updateIncludeList({ oid: cxOrgOID, careQualityOrgIds: cqOrgIds });
+    await this.cwManagementApi.updateIncludeList({
+      oid: cxOrgOID,
+      careQualityOrgIds: cqOrgIds,
+      log,
+    });
 
     // Give some time for the cache - if any, on CW's side to catch up
     await sleep(TIME_BETWEEN_INCLUDE_LIST_AND_UPDATE_ALL.asMilliseconds());

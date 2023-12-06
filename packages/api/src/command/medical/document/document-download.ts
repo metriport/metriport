@@ -5,12 +5,14 @@ import {
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
+import dayjs from "dayjs";
 import BadRequestError from "../../../errors/bad-request";
 import NotFoundError from "../../../errors/not-found";
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 
+const URL_EXPIRATION_TIME = dayjs.duration(5, "minutes");
 const s3client = makeS3Client();
 const lambdaClient = makeLambdaClient();
 const conversionLambdaName = Config.getConvertDocLambdaName();
@@ -119,7 +121,7 @@ const doesObjExist = async ({
 };
 
 export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string> => {
-  const seconds = 60;
+  const urlExpirationSeconds = URL_EXPIRATION_TIME.asSeconds();
 
   const url = s3client.getSignedUrl("getObject", {
     // TODO 760 Fix this
@@ -128,7 +130,7 @@ export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<
         Config.getSandboxSeedBucketName()!
       : Config.getMedicalDocumentsBucketName(),
     Key: fileName,
-    Expires: seconds,
+    Expires: urlExpirationSeconds,
   });
 
   // TODO try to remove this, moved here b/c this was being done upstream

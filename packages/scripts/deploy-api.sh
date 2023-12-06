@@ -53,8 +53,6 @@ tar \
   packages/api-sdk/dist \
   packages/commonwell-sdk/package.json \
   packages/commonwell-sdk/dist \
-  packages/ihe-gateway-sdk/package.json \
-  packages/ihe-gateway-sdk/dist \
   packages/carequality-sdk/package.json \
   packages/carequality-sdk/dist \
   ${API_FOLDER}/package.json \
