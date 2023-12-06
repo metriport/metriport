@@ -20,7 +20,7 @@ import { processAsyncError } from "../../errors";
 dayjs.extend(duration);
 
 const maxAttemptsToGetPatientCWData = 4;
-const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(2, "seconds");
+const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(3, "seconds");
 
 export type PatientWithCWData = Patient & {
   data: { externalData: { COMMONWELL: PatientDataCommonwell } };

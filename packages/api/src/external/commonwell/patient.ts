@@ -184,8 +184,8 @@ export async function retryLinking(patient: Patient, facilityId: string): Promis
     }
 
     const commonwellPatientId = commonwellData?.patientId;
+    const commonwellPersonId = commonwellData?.personId;
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-    const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
 
     const respGet = await commonWell.getPatient(queryMeta, commonwellPatientId);
     debug(`resp updatePatient: `, JSON.stringify(respGet));
@@ -200,14 +200,31 @@ export async function retryLinking(patient: Patient, facilityId: string): Promis
       throw new Error(msg);
     }
 
-    await findOrCreatePersonAndLink({
+    const link = await commonWell.addPatientLink(
+      queryMeta,
+      commonwellPersonId,
+      respGet._links.self.href
+    );
+
+    await setCommonwellId({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      commonwellPatientId: commonwellPatientId,
+      commonwellPersonId: commonwellPersonId,
+      commonwellStatus: "completed",
+    });
+
+    if (!link._links?.self?.href) {
+      throw new Error("Link has no href");
+    }
+
+    await autoUpgradeNetworkLinks(
       commonWell,
       queryMeta,
-      commonwellPatient,
       commonwellPatientId,
-      patientRefLink,
-      storeIds,
-    });
+      commonwellPersonId,
+      "cw.retry.linking"
+    );
 
     return true;
   } catch (err) {
@@ -480,8 +497,6 @@ async function findOrCreatePersonAndLink({
     );
   } catch (err) {
     log(`Error upgrading network links @ CW - personId: ${personId}`);
-    await storeIds({ commonwellPatientId, status: "failed" });
-    throw err;
   }
   // actually completed all CW calls
   await storeIds({ commonwellPatientId, personId, status: "completed" });
