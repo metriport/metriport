@@ -13,7 +13,7 @@ import {
   FileInfo,
 } from "./document-downloader";
 import NotFoundError from "../../../util/error/not-found";
-import { detectFileType, isContentTypeAccepted } from "@metriport/shared";
+import { detectFileType, isContentTypeAccepted, isLikelyTextFile } from "@metriport/shared";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -54,31 +54,13 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
 
     // Check if the detected file type is in the accepted content types
-    if (!isContentTypeAccepted(document.mimeType)) {
-      // If not, update the content type in S3
-      const [detectedFileType, detectedExtension] = detectFileType(Buffer.from(downloadedDocument));
-      console.log(
-        `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType}
-         to detected mimeType ${detectedFileType} and ${detectedExtension}`
-      );
-      const newKey = await this.s3Utils.updateContentTypeInS3(
-        downloadResult.bucket,
-        downloadResult.key,
-        detectedFileType,
-        detectedExtension
-      );
-      const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
-      const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(
-        newKey,
-        downloadResult.bucket
-      );
-      downloadResult = {
-        ...downloadResult,
-        ...fileDetailsUpdated,
-        key: newKey,
-        location: newLocation,
-      };
-    }
+    downloadResult = await this.checkAndUpdateMimeType({
+      document,
+      fileInfo,
+      downloadedDocument,
+      downloadResult,
+    });
+
     const newlyDownloadedFile: DownloadResult = {
       bucket: downloadResult.bucket,
       key: downloadResult.key,
@@ -97,6 +79,59 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     return newlyDownloadedFile;
   }
 
+  /**
+   * Checks if the content type of a downloaded document is accepted. If not accepted, updates the content type
+   * and extension  in S3 and returns the updated download result.
+   */
+  async checkAndUpdateMimeType({
+    document,
+    fileInfo,
+    downloadedDocument,
+    downloadResult,
+  }: {
+    document: Document;
+    fileInfo: FileInfo;
+    downloadedDocument: string;
+    downloadResult: DownloadResult;
+  }): Promise<DownloadResult> {
+    if (isContentTypeAccepted(document.mimeType)) {
+      return { ...downloadResult };
+    }
+
+    const maxBytesNeeded = 5; //NOTE: if you update detectFileType, you might need to update this number
+    const partialBuffer = Buffer.from(downloadedDocument.slice(0, maxBytesNeeded));
+    let [detectedFileType, detectedExtension] = detectFileType(partialBuffer);
+
+    // If the detected file type is binary, check if it's likely a text file using the entire buffer.
+    if (detectedFileType === "application/octet-stream") {
+      if (isLikelyTextFile(Buffer.from(downloadedDocument))) {
+        detectedFileType = "text/plain";
+        detectedExtension = ".txt";
+      }
+    }
+
+    console.log(
+      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType}
+       to detected mimeType ${detectedFileType} and ${detectedExtension}`
+    );
+
+    const newKey = await this.s3Utils.updateContentTypeInS3(
+      downloadResult.bucket,
+      downloadResult.key,
+      detectedFileType,
+      detectedExtension
+    );
+
+    const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
+    const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(newKey, downloadResult.bucket);
+
+    return {
+      ...downloadResult,
+      ...fileDetailsUpdated,
+      key: newKey,
+      location: newLocation,
+    };
+  }
   /**
    * Parses the XML file, checking if there's an embedded PDF inside it.
    * If it does, it uploads the PDF to S3 and returns the PDF file info instead of the originally

@@ -26,7 +26,7 @@ const JPEG_MAGIC_NUMBER_2 = 0xd8;
 const BMP_MAGIC_NUMBER_1 = 0x42;
 const BMP_MAGIC_NUMBER_2 = 0x4d;
 
-function isLikelyTextFile(fileBuffer: Buffer): boolean {
+export function isLikelyTextFile(fileBuffer: Buffer): boolean {
   let readableChars = 0;
   let nonReadableChars = 0;
 
@@ -103,8 +103,6 @@ export function detectFileType(fileBuffer: Buffer): [string, string] {
     return ["image/jpeg", ".jpeg"];
   } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
     return ["image/bmp", ".bmp"];
-  } else if (isLikelyTextFile(fileBuffer)) {
-    return ["text/plain", ".txt"];
   } else {
     return ["application/octet-stream", ".bin"];
   }
