@@ -42,6 +42,7 @@ export function isLikelyTextFile(fileBuffer: Buffer): boolean {
       nonReadableChars++;
     }
   }
+  console.log(`readableChars: ${readableChars}, nonReadableChars: ${nonReadableChars}`);
 
   const totalChars = readableChars + nonReadableChars;
   const threshold = 0.85; // 85% of the characters should be readable

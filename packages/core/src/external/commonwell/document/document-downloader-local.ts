@@ -98,7 +98,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       return { ...downloadResult };
     }
 
-    const maxBytesNeeded = 5; //NOTE: if you update detectFileType, you might need to update this number
+    const maxBytesNeeded = 6; //NOTE: if you update detectFileType, you might need to update this number
     const partialBuffer = Buffer.from(downloadedDocument.slice(0, maxBytesNeeded));
     let [detectedFileType, detectedExtension] = detectFileType(partialBuffer);
 
@@ -111,8 +111,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     }
 
     console.log(
-      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType}
-       to detected mimeType ${detectedFileType} and ${detectedExtension}`
+      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
     );
 
     const newKey = await this.s3Utils.updateContentTypeInS3(
