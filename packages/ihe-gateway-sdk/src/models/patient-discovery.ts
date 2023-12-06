@@ -12,30 +12,19 @@ export const xcpdGatewaysSchema = z.array(
 
 export type XCPDGateways = z.infer<typeof xcpdGatewaysSchema>;
 
-export type XCPDRequest = {
+export type PatientDiscoveryRequest = {
   id: string;
   cxId: string;
   timestamp: string;
   xcpdGateways: XCPDGateways;
-  principalCareProviderNPIs?: NPIStringArray;
   samlAttributes: SamlAttributes;
   patientResource: Patient;
+  principalCareProviderNPIs?: NPIStringArray;
 };
 
-export type XCPDPayload = {
-  patient: Patient;
-  cxId: string;
-  xcpdGateways: XCPDGateways;
-  principalCareProviderNPIs: NPIStringArray;
-  org: {
-    oid: string;
-    name: string;
-  };
-  requestId: string | undefined;
-};
-
-export const xcpdResponseSchema = baseResponseSchema.extend({
+export const patientDiscoveryResponseSchema = baseResponseSchema.extend({
   patientMatch: z.boolean(),
+  xcpdHomeCommunityId: z.string(),
 });
 
-export type XCPDResponse = z.infer<typeof xcpdResponseSchema>;
+export type PatientDiscoveryResponse = z.infer<typeof patientDiscoveryResponseSchema>;

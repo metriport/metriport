@@ -67,9 +67,8 @@ export const baseResponseSchema = z.object({
   id: z.string(),
   cxId: z.string(),
   timestamp: z.string(),
-  homeCommunityId: z.string(),
   responseTimestamp: z.string(),
   xcpdPatientId: z.object({ id: z.string(), system: z.string() }).nullable(),
-  patientResourceId: z.string(),
+  patientId: z.string(),
   operationOutcome: operationOutcome.nullable(),
 });

@@ -11,11 +11,11 @@ export const dateRange = z.object({
   dateTo: z.string(),
 });
 
-export const xcaIti38RequestSchema = z.array(
+export const documentQueryRequestSchema = z.array(
   baseRequestSchema.extend({
-    homeCommunityId: z.string(),
+    xcaHomeCommunityId: z.string(),
     xcpdPatientId: z.object({ id: z.string(), system: z.string() }),
-    patientResourceId: z.string().nullable(),
+    patientId: z.string().nullable(),
     xcaGateway: z.string(),
     classCode: z.array(code).nullable(),
     practiceSettingCode: z.array(code).nullable(),
@@ -25,10 +25,11 @@ export const xcaIti38RequestSchema = z.array(
   })
 );
 
-export type XCA_ITI_38Request = z.infer<typeof xcaIti38RequestSchema>;
+export type DocumentQueryRequest = z.infer<typeof documentQueryRequestSchema>;
 
-export const xcaIti38ResponseSchema = baseResponseSchema.extend({
+export const documentQueryResponseSchema = baseResponseSchema.extend({
   documentReference: z.array(documentReference).nullable(),
+  xcaHomeCommunityId: z.string(),
 });
 
-export type XCA_ITI_38Response = z.infer<typeof xcaIti38ResponseSchema>;
+export type DocumentQueryResponse = z.infer<typeof documentQueryResponseSchema>;

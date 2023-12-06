@@ -1,9 +1,9 @@
-name: PR Check - cq-cert-runner
+name: PR Check - carequality-cert-runner
 
 on:
   pull_request:
     paths:
-      - "packages/cq-cert-runner/**"
+      - "packages/carequality-cert-runner/**"
   merge_group:
   workflow_dispatch:
 
@@ -14,5 +14,5 @@ jobs:
   check-pr:
     uses: ./.github/workflows/_build.yml
     with:
-      path: "packages/cq-cert-runner"
+      path: "packages/carequality-cert-runner"
     secrets: inherit

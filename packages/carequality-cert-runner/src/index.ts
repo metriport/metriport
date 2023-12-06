@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { IHEGateway, APIMode } from "@metriport/ihe-gateway-sdk";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import * as dotenv from "dotenv";
 import { Command } from "commander";
-import { patients } from "./payloads";
+import { generatePatient } from "./payloads";
 // import * as dotenv from "dotenv";
 
 function metriportBanner(): string {
@@ -22,13 +24,13 @@ function metriportBanner(): string {
 
         Metriport Inc.
 
-    CQ Cert Runner
+   Carequality Cert Runner
       `;
 }
 
 export const program = new Command();
 program
-  .name("cq-cert-runner")
+  .name("carequality-cert-runner")
   .description("Tool to run through CQ certification test cases.")
   .requiredOption(
     `--env-file <file-path>`,
@@ -42,13 +44,32 @@ program
 
 async function main() {
   console.log(metriportBanner());
-  // program.parse();
-  // const options = program.opts();
-  // dotenv.config({ path: options.envFile });
+  program.parse();
+  const options = program.opts();
+  dotenv.config({ path: options["envFile"] });
+
+  const xcpdGatewayId = getEnvVarOrFail("XCPD_GATEWAY_ID");
+  const xcpdGatewayOid = getEnvVarOrFail("XCPD_GATEWAYS_OID");
+  const xcpdGatewayUrl = getEnvVarOrFail("XCPD_GATEWAYS_URL");
+
+  const orgName = getEnvVarOrFail("ORG_NAME");
+  const orgOid = getEnvVarOrFail("ORG_OID");
 
   const iheGateway = new IHEGateway(APIMode.dev);
 
-  await iheGateway.getPatient(patients);
+  const patient = generatePatient(
+    [
+      {
+        id: xcpdGatewayId,
+        oid: xcpdGatewayOid,
+        url: xcpdGatewayUrl,
+      },
+    ],
+    orgOid,
+    orgName
+  );
+
+  await iheGateway.getPatient(patient);
 }
 
 main();

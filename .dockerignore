@@ -7,7 +7,7 @@
 ./**/build
 packages/commonwell-cert-runner
 packages/commonwell-jwt-maker
-packages/cq-cert-runner
+packages/carequality-cert-runner
 packages/connect-widget
 packages/fhir-converter
 packages/fhir-test

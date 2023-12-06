@@ -24,7 +24,7 @@
       "path": "./packages/commonwell-sdk/tsconfig.ref.json"
     },
     {
-      "path": "./packages/cq-cert-runner/tsconfig.ref.json"
+      "path": "./packages/carequality-cert-runner/tsconfig.ref.json"
     },
     {
       "path": "./packages/connect-widget/tsconfig.ref.json"

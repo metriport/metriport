@@ -20,9 +20,8 @@
     "outDir": "./dist",
     // #340 Leaving this off bc there was too many fixes to be done - it should be on, though
     "noUncheckedIndexedAccess": false,
-    // #340 Leaving this off bc not that impactful considering the impact of this package
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": true
   },
   "include": ["./src"],
-  "exclude": ["dist", "node_modules", "**/__tests__"]
+  "exclude": ["dist", "node_modules"]
 }

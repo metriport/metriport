@@ -1,14 +1,14 @@
 {
-  "name": "cq-cert-runner",
+  "name": "carequality-cert-runner",
   "version": "1.0.0",
-  "description": "Tool to run through CQ certification test cases - by Metriport Inc.",
+  "description": "Tool to run through Carequality certification test cases - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "bin": {
-    "cq-cert-runner": "dist/index.js"
+    "carequality-cert-runner": "dist/index.js"
   },
   "publishConfig": {
     "access": "public"
@@ -22,7 +22,7 @@
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
-    "directory": "packages/cq-cert-runner"
+    "directory": "packages/carequality-cert-runner"
   },
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
@@ -41,6 +41,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/ihe-gateway-sdk": "^0.1.3"
+    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
+    "@metriport/core": "file:packages/core"
   }
 }

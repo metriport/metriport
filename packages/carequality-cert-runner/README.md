@@ -1,18 +1,20 @@
-# `cq-cert-runner`
+# `carequality-cert-runner`
 
-CQ Certification Runner by Metriport Inc.
+Carequality Certification Runner by Metriport Inc.
 
-Tool to run through CQ certification test cases.
+Tool to run through Carequality certification test cases.
 
 ## Install
 
 To install the program, execute the following command on your terminal:
 
-`npm i -g @metriport/cq-cert-runner`
+`npm i -g @metriport/carequality-cert-runner`
 
 Note: you may have to run the command with `sudo`.
 
 ## Usage
+
+<!-- TODO: WILL UPDATE THIS WHEN RUNNER IS COMPLETE -->
 
 ## Options
 

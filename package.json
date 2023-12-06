@@ -37,7 +37,7 @@
     "packages/commonwell-sdk",
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
-    "packages/cq-cert-runner",
+    "packages/carequality-cert-runner",
     "packages/ihe-gateway-sdk",
     "packages/react-native-sdk",
     "packages/api-sdk",
