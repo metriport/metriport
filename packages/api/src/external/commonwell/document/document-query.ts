@@ -131,7 +131,7 @@ export async function queryAndProcessDocuments({
     } else {
       log(`Querying for documents of patient ${patient.id}...`);
       const cwDocuments = await internalGetDocuments({
-        patient: patient as PatientWithCWData,
+        patient: patient,
         organization,
         facility,
       });

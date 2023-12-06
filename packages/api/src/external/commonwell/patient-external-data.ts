@@ -71,6 +71,7 @@ export async function getPatientWithCWDataAndRetryLinking({
       default:
         throw new Error(`Unknown status: ${cwLinkingStatus}`);
     }
+    // not ideal but ok since we verified it has cw data above
     return patient as PatientWithCWData;
   };
 
@@ -143,7 +144,7 @@ export const setCommonwellId = async ({
  * @param cxId The customer ID @ Metriport.
  * @returns
  */
-export const setCommonwellLinkStatusToFailed = async ({
+const setCommonwellLinkStatusToFailed = async ({
   patientId,
   cxId,
 }: {
@@ -158,15 +159,14 @@ export const setCommonwellLinkStatusToFailed = async ({
       transaction,
     });
 
-    const updatedData = cloneDeep(updatedPatient.data);
     updatedPatient.data.externalData = {
       ...updatedPatient.data.externalData,
       COMMONWELL: {
-        ...(updatedPatient.data.externalData?.COMMONWELL as PatientDataCommonwell),
+        ...updatedPatient.data.externalData?.COMMONWELL,
         status: "failed",
       },
     };
 
-    return updatedPatient.update({ data: updatedData }, { transaction });
+    return updatedPatient.update({ data: { ...updatedPatient.data } }, { transaction });
   });
 };
