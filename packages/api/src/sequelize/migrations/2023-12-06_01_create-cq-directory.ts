@@ -35,11 +35,15 @@ export const up: Migration = async ({ context: queryInterface }) => {
           field: "url_dr",
         },
         lat: {
-          type: DataTypes.STRING,
+          type: DataTypes.FLOAT,
           allowNull: true,
         },
         lon: {
-          type: DataTypes.STRING,
+          type: DataTypes.FLOAT,
+          allowNull: true,
+        },
+        point: {
+          type: "CUBE",
           allowNull: true,
         },
         state: {
@@ -49,6 +53,11 @@ export const up: Migration = async ({ context: queryInterface }) => {
         data: {
           type: DataTypes.JSONB,
           allowNull: true,
+        },
+        lastUpdated: {
+          type: DataTypes.STRING,
+          allowNull: true,
+          field: "last_updated",
         },
       },
       { transaction, addVersion: true }
