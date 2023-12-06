@@ -9,6 +9,7 @@ export const bulkInsertCQDirectoryEntries = async (
 
   const keys = `id, name, url_xcpd, url_dq, url_dr, lat, lon, point, state, data, created_at, last_updated`;
   const placeholders = orgDataArray.map(() => `(${new Array(12).fill("?").join(", ")})`).join(", ");
+  const date = new Date().toISOString();
 
   const flattenedData = orgDataArray.flatMap(entry => [
     entry.id,
@@ -21,7 +22,7 @@ export const bulkInsertCQDirectoryEntries = async (
     entry.point ?? null,
     entry.state ?? null,
     entry.data ? JSON.stringify(entry.data) : null,
-    new Date().toISOString(),
+    date,
     entry.lastUpdated ?? null,
   ]);
 
