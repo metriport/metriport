@@ -3,10 +3,8 @@ import { executeWithRetries } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { cloneDeep } from "lodash";
-import {
-  getPatientOrFail,
-  getPatientWithDependencies,
-} from "../../command/medical/patient/get-patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { Patient } from "../../domain/medical/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
@@ -19,8 +17,8 @@ import { processAsyncError } from "../../errors";
 
 dayjs.extend(duration);
 
-const maxAttemptsToGetPatientCWData = 4;
-const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(3, "seconds");
+const maxAttemptsToGetPatientCWData = 2;
+const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(10, "seconds");
 
 export type PatientWithCWData = Patient & {
   data: { externalData: { COMMONWELL: PatientDataCommonwell } };
@@ -51,13 +49,7 @@ export async function getPatientWithCWDataAndRetryLinking({
         throw new MetriportError(`Patient ${id} is 'processing', retrying after timeout...`);
       case "failed": {
         log(`Patient ${id} is already 'failed', retrying linking...`);
-        const { facilities } = await getPatientWithDependencies({ id: id, cxId });
-        // should never happen, but just for type checking
-        if (!facilities[0]) {
-          throw new Error("No facilities found for the patient");
-        }
-        // this might not be the right id.
-        const facilityId = facilities[0].id;
+        const facilityId = getFacilityIdOrFail(patient);
 
         // retry linking without waiting for it to complete
         cwCommands.patient.retryLinking(patient, facilityId);
