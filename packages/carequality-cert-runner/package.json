@@ -41,7 +41,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
+    "@metriport/ihe-gateway-sdk": "0.1.8-alpha.0",
     "@metriport/core": "1.6.7"
   }
 }
