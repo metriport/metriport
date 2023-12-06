@@ -18,8 +18,7 @@
     "noImplicitReturns": true,
     // END - From @tsconfig/strictest
     "outDir": "./dist",
-    // #340 Leaving this off bc there was too many fixes to be done - it should be on, though
-    "noUncheckedIndexedAccess": false,
+    "noUncheckedIndexedAccess": true,
     "noPropertyAccessFromIndexSignature": true
   },
   "include": ["./src"],
