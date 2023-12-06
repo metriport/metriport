@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { IHEGateway, APIMode } from "@metriport/ihe-gateway-sdk";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { getEnvVarOrFail } from "@metriport/core/src/util/env-var";
 import * as dotenv from "dotenv";
 import { Command } from "commander";
 import { generatePatient } from "./payloads";
