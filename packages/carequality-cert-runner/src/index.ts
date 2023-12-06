@@ -70,6 +70,8 @@ async function main() {
   );
 
   await iheGateway.getPatient(patient);
+
+  // TODO: INCLUDE DOCUMENT QUERY AND RETRIEVAL WHEN API ROUTES ARE READY
 }
 
 main();
