@@ -50,18 +50,22 @@ export function parseXmlString(xml: string): PatientData | null {
   return patientData || null;
 }
 
-export function parseXmlStringForRootExtension(xml: string): Promise<[string, string]> {
+export function parseXmlStringForRootExtensionSignature(
+  xml: string
+): Promise<[string, string, string]> {
   xml = JSON.parse(`"${xml}"`);
 
   const parser = new xml2js.Parser();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return parser.parseStringPromise(xml).then(function (result: any) {
+    const signature =
+      result["s:Envelope"]["s:Header"][0]["o:Security"][0]["Assertion"][0]["Signature"][0][
+        "SignatureValue"
+      ][0];
     const id = result["s:Envelope"]["s:Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
-    console.log("id", id);
-
     const root = id["$"]["root"];
     const extension = id["$"]["extension"];
-    return [root, extension];
+    return [root, extension, signature];
   });
 }
 

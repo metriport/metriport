@@ -4,7 +4,15 @@ export const xcpdTemplate = `
   <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
     <a:Action s:mustUnderstand="1">urn:hl7-org:v3:PRPA_IN201306UV02:CrossGatewayPatientDiscovery</a:Action>
     <a:RelatesTo>urn:uuid:{extension}</a:RelatesTo>
+    <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
+      <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
+        <b:Created>{createdAt}</b:Created>
+        <b:Expires>{expiresAt}</b:Expires>
+      </Timestamp>
+      <SignatureConfirmation xmlns="http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd" Value="{signature}" b:Id="_2"/>
+    </Security>
   </s:Header>
+  
   <s:Body xmlns="urn:hl7-org:v3" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <PRPA_IN201306UV02 ITSVersion="XML_1.0">
       <id root="27f64979-6822-4f8c-b07e-f3381117a46a"/>
@@ -127,13 +135,3 @@ export const xcpdTemplate = `
   </s:Body>
 </s:Envelope>
 `;
-
-/*
-    <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
-      <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
-        <b:Created>{createdAt}</b:Created>
-        <b:Expires>{expiresAt}</b:Expires>
-      </Timestamp>
-      <SignatureConfirmation xmlns="http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd" Value="jxZ64DSPeFvt5/Xm3w58elM8DW3qDtRi7qWNqdsvHolCT8FeM1W+FlhWRdkwwd2nC+Bum4SyD+HxtoCLwRZSY5y62Q7bgVVpmKzmgKyO12heTExKsMqp4kMRORZfkHpgvZ1CwkVt44CwPAIoakzSSDEBsDGqh/wrQlUCjZo+qHpnEB5CL4J63tp65mQH9yoFra5pJpJquys35xX829A5+XX5+r2zrB1oFVHhdBuSmFynX5+tlus3rPSVtpyXLPdCZbjz3L+J/a3UXbMirZzPlFHX4l95c1+9ouAiEH1WjLzFD4TkBd37EpjdnZD+3GTkGQzsqKHgcWLAt1EDsGnqpw==" b:Id="_2"/>
-    </Security>
-*/

@@ -1,6 +1,6 @@
 import express from "express";
 import {
-  parseXmlStringForRootExtension,
+  parseXmlStringForRootExtensionSignature,
   generateTimeStrings,
 } from "@metriport/core/external/carequality/xcpd-parsing";
 import bodyParser from "body-parser";
@@ -11,6 +11,13 @@ export const xcpdTemplate = `
   <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
     <a:Action s:mustUnderstand="1">urn:hl7-org:v3:PRPA_IN201306UV02:CrossGatewayPatientDiscovery</a:Action>
     <a:RelatesTo>urn:uuid:{extension}</a:RelatesTo>
+    <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
+    <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
+      <b:Created>{createdAt}</b:Created>
+      <b:Expires>{expiresAt}</b:Expires>
+    </Timestamp>
+    <SignatureConfirmation xmlns="http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd" Value="{signature}" b:Id="_2"/>
+  </Security>
   </s:Header>
   <s:Body xmlns="urn:hl7-org:v3" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <PRPA_IN201306UV02 ITSVersion="XML_1.0">
@@ -139,14 +146,16 @@ const fillTemplate = (
   expiresAt: string,
   creationTime: string,
   root: string,
-  extension: string
+  extension: string,
+  signature: string
 ) => {
   return xcpdTemplate
     .replace(/{createdAt}/g, createdAt)
     .replace(/{expiresAt}/g, expiresAt)
     .replace(/{creationTime}/g, creationTime)
     .replace(/{root}/g, root)
-    .replace(/{extension}/g, extension);
+    .replace(/{extension}/g, extension)
+    .replace(/{signature}/g, signature);
 };
 
 const app = express();
@@ -154,15 +163,16 @@ app.use(bodyParser.text({ type: "application/soap+xml" }));
 
 app.all("/xcpd/v1", (req, res) => {
   // parseXmlString(req.body);
-  parseXmlStringForRootExtension(req.body)
-    .then(([root, extension]: [string, string]) => {
+  parseXmlStringForRootExtensionSignature(req.body)
+    .then(([root, extension, signature]: [string, string, string]) => {
       console.log("root", root);
       console.log("extension", extension);
+      console.log("signature", signature);
       const { createdAt, expiresAt, creationTime } = generateTimeStrings();
       console.log("createdAt", createdAt);
       console.log("expiresAt", expiresAt);
       console.log("creationTime", creationTime);
-      const xcpd = fillTemplate(createdAt, expiresAt, creationTime, root, extension);
+      const xcpd = fillTemplate(createdAt, expiresAt, creationTime, root, extension, signature);
       console.log("xcpd", xcpd);
     })
     .catch((err: Error) => {
