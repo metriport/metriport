@@ -1,11 +1,10 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
+import { sleep } from "@metriport/core/util/sleep";
 import { QueryTypes, Sequelize } from "sequelize";
-import { createMockCQOrganization } from "../../../external/carequality/organization-mock";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
-import { sleep } from "@metriport/core/util/sleep";
 
 const BATCH_SIZE = 1000;
 const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
@@ -21,10 +20,7 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
   dialect: dbCreds.engine,
 });
 
-export const rebuildCQDirectory = async (
-  mockNumber: number | undefined,
-  failGracefully = false
-): Promise<void> => {
+export const rebuildCQDirectory = async (failGracefully = false): Promise<void> => {
   let currentPosition = 0;
   let isDone = false;
 
@@ -32,31 +28,13 @@ export const rebuildCQDirectory = async (
     await createTempCQDirectoryTable();
     while (!isDone) {
       try {
-        console.time("generation");
-        let orgs = [];
-        if (mockNumber) {
-          if (currentPosition >= mockNumber) {
-            isDone = true;
-            break;
-          }
-          for (let j = 0; j < BATCH_SIZE; j++) {
-            const fakeOrg = createMockCQOrganization();
-            orgs.push(JSON.parse(fakeOrg));
-          }
-        } else {
-          const apiKey = Config.getCQApiKey();
-          const cq = new Carequality(apiKey);
-          orgs = await cq.listOrganizations({ start: currentPosition });
-          if (orgs.length < BATCH_SIZE) {
-            isDone = true;
-          }
-        }
+        const apiKey = Config.getCQApiKey();
+        const cq = new Carequality(apiKey);
+        const orgs = await cq.listOrganizations({ start: currentPosition });
+        if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         currentPosition += BATCH_SIZE;
         const parsedOrgs = parseCQDirectoryEntries(orgs);
-        console.timeEnd("generation");
-        console.time("bulkInsert");
         await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs);
-        console.timeEnd("bulkInsert");
         console.log(`Added ${currentPosition} CQ directory entries...`);
         await sleep(750);
       } catch (error) {
