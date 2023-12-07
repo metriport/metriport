@@ -95,9 +95,7 @@ export class Carequality implements CarequalityAPI {
     oid?: string;
   }): Promise<Organization[]> {
     if (count < 1 || count > MAX_COUNT)
-      throw new Error(
-        `Count value must be between 1 and ${MAX_COUNT}. If you need more, use listAllOrganizations()`
-      );
+      throw new Error(`Count value must be between 1 and ${MAX_COUNT}`);
     const query = new URLSearchParams();
     query.append("apikey", this.apiKey);
     query.append("_format", JSON_FORMAT);
@@ -112,36 +110,6 @@ export class Carequality implements CarequalityAPI {
     const orgs = bundle.entry.map(e => e.resource.Organization);
 
     return orgs;
-  }
-
-  /**
-   * Lists the whole Carequality directory.
-   *
-   * @returns organizations list and count
-   */
-  async listAllOrganizations(failGracefully = false): Promise<Organization[]> {
-    let currentPosition = 0;
-    const organizations = [];
-    let isDone = false;
-
-    while (!isDone) {
-      try {
-        const orgs = await this.listOrganizations({ start: currentPosition });
-        organizations.push(...orgs);
-        currentPosition += MAX_COUNT;
-
-        const bundleEntryLength = orgs.length;
-        if (bundleEntryLength < MAX_COUNT) {
-          isDone = true;
-        }
-      } catch (error) {
-        isDone = true;
-        if (!failGracefully) {
-          throw error;
-        }
-      }
-    }
-    return organizations;
   }
 
   /**
