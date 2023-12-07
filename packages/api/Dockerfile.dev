@@ -10,8 +10,9 @@ RUN ls -a
 RUN npm ci --ignore-scripts --no-fund
 # build local dependencies
 RUN npm run build -w packages/shared
-RUN npm run build -w packages/api-sdk
 RUN npm run build -w packages/commonwell-sdk
+RUN npm run build -w packages/ihe-gateway-sdk
+RUN npm run build -w packages/api-sdk
 RUN npm run build -w packages/core
 RUN npm run build -w packages/carequality-sdk
 # build/run the api

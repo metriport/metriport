@@ -19,8 +19,8 @@ const version = Config.getVersion();
 initSentry(app);
 
 app.use(helmet()); // needs to come before any route declaration, including cors()
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: false, limit: "2mb" }));
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: false, limit: "20mb" }));
 app.use(cors());
 app.set("etag", false);
 

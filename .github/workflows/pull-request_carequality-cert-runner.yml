@@ -1,0 +1,18 @@
+name: PR Check - carequality-cert-runner
+
+on:
+  pull_request:
+    paths:
+      - "packages/carequality-cert-runner/**"
+  merge_group:
+  workflow_dispatch:
+
+jobs:
+  check-commits:
+    uses: ./.github/workflows/_check-commits.yml
+    secrets: inherit
+  check-pr:
+    uses: ./.github/workflows/_build.yml
+    with:
+      path: "packages/carequality-cert-runner"
+    secrets: inherit

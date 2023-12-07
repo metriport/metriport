@@ -44,6 +44,7 @@ services:
       - ../api-sdk/dist:/usr/src/app/packages/api-sdk/dist
       - ../commonwell-sdk/dist:/usr/src/app/packages/commonwell-sdk/dist
       - ../carequality-sdk/dist:/usr/src/app/packages/carequality-sdk/dist
+      - ../ihe-gateway-sdk/dist:/usr/src/app/packages/ihe-gateway-sdk/dist
       - ../shared/dist:/usr/src/app/packages/shared/dist
     extra_hosts:
       - "host.docker.internal:host-gateway"
