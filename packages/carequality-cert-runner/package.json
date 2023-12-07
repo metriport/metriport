@@ -1,29 +1,14 @@
 {
-  "name": "@metriport/ihe-gateway-sdk",
-  "version": "0.1.8-alpha.0",
-  "description": "SDK to interact with other IHE Gateways - by Metriport Inc.",
+  "name": "carequality-cert-runner",
+  "version": "1.0.0",
+  "description": "Tool to run through Carequality certification test cases - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
-  "exports": {
-    ".": "./dist/index.js",
-    "./client/*": "./dist/client/*.js",
-    "./models/*": "./dist/models/*.js"
-  },
-  "typesVersions": {
-    "*": {
-      "/": [
-        "dist/index.d.ts"
-      ],
-      "client/*": [
-        "dist/client/*"
-      ],
-      "models/*": [
-        "dist/models/*"
-      ]
-    }
+  "bin": {
+    "carequality-cert-runner": "dist/index.js"
   },
   "publishConfig": {
     "access": "public"
@@ -37,14 +22,15 @@
   "repository": {
     "url": "https://github.com/metriport/metriport.git",
     "type": "git",
-    "directory": "packages/ihe-gateway-sdk"
+    "directory": "packages/carequality-cert-runner"
   },
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
     "tsc": "tsc",
-    "watch": "tsc --watch",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
+    "install-local": "sudo npm i -g",
+    "start": "ts-node src/index.ts --env-file .env",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
@@ -55,8 +41,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/shared": "^0.1.6-alpha.0",
-    "axios": "^1.6.0",
-    "zod": "^3.22.1"
+    "@metriport/core": "^1.6.7",
+    "@metriport/ihe-gateway-sdk": "^0.1.8-alpha.0"
   }
 }
