@@ -1,5 +1,6 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { patientDiscoveryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -8,6 +9,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createOrUpdateCQDirectoryEntry } from "../../command/medical/cq-directory/create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
+import { handleDiscoverResponse } from "../../external/carequality/patient";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
@@ -94,6 +96,24 @@ router.post(
   "/directory/organization",
   asyncHandler(async (req: Request, res: Response) => {
     await createOrUpdateCQOrganization();
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+// BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
+
+/**
+ * POST /internal/carequality/patient-discovery
+ *
+ * Receives a Patient Discovery request from the IHE Gateway
+ */
+router.post(
+  "/patient-discovery",
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
+
+    await handleDiscoverResponse(patientDiscovery);
+
     return res.sendStatus(httpStatus.OK);
   })
 );

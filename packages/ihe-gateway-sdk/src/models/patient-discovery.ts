@@ -19,7 +19,7 @@ export type PatientDiscoveryRequest = {
   xcpdGateways: XCPDGateways;
   samlAttributes: SamlAttributes;
   patientResource: Patient;
-  principalCareProviderNPIs?: NPIStringArray;
+  principalCareProviderIds?: NPIStringArray;
 };
 
 export const patientDiscoveryResponseSchema = baseResponseSchema.extend({
