@@ -111,9 +111,9 @@ function getCoordinates(address: Address[]): Coordinates | undefined {
   if (!position) return;
   const lat = parseFloat(position.latitude.value);
   const lon = parseFloat(position.longitude.value);
+  if (isNaN(lat) || isNaN(lon)) return;
   if (lat < -90 || lat > 90) return;
   if (lon < -180 || lon > 180) return;
-  if (isNaN(lat) || isNaN(lon)) return;
   return { lat, lon };
 }
 
