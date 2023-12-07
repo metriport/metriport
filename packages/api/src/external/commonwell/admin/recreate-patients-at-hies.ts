@@ -143,7 +143,7 @@ export async function recreatePatientAtCW(
   } catch (error) {
     const msg = `Error while recreating patient at CW: ${error}`;
     log(msg);
-    capture.error(error, { extra: { patient, error } });
+    capture.message(msg, { extra: { patient, error }, level: "error" });
     return undefined;
   }
 }

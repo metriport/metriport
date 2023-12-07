@@ -152,7 +152,7 @@ export const findCurrentLink = async (
     const msg = `Failure retrieving link`;
     console.log(`${msg} - for person id:`, personId);
     console.log(msg, error);
-    capture.error(error, { extra: captureExtra });
+    capture.message(msg, { extra: captureExtra, level: "error" });
     throw new Error(msg, { cause: error });
   }
 };
