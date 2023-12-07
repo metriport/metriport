@@ -59,9 +59,7 @@ export function parseXmlStringForRootExtensionSignature(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return parser.parseStringPromise(xml).then(function (result: any) {
     const signature =
-      result["s:Envelope"]["s:Header"][0]["o:Security"][0]["Assertion"][0]["Signature"][0][
-        "SignatureValue"
-      ][0];
+      result["s:Envelope"]["s:Header"][0]["o:Security"][0]["Signature"][0]["SignatureValue"][0];
     const id = result["s:Envelope"]["s:Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
     const root = id["$"]["root"];
     const extension = id["$"]["extension"];
