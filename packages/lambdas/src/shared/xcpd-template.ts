@@ -1,10 +1,3 @@
-import express from "express";
-import {
-  parseXmlStringForRootExtension,
-  generateTimeStrings,
-} from "@metriport/core/external/carequality/xcpd-parsing";
-import bodyParser from "body-parser";
-
 export const xcpdTemplate = `
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
@@ -134,44 +127,13 @@ export const xcpdTemplate = `
   </s:Body>
 </s:Envelope>
 `;
-const fillTemplate = (
-  createdAt: string,
-  expiresAt: string,
-  creationTime: string,
-  root: string,
-  extension: string
-) => {
-  return xcpdTemplate
-    .replace(/{createdAt}/g, createdAt)
-    .replace(/{expiresAt}/g, expiresAt)
-    .replace(/{creationTime}/g, creationTime)
-    .replace(/{root}/g, root)
-    .replace(/{extension}/g, extension);
-};
 
-const app = express();
-app.use(bodyParser.text({ type: "application/soap+xml" }));
-
-app.all("/xcpd/v1", (req, res) => {
-  // parseXmlString(req.body);
-  parseXmlStringForRootExtension(req.body)
-    .then(([root, extension]: [string, string]) => {
-      console.log("root", root);
-      console.log("extension", extension);
-      const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-      console.log("createdAt", createdAt);
-      console.log("expiresAt", expiresAt);
-      console.log("creationTime", creationTime);
-      const xcpd = fillTemplate(createdAt, expiresAt, creationTime, root, extension);
-      console.log("xcpd", xcpd);
-    })
-    .catch((err: Error) => {
-      // handle error here
-      console.log("error", err);
-    });
-  res.status(200).send("OK");
-});
-
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
-});
+/*
+    <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
+      <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
+        <b:Created>{createdAt}</b:Created>
+        <b:Expires>{expiresAt}</b:Expires>
+      </Timestamp>
+      <SignatureConfirmation xmlns="http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd" Value="jxZ64DSPeFvt5/Xm3w58elM8DW3qDtRi7qWNqdsvHolCT8FeM1W+FlhWRdkwwd2nC+Bum4SyD+HxtoCLwRZSY5y62Q7bgVVpmKzmgKyO12heTExKsMqp4kMRORZfkHpgvZ1CwkVt44CwPAIoakzSSDEBsDGqh/wrQlUCjZo+qHpnEB5CL4J63tp65mQH9yoFra5pJpJquys35xX829A5+XX5+r2zrB1oFVHhdBuSmFynX5+tlus3rPSVtpyXLPdCZbjz3L+J/a3UXbMirZzPlFHX4l95c1+9ouAiEH1WjLzFD4TkBd37EpjdnZD+3GTkGQzsqKHgcWLAt1EDsGnqpw==" b:Id="_2"/>
+    </Security>
+*/
