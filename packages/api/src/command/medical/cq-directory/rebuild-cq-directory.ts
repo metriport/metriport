@@ -5,11 +5,10 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
+import { cqDirectoryEntryTemp, cqDirectoryEntry, cqDirectoryEntryBackup } from "./shared";
 
 const BATCH_SIZE = 1000;
-const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
-const cqDirectoryEntry = `cq_directory_entry`;
-const cqDirectoryEntryBackup = `cq_directory_entry_backup`;
+const SLEEP_TIME_MS = 750;
 
 const sqlDBCreds = Config.getDBCreds();
 const dbCreds = JSON.parse(sqlDBCreds);
@@ -20,7 +19,7 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
   dialect: dbCreds.engine,
 });
 
-export const rebuildCQDirectory = async (failGracefully = false): Promise<void> => {
+export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
   let currentPosition = 0;
   let isDone = false;
 
@@ -30,13 +29,15 @@ export const rebuildCQDirectory = async (failGracefully = false): Promise<void> 
       try {
         const apiKey = Config.getCQApiKey();
         const cq = new Carequality(apiKey);
-        const orgs = await cq.listOrganizations({ start: currentPosition });
+        const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         currentPosition += BATCH_SIZE;
         const parsedOrgs = parseCQDirectoryEntries(orgs);
         await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs);
-        console.log(`Added ${currentPosition} CQ directory entries...`);
-        await sleep(750);
+        console.log(
+          `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
+        );
+        await sleep(SLEEP_TIME_MS);
       } catch (error) {
         isDone = true;
         if (!failGracefully) {
@@ -65,41 +66,53 @@ export const rebuildCQDirectory = async (failGracefully = false): Promise<void> 
     });
     throw error;
   }
-};
+}
 
-const createTempCQDirectoryTable = async () => {
+async function createTempCQDirectoryTable(): Promise<void> {
   const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} AS SELECT * FROM ${cqDirectoryEntry} WHERE 1=0;`;
   await sequelize.query(query, {
     type: QueryTypes.INSERT,
   });
-};
+}
 
-const deleteTempCQDirectoryTable = async () => {
+async function deleteTempCQDirectoryTable(): Promise<void> {
   const query = `DROP TABLE IF EXISTS ${cqDirectoryEntryTemp}`;
   await sequelize.query(query, {
     type: QueryTypes.DELETE,
   });
-};
+}
 
-const renameCQDirectoryTablesAndUpdateIndexes = async () => {
-  const dropBackupQuery = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup};`;
-  await sequelize.query(dropBackupQuery, {
-    type: QueryTypes.DELETE,
-    logging: false,
-  });
+async function renameCQDirectoryTablesAndUpdateIndexes(): Promise<void> {
+  const transaction = await sequelize.transaction();
 
-  const renameTablesQuery = `
+  try {
+    const dropBackupQuery = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup};`;
+    await sequelize.query(dropBackupQuery, {
+      type: QueryTypes.DELETE,
+      logging: false,
+      transaction,
+    });
+
+    const renameTablesQuery = `
     ALTER TABLE ${cqDirectoryEntry} RENAME TO ${cqDirectoryEntryBackup};
     ALTER TABLE ${cqDirectoryEntryTemp} RENAME TO ${cqDirectoryEntry};
     ALTER INDEX IF EXISTS cq_directory_entry_pkey RENAME TO cq_directory_entry_backup_pkey;`;
-  await sequelize.query(renameTablesQuery, {
-    type: QueryTypes.UPDATE,
-    logging: false,
-  });
+    await sequelize.query(renameTablesQuery, {
+      type: QueryTypes.UPDATE,
+      logging: false,
+      transaction,
+    });
 
-  const createIndexQuery = `CREATE INDEX IF NOT EXISTS cq_directory_entry_pkey ON ${cqDirectoryEntry} (id);`;
-  await sequelize.query(createIndexQuery, {
-    type: QueryTypes.INSERT,
-    logging: false,
-  });
-};
+    const createIndexQuery = `CREATE INDEX IF NOT EXISTS cq_directory_entry_pkey ON ${cqDirectoryEntry} (id);`;
+    await sequelize.query(createIndexQuery, {
+      type: QueryTypes.INSERT,
+      logging: false,
+      transaction,
+    });
+
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+}

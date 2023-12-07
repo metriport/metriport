@@ -21,7 +21,6 @@ export type XCUrls = {
 };
 
 export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
-  // Use Promise.all to wait for all promises to resolve
   const parsedOrgs = orgsInput.flatMap(org => {
     if (!org) return [];
 
@@ -61,17 +60,17 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
  * Computes the Earth point for a coordinate pair. Built based on this logic: https://github.com/postgres/postgres/blob/4d0cf0b05defcee985d5af38cb0db2b9c2f8dbae/contrib/earthdistance/earthdistance--1.1.sql#L50-L55C15
  * @returns Earth 3D point
  */
-export function computeEarthPoint(lat: number, lon: number) {
+export function computeEarthPoint(lat: number, lon: number): string {
   const latRad = convertDegreesToRadians(lat);
   const lonRad = convertDegreesToRadians(lon);
 
   const x = EARTH_RADIUS * Math.cos(latRad) * Math.cos(lonRad);
   const y = EARTH_RADIUS * Math.cos(latRad) * Math.sin(lonRad);
   const z = EARTH_RADIUS * Math.sin(latRad);
-  return `(${x}, ${y}, ${z})`;
+  return `(${x},${y},${z})`;
 }
 
-function convertDegreesToRadians(degrees: number) {
+function convertDegreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 

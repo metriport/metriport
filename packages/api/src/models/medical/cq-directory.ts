@@ -8,7 +8,7 @@ export class CQDirectoryEntryModel
   implements CQDirectoryEntry
 {
   static NAME = "cq_directory_entry";
-  declare id: string;
+  declare id: string; // Organization's OID
   declare name?: string;
   declare urlXCPD: string;
   declare urlDQ?: string;

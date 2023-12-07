@@ -16,23 +16,23 @@ export async function geocodeAddresses(addresses: Address[]): Promise<Coordinate
   const awsRegion = Config.getAWSRegion();
   const client = makeLocationClient(awsRegion);
 
-  const coords = [];
+  const resultPromises = await Promise.allSettled(
+    addresses.map(async address => {
+      const addressText = `${address.addressLine1}, ${address.city}, ${address.state} ${address.zip}`;
+      const countryFilter = address.country ?? "USA";
 
-  for (const address of addresses) {
-    const addressText = `${address.addressLine1}, ${address.city}, ${address.state} ${address.zip}`;
+      const params = {
+        Text: addressText,
+        MaxResults: 1,
+        Language: "en",
+        FilterCountries: [countryFilter],
+        IndexName: indexName,
+      };
 
-    const params = {
-      Text: addressText,
-      MaxResults: 1,
-      Language: "en",
-      FilterCountries: ["USA"],
-      IndexName: indexName,
-    };
-
-    const locationResponse = await client.searchPlaceIndexForText(params).promise();
-    const coordinates = getCoordinatesFromLocation({ result: locationResponse });
-
-    coords.push(coordinates);
-  }
-  return coords;
+      const locationResponse = await client.searchPlaceIndexForText(params).promise();
+      return getCoordinatesFromLocation({ result: locationResponse });
+    })
+  );
+  const successful = resultPromises.flatMap(p => (p.status === "fulfilled" ? p.value : []));
+  return successful;
 }
