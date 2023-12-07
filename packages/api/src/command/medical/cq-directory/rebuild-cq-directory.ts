@@ -5,6 +5,7 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
+import { sleep } from "@metriport/core/util/sleep";
 
 const BATCH_SIZE = 1000;
 const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
@@ -31,6 +32,7 @@ export const rebuildCQDirectory = async (
     await createTempCQDirectoryTable();
     while (!isDone) {
       try {
+        console.time("generation");
         let orgs = [];
         if (mockNumber) {
           if (currentPosition >= mockNumber) {
@@ -51,8 +53,12 @@ export const rebuildCQDirectory = async (
         }
         currentPosition += BATCH_SIZE;
         const parsedOrgs = parseCQDirectoryEntries(orgs);
+        console.timeEnd("generation");
+        console.time("bulkInsert");
         await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs);
+        console.timeEnd("bulkInsert");
         console.log(`Added ${currentPosition} CQ directory entries...`);
+        await sleep(750);
       } catch (error) {
         isDone = true;
         if (!failGracefully) {
