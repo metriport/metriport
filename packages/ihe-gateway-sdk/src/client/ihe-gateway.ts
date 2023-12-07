@@ -24,7 +24,7 @@ export class IHEGateway {
   static DOCUMENT_QUERY_ENDPOINT = "/xcadq";
   static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr";
 
-  readonly api: AxiosInstance;
+  private api: AxiosInstance;
   constructor(apiMode: APIMode, options: { timeout?: number } = {}) {
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT.milliseconds(),
