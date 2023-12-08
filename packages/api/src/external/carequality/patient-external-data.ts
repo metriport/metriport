@@ -47,6 +47,14 @@ export const setCarequalityId = async ({
       | PatientDataCarequality
       | undefined;
 
+    const patientLinksHasSystemId = carequalityExternalData?.patientLinks?.some(
+      patientLink => patientLink.systemId === carequalityPatientSystemId
+    );
+
+    if (patientLinksHasSystemId) {
+      return updatedPatient;
+    }
+
     updatedData.externalData = {
       ...updatedData.externalData,
       CAREQUALITY: {
