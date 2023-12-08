@@ -138,17 +138,20 @@ export async function create(
     });
 
     return { commonwellPatientId, personId };
-  } catch (err) {
-    console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
-    capture.error(err, {
+  } catch (error) {
+    const msg = `Failure while creating patient @ CW`;
+    console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
+    capture.message(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
         cwReference: commonWell?.lastReferenceHeader,
         context: createContext,
+        error,
       },
+      level: "error",
     });
-    throw err;
+    throw error;
   }
 }
 

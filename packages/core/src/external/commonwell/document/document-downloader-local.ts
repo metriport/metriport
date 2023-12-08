@@ -240,9 +240,10 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         console.log(`${msg} - ${JSON.stringify(additionalInfo)}`);
         throw new NotFoundError(msg, undefined, additionalInfo);
       }
+      const msg = `CW - Error downloading document`;
       this.config.capture &&
-        this.config.capture.error(error, { extra: { ...additionalInfo, error } });
-      throw new MetriportError(`CW - Error downloading document`, error, additionalInfo);
+        this.config.capture.message(msg, { extra: { ...additionalInfo, error }, level: "error" });
+      throw new MetriportError(msg, error, additionalInfo);
     }
   }
 }

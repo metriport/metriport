@@ -45,6 +45,7 @@ jobs:
               - "packages/api/**"
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
+              - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
             infra-lambdas:
