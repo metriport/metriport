@@ -74,17 +74,19 @@ export async function autoUpgradeNetworkLinks(
         requests.push(
           commonWell
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
-            .catch(err => {
-              console.log(`Failed to upgrade link: `, err);
-              capture.error(err, {
+            .catch(error => {
+              const msg = `Failed to upgrade link`;
+              console.log(`${msg}. Cause: ${error}`);
+              capture.message(msg, {
                 extra: {
                   commonwellPatientId,
                   commonwellPersonId,
                   cwReference: commonWell.lastReferenceHeader,
                   context: executionContext,
                 },
+                level: "error",
               });
-              throw err;
+              throw error;
             })
         );
       }
