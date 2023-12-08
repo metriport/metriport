@@ -1,4 +1,5 @@
 import { PatientDiscoveryRequest, XCPDGateways } from "@metriport/ihe-gateway-sdk";
+import { PurposeOfUse } from "@metriport/carequality-sdk";
 import { Patient as FHIRPatient } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import dayjs from "dayjs";
@@ -35,7 +36,7 @@ export function patientToIheGateway({
       organization: orgName,
       organizationId: orgOid,
       homeCommunityId: orgOid,
-      purposeOfUse: "TREATMENT", // TODO: retrieve from config
+      purposeOfUse: PurposeOfUse.TREATMENT,
     },
     patientResource: patient,
   };
