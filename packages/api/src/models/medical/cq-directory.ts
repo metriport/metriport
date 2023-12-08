@@ -13,7 +13,7 @@ export class CQDirectoryEntryModel
   declare urlXCPD: string;
   declare urlDQ?: string;
   declare urlDR?: string;
-  declare lastUpdated: string;
+  declare lastUpdatedAtCQ: string;
   declare lat?: number;
   declare lon?: number;
   declare point?: string;
@@ -54,9 +54,9 @@ export class CQDirectoryEntryModel
         point: {
           type: "CUBE",
         },
-        lastUpdated: {
+        lastUpdatedAtCQ: {
           type: DataTypes.STRING,
-          field: "last_updated",
+          field: "last_updated_at_cq",
         },
       },
       {

@@ -6,9 +6,14 @@ import { capture } from "../../../shared/notifications";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
 import { cqDirectoryEntryTemp, cqDirectoryEntry, cqDirectoryEntryBackup } from "./shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
 
+dayjs.extend(duration);
 const BATCH_SIZE = 1000;
-const SLEEP_TIME_MS = 750;
+const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
 
 const sqlDBCreds = Config.getDBCreds();
 const dbCreds = JSON.parse(sqlDBCreds);
@@ -33,11 +38,11 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         currentPosition += BATCH_SIZE;
         const parsedOrgs = parseCQDirectoryEntries(orgs);
-        await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs);
         console.log(
           `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
         );
-        await sleep(SLEEP_TIME_MS);
+        await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs);
+        await sleep(SLEEP_TIME.asMilliseconds());
       } catch (error) {
         isDone = true;
         if (!failGracefully) {
@@ -57,8 +62,10 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   }
   try {
     await renameCQDirectoryTablesAndUpdateIndexes();
+    console.log("CQ directory successfully rebuilt! :)");
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
+    await deleteTempCQDirectoryTable();
     console.log(`${msg}. Cause: ${error}`);
     capture.message(msg, {
       extra: { context: `renameCQDirectoryTablesAndUpdateIndexes`, error },
@@ -83,9 +90,15 @@ async function deleteTempCQDirectoryTable(): Promise<void> {
 }
 
 async function renameCQDirectoryTablesAndUpdateIndexes(): Promise<void> {
-  const transaction = await sequelize.transaction();
+  await executeOnDBTx(CQDirectoryEntryModel.prototype, async transaction => {
+    const lockTablesQuery = `
+      LOCK TABLE ${cqDirectoryEntry}, ${cqDirectoryEntryTemp} IN ACCESS EXCLUSIVE MODE;`;
+    await sequelize.query(lockTablesQuery, {
+      type: QueryTypes.RAW,
+      logging: false,
+      transaction,
+    });
 
-  try {
     const dropBackupQuery = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup};`;
     await sequelize.query(dropBackupQuery, {
       type: QueryTypes.DELETE,
@@ -109,10 +122,5 @@ async function renameCQDirectoryTablesAndUpdateIndexes(): Promise<void> {
       logging: false,
       transaction,
     });
-
-    await transaction.commit();
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  }
+  });
 }

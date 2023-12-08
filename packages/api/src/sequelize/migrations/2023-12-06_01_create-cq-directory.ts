@@ -54,10 +54,10 @@ export const up: Migration = async ({ context: queryInterface }) => {
           type: DataTypes.JSONB,
           allowNull: true,
         },
-        lastUpdated: {
+        lastUpdatedAtCQ: {
           type: DataTypes.STRING,
           allowNull: true,
-          field: "last_updated",
+          field: "last_updated_at_cq",
         },
       },
       { transaction, addVersion: true }

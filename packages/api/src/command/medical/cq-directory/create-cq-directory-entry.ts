@@ -17,7 +17,7 @@ function createKeys(): string {
   const state: keyof Pick<CQDirectoryEntryModel, "state"> = "state";
   const data: keyof Pick<CQDirectoryEntryModel, "data"> = "data";
   const createdAt: keyof Pick<CQDirectoryEntryModel, "createdAt"> = "createdAt";
-  const lastUpdated: keyof Pick<CQDirectoryEntryModel, "lastUpdated"> = "lastUpdated";
+  const lastUpdatedAtCQ: keyof Pick<CQDirectoryEntryModel, "lastUpdatedAtCQ"> = "lastUpdatedAtCQ";
 
   const allKeys = [
     id,
@@ -31,7 +31,7 @@ function createKeys(): string {
     state,
     data,
     createdAt ? "created_at" : undefined,
-    lastUpdated ? "last_updated" : undefined,
+    lastUpdatedAtCQ ? "last_updated_at_cq" : undefined,
   ];
 
   return allKeys.join(", ");
@@ -57,7 +57,7 @@ export async function bulkInsertCQDirectoryEntries(
     entry.state ?? null,
     entry.data ? JSON.stringify(entry.data) : null,
     date,
-    entry.lastUpdated ?? null,
+    entry.lastUpdatedAtCQ ?? null,
   ]);
 
   const query = `INSERT INTO ${cqDirectoryEntryTemp} (${keys}) VALUES ${placeholders};`;

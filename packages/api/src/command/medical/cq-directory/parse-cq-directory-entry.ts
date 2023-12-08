@@ -48,7 +48,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       point,
       state,
       data: org,
-      lastUpdated: org.meta.lastUpdated.value,
+      lastUpdatedAtCQ: org.meta.lastUpdated.value,
     };
     return orgData;
   });
