@@ -8,8 +8,11 @@ import {
 import { Address } from "@metriport/carequality-sdk/models/address";
 import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { Coordinates } from "@metriport/core/external/aws/location";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../../domain/medical/cq-directory";
+
+const EARTH_RADIUS = 6378168;
 
 export type XCUrls = {
   urlXCPD: string;
@@ -18,33 +21,57 @@ export type XCUrls = {
 };
 
 export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
-  const orgs = orgsInput.flatMap(org => {
-    if (!org) {
-      return [];
-    }
+  const parsedOrgs = orgsInput.flatMap(org => {
+    if (!org) return [];
+
     const normalizedOid = getOid(org);
     if (!normalizedOid) return [];
 
     const url = getUrls(org.contained);
     if (!url?.urlXCPD) return [];
 
-    const coordinates = getCoordinates(org.address);
+    const coordinates = org.address ? getCoordinates(org.address) : undefined;
+    const lat = coordinates ? coordinates.lat : undefined;
+    const lon = coordinates ? coordinates.lon : undefined;
+    const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
+
     const state = getState(org.address);
 
     const orgData: CQDirectoryEntryData = {
-      oid: normalizedOid,
+      id: normalizedOid,
       name: org.name?.value ?? undefined,
       urlXCPD: url.urlXCPD,
       urlDQ: url.urlDQ,
       urlDR: url.urlDR,
-      lat: coordinates?.lat ?? undefined,
-      lon: coordinates?.lon ?? undefined,
+      lat,
+      lon,
+      point,
       state,
       data: org,
+      lastUpdatedAtCQ: org.meta.lastUpdated.value,
     };
     return orgData;
   });
-  return orgs;
+
+  return parsedOrgs;
+}
+
+/**
+ * Computes the Earth point for a coordinate pair. Built based on this logic: https://github.com/postgres/postgres/blob/4d0cf0b05defcee985d5af38cb0db2b9c2f8dbae/contrib/earthdistance/earthdistance--1.1.sql#L50-L55C15
+ * @returns Earth 3D point
+ */
+export function computeEarthPoint(lat: number, lon: number): string {
+  const latRad = convertDegreesToRadians(lat);
+  const lonRad = convertDegreesToRadians(lon);
+
+  const x = EARTH_RADIUS * Math.cos(latRad) * Math.cos(lonRad);
+  const y = EARTH_RADIUS * Math.cos(latRad) * Math.sin(lonRad);
+  const z = EARTH_RADIUS * Math.sin(latRad);
+  return `(${x},${y},${z})`;
+}
+
+function convertDegreesToRadians(degrees: number): number {
+  return (degrees * Math.PI) / 180;
 }
 
 function getUrls(contained: Contained): XCUrls | undefined {
@@ -77,20 +104,16 @@ function getUrls(contained: Contained): XCUrls | undefined {
   return urls;
 }
 
-function getCoordinates(address: Address[] | undefined): { lat: string; lon: string } | undefined {
-  if (!address) return;
-  const coordinates = address.flatMap(a => {
-    if (a.extension?.url === ORG_POSITION) {
-      const position = a.extension?.valueCodeableConcept?.coding?.value?.position;
-      if (!position) return [];
-      return {
-        lat: position.latitude.value,
-        lon: position.longitude.value,
-      };
-    }
-  })[0];
-
-  return coordinates;
+function getCoordinates(address: Address[]): Coordinates | undefined {
+  const orgPosition = address.find(a => a.extension?.url === ORG_POSITION);
+  const position = orgPosition?.extension?.valueCodeableConcept?.coding?.value?.position;
+  if (!position) return;
+  const lat = parseFloat(position.latitude.value);
+  const lon = parseFloat(position.longitude.value);
+  if (isNaN(lat) || isNaN(lon)) return;
+  if (lat < -90 || lat > 90) return;
+  if (lon < -180 || lon > 180) return;
+  return { lat, lon };
 }
 
 function getState(addresses: Address[] | undefined): string | undefined {

@@ -8,23 +8,22 @@ export class CQDirectoryEntryModel
   implements CQDirectoryEntry
 {
   static NAME = "cq_directory_entry";
-  declare oid: string;
+  declare id: string; // Organization's OID
   declare name?: string;
   declare urlXCPD: string;
   declare urlDQ?: string;
   declare urlDR?: string;
-  declare lat?: string;
-  declare lon?: string;
-  declare data?: Organization;
+  declare lastUpdatedAtCQ: string;
+  declare lat?: number;
+  declare lon?: number;
+  declare point?: string;
   declare state?: string;
+  declare data?: Organization;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CQDirectoryEntryModel.init(
       {
         ...BaseModel.attributes(),
-        oid: {
-          type: DataTypes.STRING,
-        },
         name: {
           type: DataTypes.STRING,
         },
@@ -41,16 +40,23 @@ export class CQDirectoryEntryModel
           field: "url_dr",
         },
         lat: {
-          type: DataTypes.STRING,
+          type: DataTypes.FLOAT,
         },
         lon: {
-          type: DataTypes.STRING,
+          type: DataTypes.FLOAT,
         },
         state: {
           type: DataTypes.STRING,
         },
         data: {
           type: DataTypes.JSONB,
+        },
+        point: {
+          type: "CUBE",
+        },
+        lastUpdatedAtCQ: {
+          type: DataTypes.STRING,
+          field: "last_updated_at_cq",
         },
       },
       {
