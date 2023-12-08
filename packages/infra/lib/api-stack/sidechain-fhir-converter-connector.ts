@@ -30,7 +30,7 @@ function settings() {
     // Number of times we want to retry a message, this includes throttles!
     maxReceiveCount: 5,
     // Number of times we want to retry a message that timed out when trying to be processed
-    maxTimeoutRetries: 99,
+    maxTimeoutRetries: 15,
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
