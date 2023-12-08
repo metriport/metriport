@@ -39,13 +39,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: APIGatewayProxyE
   if (req.body) {
     return parseXmlStringForRootExtensionSignature(req.body).then(
       ([root, extension, signature]: [string, string, string]) => {
-        console.log("root", root);
-        console.log("extension", extension);
-        console.log("signature", signature);
         const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-        console.log("createdAt", createdAt);
-        console.log("expiresAt", expiresAt);
-        console.log("creationTime", creationTime);
         const xcpd = fillTemplate(createdAt, expiresAt, creationTime, root, extension, signature);
         console.log("xcpd", xcpd);
         return buildResponse(200, xcpd);

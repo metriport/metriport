@@ -2,7 +2,7 @@ import * as xml2js from "xml2js";
 import { PatientData } from "../../domain/patient/patient-incoming-schema";
 import { Address } from "@metriport/api-sdk/medical/models/common/address";
 
-export function parseXmlString(xml: string): PatientData | null {
+export function parseXmlStringForPatientData(xml: string): PatientData | null {
   xml = JSON.parse(`"${xml}"`);
   let patientData: PatientData | null = null;
 
