@@ -75,7 +75,7 @@ export async function autoUpgradeNetworkLinks(
           commonWell
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
             .catch(error => {
-              const msg = `Failed to upgrade link:`;
+              const msg = `Failed to upgrade link`;
               console.log(`${msg}. Cause: ${error}`);
               capture.message(msg, {
                 extra: {
