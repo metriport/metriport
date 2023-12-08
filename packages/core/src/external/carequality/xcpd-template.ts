@@ -29,11 +29,6 @@ export const xcpdTemplate = `
       </acknowledgement>
       <controlActProcess classCode="CACT" moodCode="EVN">
         <code code="PRPA_TE201306UV02" displayName="2.16.840.1.113883.1.6"/>
-        <authorOrPerformer typeCode="AUT">
-          <assignedDevice classCode="ASSIGNED">
-            <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
-          </assignedDevice>
-        </authorOrPerformer>
         <subject contextConductionInd="false" typeCode="SUBJ">
           <registrationEvent classCode="REG" moodCode="EVN">
             <id nullFlavor="NA"/>
@@ -44,19 +39,19 @@ export const xcpdTemplate = `
                 <statusCode code="active"/>
                 <patientPerson classCode="PSN" determinerCode="INSTANCE">
                   <name>
-                    <given>Nwhinone</given>
-                    <family>Nwhinzzztestpatient</family>
+                    <given>{firstName}</given>
+                    <family>{lastName}</family>
                     <delimiter>,</delimiter>
                   </name>
-                  <telecom use="HP" value="tel:+1-205-111-1111"/>
-                  <administrativeGenderCode code="M"/>
-                  <birthTime value="19810101"/>
+                  <telecom use="HP" value="tel:{phone}"/>
+                  <administrativeGenderCode code="{genderAtBirth}"/>
+                  <birthTime value="{dob}"/>
                   <addr>
-                    <streetAddressLine>1100 test street</streetAddressLine>
-                    <city>Helena</city>
-                    <state>AL</state>
-                    <postalCode>35080</postalCode>
-                    <country>US</country>
+                    <streetAddressLine>{addressLine1}</streetAddressLine>
+                    <city>{city}</city>
+                    <state>{state}</state>
+                    <postalCode>{zip}</postalCode>
+                    <country>{country}</country>
                   </addr>
                   <asOtherIDs classCode="PAT">
                     <id extension="EV10045900" root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
@@ -93,36 +88,36 @@ export const xcpdTemplate = `
           <responsePriorityCode code="I"/>
           <parameterList>
             <livingSubjectAdministrativeGender>
-              <value code="M" codeSystem="2.16.840.1.113883.5.1"/>
+              <value code="{genderAtBirth}" codeSystem="2.16.840.1.113883.5.1"/>
               <semanticsText>LivingSubject.administrativeGender</semanticsText>
             </livingSubjectAdministrativeGender>
             <livingSubjectBirthTime>
-              <value value="19810101"/>
+              <value value="{dob}"/>
               <semanticsText>LivingSubject.birthTime</semanticsText>
             </livingSubjectBirthTime>
             <livingSubjectId>
-              <value extension="666-10-0001" root="2.16.840.1.113883.4.1"/>
+              <value extension="{livingSubjectId.extension}" root="{livingSubjectId.root}"/>
               <semanticsText>LivingSubject.id</semanticsText>
             </livingSubjectId>
             <livingSubjectName>
               <value>
-                <given>NWHINONE</given>
-                <family>NWHINZZZTESTPATIENT</family>
+                <given>{firstName}</given>
+                <family>{lastName}</family>
               </value>
               <semanticsText>LivingSubject.name</semanticsText>
             </livingSubjectName>
             <patientAddress>
               <value>
-                <streetAddressLine>1100 Test Street</streetAddressLine>
-                <city>Helena</city>
-                <state>AL</state>
-                <postalCode>35080</postalCode>
-                <country>USA</country>
+                <streetAddressLine>{addressLine1}</streetAddressLine>
+                <city>{city}</city>
+                <state>{state}</state>
+                <postalCode>{zip}</postalCode>
+                <country>{country}</country>
               </value>
               <semanticsText>Patient.addr</semanticsText>
             </patientAddress>
             <patientTelecom>
-              <value value="tel:205-111-1111"/>
+              <value value="tel:{phone}"/>
               <semanticsText>Patient.telecom</semanticsText>
             </patientTelecom>
             <principalCareProviderId>
@@ -135,3 +130,17 @@ export const xcpdTemplate = `
   </s:Body>
 </s:Envelope>
 `;
+
+/**
+ * Removed since wasn't in Particle but was in epic so not necessary: 
+ * 
+ *         <authorOrPerformer typeCode="AUT">
+          <assignedDevice classCode="ASSIGNED">
+            <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
+          </assignedDevice>
+        </authorOrPerformer>
+ * 
+ * 
+ * 
+ * 
+ * */
