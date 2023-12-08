@@ -14,6 +14,7 @@ import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as ALS from "aws-cdk-lib/aws-location";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
@@ -273,6 +274,15 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
+    //-------------------------------------------
+    // Amazon Location Service
+    //-------------------------------------------
+    const placeIndex = new ALS.CfnPlaceIndex(this, "GeolocationPlaceIndex.Esri", {
+      dataSource: "Esri",
+      indexName: "GeolocationPlaceIndex.Esri",
+      description: "Geolocation Place Index",
+    });
+
     // sidechain FHIR converter queue
     const {
       queue: sidechainFHIRConverterQueue,
@@ -383,6 +393,7 @@ export class APIStack extends Stack {
       documentDownloaderLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
+      placeIndex,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },

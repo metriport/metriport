@@ -57,7 +57,7 @@ export const config: EnvConfig = {
       CQ_API_KEY: "CQ_API_KEY",
     },
     envVars: {
-      CQ_ORG_DETAILS: `{"orgName": "Test org","orgOid": "1.2.3.1.4.1.11.12.29.2022.1234","addressLine1": "123 Main St","city": "Phoenix","state": "AZ","zip": "12345","lat": "33.12345","lon": "-112.12345","urlXCPD": "https://api.myhealthapp.com/xcpd","urlDQ": "https://api.myhealthapp.com/xca-dq","urlDR": "https://api.myhealthapp.com/xca-dr","contactName": "Engineering","phone": "(123)-123-1234","email": "support@healthapp.com"}`,
+      CQ_ORG_DETAILS: `{"name": "Test org","oid": "1.2.3.1.4.1.11.12.29.2022.1234","addressLine1": "123 Main St","city": "Phoenix","state": "AZ","zip": "12345","lat": "33.12345","lon": "-112.12345","urlXCPD": "https://api.myhealthapp.com/xcpd","urlDQ": "https://api.myhealthapp.com/xca-dq","urlDR": "https://api.myhealthapp.com/xca-dr","contactName": "Engineering","phone": "(123)-123-1234","email": "support@healthapp.com"}`,
     },
   },
   commonwell: {

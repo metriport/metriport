@@ -37,12 +37,10 @@ export const identifierSchema = z.object({
   value: objectValueOptional,
 });
 
-export const meta = z
-  .object({
-    lastUpdated: objectValueOptional,
-    versionId: objectValueOptional,
-  })
-  .nullish();
+export const meta = z.object({
+  lastUpdated: objectValue,
+  versionId: objectValueOptional,
+});
 
 export const codingSchema = z
   .object({
