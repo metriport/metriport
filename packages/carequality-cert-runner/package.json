@@ -1,5 +1,5 @@
 {
-  "name": "carequality-cert-runner",
+  "name": "@metriport/carequality-cert-runner",
   "version": "1.0.1-alpha.0",
   "description": "Tool to run through Carequality certification test cases - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
