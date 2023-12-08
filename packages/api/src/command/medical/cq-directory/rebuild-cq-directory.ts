@@ -91,17 +91,16 @@ async function deleteTempCQDirectoryTable(): Promise<void> {
 
 async function renameCQDirectoryTablesAndUpdateIndexes(): Promise<void> {
   await executeOnDBTx(CQDirectoryEntryModel.prototype, async transaction => {
-    const lockTablesQuery = `
-      LOCK TABLE ${cqDirectoryEntry}, ${cqDirectoryEntryTemp} IN ACCESS EXCLUSIVE MODE;`;
-    await sequelize.query(lockTablesQuery, {
-      type: QueryTypes.RAW,
+    const dropBackupQuery = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup};`;
+    await sequelize.query(dropBackupQuery, {
+      type: QueryTypes.DELETE,
       logging: false,
       transaction,
     });
 
-    const dropBackupQuery = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup};`;
-    await sequelize.query(dropBackupQuery, {
-      type: QueryTypes.DELETE,
+    const lockTablesQuery = `LOCK TABLE ${cqDirectoryEntry} IN ACCESS EXCLUSIVE MODE;`;
+    await sequelize.query(lockTablesQuery, {
+      type: QueryTypes.RAW,
       logging: false,
       transaction,
     });
