@@ -67,8 +67,11 @@ export const create = async (
 
     await autoUpgradeNetworkLinks(commonWell, queryMeta, cwPatientId, personId, context);
   } catch (error) {
-    capture.error(error, {
+    const msg = `Failed to create CW person link`;
+    console.log(`${msg}. Cause: ${error}`);
+    capture.message(msg, {
       extra: { cwPatientId, personId, cwReference: commonWell?.lastReferenceHeader, context },
+      level: "error",
     });
     throw error;
   }
