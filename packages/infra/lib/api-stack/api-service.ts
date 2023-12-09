@@ -9,10 +9,10 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
+import * as ALS from "aws-cdk-lib/aws-location";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import * as ALS from "aws-cdk-lib/aws-location";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
@@ -48,7 +48,8 @@ export function createAPIService(
   documentDownloaderLambda: ILambda,
   medicalDocumentsUploadBucket: s3.Bucket,
   fhirToMedicalRecordLambda: ILambda | undefined,
-  placeIndex: ALS.CfnPlaceIndex | undefined,
+  placeIndexStaging: ALS.CfnPlaceIndex | undefined,
+  placeIndexSandbox: ALS.CfnPlaceIndex | undefined,
   searchIngestionQueue: IQueue,
   searchEndpoint: string,
   searchAuth: { userName: string; secret: ISecret },
@@ -158,8 +159,17 @@ export function createAPIService(
           ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
             CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
           }),
-          ...(placeIndex && {
-            PLACE_INDEX_NAME: placeIndex.indexName,
+          ...((placeIndexStaging && {
+            PLACE_INDEX_NAME: placeIndexStaging.indexName,
+          }) ||
+            (placeIndexSandbox && {
+              PLACE_INDEX_NAME: placeIndexSandbox.indexName,
+            }) ||
+            (isProd(props.config) && {
+              PLACE_INDEX_NAME: props.config.placeIndexNameProd,
+            })),
+          ...(props.config.placeIndexProdRegion && {
+            PLACE_INDEX_PROD_REGION: props.config.placeIndexProdRegion,
           }),
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
@@ -253,7 +263,7 @@ export function createAPIService(
         }),
         new iam.PolicyStatement({
           actions: ["geo:SearchPlaceIndexForText"],
-          resources: [`arn:aws:geo:*`], // Perhaps, need to be more specific with the exact resource here
+          resources: [`arn:aws:geo:*`],
           effect: iam.Effect.ALLOW,
         }),
       ],

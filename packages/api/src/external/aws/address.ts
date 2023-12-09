@@ -4,6 +4,7 @@ import {
   makeLocationClient,
 } from "@metriport/core/external/aws/location";
 import { Config } from "../../shared/config";
+import * as AWS from "aws-sdk";
 import { Coordinates } from "@metriport/core/external/aws/location";
 
 /**
@@ -13,7 +14,7 @@ import { Coordinates } from "@metriport/core/external/aws/location";
  */
 export async function geocodeAddresses(addresses: Address[]): Promise<Coordinates[]> {
   const indexName = Config.getPlaceIndexName();
-  const awsRegion = Config.getAWSRegion();
+  const awsRegion = Config.isProdEnv() ? Config.getPlaceIndexProdRegion() : Config.getAWSRegion();
   const client = makeLocationClient(awsRegion);
 
   const resultPromises = await Promise.allSettled(
@@ -21,7 +22,7 @@ export async function geocodeAddresses(addresses: Address[]): Promise<Coordinate
       const addressText = `${address.addressLine1}, ${address.city}, ${address.state} ${address.zip}`;
       const countryFilter = address.country ?? "USA";
 
-      const params = {
+      const params: AWS.Location.Types.SearchPlaceIndexForTextRequest = {
         Text: addressText,
         MaxResults: 1,
         Language: "en",

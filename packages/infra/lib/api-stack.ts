@@ -10,11 +10,11 @@ import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import * as ALS from "aws-cdk-lib/aws-location";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import * as ALS from "aws-cdk-lib/aws-location";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
@@ -34,11 +34,11 @@ import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-con
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { createIHEStack } from "./ihe-stack";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
-import { isProd, isSandbox, mbToBytes } from "./shared/util";
+import { isProd, isSandbox, isStaging, mbToBytes } from "./shared/util";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -277,11 +277,34 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Amazon Location Service
     //-------------------------------------------
-    const placeIndex = new ALS.CfnPlaceIndex(this, "GeolocationPlaceIndex.Esri", {
-      dataSource: "Esri",
-      indexName: "GeolocationPlaceIndex.Esri",
-      description: "Geolocation Place Index",
-    });
+    const indexName = props.config.placeIndexName;
+    const placeIndexStaging = isStaging(props.config)
+      ? new ALS.CfnPlaceIndex(this, indexName, {
+          dataSource: "Esri",
+          indexName: indexName,
+          description: `Geolocation Place Index ${EnvType.staging}`,
+        })
+      : undefined;
+
+    const placeIndexSandbox = isSandbox(props.config)
+      ? new ALS.CfnPlaceIndex(this, indexName, {
+          dataSource: "Esri",
+          indexName: indexName,
+          description: `Geolocation Place Index ${EnvType.sandbox}`,
+        })
+      : undefined;
+
+    const indexNameProd = props.config.placeIndexNameProd;
+
+    // Production place index created on the sandbox env
+    const placeIndexProd =
+      isSandbox(props.config) && indexNameProd
+        ? new ALS.CfnPlaceIndex(this, indexNameProd, {
+            dataSource: "Esri",
+            indexName: indexNameProd,
+            description: `Geolocation Place Index ${EnvType.production}`,
+          })
+        : undefined;
 
     // sidechain FHIR converter queue
     const {
@@ -393,7 +416,8 @@ export class APIStack extends Stack {
       documentDownloaderLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
-      placeIndex,
+      placeIndexStaging,
+      placeIndexSandbox,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -776,6 +800,11 @@ export class APIStack extends Stack {
       description: "Userpool for client secret based apps",
       value: userPoolClientSecret.userPoolId,
     });
+    placeIndexProd &&
+      new CfnOutput(this, "PlaceIndexName", {
+        description: "Place index name",
+        value: placeIndexProd.indexName,
+      });
   }
 
   private setupTestLambda(
