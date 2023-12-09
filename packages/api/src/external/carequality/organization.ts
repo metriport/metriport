@@ -5,8 +5,8 @@ import { buildOrganizationFromTemplate } from "./organization-template";
 const cq = makeCarequalityAPI();
 
 export type CQOrgDetails = {
-  orgName: string;
-  orgOID: string;
+  name: string;
+  oid: string;
   addressLine1: string;
   city: string;
   state: string;
@@ -23,20 +23,21 @@ export type CQOrgDetails = {
 
 export async function createOrUpdateCQOrganization(): Promise<void> {
   const cqOrgDetailsString = Config.getCQOrgDetails();
-  if (!cq) {
-    throw new Error("CQ is not enabled in this environment");
-  }
-  const cqOrgDetails = cqOrgDetailsString ? JSON.parse(cqOrgDetailsString) : undefined;
+  if (!cq) return;
+  const cqOrgDetails: CQOrgDetails = cqOrgDetailsString
+    ? JSON.parse(cqOrgDetailsString)
+    : undefined;
   if (!cqOrgDetails) {
     const msg = "No CQ Organization details found. Skipping...";
     console.log(msg);
     throw new Error(msg);
   }
+
   const cqOrg = buildOrganizationFromTemplate(cqOrgDetails);
   try {
-    const org = await cq.listOrganizations({ count: 1, oid: cqOrgDetails.orgOID });
+    const org = await cq.listOrganizations({ count: 1, oid: cqOrgDetails.oid });
     if (org.length > 0) {
-      await updateCQOrganization(cqOrg, cqOrgDetails.orgOID);
+      await updateCQOrganization(cqOrg, cqOrgDetails.oid);
       return;
     }
   } catch (error) {
@@ -55,9 +56,7 @@ export async function createOrUpdateCQOrganization(): Promise<void> {
 
 async function updateCQOrganization(cqOrg: string, oid: string): Promise<void> {
   console.log(`Updating org in the CQ Directory...`);
-  if (!cq) {
-    throw new Error("CQ is not enabled in this environment");
-  }
+  if (!cq) return;
   try {
     await cq.updateOrganization(cqOrg, oid);
   } catch (error) {

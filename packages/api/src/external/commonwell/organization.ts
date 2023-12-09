@@ -88,7 +88,7 @@ export const create = async (org: Organization): Promise<void> => {
   } catch (error) {
     const msg = `Failure creating Org @ CW`;
     log(msg, error);
-    capture.error(error, {
+    capture.message(msg, {
       extra: {
         orgId: org.id,
         orgOID: org.oid,
@@ -96,6 +96,7 @@ export const create = async (org: Organization): Promise<void> => {
         context: `cw.org.create`,
         payload: cwOrg,
       },
+      level: "error",
     });
     throw error;
   }
@@ -116,6 +117,7 @@ export const update = async (org: Organization): Promise<void> => {
       orgOID: org.oid,
       cwReference: commonWell.lastReferenceHeader,
       context: `cw.org.update`,
+      error,
     };
     // Try to create the org if it doesn't exist
     if (error.response?.status === 404) {
@@ -125,7 +127,7 @@ export const update = async (org: Organization): Promise<void> => {
     // General error handling
     const msg = `Failure updating Org @ CW`;
     log(msg, error);
-    capture.error(error, { extra: { ...extra, payload: cwOrg } });
+    capture.message(msg, { extra: { ...extra, payload: cwOrg }, level: "error" });
     throw error;
   }
 };
@@ -146,10 +148,12 @@ export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
     );
     await managementApi.updateIncludeList({ oid: orgOID, careQualityOrgIds: cqOrgIdsLimited });
   } catch (error) {
-    const additional = { orgOID, error };
-    console.log(`Error while updating CQ include list`, additional);
-    capture.error(error, {
+    const additional = { orgOID, error, context: `initCQOrgIncludeList` };
+    const msg = `Error while updating CQ include list`;
+    console.log(`${msg}. Cause: ${additional}`);
+    capture.message(msg, {
       extra: additional,
+      level: "error",
     });
   }
 }

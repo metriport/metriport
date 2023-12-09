@@ -2,15 +2,17 @@ import { BaseDomain, BaseDomainCreate } from "../base-domain";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
 
 export type CQDirectoryEntryData = {
-  oid: string;
+  id: string; // Organization's OID
   name?: string;
   urlXCPD: string;
   urlDQ?: string;
   urlDR?: string;
-  lat?: string;
-  lon?: string;
+  lat?: number;
+  lon?: number;
   state?: string;
   data?: Organization;
+  point?: string;
+  lastUpdatedAtCQ: string;
 };
 
 export interface CQDirectoryEntryCreate extends BaseDomainCreate, CQDirectoryEntryData {}

@@ -8,9 +8,7 @@ import { IHEGateway, APIMode } from "@metriport/ihe-gateway-sdk";
  * @returns Carequality API.
  */
 export function makeCarequalityAPI(apiKey?: string): Carequality | undefined {
-  if (Config.isSandbox()) {
-    return;
-  }
+  if (Config.isSandbox()) return;
   const cqApiKey = apiKey ?? Config.getCQApiKey();
   return new Carequality(cqApiKey);
 }
