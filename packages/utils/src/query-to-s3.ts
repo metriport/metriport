@@ -21,10 +21,13 @@ const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const bucketName = getEnvVarOrFail("S3_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
 
+// Example:
+// const tableName = "change_log";
+// const query = `SELECT * FROM ${tableName} WHERE created_at < current_date - interval '30' day`;
 const tableName = "<TABLE>";
 const query = `SELECT * FROM ${tableName} WHERE ...`;
 
-const getFileName = () => `exports/${tableName}}/${tableName}_${dayjs().toISOString()}.json`;
+const getFileName = () => `exports/${tableName}/${tableName}_${dayjs().toISOString()}.json`;
 
 const s3 = new AWS.S3({ signatureVersion: "v4", region });
 
