@@ -7,16 +7,16 @@ import { Config } from "../../shared/config";
 import * as AWS from "aws-sdk";
 import { Coordinates } from "@metriport/core/external/aws/location";
 
+const indexName = Config.getPlaceIndexName();
+const awsRegion = Config.isProdEnv() ? Config.getPlaceIndexProdRegion() : Config.getAWSRegion();
+const client = makeLocationClient(awsRegion);
+
 /**
  * Geocodes a list of addresses using Amazon Location Services.
  * @param addresses
  * @returns
  */
 export async function geocodeAddresses(addresses: Address[]): Promise<Coordinates[]> {
-  const indexName = Config.getPlaceIndexName();
-  const awsRegion = Config.isProdEnv() ? Config.getPlaceIndexProdRegion() : Config.getAWSRegion();
-  const client = makeLocationClient(awsRegion);
-
   const resultPromises = await Promise.allSettled(
     addresses.map(async address => {
       const addressText = `${address.addressLine1}, ${address.city}, ${address.state} ${address.zip}`;
