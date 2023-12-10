@@ -8,22 +8,37 @@ export function parseXmlStringForPatientData(xml: string): Promise<PatientData> 
   xml = JSON.parse(`"${xml}"`);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const parser = new xml2js.Parser();
+  const parser = new xml2js.Parser({
+    tagNameProcessors: [xml2js.processors.stripPrefix],
+  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return parser.parseStringPromise(xml).then(function (result: any) {
+    console.log("result", JSON.stringify(result, null, 2));
     const parameterList =
-      result["s:Envelope"]["s:Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
+      result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
         "queryByParameter"
       ][0]["parameterList"][0];
-
     const patientName = parameterList["livingSubjectName"][0]["value"][0];
     const gender = parameterList["livingSubjectAdministrativeGender"][0]["value"][0]["$"]["code"];
     const dob = parameterList["livingSubjectBirthTime"][0]["value"][0]["$"]["value"];
     const address = parameterList["patientAddress"][0]["value"][0];
-    const livingSubjectId: LivingSubjectId = {
-      extension: parameterList["livingSubjectId"][0]["value"][0]["$"]["extension"],
-      root: parameterList["livingSubjectId"][0]["value"][0]["$"]["root"],
-    };
+
+    let phone = "";
+    if (parameterList["patientTelecom"] && parameterList["patientTelecom"][0]["value"]) {
+      phone = parameterList["patientTelecom"][0]["value"][0]["$"]["value"];
+    }
+
+    let livingSubjectId: LivingSubjectId | undefined;
+    if (
+      parameterList["livingSubjectId"] &&
+      parameterList["livingSubjectId"][0]["value"] &&
+      parameterList["livingSubjectId"][0]["value"][0]["$"]
+    ) {
+      livingSubjectId = {
+        extension: parameterList["livingSubjectId"][0]["value"][0]["$"]["extension"],
+        root: parameterList["livingSubjectId"][0]["value"][0]["$"]["root"],
+      };
+    }
     let principalCareProviderId: PrincipalCareProviderId | undefined;
     if (
       parameterList["principalCareProviderId"] &&
@@ -41,7 +56,7 @@ export function parseXmlStringForPatientData(xml: string): Promise<PatientData> 
       city: address["city"][0],
       state: address["state"][0],
       zip: address["postalCode"][0],
-      country: address["country"][0],
+      country: address["country"] ? address["country"][0] : "USA",
     };
 
     const patientData = {
@@ -52,6 +67,7 @@ export function parseXmlStringForPatientData(xml: string): Promise<PatientData> 
       dob: dob,
       genderAtBirth: gender,
       address: [patientAddress],
+      contact: [{ phone: phone }],
     };
     return patientData;
   });
@@ -62,12 +78,17 @@ export function parseXmlStringForRootExtensionSignature(
 ): Promise<[string, string, string]> {
   xml = JSON.parse(`"${xml}"`);
 
-  const parser = new xml2js.Parser();
+  const parser = new xml2js.Parser({
+    tagNameProcessors: [xml2js.processors.stripPrefix],
+  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return parser.parseStringPromise(xml).then(function (result: any) {
     const signature =
-      result["s:Envelope"]["s:Header"][0]["o:Security"][0]["Signature"][0]["SignatureValue"][0];
-    const id = result["s:Envelope"]["s:Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
+      result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
+    /* The line `const id = result["s:Envelope"]["s:Body"][0]["PRPA_IN201305UV02"][0]["id"][0];` is
+extracting the value of the `id` element from the XML response. It is accessing the nested
+properties of the `result` object to navigate to the desired element and retrieve its value. */
+    const id = result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
     const root = id["$"]["root"];
     const extension = id["$"]["extension"];
     return [root, extension, signature];
@@ -113,7 +134,13 @@ export const fillTemplate = (
   signature: string,
   patientData: PatientData
 ) => {
-  const { firstName, lastName, dob, genderAtBirth, livingSubjectId, address } = patientData;
+  const { firstName, lastName, dob, genderAtBirth, livingSubjectId, address, contact } =
+    patientData;
+
+  let phone = "";
+  if (contact && Array.isArray(contact) && contact.length > 0 && contact[0]) {
+    phone = contact[0].phone || "";
+  }
 
   let addressLine1, city, state, zip, country;
   if (Array.isArray(address) && typeof address[0] === "object") {
@@ -136,8 +163,9 @@ export const fillTemplate = (
     .replace(/{state}/g, state || "")
     .replace(/{zip}/g, zip || "")
     .replace(/{country}/g, country || "")
-    .replace(/{livingSubjectId.extension}/g, livingSubjectId?.extension || "")
-    .replace(/{livingSubjectId.root}/g, livingSubjectId?.root || "");
+    .replace(/{livingSubjectId.extension}/g, livingSubjectId?.extension || "ABCDEFG")
+    .replace(/{livingSubjectId.root}/g, livingSubjectId?.root || "123456789")
+    .replace(/{phone}/g, phone || "000-000-0000");
 };
 
 // data normalizing
