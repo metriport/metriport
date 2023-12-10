@@ -166,13 +166,32 @@ export const fillTemplate = (
     .replace(/{phone}/g, phone || "000-000-0000");
 };
 
-// data normalizing
-
+export function generateXCPD(
+  xml: string,
+  patientData: PatientData,
+  xcpdTemplate: string
+): Promise<string> {
+  return parseXmlStringForRootExtensionSignature(xml).then(
+    ([root, extension, signature]: [string, string, string]) => {
+      const { createdAt, expiresAt, creationTime } = generateTimeStrings();
+      const xcpd = fillTemplate(
+        xcpdTemplate,
+        createdAt,
+        expiresAt,
+        creationTime,
+        root,
+        extension,
+        signature,
+        patientData
+      );
+      return xcpd;
+    }
+  );
+}
 export function isAnyPatientMatching(patientToMatch: PatientData): boolean {
   const patients = [patient_1, patient_2, patient_3];
   for (const patient of patients) {
     if (isPatientMatching(patient, patientToMatch)) {
-      console.log("patient matched", patient);
       return true;
     }
   }

@@ -1,9 +1,7 @@
 import express from "express";
 import {
-  parseXmlStringForRootExtensionSignature,
-  generateTimeStrings,
   parseXmlStringForPatientData,
-  fillTemplate,
+  generateXCPD,
   isAnyPatientMatching,
 } from "@metriport/core/external/carequality/xcpd-parsing";
 import { PatientData } from "@metriport/core/external/carequality/patient-incoming-schema";
@@ -22,19 +20,8 @@ app.all("/xcpd/v1", (req, res) => {
   parseXmlStringForPatientData(req.body)
     .then((patientData: PatientData) => {
       if (isAnyPatientMatching(patientData)) {
-        parseXmlStringForRootExtensionSignature(req.body)
-          .then(([root, extension, signature]: [string, string, string]) => {
-            const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-            const xcpd = fillTemplate(
-              xcpdTemplate,
-              createdAt,
-              expiresAt,
-              creationTime,
-              root,
-              extension,
-              signature,
-              patientData
-            );
+        generateXCPD(req.body, patientData, xcpdTemplate)
+          .then((xcpd: string) => {
             res.set("Content-Type", "application/soap+xml; charset=utf-8");
             res.send(xcpd);
           })

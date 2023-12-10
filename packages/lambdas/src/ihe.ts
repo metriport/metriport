@@ -2,9 +2,7 @@ import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import {
-  parseXmlStringForRootExtensionSignature,
-  generateTimeStrings,
-  fillTemplate,
+  generateXCPD,
   parseXmlStringForPatientData,
   isAnyPatientMatching,
 } from "@metriport/core/external/carequality/xcpd-parsing";
@@ -27,23 +25,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: APIGatewayProxyE
       .then(patientData => {
         if (isAnyPatientMatching(patientData)) {
           if (req.body) {
-            return parseXmlStringForRootExtensionSignature(req.body).then(
-              ([root, extension, signature]: [string, string, string]) => {
-                const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-                const xcpd = fillTemplate(
-                  xcpdTemplate,
-                  createdAt,
-                  expiresAt,
-                  creationTime,
-                  root,
-                  extension,
-                  signature,
-                  patientData
-                );
-                console.log("xcpd", xcpd);
+            return generateXCPD(req.body, patientData, xcpdTemplate)
+              .then((xcpd: string) => {
                 return buildResponse(200, xcpd);
-              }
-            );
+              })
+              .catch((err: Error) => {
+                console.log("error", err);
+                return buildResponse(404, "invalid xcpd request");
+              });
           }
         } else {
           console.log("no patient matching");
