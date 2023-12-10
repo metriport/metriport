@@ -58,6 +58,7 @@
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",
     "http-status": "^1.7.0",
+    "jaro-winkler": "^0.2.8",
     "json-stringify-safe": "^5.0.1",
     "lodash": "^4.17.21",
     "playwright": "^1.39.0",

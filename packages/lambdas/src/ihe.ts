@@ -6,6 +6,7 @@ import {
   generateTimeStrings,
   fillTemplate,
   parseXmlStringForPatientData,
+  isAnyPatientMatching,
 } from "@metriport/core/external/carequality/xcpd-parsing";
 import { xcpdTemplate } from "@metriport/core/external/carequality/xcpd-template";
 
@@ -24,24 +25,29 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: APIGatewayProxyE
   if (req.body) {
     return parseXmlStringForPatientData(req.body)
       .then(patientData => {
-        if (req.body) {
-          return parseXmlStringForRootExtensionSignature(req.body).then(
-            ([root, extension, signature]: [string, string, string]) => {
-              const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-              const xcpd = fillTemplate(
-                xcpdTemplate,
-                createdAt,
-                expiresAt,
-                creationTime,
-                root,
-                extension,
-                signature,
-                patientData
-              );
-              console.log("xcpd", xcpd);
-              return buildResponse(200, xcpd);
-            }
-          );
+        if (isAnyPatientMatching(patientData)) {
+          if (req.body) {
+            return parseXmlStringForRootExtensionSignature(req.body).then(
+              ([root, extension, signature]: [string, string, string]) => {
+                const { createdAt, expiresAt, creationTime } = generateTimeStrings();
+                const xcpd = fillTemplate(
+                  xcpdTemplate,
+                  createdAt,
+                  expiresAt,
+                  creationTime,
+                  root,
+                  extension,
+                  signature,
+                  patientData
+                );
+                console.log("xcpd", xcpd);
+                return buildResponse(200, xcpd);
+              }
+            );
+          }
+        } else {
+          console.log("no patient matching");
+          return buildResponse(404, "No patient matching");
         }
       })
       .catch((err: Error) => {

@@ -1,8 +1,11 @@
 import * as xml2js from "xml2js";
 import { PatientData, LivingSubjectId, PrincipalCareProviderId } from "./patient-incoming-schema";
 import { Address } from "@metriport/api-sdk/medical/models/common/address";
+import { USState } from "@metriport/api-sdk/medical/models/common/us-data";
+import jaroWinkler from "jaro-winkler";
 
 // TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
+const SIMILARITY_THRESHOLD = 0.9;
 
 export function parseXmlStringForPatientData(xml: string): Promise<PatientData> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -164,3 +167,99 @@ export const fillTemplate = (
 };
 
 // data normalizing
+
+export function isAnyPatientMatching(patientToMatch: PatientData): boolean {
+  const patients = [patient_1, patient_2, patient_3];
+  for (const patient of patients) {
+    if (isPatientMatching(patient, patientToMatch)) {
+      console.log("patient matched", patient);
+      return true;
+    }
+  }
+  return false;
+}
+
+export const isPatientMatching = (patient1: PatientData, patient2: PatientData): boolean => {
+  let score = 0;
+  let fieldCount = 0;
+
+  const addScore = (value1: string, value2: string) => {
+    const similarity = jaroWinkler(value1, value2);
+    score += similarity;
+    fieldCount += 1;
+  };
+
+  addScore(patient1.firstName, patient2.firstName);
+  addScore(patient1.lastName, patient2.lastName);
+  addScore(patient1.dob, patient2.dob);
+  addScore(patient1.genderAtBirth, patient2.genderAtBirth);
+
+  const totalScore = score / fieldCount;
+  return totalScore >= SIMILARITY_THRESHOLD;
+};
+
+const patient_1 = {
+  firstName: "Skwisgaar",
+  lastName: "Skwigelf",
+  dob: "1969-04-20",
+  genderAtBirth: "M" as "F" | "M",
+  address: [
+    {
+      addressLine1: "2517 Durant Ave",
+      city: "Berkeley",
+      state: "CA" as USState,
+      zip: "94704",
+      // eslint-disable-next-line @typescript-eslint/prefer-as-const
+      country: "USA" as "USA",
+    },
+  ],
+  contact: [
+    {
+      phone: "666-666-6666",
+    },
+  ],
+};
+
+const patient_2 = {
+  firstName: "Federico",
+  lastName: "Aufderhar",
+  dob: "1981-07-12",
+  genderAtBirth: "M" as "F" | "M",
+  address: [
+    {
+      addressLine1: "237 Hegmann Avenue",
+      city: "Berkley",
+      state: "MA" as USState,
+      zip: "02779 1234",
+      // eslint-disable-next-line @typescript-eslint/prefer-as-const
+      country: "USA" as "USA",
+    },
+  ],
+  contact: [
+    {
+      phone: "1-234-567-8910",
+    },
+  ],
+};
+
+const patient_3 = {
+  firstName: "NWHINONE",
+  lastName: "NWHINZZZTESTPATIENT",
+  dob: "1981-01-01",
+  genderAtBirth: "M" as "F" | "M",
+  address: [
+    {
+      addressLine1: "1100 Test Street",
+      city: "Helena",
+      state: "AL" as USState,
+      zip: "35080",
+      // eslint-disable-next-line @typescript-eslint/prefer-as-const
+      country: "USA" as "USA",
+    },
+  ],
+  contact: [
+    {
+      phone: "205-111-1111",
+    },
+  ],
+};

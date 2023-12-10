@@ -4,6 +4,7 @@ import {
   generateTimeStrings,
   parseXmlStringForPatientData,
   fillTemplate,
+  isAnyPatientMatching,
 } from "@metriport/core/external/carequality/xcpd-parsing";
 import { PatientData } from "@metriport/core/external/carequality/patient-incoming-schema";
 import { xcpdTemplate } from "@metriport/core/external/carequality/xcpd-template";
@@ -20,26 +21,30 @@ app.all("/xcpd/v1", (req, res) => {
   // log it pretty
   parseXmlStringForPatientData(req.body)
     .then((patientData: PatientData) => {
-      parseXmlStringForRootExtensionSignature(req.body)
-        .then(([root, extension, signature]: [string, string, string]) => {
-          const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-          const xcpd = fillTemplate(
-            xcpdTemplate,
-            createdAt,
-            expiresAt,
-            creationTime,
-            root,
-            extension,
-            signature,
-            patientData
-          );
-          // retrun xcpd
-          res.set("Content-Type", "application/soap+xml; charset=utf-8");
-          res.send(xcpd);
-        })
-        .catch((err: Error) => {
-          console.log("error", err);
-        });
+      if (isAnyPatientMatching(patientData)) {
+        parseXmlStringForRootExtensionSignature(req.body)
+          .then(([root, extension, signature]: [string, string, string]) => {
+            const { createdAt, expiresAt, creationTime } = generateTimeStrings();
+            const xcpd = fillTemplate(
+              xcpdTemplate,
+              createdAt,
+              expiresAt,
+              creationTime,
+              root,
+              extension,
+              signature,
+              patientData
+            );
+            res.set("Content-Type", "application/soap+xml; charset=utf-8");
+            res.send(xcpd);
+          })
+          .catch((err: Error) => {
+            console.log("error", err);
+          });
+      } else {
+        console.log("no patient matching");
+        res.status(404).send("No patient matching");
+      }
     })
     .catch((err: Error) => {
       console.log("error", err);
