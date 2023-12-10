@@ -13,7 +13,7 @@ export class LocationServicesStack extends Stack {
     //-------------------------------------------
     // API Gateway
     //-------------------------------------------
-    const placeIndex = new ALS.CfnPlaceIndex(scope, props.config.locationService.placeIndexName, {
+    const placeIndex = new ALS.CfnPlaceIndex(this, props.config.locationService.placeIndexName, {
       dataSource: "Esri",
       indexName: props.config.locationService.placeIndexName,
     });
