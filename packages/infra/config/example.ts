@@ -52,7 +52,10 @@ export const config: EnvConfig = {
     domain: "myhealthapp.com",
     host: "myhealthapp.com",
   },
-  placeIndexName: "your_place_index_name",
+  locationService: {
+    placeIndexName: "your_place_index_name",
+    placeIndexRegion: "aws_region",
+  },
   carequality: {
     secretNames: {
       CQ_API_KEY: "CQ_API_KEY",

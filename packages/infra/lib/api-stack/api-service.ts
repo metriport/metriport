@@ -166,11 +166,9 @@ export function createAPIService(
               PLACE_INDEX_NAME: placeIndexSandbox.indexName,
             }) ||
             (isProd(props.config) && {
-              PLACE_INDEX_NAME: props.config.placeIndexNameProd,
+              PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             })),
-          ...(props.config.placeIndexProdRegion && {
-            PLACE_INDEX_PROD_REGION: props.config.placeIndexProdRegion,
-          }),
+          PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,

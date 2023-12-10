@@ -277,7 +277,7 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Amazon Location Service
     //-------------------------------------------
-    const indexName = props.config.placeIndexName;
+    const indexName = props.config.locationService.placeIndexName;
     const placeIndexStaging = isStaging(props.config)
       ? new ALS.CfnPlaceIndex(this, indexName, {
           dataSource: "Esri",
@@ -294,9 +294,8 @@ export class APIStack extends Stack {
         })
       : undefined;
 
-    const indexNameProd = props.config.placeIndexNameProd;
-
     // Production place index created on the sandbox env
+    const indexNameProd = props.config.locationService.placeIndexNameProd;
     const placeIndexProd =
       isSandbox(props.config) && indexNameProd
         ? new ALS.CfnPlaceIndex(this, indexNameProd, {

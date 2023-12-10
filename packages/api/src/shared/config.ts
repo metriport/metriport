@@ -94,8 +94,8 @@ export class Config {
     return getEnvVarOrFail("PLACE_INDEX_NAME");
   }
 
-  static getPlaceIndexProdRegion(): string {
-    return getEnvVarOrFail("PLACE_INDEX_PROD_REGION");
+  static getPlaceIndexRegion(): string {
+    return getEnvVarOrFail("PLACE_INDEX_REGION");
   }
 
   static getTokenTableName(): string {
