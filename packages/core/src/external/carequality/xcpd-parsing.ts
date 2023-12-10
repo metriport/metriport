@@ -5,15 +5,12 @@ import { Address } from "@metriport/api-sdk/medical/models/common/address";
 // TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
 
 export function parseXmlStringForPatientData(xml: string): Promise<PatientData> {
-  xml = JSON.parse(`"${xml}"`);
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return parser.parseStringPromise(xml).then(function (result: any) {
-    console.log("result", JSON.stringify(result, null, 2));
     const parameterList =
       result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
         "queryByParameter"
@@ -76,8 +73,6 @@ export function parseXmlStringForPatientData(xml: string): Promise<PatientData> 
 export function parseXmlStringForRootExtensionSignature(
   xml: string
 ): Promise<[string, string, string]> {
-  xml = JSON.parse(`"${xml}"`);
-
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
