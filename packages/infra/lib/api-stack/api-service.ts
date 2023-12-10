@@ -9,7 +9,6 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
-import * as ALS from "aws-cdk-lib/aws-location";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -48,8 +47,6 @@ export function createAPIService(
   documentDownloaderLambda: ILambda,
   medicalDocumentsUploadBucket: s3.Bucket,
   fhirToMedicalRecordLambda: ILambda | undefined,
-  placeIndexStaging: ALS.CfnPlaceIndex | undefined,
-  placeIndexSandbox: ALS.CfnPlaceIndex | undefined,
   searchIngestionQueue: IQueue,
   searchEndpoint: string,
   searchAuth: { userName: string; secret: ISecret },
@@ -159,15 +156,7 @@ export function createAPIService(
           ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
             CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
           }),
-          ...((placeIndexStaging && {
-            PLACE_INDEX_NAME: placeIndexStaging.indexName,
-          }) ||
-            (placeIndexSandbox && {
-              PLACE_INDEX_NAME: placeIndexSandbox.indexName,
-            }) ||
-            (isProd(props.config) && {
-              PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
-            })),
+          PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
           PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,

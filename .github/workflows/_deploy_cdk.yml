@@ -12,6 +12,10 @@ on:
         required: true
         type: string
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
+      location_services_cdk_stack:
+        required: true
+        type: string
+        description: "the name of the Location Services CDK stack we're deploying"
       cdk_stack:
         required: true
         type: string
@@ -160,6 +164,35 @@ jobs:
           ignore_empty: true
           sourcemaps: metriport/packages/lambdas/dist
           projects: lambdas-oss
+
+      # Location Stack CDK DIFF
+      - name: Diff Location Services CDK stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "diff"
+          cdk_version: "2.87.0"
+          cdk_stack: "${{ inputs.location_services_cdk_stack }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+
+      # Location Stack DEPLOY
+      - name: Deploy Location Services CDK stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "deploy --verbose --require-approval never"
+          cdk_version: "2.87.0"
+          cdk_stack: "${{ inputs.location_services_cdk_stack }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+          METRIPORT_VERSION: ${{ github.sha }}
 
       # CDK DIFF
       - name: Diff CDK stack

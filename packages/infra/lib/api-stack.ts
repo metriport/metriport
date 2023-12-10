@@ -10,7 +10,6 @@ import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
-import * as ALS from "aws-cdk-lib/aws-location";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -34,11 +33,11 @@ import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-con
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { createIHEStack } from "./ihe-stack";
-import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { Secrets, getSecrets } from "./shared/secrets";
+import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
-import { isProd, isSandbox, isStaging, mbToBytes } from "./shared/util";
+import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -274,37 +273,6 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
-    //-------------------------------------------
-    // Amazon Location Service
-    //-------------------------------------------
-    const indexName = props.config.locationService.placeIndexName;
-    const placeIndexStaging = isStaging(props.config)
-      ? new ALS.CfnPlaceIndex(this, indexName, {
-          dataSource: "Esri",
-          indexName: indexName,
-          description: `Geolocation Place Index ${EnvType.staging}`,
-        })
-      : undefined;
-
-    const placeIndexSandbox = isSandbox(props.config)
-      ? new ALS.CfnPlaceIndex(this, indexName, {
-          dataSource: "Esri",
-          indexName: indexName,
-          description: `Geolocation Place Index ${EnvType.sandbox}`,
-        })
-      : undefined;
-
-    // Production place index created on the sandbox env
-    const indexNameProd = props.config.locationService.placeIndexNameProd;
-    const placeIndexProd =
-      isSandbox(props.config) && indexNameProd
-        ? new ALS.CfnPlaceIndex(this, indexNameProd, {
-            dataSource: "Esri",
-            indexName: indexNameProd,
-            description: `Geolocation Place Index ${EnvType.production}`,
-          })
-        : undefined;
-
     // sidechain FHIR converter queue
     const {
       queue: sidechainFHIRConverterQueue,
@@ -415,8 +383,6 @@ export class APIStack extends Stack {
       documentDownloaderLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
-      placeIndexStaging,
-      placeIndexSandbox,
       ccdaSearchQueue,
       ccdaSearchDomain.domainEndpoint,
       { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -799,11 +765,6 @@ export class APIStack extends Stack {
       description: "Userpool for client secret based apps",
       value: userPoolClientSecret.userPoolId,
     });
-    placeIndexProd &&
-      new CfnOutput(this, "PlaceIndexName", {
-        description: "Place index name",
-        value: placeIndexProd.indexName,
-      });
   }
 
   private setupTestLambda(

@@ -38,8 +38,8 @@ export type EnvConfig = {
     POST_HOG_API_KEY: string;
   };
   locationService: {
+    stackName: string;
     placeIndexName: string;
-    placeIndexNameProd?: string;
     placeIndexRegion: string;
   };
   carequality?: {
