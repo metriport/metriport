@@ -6,7 +6,6 @@ import {
   parseXmlStringForPatientData,
   isAnyPatientMatching,
 } from "@metriport/core/external/carequality/xcpd-parsing";
-import { xcpdTemplate } from "@metriport/core/external/carequality/xcpd-template";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -23,9 +22,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: APIGatewayProxyE
   if (req.body) {
     return parseXmlStringForPatientData(req.body)
       .then(patientData => {
-        if (isAnyPatientMatching(patientData)) {
+        const matchingPatient = isAnyPatientMatching(patientData);
+        if (matchingPatient) {
           if (req.body) {
-            return generateXCPD(req.body, patientData, xcpdTemplate)
+            return generateXCPD(req.body, matchingPatient)
               .then((xcpd: string) => {
                 return buildResponse(200, xcpd);
               })

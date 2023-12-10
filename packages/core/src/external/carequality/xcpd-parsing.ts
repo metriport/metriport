@@ -1,5 +1,7 @@
 import * as xml2js from "xml2js";
 import { PatientData, LivingSubjectId, PrincipalCareProviderId } from "./patient-incoming-schema";
+import { generateTimeStrings } from "./utils";
+import { xcpdTemplate } from "./xcpd-template";
 import { Address } from "@metriport/api-sdk/medical/models/common/address";
 import { USState } from "@metriport/api-sdk/medical/models/common/us-data";
 import jaroWinkler from "jaro-winkler";
@@ -83,9 +85,6 @@ export function parseXmlStringForRootExtensionSignature(
   return parser.parseStringPromise(xml).then(function (result: any) {
     const signature =
       result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
-    /* The line `const id = result["s:Envelope"]["s:Body"][0]["PRPA_IN201305UV02"][0]["id"][0];` is
-extracting the value of the `id` element from the XML response. It is accessing the nested
-properties of the `result` object to navigate to the desired element and retrieve its value. */
     const id = result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
     const root = id["$"]["root"];
     const extension = id["$"]["extension"];
@@ -93,36 +92,7 @@ properties of the `result` object to navigate to the desired element and retriev
   });
 }
 
-export function generateTimeStrings(): {
-  createdAt: string;
-  expiresAt: string;
-  creationTime: string;
-} {
-  const now = new Date();
-
-  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
-
-  const createdAt = now.toISOString();
-  const expiresAtStr = expiresAt.toISOString();
-
-  // Get timezone offset in minutes
-  const timezoneOffset = now.getTimezoneOffset();
-  const timezoneOffsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
-  const timezoneOffsetMinutes = Math.abs(timezoneOffset) % 60;
-
-  // Format timezone offset as "+HHMM" or "-HHMM"
-  const timezoneOffsetStr =
-    (timezoneOffset > 0 ? "-" : "+") +
-    String(timezoneOffsetHours).padStart(2, "0") +
-    String(timezoneOffsetMinutes).padStart(2, "0");
-
-  // Format the creationTime in the required format
-  const creationTime = now.toISOString().replace(/-|:|\.\d{3}/g, "") + timezoneOffsetStr;
-
-  return { createdAt, expiresAt: expiresAtStr, creationTime };
-}
-
-export const fillTemplate = (
+const fillTemplate = (
   xcpdTemplate: string,
   createdAt: string,
   expiresAt: string,
@@ -132,8 +102,17 @@ export const fillTemplate = (
   signature: string,
   patientData: PatientData
 ) => {
-  const { firstName, lastName, dob, genderAtBirth, livingSubjectId, address, contact } =
-    patientData;
+  const {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
+    livingSubjectId,
+    address,
+    contact,
+    id,
+    systemId,
+  } = patientData;
 
   let phone = "";
   if (contact && Array.isArray(contact) && contact.length > 0 && contact[0]) {
@@ -163,14 +142,12 @@ export const fillTemplate = (
     .replace(/{country}/g, country || "")
     .replace(/{livingSubjectId.extension}/g, livingSubjectId?.extension || "ABCDEFG")
     .replace(/{livingSubjectId.root}/g, livingSubjectId?.root || "123456789")
-    .replace(/{phone}/g, phone || "000-000-0000");
+    .replace(/{phone}/g, phone || "000-000-0000")
+    .replace(/{patientId}/g, id || "1234567890")
+    .replace(/{systemId}/g, systemId || "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000");
 };
 
-export function generateXCPD(
-  xml: string,
-  patientData: PatientData,
-  xcpdTemplate: string
-): Promise<string> {
+export function generateXCPD(xml: string, patientData: PatientData): Promise<string> {
   return parseXmlStringForRootExtensionSignature(xml).then(
     ([root, extension, signature]: [string, string, string]) => {
       const { createdAt, expiresAt, creationTime } = generateTimeStrings();
@@ -188,14 +165,14 @@ export function generateXCPD(
     }
   );
 }
-export function isAnyPatientMatching(patientToMatch: PatientData): boolean {
+export function isAnyPatientMatching(patientToMatch: PatientData): PatientData | undefined {
   const patients = [patient_1, patient_2, patient_3];
   for (const patient of patients) {
     if (isPatientMatching(patient, patientToMatch)) {
-      return true;
+      return patient;
     }
   }
-  return false;
+  return undefined;
 }
 
 export const isPatientMatching = (patient1: PatientData, patient2: PatientData): boolean => {
@@ -218,6 +195,8 @@ export const isPatientMatching = (patient1: PatientData, patient2: PatientData):
 };
 
 const patient_1 = {
+  id: "EV38NJT4M6Q2B5X",
+  documentId: "1.2.840.114350.1.13.11511.3.7.8.456721.987654",
   firstName: "Skwisgaar",
   lastName: "Skwigelf",
   dob: "1969-04-20",
@@ -240,6 +219,8 @@ const patient_1 = {
 };
 
 const patient_2 = {
+  id: "EV72KHP9L1C3FA4",
+  documentId: "1.2.840.114350.1.13.11511.3.7.8.234587.334455",
   firstName: "Federico",
   lastName: "Aufderhar",
   dob: "1981-07-12",
@@ -262,6 +243,8 @@ const patient_2 = {
 };
 
 const patient_3 = {
+  id: "EV72KHP9L1C3FA4",
+  documentId: "1.2.840.114350.1.13.11511.3.7.8.123456.789012",
   firstName: "NWHINONE",
   lastName: "NWHINZZZTESTPATIENT",
   dob: "1981-01-01",

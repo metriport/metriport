@@ -20,6 +20,9 @@ export const PatientDataSchema = demographicsSchema.merge(
   z.object({
     livingSubjectId: LivingSubjectIdSchema.optional(),
     principalCareProviderId: principalCareProviderIdSchema.optional(),
+    id: z.string().optional(),
+    systemId: z.string().optional(),
+    docmentId: z.string().optional(),
   })
 );
 export type PatientData = z.infer<typeof PatientDataSchema>;

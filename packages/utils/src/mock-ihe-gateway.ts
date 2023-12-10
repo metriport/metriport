@@ -4,8 +4,8 @@ import {
   generateXCPD,
   isAnyPatientMatching,
 } from "@metriport/core/external/carequality/xcpd-parsing";
+import { generateITI38 } from "@metriport/core/external/carequality/xca-parsing";
 import { PatientData } from "@metriport/core/external/carequality/patient-incoming-schema";
-import { xcpdTemplate } from "@metriport/core/external/carequality/xcpd-template";
 import bodyParser from "body-parser";
 
 // TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
@@ -19,8 +19,9 @@ app.all("/xcpd/v1", (req, res) => {
   // log it pretty
   parseXmlStringForPatientData(req.body)
     .then((patientData: PatientData) => {
-      if (isAnyPatientMatching(patientData)) {
-        generateXCPD(req.body, patientData, xcpdTemplate)
+      const matchingPatient = isAnyPatientMatching(patientData);
+      if (matchingPatient) {
+        generateXCPD(req.body, matchingPatient)
           .then((xcpd: string) => {
             res.set("Content-Type", "application/soap+xml; charset=utf-8");
             res.send(xcpd);
@@ -35,6 +36,18 @@ app.all("/xcpd/v1", (req, res) => {
     })
     .catch((err: Error) => {
       console.log("error", err);
+    });
+});
+
+app.all("/iti38/v1", (req, res) => {
+  generateITI38(req.body)
+    .then((iti38: string) => {
+      res.set("Content-Type", "application/soap+xml; charset=utf-8");
+      res.send(iti38);
+    })
+    .catch((err: Error) => {
+      console.log("error", err);
+      res.status(404).send("No patient matching");
     });
 });
 

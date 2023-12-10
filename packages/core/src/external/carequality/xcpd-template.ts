@@ -1,3 +1,4 @@
+export const homeCommunityID = "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000";
 export const xcpdTemplate = `
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
@@ -35,7 +36,7 @@ export const xcpdTemplate = `
             <statusCode code="active"/>
             <subject1 typeCode="SBJ">
               <patient classCode="PAT">
-                <id extension="EV12ZGR7J6K4MF8" root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
+                <id extension="{patientId}" root="{systemId}"/>
                 <statusCode code="active"/>
                 <patientPerson classCode="PSN" determinerCode="INSTANCE">
                   <name>
