@@ -53,6 +53,7 @@ export const config: EnvConfig = {
     host: "myhealthapp.com",
   },
   locationService: {
+    stackName: "MetriportLocationServiceStack",
     placeIndexName: "your_place_index_name",
     placeIndexRegion: "aws_region",
   },
