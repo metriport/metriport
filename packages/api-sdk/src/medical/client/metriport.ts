@@ -179,7 +179,7 @@ export class MetriportMedicalApi {
    */
   async listFacilities(): Promise<Facility[]> {
     const resp = await this.api.get(`${FACILITY_URL}`);
-    if (!resp.data) [];
+    if (!resp.data) return [];
     return facilityListSchema.parse(resp.data).facilities;
   }
 
