@@ -33,7 +33,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
     while (!isDone) {
       try {
         const apiKey = Config.getCQApiKey();
-        const cq = new Carequality(apiKey);
+        const cq = new Carequality(apiKey); // TODO: use the prod API mode - https://github.com/metriport/metriport-internal/issues/1350
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         currentPosition += BATCH_SIZE;
