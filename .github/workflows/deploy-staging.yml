@@ -118,7 +118,6 @@ jobs:
     needs: files-changed
     with:
       deploy_env: "staging"
-      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.WIDGET_REGION_STAGING }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}

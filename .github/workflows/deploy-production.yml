@@ -154,7 +154,6 @@ jobs:
     needs: files-changed
     with:
       deploy_env: "production"
-      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_PRODUCTION }}
       cdk_stack: ${{ vars.WIDGET_STACK_NAME_PRODUCTION }}
       AWS_REGION: ${{ vars.WIDGET_REGION_PRODUCTION }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
