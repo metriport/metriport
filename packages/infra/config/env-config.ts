@@ -37,6 +37,11 @@ export type EnvConfig = {
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
   };
+  locationService: {
+    stackName: string;
+    placeIndexName: string;
+    placeIndexRegion: string;
+  };
   carequality?: {
     secretNames?: {
       CQ_API_KEY?: string;
