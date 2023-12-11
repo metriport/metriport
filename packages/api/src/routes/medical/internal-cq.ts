@@ -1,5 +1,6 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { documentQueryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -15,6 +16,7 @@ import { createOrUpdateCQOrganization } from "../../external/carequality/organiz
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
+import { handleDocQueryResponse } from "../../external/carequality/document";
 
 dayjs.extend(duration);
 
@@ -81,7 +83,7 @@ router.post(
 
 /**
  * GET /internal/carequality/directory/nearby-organizations
- 
+
  *
  * Retrieves the organizations within a specified radius from the patient's address.
  * @param req.query.cxId The ID of the customer organization.
@@ -101,6 +103,17 @@ router.get(
     const orgs = await searchNearbyCQOrganizations({ cxId, patientId, radiusInMiles: radius });
 
     return res.status(httpStatus.OK).json(orgs);
+  })
+);
+
+router.post(
+  "/document-query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const docQueryResp = documentQueryResponseSchema.parse(req.body);
+
+    await handleDocQueryResponse(docQueryResp);
+
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
