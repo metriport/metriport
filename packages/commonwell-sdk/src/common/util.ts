@@ -3,7 +3,7 @@ import { StrongId } from "../models/identifier";
 import { Organization } from "../models/organization";
 import { Patient } from "../models/patient";
 import { Person, PersonSearchResp } from "../models/person";
-import { PurposeOfUse } from "../models/purpose-of-use";
+import { PurposeOfUse } from "@metriport/shared";
 import { RequestMetadata } from "../client/commonwell";
 
 /**
