@@ -1,18 +1,27 @@
 import { IHEGateway, PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
 import { Organization } from "../../domain/medical/organization";
-import { Patient } from "../../domain/medical/patient";
+import { Patient, PatientExternalData } from "../../domain/medical/patient";
 import { capture } from "../../shared/notifications";
 import { makeIheGatewayAPI } from "./api";
 import { toFHIR } from "../fhir/patient";
 import { patientToIheGateway } from "./patient-conversion";
 import { setCarequalityId } from "./patient-external-data";
+import { PatientDataCarequality } from "./patient-shared";
+import { MedicalDataSource } from "..";
 
 const createContext = "cq.patient.create";
+
+export function getCQData(
+  data: PatientExternalData | undefined
+): PatientDataCarequality | undefined {
+  if (!data) return undefined;
+  return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality;
+}
 
 export async function discover(
   patient: Patient,
   organization: Organization,
-  facilityId: string
+  facilityNPI: string
 ): Promise<void> {
   let iheGateway: IHEGateway | undefined;
   try {
@@ -26,25 +35,24 @@ export async function discover(
       patient: fhirPatient,
       cxId: patient.cxId,
       xcpdGateways: [], // TODO ADD XCPD GATEWAYS WHEN WE HAVE THEM
-      facilityNPI: facilityId,
+      facilityNPI: facilityNPI,
       orgName: organization.data.name,
       orgOid: organization.oid,
     });
 
     iheGateway.startPatientDiscovery(iheGatewayRequest);
   } catch (err) {
-    console.error(
-      `Failure while starting patient discovery for ${patient.id} @ IHE Gateway: `,
-      err
-    );
-    capture.error(err, {
+    const msg = `Failure while starting patient discovery for ${patient.id} @ IHE Gateway`;
+    console.error(msg, err);
+    capture.message(msg, {
       extra: {
-        facilityId,
+        facilityNPI,
         patientId: patient.id,
         context: createContext,
+        error: err,
       },
+      level: "error",
     });
-    throw err;
   }
 }
 

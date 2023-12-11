@@ -24,7 +24,7 @@ export function makeIheGatewayAPI(): IHEGateway {
   // }
 
   if (Config.isDev() || Config.isStaging()) {
-    return new IHEGateway(APIMode.dev, {});
+    return new IHEGateway(APIMode.dev);
   }
 
   return new IHEGateway(APIMode.production, {});

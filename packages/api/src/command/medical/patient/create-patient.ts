@@ -45,10 +45,10 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
   cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
 
   // TODO: NEED CQ PATIENT DIRECTORY SEARCH
-  // const organization = await getOrganizationOrFail({ cxId, id: facilityId });
+  // const organization = await getOrganizationOrFail({ cxId });
 
   // cqCommands.patient
-  //   .discover(newPatient, organization, facilityId)
+  //   .discover(newPatient, organization, facility.data.npi)
   //   .catch(processAsyncError(`cq.patient.create`));
 
   return newPatient;

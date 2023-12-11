@@ -6,6 +6,7 @@ import { Patient } from "../../domain/medical/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { PatientDataCarequality } from "./patient-shared";
+import { getCQData } from "./patient";
 
 dayjs.extend(duration);
 
@@ -43,9 +44,7 @@ export const setCarequalityId = async ({
 
     const updatedData = cloneDeep(updatedPatient.data);
 
-    const carequalityExternalData = updatedData.externalData?.CAREQUALITY as
-      | PatientDataCarequality
-      | undefined;
+    const carequalityExternalData = getCQData(updatedData.externalData);
 
     const patientLinksHasSystemId = carequalityExternalData?.patientLinks?.some(
       patientLink => patientLink.systemId === carequalityPatientSystemId

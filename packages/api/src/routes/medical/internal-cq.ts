@@ -83,7 +83,6 @@ router.post(
 
 /**
  * GET /internal/carequality/directory/nearby-organizations
-
  *
  * Retrieves the organizations within a specified radius from the patient's address.
  * @param req.query.cxId The ID of the customer organization.
@@ -118,7 +117,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
 
-    await handleDiscoverResponse(patientDiscovery);
+    handleDiscoverResponse(patientDiscovery);
 
     return res.sendStatus(httpStatus.OK);
   })
