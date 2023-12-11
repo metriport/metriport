@@ -2,11 +2,6 @@ import { generateTimeStrings } from "./utils";
 import * as xml2js from "xml2js";
 import { iti38Template } from "./iti-38-template";
 
-// a dictionary of document ids to documentData
-// const documentData = {
-//     "1.2.840.114350.1.13.11511.3.7.8.123456.789012": patient_3_doc
-//   };
-
 // TODO make IDs real
 const patientToDocumentLinks: { [key: string]: string } = {
   EV10045900: "123456",
@@ -14,9 +9,6 @@ const patientToDocumentLinks: { [key: string]: string } = {
   EV51WRZ8G7D6H9Y: "345678",
 };
 
-// repository unique and home community id which are actually the system id. Which we need to return in XCPD
-
-// patient Id, system id, signature, messageId
 export function parseXmlStringForPatientIdSystemSignature(
   xml: string
 ): Promise<[string, string, string, string]> {

@@ -22,8 +22,8 @@
   "license": "ISC",
   "dependencies": {
     "@aws-lambda-powertools/parameters": "^1.8.0-beta",
-    "@aws-sdk/client-secrets-manager": "^3.348.0",
     "@aws-sdk/client-s3": "^3.435.0",
+    "@aws-sdk/client-secrets-manager": "^3.348.0",
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
@@ -33,6 +33,7 @@
     "@sentry/serverless": "^7.46.0",
     "@types/xmldom": "^0.1.32",
     "aws-sdk": "^2.1248.0",
+    "aws-serverless-express": "^3.4.0",
     "axios": "^1.4.0",
     "dayjs": "^1.11.10",
     "http-status": "^1.7.0",

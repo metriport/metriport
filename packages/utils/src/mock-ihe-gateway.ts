@@ -2,11 +2,11 @@ import express from "express";
 import {
   parseXmlStringForPatientData,
   generateXCPD,
-  isAnyPatientMatching,
 } from "@metriport/core/external/carequality/iti-55-parsing";
 import { generateITI38 } from "@metriport/core/external/carequality/iti-38-parsing";
 import { generateITI39 } from "@metriport/core/external/carequality/iti-39-parsing";
 import { PatientData } from "@metriport/core/external/carequality/patient-incoming-schema";
+import { isAnyPatientMatching } from "@metriport/core/external/carequality/patient-matching";
 import bodyParser from "body-parser";
 
 // TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
@@ -14,10 +14,7 @@ import bodyParser from "body-parser";
 const app = express();
 app.use(bodyParser.text({ type: "application/soap+xml" }));
 
-app.all("/xcpd/v1", (req, res) => {
-  // parseXmlString(req.body);
-
-  // log it pretty
+app.post("/xcpd/v1", (req, res) => {
   parseXmlStringForPatientData(req.body)
     .then((patientData: PatientData) => {
       const matchingPatient = isAnyPatientMatching(patientData);
@@ -40,7 +37,7 @@ app.all("/xcpd/v1", (req, res) => {
     });
 });
 
-app.all("/iti38/v1", (req, res) => {
+app.post("/iti38/v1", (req, res) => {
   generateITI38(req.body)
     .then((iti38: string) => {
       res.set("Content-Type", "application/soap+xml; charset=utf-8");
@@ -52,7 +49,7 @@ app.all("/iti38/v1", (req, res) => {
     });
 });
 
-app.all("/iti39/v1", (req, res) => {
+app.post("/iti39/v1", (req, res) => {
   generateITI39(req.body)
     .then((iti38: string) => {
       res.set("Content-Type", "application/soap+xml; charset=utf-8");
