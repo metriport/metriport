@@ -7,6 +7,7 @@ import { EnvConfig } from "../config/env-config";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar } from "../lib/shared/util";
+import { LocationServicesStack } from "../lib/location-services-stack";
 
 const app = new cdk.App();
 
@@ -28,6 +29,14 @@ async function deploy(config: EnvConfig) {
   //    Do this first, and then manually set the values in the AWS Secrets Manager.
   //---------------------------------------------------------------------------------
   new SecretsStack(app, config.secretsStackName, { env, config });
+
+  //---------------------------------------------------------------------------------
+  // 2. Deploy the location services stack to initialize all geo services.
+  //---------------------------------------------------------------------------------
+  new LocationServicesStack(app, config.locationService.stackName, {
+    env: { ...env, region: config.locationService.placeIndexRegion },
+    config,
+  });
 
   //---------------------------------------------------------------------------------
   // 2. Deploy the API stack once all secrets are defined.
