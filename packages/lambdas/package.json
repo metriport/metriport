@@ -38,6 +38,7 @@
     "dayjs": "^1.11.10",
     "express": "^4.18.2",
     "http-status": "^1.7.0",
+    "jaro-winkler": "^0.2.8",
     "json-stringify-safe": "^5.0.1",
     "lodash": "^4.17.21",
     "nanoid": "^3.3.6",
@@ -45,7 +46,9 @@
     "puppeteer-core": "18.0.5",
     "saxon-js": "^2.5.0",
     "uuid": "^9.0.0",
-    "xmldom": "^0.6.0"
+    "xml2js": "^0.6.2",
+    "xmldom": "^0.6.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@metriport/core": "file:packages/core",
