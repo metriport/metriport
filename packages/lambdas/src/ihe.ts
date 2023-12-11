@@ -3,14 +3,9 @@ import { capture } from "./shared/capture";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import express from "express";
 import * as serverless from "aws-serverless-express";
-import {
-  parseXmlStringForPatientData,
-  generateXCPD,
-} from "@metriport/core/external/carequality/iti-55-parsing";
 import { generateITI38 } from "@metriport/core/external/carequality/iti-38-parsing";
 import { generateITI39 } from "@metriport/core/external/carequality/iti-39-parsing";
-import { PatientData } from "@metriport/core/external/carequality/patient-incoming-schema";
-import { isAnyPatientMatching } from "@metriport/core/external/carequality/patient-matching";
+import { generateXCPD } from "@metriport/core/external/carequality/iti-55-parsing";
 
 const app = express();
 const server = serverless.createServer(app);
@@ -23,21 +18,9 @@ const buildResponse = (status: number, body?: unknown) => ({
 });
 
 app.post("/xcpd/v1", req => {
-  parseXmlStringForPatientData(req.body)
-    .then((patientData: PatientData) => {
-      const matchingPatient = isAnyPatientMatching(patientData);
-      if (matchingPatient) {
-        generateXCPD(req.body, matchingPatient)
-          .then((xcpd: string) => {
-            return buildResponse(200, xcpd);
-          })
-          .catch((err: Error) => {
-            console.log("error", err);
-          });
-      } else {
-        console.log("no patient matching");
-        return buildResponse(404, "No patient id matching");
-      }
+  generateXCPD(req.body)
+    .then((xcpd: string) => {
+      return buildResponse(200, xcpd);
     })
     .catch((err: Error) => {
       console.log("error", err);

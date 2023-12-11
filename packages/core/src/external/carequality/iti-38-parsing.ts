@@ -1,6 +1,6 @@
 import { generateTimeStrings } from "./utils";
 import * as xml2js from "xml2js";
-import { iti38Template } from "./iti-38-template";
+import { generateITI38Template } from "./iti-38-template";
 
 // TODO make IDs real
 const patientToDocumentLinks: { [key: string]: string } = {
@@ -54,16 +54,28 @@ const fillTemplate = (
   patientId: string,
   systemId: string,
   messageId: string,
-  documentId: string
+  documentId?: string
 ) => {
-  return iti38Template
-    .replace(/{signature}/g, signature)
-    .replace(/{createdAt}/g, createdAt)
-    .replace(/{expiresAt}/g, expiresAt)
-    .replace(/{patientId}/g, patientId)
-    .replace(/{systemId}/g, systemId)
-    .replace(/{messageId}/g, messageId)
-    .replace(/{documentId}/g, documentId);
+  if (documentId) {
+    return iti38Template
+      .replace(/{signature}/g, signature)
+      .replace(/{createdAt}/g, createdAt)
+      .replace(/{expiresAt}/g, expiresAt)
+      .replace(/{patientId}/g, patientId)
+      .replace(/{systemId}/g, systemId)
+      .replace(/{messageId}/g, messageId)
+      .replace(/{documentId}/g, documentId)
+      .replace(/{status}/g, "Success");
+  } else {
+    return iti38Template
+      .replace(/{signature}/g, signature)
+      .replace(/{createdAt}/g, createdAt)
+      .replace(/{expiresAt}/g, expiresAt)
+      .replace(/{patientId}/g, patientId)
+      .replace(/{systemId}/g, systemId)
+      .replace(/{messageId}/g, messageId)
+      .replace(/{status}/g, "Failed");
+  }
 };
 
 export function generateITI38(xml: string): Promise<string> {
@@ -71,9 +83,8 @@ export function generateITI38(xml: string): Promise<string> {
     ([patientId, systemId, signature, messageId]: [string, string, string, string]) => {
       const { createdAt, expiresAt } = generateTimeStrings();
       const documentId = patientToDocumentLinks[patientId];
-      if (!documentId) {
-        throw new Error(`No document found for patient ${patientId}`);
-      }
+      const status = documentId ? "Success" : "Failed";
+      const iti38Template = generateITI38Template(status);
       const iti38 = fillTemplate(
         iti38Template,
         signature,

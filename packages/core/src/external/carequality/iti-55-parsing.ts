@@ -3,6 +3,7 @@ import { PatientData, LivingSubjectId, PrincipalCareProviderId } from "./patient
 import { generateTimeStrings } from "./utils";
 import { generateXcpdTemplate } from "./iti-55-template";
 import { Address } from "@metriport/api-sdk/medical/models/common/address";
+import { isAnyPatientMatching } from "./patient-matching";
 
 export function parseXmlStringForPatientData(xml: string): Promise<PatientData> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,27 +154,33 @@ const fillTemplate = (
     .replace(/{code}/g, status);
 };
 
-export function generateXCPD(
-  xml: string,
-  status: string,
-  patientData?: PatientData
-): Promise<string> {
-  return parseXmlStringForRootExtensionSignature(xml).then(
-    ([root, extension, signature]: [string, string, string]) => {
-      const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-      const xcpdTemplate = generateXcpdTemplate(status);
-      const xcpd = fillTemplate(
-        xcpdTemplate,
-        createdAt,
-        expiresAt,
-        creationTime,
-        root,
-        extension,
-        signature,
-        status,
-        patientData
-      );
-      return xcpd;
+export function generateXCPD(requestBody: string): Promise<string> {
+  return parseXmlStringForPatientData(requestBody).then((patientData: PatientData) => {
+    const matchingPatient = isAnyPatientMatching(patientData);
+    let status = "";
+    if (matchingPatient) {
+      status = "OK";
+    } else {
+      console.log("no patient matching");
+      status = "NF";
     }
-  );
+    return parseXmlStringForRootExtensionSignature(requestBody).then(
+      ([root, extension, signature]: [string, string, string]) => {
+        const { createdAt, expiresAt, creationTime } = generateTimeStrings();
+        const xcpdTemplate = generateXcpdTemplate(status);
+        const xcpd = fillTemplate(
+          xcpdTemplate,
+          createdAt,
+          expiresAt,
+          creationTime,
+          root,
+          extension,
+          signature,
+          status,
+          matchingPatient
+        );
+        return xcpd;
+      }
+    );
+  });
 }

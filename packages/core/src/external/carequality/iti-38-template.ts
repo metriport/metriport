@@ -1,20 +1,8 @@
-export const iti38Template = `
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
-  <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
-    <a:Action s:mustUnderstand="1">urn:ihe:iti:2007:CrossGatewayQueryResponse</a:Action>
-    <a:RelatesTo>{messageId}</a:RelatesTo>
-    <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
-      <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
-        <b:Created>{createdAt}</b:Created>
-        <b:Expires>{expiresAt}</b:Expires>
-      </Timestamp>
-      <SignatureConfirmation xmlns="http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd" Value="{signature}" b:Id="_2"/>
-    </Security>
-  </s:Header>
-  <s:Body xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <AdhocQueryResponse xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success">
-      <RegistryObjectList xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0">
+export function generateITI38Template(status: string): string {
+  let registryObjectList = "";
+  if (status === "Success") {
+    registryObjectList = `
+    <RegistryObjectList xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0">
         <ExtrinsicObject home="urn:oid:{systemId}" id="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" isOpaque="false" lid="urn:uuid:bb16ef7a-8b31-4c4c-a2f9-eaa2df34b907" mimeType="text/xml" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
           <Slot name="languageCode">
             <ValueList>
@@ -117,7 +105,27 @@ export const iti38Template = `
             </Name>
           </ExternalIdentifier>
         </ExtrinsicObject>
-      </RegistryObjectList>
-    </AdhocQueryResponse>
-  </s:Body>
-</s:Envelope>`;
+      </RegistryObjectList>`;
+  }
+  const iti38Template = `
+  <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  <s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+    <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+      <a:Action s:mustUnderstand="1">urn:ihe:iti:2007:CrossGatewayQueryResponse</a:Action>
+      <a:RelatesTo>{messageId}</a:RelatesTo>
+      <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
+        <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
+          <b:Created>{createdAt}</b:Created>
+          <b:Expires>{expiresAt}</b:Expires>
+        </Timestamp>
+        <SignatureConfirmation xmlns="http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd" Value="{signature}" b:Id="_2"/>
+      </Security>
+    </s:Header>
+    <s:Body xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <AdhocQueryResponse xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success">
+        ${registryObjectList}
+      </AdhocQueryResponse>
+    </s:Body>
+  </s:Envelope>`;
+  return iti38Template;
+}

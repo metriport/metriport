@@ -1,7 +1,7 @@
 import { patient_3_doc } from "./docs";
 import { generateTimeStrings } from "./utils";
 import * as xml2js from "xml2js";
-import { iti39Template } from "./iti-39-template";
+import { generateITI39Template } from "./iti-39-template";
 
 // todo make this have the values we want
 const documentData: { [key: string]: string } = {
@@ -38,15 +38,25 @@ const fillTemplate = (
   expiresAt: string,
   homeCommunityId: string,
   documentId: string,
-  base64: string
+  document?: string
 ) => {
-  return iti39Template
-    .replace(/{signature}/g, signature)
-    .replace(/{createdAt}/g, createdAt)
-    .replace(/{expiresAt}/g, expiresAt)
-    .replace(/{homeCommunityId}/g, homeCommunityId)
-    .replace(/{documentId}/g, documentId)
-    .replace(/{base64}/g, base64);
+  if (document) {
+    const base64 = btoa(document);
+    return iti39Template
+      .replace(/{signature}/g, signature)
+      .replace(/{createdAt}/g, createdAt)
+      .replace(/{expiresAt}/g, expiresAt)
+      .replace(/{homeCommunityId}/g, homeCommunityId)
+      .replace(/{documentId}/g, documentId)
+      .replace(/{base64}/g, base64)
+      .replace(/{status}/g, "Success");
+  } else {
+    return iti39Template
+      .replace(/{signature}/g, signature)
+      .replace(/{createdAt}/g, createdAt)
+      .replace(/{expiresAt}/g, expiresAt)
+      .replace(/{status}/g, "Failed");
+  }
 };
 
 export function generateITI39(xml: string): Promise<string> {
@@ -54,10 +64,8 @@ export function generateITI39(xml: string): Promise<string> {
     ([signature, documentId, homeCommunityid]: [string, string, string]) => {
       const { createdAt, expiresAt } = generateTimeStrings();
       const document = documentData[documentId];
-      if (!document) {
-        throw new Error(`No document found for id ${documentId}`);
-      }
-      const base64 = btoa(document);
+      const status = document ? "Success" : "Failed";
+      const iti39Template = generateITI39Template(status);
       const iti38 = fillTemplate(
         iti39Template,
         signature,
@@ -65,7 +73,7 @@ export function generateITI39(xml: string): Promise<string> {
         expiresAt,
         homeCommunityid,
         documentId,
-        base64
+        document
       );
       return iti38;
     }
