@@ -1,54 +1,98 @@
-export const homeCommunityID = "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000";
-
 export function generateXcpdTemplate(code: string) {
   let registrationEvent = "";
+  let queryByParameter = "";
   if (code === "OK") {
     registrationEvent = `
       <registrationEvent classCode="REG" moodCode="EVN">
-      <id nullFlavor="NA"/>
-      <statusCode code="active"/>
-      <subject1 typeCode="SBJ">
-        <patient classCode="PAT">
-          <id extension="{patientId}" root="{systemId}"/>
-          <statusCode code="active"/>
-          <patientPerson classCode="PSN" determinerCode="INSTANCE">
-            <name>
+        <id nullFlavor="NA"/>
+        <statusCode code="active"/>
+        <subject1 typeCode="SBJ">
+          <patient classCode="PAT">
+            <id extension="{patientId}" root="{systemId}"/>
+            <statusCode code="active"/>
+            <patientPerson classCode="PSN" determinerCode="INSTANCE">
+              <name>
+                <given>{firstName}</given>
+                <family>{lastName}</family>
+                <delimiter>,</delimiter>
+              </name>
+              <telecom use="HP" value="tel:{phone}"/>
+              <administrativeGenderCode code="{genderAtBirth}"/>
+              <birthTime value="{dob}"/>
+              <addr>
+                <streetAddressLine>{addressLine1}</streetAddressLine>
+                <city>{city}</city>
+                <state>{state}</state>
+                <postalCode>{zip}</postalCode>
+                <country>{country}</country>
+              </addr>
+              <asOtherIDs classCode="PAT">
+                <id extension="EV10045900" root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
+                <scopingOrganization classCode="ORG" determinerCode="INSTANCE">
+                  <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
+                </scopingOrganization>
+              </asOtherIDs>
+            </patientPerson>
+            <subjectOf1>
+              <queryMatchObservation classCode="OBS" moodCode="EVN">
+                <code code="IHE_PDQ"/>
+                <value value="100" xsi:type="INT"/>
+              </queryMatchObservation>
+            </subjectOf1>
+          </patient>
+        </subject1>
+        <custodian typeCode="CST">
+          <assignedEntity classCode="ASSIGNED">
+            <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
+            <code code="NotHealthDataLocator" codeSystem="1.3.6.1.4.1.19376.1.2.27.2"/>
+          </assignedEntity>
+        </custodian>
+      </registrationEvent>`;
+    queryByParameter = `
+      <queryByParameter>
+        <queryId extension="{extension}" root="{root}"/>
+        <statusCode code="new"/>
+        <responseModalityCode code="R"/>
+        <responsePriorityCode code="I"/>
+        <parameterList>
+          <livingSubjectAdministrativeGender>
+            <value code="{genderAtBirth}" codeSystem="2.16.840.1.113883.5.1"/>
+            <semanticsText>LivingSubject.administrativeGender</semanticsText>
+          </livingSubjectAdministrativeGender>
+          <livingSubjectBirthTime>
+            <value value="{dob}"/>
+            <semanticsText>LivingSubject.birthTime</semanticsText>
+          </livingSubjectBirthTime>
+          <livingSubjectId>
+            <value extension="{livingSubjectId.extension}" root="{livingSubjectId.root}"/>
+            <semanticsText>LivingSubject.id</semanticsText>
+          </livingSubjectId>
+          <livingSubjectName>
+            <value>
               <given>{firstName}</given>
               <family>{lastName}</family>
-              <delimiter>,</delimiter>
-            </name>
-            <telecom use="HP" value="tel:{phone}"/>
-            <administrativeGenderCode code="{genderAtBirth}"/>
-            <birthTime value="{dob}"/>
-            <addr>
+            </value>
+            <semanticsText>LivingSubject.name</semanticsText>
+          </livingSubjectName>
+          <patientAddress>
+            <value>
               <streetAddressLine>{addressLine1}</streetAddressLine>
               <city>{city}</city>
               <state>{state}</state>
               <postalCode>{zip}</postalCode>
               <country>{country}</country>
-            </addr>
-            <asOtherIDs classCode="PAT">
-              <id extension="EV10045900" root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
-              <scopingOrganization classCode="ORG" determinerCode="INSTANCE">
-                <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
-              </scopingOrganization>
-            </asOtherIDs>
-          </patientPerson>
-          <subjectOf1>
-            <queryMatchObservation classCode="OBS" moodCode="EVN">
-              <code code="IHE_PDQ"/>
-              <value value="100" xsi:type="INT"/>
-            </queryMatchObservation>
-          </subjectOf1>
-        </patient>
-      </subject1>
-      <custodian typeCode="CST">
-        <assignedEntity classCode="ASSIGNED">
-          <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
-          <code code="NotHealthDataLocator" codeSystem="1.3.6.1.4.1.19376.1.2.27.2"/>
-        </assignedEntity>
-      </custodian>
-    </registrationEvent>`;
+            </value>
+            <semanticsText>Patient.addr</semanticsText>
+          </patientAddress>
+          <patientTelecom>
+            <value value="tel:{phone}"/>
+            <semanticsText>Patient.telecom</semanticsText>
+          </patientTelecom>
+          <principalCareProviderId>
+            <value extension="1689055451" root="2.16.840.1.113883.4.6"/>
+          </principalCareProviderId>
+        </parameterList>
+      </queryByParameter>`;
   }
 
   const xcpdTemplate = `
@@ -82,58 +126,13 @@ export function generateXcpdTemplate(code: string) {
         </acknowledgement>
         <controlActProcess classCode="CACT" moodCode="EVN">
           <code code="PRPA_TE201306UV02" displayName="2.16.840.1.113883.1.6"/>
-          <subject contextConductionInd="false" typeCode="SUBJ">
-            ${registrationEvent}
+          <subject contextConductionInd="false" typeCode="SUBJ"> ${registrationEvent} 
           </subject>
           <queryAck>
             <queryId extension="{extension}" root="{root}"/>
             <statusCode code="deliveredResponse"/>
             <queryResponseCode code="{code}"/>
-          </queryAck>
-          <queryByParameter>
-            <queryId extension="{extension}" root="{root}"/>
-            <statusCode code="new"/>
-            <responseModalityCode code="R"/>
-            <responsePriorityCode code="I"/>
-            <parameterList>
-              <livingSubjectAdministrativeGender>
-                <value code="{genderAtBirth}" codeSystem="2.16.840.1.113883.5.1"/>
-                <semanticsText>LivingSubject.administrativeGender</semanticsText>
-              </livingSubjectAdministrativeGender>
-              <livingSubjectBirthTime>
-                <value value="{dob}"/>
-                <semanticsText>LivingSubject.birthTime</semanticsText>
-              </livingSubjectBirthTime>
-              <livingSubjectId>
-                <value extension="{livingSubjectId.extension}" root="{livingSubjectId.root}"/>
-                <semanticsText>LivingSubject.id</semanticsText>
-              </livingSubjectId>
-              <livingSubjectName>
-                <value>
-                  <given>{firstName}</given>
-                  <family>{lastName}</family>
-                </value>
-                <semanticsText>LivingSubject.name</semanticsText>
-              </livingSubjectName>
-              <patientAddress>
-                <value>
-                  <streetAddressLine>{addressLine1}</streetAddressLine>
-                  <city>{city}</city>
-                  <state>{state}</state>
-                  <postalCode>{zip}</postalCode>
-                  <country>{country}</country>
-                </value>
-                <semanticsText>Patient.addr</semanticsText>
-              </patientAddress>
-              <patientTelecom>
-                <value value="tel:{phone}"/>
-                <semanticsText>Patient.telecom</semanticsText>
-              </patientTelecom>
-              <principalCareProviderId>
-                <value extension="1689055451" root="2.16.840.1.113883.4.6"/>
-              </principalCareProviderId>
-            </parameterList>
-          </queryByParameter>
+          </queryAck> ${queryByParameter} 
         </controlActProcess>
       </PRPA_IN201306UV02>
     </s:Body>

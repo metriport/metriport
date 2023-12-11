@@ -26,8 +26,7 @@ export function generateITI39Template(status: string): string {
     </s:Header>
     <s:Body xmlns="urn:ihe:iti:xds-b:2007" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <RetrieveDocumentSetResponse xmlns="urn:ihe:iti:xds-b:2007">
-        <RegistryResponse xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:{status}"/>
-        ${documentResponse}
+        <RegistryResponse xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:{status}"/> ${documentResponse}
       </RetrieveDocumentSetResponse>
     </s:Body>
   </s:Envelope>`;

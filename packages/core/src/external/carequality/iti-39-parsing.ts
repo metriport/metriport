@@ -1,11 +1,13 @@
-import { patient_3_doc } from "./docs";
+import { generatePatientDoc } from "./docs";
 import { generateTimeStrings } from "./utils";
 import * as xml2js from "xml2js";
 import { generateITI39Template } from "./iti-39-template";
 
 // todo make this have the values we want
 const documentData: { [key: string]: string } = {
-  "1.2.840.114350.1.13.11511.3.7.8.688883.110924": patient_3_doc,
+  "1.2.840.114350.1.13.11511.3.7.8.456721.987654": generatePatientDoc(1),
+  "1.2.840.114350.1.13.11511.3.7.8.234587.334455": generatePatientDoc(2),
+  "1.2.840.114350.1.13.11511.3.7.8.123456.789012": generatePatientDoc(3),
 };
 
 export function parseXmlStringForDocumentIdCommunityIdSignature(

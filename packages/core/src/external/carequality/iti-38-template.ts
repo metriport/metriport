@@ -122,8 +122,7 @@ export function generateITI38Template(status: string): string {
       </Security>
     </s:Header>
     <s:Body xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-      <AdhocQueryResponse xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success">
-        ${registryObjectList}
+      <AdhocQueryResponse xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:{status}"> ${registryObjectList}
       </AdhocQueryResponse>
     </s:Body>
   </s:Envelope>`;

@@ -4,9 +4,9 @@ import { generateITI38Template } from "./iti-38-template";
 
 // TODO make IDs real
 const patientToDocumentLinks: { [key: string]: string } = {
-  EV10045900: "123456",
-  EV72KHP9L1C3FA4: "234567",
-  EV51WRZ8G7D6H9Y: "345678",
+  EV38NJT4M6Q2B5X: "1.2.840.114350.1.13.11511.3.7.8.456721.987654",
+  EV72KHP9L1C3FA4: "1.2.840.114350.1.13.11511.3.7.8.234587.334455",
+  EV51WRZ8G7D6H9Y: "1.2.840.114350.1.13.11511.3.7.8.123456.789012",
 };
 
 export function parseXmlStringForPatientIdSystemSignature(
