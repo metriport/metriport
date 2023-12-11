@@ -1,5 +1,3 @@
-import BadRequestError from "@metriport/core/util/error/bad-request";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -97,9 +95,7 @@ export class Carequality implements CarequalityAPI {
     oid?: string;
   }): Promise<Organization[]> {
     if (count < 1 || count > MAX_COUNT)
-      throw new BadRequestError(
-        `Count value must be between 1 and ${MAX_COUNT}. If you need more, use listAllOrganizations()`
-      );
+      throw new Error(`Count value must be between 1 and ${MAX_COUNT}`);
     const query = new URLSearchParams();
     query.append("apikey", this.apiKey);
     query.append("_format", JSON_FORMAT);
@@ -114,45 +110,6 @@ export class Carequality implements CarequalityAPI {
     const orgs = bundle.entry.map(e => e.resource.Organization);
 
     return orgs;
-  }
-
-  /**
-   * Lists the whole Carequality directory.
-   *
-   * @returns organizations list and count
-   */
-  async listAllOrganizations(failGracefully = false): Promise<Organization[]> {
-    let currentPosition = 0;
-    const organizations = [];
-    let isDone = false;
-
-    while (!isDone) {
-      try {
-        console.log(
-          `Querying the next ${MAX_COUNT} organizations, starting from ${currentPosition}`
-        );
-        const orgs = await this.listOrganizations({ start: currentPosition });
-        organizations.push(...orgs);
-        currentPosition += MAX_COUNT;
-
-        const bundleEntryLength = orgs.length;
-        console.log(
-          `Received: ${bundleEntryLength} orgs. Continuing: ${!(bundleEntryLength < MAX_COUNT)}`
-        );
-        if (bundleEntryLength < MAX_COUNT) {
-          console.log("Reached the end of the CQ directory...");
-          isDone = true;
-        }
-      } catch (error) {
-        isDone = true;
-        const msg = "Failed to list CQ organizations";
-        console.log(`${msg}. Cause: ${error}.`);
-        if (!failGracefully) {
-          throw new MetriportError(msg, error, {});
-        }
-      }
-    }
-    return organizations;
   }
 
   /**
