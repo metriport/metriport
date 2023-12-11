@@ -18,6 +18,7 @@ export function makeCarequalityAPI(apiKey?: string): Carequality | undefined {
  * @returns IHE Gateway client.
  */
 export function makeIheGatewayAPI(): IHEGateway {
+  // TODO https://github.com/metriport/metriport/pull/1302#discussion_r1420598185
   // TODO ADD IHE GATEWAY MOCK
   // if (Config.isSandbox()) {
   //   return;

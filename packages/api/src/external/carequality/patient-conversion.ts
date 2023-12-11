@@ -4,6 +4,7 @@ import { Patient as FHIRPatient } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import dayjs from "dayjs";
 
+// TODO: https://github.com/metriport/metriport/pull/1302#discussion_r1422870828
 export function patientToIheGateway({
   patient,
   cxId,
@@ -26,9 +27,10 @@ export function patientToIheGateway({
     cxId: cxId,
     timestamp: dayjs().toISOString(),
     xcpdGateways: xcpdGateways,
-    principalCareProviderIds: [facilityNPI],
+    principalCareProviderNPIs: [facilityNPI],
     samlAttributes: {
       subjectId: user,
+      // TODO https://github.com/metriport/metriport/pull/1302#discussion_r1422876830
       subjectRole: {
         code: "106331006",
         display: "Administrative AND/OR managerial worker",
