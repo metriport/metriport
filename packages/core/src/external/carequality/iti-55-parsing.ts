@@ -1,7 +1,7 @@
 import * as xml2js from "xml2js";
 import { PatientData, LivingSubjectId, PrincipalCareProviderId } from "./patient-incoming-schema";
 import { generateTimeStrings } from "./utils";
-import { xcpdTemplate } from "./iti-55-template";
+import { generateXcpdTemplate } from "./iti-55-template";
 import { Address } from "@metriport/api-sdk/medical/models/common/address";
 
 export function parseXmlStringForPatientData(xml: string): Promise<PatientData> {
@@ -95,30 +95,54 @@ const fillTemplate = (
   root: string,
   extension: string,
   signature: string,
-  patientData: PatientData
+  status: string,
+  patientData?: PatientData
 ) => {
-  const {
-    firstName,
-    lastName,
-    dob,
-    genderAtBirth,
-    livingSubjectId,
-    address,
-    contact,
-    id,
-    systemId,
-  } = patientData;
+  if (patientData) {
+    const {
+      firstName,
+      lastName,
+      dob,
+      genderAtBirth,
+      livingSubjectId,
+      address,
+      contact,
+      id,
+      systemId,
+    } = patientData;
 
-  let phone = "";
-  if (contact && Array.isArray(contact) && contact.length > 0 && contact[0]) {
-    phone = contact[0].phone || "";
+    let phone = "";
+    if (contact && Array.isArray(contact) && contact.length > 0 && contact[0]) {
+      phone = contact[0].phone || "";
+    }
+
+    let addressLine1, city, state, zip, country;
+    if (Array.isArray(address) && typeof address[0] === "object") {
+      ({ addressLine1, city, state, zip, country } = address[0]);
+    }
+    return xcpdTemplate
+      .replace(/{createdAt}/g, createdAt)
+      .replace(/{expiresAt}/g, expiresAt)
+      .replace(/{creationTime}/g, creationTime)
+      .replace(/{root}/g, root)
+      .replace(/{extension}/g, extension)
+      .replace(/{signature}/g, signature)
+      .replace(/{firstName}/g, firstName)
+      .replace(/{lastName}/g, lastName)
+      .replace(/{dob}/g, dob)
+      .replace(/{genderAtBirth}/g, genderAtBirth)
+      .replace(/{addressLine1}/g, addressLine1 || "")
+      .replace(/{city}/g, city || "")
+      .replace(/{state}/g, state || "")
+      .replace(/{zip}/g, zip || "")
+      .replace(/{country}/g, country || "")
+      .replace(/{livingSubjectId.extension}/g, livingSubjectId?.extension || "ABCDEFG")
+      .replace(/{livingSubjectId.root}/g, livingSubjectId?.root || "123456789")
+      .replace(/{phone}/g, phone || "000-000-0000")
+      .replace(/{patientId}/g, id || "1234567890")
+      .replace(/{systemId}/g, systemId || "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000")
+      .replace(/{code}/g, status);
   }
-
-  let addressLine1, city, state, zip, country;
-  if (Array.isArray(address) && typeof address[0] === "object") {
-    ({ addressLine1, city, state, zip, country } = address[0]);
-  }
-
   return xcpdTemplate
     .replace(/{createdAt}/g, createdAt)
     .replace(/{expiresAt}/g, expiresAt)
@@ -126,26 +150,18 @@ const fillTemplate = (
     .replace(/{root}/g, root)
     .replace(/{extension}/g, extension)
     .replace(/{signature}/g, signature)
-    .replace(/{firstName}/g, firstName)
-    .replace(/{lastName}/g, lastName)
-    .replace(/{dob}/g, dob)
-    .replace(/{genderAtBirth}/g, genderAtBirth)
-    .replace(/{addressLine1}/g, addressLine1 || "")
-    .replace(/{city}/g, city || "")
-    .replace(/{state}/g, state || "")
-    .replace(/{zip}/g, zip || "")
-    .replace(/{country}/g, country || "")
-    .replace(/{livingSubjectId.extension}/g, livingSubjectId?.extension || "ABCDEFG")
-    .replace(/{livingSubjectId.root}/g, livingSubjectId?.root || "123456789")
-    .replace(/{phone}/g, phone || "000-000-0000")
-    .replace(/{patientId}/g, id || "1234567890")
-    .replace(/{systemId}/g, systemId || "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000");
+    .replace(/{code}/g, status);
 };
 
-export function generateXCPD(xml: string, patientData: PatientData): Promise<string> {
+export function generateXCPD(
+  xml: string,
+  status: string,
+  patientData?: PatientData
+): Promise<string> {
   return parseXmlStringForRootExtensionSignature(xml).then(
     ([root, extension, signature]: [string, string, string]) => {
       const { createdAt, expiresAt, creationTime } = generateTimeStrings();
+      const xcpdTemplate = generateXcpdTemplate(status);
       const xcpd = fillTemplate(
         xcpdTemplate,
         createdAt,
@@ -154,6 +170,7 @@ export function generateXCPD(xml: string, patientData: PatientData): Promise<str
         root,
         extension,
         signature,
+        status,
         patientData
       );
       return xcpd;

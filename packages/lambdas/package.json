@@ -50,6 +50,7 @@
     "@metriport/core": "file:packages/core",
     "@sparticuz/chromium": "106.0.2",
     "@tsconfig/node18": "^1.0.1",
+    "@types/aws-serverless-express": "^3.3.9",
     "@types/jest": "^29.5.5",
     "@types/node-fetch": "^2.6.4",
     "@types/uuid": "^9.0.2",

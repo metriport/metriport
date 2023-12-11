@@ -19,7 +19,7 @@ app.post("/xcpd/v1", (req, res) => {
     .then((patientData: PatientData) => {
       const matchingPatient = isAnyPatientMatching(patientData);
       if (matchingPatient) {
-        generateXCPD(req.body, matchingPatient)
+        generateXCPD(req.body, "OK", matchingPatient)
           .then((xcpd: string) => {
             res.set("Content-Type", "application/soap+xml; charset=utf-8");
             res.send(xcpd);
@@ -29,7 +29,14 @@ app.post("/xcpd/v1", (req, res) => {
           });
       } else {
         console.log("no patient matching");
-        res.status(404).send("No patient matching");
+        generateXCPD(req.body, "NF", matchingPatient)
+          .then((xcpd: string) => {
+            res.set("Content-Type", "application/soap+xml; charset=utf-8");
+            res.send(xcpd);
+          })
+          .catch((err: Error) => {
+            console.log("error", err);
+          });
       }
     })
     .catch((err: Error) => {
