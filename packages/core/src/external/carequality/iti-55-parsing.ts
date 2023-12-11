@@ -5,12 +5,16 @@ import { generateXcpdTemplate } from "./iti-55-template";
 import { Address } from "@metriport/api-sdk/medical/models/common/address";
 import { isAnyPatientMatching } from "./patient-matching";
 
-export function parseXmlStringForPatientData(xml: string): Promise<PatientData> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+/**
+ * Parses an XML string and extracts patient data and other information.
+ * @param xml - The XML string to be parsed.
+ * @returns A promise that resolves to an array containing the parsed patient data object and the root ID, extension ID, and signature extracted from the XML.
+ */
+export function parseXmlString(xml: string): Promise<[PatientData, [string, string, string]]> {
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   return parser.parseStringPromise(xml).then(function (result: any) {
     const parameterList =
       result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
@@ -20,6 +24,11 @@ export function parseXmlStringForPatientData(xml: string): Promise<PatientData> 
     const gender = parameterList["livingSubjectAdministrativeGender"][0]["value"][0]["$"]["code"];
     const dob = parameterList["livingSubjectBirthTime"][0]["value"][0]["$"]["value"];
     const address = parameterList["patientAddress"][0]["value"][0];
+    const signature =
+      result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
+    const id = result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
+    const root = id["$"]["root"];
+    const extension = id["$"]["extension"];
 
     let phone = "";
     if (parameterList["patientTelecom"] && parameterList["patientTelecom"][0]["value"]) {
@@ -67,24 +76,7 @@ export function parseXmlStringForPatientData(xml: string): Promise<PatientData> 
       address: [patientAddress],
       contact: [{ phone: phone }],
     };
-    return patientData;
-  });
-}
-
-export function parseXmlStringForRootExtensionSignature(
-  xml: string
-): Promise<[string, string, string]> {
-  const parser = new xml2js.Parser({
-    tagNameProcessors: [xml2js.processors.stripPrefix],
-  });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return parser.parseStringPromise(xml).then(function (result: any) {
-    const signature =
-      result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
-    const id = result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
-    const root = id["$"]["root"];
-    const extension = id["$"]["extension"];
-    return [root, extension, signature];
+    return [patientData, [root, extension, signature]];
   });
 }
 
@@ -155,32 +147,30 @@ const fillTemplate = (
 };
 
 export function generateXCPD(requestBody: string): Promise<string> {
-  return parseXmlStringForPatientData(requestBody).then((patientData: PatientData) => {
-    const matchingPatient = isAnyPatientMatching(patientData);
-    let status = "";
-    if (matchingPatient) {
-      status = "OK";
-    } else {
-      console.log("no patient matching");
-      status = "NF";
-    }
-    return parseXmlStringForRootExtensionSignature(requestBody).then(
-      ([root, extension, signature]: [string, string, string]) => {
-        const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-        const xcpdTemplate = generateXcpdTemplate(status);
-        const xcpd = fillTemplate(
-          xcpdTemplate,
-          createdAt,
-          expiresAt,
-          creationTime,
-          root,
-          extension,
-          signature,
-          status,
-          matchingPatient
-        );
-        return xcpd;
+  return parseXmlString(requestBody).then(
+    ([patientData, [root, extension, signature]]: [PatientData, [string, string, string]]) => {
+      const matchingPatient = isAnyPatientMatching(patientData);
+      let status = "";
+      if (matchingPatient) {
+        status = "OK";
+      } else {
+        console.log("no patient matching");
+        status = "NF";
       }
-    );
-  });
+      const { createdAt, expiresAt, creationTime } = generateTimeStrings();
+      const xcpdTemplate = generateXcpdTemplate(status);
+      const xcpd = fillTemplate(
+        xcpdTemplate,
+        createdAt,
+        expiresAt,
+        creationTime,
+        root,
+        extension,
+        signature,
+        status,
+        matchingPatient
+      );
+      return xcpd;
+    }
+  );
 }

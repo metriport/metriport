@@ -3,16 +3,19 @@ import { generateTimeStrings } from "./utils";
 import * as xml2js from "xml2js";
 import { generateITI39Template } from "./iti-39-template";
 
-// todo make this have the values we want
+// mapping od document ids to docs
 const documentData: { [key: string]: string } = {
   "1.2.840.114350.1.13.11511.3.7.8.456721.987654": generatePatientDoc(1),
   "1.2.840.114350.1.13.11511.3.7.8.234587.334455": generatePatientDoc(2),
   "1.2.840.114350.1.13.11511.3.7.8.123456.789012": generatePatientDoc(3),
 };
 
-export function parseXmlStringForDocumentIdCommunityIdSignature(
-  xml: string
-): Promise<[string, string, string]> {
+/**
+ * Parses an XML string and extracts signature, documentId, and homeCommunityID.
+ * @param xml - The XML string to be parsed.
+ * @returns A promise that resolves to an array containing the signature, documentId, and homeCommunityID extracted from the XML.
+ */
+function parseXmlString(xml: string): Promise<[string, string, string]> {
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
@@ -42,27 +45,24 @@ const fillTemplate = (
   documentId: string,
   document?: string
 ) => {
-  if (document) {
-    const base64 = btoa(document);
-    return iti39Template
-      .replace(/{signature}/g, signature)
-      .replace(/{createdAt}/g, createdAt)
-      .replace(/{expiresAt}/g, expiresAt)
-      .replace(/{homeCommunityId}/g, homeCommunityId)
-      .replace(/{documentId}/g, documentId)
-      .replace(/{base64}/g, base64)
-      .replace(/{status}/g, "Success");
-  } else {
-    return iti39Template
-      .replace(/{signature}/g, signature)
-      .replace(/{createdAt}/g, createdAt)
-      .replace(/{expiresAt}/g, expiresAt)
-      .replace(/{status}/g, "Failed");
-  }
+  const templateVariables = {
+    signature,
+    createdAt,
+    expiresAt,
+    homeCommunityId,
+    documentId,
+    base64: document ? btoa(document) : "",
+    status: document ? "Success" : "Failed",
+  };
+
+  return Object.entries(templateVariables).reduce(
+    (filledTemplate, [key, value]) => filledTemplate.replace(new RegExp(`{${key}}`, "g"), value),
+    iti39Template
+  );
 };
 
 export function generateITI39(xml: string): Promise<string> {
-  return parseXmlStringForDocumentIdCommunityIdSignature(xml).then(
+  return parseXmlString(xml).then(
     ([signature, documentId, homeCommunityid]: [string, string, string]) => {
       const { createdAt, expiresAt } = generateTimeStrings();
       const document = documentData[documentId];

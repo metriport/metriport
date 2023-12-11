@@ -33,6 +33,7 @@ export const isPatientMatching = (patient1: PatientData, patient2: PatientData):
   return totalScore >= SIMILARITY_THRESHOLD;
 };
 
+// patients
 const patient_1 = {
   id: "EV38NJT4M6Q2B5X",
   documentId: "1.2.840.114350.1.13.11511.3.7.8.456721.987654",
