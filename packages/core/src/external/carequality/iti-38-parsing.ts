@@ -1,7 +1,6 @@
-//import { patient_3_doc } from "./docs";
 import { generateTimeStrings } from "./utils";
 import * as xml2js from "xml2js";
-import { iti38Template } from "./iti38-template";
+import { iti38Template } from "./iti-38-template";
 
 // a dictionary of document ids to documentData
 // const documentData = {

@@ -5,7 +5,7 @@ import {
   generateXCPD,
   parseXmlStringForPatientData,
   isAnyPatientMatching,
-} from "@metriport/core/external/carequality/xcpd-parsing";
+} from "@metriport/core/external/carequality/iti-55-parsing";
 
 // Keep this as early on the file as possible
 capture.init();

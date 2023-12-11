@@ -1,7 +1,7 @@
 import * as xml2js from "xml2js";
 import { PatientData, LivingSubjectId, PrincipalCareProviderId } from "./patient-incoming-schema";
 import { generateTimeStrings } from "./utils";
-import { xcpdTemplate } from "./xcpd-template";
+import { xcpdTemplate } from "./iti-55-template";
 import { Address } from "@metriport/api-sdk/medical/models/common/address";
 import { USState } from "@metriport/api-sdk/medical/models/common/us-data";
 import jaroWinkler from "jaro-winkler";

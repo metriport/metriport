@@ -3,8 +3,9 @@ import {
   parseXmlStringForPatientData,
   generateXCPD,
   isAnyPatientMatching,
-} from "@metriport/core/external/carequality/xcpd-parsing";
-import { generateITI38 } from "@metriport/core/external/carequality/xca-parsing";
+} from "@metriport/core/external/carequality/iti-55-parsing";
+import { generateITI38 } from "@metriport/core/external/carequality/iti-38-parsing";
+import { generateITI39 } from "@metriport/core/external/carequality/iti-39-parsing";
 import { PatientData } from "@metriport/core/external/carequality/patient-incoming-schema";
 import bodyParser from "body-parser";
 
@@ -41,6 +42,18 @@ app.all("/xcpd/v1", (req, res) => {
 
 app.all("/iti38/v1", (req, res) => {
   generateITI38(req.body)
+    .then((iti38: string) => {
+      res.set("Content-Type", "application/soap+xml; charset=utf-8");
+      res.send(iti38);
+    })
+    .catch((err: Error) => {
+      console.log("error", err);
+      res.status(404).send("No patient matching");
+    });
+});
+
+app.all("/iti39/v1", (req, res) => {
+  generateITI39(req.body)
     .then((iti38: string) => {
       res.set("Content-Type", "application/soap+xml; charset=utf-8");
       res.send(iti38);
