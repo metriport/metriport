@@ -42,6 +42,7 @@ export const setCarequalityId = async ({
       transaction,
     });
 
+    // TODO: #1353 Optimize Sequelize updates
     const updatedData = cloneDeep(updatedPatient.data);
 
     const carequalityExternalData = getCQData(updatedData.externalData);

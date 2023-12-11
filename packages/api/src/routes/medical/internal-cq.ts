@@ -7,7 +7,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
-import { handleDiscoverResponse } from "../../external/carequality/patient";
+import { handlePatientDiscoverResponse } from "../../external/carequality/patient";
 import { rebuildCQDirectory } from "../../command/medical/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
@@ -117,7 +117,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
 
-    handleDiscoverResponse(patientDiscovery);
+    handlePatientDiscoverResponse(patientDiscovery);
 
     return res.sendStatus(httpStatus.OK);
   })
