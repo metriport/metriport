@@ -113,7 +113,7 @@ router.get(
  * Receives a Patient Discovery request from the IHE Gateway
  */
 router.post(
-  "/patient-discovery",
+  "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
     const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
 
