@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { ISO_DATE } from "@metriport/shared/common/date";
 import AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -14,7 +15,7 @@ dayjs.extend(duration);
  *
  * Populate the env vars.
  *
- * Update `query` and `tableName` to match your needs.
+ * Update `tableName` and `daysToKeep` to match your needs.
  */
 
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
@@ -22,12 +23,16 @@ const bucketName = getEnvVarOrFail("S3_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
 
 // Example:
+// const daysToKeep = 30;
 // const tableName = "change_log";
-// const query = `SELECT * FROM ${tableName} WHERE created_at < current_date - interval '30' day`;
+const daysToKeep = 999;
 const tableName = "<TABLE>";
-const query = `SELECT * FROM ${tableName} WHERE ...`;
 
-const getFileName = () => `exports/${tableName}/${tableName}_${dayjs().toISOString()}.json`;
+const query = `SELECT * FROM ${tableName} WHERE created_at < current_date - interval '${daysToKeep}' day`;
+
+const untilDate = dayjs().subtract(daysToKeep, "day").format(ISO_DATE);
+const getFileName = () =>
+  `exports/${region}/${tableName}_until_${untilDate}_createdAt_${dayjs().toISOString()}.json`;
 
 const s3 = new AWS.S3({ signatureVersion: "v4", region });
 
