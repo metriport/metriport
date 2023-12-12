@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { APIGatewayProxyEvent } from "aws-lambda";
 import { generateITI38 } from "@metriport/core/external/carequality/iti-38-parsing";
 import { generateITI39 } from "@metriport/core/external/carequality/iti-39-parsing";
 import { generateXCPD } from "@metriport/core/external/carequality/iti-55-parsing";
@@ -37,8 +37,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
   }
 });
 
-const buildResponse = (status: number, body?: unknown): APIGatewayProxyResult => ({
+const buildResponse = (status: number, body?: unknown) => ({
   statusCode: status,
   headers: { "Content-Type": "application/soap+xml; charset=utf-8" },
-  body: JSON.stringify(body),
+  body: body,
 });

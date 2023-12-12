@@ -10,8 +10,7 @@ export function generateITI39Template(status: string): string {
         <Document>{base64}<Document
     </DocumentResponse>`;
   }
-  const iti39Template = `
-  <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  const iti39Template = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
   <s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
     <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
       <a:Action s:mustUnderstand="1">urn:ihe:iti:2007:CrossGatewayRetrieveResponse</a:Action>

@@ -95,8 +95,7 @@ export function generateXcpdTemplate(code: string) {
       </queryByParameter>`;
   }
 
-  const xcpdTemplate = `
-  <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  const xcpdTemplate = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
   <s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
     <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
       <a:Action s:mustUnderstand="1">urn:hl7-org:v3:PRPA_IN201306UV02:CrossGatewayPatientDiscovery</a:Action>
@@ -109,7 +108,6 @@ export function generateXcpdTemplate(code: string) {
         <SignatureConfirmation xmlns="http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd" Value="{signature}" b:Id="_2"/>
       </Security>
     </s:Header>
-    
     <s:Body xmlns="urn:hl7-org:v3" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <PRPA_IN201306UV02 ITSVersion="XML_1.0">
         <id root="27f64979-6822-4f8c-b07e-f3381117a46a"/>
