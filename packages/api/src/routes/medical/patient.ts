@@ -15,7 +15,6 @@ import { PatientCreateCmd, createPatient } from "../../command/medical/patient/c
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
-import { addCoordinatesToAddresses } from "../../command/medical/patient/upsert-geographic-coordinates";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
@@ -80,7 +79,6 @@ router.post(
       facilityId,
     };
 
-    patientCreate.address = await addCoordinatesToAddresses(patientCreate.address);
     const patient = await createPatient(patientCreate);
 
     // temp solution until we migrate to FHIR
@@ -121,7 +119,6 @@ router.put(
       id,
     };
 
-    patientUpdate.address = await addCoordinatesToAddresses(patientUpdate.address);
     const updatedPatient = await updatePatient(patientUpdate);
 
     // temp solution until we migrate to FHIR

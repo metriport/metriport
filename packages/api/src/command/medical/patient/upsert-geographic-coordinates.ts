@@ -13,9 +13,9 @@ const ADDRESS_MATCH_RELEVANCE_THRESHOLD = 0.9;
  * Optionally reports potentially wrong address entries.
  * Optionally updates the patient with the updated addresses.
  *
- * @param patient the Patient to update the addresses for
- * @param reportRelevance optional, boolean to indicate whether to report a bad address to the cx. Defaults to false.
- * @param updatePatientAddresses optional, boolean to indicate whether to update the patient data. Defaults to false.
+ * @param patient - the Patient to update the addresses for
+ * @param reportRelevance - optional, boolean to indicate whether to report a bad address to the cx. Defaults to false.
+ * @param updatePatientAddresses - optional, boolean to indicate whether to update the patient data. Defaults to false.
  * @returns list of Addresses
  */
 export const upsertGeographicCoordinates = async ({
@@ -51,16 +51,26 @@ export const upsertGeographicCoordinates = async ({
  * Updates the addresses with geographic coordinates.
  *
  * @param addresses - a list of Address objects.
+ * @param reportRelevance - optional, boolean to indicate whether to report a bad address to the cx. Defaults to false.
  * @returns - a list of Address objects with updated coordinates.
  */
-export async function addCoordinatesToAddresses(addresses: Address[]): Promise<Address[]> {
-  await addGeographicCoordinates(addresses);
+export async function addCoordinatesToAddresses({
+  addresses,
+  patient,
+  reportRelevance = false,
+}: {
+  addresses: Address[];
+  patient: Partial<Patient>;
+  reportRelevance?: boolean;
+}): Promise<Address[]> {
+  const addressAndLabel = await addGeographicCoordinates(addresses);
+  if (reportRelevance) await reportLowRelevance(addressAndLabel, patient);
   return addresses;
 }
 
 export async function reportLowRelevance(
   addresses: AddressAndSuggestedLabel[],
-  patient: Patient
+  patient: Partial<Patient>
 ): Promise<void> {
   for (const a of addresses) {
     let aboveThreshold = true;
@@ -80,15 +90,17 @@ export async function reportLowRelevance(
         level: "info",
       });
     }
-    analytics({
-      distinctId: patient.cxId,
-      event: EventTypes.addressRelevance,
-      properties: {
-        relevance: a.relevance,
-        aboveThreshold,
-        apiType: Product.medical,
-      },
-    });
+    if (patient.cxId) {
+      analytics({
+        distinctId: patient.cxId,
+        event: EventTypes.addressRelevance,
+        properties: {
+          relevance: a.relevance,
+          aboveThreshold,
+          apiType: Product.medical,
+        },
+      });
+    }
     // TODO: #1327 - automatically email the CX about a bad address
   }
 }

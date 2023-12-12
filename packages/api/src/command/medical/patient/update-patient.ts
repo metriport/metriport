@@ -5,6 +5,7 @@ import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { addCoordinatesToAddresses } from "./upsert-geographic-coordinates";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -25,6 +26,11 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
       cxId,
       lock: true,
       transaction,
+    });
+    patientUpdate.address = await addCoordinatesToAddresses({
+      addresses: patientUpdate.address,
+      patient: patientUpdate,
+      reportRelevance: true,
     });
 
     validateVersionForUpdate(patient, eTag);
