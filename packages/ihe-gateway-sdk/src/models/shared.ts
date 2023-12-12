@@ -37,9 +37,10 @@ export type BaseRequest = {
 
 export const documentReference = z.object({
   homeCommunityId: z.string(),
-  urn: z.string(),
+  docUniqueId: z.string(),
   repositoryUniqueId: z.string(),
   contentType: z.string().nullable(),
+  language: z.string().nullable(),
   uri: z.string().nullable(),
   creation: z.string().nullable(),
   title: z.string().nullable(),
