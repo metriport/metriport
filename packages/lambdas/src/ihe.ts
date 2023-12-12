@@ -1,49 +1,44 @@
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
-import { APIGatewayProxyEvent } from "aws-lambda";
-import { xcpdTemplate } from "./shared/xcpd-template";
-import {
-  parseXmlStringForRootExtensionSignature,
-  generateTimeStrings,
-} from "@metriport/core/external/carequality/xcpd-parsing";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { generateITI38 } from "@metriport/core/external/carequality/iti-38-parsing";
+import { generateITI39 } from "@metriport/core/external/carequality/iti-39-parsing";
+import { generateXCPD } from "@metriport/core/external/carequality/iti-55-parsing";
 
-// Keep this as early on the file as possible
 capture.init();
 
-const fillTemplate = (
-  createdAt: string,
-  expiresAt: string,
-  creationTime: string,
-  root: string,
-  extension: string,
-  signature: string
-) => {
-  return xcpdTemplate
-    .replace(/{createdAt}/g, createdAt)
-    .replace(/{expiresAt}/g, expiresAt)
-    .replace(/{creationTime}/g, creationTime)
-    .replace(/{root}/g, root)
-    .replace(/{extension}/g, extension)
-    .replace(/{signature}/g, signature);
-};
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProxyEvent) => {
+  console.log(JSON.stringify(event));
+  const path = event.path;
+  let result;
 
-const buildResponse = (status: number, body?: unknown) => ({
-  statusCode: status,
-  headers: { "Content-Type": "application/soap+xml; charset=utf-8" },
-  body,
+  if (!event.body) {
+    return buildResponse(400, "Request body is missing");
+  }
+  try {
+    switch (path) {
+      case "/xcpd/v1":
+        result = await generateXCPD(event.body);
+        break;
+      case "/iti38/v1":
+        result = await generateITI38(event.body);
+        break;
+      case "/iti39/v1":
+        result = await generateITI39(event.body);
+        break;
+      default:
+        throw new Error("Invalid path");
+    }
+
+    return buildResponse(200, result);
+  } catch (err) {
+    console.log("error", err);
+    return buildResponse(404, "Invalid XML");
+  }
 });
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (req: APIGatewayProxyEvent) => {
-  // just log the payload for now
-  console.log(JSON.stringify(req));
-  if (req.body) {
-    return parseXmlStringForRootExtensionSignature(req.body).then(
-      ([root, extension, signature]: [string, string, string]) => {
-        const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-        const xcpd = fillTemplate(createdAt, expiresAt, creationTime, root, extension, signature);
-        console.log("xcpd", xcpd);
-        return buildResponse(200, xcpd);
-      }
-    );
-  }
+const buildResponse = (status: number, body?: unknown): APIGatewayProxyResult => ({
+  statusCode: status,
+  headers: { "Content-Type": "application/soap+xml; charset=utf-8" },
+  body: JSON.stringify(body),
 });
