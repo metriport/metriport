@@ -1,9 +1,15 @@
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
-import { geocodeAddresses } from "../../../external/aws/address";
+import { addGeographicCoordinates } from "../../../external/aws/address";
 import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
+import {
+  patientUpdateSchema,
+  schemaUpdateToPatient,
+} from "../../../routes/medical/schemas/patient";
+import { uniq } from "lodash";
 import { getPatientOrFail } from "../patient/get-patient";
+import { PatientUpdateCmd, updatePatient } from "../patient/update-patient";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
 
@@ -19,11 +25,13 @@ export type CQOrgBasicDetails = {
 
 /**
  * Searches the Carequality Directory for organizations within a specified radius of a patient's addresses.
+ * Updates the patient addresses with coordinates if they don't already exist.
+ *
  * @param cxId The ID of the customer organization.
  * @param patientId The ID of the patient.
  * @param radiusInMiles Optional, the radius in miles within which to search for organizations. Defaults to 50 miles.
  *
- * @returns Returns the details of organizations within the specified radius of the patient's address.
+ * @returns Returns the details of organizations within the specified radius of the patient's addresses.
  */
 export async function searchNearbyCQOrganizations({
   cxId,
@@ -35,16 +43,26 @@ export async function searchNearbyCQOrganizations({
   radiusInMiles?: number;
 }): Promise<CQOrgBasicDetails[]> {
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
-
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const coordinates = await geocodeAddresses(patient.data.address);
+  const addresses = patient.data.address;
+  const needUpdate = await addGeographicCoordinates(addresses);
+  if (needUpdate) {
+    const updData = patientUpdateSchema.parse(patient.data);
+    const patientUpdate: PatientUpdateCmd = {
+      ...schemaUpdateToPatient(updData, cxId),
+      id: patient.id,
+    };
+    await updatePatient(patientUpdate);
+  }
+  const coordinates = addresses.flatMap(address => address.coordinates ?? []);
+  if (!coordinates.length) throw new Error("Failed to get patient coordinates");
 
   const orgs = await searchCQDirectoriesByRadius({
     coordinates,
     radiusInMeters,
   });
 
-  return orgs.map(toBasicOrgAttributes);
+  return uniq(orgs.map(toBasicOrgAttributes));
 }
 
 /**

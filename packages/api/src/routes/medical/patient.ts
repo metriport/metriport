@@ -42,6 +42,7 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { addGeographicCoordinates } from "../../external/aws/address";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -79,6 +80,7 @@ router.post(
       facilityId,
     };
 
+    await addGeographicCoordinates(patientCreate.address);
     const patient = await createPatient(patientCreate);
 
     // temp solution until we migrate to FHIR
@@ -119,6 +121,7 @@ router.put(
       id,
     };
 
+    await addGeographicCoordinates(patientUpdate.address);
     const updatedPatient = await updatePatient(patientUpdate);
 
     // temp solution until we migrate to FHIR

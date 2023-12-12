@@ -11,29 +11,44 @@ const indexName = Config.getPlaceIndexName();
 const placeIndexRegion = Config.getPlaceIndexRegion();
 const client = makeLocationClient(placeIndexRegion);
 
+export function buildAddressText(address: Address): string {
+  return `${address.addressLine1}, ${address.city}, ${address.state} ${address.zip}`;
+}
+
 /**
- * Geocodes a list of addresses using Amazon Location Services.
- * @param addresses
- * @returns
+ * Adds coordinates to addresses that don't already have them
+ *
+ * @param addresses a list of Address objects
+ * @returns a boolean indicating whether any addresses were updated
  */
-export async function geocodeAddresses(addresses: Address[]): Promise<Coordinates[]> {
-  const resultPromises = await Promise.allSettled(
+export async function addGeographicCoordinates(addresses: Address[]): Promise<boolean> {
+  const updates = await Promise.allSettled(
     addresses.map(async address => {
-      const addressText = `${address.addressLine1}, ${address.city}, ${address.state} ${address.zip}`;
-      const countryFilter = address.country ?? "USA";
-
-      const params: AWS.Location.Types.SearchPlaceIndexForTextRequest = {
-        Text: addressText,
-        MaxResults: 1,
-        Language: "en",
-        FilterCountries: [countryFilter],
-        IndexName: indexName,
-      };
-
-      const locationResponse = await client.searchPlaceIndexForText(params).promise();
-      return getCoordinatesFromLocation({ result: locationResponse });
+      if (address.coordinates) return false;
+      address.coordinates = await geocodeAddress(address);
+      return true;
     })
   );
-  const successful = resultPromises.flatMap(p => (p.status === "fulfilled" ? p.value : []));
-  return successful;
+  return updates.map(p => (p.status === "fulfilled" ? p.value : [])).includes(true);
+}
+
+/**
+ * Geocodes an addresses using Amazon Location Services.
+ * @param address an Address object
+ * @returns a Coordinate pair
+ */
+export async function geocodeAddress(address: Address): Promise<Coordinates> {
+  const addressText = buildAddressText(address);
+  const countryFilter = address.country ?? "USA";
+
+  const params: AWS.Location.Types.SearchPlaceIndexForTextRequest = {
+    Text: addressText,
+    MaxResults: 1,
+    Language: "en",
+    FilterCountries: [countryFilter],
+    IndexName: indexName,
+  };
+
+  const locationResponse = await client.searchPlaceIndexForText(params).promise();
+  return getCoordinatesFromLocation({ result: locationResponse });
 }
