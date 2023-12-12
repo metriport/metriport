@@ -9,6 +9,11 @@ export type Coordinates = {
   lon: number;
 };
 
+export type CoordinatesAndRelevance = {
+  coordinates: Coordinates;
+  relevance: number;
+};
+
 export function makeLocationClient(region: string): AWS.Location {
   return new AWS.Location({ signatureVersion: "v4", region });
 }
@@ -27,20 +32,23 @@ export function getLocationResultPayload({
   return result.Results;
 }
 
-export function getCoordinatesFromLocation({
-  result,
-}: {
-  result: PromiseResult<AWS.Location.SearchPlaceIndexForTextResponse, AWS.AWSError>;
-}): Coordinates {
-  const resp = getLocationResultPayload({ result });
-  const topSuggestion = resp ? resp[0] : undefined;
-  if (topSuggestion) {
-    const point = topSuggestion.Place?.Geometry?.Point;
+export function getCoordinatesAndRelevanceFromLocation(
+  suggestedAddress: AWS.Location.SearchForTextResult
+): CoordinatesAndRelevance {
+  const point = suggestedAddress.Place?.Geometry?.Point;
+  const relevance = suggestedAddress.Relevance;
 
-    if (point) {
-      const lon = point[0];
-      const lat = point[1];
-      if (lon && lat) return { lon, lat };
+  if (point) {
+    const lon = point[0];
+    const lat = point[1];
+    if (lon && lat && relevance) {
+      return {
+        coordinates: {
+          lon,
+          lat,
+        },
+        relevance,
+      };
     }
   }
 

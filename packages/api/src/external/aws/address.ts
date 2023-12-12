@@ -1,11 +1,17 @@
-import { Address } from "../../domain/medical/address";
 import {
-  getCoordinatesFromLocation,
+  CoordinatesAndRelevance,
+  getCoordinatesAndRelevanceFromLocation,
+  getLocationResultPayload,
   makeLocationClient,
 } from "@metriport/core/external/aws/location";
-import { Config } from "../../shared/config";
 import * as AWS from "aws-sdk";
-import { Coordinates } from "@metriport/core/external/aws/location";
+import { Address } from "../../domain/medical/address";
+import { Config } from "../../shared/config";
+
+export type AddressAndRelevance = {
+  address: Address;
+  relevance: number;
+};
 
 const indexName = Config.getPlaceIndexName();
 const placeIndexRegion = Config.getPlaceIndexRegion();
@@ -16,20 +22,35 @@ export function buildAddressText(address: Address): string {
 }
 
 /**
- * Adds coordinates to addresses that don't already have them
+ * Adds coordinates to addresses that don't already have them.
  *
- * @param addresses a list of Address objects
- * @returns a boolean indicating whether any addresses were updated
+ * @param addressList a list of Address objects.
+ * @returns a list of updated Address objects and their relevance score from geocoding.
  */
-export async function addGeographicCoordinates(addresses: Address[]): Promise<boolean> {
-  const updates = await Promise.allSettled(
-    addresses.map(async address => {
-      if (address.coordinates) return false;
-      address.coordinates = await geocodeAddress(address);
-      return true;
+export async function addGeographicCoordinates(
+  addressList: Address[]
+): Promise<AddressAndRelevance[]> {
+  const geocodingUpdates = await Promise.allSettled(
+    addressList.map(async address => {
+      if (address.coordinates) {
+        return;
+      }
+      const coordinatesAndRelevance = await geocodeAddress(address);
+      if (coordinatesAndRelevance) {
+        address.coordinates = coordinatesAndRelevance.coordinates;
+        const relevance = coordinatesAndRelevance.relevance;
+        return {
+          address,
+          relevance,
+        };
+      }
+      return;
     })
   );
-  return updates.map(p => (p.status === "fulfilled" ? p.value : [])).includes(true);
+  const updatedAddresses = geocodingUpdates.flatMap(p =>
+    p.status === "fulfilled" && p.value ? p.value : []
+  );
+  return updatedAddresses;
 }
 
 /**
@@ -37,7 +58,9 @@ export async function addGeographicCoordinates(addresses: Address[]): Promise<bo
  * @param address an Address object
  * @returns a Coordinate pair
  */
-export async function geocodeAddress(address: Address): Promise<Coordinates> {
+export async function geocodeAddress(
+  address: Address
+): Promise<CoordinatesAndRelevance | undefined> {
   const addressText = buildAddressText(address);
   const countryFilter = address.country ?? "USA";
 
@@ -50,5 +73,10 @@ export async function geocodeAddress(address: Address): Promise<Coordinates> {
   };
 
   const locationResponse = await client.searchPlaceIndexForText(params).promise();
-  return getCoordinatesFromLocation({ result: locationResponse });
+  const resp = getLocationResultPayload({ result: locationResponse });
+
+  const topSuggestion = resp ? resp[0] : undefined;
+  if (topSuggestion) {
+    return getCoordinatesAndRelevanceFromLocation(topSuggestion);
+  }
 }

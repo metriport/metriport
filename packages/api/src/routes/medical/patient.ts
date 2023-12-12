@@ -15,6 +15,7 @@ import { PatientCreateCmd, createPatient } from "../../command/medical/patient/c
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { addCoordinatesToAddresses } from "../../command/medical/patient/upsert-geographic-coordinates";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
@@ -42,7 +43,6 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { addGeographicCoordinates } from "../../external/aws/address";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -80,7 +80,7 @@ router.post(
       facilityId,
     };
 
-    await addGeographicCoordinates(patientCreate.address);
+    patientCreate.address = await addCoordinatesToAddresses(patientCreate.address);
     const patient = await createPatient(patientCreate);
 
     // temp solution until we migrate to FHIR
@@ -121,7 +121,7 @@ router.put(
       id,
     };
 
-    await addGeographicCoordinates(patientUpdate.address);
+    patientUpdate.address = await addCoordinatesToAddresses(patientUpdate.address);
     const updatedPatient = await updatePatient(patientUpdate);
 
     // temp solution until we migrate to FHIR

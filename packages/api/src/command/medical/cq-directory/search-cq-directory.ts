@@ -1,15 +1,10 @@
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
-import { Sequelize } from "sequelize";
-import { addGeographicCoordinates } from "../../../external/aws/address";
-import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
-import {
-  patientUpdateSchema,
-  schemaUpdateToPatient,
-} from "../../../routes/medical/schemas/patient";
 import { uniq } from "lodash";
+import { Sequelize } from "sequelize";
+import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
 import { getPatientOrFail } from "../patient/get-patient";
-import { PatientUpdateCmd, updatePatient } from "../patient/update-patient";
+import { upsertGeographicCoordinates } from "../patient/upsert-geographic-coordinates";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
 
@@ -44,16 +39,12 @@ export async function searchNearbyCQOrganizations({
 }): Promise<CQOrgBasicDetails[]> {
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const addresses = patient.data.address;
-  const needUpdate = await addGeographicCoordinates(addresses);
-  if (needUpdate) {
-    const updData = patientUpdateSchema.parse(patient.data);
-    const patientUpdate: PatientUpdateCmd = {
-      ...schemaUpdateToPatient(updData, cxId),
-      id: patient.id,
-    };
-    await updatePatient(patientUpdate);
-  }
+  const addresses = await upsertGeographicCoordinates({
+    patient,
+    reportRelevance: true,
+    updatePatientAddresses: true,
+  });
+
   const coordinates = addresses.flatMap(address => address.coordinates ?? []);
   if (!coordinates.length) throw new Error("Failed to get patient coordinates");
 
