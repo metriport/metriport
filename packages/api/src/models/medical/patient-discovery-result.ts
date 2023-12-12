@@ -42,6 +42,7 @@ export class PatientDiscoveryResultModel extends Model<any, any> implements Pati
         sequelize,
         freezeTableName: true,
         underscored: true,
+        timestamps: false,
         createdAt: "created_at",
         tableName: PatientDiscoveryResultModel.NAME,
       }
