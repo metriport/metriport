@@ -1,19 +1,16 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, literal } from "sequelize";
 import type { Migration } from "..";
-import * as shared from "../migrations-shared";
 
 const tableName = "patient_discovery_result";
 
 // Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
-    await shared.createTable(
-      queryInterface,
+    await queryInterface.createTable(
       tableName,
       {
         id: {
           type: DataTypes.STRING,
-          primaryKey: true,
         },
         requestId: {
           type: DataTypes.UUID,
@@ -30,8 +27,14 @@ export const up: Migration = async ({ context: queryInterface }) => {
         data: {
           type: DataTypes.JSONB,
         },
+        createdAt: {
+          field: "created_at",
+          type: DataTypes.DATE(6),
+          allowNull: false,
+          defaultValue: literal("CURRENT_TIMESTAMP(6)"),
+        },
       },
-      { transaction, addVersion: true }
+      { transaction }
     );
   });
 };

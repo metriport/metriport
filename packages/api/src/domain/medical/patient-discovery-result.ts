@@ -1,10 +1,9 @@
 import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
-import { BaseDomain, BaseDomainCreate } from "../base-domain";
+import { BaseDomainCreate } from "../base-domain";
 
-export interface PatientDiscoveryResultCreate extends BaseDomainCreate {
+export interface PatientDiscoveryResult extends BaseDomainCreate {
   requestId: string;
   status: string;
+  createdAt: Date;
   data: PatientDiscoveryResponse;
 }
-
-export interface PatientDiscoveryResult extends BaseDomain, PatientDiscoveryResultCreate {}

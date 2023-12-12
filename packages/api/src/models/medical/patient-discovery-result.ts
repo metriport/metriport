@@ -1,22 +1,25 @@
-import { DataTypes, Sequelize } from "sequelize";
+import { DataTypes, Sequelize, Model, CreationOptional } from "sequelize";
 import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
 import { PatientDiscoveryResult } from "../../domain/medical/patient-discovery-result";
-import { BaseModel, ModelSetup } from "../_default";
+import { ModelSetup } from "../_default";
 
-export class PatientDiscoveryResultModel
-  extends BaseModel<PatientDiscoveryResultModel>
-  implements PatientDiscoveryResult
-{
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class PatientDiscoveryResultModel extends Model<any, any> implements PatientDiscoveryResult {
   static NAME = "patient_discovery_result";
+  declare id: string;
   declare requestId: string;
   declare patientId: string;
   declare status: string;
+  declare createdAt: CreationOptional<Date>;
   declare data: PatientDiscoveryResponse;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientDiscoveryResultModel.init(
       {
-        ...BaseModel.attributes(),
+        id: {
+          type: DataTypes.UUID,
+          primaryKey: true,
+        },
         requestId: {
           type: DataTypes.UUID,
           field: "request_id",
@@ -31,9 +34,15 @@ export class PatientDiscoveryResultModel
         data: {
           type: DataTypes.JSONB,
         },
+        createdAt: {
+          type: DataTypes.DATE(6),
+        },
       },
       {
-        ...BaseModel.modelOptions(sequelize),
+        sequelize,
+        freezeTableName: true,
+        underscored: true,
+        createdAt: "created_at",
         tableName: PatientDiscoveryResultModel.NAME,
       }
     );
