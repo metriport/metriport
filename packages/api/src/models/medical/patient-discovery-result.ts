@@ -9,6 +9,7 @@ export class PatientDiscoveryResultModel
 {
   static NAME = "patient_discovery_result";
   declare requestId: string;
+  declare patientId: string;
   declare status: string;
   declare data: PatientDiscoveryResponse;
 
@@ -19,6 +20,10 @@ export class PatientDiscoveryResultModel
         requestId: {
           type: DataTypes.UUID,
           field: "request_id",
+        },
+        patientId: {
+          type: DataTypes.UUID,
+          field: "patient_id",
         },
         status: {
           type: DataTypes.STRING,
