@@ -4,6 +4,8 @@ import { Address } from "../../../domain/medical/address";
 import { AddressAndRelevance, addGeographicCoordinates } from "../../../external/aws/address";
 import { capture } from "../../../shared/notifications";
 import { PatientUpdateCmd, updatePatient } from "./update-patient";
+import { EventTypes, analytics } from "../../../shared/analytics";
+import { Product } from "../../../domain/product";
 
 const ADDRESS_MATCH_RELEVANCE_THRESHOLD = 0.9;
 
@@ -66,7 +68,9 @@ export async function reportLowRelevance(
   patient: Patient
 ): Promise<void> {
   for (const a of addresses) {
+    let belowThreshold = false;
     if (a.relevance < ADDRESS_MATCH_RELEVANCE_THRESHOLD) {
+      belowThreshold = true;
       const msg = `Low address match coefficient`;
       console.log(`${msg}. Address: ${a.address}, Relevance: ${a.relevance}`);
       capture.message(msg, {
@@ -79,6 +83,15 @@ export async function reportLowRelevance(
         },
       });
     }
+    analytics({
+      distinctId: patient.cxId,
+      event: EventTypes.address,
+      properties: {
+        relevance: a.relevance,
+        belowThreshold,
+        apiType: Product.medical,
+      },
+    });
     // TODO: #1327 - automatically email the CX about a bad address
   }
 }
