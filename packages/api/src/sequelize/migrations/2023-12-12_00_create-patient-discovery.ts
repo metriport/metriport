@@ -11,6 +11,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       {
         id: {
           type: DataTypes.STRING,
+          primaryKey: true,
         },
         requestId: {
           type: DataTypes.UUID,
