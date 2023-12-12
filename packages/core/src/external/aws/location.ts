@@ -9,9 +9,10 @@ export type Coordinates = {
   lon: number;
 };
 
-export type CoordinatesAndRelevance = {
+export type AddressSuggestion = {
   coordinates: Coordinates;
   relevance: number;
+  suggestedLabel: string;
 };
 
 export function makeLocationClient(region: string): AWS.Location {
@@ -32,22 +33,24 @@ export function getLocationResultPayload({
   return result.Results;
 }
 
-export function getCoordinatesAndRelevanceFromLocation(
+export function parseSuggestedAddress(
   suggestedAddress: AWS.Location.SearchForTextResult
-): CoordinatesAndRelevance {
+): AddressSuggestion {
   const point = suggestedAddress.Place?.Geometry?.Point;
   const relevance = suggestedAddress.Relevance;
+  const label = suggestedAddress.Place.Label;
 
   if (point) {
     const lon = point[0];
     const lat = point[1];
-    if (lon && lat && relevance) {
+    if (lon && lat && relevance && label) {
       return {
         coordinates: {
           lon,
           lat,
         },
         relevance,
+        suggestedLabel: label,
       };
     }
   }

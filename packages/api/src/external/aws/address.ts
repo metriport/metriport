@@ -1,6 +1,6 @@
 import {
-  CoordinatesAndRelevance,
-  getCoordinatesAndRelevanceFromLocation,
+  AddressSuggestion,
+  parseSuggestedAddress,
   getLocationResultPayload,
   makeLocationClient,
 } from "@metriport/core/external/aws/location";
@@ -8,9 +8,10 @@ import * as AWS from "aws-sdk";
 import { Address } from "../../domain/medical/address";
 import { Config } from "../../shared/config";
 
-export type AddressAndRelevance = {
+export type AddressAndSuggestedLabel = {
   address: Address;
   relevance: number;
+  suggestedLabel: string;
 };
 
 const indexName = Config.getPlaceIndexName();
@@ -29,19 +30,20 @@ export function buildAddressText(address: Address): string {
  */
 export async function addGeographicCoordinates(
   addressList: Address[]
-): Promise<AddressAndRelevance[]> {
+): Promise<AddressAndSuggestedLabel[]> {
   const geocodingUpdates = await Promise.allSettled(
     addressList.map(async address => {
       if (address.coordinates) {
         return;
       }
-      const coordinatesAndRelevance = await geocodeAddress(address);
-      if (coordinatesAndRelevance) {
-        address.coordinates = coordinatesAndRelevance.coordinates;
-        const relevance = coordinatesAndRelevance.relevance;
+      const suggested = await geocodeAddress(address);
+      if (suggested) {
+        address.coordinates = suggested.coordinates;
+        const relevance = suggested.relevance;
         return {
           address,
           relevance,
+          suggestedLabel: suggested.suggestedLabel,
         };
       }
       return;
@@ -58,9 +60,7 @@ export async function addGeographicCoordinates(
  * @param address an Address object
  * @returns a Coordinate pair
  */
-export async function geocodeAddress(
-  address: Address
-): Promise<CoordinatesAndRelevance | undefined> {
+export async function geocodeAddress(address: Address): Promise<AddressSuggestion | undefined> {
   const addressText = buildAddressText(address);
   const countryFilter = address.country ?? "USA";
 
@@ -77,6 +77,6 @@ export async function geocodeAddress(
 
   const topSuggestion = resp ? resp[0] : undefined;
   if (topSuggestion) {
-    return getCoordinatesAndRelevanceFromLocation(topSuggestion);
+    return parseSuggestedAddress(topSuggestion);
   }
 }

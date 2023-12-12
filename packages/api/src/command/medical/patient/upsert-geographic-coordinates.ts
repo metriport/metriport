@@ -1,11 +1,10 @@
-import { uniq } from "lodash";
-import { Patient } from "../../../domain/medical/patient";
 import { Address } from "../../../domain/medical/address";
-import { AddressAndRelevance, addGeographicCoordinates } from "../../../external/aws/address";
+import { Patient } from "../../../domain/medical/patient";
+import { Product } from "../../../domain/product";
+import { AddressAndSuggestedLabel, addGeographicCoordinates } from "../../../external/aws/address";
+import { EventTypes, analytics } from "../../../shared/analytics";
 import { capture } from "../../../shared/notifications";
 import { PatientUpdateCmd, updatePatient } from "./update-patient";
-import { EventTypes, analytics } from "../../../shared/analytics";
-import { Product } from "../../../domain/product";
 
 const ADDRESS_MATCH_RELEVANCE_THRESHOLD = 0.9;
 
@@ -28,27 +27,24 @@ export const upsertGeographicCoordinates = async ({
   reportRelevance?: boolean;
   updatePatientAddresses?: boolean;
 }): Promise<Address[]> => {
-  const data = patient.data;
-  const addressesAndRelevanceScores = await addGeographicCoordinates(data.address);
-  const updatedAddresses = addressesAndRelevanceScores.map(p => p.address);
-  const newAddresses = uniq([...data.address, ...updatedAddresses]);
+  const addresses = patient.data.address;
+  const addressAndLabel = await addGeographicCoordinates(addresses);
+  const updatedAddresses = addressAndLabel.map(p => p.address);
+  if (!updatedAddresses.length) return addresses;
 
-  if (updatedAddresses.length) {
-    if (reportRelevance) reportLowRelevance(addressesAndRelevanceScores, patient);
-    if (updatePatientAddresses) {
-      const { id, cxId, eTag } = patient;
-      const patientUpdatedData: PatientUpdateCmd = {
-        ...patient.data,
-        address: newAddresses,
-        id,
-        cxId,
-        eTag,
-      };
-      await updatePatient(patientUpdatedData);
-    }
-    return newAddresses;
+  if (reportRelevance) reportLowRelevance(addressAndLabel, patient);
+  if (updatePatientAddresses) {
+    const { id, cxId, eTag } = patient;
+    const patientUpdatedData: PatientUpdateCmd = {
+      ...patient.data,
+      address: addresses,
+      id,
+      cxId,
+      eTag,
+    };
+    await updatePatient(patientUpdatedData);
   }
-  return data.address;
+  return addresses;
 };
 
 /**
@@ -58,19 +54,18 @@ export const upsertGeographicCoordinates = async ({
  * @returns - a list of Address objects with updated coordinates.
  */
 export async function addCoordinatesToAddresses(addresses: Address[]): Promise<Address[]> {
-  const addressesAndRelevanceScores = await addGeographicCoordinates(addresses);
-  const updatedAddresses = addressesAndRelevanceScores.map(p => p.address);
-  return uniq([...addresses, ...updatedAddresses]);
+  await addGeographicCoordinates(addresses);
+  return addresses;
 }
 
 export async function reportLowRelevance(
-  addresses: AddressAndRelevance[],
+  addresses: AddressAndSuggestedLabel[],
   patient: Patient
 ): Promise<void> {
   for (const a of addresses) {
-    let belowThreshold = false;
+    let aboveThreshold = true;
     if (a.relevance < ADDRESS_MATCH_RELEVANCE_THRESHOLD) {
-      belowThreshold = true;
+      aboveThreshold = false;
       const msg = `Low address match coefficient`;
       console.log(`${msg}. Address: ${a.address}, Relevance: ${a.relevance}`);
       capture.message(msg, {
@@ -78,17 +73,19 @@ export async function reportLowRelevance(
           context: `getCoordinatesFromLocation`,
           relevance: a.relevance,
           address: a.address,
+          suggestedAddress: a.suggestedLabel,
           patient,
           threshold: ADDRESS_MATCH_RELEVANCE_THRESHOLD,
         },
+        level: "info",
       });
     }
     analytics({
       distinctId: patient.cxId,
-      event: EventTypes.address,
+      event: EventTypes.addressRelevance,
       properties: {
         relevance: a.relevance,
-        belowThreshold,
+        aboveThreshold,
         apiType: Product.medical,
       },
     });
