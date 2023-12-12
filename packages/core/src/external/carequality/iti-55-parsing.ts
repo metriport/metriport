@@ -10,7 +10,7 @@ import { isAnyPatientMatching } from "./patient-matching";
  * @param xml - The XML string to be parsed.
  * @returns A promise that resolves to an array containing the parsed patient data object and the root ID, extension ID, and signature extracted from the XML.
  */
-export function parseXmlString(xml: string): Promise<[PatientData, [string, string, string]]> {
+function parseXmlString(xml: string): Promise<[PatientData, [string, string, string]]> {
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
