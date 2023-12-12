@@ -26,3 +26,11 @@ export function generateTimeStrings(): {
 
   return { createdAt, expiresAt: expiresAtStr, creationTime };
 }
+
+export function cleanXml(xml: string): string {
+  xml = xml.trim();
+  xml = xml.replace(/^\\n/, "");
+  xml = xml.replace(/\\\\\\"/g, '"');
+  xml = xml.replace(/\\"/g, '"');
+  return xml;
+}

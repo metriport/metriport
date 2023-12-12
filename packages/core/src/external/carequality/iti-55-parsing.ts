@@ -1,6 +1,6 @@
 import * as xml2js from "xml2js";
 import { PatientData, LivingSubjectId, PrincipalCareProviderId } from "./patient-incoming-schema";
-import { generateTimeStrings } from "./utils";
+import { cleanXml, generateTimeStrings } from "./utils";
 import { generateXcpdTemplate } from "./iti-55-template";
 import { Address } from "@metriport/api-sdk/medical/models/common/address";
 import { isAnyPatientMatching } from "./patient-matching";
@@ -11,6 +11,9 @@ import { isAnyPatientMatching } from "./patient-matching";
  * @returns A promise that resolves to an array containing the parsed patient data object and the root ID, extension ID, and signature extracted from the XML.
  */
 async function parseXmlString(xml: string): Promise<[PatientData, [string, string, string]]> {
+  // Removing leading newlines and escaping double quote variations
+  xml = cleanXml(xml);
+
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
@@ -151,9 +154,9 @@ const fillTemplate = (
     .replace(/{code}/g, status);
 };
 
-export async function generateXCPD(requestBody: string): Promise<string> {
+export async function generateXCPD(xml: string): Promise<string> {
   try {
-    const [patientData, [root, extension, signature]] = await parseXmlString(requestBody);
+    const [patientData, [root, extension, signature]] = await parseXmlString(xml);
     const matchingPatient = isAnyPatientMatching(patientData);
     let status = "";
     if (matchingPatient) {

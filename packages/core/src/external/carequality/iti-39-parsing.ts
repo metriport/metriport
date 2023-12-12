@@ -1,5 +1,5 @@
 import { generatePatientDoc } from "./docs";
-import { generateTimeStrings } from "./utils";
+import { generateTimeStrings, cleanXml } from "./utils";
 import * as xml2js from "xml2js";
 import { generateITI39Template } from "./iti-39-template";
 
@@ -16,6 +16,8 @@ const documentData: { [key: string]: string } = {
  * @returns A promise that resolves to an array containing the signature, documentId, and homeCommunityID extracted from the XML.
  */
 async function parseXmlString(xml: string): Promise<[string, string, string]> {
+  xml = cleanXml(xml);
+
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });

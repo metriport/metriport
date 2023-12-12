@@ -1,4 +1,4 @@
-import { generateTimeStrings } from "./utils";
+import { generateTimeStrings, cleanXml } from "./utils";
 import * as xml2js from "xml2js";
 import { generateITI38Template } from "./iti-38-template";
 
@@ -15,6 +15,8 @@ const patientToDocumentLinks: { [key: string]: string } = {
  * @returns A promise that resolves to an array containing the patientId, systemId, signature, and messageId extracted from the XML.
  */
 async function parseXmlString(xml: string): Promise<[string, string, string, string]> {
+  xml = cleanXml(xml);
+
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
