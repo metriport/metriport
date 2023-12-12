@@ -15,12 +15,13 @@ const documentData: { [key: string]: string } = {
  * @param xml - The XML string to be parsed.
  * @returns A promise that resolves to an array containing the signature, documentId, and homeCommunityID extracted from the XML.
  */
-function parseXmlString(xml: string): Promise<[string, string, string]> {
+async function parseXmlString(xml: string): Promise<[string, string, string]> {
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return parser.parseStringPromise(xml).then(function (result: any) {
+
+  try {
+    const result = await parser.parseStringPromise(xml);
     const signature =
       result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
     const documentId =
@@ -33,7 +34,10 @@ function parseXmlString(xml: string): Promise<[string, string, string]> {
       ];
 
     return [signature, documentId, homeCommunityId];
-  });
+  } catch (err) {
+    console.log("error", err);
+    throw new Error("Invalid XML");
+  }
 }
 
 const fillTemplate = (
@@ -61,23 +65,25 @@ const fillTemplate = (
   );
 };
 
-export function generateITI39(xml: string): Promise<string> {
-  return parseXmlString(xml).then(
-    ([signature, documentId, homeCommunityid]: [string, string, string]) => {
-      const { createdAt, expiresAt } = generateTimeStrings();
-      const document = documentData[documentId];
-      const status = document ? "Success" : "Failed";
-      const iti39Template = generateITI39Template(status);
-      const iti38 = fillTemplate(
-        iti39Template,
-        signature,
-        createdAt,
-        expiresAt,
-        homeCommunityid,
-        documentId,
-        document
-      );
-      return iti38;
-    }
-  );
+export async function generateITI39(xml: string): Promise<string> {
+  try {
+    const [signature, documentId, homeCommunityid] = await parseXmlString(xml);
+    const { createdAt, expiresAt } = generateTimeStrings();
+    const document = documentData[documentId];
+    const status = document ? "Success" : "Failed";
+    const iti39Template = generateITI39Template(status);
+    const iti38 = fillTemplate(
+      iti39Template,
+      signature,
+      createdAt,
+      expiresAt,
+      homeCommunityid,
+      documentId,
+      document
+    );
+    return iti38;
+  } catch (error) {
+    console.error(error);
+    throw new Error("XML parsing failed");
+  }
 }

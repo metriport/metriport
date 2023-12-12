@@ -15,7 +15,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     if (!event.body) {
       return buildResponse(400, "Request body is missing");
     }
-
+    console.log("event", event.body);
     try {
       switch (path) {
         case "/xcpd/v1":
@@ -34,7 +34,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       return buildResponse(200, result);
     } catch (err) {
       console.log("error", err);
-      return buildResponse(500, "Internal server error");
+      return buildResponse(404, "Invalid XML");
     }
   }
 );

@@ -10,12 +10,14 @@ import { isAnyPatientMatching } from "./patient-matching";
  * @param xml - The XML string to be parsed.
  * @returns A promise that resolves to an array containing the parsed patient data object and the root ID, extension ID, and signature extracted from the XML.
  */
-function parseXmlString(xml: string): Promise<[PatientData, [string, string, string]]> {
+async function parseXmlString(xml: string): Promise<[PatientData, [string, string, string]]> {
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return parser.parseStringPromise(xml).then(function (result: any) {
+
+  try {
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await parser.parseStringPromise(xml);
     const parameterList =
       result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
         "queryByParameter"
@@ -77,7 +79,10 @@ function parseXmlString(xml: string): Promise<[PatientData, [string, string, str
       contact: [{ phone: phone }],
     };
     return [patientData, [root, extension, signature]];
-  });
+  } catch (error) {
+    console.error(error);
+    throw new Error("XML parsing failed");
+  }
 }
 
 const fillTemplate = (
@@ -146,31 +151,33 @@ const fillTemplate = (
     .replace(/{code}/g, status);
 };
 
-export function generateXCPD(requestBody: string): Promise<string> {
-  return parseXmlString(requestBody).then(
-    ([patientData, [root, extension, signature]]: [PatientData, [string, string, string]]) => {
-      const matchingPatient = isAnyPatientMatching(patientData);
-      let status = "";
-      if (matchingPatient) {
-        status = "OK";
-      } else {
-        console.log("no patient matching");
-        status = "NF";
-      }
-      const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-      const xcpdTemplate = generateXcpdTemplate(status);
-      const xcpd = fillTemplate(
-        xcpdTemplate,
-        createdAt,
-        expiresAt,
-        creationTime,
-        root,
-        extension,
-        signature,
-        status,
-        matchingPatient
-      );
-      return xcpd;
+export async function generateXCPD(requestBody: string): Promise<string> {
+  try {
+    const [patientData, [root, extension, signature]] = await parseXmlString(requestBody);
+    const matchingPatient = isAnyPatientMatching(patientData);
+    let status = "";
+    if (matchingPatient) {
+      status = "OK";
+    } else {
+      console.log("no patient matching");
+      status = "NF";
     }
-  );
+    const { createdAt, expiresAt, creationTime } = generateTimeStrings();
+    const xcpdTemplate = generateXcpdTemplate(status);
+    const xcpd = fillTemplate(
+      xcpdTemplate,
+      createdAt,
+      expiresAt,
+      creationTime,
+      root,
+      extension,
+      signature,
+      status,
+      matchingPatient
+    );
+    return xcpd;
+  } catch (error) {
+    console.error(error);
+    throw new Error("XML parsing failed");
+  }
 }

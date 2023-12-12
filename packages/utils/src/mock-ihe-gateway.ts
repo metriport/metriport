@@ -9,39 +9,37 @@ import bodyParser from "body-parser";
 const app = express();
 app.use(bodyParser.text({ type: "application/soap+xml" }));
 
-app.post("/xcpd/v1", (req, res) => {
-  generateXCPD(req.body)
-    .then((xcpd: string) => {
-      res.set("Content-Type", "application/soap+xml; charset=utf-8");
-      res.send(xcpd);
-    })
-    .catch((err: Error) => {
-      console.log("error", err);
-    });
+app.post("/xcpd/v1", async (req, res) => {
+  try {
+    const xcpd = await generateXCPD(req.body);
+    res.set("Content-Type", "application/soap+xml; charset=utf-8");
+    res.send(xcpd);
+  } catch (err) {
+    console.log("error", err);
+    res.status(404).send("Invalid XML");
+  }
 });
 
-app.post("/iti38/v1", (req, res) => {
-  generateITI38(req.body)
-    .then((iti38: string) => {
-      res.set("Content-Type", "application/soap+xml; charset=utf-8");
-      res.send(iti38);
-    })
-    .catch((err: Error) => {
-      console.log("error", err);
-      res.status(404).send("No patient matching");
-    });
+app.post("/iti38/v1", async (req, res) => {
+  try {
+    const iti38 = await generateITI38(req.body);
+    res.set("Content-Type", "application/soap+xml; charset=utf-8");
+    res.send(iti38);
+  } catch (err) {
+    console.log("error", err);
+    res.status(404).send("No patient matching");
+  }
 });
 
-app.post("/iti39/v1", (req, res) => {
-  generateITI39(req.body)
-    .then((iti38: string) => {
-      res.set("Content-Type", "application/soap+xml; charset=utf-8");
-      res.send(iti38);
-    })
-    .catch((err: Error) => {
-      console.log("error", err);
-      res.status(404).send("No patient matching");
-    });
+app.post("/iti39/v1", async (req, res) => {
+  try {
+    const iti39 = await generateITI39(req.body);
+    res.set("Content-Type", "application/soap+xml; charset=utf-8");
+    res.send(iti39);
+  } catch (err) {
+    console.log("error", err);
+    res.status(404).send("No patient matching");
+  }
 });
 
 app.listen(3000, () => {
