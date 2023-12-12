@@ -228,6 +228,7 @@ function createLinkPatientsLambda(
 
   provideAccessToQueue({ accessType: "both", queue: inputQueue, resource: lambda });
   cookieStore.grantRead(lambda);
+  cookieStore.grantWrite(lambda);
 
   return lambda;
 }

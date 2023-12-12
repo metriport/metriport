@@ -5,7 +5,7 @@ import { PatientUpdater } from "./patient-updater";
 
 dayjs.extend(duration);
 
-const UPDATE_TIMEOUT = dayjs.duration({ minutes: 2 });
+const UPDATE_TIMEOUT = dayjs.duration({ minutes: 3 });
 
 /**
  * Implementation of the PatientUpdater that calls the Metriport API

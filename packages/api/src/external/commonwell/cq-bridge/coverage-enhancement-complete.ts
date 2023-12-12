@@ -17,13 +17,20 @@ export const completeEnhancedCoverage = async ({
   cxId,
   patientIds,
   cqLinkStatus,
+  startedAt,
+  context,
 }: {
   cxId: string;
   patientIds: string[];
   cqLinkStatus: CQLinkStatus;
+  startedAt?: number;
+  /**
+   * Context/operation in which this function is being called
+   */
+  context?: string;
 }): Promise<void> => {
-  const startedAt = Date.now();
-  const { log } = out(`EC completer - cx ${cxId}`);
+  const startedAtLocal = Date.now();
+  const { log } = out(`EC completer - cx ${cxId}, ctxt ${context ?? "n/a"}`);
   try {
     log(
       `Completing EC for ${patientIds.length} patients, to status: ${cqLinkStatus}, ` +
@@ -41,9 +48,14 @@ export const completeEnhancedCoverage = async ({
       numberOfParallelExecutions: PARALLEL_UPDATES,
     });
   } finally {
-    const duration = Date.now() - startedAt;
-    const durationMin = dayjs.duration(duration).asMinutes();
-    log(`Done, duration: ${duration} ms / ${durationMin} min`);
+    const duration = startedAt ? Date.now() - startedAt : undefined;
+    const durationMin = duration ? dayjs.duration(duration).asMinutes() : undefined;
+    const durationLocal = Date.now() - startedAtLocal;
+    const durationLocalMin = dayjs.duration(durationLocal).asMinutes();
+    log(
+      `Done, total duration: ${duration} ms / ${durationMin} min ` +
+        `(just to complete: ${durationLocal} ms / ${durationLocalMin} min)`
+    );
   }
 };
 

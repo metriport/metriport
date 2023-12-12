@@ -55,7 +55,7 @@ export class CoverageEnhancerCloud extends CoverageEnhancer {
         });
       }
     } finally {
-      await this.sendEnhancedCoverageDone(cxId, patientIds);
+      await this.sendEnhancedCoverageDone(cxId, patientIds, startedAt);
 
       const duration = Date.now() - startedAt;
       const durationMin = dayjs.duration(duration).asMinutes();
@@ -72,11 +72,12 @@ export class CoverageEnhancerCloud extends CoverageEnhancer {
     await this.sendMessageToQueue(params.cxId, payload);
   }
 
-  private async sendEnhancedCoverageDone(cxId: string, patientIds: string[]) {
+  private async sendEnhancedCoverageDone(cxId: string, patientIds: string[], startedAt: number) {
     const payload: Input = {
       cxId,
       patientIds,
       done: true,
+      startedAt,
     };
     await this.sendMessageToQueue(cxId, payload);
   }

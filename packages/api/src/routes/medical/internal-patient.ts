@@ -404,6 +404,7 @@ const completeEnhancedCoverageSchema = z.object({
   cxId: uuidSchema,
   patientIds: uuidSchema.array(),
   cqLinkStatus: cqLinkStatusSchema,
+  startedAt: z.number().nullish(),
 });
 
 /** ---------------------------------------------------------------------------
@@ -420,13 +421,16 @@ const completeEnhancedCoverageSchema = z.object({
 router.post(
   "/enhance-coverage/completed",
   asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, patientIds, cqLinkStatus } = completeEnhancedCoverageSchema.parse(req.body);
+    const { cxId, patientIds, cqLinkStatus, startedAt } = completeEnhancedCoverageSchema.parse(
+      req.body
+    );
 
     // intentionally async, no need to wait for it
     completeEnhancedCoverage({
       cxId,
       patientIds,
       cqLinkStatus,
+      startedAt: startedAt ?? undefined,
     }).catch(error => {
       console.log(
         `Failed to set cqLinkStatus for patients ${patientIds.join(", ")} - ${errorToString(error)}`

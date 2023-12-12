@@ -2,7 +2,7 @@ import { CoverageEnhancementParams } from "@metriport/core/external/commonwell/c
 import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-local";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { out } from "@metriport/core/util/log";
-import { sleep } from "@metriport/core/util/sleep";
+import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { capture } from "../../../shared/notifications";
@@ -46,10 +46,12 @@ export class CoverageEnhancerApiLocal extends CoverageEnhancerLocal {
     log(`Giving some time for patients to be updated @ CW... (${waitTime} ms)`);
     await sleep(waitTime);
 
-    await completeEnhancedCoverage({ cxId, patientIds, cqLinkStatus: "linked" });
-
-    const duration = Date.now() - startedAt;
-    const durationMin = dayjs.duration(duration).asMinutes();
-    log(`Done, total time: ${duration} ms / ${durationMin} min`);
+    await completeEnhancedCoverage({
+      cxId,
+      patientIds,
+      cqLinkStatus: "linked",
+      startedAt,
+      context: "enhanceCoverage",
+    });
   }
 }

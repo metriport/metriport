@@ -13,6 +13,11 @@ export type LinkPatientsCommand = {
   cxOrgOID: string;
   patientIds: string[];
   cqOrgIds: string[];
+  /**
+   * Indicates whether to make changes to internal and external services or not, used to validate
+   * the overall setup/infra.
+   */
+  dryRun?: boolean | undefined;
   log?: typeof console.log;
 };
 
@@ -25,22 +30,32 @@ export class LinkPatients {
     private readonly patientsUpdater: PatientUpdater
   ) {}
 
+  /**
+   * Links Patients to CQ orgs using CW's CQ bridge.
+   * It updates the include list for the cx @ CW and then issues an update on all provided
+   * patient IDs so they get linked to those orgs @ CW's CQ bridge.
+   *
+   * @param dryRun indicates whether to make changes to internal and external services or not,
+   *               used to validate the overall setup/infra
+   */
   async linkPatientsToOrgs({
     cxId,
     cxOrgOID,
     patientIds,
     cqOrgIds,
+    dryRun,
     log,
   }: LinkPatientsCommand): Promise<void> {
     await this.cwManagementApi.updateIncludeList({
       oid: cxOrgOID,
       careQualityOrgIds: cqOrgIds,
+      dryRun,
       log,
     });
 
     // Give some time for the cache - if any, on CW's side to catch up
     await sleep(TIME_BETWEEN_INCLUDE_LIST_AND_UPDATE_ALL.asMilliseconds());
 
-    await this.patientsUpdater.updateAll(cxId, patientIds);
+    if (!dryRun) await this.patientsUpdater.updateAll(cxId, patientIds);
   }
 }

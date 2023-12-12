@@ -31,6 +31,7 @@ export async function checkStaleEnhancedCoverage(cxIds: string[]): Promise<void>
       cxId,
       patientIds: patientsOfCx.map(p => p.id),
       cqLinkStatus: "linked",
+      context: "checkStaleEnhancedCoverage",
     });
   }
 }

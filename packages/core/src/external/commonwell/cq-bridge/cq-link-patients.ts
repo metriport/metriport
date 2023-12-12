@@ -4,4 +4,7 @@ export type ChunkProgress = { chunkIndex?: number | undefined; chunkTotal?: numb
 
 export type Input =
   | (LinkPatientsCommand & { done: false } & ChunkProgress)
-  | (Pick<LinkPatientsCommand, "cxId" | "patientIds"> & { done: true } & ChunkProgress);
+  | (Pick<LinkPatientsCommand, "cxId" | "patientIds"> & {
+      done: true;
+      startedAt?: number; // when the process started
+    } & ChunkProgress);

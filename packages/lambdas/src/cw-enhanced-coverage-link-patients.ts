@@ -3,6 +3,7 @@ import { PatientUpdaterMetriportAPI } from "@metriport/core/domain/patient/patie
 import { Input } from "@metriport/core/external/commonwell/cq-bridge/cq-link-patients";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { LinkPatients } from "@metriport/core/external/commonwell/management/link-patients";
+import { errorToString } from "@metriport/core/util/error/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { sleep } from "@metriport/core/util/sleep";
 import * as Sentry from "@sentry/serverless";
@@ -72,17 +73,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       console.log(`Giving some time to increase chances of cache being updated @ CW...`);
       await sleep(TIME_BETWEEN_CQ_LINK_AND_DOC_QUERY.asMilliseconds());
       console.log(`Notifying our API EC is completed for this batch...`);
-      await completeEnhancedCoverage(entry.cxId, entry.patientIds);
+      await completeEnhancedCoverage(entry.cxId, entry.patientIds, entry.startedAt);
       return;
     }
 
-    if (!isProduction()) {
-      console.log(`--> skipping actual linking b/c we're not on prod`);
-      return;
-    }
-    await linkPatients.linkPatientsToOrgs(entry);
+    const dryRun = !isProduction();
+    await linkPatients.linkPatientsToOrgs({ ...entry, dryRun });
 
     console.log(`Done.`);
+  } catch (error) {
+    const msg = `Error running EC Lambda`;
+    console.log(`${msg} - ${errorToString(error)}`);
+    capture.message(msg, { extra: { error, event }, level: "error" });
+    throw error;
   } finally {
     const duration = Date.now() - startedAt;
     const durationMin = dayjs.duration(duration).asMinutes();
@@ -90,11 +93,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   }
 });
 
-async function completeEnhancedCoverage(cxId: string, patientIds: string[]): Promise<void> {
+async function completeEnhancedCoverage(
+  cxId: string,
+  patientIds: string[],
+  startedAt?: number
+): Promise<void> {
   await axios.post(`${metriportBaseUrl}/internal/patient/enhance-coverage/completed`, {
     cxId,
     patientIds,
     cqLinkStatus: "linked",
+    startedAt,
   });
 }
 
@@ -121,7 +129,10 @@ function recordToEntry(record: SQSRecord): Input {
   const done = body.done;
   if (done == undefined) throw new Error(`Missing 'done' in body`);
 
-  const basePayload = { cxId, cxOrgOID, patientIds, done, chunkIndex, chunkTotal };
+  const startedAtRaw = body.startedAt;
+  const startedAt = startedAtRaw ? Number(startedAtRaw) : undefined;
+
+  const basePayload = { cxId, cxOrgOID, patientIds, done, chunkIndex, chunkTotal, startedAt };
   if (done) return basePayload;
   return { ...basePayload, cqOrgIds };
 }
