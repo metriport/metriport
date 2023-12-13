@@ -5,13 +5,13 @@ import { periodSchema } from "./period";
 // the system http://hl7.org/fhir/R4/valueset-contact-point-use.html.
 // See: https://specification.commonwellalliance.org/appendix/terminology-bindings#c4-contact-use-codes
 export enum ContactUseCodes {
-  usual = "usual",
+  usual = "usual", // note that "usual" is not specified in the CW spec, but is in FHIR - may need review before use
   home = "home",
   work = "work",
   temp = "temp",
   old = "old",
   mobile = "mobile",
-  unspecified = "unspecified",
+  unspecified = "unspecified", // note that "unspecified" is not specified in the CW spec, but is in FHIR - may need review before use
 }
 export const contactUseCodesSchema = z.enum(Object.keys(ContactUseCodes) as [string, ...string[]]);
 
