@@ -1,7 +1,7 @@
-// import * as patient from "./patient";
+import * as patient from "./patient";
 
-// const cqCommands = {
-//   patient,
-// };
+const cqCommands = {
+  patient,
+};
 
-// export default cqCommands;
+export default cqCommands;
