@@ -72,6 +72,45 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     alarmSnsAction: props.alarmAction,
   });
 
+  createLambda({
+    stack: stack,
+    name: "ITI38",
+    entry: "iti38",
+    layers: [props.lambdaLayers.shared],
+    envType: props.config.environmentType,
+    envVars: {
+      ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+    },
+    vpc: props.vpc,
+    alarmSnsAction: props.alarmAction,
+  });
+
+  createLambda({
+    stack: stack,
+    name: "ITI39",
+    entry: "iti39",
+    layers: [props.lambdaLayers.shared],
+    envType: props.config.environmentType,
+    envVars: {
+      ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+    },
+    vpc: props.vpc,
+    alarmSnsAction: props.alarmAction,
+  });
+
+  createLambda({
+    stack: stack,
+    name: "ITI55",
+    entry: "iti55",
+    layers: [props.lambdaLayers.shared],
+    envType: props.config.environmentType,
+    envVars: {
+      ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+    },
+    vpc: props.vpc,
+    alarmSnsAction: props.alarmAction,
+  });
+
   // create the proxy to the lambda
   const proxy = new apig.ProxyResource(stack, `IHE/Proxy`, {
     parent: api.root,
