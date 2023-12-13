@@ -59,20 +59,8 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
   });
 
-  const iheLambda = createLambda({
-    stack: stack,
-    name: "IHE",
-    entry: "ihe",
-    layers: [props.lambdaLayers.shared],
-    envType: props.config.environmentType,
-    envVars: {
-      ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-    },
-    vpc: props.vpc,
-    alarmSnsAction: props.alarmAction,
-  });
-
-  createLambda({
+  // Create lambdas
+  const iti38Lambda = createLambda({
     stack: stack,
     name: "ITI38",
     entry: "iti38",
@@ -85,7 +73,7 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     alarmSnsAction: props.alarmAction,
   });
 
-  createLambda({
+  const iti39Lambda = createLambda({
     stack: stack,
     name: "ITI39",
     entry: "iti39",
@@ -98,7 +86,7 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     alarmSnsAction: props.alarmAction,
   });
 
-  createLambda({
+  const iti55Lambda = createLambda({
     stack: stack,
     name: "ITI55",
     entry: "iti55",
@@ -111,17 +99,15 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     alarmSnsAction: props.alarmAction,
   });
 
-  // create the proxy to the lambda
-  const proxy = new apig.ProxyResource(stack, `IHE/Proxy`, {
-    parent: api.root,
-    anyMethod: false,
-    defaultCorsPreflightOptions: { allowOrigins: ["*"] },
-  });
-  proxy.addMethod("ANY", new apig.LambdaIntegration(iheLambda), {
-    requestParameters: {
-      "method.request.path.proxy": true,
-    },
-  });
+  // Create resources for each lambda directly under the API root
+  const iti38Resource = api.root.addResource("ITI38");
+  const iti39Resource = api.root.addResource("ITI39");
+  const iti55Resource = api.root.addResource("ITI55");
+
+  // Add methods for each resource
+  iti38Resource.addMethod("ANY", new apig.LambdaIntegration(iti38Lambda));
+  iti39Resource.addMethod("ANY", new apig.LambdaIntegration(iti39Lambda));
+  iti55Resource.addMethod("ANY", new apig.LambdaIntegration(iti55Lambda));
   //-------------------------------------------
   // Output
   //-------------------------------------------
