@@ -29,7 +29,7 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
   if (patientExists) return patientExists;
 
   // validate facility exists and cx has access to it
-  await getFacilityOrFail({ cxId, id: facilityId });
+  const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
   const patientCreate: PatientCreate = {
     id: uuidv7(),
@@ -45,7 +45,6 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
   cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
 
   const organization = await getOrganizationOrFail({ cxId });
-  const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
   // Intentionally asynchronous - it takes too long to perform
   cqCommands.patient

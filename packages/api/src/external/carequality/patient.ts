@@ -23,7 +23,7 @@ import { mockLongExecution } from "./mock-patient-discovery";
 dayjs.extend(duration);
 
 const createContext = "cq.patient.discover";
-export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ seconds: 10 });
+export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 2 });
 
 export function getCQData(
   data: PatientExternalData | undefined
@@ -57,14 +57,14 @@ export async function discover(
       orgOid: organization.oid,
     });
     try {
-      // TODO: Uncomment this when testing is done
+      // TODO: Uncomment this when testing and infra are done
       // await pTimeout(
       //   iheGateway.startPatientDiscovery(iheGatewayRequest),
       //   PATIENT_DISCOVERY_TIMEOUT.asMilliseconds(),
       //   "startPatientDiscovery function timed out!"
       // );
 
-      // TODO: Remove this when testing is done
+      // TODO: Remove this when testing and infra are done
       await pTimeout(
         mockLongExecution(iheGatewayRequest),
         PATIENT_DISCOVERY_TIMEOUT.asMilliseconds(),

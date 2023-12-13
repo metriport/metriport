@@ -27,7 +27,7 @@ export function patientToIheGateway({
     cxId: cxId,
     timestamp: dayjs().toISOString(),
     xcpdGateways: xcpdGateways,
-    principalCareProviderNPIs: [facilityNPI],
+    principalCareProviderIds: [facilityNPI],
     samlAttributes: {
       subjectId: user,
       // TODO https://github.com/metriport/metriport/pull/1302#discussion_r1422876830
