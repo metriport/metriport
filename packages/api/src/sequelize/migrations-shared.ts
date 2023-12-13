@@ -87,3 +87,31 @@ export const createTable = async (
   );
   await addUpdatedAtTrigger(queryInterface, options.transaction, tableName);
 };
+
+export const resultsColumns = {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true,
+  },
+  requestId: {
+    type: DataTypes.UUID,
+    field: "request_id",
+  },
+  patientId: {
+    type: DataTypes.UUID,
+    field: "patient_id",
+  },
+  status: {
+    type: DataTypes.STRING,
+    field: "status",
+  },
+  data: {
+    type: DataTypes.JSONB,
+  },
+  createdAt: {
+    field: "created_at",
+    type: DataTypes.DATE(6),
+    allowNull: false,
+    defaultValue: literal("CURRENT_TIMESTAMP(6)"),
+  },
+};

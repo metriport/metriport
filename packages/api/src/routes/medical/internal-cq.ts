@@ -8,7 +8,6 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
-import { handlePatientDiscoveryResponse } from "../../command/medical/patient-discovery-result/create-patient-discovery-result";
 import { rebuildCQDirectory } from "../../command/medical/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
@@ -18,7 +17,10 @@ import { createOrUpdateCQOrganization } from "../../external/carequality/organiz
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
-import { handleDocQueryResponse } from "../../external/carequality/document";
+import {
+  handleIHEResponse,
+  IHEResultType,
+} from "../../command/medical/ihe-result/create-ihe-result";
 
 dayjs.extend(duration);
 
@@ -119,18 +121,26 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
 
-    await handlePatientDiscoveryResponse(patientDiscovery);
+    await handleIHEResponse({
+      type: IHEResultType.PATIENT_DISCOVERY,
+      response: patientDiscovery,
+    });
 
     return res.sendStatus(httpStatus.OK);
   })
 );
 
+/**
+ * POST /internal/carequality/document-query
+ *
+ * Receives a Document Query request from the IHE Gateway
+ */
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const docQueryResp = documentQueryResponseSchema.parse(req.body);
+    const docQuery = documentQueryResponseSchema.parse(req.body);
 
-    await handleDocQueryResponse(docQueryResp);
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: docQuery });
 
     return res.sendStatus(httpStatus.OK);
   })

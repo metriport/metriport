@@ -9,6 +9,7 @@ import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { CQDirectoryEntryModel } from "./medical/cq-directory";
 import { DocRefMappingModel } from "./medical/docref-mapping";
+import { DocumentQueryResultModel } from "./medical/document-query-result";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientDiscoveryResultModel } from "./medical/patient-discovery-result";
 import { PatientModel } from "./medical/patient";
@@ -27,6 +28,7 @@ const models: ModelSetup[] = [
   MAPIAccess.setup,
   DocRefMappingModel.setup,
   PatientDiscoveryResultModel.setup,
+  DocumentQueryResultModel.setup,
 ];
 
 export type MetriportDB = {

@@ -28,7 +28,7 @@ export type DocumentQueryRequest = BaseRequest & {
 
 export const documentQueryResponseSchema = baseResponseSchema.extend({
   documentReference: z.array(documentReference).nullish(),
-  xcaHomeCommunityId: z.string(),
+  gateway: z.object({ homeCommunityId: z.string(), url: z.string() }),
 });
 
 export type DocumentQueryResponse = z.infer<typeof documentQueryResponseSchema>;
