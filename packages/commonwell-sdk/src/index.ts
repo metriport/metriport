@@ -49,4 +49,3 @@ export {
   Person,
   PersonSearchResp,
 } from "./models/person";
-export { PurposeOfUse } from "./models/purpose-of-use";

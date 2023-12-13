@@ -1,4 +1,5 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
+import { patientDiscoveryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { documentQueryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
@@ -7,6 +8,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
+import { handlePatientDiscoveryResponse } from "../../command/medical/patient-discovery-result/create-patient-discovery-result";
 import { rebuildCQDirectory } from "../../command/medical/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
@@ -83,7 +85,6 @@ router.post(
 
 /**
  * GET /internal/carequality/directory/nearby-organizations
-
  *
  * Retrieves the organizations within a specified radius from the patient's address.
  * @param req.query.cxId The ID of the customer organization.
@@ -106,8 +107,26 @@ router.get(
   })
 );
 
+// BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
+
+/**
+ * POST /internal/carequality/patient-discovery
+ *
+ * Receives a Patient Discovery request from the IHE Gateway
+ */
 router.post(
-  "/document-query",
+  "/patient-discovery/response",
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
+
+    await handlePatientDiscoveryResponse(patientDiscovery);
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+router.post(
+  "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
     const docQueryResp = documentQueryResponseSchema.parse(req.body);
 

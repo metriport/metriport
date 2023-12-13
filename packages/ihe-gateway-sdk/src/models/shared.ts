@@ -39,11 +39,11 @@ export const documentReference = z.object({
   homeCommunityId: z.string(),
   docUniqueId: z.string(),
   repositoryUniqueId: z.string(),
-  contentType: z.string().nullable(),
-  language: z.string().nullable(),
-  uri: z.string().nullable(),
-  creation: z.string().nullable(),
-  title: z.string().nullable(),
+  contentType: z.string().nullish(),
+  language: z.string().nullish(),
+  uri: z.string().nullish(),
+  creation: z.string().nullish(),
+  title: z.string().nullish(),
 });
 
 export type DocumentReference = z.infer<typeof documentReference>;
@@ -65,7 +65,8 @@ export const baseResponseSchema = z.object({
   cxId: z.string(),
   timestamp: z.string(),
   responseTimestamp: z.string(),
-  xcpdPatientId: z.object({ id: z.string(), system: z.string() }).nullable(),
+  xcpdPatientId: z.object({ id: z.string(), system: z.string() }).optional(),
+  gateway: z.object({ oid: z.string(), url: z.string() }),
   patientId: z.string(),
-  operationOutcome: operationOutcome.nullable(),
+  operationOutcome: operationOutcome.nullish(),
 });
