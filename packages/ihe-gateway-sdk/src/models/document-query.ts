@@ -5,7 +5,10 @@ import {
   BaseResponse,
   documentReferenceSchema,
   DocumentReference,
+  XCAGatewaySchema,
   XCAGateway,
+  XCPDPatientId,
+  xcpdPatientIdSchema,
 } from "./shared";
 import { z } from "zod";
 
@@ -19,12 +22,6 @@ export const dateRangeSchema = z.object({
   dateTo: z.string(),
 });
 
-export const xcpdPatientIdSchema = z.object({
-  id: z.string(),
-  system: z.string(),
-});
-
-export type XCPDPatientId = z.infer<typeof xcpdPatientIdSchema>;
 export type Code = z.infer<typeof codeSchema>;
 export type DateRange = z.infer<typeof dateRangeSchema>;
 
@@ -34,7 +31,7 @@ export type DocumentQueryRequestOutgoing = BaseRequest & {
   cxId: string;
   xcpdPatientId: XCPDPatientId;
   patientId?: string;
-  xcaGateway: XCAGateway;
+  gateway: XCAGateway;
   classCode?: Code[];
   practiceSettingCode?: Code[];
   facilityTypeCode?: Code[];
@@ -44,25 +41,25 @@ export type DocumentQueryRequestOutgoing = BaseRequest & {
 
 export const documentQueryResponseIncomingSchema = baseResponseSchema.extend({
   cxId: z.string(),
-  documentReference: z.array(documentReferenceSchema).nullable(),
-  xcaHomeCommunityId: z.string(),
+  gateway: XCAGatewaySchema.nullish(),
+  documentReference: z.array(documentReferenceSchema).nullish(),
 });
 export type DocumentQueryResponse = z.infer<typeof documentQueryResponseIncomingSchema>;
 
 // The following are for us responding to a document query request
 
 export const DocumentQueryRequestIncomingSchema = baseRequestSchema.extend({
-  xcpdPatientId: z.object({ id: z.string(), system: z.string() }),
-  classCode: z.array(codeSchema).optional(),
-  practiceSettingCode: z.array(codeSchema).optional(),
-  facilityTypeCode: z.array(codeSchema).optional(),
-  documentCreationDate: z.array(dateRangeSchema).optional(),
-  serviceDate: z.array(dateRangeSchema).optional(),
+  xcpdPatientId: xcpdPatientIdSchema,
+  classCode: z.array(codeSchema).nullish(),
+  practiceSettingCode: z.array(codeSchema).nullish(),
+  facilityTypeCode: z.array(codeSchema).nullish(),
+  documentCreationDate: z.array(dateRangeSchema).nullish(),
+  serviceDate: z.array(dateRangeSchema).nullish(),
 });
 
 export type DocumentQueryRequestIncoming = z.infer<typeof DocumentQueryRequestIncomingSchema>;
 
-// TODO the definition here doesnt havea xcpdPatientId on notion. Currently nullable in baseResponse
+// TODO the definition here doesnt havea xcpdPatientId on notion. Currently nullish in baseResponse
 export type DocumentQueryResponseOutgoing = BaseResponse & {
   documentReference: DocumentReference[];
 };

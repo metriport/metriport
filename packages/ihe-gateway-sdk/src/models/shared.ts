@@ -34,7 +34,7 @@ export const baseRequestSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
   samlAttributes: samlAttributesSchema,
-  patientId: z.string().nullable(),
+  patientId: z.string().nullish(),
 });
 
 export type BaseRequest = z.infer<typeof baseRequestSchema>;
@@ -44,13 +44,13 @@ export const documentReferenceSchema = z.object({
   docUniqueId: z.string(),
   urn: z.string(),
   repositoryUniqueId: z.string(),
-  newRepositoryUniqueId: z.string().nullable(),
-  newDocumentUniqueId: z.string().nullable(),
-  contentType: z.string().nullable(),
-  url: z.string().nullable(), // signed urls that mirth will use to download actually b64 bytes
-  uri: z.string().nullable(),
-  creation: z.string().nullable(),
-  title: z.string().nullable(),
+  newRepositoryUniqueId: z.string().nullish(),
+  newDocumentUniqueId: z.string().nullish(),
+  contentType: z.string().nullish(),
+  url: z.string().nullish(), // signed urls that mirth will use to download actually b64 bytes
+  uri: z.string().nullish(),
+  creation: z.string().nullish(),
+  title: z.string().nullish(),
 });
 
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
@@ -69,13 +69,20 @@ export const operationOutcome = z.object({
 
 export type OperationOutcome = z.infer<typeof operationOutcome>;
 
+export const xcpdPatientIdSchema = z.object({
+  id: z.string(),
+  system: z.string(),
+});
+
+export type XCPDPatientId = z.infer<typeof xcpdPatientIdSchema>;
+
 export const baseResponseSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
   responseTimestamp: z.string(),
-  xcpdPatientId: z.object({ id: z.string(), system: z.string() }).nullable(), // why nullable as oppposed to optional?
-  patientId: z.string().nullable(), // TODO should this not be nullable
-  operationOutcome: operationOutcome.nullable(),
+  xcpdPatientId: xcpdPatientIdSchema.nullish(),
+  patientId: z.string().nullish(), // TODO should this not be nullish
+  operationOutcome: operationOutcome.nullish(),
 });
 
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
@@ -91,9 +98,23 @@ const nameSchema = z.object({
 });
 
 const telecomSchema = z.object({
-  system: z.string().optional(),
+  system: z
+    .union([
+      z.literal("phone"),
+      z.literal("fax"),
+      z.literal("email"),
+      z.literal("pager"),
+      z.literal("url"),
+      z.literal("sms"),
+      z.literal("other"),
+    ])
+    .optional(),
   value: z.string().optional(),
 });
+
+const genderSchema = z
+  .union([z.literal("male"), z.literal("female"), z.literal("other"), z.literal("unknown")])
+  .optional();
 
 const addressSchema = z.object({
   line: z.array(z.string()).optional(),
@@ -104,19 +125,20 @@ const addressSchema = z.object({
 });
 
 export const patientResourceSchema = z.object({
-  resourceType: z.literal("Patient").optional(),
+  resourceType: z.literal("Patient"),
   id: z.string().optional(),
   identifier: z.array(identifierSchema).optional(),
   name: z.array(nameSchema),
   telecom: z.array(telecomSchema).optional(),
-  gender: z.string(),
+  gender: genderSchema,
   birthDate: z.string(),
   address: z.array(addressSchema).optional(),
 });
 
 export type PatientResource = z.infer<typeof patientResourceSchema>;
 
-export type XCAGateway = {
-  homeCommunityId: string;
-  url: string;
-};
+export const XCAGatewaySchema = z.object({
+  homeCommunityId: z.string(),
+  url: z.string(),
+});
+export type XCAGateway = z.infer<typeof XCAGatewaySchema>;
