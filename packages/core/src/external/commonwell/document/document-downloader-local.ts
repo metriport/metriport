@@ -100,26 +100,32 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
     const [detectedFileType, detectedExtension] = detectFileType(downloadedDocument);
 
-    console.log(
-      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
-    );
+    // If the file type has changed
+    if (detectedFileType !== document.mimeType) {
+      console.log(
+        `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
+      );
+      const newKey = await this.s3Utils.updateContentTypeInS3(
+        downloadResult.bucket,
+        downloadResult.key,
+        detectedFileType,
+        detectedExtension
+      );
+      const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
+      const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(
+        newKey,
+        downloadResult.bucket
+      );
 
-    const newKey = await this.s3Utils.updateContentTypeInS3(
-      downloadResult.bucket,
-      downloadResult.key,
-      detectedFileType,
-      detectedExtension
-    );
-
-    const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
-    const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(newKey, downloadResult.bucket);
-
-    return {
-      ...downloadResult,
-      ...fileDetailsUpdated,
-      key: newKey,
-      location: newLocation,
-    };
+      return {
+        ...downloadResult,
+        ...fileDetailsUpdated,
+        key: newKey,
+        location: newLocation,
+      };
+    } else {
+      return { ...downloadResult };
+    }
   }
   /**
    * Parses the XML file, checking if there's an embedded PDF inside it.
