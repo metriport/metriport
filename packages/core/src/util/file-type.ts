@@ -3,8 +3,10 @@ import {
   XML_MIME_TYPE,
   PDF_MIME_TYPE,
   TIFF_MIME_TYPE,
+  TIF_MIME_TYPE,
   PNG_MIME_TYPE,
   JPEG_MIME_TYPE,
+  JPG_MIME_TYPE,
   BMP_MIME_TYPE,
   TEXT_MIME_TYPE,
   OCTET_MIME_TYPE,
@@ -95,6 +97,7 @@ export function isLikelyTextFile(fileBuffer: Buffer): boolean {
 export function detectFileType(document: string): [string, string] {
   const maxBytesNeeded = 6; //NOTE: if you update detectFileType, you might need to update this number
   const fileBuffer = Buffer.from(document.slice(0, maxBytesNeeded));
+  console.log(`detectFileType: ${fileBuffer}`);
   if (
     (fileBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
       fileBuffer[1] === TIFF_MAGIC_NUMBER_2 &&
@@ -156,12 +159,13 @@ export function isContentTypeAccepted(mimeType: string | undefined): boolean {
     JSON_MIME_TYPE,
     XML_MIME_TYPE,
     PDF_MIME_TYPE,
+    TIF_MIME_TYPE,
     TIFF_MIME_TYPE,
     PNG_MIME_TYPE,
     JPEG_MIME_TYPE,
+    JPG_MIME_TYPE,
     BMP_MIME_TYPE,
     TEXT_MIME_TYPE,
-    OCTET_MIME_TYPE,
     HTML_MIME_TYPE,
   ];
 
