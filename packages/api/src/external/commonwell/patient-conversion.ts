@@ -1,5 +1,7 @@
 import {
   AddressUseCodes,
+  Contact,
+  ContactSystemCodes,
   Identifier,
   NameUseCodes,
   Patient as CommonwellPatient,
@@ -82,6 +84,22 @@ export function patientToCommonwell({
       gender: {
         code: genderMapping[patient.data.genderAtBirth],
       },
+      telecom: patient.data.contact?.flatMap(contact => {
+        const contacts: Contact[] = [];
+        if (contact.email) {
+          contacts.push({
+            system: ContactSystemCodes.email,
+            value: contact.email,
+          });
+        }
+        if (contact.phone) {
+          contacts.push({
+            system: ContactSystemCodes.phone,
+            value: contact.phone,
+          });
+        }
+        return contacts;
+      }),
       birthDate: patient.data.dob,
       identifier: strongIdentifiers,
     },

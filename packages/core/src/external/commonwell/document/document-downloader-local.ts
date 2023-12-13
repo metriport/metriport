@@ -13,6 +13,7 @@ import {
   FileInfo,
 } from "./document-downloader";
 import NotFoundError from "../../../util/error/not-found";
+import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -50,12 +51,15 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const onEnd = () => {
       console.log("Finished downloading document");
     };
-    const downloadResult = await this.downloadFromCommonwellIntoS3(
+    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
+
+    // Check if the detected file type is in the accepted content types
+    downloadResult = await this.checkAndUpdateMimeType({
       document,
       fileInfo,
-      onData,
-      onEnd
-    );
+      downloadedDocument,
+      downloadResult,
+    });
 
     const newlyDownloadedFile: DownloadResult = {
       bucket: downloadResult.bucket,
@@ -75,6 +79,48 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     return newlyDownloadedFile;
   }
 
+  /**
+   * Checks if the content type of a downloaded document is accepted. If not accepted, updates the content type
+   * and extension  in S3 and returns the updated download result.
+   */
+  async checkAndUpdateMimeType({
+    document,
+    fileInfo,
+    downloadedDocument,
+    downloadResult,
+  }: {
+    document: Document;
+    fileInfo: FileInfo;
+    downloadedDocument: string;
+    downloadResult: DownloadResult;
+  }): Promise<DownloadResult> {
+    if (isContentTypeAccepted(document.mimeType)) {
+      return { ...downloadResult };
+    }
+
+    const [detectedFileType, detectedExtension] = detectFileType(downloadedDocument);
+
+    console.log(
+      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
+    );
+
+    const newKey = await this.s3Utils.updateContentTypeInS3(
+      downloadResult.bucket,
+      downloadResult.key,
+      detectedFileType,
+      detectedExtension
+    );
+
+    const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
+    const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(newKey, downloadResult.bucket);
+
+    return {
+      ...downloadResult,
+      ...fileDetailsUpdated,
+      key: newKey,
+      location: newLocation,
+    };
+  }
   /**
    * Parses the XML file, checking if there's an embedded PDF inside it.
    * If it does, it uploads the PDF to S3 and returns the PDF file info instead of the originally
@@ -185,12 +231,13 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
     const uploadResult = await promise;
 
-    console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
+    console.log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
 
     const { size, contentType } = await this.s3Utils.getFileInfoFromS3(
       uploadResult.Key,
       uploadResult.Bucket
     );
+
     return {
       key: uploadResult.Key,
       bucket: uploadResult.Bucket,
@@ -215,7 +262,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
           Bucket: s3FileLocation,
           Key: s3FileName,
           Body: pass,
-          ContentType: contentType ? contentType : "text/xml",
+          ContentType: contentType || "",
         })
         .promise(),
     };

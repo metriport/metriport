@@ -93,6 +93,7 @@ export async function findOrCreatePerson({
 
     if (enrolledPersons.length > 1) {
       // TODO needs to be rewritten to return the one with most links
+      // Update 2023-12-12: the above TODO may be deprecated, since we actually want to link to the earliest person - even if the one has more links, they could be a "duplicate" patient that'll be removed later
       return alertAndReturnEarliestPerson(
         commonwellPatientId,
         [enrolledPersons[0] as CommonwellPerson, ...enrolledPersons.slice(1)], // to match the type requiring at least one element
