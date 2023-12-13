@@ -1,3 +1,24 @@
+import {
+  JSON_MIME_TYPE,
+  XML_MIME_TYPE,
+  PDF_MIME_TYPE,
+  TIFF_MIME_TYPE,
+  PNG_MIME_TYPE,
+  JPEG_MIME_TYPE,
+  BMP_MIME_TYPE,
+  TEXT_MIME_TYPE,
+  OCTET_MIME_TYPE,
+  HTML_MIME_TYPE,
+  XML_FILE_EXTENSION,
+  PDF_FILE_EXTENSION,
+  TIFF_FILE_EXTENSION,
+  PNG_FILE_EXTENSION,
+  JPEG_FILE_EXTENSION,
+  BMP_FILE_EXTENSION,
+  TEXT_FILE_EXTENSION,
+  OCTET_FILE_EXTENSION,
+} from "./mime";
+
 const TIFF_MAGIC_NUMBER_1 = 0x49;
 const TIFF_MAGIC_NUMBER_2 = 0x49;
 const TIFF_MAGIC_NUMBER_3 = 0x2a;
@@ -26,23 +47,34 @@ const JPEG_MAGIC_NUMBER_2 = 0xd8;
 const BMP_MAGIC_NUMBER_1 = 0x42;
 const BMP_MAGIC_NUMBER_2 = 0x4d;
 
+const ASCII_TAB = 9;
+const ASCII_LINE_FEED = 10;
+const ASCII_CARRIAGE_RETURN = 13;
+const ASCII_SPACE = 32;
+const ASCII_TILDE = 126;
+
+export function isASCIIChar(char: number): boolean {
+  return (
+    char !== undefined &&
+    ((char >= ASCII_SPACE && char <= ASCII_TILDE) ||
+      char === ASCII_TAB ||
+      char === ASCII_LINE_FEED ||
+      char === ASCII_CARRIAGE_RETURN)
+  );
+}
+
 export function isLikelyTextFile(fileBuffer: Buffer): boolean {
   let readableChars = 0;
   let nonReadableChars = 0;
 
   for (let i = 0; i < fileBuffer.length; i++) {
     const char = fileBuffer[i];
-    if (
-      char !== undefined &&
-      ((char >= 32 && char <= 126) || char === 9 || char === 10 || char === 13)
-    ) {
-      // Common ASCII characters and whitespace/control characters (tab, line feed, carriage return)
+    if (char !== undefined && isASCIIChar(char)) {
       readableChars++;
     } else {
       nonReadableChars++;
     }
   }
-  console.log(`readableChars: ${readableChars}, nonReadableChars: ${nonReadableChars}`);
 
   const totalChars = readableChars + nonReadableChars;
   const threshold = 0.85; // 85% of the characters should be readable
@@ -60,7 +92,9 @@ export function isLikelyTextFile(fileBuffer: Buffer): boolean {
  * identify the file type.
  * @returns The function `detectFileType` returns a string representing the detected file type.
  */
-export function detectFileType(fileBuffer: Buffer): [string, string] {
+export function detectFileType(document: string): [string, string] {
+  const maxBytesNeeded = 6; //NOTE: if you update detectFileType, you might need to update this number
+  const fileBuffer = Buffer.from(document.slice(0, maxBytesNeeded));
   if (
     (fileBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
       fileBuffer[1] === TIFF_MAGIC_NUMBER_2 &&
@@ -71,7 +105,7 @@ export function detectFileType(fileBuffer: Buffer): [string, string] {
       fileBuffer[2] === TIFF_MAGIC_NUMBER_7 &&
       fileBuffer[3] === TIFF_MAGIC_NUMBER_8)
   ) {
-    return ["image/tiff", ".tiff"];
+    return [TIFF_MIME_TYPE, TIFF_FILE_EXTENSION];
   } else if (
     fileBuffer[0] === PDF_MAGIC_NUMBER_1 &&
     fileBuffer[1] === PDF_MAGIC_NUMBER_2 &&
@@ -79,7 +113,7 @@ export function detectFileType(fileBuffer: Buffer): [string, string] {
     fileBuffer[3] === PDF_MAGIC_NUMBER_4 &&
     fileBuffer[4] === PDF_MAGIC_NUMBER_5
   ) {
-    return ["application/pdf", ".pdf"];
+    return [PDF_MIME_TYPE, PDF_FILE_EXTENSION];
   } else if (
     fileBuffer[0] === XML_MAGIC_NUMBER_1 &&
     fileBuffer[1] === XML_MAGIC_NUMBER_2 &&
@@ -88,24 +122,26 @@ export function detectFileType(fileBuffer: Buffer): [string, string] {
     fileBuffer[4] === XML_MAGIC_NUMBER_5 &&
     fileBuffer[5] === XML_MAGIC_NUMBER_6
   ) {
-    return ["application/xml", ".xml"];
+    return [XML_MIME_TYPE, XML_FILE_EXTENSION];
   } else if (
     fileBuffer[0] === PNG_MAGIC_NUMBER_1 &&
     fileBuffer[1] === PNG_MAGIC_NUMBER_2 &&
     fileBuffer[2] === PNG_MAGIC_NUMBER_3 &&
     fileBuffer[3] === PNG_MAGIC_NUMBER_4
   ) {
-    return ["image/png", ".png"];
+    return [PNG_MIME_TYPE, PNG_FILE_EXTENSION];
   } else if (
     fileBuffer[0] === JPEG_MAGIC_NUMBER_1 &&
     fileBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
     fileBuffer[2] === JPEG_MAGIC_NUMBER_1
   ) {
-    return ["image/jpeg", ".jpeg"];
+    return [JPEG_MIME_TYPE, JPEG_FILE_EXTENSION];
   } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
-    return ["image/bmp", ".bmp"];
+    return [BMP_MIME_TYPE, BMP_FILE_EXTENSION];
+  } else if (isLikelyTextFile(Buffer.from(document))) {
+    return [TEXT_MIME_TYPE, TEXT_FILE_EXTENSION];
   } else {
-    return ["application/octet-stream", ".bin"];
+    return [OCTET_MIME_TYPE, OCTET_FILE_EXTENSION];
   }
 }
 /**
@@ -117,17 +153,16 @@ export function detectFileType(fileBuffer: Buffer): [string, string] {
 
 export function isContentTypeAccepted(mimeType: string | undefined): boolean {
   const acceptedContentTypes = [
-    "application/json",
-    "application/pdf",
-    "application/xml",
-    "image/bmp",
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/tif",
-    "image/tiff",
-    "text/html",
-    "text/xml",
+    JSON_MIME_TYPE,
+    XML_MIME_TYPE,
+    PDF_MIME_TYPE,
+    TIFF_MIME_TYPE,
+    PNG_MIME_TYPE,
+    JPEG_MIME_TYPE,
+    BMP_MIME_TYPE,
+    TEXT_MIME_TYPE,
+    OCTET_MIME_TYPE,
+    HTML_MIME_TYPE,
   ];
 
   return !!mimeType && acceptedContentTypes.includes(mimeType);

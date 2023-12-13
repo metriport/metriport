@@ -13,7 +13,7 @@ import {
   FileInfo,
 } from "./document-downloader";
 import NotFoundError from "../../../util/error/not-found";
-import { detectFileType, isContentTypeAccepted, isLikelyTextFile } from "@metriport/shared";
+import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -98,17 +98,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       return { ...downloadResult };
     }
 
-    const maxBytesNeeded = 6; //NOTE: if you update detectFileType, you might need to update this number
-    const partialBuffer = Buffer.from(downloadedDocument.slice(0, maxBytesNeeded));
-    let [detectedFileType, detectedExtension] = detectFileType(partialBuffer);
-
-    // If the detected file type is binary, check if it's likely a text file using the entire buffer.
-    if (detectedFileType === "application/octet-stream") {
-      if (isLikelyTextFile(Buffer.from(downloadedDocument))) {
-        detectedFileType = "text/plain";
-        detectedExtension = ".txt";
-      }
-    }
+    const [detectedFileType, detectedExtension] = detectFileType(downloadedDocument);
 
     console.log(
       `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`

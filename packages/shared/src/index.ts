@@ -4,4 +4,3 @@ export { normalizeOid } from "./common/normalize-oid";
 export { executeWithRetries, executeWithRetriesOrFail } from "./common/retry";
 export { sleep } from "./common/sleep";
 export { validateNPI } from "./common/validate-npi";
-export { detectFileType, isContentTypeAccepted, isLikelyTextFile } from "./common/file-type";
