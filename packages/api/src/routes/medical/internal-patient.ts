@@ -219,19 +219,17 @@ router.get(
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
-    const links: PatientLinksDTO = {
-      currentLinks: [],
-      potentialLinks: [],
-    };
-
     const cwPersonLinks = await cwCommands.link.get(patientId, cxId, facilityId);
     const cwConvertedLinks = dtoFromCW({
       cwPotentialPersons: cwPersonLinks.potentialLinks,
       cwCurrentPersons: cwPersonLinks.currentLinks,
     });
 
-    links.potentialLinks = [...cwConvertedLinks.potentialLinks];
-    links.currentLinks = [...cwConvertedLinks.currentLinks];
+    const links: PatientLinksDTO & { networkLinks: unknown } = {
+      currentLinks: cwConvertedLinks.currentLinks,
+      potentialLinks: cwConvertedLinks.potentialLinks,
+      networkLinks: cwPersonLinks.networkLinks,
+    };
 
     return res.status(status.OK).json(links);
   })

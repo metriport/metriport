@@ -1,17 +1,24 @@
 import {
   CommonWellAPI,
+  isLOLA1,
+  isLOLA2,
+  isLOLA3,
   LOLA,
+  NetworkLink,
   organizationQueryMeta,
   PatientLinkResp,
+  PatientNetworkLink,
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import { oid } from "@metriport/core/domain/oid";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
+import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
-import { oid } from "@metriport/core/domain/oid";
 import { makeCommonWellAPI } from "../api";
+import { getCWData } from "../patient";
 import { setCommonwellId } from "../patient-external-data";
 import {
   getPatientData,
@@ -21,9 +28,15 @@ import {
 } from "../patient-shared";
 import { commonwellPersonLinks } from "./shared";
 
+type NetworkLinks = {
+  lola1: PatientNetworkLink[];
+  lola2: PatientNetworkLink[];
+  lola3: PatientNetworkLink[];
+};
 type CWPersonLinks = {
   currentLinks: Person[];
   potentialLinks: Person[];
+  networkLinks: NetworkLinks | undefined;
 };
 
 export const get = async (
@@ -34,44 +47,46 @@ export const get = async (
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const { organization, facility } = await getPatientData(patient, facilityId);
 
-  const links: CWPersonLinks = {
-    currentLinks: [],
-    potentialLinks: [],
-  };
-
   const orgName = organization.data.name;
   const orgOID = organization.oid;
   const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
   const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
   const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
-  if (patient.data.externalData?.COMMONWELL) {
-    const cwLink = await findCurrentLink(patient, commonWell, queryMeta);
-    if (cwLink) links.currentLinks = [...links.currentLinks, cwLink];
-  }
+  const patientCWData = getCWData(patient.data.externalData);
 
-  const potentialCWLinks = await findAllPotentialLinks(patient, commonWell, queryMeta);
-  links.potentialLinks = [...links.potentialLinks, ...potentialCWLinks];
+  const cwLink = await findCurrentLink(patient, patientCWData, commonWell, queryMeta);
 
+  const potentialLinks = await findAllPotentialLinks(patient, commonWell, queryMeta);
+
+  const networkLinks = await findNetworkLinks(patientCWData, commonWell, queryMeta);
+
+  const links: CWPersonLinks = {
+    currentLinks: cwLink ? [cwLink] : [],
+    potentialLinks,
+    networkLinks,
+  };
   return links;
 };
 
 export const findCurrentLink = async (
-  patient: Patient,
+  patient: Pick<Patient, "id" | "cxId">,
+  patientCWData: PatientDataCommonwell | undefined,
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata
 ): Promise<Person | undefined> => {
-  if (!patient.data.externalData?.COMMONWELL) {
+  if (!patientCWData) {
     console.log(`No CW data for patient`, patient.id);
-    return;
+    return undefined;
   }
 
-  // IMPORT AS PARAM INSTEAD OF CONVERT
-  const patientCWExternalData = patient.data.externalData?.COMMONWELL as PatientDataCommonwell;
-  const personId = patientCWExternalData.personId;
-  if (!personId) return;
+  const personId = patientCWData.personId;
+  if (!personId) {
+    console.log(`No CW person ID patient`, patient.id);
+    return undefined;
+  }
 
-  const patientCWId = patientCWExternalData.patientId;
+  const patientCWId = patientCWData.patientId;
   const captureExtra = {
     patientId: patient.id,
     cwPatientId: patientCWId,
@@ -137,7 +152,7 @@ export const findCurrentLink = async (
     const msg = `Failure retrieving link`;
     console.log(`${msg} - for person id:`, personId);
     console.log(msg, error);
-    capture.error(error, { extra: captureExtra });
+    capture.message(msg, { extra: captureExtra, level: "error" });
     throw new Error(msg, { cause: error });
   }
 };
@@ -220,3 +235,27 @@ const findAllPersonsStrongId = async (
     throw new Error(msg, { cause: error });
   }
 };
+
+async function findNetworkLinks(
+  patientCWData: PatientDataCommonwell | undefined,
+  commonWell: CommonWellAPI,
+  queryMeta: RequestMetadata
+): Promise<NetworkLinks | undefined> {
+  if (!patientCWData) return undefined;
+
+  const respLinks = await commonWell.getNetworkLinks(queryMeta, patientCWData.patientId);
+  const allLinks = respLinks._embedded.networkLink
+    ? respLinks._embedded.networkLink.flatMap(filterTruthy)
+    : [];
+  const toPatient = (l: NetworkLink): PatientNetworkLink | undefined => {
+    return l?.patient ?? undefined;
+  };
+  const lola1 = allLinks.filter(isLOLA1).map(toPatient).flatMap(filterTruthy);
+  const lola2 = allLinks.filter(isLOLA2).map(toPatient).flatMap(filterTruthy);
+  const lola3 = allLinks.filter(isLOLA3).map(toPatient).flatMap(filterTruthy);
+  console.log(
+    `Found ${allLinks.length} network links, ${lola1.length} are LOLA 1` +
+      `, ${lola2.length} are LOLA 2, ${lola3.length} are LOLA 3`
+  );
+  return { lola1, lola2, lola3 };
+}

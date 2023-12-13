@@ -38,10 +38,11 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
 });
 
 async function main() {
-  const { umzug, migrations, executed, pending } = await getUmzugWithMeta(sequelize);
+  const { umzug, migrations, executed, pending, lastExecuted } = await getUmzugWithMeta(sequelize);
   console.log("");
   console.log(
-    `[--- SEQUELIZE ---] Migrations: ${executed} executed, ${pending} pending, ${migrations} total`
+    `[--- SEQUELIZE ---] Migrations: ${executed} executed, ${pending} pending, ` +
+      `${migrations} total, last executed: ${lastExecuted}`
   );
   console.log("");
   await umzug.runAsCLI();

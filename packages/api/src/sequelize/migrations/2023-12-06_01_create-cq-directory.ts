@@ -15,11 +15,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
           primaryKey: true,
           allowNull: false,
         },
-        oid: {
-          type: DataTypes.STRING,
-          unique: true,
-          allowNull: false,
-        },
         name: {
           type: DataTypes.STRING,
           allowNull: true,
@@ -40,11 +35,15 @@ export const up: Migration = async ({ context: queryInterface }) => {
           field: "url_dr",
         },
         lat: {
-          type: DataTypes.STRING,
+          type: DataTypes.FLOAT,
           allowNull: true,
         },
         lon: {
-          type: DataTypes.STRING,
+          type: DataTypes.FLOAT,
+          allowNull: true,
+        },
+        point: {
+          type: "CUBE",
           allowNull: true,
         },
         state: {
@@ -54,6 +53,11 @@ export const up: Migration = async ({ context: queryInterface }) => {
         data: {
           type: DataTypes.JSONB,
           allowNull: true,
+        },
+        lastUpdatedAtCQ: {
+          type: DataTypes.STRING,
+          allowNull: true,
+          field: "last_updated_at_cq",
         },
       },
       { transaction, addVersion: true }

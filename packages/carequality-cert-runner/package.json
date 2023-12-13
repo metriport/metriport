@@ -1,0 +1,47 @@
+{
+  "name": "@metriport/carequality-cert-runner",
+  "version": "1.0.2",
+  "description": "Tool to run through Carequality certification test cases - by Metriport Inc.",
+  "author": "Metriport Inc. <contact@metriport.com>",
+  "homepage": "https://metriport.com/",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "bin": {
+    "carequality-cert-runner": "dist/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "repository": {
+    "url": "https://github.com/metriport/metriport.git",
+    "type": "git",
+    "directory": "packages/carequality-cert-runner"
+  },
+  "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
+    "tsc": "tsc",
+    "build": "tsc -p .",
+    "build:cloud": "npm run build",
+    "install-local": "sudo npm i -g",
+    "start": "ts-node src/index.ts --env-file .env",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "echo \"No test specified yet\""
+  },
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  },
+  "dependencies": {
+    "@metriport/core": "^1.6.10",
+    "@metriport/ihe-gateway-sdk": "^0.1.11"
+  }
+}

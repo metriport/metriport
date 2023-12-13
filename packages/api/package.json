@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.10.0",
+  "version": "1.10.3",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -33,6 +33,7 @@
     "@metriport/carequality-sdk": "file:packages/carequality-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "@metriport/core": "file:packages/core",
+    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@metriport/shared": "file:packages/shared",
     "@opensearch-project/opensearch": "^2.3.1",
     "@sentry/node": "^7.45.0",

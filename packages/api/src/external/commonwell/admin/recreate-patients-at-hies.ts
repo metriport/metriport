@@ -141,9 +141,12 @@ export async function recreatePatientAtCW(
 
     return { originalCWPatientId, newCWPatientId };
   } catch (error) {
-    const msg = `Error while recreating patient at CW: ${error}`;
-    log(msg);
-    capture.error(error, { extra: { patient, error } });
+    const msg = `Error while recreating patient at CW`;
+    log(`${msg}. Error: ${error}`);
+    capture.message(msg, {
+      extra: { patientId: patient.id, cxId: patient.cxId, error },
+      level: "error",
+    });
     return undefined;
   }
 }

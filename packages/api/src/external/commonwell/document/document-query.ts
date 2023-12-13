@@ -164,7 +164,8 @@ export async function queryAndProcessDocuments({
       return fhirDocRefs.length;
     }
   } catch (error) {
-    console.log(`Error: ${errorToString(error)}`);
+    const msg = `Failed to query and process documents`;
+    console.log(`${msg}. Error: ${errorToString(error)}`);
     processPatientDocumentRequest(
       patientParam.cxId,
       patientParam.id,
@@ -176,7 +177,7 @@ export async function queryAndProcessDocuments({
       downloadProgress: { status: "failed" },
       requestId,
     });
-    capture.error(error, {
+    capture.message(msg, {
       extra: {
         context: `cw.queryAndProcessDocuments`,
         error,
@@ -186,6 +187,7 @@ export async function queryAndProcessDocuments({
         requestId,
         ignoreDocRefOnFHIRServer,
       },
+      level: "error",
     });
     throw error;
   }
@@ -293,10 +295,11 @@ function reportCWErrors({
 }): void {
   const errorsByCategory = groupCWErrors(errors);
   for (const [category, errors] of Object.entries(errorsByCategory)) {
-    const msg = `Document query error - ${category}`;
-    log(`${msg}: ${JSON.stringify(errors)}`);
-    capture.error(new Error(msg), {
-      extra: { ...context, errors },
+    const msg = `CW Document query error`;
+    log(`${msg} - Category: ${category}. Cause: ${JSON.stringify(errors)}`);
+    capture.message(msg, {
+      extra: { ...context, errors, category },
+      level: "error",
     });
   }
 }
@@ -563,11 +566,10 @@ export async function downloadDocsAndUpsertFHIR({
               errorReported = true;
               throw error;
             }
+            const msg = `Error downloading from CW and upserting to FHIR`;
             const zeroLengthDetailsStr = isZeroLength ? "zero length document" : "";
-            log(
-              `Error downloading ${zeroLengthDetailsStr} from CW and upserting to FHIR (docId ${doc.id}): ${error}`
-            );
-            capture.error(error, {
+            log(`${msg}: ${zeroLengthDetailsStr}, (docId ${doc.id}): ${error}`);
+            capture.message(msg, {
               extra: {
                 context: `s3.documentUpload`,
                 patientId: patient.id,
@@ -576,6 +578,7 @@ export async function downloadDocsAndUpsertFHIR({
                 requestId,
                 error,
               },
+              level: "error",
             });
             errorReported = true;
             throw error;
@@ -643,10 +646,10 @@ export async function downloadDocsAndUpsertFHIR({
           return FHIRDocRef;
         } catch (error) {
           errorCount++;
-
-          log(`Error processing doc: ${error}`, doc);
+          const msg = `Error processing doc from CW`;
+          log(`${msg}: ${error}; doc ${JSON.stringify(doc)}`);
           if (!errorReported && !(error instanceof NotFoundError)) {
-            capture.error(error, {
+            capture.message(msg, {
               extra: {
                 context: `cw.downloadDocsAndUpsertFHIR`,
                 patientId: patient.id,
@@ -654,6 +657,7 @@ export async function downloadDocsAndUpsertFHIR({
                 requestId,
                 error,
               },
+              level: "error",
             });
           }
           throw error;
@@ -670,8 +674,11 @@ export async function downloadDocsAndUpsertFHIR({
               requestId,
             });
           } catch (error) {
-            capture.error(error, {
+            const msg = `Failed to append doc query progress`;
+            console.log(`${msg}. Cause: ${error}`);
+            capture.message(msg, {
               extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId, error },
+              level: "error",
             });
           }
         }
@@ -830,12 +837,9 @@ async function ingestIntoSearchEngine(
       requestId,
     });
   } catch (error) {
-    log(
-      `Error ingesting doc ${fhirDoc.id} / file ${file.key} into OpenSearch: ${errorToString(
-        error
-      )}`
-    );
-    capture.error(error, {
+    const msg = `Error ingesting doc into OpenSearch`;
+    log(`${msg}. Document ID: ${fhirDoc.id}, file key: ${file.key}: ${errorToString(error)}`);
+    capture.message(msg, {
       extra: {
         context: `ingestIntoSearchEngine`,
         patientId: patient.id,
@@ -843,6 +847,7 @@ async function ingestIntoSearchEngine(
         requestId,
         error,
       },
+      level: "error",
     });
     // intentionally not throwing here, we don't want to fail b/c of search ingestion
   }
