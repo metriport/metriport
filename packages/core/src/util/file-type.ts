@@ -1,6 +1,8 @@
 import {
   JSON_MIME_TYPE,
+  JSON_MIME_TYPE_2,
   XML_MIME_TYPE,
+  XML_MIME_TYPE_2,
   PDF_MIME_TYPE,
   TIFF_MIME_TYPE,
   TIF_MIME_TYPE,
@@ -156,7 +158,9 @@ export function detectFileType(document: string): [string, string] {
 export function isContentTypeAccepted(mimeType: string | undefined): boolean {
   const acceptedContentTypes = [
     JSON_MIME_TYPE,
+    JSON_MIME_TYPE_2,
     XML_MIME_TYPE,
+    XML_MIME_TYPE_2,
     PDF_MIME_TYPE,
     TIFF_MIME_TYPE,
     TIF_MIME_TYPE,

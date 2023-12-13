@@ -12,10 +12,12 @@ export function isMimeTypeXML(mimeType?: string | undefined | null): boolean {
 
 // define exportable constants for all the different file types
 export const JSON_MIME_TYPE = "application/json";
+export const JSON_MIME_TYPE_2 = "text/json";
 export const JSON_FILE_EXTENSION = ".json";
 export const PDF_MIME_TYPE = "application/pdf";
 export const PDF_FILE_EXTENSION = ".pdf";
 export const XML_MIME_TYPE = "application/xml";
+export const XML_MIME_TYPE_2 = "text/xml";
 export const XML_FILE_EXTENSION = ".xml";
 export const TIFF_MIME_TYPE = "image/tiff";
 export const TIFF_FILE_EXTENSION = ".tiff";
