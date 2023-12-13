@@ -118,5 +118,9 @@ function getStrongIdentifiers(data: PatientData): Identifier[] | undefined {
 }
 
 function normalizePhoneNumber(phone: string): string {
-  return phone.replace(/[^0-9]/g, "");
+  const numericPhone = phone.replace(/[^0-9]/g, "");
+  if (numericPhone.length > 10) {
+    return numericPhone.slice(-10);
+  }
+  return numericPhone;
 }
