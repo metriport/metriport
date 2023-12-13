@@ -157,7 +157,7 @@ export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
 export const documentReferenceResourceType = "DocumentReference";
 export const operationOutcomeResourceType = "OperationOutcome";
 
-export const documentQueryResponseSchema = z.object({
+export const documentQueryResponseIncomingSchema = z.object({
   resourceType: resourceTypeSchema,
   entry: z.preprocess(entries => {
     const result = z.array(z.any()).parse(entries);
@@ -165,7 +165,7 @@ export const documentQueryResponseSchema = z.object({
   }, z.array(documentSchema)),
 });
 
-export type DocumentQueryResponse = z.infer<typeof documentQueryResponseSchema>;
+export type DocumentQueryResponse = z.infer<typeof documentQueryResponseIncomingSchema>;
 
 export const documentQueryFullResponseSchema = z.object({
   resourceType: resourceTypeSchema,
