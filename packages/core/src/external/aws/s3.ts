@@ -1,9 +1,15 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  PutObjectCommand,
+  S3Client,
+  CopyObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
+import { capture } from "../../util/notifications";
 
 dayjs.extend(duration);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
@@ -144,5 +150,58 @@ export class S3Utils {
 
   buildFileUrl(bucket: string, key: string): string {
     return `https://${bucket}.s3.${this.region}.amazonaws.com/${key}`;
+  }
+
+  /**
+   * Updates the content type and extension of a file in an S3 bucket by copying the file with the new metadata and deleting the original file.
+   *
+   * @param bucket - The name of the S3 bucket where the file is located.
+   * @param key - The key or path of the file in the S3 bucket.
+   * @param newContentType - The new content type to be set for the file.
+   * @param newExtension - The new extension to be added to the file name.
+   * @returns The new key or path of the file in the S3 bucket after updating the content type and extension.
+   */
+  async updateContentTypeInS3(
+    bucket: string,
+    key: string,
+    newContentType: string,
+    newExtension: string
+  ): Promise<string> {
+    const copySource = encodeURIComponent(`${bucket}/${key}`);
+    // Extract the file name without the old extension
+    const lastDotIndex = key.lastIndexOf(".");
+    const fileNameWithoutExtension = key.substring(0, lastDotIndex);
+
+    // Append the new extension to the file name
+    const newKey = `${fileNameWithoutExtension}.${newExtension.replace(/^\.+/, "")}`;
+
+    const copyObjectCommand = new CopyObjectCommand({
+      Bucket: bucket,
+      Key: newKey,
+      CopySource: copySource,
+      ContentType: newContentType,
+      MetadataDirective: "REPLACE",
+    });
+    await this.s3Client.send(copyObjectCommand);
+
+    try {
+      // Delete the original file
+      const deleteObjectCommand = new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      });
+      await this.s3Client.send(deleteObjectCommand);
+    } catch (error) {
+      capture.error(error, {
+        extra: {
+          bucket,
+          key,
+          context: `document-downloader-local.updateContentTypeInS3.delete`,
+          error,
+        },
+      });
+    }
+
+    return newKey;
   }
 }
