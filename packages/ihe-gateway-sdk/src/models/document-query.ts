@@ -27,7 +27,7 @@ export type DocumentQueryRequest = BaseRequest & {
 };
 
 export const documentQueryResponseSchema = baseResponseSchema.extend({
-  documentReference: z.array(documentReference).nullable(),
+  documentReference: z.array(documentReference).nullish(),
   xcaHomeCommunityId: z.string(),
 });
 
