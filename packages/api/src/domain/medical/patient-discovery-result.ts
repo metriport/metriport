@@ -1,14 +1,11 @@
-import { BaseResultDomain, baseResponseSchema } from "./ihe-result";
-import { z } from "zod";
+import { BaseResultDomain, BaseResponse } from "./ihe-result";
 
 export interface PatientDiscoveryResult extends BaseResultDomain {
   data: PatientDiscoveryResponse;
 }
 
-export const patientDiscoveryResponseSchema = baseResponseSchema.extend({
-  patientMatch: z.boolean(),
-  xcpdHomeCommunityId: z.string().optional(),
-  gateway: z.object({ oid: z.string(), url: z.string() }),
-});
-
-export type PatientDiscoveryResponse = z.infer<typeof patientDiscoveryResponseSchema>;
+export type PatientDiscoveryResponse = BaseResponse & {
+  patientMatch: boolean;
+  xcpdHomeCommunityId?: string;
+  gateway: { oid: string; url: string };
+};

@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { BaseDomainCreate } from "../base-domain";
 
 export interface BaseResultDomain extends BaseDomainCreate {
@@ -7,37 +6,35 @@ export interface BaseResultDomain extends BaseDomainCreate {
   createdAt: Date;
 }
 
-export const issue = z.object({
-  severity: z.string(),
-  code: z.string(),
-  details: z.object({ text: z.string() }),
-});
+export type Issue = {
+  severity: string;
+  code: string;
+  details: { text: string };
+};
 
-export const operationOutcome = z.object({
-  resourceType: z.string(),
-  id: z.string(),
-  issue: z.array(issue),
-});
+export type OperationOutcome = {
+  resourceType: string;
+  id: string;
+  issue: Issue[];
+};
 
-export const baseResponseSchema = z.object({
-  id: z.string(),
-  cxId: z.string(),
-  timestamp: z.string(),
-  responseTimestamp: z.string(),
-  xcpdPatientId: z.object({ id: z.string(), system: z.string() }).optional(),
-  patientId: z.string(),
-  operationOutcome: operationOutcome.nullish(),
-});
+export type BaseResponse = {
+  id: string;
+  cxId: string;
+  timestamp: string;
+  responseTimestamp: string;
+  xcpdPatientId?: { id: string; system: string };
+  patientId: string;
+  operationOutcome?: OperationOutcome;
+};
 
-export const documentReference = z.object({
-  homeCommunityId: z.string(),
-  docUniqueId: z.string(),
-  repositoryUniqueId: z.string(),
-  contentType: z.string().nullish(),
-  language: z.string().nullish(),
-  uri: z.string().nullish(),
-  creation: z.string().nullish(),
-  title: z.string().nullish(),
-});
-
-export type DocumentReference = z.infer<typeof documentReference>;
+export type DocumentReference = {
+  homeCommunityId: string;
+  docUniqueId: string;
+  repositoryUniqueId: string;
+  contentType?: string | null;
+  language?: string | null;
+  uri?: string | null;
+  creation?: string | null;
+  title?: string | null;
+};

@@ -19,9 +19,6 @@ import {
   handleIHEResponse,
   IHEResultType,
 } from "../../command/medical/ihe-result/create-ihe-result";
-import { patientDiscoveryResponseSchema } from "../../domain/medical/patient-discovery-result";
-import { documentQueryResponseSchema } from "../../domain/medical/document-query-result";
-import { documentRetrievalResponseSchema } from "../../domain/medical/document-retrieval-result";
 
 dayjs.extend(duration);
 
@@ -120,11 +117,9 @@ router.get(
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
-
     await handleIHEResponse({
       type: IHEResultType.PATIENT_DISCOVERY,
-      response: patientDiscovery,
+      response: req.body,
     });
 
     return res.sendStatus(httpStatus.OK);
@@ -139,9 +134,7 @@ router.post(
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const docQuery = documentQueryResponseSchema.parse(req.body);
-
-    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: docQuery });
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: req.body });
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -155,9 +148,7 @@ router.post(
 router.post(
   "/document-retrieval/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const docRetrieval = documentRetrievalResponseSchema.parse(req.body);
-
-    await handleIHEResponse({ type: IHEResultType.DOCUMENT_RETRIEVAL, response: docRetrieval });
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_RETRIEVAL, response: req.body });
 
     return res.sendStatus(httpStatus.OK);
   })

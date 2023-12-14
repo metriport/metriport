@@ -1,19 +1,16 @@
-import { BaseResultDomain, baseResponseSchema, documentReference } from "./ihe-result";
-import { z } from "zod";
+import { BaseResultDomain, BaseResponse, DocumentReference } from "./ihe-result";
 
 export interface DocumentRetrievalResult extends BaseResultDomain {
   data: DocumentRetrievalResponse;
 }
 
-export const docFileReference = documentReference.extend({
-  newRepositoryUniqueId: z.string(),
-  newDocUniqueId: z.string(),
-  url: z.string(),
-});
+export type DocFileReference = DocumentReference & {
+  newRepositoryUniqueId: string;
+  newDocUniqueId: string;
+  url: string;
+};
 
-export const documentRetrievalResponseSchema = baseResponseSchema.extend({
-  documentReference: z.array(docFileReference),
-  gateway: z.object({ homeCommunityId: z.string(), url: z.string() }),
-});
-
-export type DocumentRetrievalResponse = z.infer<typeof documentRetrievalResponseSchema>;
+export type DocumentRetrievalResponse = BaseResponse & {
+  documentReference: DocFileReference[];
+  gateway: { homeCommunityId: string; url: string };
+};
