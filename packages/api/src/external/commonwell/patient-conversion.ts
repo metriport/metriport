@@ -1,5 +1,7 @@
 import {
   AddressUseCodes,
+  Contact,
+  ContactSystemCodes,
   Identifier,
   NameUseCodes,
   Patient as CommonwellPatient,
@@ -82,6 +84,22 @@ export function patientToCommonwell({
       gender: {
         code: genderMapping[patient.data.genderAtBirth],
       },
+      telecom: patient.data.contact?.flatMap(contact => {
+        const contacts: Contact[] = [];
+        if (contact.email) {
+          contacts.push({
+            system: ContactSystemCodes.email,
+            value: contact.email,
+          });
+        }
+        if (contact.phone) {
+          contacts.push({
+            system: ContactSystemCodes.phone,
+            value: normalizePhoneNumber(contact.phone),
+          });
+        }
+        return contacts;
+      }),
       birthDate: patient.data.dob,
       identifier: strongIdentifiers,
     },
@@ -97,4 +115,12 @@ function getStrongIdentifiers(data: PatientData): Identifier[] | undefined {
     period: id.period,
     ...(id.assigner ? { assigner: id.assigner } : undefined),
   }));
+}
+
+function normalizePhoneNumber(phone: string): string {
+  const numericPhone = phone.replace(/[^0-9]/g, "");
+  if (numericPhone.length > 10) {
+    return numericPhone.slice(-10);
+  }
+  return numericPhone;
 }
