@@ -1,6 +1,8 @@
 import { Sequelize } from "sequelize";
-import { DocumentQueryResponse } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResult } from "../../domain/medical/ihe-result";
+import {
+  DocumentQueryResult,
+  DocumentQueryResponse,
+} from "../../domain/medical/document-query-result";
 import { ModelSetup } from "../_default";
 import { BaseIHEResultModel } from "./ihe-result";
 

@@ -1,12 +1,10 @@
-import {
-  DocumentQueryResponse,
-  PatientDiscoveryResponse,
-  DocumentRetrievalResponse,
-} from "@metriport/ihe-gateway-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
 import { PatientDiscoveryResultModel } from "../../../models/medical/patient-discovery-result";
+import { PatientDiscoveryResponse } from "../../../domain/medical/patient-discovery-result";
+import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
+import { DocumentQueryResponse } from "../../../domain/medical/document-query-result";
 import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
+import { DocumentRetrievalResponse } from "../../../domain/medical/document-retrieval-result";
 
 export enum IHEResultType {
   PATIENT_DISCOVERY = "patient-discovery",

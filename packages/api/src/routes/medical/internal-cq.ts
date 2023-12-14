@@ -1,9 +1,4 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
-import {
-  patientDiscoveryResponseSchema,
-  documentQueryResponseSchema,
-  documentRetrievalResponseSchema,
-} from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -24,6 +19,9 @@ import {
   handleIHEResponse,
   IHEResultType,
 } from "../../command/medical/ihe-result/create-ihe-result";
+import { patientDiscoveryResponseSchema } from "../../domain/medical/patient-discovery-result";
+import { documentQueryResponseSchema } from "../../domain/medical/document-query-result";
+import { documentRetrievalResponseSchema } from "../../domain/medical/document-retrieval-result";
 
 dayjs.extend(duration);
 
