@@ -51,15 +51,21 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const onEnd = () => {
       console.log("Finished downloading document");
     };
-    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
-
-    // Check if the detected file type is in the accepted content types
-    downloadResult = await this.checkAndUpdateMimeType({
+    const downloadResult = await this.downloadFromCommonwellIntoS3(
       document,
       fileInfo,
-      downloadedDocument,
-      downloadResult,
-    });
+      onData,
+      onEnd
+    );
+
+    // TODO #1258
+    // // Check if the detected file type is in the accepted content types
+    // downloadResult = await this.checkAndUpdateMimeType({
+    //   document,
+    //   fileInfo,
+    //   downloadedDocument,
+    //   downloadResult,
+    // });
 
     const newlyDownloadedFile: DownloadResult = {
       bucket: downloadResult.bucket,
@@ -262,7 +268,8 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
           Bucket: s3FileLocation,
           Key: s3FileName,
           Body: pass,
-          ContentType: contentType || "",
+          // TODO #1258
+          ContentType: contentType ? contentType : "text/xml",
         })
         .promise(),
     };

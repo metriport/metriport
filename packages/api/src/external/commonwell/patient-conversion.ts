@@ -95,7 +95,7 @@ export function patientToCommonwell({
         if (contact.phone) {
           contacts.push({
             system: ContactSystemCodes.phone,
-            value: contact.phone,
+            value: normalizePhoneNumber(contact.phone),
           });
         }
         return contacts;
@@ -115,4 +115,12 @@ function getStrongIdentifiers(data: PatientData): Identifier[] | undefined {
     period: id.period,
     ...(id.assigner ? { assigner: id.assigner } : undefined),
   }));
+}
+
+function normalizePhoneNumber(phone: string): string {
+  const numericPhone = phone.replace(/[^0-9]/g, "");
+  if (numericPhone.length > 10) {
+    return numericPhone.slice(-10);
+  }
+  return numericPhone;
 }
