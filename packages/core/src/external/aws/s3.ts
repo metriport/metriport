@@ -175,6 +175,12 @@ export class S3Utils {
     // Append the new extension to the file name
     const newKey = `${fileNameWithoutExtension}.${newExtension.replace(/^\.+/, "")}`;
 
+    // If the new key is the same as the old key, dont replace or delete any file and return the original key
+    if (newKey === key) {
+      return newKey;
+    }
+    // If the new key is different from the old key, copy the file with the new metadata and delete the original file
+
     const copyObjectCommand = new CopyObjectCommand({
       Bucket: bucket,
       Key: newKey,
@@ -185,7 +191,6 @@ export class S3Utils {
     await this.s3Client.send(copyObjectCommand);
 
     try {
-      // Delete the original file
       const deleteObjectCommand = new DeleteObjectCommand({
         Bucket: bucket,
         Key: key,
