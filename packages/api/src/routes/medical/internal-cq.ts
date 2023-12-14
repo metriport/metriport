@@ -1,7 +1,5 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
-import { patientDiscoveryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { documentQueryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -119,11 +117,9 @@ router.get(
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
-
     await handleIHEResponse({
       type: IHEResultType.PATIENT_DISCOVERY,
-      response: patientDiscovery,
+      response: req.body,
     });
 
     return res.sendStatus(httpStatus.OK);
@@ -138,9 +134,21 @@ router.post(
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const docQuery = documentQueryResponseSchema.parse(req.body);
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: req.body });
 
-    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: docQuery });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-retrieval/response
+ *
+ * Receives a Document Retrieval response from the IHE Gateway
+ */
+router.post(
+  "/document-retrieval/response",
+  asyncHandler(async (req: Request, res: Response) => {
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_RETRIEVAL, response: req.body });
 
     return res.sendStatus(httpStatus.OK);
   })
