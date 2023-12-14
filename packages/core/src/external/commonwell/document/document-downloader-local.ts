@@ -1,5 +1,6 @@
 import { CommonWellAPI, CommonwellError, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import AWS from "aws-sdk";
+import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
@@ -104,19 +105,24 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       return { ...downloadResult };
     }
 
+    const old_extension = path.extname(fileInfo.name);
     const [detectedFileType, detectedExtension] = detectFileType(downloadedDocument);
 
+    // If the file type has not changed
+    if (detectedFileType === document.mimeType || old_extension === detectedExtension) {
+      return downloadResult;
+    }
+
+    // If the file type has changed
     console.log(
       `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
     );
-
     const newKey = await this.s3Utils.updateContentTypeInS3(
       downloadResult.bucket,
       downloadResult.key,
       detectedFileType,
       detectedExtension
     );
-
     const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
     const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(newKey, downloadResult.bucket);
 
