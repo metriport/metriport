@@ -54,8 +54,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     };
     let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
 
-    // TODO #1258
-    // Check if the detected file type is in the accepted content types
+    // Check if the detected file type is in the accepted content types and update it if not
     downloadResult = await this.checkAndUpdateMimeType({
       document,
       fileInfo,
