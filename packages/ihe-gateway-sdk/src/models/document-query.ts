@@ -9,20 +9,16 @@ import {
   XCAGateway,
   XCPDPatientId,
   xcpdPatientIdSchema,
+  codeSchema,
+  Code,
 } from "./shared";
 import { z } from "zod";
-
-export const codeSchema = z.object({
-  system: z.string(),
-  code: z.string(),
-});
 
 export const dateRangeSchema = z.object({
   dateFrom: z.string(),
   dateTo: z.string(),
 });
 
-export type Code = z.infer<typeof codeSchema>;
 export type DateRange = z.infer<typeof dateRangeSchema>;
 
 // The following are for us creating a document query request

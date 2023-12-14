@@ -55,16 +55,22 @@ export const documentReferenceSchema = z.object({
 
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
 
-export const issue = z.object({
+export const codeSchema = z.object({
+  system: z.string(),
+  code: z.string(),
+});
+export type Code = z.infer<typeof codeSchema>;
+
+export const issueSchema = z.object({
   severity: z.string(),
   code: z.string(),
-  details: z.object({ text: z.string() }),
+  details: z.object({ coding: z.array(codeSchema) }),
 });
 
 export const operationOutcome = z.object({
   resourceType: z.string(),
   id: z.string(),
-  issue: z.array(issue),
+  issue: z.array(issueSchema),
 });
 
 export type OperationOutcome = z.infer<typeof operationOutcome>;
@@ -95,6 +101,8 @@ const identifierSchema = z.object({
 const nameSchema = z.object({
   family: z.string(),
   given: z.array(z.string()),
+  prefix: z.array(z.string()).optional(),
+  suffix: z.array(z.string()).optional(),
 });
 
 const telecomSchema = z.object({
@@ -124,8 +132,15 @@ const addressSchema = z.object({
   country: z.string().optional(),
 });
 
+const extensionSchema = z.object({
+  url: z.string(),
+  valueAdress: addressSchema.optional(),
+  valueString: z.string().optional(),
+});
+
 export const patientResourceSchema = z.object({
   resourceType: z.literal("Patient"),
+  extension: z.array(extensionSchema).optional(),
   id: z.string().optional(),
   identifier: z.array(identifierSchema).optional(),
   name: z.array(nameSchema),
