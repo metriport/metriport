@@ -52,21 +52,16 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const onEnd = () => {
       console.log("Finished downloading document");
     };
-    const downloadResult = await this.downloadFromCommonwellIntoS3(
-      document,
-      fileInfo,
-      onData,
-      onEnd
-    );
+    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
 
     // TODO #1258
-    // // Check if the detected file type is in the accepted content types
-    // downloadResult = await this.checkAndUpdateMimeType({
-    //   document,
-    //   fileInfo,
-    //   downloadedDocument,
-    //   downloadResult,
-    // });
+    // Check if the detected file type is in the accepted content types
+    downloadResult = await this.checkAndUpdateMimeType({
+      document,
+      fileInfo,
+      downloadedDocument,
+      downloadResult,
+    });
 
     const newlyDownloadedFile: DownloadResult = {
       bucket: downloadResult.bucket,
