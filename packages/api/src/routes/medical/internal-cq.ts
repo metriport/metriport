@@ -1,13 +1,13 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import { patientDiscoveryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { documentQueryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
-import { handlePatientDiscoveryResponse } from "../../command/medical/patient-discovery-result/create-patient-discovery-result";
 import { rebuildCQDirectory } from "../../command/medical/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
@@ -17,6 +17,10 @@ import { createOrUpdateCQOrganization } from "../../external/carequality/organiz
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
+import {
+  handleIHEResponse,
+  IHEResultType,
+} from "../../command/medical/ihe-result/create-ihe-result";
 
 dayjs.extend(duration);
 
@@ -108,16 +112,35 @@ router.get(
 // BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
 
 /**
- * POST /internal/carequality/patient-discovery
+ * POST /internal/carequality/patient-discovery/response
  *
- * Receives a Patient Discovery request from the IHE Gateway
+ * Receives a Patient Discovery response from the IHE Gateway
  */
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
     const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
 
-    await handlePatientDiscoveryResponse(patientDiscovery);
+    await handleIHEResponse({
+      type: IHEResultType.PATIENT_DISCOVERY,
+      response: patientDiscovery,
+    });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-query/response
+ *
+ * Receives a Document Query response from the IHE Gateway
+ */
+router.post(
+  "/document-query/response",
+  asyncHandler(async (req: Request, res: Response) => {
+    const docQuery = documentQueryResponseSchema.parse(req.body);
+
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: docQuery });
 
     return res.sendStatus(httpStatus.OK);
   })
