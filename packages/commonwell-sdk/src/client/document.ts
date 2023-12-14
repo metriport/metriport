@@ -7,7 +7,7 @@ import {
   DocumentQueryFullResponse,
   DocumentQueryResponse,
   documentQueryFullResponseSchema,
-  documentQueryResponseIncomingSchema,
+  documentQueryResponseSchema,
 } from "../models/document";
 import { CommonWell } from "./commonwell";
 
@@ -38,7 +38,7 @@ export async function query(
 ): Promise<DocumentQueryResponse> {
   const response = await initQuery(api, headers, patientId);
   try {
-    return documentQueryResponseIncomingSchema.parse(response.data);
+    return documentQueryResponseSchema.parse(response.data);
   } catch (err) {
     throw new CommonwellError(`Error parsing document query response`, err, {
       headers,

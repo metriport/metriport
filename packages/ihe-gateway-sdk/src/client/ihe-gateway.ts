@@ -44,7 +44,7 @@ export class IHEGateway {
    * @param PatientDiscoveryRequestOutgoing A patient discovery transaction request to Ihe Gateway.
    *
    */
-  async startPatient3Discovery(
+  async startPatientDiscovery(
     PatientDiscoveryRequestOutgoing: PatientDiscoveryRequestOutgoing
   ): Promise<void> {
     await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, PatientDiscoveryRequestOutgoing);
