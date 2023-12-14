@@ -1,4 +1,4 @@
-import { BaseRequest, DocumentReference, baseResponseSchema } from "./shared";
+import { BaseRequest, DocumentReference, baseResponseSchema, documentReference } from "./shared";
 
 import { z } from "zod";
 
@@ -11,9 +11,10 @@ export type DocumentRetrievalRequest = BaseRequest & {
   documentReference: DocumentReference[];
 };
 
-export const docFileReference = z.object({
-  fileName: z.string(),
-  docId: z.string(),
+export const docFileReference = documentReference.extend({
+  newRepositoryUniqueId: z.string(),
+  newDocUniqueId: z.string(),
+  url: z.string(),
 });
 
 export const documentRetrievalResponseSchema = baseResponseSchema.extend({
