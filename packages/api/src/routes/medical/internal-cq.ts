@@ -112,9 +112,9 @@ router.get(
 // BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
 
 /**
- * POST /internal/carequality/patient-discovery
+ * POST /internal/carequality/patient-discovery/response
  *
- * Receives a Patient Discovery request from the IHE Gateway
+ * Receives a Patient Discovery response from the IHE Gateway
  */
 router.post(
   "/patient-discovery/response",
@@ -131,9 +131,9 @@ router.post(
 );
 
 /**
- * POST /internal/carequality/document-query
+ * POST /internal/carequality/document-query/response
  *
- * Receives a Document Query request from the IHE Gateway
+ * Receives a Document Query response from the IHE Gateway
  */
 router.post(
   "/document-query/response",

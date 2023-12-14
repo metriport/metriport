@@ -1,10 +1,12 @@
 import { Sequelize } from "sequelize";
 import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
-import { IHEResult } from "../../domain/medical/ihe-result";
-import { ModelSetup, BaseIHEResultModel } from "../_default";
+import { PatientDiscoveryResult } from "../../domain/medical/ihe-result";
+import { ModelSetup } from "../_default";
+import { BaseIHEResultModel } from "./ihe-result";
+
 export class PatientDiscoveryResultModel
   extends BaseIHEResultModel<PatientDiscoveryResultModel>
-  implements IHEResult<PatientDiscoveryResponse>
+  implements PatientDiscoveryResult
 {
   static NAME = "patient_discovery_result";
   declare data: PatientDiscoveryResponse;
