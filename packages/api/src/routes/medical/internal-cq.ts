@@ -1,7 +1,10 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
-import { patientDiscoveryResponseSchema } from "@metriport/ihe-gateway-sdk";
+import {
+  patientDiscoveryResponseSchema,
+  documentQueryResponseSchema,
+  documentRetrievalResponseSchema,
+} from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { documentQueryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -141,6 +144,22 @@ router.post(
     const docQuery = documentQueryResponseSchema.parse(req.body);
 
     await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: docQuery });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-retrieval/response
+ *
+ * Receives a Document Retrieval response from the IHE Gateway
+ */
+router.post(
+  "/document-retrieval/response",
+  asyncHandler(async (req: Request, res: Response) => {
+    const docRetrieval = documentRetrievalResponseSchema.parse(req.body);
+
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_RETRIEVAL, response: docRetrieval });
 
     return res.sendStatus(httpStatus.OK);
   })

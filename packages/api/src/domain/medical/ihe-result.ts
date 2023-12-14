@@ -1,4 +1,8 @@
-import { PatientDiscoveryResponse, DocumentQueryResponse } from "@metriport/ihe-gateway-sdk";
+import {
+  PatientDiscoveryResponse,
+  DocumentQueryResponse,
+  DocumentRetrievalResponse,
+} from "@metriport/ihe-gateway-sdk";
 import { BaseDomainCreate } from "../base-domain";
 
 export interface BaseResultDomain extends BaseDomainCreate {
@@ -13,4 +17,8 @@ export interface PatientDiscoveryResult extends BaseResultDomain {
 
 export interface DocumentQueryResult extends BaseResultDomain {
   data: DocumentQueryResponse;
+}
+
+export interface DocumentRetrievalResult extends BaseResultDomain {
+  data: DocumentRetrievalResponse;
 }

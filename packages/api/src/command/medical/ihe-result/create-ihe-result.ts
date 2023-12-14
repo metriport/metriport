@@ -1,11 +1,17 @@
-import { DocumentQueryResponse, PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
+import {
+  DocumentQueryResponse,
+  PatientDiscoveryResponse,
+  DocumentRetrievalResponse,
+} from "@metriport/ihe-gateway-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
 import { PatientDiscoveryResultModel } from "../../../models/medical/patient-discovery-result";
+import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
 
 export enum IHEResultType {
-  DOCUMENT_QUERY = "document-query",
   PATIENT_DISCOVERY = "patient-discovery",
+  DOCUMENT_QUERY = "document-query",
+  DOCUMENT_RETRIEVAL = "document-retrieval",
 }
 
 type IHEResult =
@@ -16,6 +22,10 @@ type IHEResult =
   | {
       type: IHEResultType.PATIENT_DISCOVERY;
       response: PatientDiscoveryResponse;
+    }
+  | {
+      type: IHEResultType.DOCUMENT_RETRIEVAL;
+      response: DocumentRetrievalResponse;
     };
 
 export async function handleIHEResponse({ type, response }: IHEResult): Promise<void> {
@@ -37,6 +47,12 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
       break;
     case IHEResultType.DOCUMENT_QUERY:
       await DocumentQueryResultModel.create({
+        ...defaultPayload,
+        data: response,
+      });
+      break;
+    case IHEResultType.DOCUMENT_RETRIEVAL:
+      await DocumentRetrievalResultModel.create({
         ...defaultPayload,
         data: response,
       });
