@@ -35,27 +35,38 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
     id: uuidv7(),
     requestId: id,
     patientId,
-    status: operationOutcome?.issue ? "failure" : "success",
   };
 
   switch (type) {
-    case IHEResultType.PATIENT_DISCOVERY:
+    case IHEResultType.PATIENT_DISCOVERY: {
+      const hasError = operationOutcome?.issue && !response.patientMatch;
+
       await PatientDiscoveryResultModel.create({
         ...defaultPayload,
+        status: hasError ? "success" : "failure",
         data: response,
       });
-      break;
-    case IHEResultType.DOCUMENT_QUERY:
+      return;
+    }
+    case IHEResultType.DOCUMENT_QUERY: {
+      const hasError = operationOutcome?.issue && !response.documentReference?.length;
+
       await DocumentQueryResultModel.create({
         ...defaultPayload,
+        status: hasError ? "success" : "failure",
         data: response,
       });
-      break;
-    case IHEResultType.DOCUMENT_RETRIEVAL:
+      return;
+    }
+    case IHEResultType.DOCUMENT_RETRIEVAL: {
+      const hasError = operationOutcome?.issue && !response.documentReference?.length;
+
       await DocumentRetrievalResultModel.create({
         ...defaultPayload,
+        status: hasError ? "success" : "failure",
         data: response,
       });
-      break;
+      return;
+    }
   }
 }
