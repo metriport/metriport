@@ -102,7 +102,6 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const old_extension = path.extname(fileInfo.name);
     const [detectedFileType, detectedExtension] = detectFileType(downloadedDocument);
 
-    console.log("old extension: ", old_extension);
     // If the file type has changed
     if (detectedFileType !== document.mimeType && old_extension !== detectedExtension) {
       console.log(
