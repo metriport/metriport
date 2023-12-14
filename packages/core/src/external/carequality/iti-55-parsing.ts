@@ -12,7 +12,7 @@ import { isAnyPatientMatching } from "./patient-matching";
  */
 async function parseXmlString(
   xml: string
-): Promise<[PatientData, [string, string, string, string, string]]> {
+): Promise<[PatientData, [string, string, string, string]]> {
   // Removing leading newlines and escaping double quote variations
   xml = cleanXml(xml);
 
@@ -39,7 +39,6 @@ async function parseXmlString(
       result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
     const bodyId = result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
     const root = bodyId["$"]["root"];
-    const id = bodyId["$"]["extension"];
 
     const messageId = result["Envelope"]["Header"][0]["MessageID"][0];
 
@@ -89,7 +88,7 @@ async function parseXmlString(
       address: [patientAddress],
       contact: [{ phone: phone }],
     };
-    return [patientData, [root, messageId, id, queryId, signature]];
+    return [patientData, [root, messageId, queryId, signature]];
   } catch (error) {
     console.error(error);
     throw new Error("XML parsing failed");
