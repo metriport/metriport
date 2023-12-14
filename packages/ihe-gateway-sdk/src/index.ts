@@ -38,7 +38,7 @@ export {
   baseRequestSchema,
   BaseRequest,
   DocumentReference,
-  issue,
+  issueSchema,
   operationOutcome,
   OperationOutcome,
   BaseResponse,

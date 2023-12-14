@@ -61,10 +61,15 @@ export const codeSchema = z.object({
 });
 export type Code = z.infer<typeof codeSchema>;
 
+const detailsSchema = z.union([
+  z.object({ coding: z.array(codeSchema) }),
+  z.object({ text: z.string() }),
+]);
+
 export const issueSchema = z.object({
   severity: z.string(),
   code: z.string(),
-  details: z.object({ coding: z.array(codeSchema) }),
+  details: detailsSchema,
 });
 
 export const operationOutcome = z.object({

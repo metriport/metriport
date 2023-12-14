@@ -55,7 +55,7 @@ export const DocumentQueryRequestIncomingSchema = baseRequestSchema.extend({
 
 export type DocumentQueryRequestIncoming = z.infer<typeof DocumentQueryRequestIncomingSchema>;
 
-// TODO the definition here doesnt havea xcpdPatientId on notion. Currently nullish in baseResponse
+// DocumentReference optional because the error response doesnt have it
 export type DocumentQueryResponseOutgoing = BaseResponse & {
-  documentReference: DocumentReference[];
+  documentReference?: DocumentReference[];
 };

@@ -33,6 +33,7 @@ export type DocumentRetrievalRequestIncoming = z.infer<
   typeof DocumentRetrievalRequestIncomingSchema
 >;
 
+// DocumentReference is optional because the error response doesnt have it
 export type DocumentRetrievalResponseOutgoing = BaseResponse & {
-  documentReference: DocumentReference[];
+  documentReference?: DocumentReference[];
 };
