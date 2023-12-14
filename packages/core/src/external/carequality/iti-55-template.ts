@@ -50,7 +50,7 @@ export function generateXcpdTemplate(code: string) {
       </registrationEvent>`;
     queryByParameter = `
       <queryByParameter>
-        <queryId extension="{extension}" root="{root}"/>
+        <queryId extension="{queryId}" root="{root}"/>
         <statusCode code="new"/>
         <responseModalityCode code="R"/>
         <responsePriorityCode code="I"/>
@@ -99,7 +99,7 @@ export function generateXcpdTemplate(code: string) {
   <s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
     <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
       <a:Action s:mustUnderstand="1">urn:hl7-org:v3:PRPA_IN201306UV02:CrossGatewayPatientDiscovery</a:Action>
-      <a:RelatesTo>urn:uuid:{extension}</a:RelatesTo>
+      <a:RelatesTo>urn:uuid:{messageId}</a:RelatesTo>
       <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
         <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
           <b:Created>{createdAt}</b:Created>
@@ -119,7 +119,7 @@ export function generateXcpdTemplate(code: string) {
         <acknowledgement>
           <typeCode code="AA"/>
           <targetMessage>
-            <id extension="{extension}" root="{root}"/>
+            <id extension="{messageId}" root="{root}"/>
           </targetMessage>
         </acknowledgement>
         <controlActProcess classCode="CACT" moodCode="EVN">
@@ -127,7 +127,7 @@ export function generateXcpdTemplate(code: string) {
           <subject contextConductionInd="false" typeCode="SUBJ"> ${registrationEvent} 
           </subject>
           <queryAck>
-            <queryId extension="{extension}" root="{root}"/>
+            <queryId extension="{queryId}" root="{root}"/>
             <statusCode code="deliveredResponse"/>
             <queryResponseCode code="{code}"/>
           </queryAck> ${queryByParameter} 

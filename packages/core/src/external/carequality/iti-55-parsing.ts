@@ -10,7 +10,9 @@ import { isAnyPatientMatching } from "./patient-matching";
  * @param xml - The XML string to be parsed.
  * @returns A promise that resolves to an array containing the parsed patient data object and the root ID, extension ID, and signature extracted from the XML.
  */
-async function parseXmlString(xml: string): Promise<[PatientData, [string, string, string]]> {
+async function parseXmlString(
+  xml: string
+): Promise<[PatientData, [string, string, string, string, string]]> {
   // Removing leading newlines and escaping double quote variations
   xml = cleanXml(xml);
 
@@ -21,6 +23,10 @@ async function parseXmlString(xml: string): Promise<[PatientData, [string, strin
   try {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await parser.parseStringPromise(xml);
+    const queryId =
+      result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
+        "queryByParameter"
+      ][0]["queryId"][0]["$"]["extension"];
     const parameterList =
       result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
         "queryByParameter"
@@ -31,9 +37,11 @@ async function parseXmlString(xml: string): Promise<[PatientData, [string, strin
     const address = parameterList["patientAddress"][0]["value"][0];
     const signature =
       result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
-    const id = result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
-    const root = id["$"]["root"];
-    const extension = id["$"]["extension"];
+    const bodyId = result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
+    const root = bodyId["$"]["root"];
+    const id = bodyId["$"]["extension"];
+
+    const messageId = result["Envelope"]["Header"][0]["MessageID"][0];
 
     let phone = "";
     if (parameterList["patientTelecom"] && parameterList["patientTelecom"][0]["value"]) {
@@ -81,7 +89,7 @@ async function parseXmlString(xml: string): Promise<[PatientData, [string, strin
       address: [patientAddress],
       contact: [{ phone: phone }],
     };
-    return [patientData, [root, extension, signature]];
+    return [patientData, [root, messageId, id, queryId, signature]];
   } catch (error) {
     console.error(error);
     throw new Error("XML parsing failed");
@@ -94,7 +102,8 @@ const fillTemplate = (
   expiresAt: string,
   creationTime: string,
   root: string,
-  extension: string,
+  messageId: string,
+  queryId: string,
   signature: string,
   status: string,
   patientData?: PatientData
@@ -126,7 +135,8 @@ const fillTemplate = (
       .replace(/{expiresAt}/g, expiresAt)
       .replace(/{creationTime}/g, creationTime)
       .replace(/{root}/g, root)
-      .replace(/{extension}/g, extension)
+      .replace(/{messageId}/g, messageId)
+      .replace(/{queryId}/g, queryId)
       .replace(/{signature}/g, signature)
       .replace(/{firstName}/g, firstName)
       .replace(/{lastName}/g, lastName)
@@ -149,14 +159,15 @@ const fillTemplate = (
     .replace(/{expiresAt}/g, expiresAt)
     .replace(/{creationTime}/g, creationTime)
     .replace(/{root}/g, root)
-    .replace(/{extension}/g, extension)
+    .replace(/{messageId}/g, messageId)
+    .replace(/{queryId}/g, queryId)
     .replace(/{signature}/g, signature)
     .replace(/{code}/g, status);
 };
 
 export async function generateXCPD(xml: string): Promise<string> {
   try {
-    const [patientData, [root, extension, signature]] = await parseXmlString(xml);
+    const [patientData, [root, messageId, queryId, signature]] = await parseXmlString(xml);
     const matchingPatient = isAnyPatientMatching(patientData);
     let status = "";
     if (matchingPatient) {
@@ -173,7 +184,8 @@ export async function generateXCPD(xml: string): Promise<string> {
       expiresAt,
       creationTime,
       root,
-      extension,
+      messageId,
+      queryId,
       signature,
       status,
       matchingPatient
