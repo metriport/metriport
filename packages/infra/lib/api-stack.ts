@@ -15,11 +15,8 @@ import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
-import * as sns from "aws-cdk-lib/aws-sns";
-import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
-import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
@@ -32,12 +29,11 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
-import { IHEStack } from "./ihe-stack";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
-import { isProd, isSandbox, mbToBytes } from "./shared/util";
+import { isProd, isSandbox, mbToBytes, setupSlackNotifSnsTopic } from "./shared/util";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -48,7 +44,8 @@ interface APIStackProps extends StackProps {
 }
 
 export class APIStack extends Stack {
-  readonly vpc: ec2.IVpc;
+  public readonly vpc: ec2.IVpc;
+  public readonly sharedLambdaLayers: LambdaLayers;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -239,6 +236,7 @@ export class APIStack extends Stack {
     }
 
     const lambdaLayers = setupLambdasLayers(this);
+    this.sharedLambdaLayers = lambdaLayers;
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -692,17 +690,6 @@ export class APIStack extends Stack {
         limit: this.isProd(props) ? 10000 : 500,
         period: apig.Period.DAY,
       },
-    });
-
-    //-------------------------------------------
-    // IHE API Gateway
-    //-------------------------------------------
-    new IHEStack(this, "IHEStack", {
-      config: props.config,
-      vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
-      lambdaLayers,
-      publicZone,
     });
 
     createScheduledAPIQuotaChecker({
@@ -1483,23 +1470,4 @@ export class APIStack extends Stack {
   private isProd(props: APIStackProps): boolean {
     return isProd(props.config);
   }
-}
-
-function setupSlackNotifSnsTopic(
-  stack: Stack,
-  config: EnvConfig
-): { snsTopic: ITopic; alarmAction: SnsAction } | undefined {
-  if (!config.slack) return undefined;
-
-  const slackNotifSnsTopic = new sns.Topic(stack, "SlackSnsTopic", {
-    displayName: "Slack SNS Topic",
-  });
-  AlarmSlackBot.addSlackChannelConfig(stack, {
-    configName: `slack-chatbot-configuration-` + config.environmentType,
-    workspaceId: config.slack.workspaceId,
-    channelId: config.slack.alertsChannelId,
-    topics: [slackNotifSnsTopic],
-  });
-  const alarmAction = new SnsAction(slackNotifSnsTopic);
-  return { snsTopic: slackNotifSnsTopic, alarmAction };
 }

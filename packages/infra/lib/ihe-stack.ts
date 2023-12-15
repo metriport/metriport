@@ -1,7 +1,6 @@
-import { NestedStack, NestedStackProps, CfnOutput } from "aws-cdk-lib";
+import { Stack, StackProps, CfnOutput } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
-import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -9,16 +8,15 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
+import { setupSlackNotifSnsTopic } from "./shared/util";
 
-interface IHEStackProps extends NestedStackProps {
+interface IHEStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  alarmAction: SnsAction | undefined;
   lambdaLayers: LambdaLayers;
-  publicZone: r53.IHostedZone;
 }
 
-export class IHEStack extends NestedStack {
+export class IHEStack extends Stack {
   constructor(scope: Construct, id: string, props: IHEStackProps) {
     super(scope, id, props);
     //-------------------------------------------
@@ -31,6 +29,14 @@ export class IHEStack extends NestedStack {
     if (!props.config.iheGateway?.certArn) {
       throw new Error("Must define cert arn if building the IHE stack!");
     }
+
+    // create slack
+    const slackNotification = setupSlackNotifSnsTopic(this, props.config);
+
+    // get the public zone
+    const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
+      domainName: props.config.host,
+    });
 
     // Create the API Gateway
     const api = new apig.RestApi(this, "IHEAPIGateway", {
@@ -57,7 +63,7 @@ export class IHEStack extends NestedStack {
     });
     new r53.ARecord(this, "IHEAPIDomainRecord", {
       recordName: iheApiUrl,
-      zone: props.publicZone,
+      zone: publicZone,
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
     });
 
@@ -71,7 +77,7 @@ export class IHEStack extends NestedStack {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      alarmSnsAction: slackNotification?.alarmAction,
     });
 
     const proxy = new apig.ProxyResource(this, `IHE/Proxy`, {
