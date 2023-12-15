@@ -2,8 +2,7 @@ export function generateXcpdTemplate(code: string) {
   let registrationEvent = "";
   let queryByParameter = "";
   if (code === "OK") {
-    registrationEvent = `
-      <registrationEvent classCode="REG" moodCode="EVN">
+    registrationEvent = `<registrationEvent classCode="REG" moodCode="EVN">
         <id nullFlavor="NA"/>
         <statusCode code="active"/>
         <subject1 typeCode="SBJ">
@@ -48,9 +47,8 @@ export function generateXcpdTemplate(code: string) {
           </assignedEntity>
         </custodian>
       </registrationEvent>`;
-    queryByParameter = `
-      <queryByParameter>
-        <queryId extension="{extension}" root="{root}"/>
+    queryByParameter = `<queryByParameter>
+        <queryId extension="{queryId}" root="{root}"/>
         <statusCode code="new"/>
         <responseModalityCode code="R"/>
         <responsePriorityCode code="I"/>
@@ -99,7 +97,7 @@ export function generateXcpdTemplate(code: string) {
   <s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
     <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
       <a:Action s:mustUnderstand="1">urn:hl7-org:v3:PRPA_IN201306UV02:CrossGatewayPatientDiscovery</a:Action>
-      <a:RelatesTo>urn:uuid:{extension}</a:RelatesTo>
+      <a:RelatesTo>urn:uuid:{messageId}</a:RelatesTo>
       <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
         <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
           <b:Created>{createdAt}</b:Created>
@@ -119,7 +117,7 @@ export function generateXcpdTemplate(code: string) {
         <acknowledgement>
           <typeCode code="AA"/>
           <targetMessage>
-            <id extension="{extension}" root="{root}"/>
+            <id extension="{messageId}" root="{root}"/>
           </targetMessage>
         </acknowledgement>
         <controlActProcess classCode="CACT" moodCode="EVN">
@@ -127,7 +125,7 @@ export function generateXcpdTemplate(code: string) {
           <subject contextConductionInd="false" typeCode="SUBJ"> ${registrationEvent} 
           </subject>
           <queryAck>
-            <queryId extension="{extension}" root="{root}"/>
+            <queryId extension="{queryId}" root="{root}"/>
             <statusCode code="deliveredResponse"/>
             <queryResponseCode code="{code}"/>
           </queryAck> ${queryByParameter} 
@@ -137,17 +135,3 @@ export function generateXcpdTemplate(code: string) {
   </s:Envelope>`;
   return xcpdTemplate;
 }
-
-/**
- * Removed since wasn't in Particle but was in epic so not necessary: 
- * 
- *         <authorOrPerformer typeCode="AUT">
-          <assignedDevice classCode="ASSIGNED">
-            <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
-          </assignedDevice>
-        </authorOrPerformer>
- * 
- * 
- * 
- * 
- * */
