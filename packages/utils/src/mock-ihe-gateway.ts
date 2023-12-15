@@ -16,7 +16,7 @@ app.post("/xcpd/v1", async (req, res) => {
     res.send(xcpd);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    res.status(404).send(err.message);
+    res.status(400).send(err.message);
   }
 });
 
@@ -27,7 +27,7 @@ app.post("/iti38/v1", async (req, res) => {
     res.send(iti38);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    res.status(404).send(err.message);
+    res.status(400).send(err.message);
   }
 });
 
@@ -38,7 +38,7 @@ app.post("/iti39/v1", async (req, res) => {
     res.send(iti39);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    res.status(404).send(err.message);
+    res.status(400).send(err.message);
   }
 });
 

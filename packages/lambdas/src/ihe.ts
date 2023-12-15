@@ -33,7 +33,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
     return buildResponse(200, result);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    return buildResponse(404, err.message);
+    return buildResponse(400, err.message);
   }
 });
 
