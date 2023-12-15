@@ -75,10 +75,10 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
             level: "warning",
           });
           if (stopOnErrors) {
-            log(msg + " - interrupting...", error);
+            log(`${msg} - interrupting... ${JSON.stringify(error)}`);
             throw error;
           }
-          log(msg + " - continuing...", error);
+          log(`${msg} - continuing... ${JSON.stringify(error)}`);
         }
       }
 
