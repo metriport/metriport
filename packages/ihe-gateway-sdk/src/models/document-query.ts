@@ -1,25 +1,16 @@
 import {
   BaseRequest,
-  baseRequestSchema,
-  baseResponseSchema,
   BaseResponse,
-  documentReferenceSchema,
   DocumentReference,
-  XCAGatewaySchema,
   XCAGateway,
   XCPDPatientId,
-  xcpdPatientIdSchema,
-  codeSchema,
   Code,
 } from "./shared";
-import { z } from "zod";
 
-export const dateRangeSchema = z.object({
-  dateFrom: z.string(),
-  dateTo: z.string(),
-});
-
-export type DateRange = z.infer<typeof dateRangeSchema>;
+export type DateRange = {
+  dateFrom: string;
+  dateTo: string;
+};
 
 // The following are for us creating a document query request
 
@@ -34,27 +25,16 @@ export type DocumentQueryRequestOutgoing = BaseRequest & {
   documentCreationDate?: DateRange;
   serviceDate?: DateRange;
 };
-
-export const documentQueryResponseIncomingSchema = baseResponseSchema.extend({
-  cxId: z.string(),
-  gateway: XCAGatewaySchema.nullish(),
-  documentReference: z.array(documentReferenceSchema).nullish(),
-});
-export type DocumentQueryResponse = z.infer<typeof documentQueryResponseIncomingSchema>;
-
 // The following are for us responding to a document query request
 
-export const DocumentQueryRequestIncomingSchema = baseRequestSchema.extend({
-  xcpdPatientId: xcpdPatientIdSchema,
-  classCode: z.array(codeSchema).nullish(),
-  practiceSettingCode: z.array(codeSchema).nullish(),
-  facilityTypeCode: z.array(codeSchema).nullish(),
-  documentCreationDate: z.array(dateRangeSchema).nullish(),
-  serviceDate: z.array(dateRangeSchema).nullish(),
-});
-
-export type DocumentQueryRequestIncoming = z.infer<typeof DocumentQueryRequestIncomingSchema>;
-
+export type DocumentQueryRequestIncoming = BaseRequest & {
+  xcpdPatientId: XCPDPatientId;
+  classCode?: Code[];
+  practiceSettingCode?: Code[];
+  facilityTypeCode?: Code[];
+  documentCreationDate?: DateRange;
+  serviceDate?: DateRange;
+};
 // DocumentReference optional because the error response doesnt have it
 export type DocumentQueryResponseOutgoing = BaseResponse & {
   documentReference?: DocumentReference[];

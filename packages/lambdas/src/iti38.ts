@@ -1,8 +1,7 @@
 import * as Sentry from "@sentry/serverless";
 import {
-  DocumentQueryRequestIncoming,
   DocumentQueryResponseOutgoing,
-  DocumentQueryRequestIncomingSchema,
+  DocumentQueryRequestIncoming,
   DocumentReference,
 } from "@metriport/ihe-gateway-sdk";
 
@@ -10,9 +9,8 @@ import {
 async function processRequest(
   payload: DocumentQueryRequestIncoming
 ): Promise<DocumentQueryResponseOutgoing> {
-  const validationResult = DocumentQueryRequestIncomingSchema.safeParse(payload);
-
-  if (!validationResult.success) {
+  // Randomly return error or success response
+  if (Math.random() > 0.5) {
     return constructErrorResponse(payload);
   }
   return constructSuccessResponse(payload);

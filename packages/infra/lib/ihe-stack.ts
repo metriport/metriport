@@ -59,6 +59,30 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
   });
 
+  const iheLambda = createLambda({
+    stack: stack,
+    name: "IHE",
+    entry: "ihe",
+    layers: [props.lambdaLayers.shared],
+    envType: props.config.environmentType,
+    envVars: {
+      ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+    },
+    vpc: props.vpc,
+    alarmSnsAction: props.alarmAction,
+  });
+
+  const proxy = new apig.ProxyResource(stack, `IHE/Proxy`, {
+    parent: api.root,
+    anyMethod: false,
+    defaultCorsPreflightOptions: { allowOrigins: ["*"] },
+  });
+  proxy.addMethod("ANY", new apig.LambdaIntegration(iheLambda), {
+    requestParameters: {
+      "method.request.path.proxy": true,
+    },
+  });
+
   // Create lambdas
   const iti38Lambda = createLambda({
     stack: stack,

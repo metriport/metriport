@@ -16,149 +16,73 @@ export const oidStringSchema = z
   .string()
   .refine(oid => normalizeOid(oid), { message: "OID is not valid" });
 
-export const samlAttributesSchema = z.object({
-  subjectId: z.string(),
-  subjectRole: z.object({
-    display: z.string(),
-    code: z.string(),
-  }),
-  organization: z.string(),
-  organizationId: z.string(),
-  homeCommunityId: z.string(),
-  purposeOfUse: z.string(),
-});
+export type SamlAttributes = {
+  subjectId: string;
+  subjectRole: {
+    display: string;
+    code: string;
+  };
+  organization: string;
+  organizationId: string;
+  homeCommunityId: string;
+  purposeOfUse: string;
+};
 
-export type SamlAttributes = z.infer<typeof samlAttributesSchema>;
+export type BaseRequest = {
+  id: string;
+  timestamp: string;
+  samlAttributes: SamlAttributes;
+  patientId?: string;
+};
 
-export const baseRequestSchema = z.object({
-  id: z.string(),
-  timestamp: z.string(),
-  samlAttributes: samlAttributesSchema,
-  patientId: z.string().nullish(),
-});
+export type DocumentReference = {
+  homeCommunityId: string;
+  docUniqueId: string;
+  urn: string;
+  repositoryUniqueId: string;
+  newRepositoryUniqueId?: string;
+  newDocumentUniqueId?: string;
+  contentType?: string;
+  url?: string; // signed urls that mirth will use to download actually b64 bytes
+  uri?: string;
+  creation?: string;
+  title?: string;
+};
 
-export type BaseRequest = z.infer<typeof baseRequestSchema>;
+export type Code = {
+  system: string;
+  code: string;
+};
 
-export const documentReferenceSchema = z.object({
-  homeCommunityId: z.string(),
-  docUniqueId: z.string(),
-  urn: z.string(),
-  repositoryUniqueId: z.string(),
-  newRepositoryUniqueId: z.string().nullish(),
-  newDocumentUniqueId: z.string().nullish(),
-  contentType: z.string().nullish(),
-  url: z.string().nullish(), // signed urls that mirth will use to download actually b64 bytes
-  uri: z.string().nullish(),
-  creation: z.string().nullish(),
-  title: z.string().nullish(),
-});
+export type Details = { coding: Code[] } | { text: string };
 
-export type DocumentReference = z.infer<typeof documentReferenceSchema>;
+export type Issue = {
+  severity: string;
+  code: string;
+  details: Details;
+};
 
-export const codeSchema = z.object({
-  system: z.string(),
-  code: z.string(),
-});
-export type Code = z.infer<typeof codeSchema>;
+export type OperationOutcome = {
+  resourceType: string;
+  id: string;
+  issue: Issue[];
+};
 
-const detailsSchema = z.union([
-  z.object({ coding: z.array(codeSchema) }),
-  z.object({ text: z.string() }),
-]);
+export type XCPDPatientId = {
+  id: string;
+  system: string;
+};
 
-export const issueSchema = z.object({
-  severity: z.string(),
-  code: z.string(),
-  details: detailsSchema,
-});
+export type BaseResponse = {
+  id: string;
+  timestamp: string;
+  responseTimestamp: string;
+  xcpdPatientId?: XCPDPatientId;
+  patientId?: string; // TODO should this not be nullish
+  operationOutcome?: OperationOutcome;
+};
 
-export const operationOutcome = z.object({
-  resourceType: z.string(),
-  id: z.string(),
-  issue: z.array(issueSchema),
-});
-
-export type OperationOutcome = z.infer<typeof operationOutcome>;
-
-export const xcpdPatientIdSchema = z.object({
-  id: z.string(),
-  system: z.string(),
-});
-
-export type XCPDPatientId = z.infer<typeof xcpdPatientIdSchema>;
-
-export const baseResponseSchema = z.object({
-  id: z.string(),
-  timestamp: z.string(),
-  responseTimestamp: z.string(),
-  xcpdPatientId: xcpdPatientIdSchema.nullish(),
-  patientId: z.string().nullish(), // TODO should this not be nullish
-  operationOutcome: operationOutcome.nullish(),
-});
-
-export type BaseResponse = z.infer<typeof baseResponseSchema>;
-
-const identifierSchema = z.object({
-  system: z.string().optional(),
-  value: z.string().optional(),
-});
-
-const nameSchema = z.object({
-  family: z.string(),
-  given: z.array(z.string()),
-  prefix: z.array(z.string()).optional(),
-  suffix: z.array(z.string()).optional(),
-});
-
-const telecomSchema = z.object({
-  system: z
-    .union([
-      z.literal("phone"),
-      z.literal("fax"),
-      z.literal("email"),
-      z.literal("pager"),
-      z.literal("url"),
-      z.literal("sms"),
-      z.literal("other"),
-    ])
-    .optional(),
-  value: z.string().optional(),
-});
-
-const genderSchema = z
-  .union([z.literal("male"), z.literal("female"), z.literal("other"), z.literal("unknown")])
-  .optional();
-
-const addressSchema = z.object({
-  line: z.array(z.string()).optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  postalCode: z.string().optional(),
-  country: z.string().optional(),
-});
-
-const extensionSchema = z.object({
-  url: z.string(),
-  valueAdress: addressSchema.optional(),
-  valueString: z.string().optional(),
-});
-
-export const patientResourceSchema = z.object({
-  resourceType: z.literal("Patient"),
-  extension: z.array(extensionSchema).optional(),
-  id: z.string().optional(),
-  identifier: z.array(identifierSchema).optional(),
-  name: z.array(nameSchema),
-  telecom: z.array(telecomSchema).optional(),
-  gender: genderSchema,
-  birthDate: z.string(),
-  address: z.array(addressSchema).optional(),
-});
-
-export type PatientResource = z.infer<typeof patientResourceSchema>;
-
-export const XCAGatewaySchema = z.object({
-  homeCommunityId: z.string(),
-  url: z.string(),
-});
-export type XCAGateway = z.infer<typeof XCAGatewaySchema>;
+export type XCAGateway = {
+  homeCommunityId: string;
+  url: string;
+};

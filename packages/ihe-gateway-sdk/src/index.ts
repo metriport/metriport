@@ -1,48 +1,30 @@
 export { IHEGateway, APIMode } from "./client/ihe-gateway";
 export {
   PatientDiscoveryRequestOutgoing,
-  XCPDGateways,
-  PatientDiscoveryResponseIncoming,
-  xcpdGatewaysSchema,
-  PatientDiscoveryResponseIncomingSchema,
-  PatientDiscoveryRequestIncomingSchema,
-  PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
+  PatientDiscoveryRequestIncoming,
+  XCPDGateways,
 } from "./models/patient-discovery";
 export {
   DocumentQueryRequestOutgoing,
-  DocumentQueryResponse,
-  documentQueryResponseIncomingSchema,
-  DocumentQueryRequestIncomingSchema,
-  DocumentQueryRequestIncoming,
   DocumentQueryResponseOutgoing,
+  DocumentQueryRequestIncoming,
 } from "./models/document-query";
 export {
   DocumentRetrievalRequestOutgoing,
-  DocumentRetrievalResponseIncoming,
-  DocumentRetrievalResponseIncomingIncomingSchema,
-  DocumentRetrievalRequestIncomingSchema,
-  DocumentRetrievalRequestIncoming,
   DocumentRetrievalResponseOutgoing,
+  DocumentRetrievalRequestIncoming,
 } from "./models/document-retrieval";
 export {
-  documentReferenceSchema,
-  baseResponseSchema,
   npiStringSchema,
   NPIString,
   NPIStringArray,
   npiStringArraySchema,
   oidStringSchema,
-  samlAttributesSchema,
   SamlAttributes,
-  baseRequestSchema,
   BaseRequest,
   DocumentReference,
-  issueSchema,
-  operationOutcome,
   OperationOutcome,
   BaseResponse,
-  patientResourceSchema,
-  PatientResource,
   XCAGateway,
 } from "./models/shared";

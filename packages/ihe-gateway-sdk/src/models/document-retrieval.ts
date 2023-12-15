@@ -1,14 +1,4 @@
-import {
-  BaseRequest,
-  DocumentReference,
-  documentReferenceSchema,
-  baseResponseSchema,
-  BaseResponse,
-  baseRequestSchema,
-  XCAGateway,
-} from "./shared";
-import { z } from "zod";
-
+import { BaseRequest, DocumentReference, BaseResponse, XCAGateway } from "./shared";
 // The following are for us creating a document retrieval request
 export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   cxId: string;
@@ -17,22 +7,11 @@ export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   documentReference: DocumentReference[];
 };
 
-export const DocumentRetrievalResponseIncomingIncomingSchema = baseResponseSchema.extend({
-  cxId: z.string(),
-  documentReference: z.array(documentReferenceSchema),
-});
-export type DocumentRetrievalResponseIncoming = z.infer<
-  typeof DocumentRetrievalResponseIncomingIncomingSchema
->;
-
 // The following are for us responding to a document retrieval request
-export const DocumentRetrievalRequestIncomingSchema = baseRequestSchema.extend({
-  documentReference: z.array(documentReferenceSchema),
-});
-export type DocumentRetrievalRequestIncoming = z.infer<
-  typeof DocumentRetrievalRequestIncomingSchema
->;
 
+export type DocumentRetrievalRequestIncoming = BaseRequest & {
+  documentReference: DocumentReference[];
+};
 // DocumentReference is optional because the error response doesnt have it
 export type DocumentRetrievalResponseOutgoing = BaseResponse & {
   documentReference?: DocumentReference[];

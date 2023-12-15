@@ -2,18 +2,16 @@ import * as Sentry from "@sentry/serverless";
 import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
-  PatientDiscoveryRequestIncomingSchema,
-  PatientResource,
 } from "@metriport/ihe-gateway-sdk";
+import { Patient } from "@medplum/fhirtypes";
+
 // import { Patient, patientCreateSchema} from "@metriport/api-sdk";
 
 // Function to extract necessary fields and construct the responses
 async function processRequest(
   payload: PatientDiscoveryRequestIncoming
 ): Promise<PatientDiscoveryResponseOutgoing> {
-  const validationResult = PatientDiscoveryRequestIncomingSchema.safeParse(payload);
-
-  if (!validationResult.success) {
+  if (Math.random() > 0.5) {
     return constructErrorResponse(payload);
   }
   return constructSuccessResponse(payload, true);
@@ -48,7 +46,7 @@ function constructSuccessResponse(
   payload: PatientDiscoveryRequestIncoming,
   patientMatch: boolean
 ): PatientDiscoveryResponseOutgoing {
-  const patientResource: PatientResource = {
+  const patientResource: Patient = {
     resourceType: "Patient",
     identifier: [
       {
@@ -73,7 +71,7 @@ function constructSuccessResponse(
         country: "USA",
       },
     ],
-  } as PatientResource;
+  };
 
   return {
     id: payload.id,
