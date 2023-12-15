@@ -353,7 +353,7 @@ export class APIStack extends Stack {
       bucket: generalBucket,
       alarmSnsAction: slackNotification?.alarmAction,
     });
-    // const cqLinkPatientQueue = cwEnhancedQueryQueues?.linkPatientQueue;
+    const linkPatientsQueue = cwEnhancedQueryQueues?.linkPatientsQueue;
     const cookieStore = cwEnhancedQueryQueues?.cookieStore;
 
     //-------------------------------------------
@@ -392,7 +392,7 @@ export class APIStack extends Stack {
         configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
       },
-      // cqLinkPatientQueue
+      linkPatientsQueue,
       cookieStore
     );
 
@@ -480,8 +480,7 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
-    // cqLinkPatientQueue &&
-    cookieStore &&
+    if (cookieStore && linkPatientsQueue) {
       cwEnhancedCoverageConnector.setupLambdas({
         stack: this,
         vpc: this.vpc,
@@ -491,9 +490,10 @@ export class APIStack extends Stack {
         apiAddress: apiLoadBalancerAddress,
         bucket: generalBucket,
         alarmSnsAction: slackNotification?.alarmAction,
-        // linkPatientQueue: cqLinkPatientQueue,
+        linkPatientsQueue,
         cookieStore,
       });
+    }
 
     //-------------------------------------------
     // API Gateway

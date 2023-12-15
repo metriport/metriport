@@ -56,7 +56,7 @@ export function createAPIService(
     configId: string;
     cxsWithEnhancedCoverageFeatureFlag: string;
   },
-  // cqLinkPatientQueue: IQueue | undefined
+  linkPatientsQueue: IQueue | undefined,
   cookieStore: secret.ISecret | undefined
 ): {
   cluster: ecs.Cluster;
@@ -163,9 +163,9 @@ export function createAPIService(
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
           CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG:
             appConfigEnvVars.cxsWithEnhancedCoverageFeatureFlag,
-          // ...(cqLinkPatientQueue && {
-          //   CW_CQ_PATIENT_LINK_QUEUE_URL: cqLinkPatientQueue.queueUrl,
-          // }),
+          ...(linkPatientsQueue && {
+            CW_CQ_PATIENT_LINK_QUEUE_URL: linkPatientsQueue.queueUrl,
+          }),
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -216,12 +216,12 @@ export function createAPIService(
       queue: sidechainFHIRConverterDLQ,
       resource: fargateService.service.taskDefinition.taskRole,
     });
-  // cqLinkPatientQueue &&
-  //   provideAccessToQueue({
-  //     accessType: "send",
-  //     queue: cqLinkPatientQueue,
-  //     resource: fargateService.service.taskDefinition.taskRole,
-  //   });
+  linkPatientsQueue &&
+    provideAccessToQueue({
+      accessType: "send",
+      queue: linkPatientsQueue,
+      resource: fargateService.service.taskDefinition.taskRole,
+    });
   if (cookieStore) {
     cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);

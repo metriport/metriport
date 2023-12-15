@@ -124,18 +124,25 @@ export class CommonWellManagementAPI {
     oid,
     careQualityOrgIds,
     timeout = DEFAULT_TIMEOUT_INCLUDE_LIST.asMilliseconds(),
+    dryRun = false,
     log = console.log,
     debug = emptyFunction,
   }: {
     oid: string;
     careQualityOrgIds: string[];
     timeout?: number;
+    dryRun?: boolean | undefined;
     log?: typeof console.log | undefined;
     debug?: typeof console.log | undefined;
   }): Promise<void> {
     const cookies = await this.cookieManager.getCookies();
     if (cookies.length < 1) {
       log(`No cookies to support auth, skipping...`);
+      return;
+    }
+
+    if (dryRun) {
+      log(`[DRY RUN] Would be posting to /IncludeList and updating cookies, skipping...`);
       return;
     }
 
