@@ -14,6 +14,11 @@ export type SetBulkGetDocUrlProgress = {
   requestId?: string;
 };
 
+export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
+  status: BulkGetDocumentsUrlProgress["status"];
+  requestId: string;
+};
+
 /**
  * The function `appendBulkGetDocUrlProgress` updates the progress of a BulkGetDocumentsUrl query to a patient's data.
  * @param SetBulkGetDocUrlProgress - A cmd argument type to update the progress of a bulk get doc URL query.
@@ -36,7 +41,7 @@ export async function appendBulkGetDocUrlProgress({
     });
 
     const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = existingPatient.data
-      ?.bulkGetDocumentsUrlProgress || { status: "processing" };
+      ?.bulkGetDocumentsUrlProgress ?? { status: BulkGetDocUrlStatus.processing };
 
     if (status) {
       bulkGetDocumentsUrlProgress.status = status;
@@ -57,11 +62,6 @@ export async function appendBulkGetDocUrlProgress({
   });
 }
 
-export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
-  bulkGetDocumentsUrlProgress: Required<Pick<BulkGetDocumentsUrlProgress, "status">>;
-  requestId: string;
-};
-
 /**
  * The function `storeBulkGetDocumentUrlQueryInit` initializes the `BulkGetDocumentsUrlProgress` field in a patient's data.
  * @param cmd - The `cmd` argument type to initialize the `BulkGetDocumentsUrlProgress` field
@@ -70,7 +70,7 @@ export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
 export const storeBulkGetDocumentUrlQueryInit = async (
   cmd: BulkGetDocUrlQueryInitCmd
 ): Promise<Patient> => {
-  const { id, cxId } = cmd;
+  const { id, cxId, status, requestId } = cmd;
 
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
@@ -83,8 +83,8 @@ export const storeBulkGetDocumentUrlQueryInit = async (
     const update = {
       bulkGetDocumentsUrlProgress: {
         ...patient.data.bulkGetDocumentsUrlProgress,
-        ...cmd.bulkGetDocumentsUrlProgress,
-        requestId: cmd.requestId,
+        status,
+        requestId,
       },
     };
 

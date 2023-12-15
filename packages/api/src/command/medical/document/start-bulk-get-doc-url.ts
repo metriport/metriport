@@ -28,7 +28,6 @@ export const startBulkGetDocumentUrls = async (
   patientId: string
 ): Promise<BulkGetDocumentsUrlProgress> => {
   const { log } = Util.out(`startBulkGetDocumentUrls - M patient ${patientId}`);
-  if (!bulkSigningLambdaName) throw new Error("Bulk Signing Lambda Name is undefined");
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const bulkGetDocUrlProgress = patient.data.bulkGetDocumentsUrlProgress;
@@ -37,7 +36,7 @@ export const startBulkGetDocumentUrls = async (
     log(
       `Patient ${patientId}, Request ${bulkGetDocUrlProgress?.requestId}, bulkGetDocUrlProgress is already 'processing', skipping...`
     );
-    return createBulkGetDocumentUrlQueryResponse("processing", patient);
+    return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.processing, patient);
   }
 
   const requestId = getOrGenerateRequestId(bulkGetDocUrlProgress);
@@ -45,7 +44,7 @@ export const startBulkGetDocumentUrls = async (
   const updatedPatient = await storeBulkGetDocumentUrlQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    bulkGetDocumentsUrlProgress: { status: "processing" },
+    status: BulkGetDocUrlStatus.processing,
     requestId,
   });
 
@@ -66,16 +65,16 @@ export const startBulkGetDocumentUrls = async (
   } catch (error) {
     appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId: cxId },
-      status: "failed",
+      status: BulkGetDocUrlStatus.failed,
       requestId: requestId,
     });
     capture.error(error, {
       extra: { patientId, context: `startBulkGetDocumentUrls`, error },
     });
-    return createBulkGetDocumentUrlQueryResponse("failed", updatedPatient);
+    return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.failed, updatedPatient);
   }
 
-  return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
+  return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.processing, updatedPatient);
 };
 
 /**

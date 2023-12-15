@@ -1,5 +1,8 @@
-export const BulkGetDocUrlStatus = ["processing", "completed", "failed"] as const;
-export type BulkGetDocUrlStatus = (typeof BulkGetDocUrlStatus)[number];
+export enum BulkGetDocUrlStatus {
+  completed = "completed",
+  failed = "failed",
+  processing = "processing",
+}
 
 export type BulkGetDocumentsUrlProgress = {
   status: BulkGetDocUrlStatus;
