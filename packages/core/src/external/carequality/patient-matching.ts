@@ -19,7 +19,7 @@ export const isPatientMatching = (patient1: PatientData, patient2: PatientData):
   let fieldCount = 0;
 
   const addScore = (value1: string, value2: string) => {
-    const similarity = jaroWinkler(value1, value2);
+    const similarity = jaroWinkler(value1.toLowerCase(), value2.toLowerCase());
     score += similarity;
     fieldCount += 1;
   };
