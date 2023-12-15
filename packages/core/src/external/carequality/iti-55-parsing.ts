@@ -12,87 +12,99 @@ import { isAnyPatientMatching } from "./patient-matching";
  */
 async function parseXmlString(
   xml: string
-): Promise<[PatientData, [string, string, string, string]]> {
+): Promise<[PatientData, [string, string, string | undefined, string]]> {
   // Removing leading newlines and escaping double quote variations
   xml = cleanXml(xml);
-
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
 
+  let result;
   try {
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await parser.parseStringPromise(xml);
-    const queryId =
-      result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
-        "queryByParameter"
-      ][0]["queryId"][0]["$"]["extension"];
-    const parameterList =
+    result = await parser.parseStringPromise(xml);
+  } catch (error) {
+    console.error(error);
+    throw new Error("XML parsing failed: Invalid XML");
+  }
+
+  const address =
+    result?.["Envelope"]?.["Body"]?.[0]?.["PRPA_IN201305UV02"]?.[0]?.["controlActProcess"]?.[0]?.[
+      "queryByParameter"
+    ]?.[0]?.["parameterList"]?.[0]?.["patientAddress"]?.[0]?.["value"]?.[0];
+
+  // these need to be defined
+  let parameterList, patientName, gender, dob, signature, messageId;
+  let patientAddress: Address[] | undefined;
+  try {
+    parameterList =
       result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
         "queryByParameter"
       ][0]["parameterList"][0];
-    const patientName = parameterList["livingSubjectName"][0]["value"][0];
-    const gender = parameterList["livingSubjectAdministrativeGender"][0]["value"][0]["$"]["code"];
-    const dob = parameterList["livingSubjectBirthTime"][0]["value"][0]["$"]["value"];
-    const address = parameterList["patientAddress"][0]["value"][0];
-    const signature =
-      result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
-    const bodyId = result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["id"][0];
-    const root = bodyId["$"]["root"];
-
-    const messageId = result["Envelope"]["Header"][0]["MessageID"][0];
-
-    let phone = "";
-    if (parameterList["patientTelecom"] && parameterList["patientTelecom"][0]["value"]) {
-      phone = parameterList["patientTelecom"][0]["value"][0]["$"]["value"];
+    patientName = parameterList["livingSubjectName"][0]["value"][0];
+    gender = parameterList["livingSubjectAdministrativeGender"][0]["value"][0]["$"]["code"];
+    dob = parameterList["livingSubjectBirthTime"][0]["value"][0]["$"]["value"];
+    signature = result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
+    messageId = result["Envelope"]["Header"][0]["MessageID"][0];
+    if (address) {
+      if (address) {
+        patientAddress = [
+          {
+            addressLine1: address["streetAddressLine"][0],
+            city: address["city"][0],
+            state: address["state"][0],
+            zip: address["postalCode"][0],
+            country: address["country"][0] || "USA",
+          },
+        ];
+      }
     }
-
-    let livingSubjectId: LivingSubjectId | undefined;
-    if (
-      parameterList["livingSubjectId"] &&
-      parameterList["livingSubjectId"][0]["value"] &&
-      parameterList["livingSubjectId"][0]["value"][0]["$"]
-    ) {
-      livingSubjectId = {
-        extension: parameterList["livingSubjectId"][0]["value"][0]["$"]["extension"],
-        root: parameterList["livingSubjectId"][0]["value"][0]["$"]["root"],
-      };
-    }
-    let principalCareProviderId: PrincipalCareProviderId | undefined;
-    if (
-      parameterList["principalCareProviderId"] &&
-      parameterList["principalCareProviderId"][0]["value"] &&
-      parameterList["principalCareProviderId"][0]["value"][0]["$"]
-    ) {
-      principalCareProviderId = {
-        extension: parameterList["principalCareProviderId"][0]["value"][0]["$"]["extension"],
-        root: parameterList["principalCareProviderId"][0]["value"][0]["$"]["root"],
-      };
-    }
-
-    const patientAddress: Address = {
-      addressLine1: address["streetAddressLine"][0],
-      city: address["city"][0],
-      state: address["state"][0],
-      zip: address["postalCode"][0],
-      country: address["country"] ? address["country"][0] : "USA",
-    };
-
-    const patientData = {
-      livingSubjectId: livingSubjectId,
-      principalCareProviderId: principalCareProviderId,
-      firstName: patientName["given"][0],
-      lastName: patientName["family"][0],
-      dob: dob,
-      genderAtBirth: gender,
-      address: [patientAddress],
-      contact: [{ phone: phone }],
-    };
-    return [patientData, [root, messageId, queryId, signature]];
   } catch (error) {
-    console.error(error);
-    throw new Error("XML parsing failed");
+    throw new Error(
+      "XML parsing failed: A Required field is missing. Either patientName, gender, dob, signature, messageId, or patientAddress is missing."
+    );
   }
+
+  // these dont need to be defined
+  const phone =
+    result?.["Envelope"]?.["Body"]?.[0]?.["PRPA_IN201305UV02"]?.[0]?.["controlActProcess"]?.[0]?.[
+      "queryByParameter"
+    ]?.[0]?.["parameterList"]?.[0]?.["patientTelecom"]?.[0]?.["value"]?.[0]?.["$"]?.["value"];
+  const queryId =
+    result?.["Envelope"]?.["Body"]?.[0]?.["PRPA_IN201305UV02"]?.[0]?.["controlActProcess"]?.[0]?.[
+      "queryByParameter"
+    ]?.[0]?.["queryId"]?.[0]?.["$"]?.["extension"];
+  const root =
+    result?.["Envelope"]?.["Body"]?.[0]?.["PRPA_IN201305UV02"]?.[0]?.["id"]?.[0]?.["$"]?.["root"];
+
+  const livingSubjectId: LivingSubjectId | undefined = parameterList["livingSubjectId"]?.[0]?.[
+    "value"
+  ]?.[0]?.["$"]
+    ? {
+        extension: parameterList["livingSubjectId"][0]["value"][0]["$"]?.["extension"],
+        root: parameterList["livingSubjectId"][0]["value"][0]["$"]?.["root"],
+      }
+    : undefined;
+
+  const principalCareProviderId: PrincipalCareProviderId | undefined = parameterList[
+    "principalCareProviderId"
+  ]?.[0]?.["value"]?.[0]?.["$"]
+    ? {
+        extension: parameterList["principalCareProviderId"][0]["value"][0]["$"]?.["extension"],
+        root: parameterList["principalCareProviderId"][0]["value"][0]["$"]?.["root"],
+      }
+    : undefined;
+
+  const patientData = {
+    livingSubjectId: livingSubjectId,
+    principalCareProviderId: principalCareProviderId,
+    firstName: patientName["given"][0],
+    lastName: patientName["family"][0],
+    dob: dob,
+    genderAtBirth: gender,
+    address: patientAddress,
+    contact: [{ phone: phone }],
+  };
+  return [patientData, [root, messageId, queryId, signature]];
 }
 
 const fillTemplate = (
@@ -102,7 +114,7 @@ const fillTemplate = (
   creationTime: string,
   root: string,
   messageId: string,
-  queryId: string,
+  queryId: string | undefined,
   signature: string,
   status: string,
   patientData?: PatientData
@@ -125,17 +137,22 @@ const fillTemplate = (
       phone = contact[0].phone || "";
     }
 
-    let addressLine1, city, state, zip, country;
+    let addressLine1,
+      city,
+      state,
+      zip,
+      country = "";
     if (Array.isArray(address) && typeof address[0] === "object") {
       ({ addressLine1, city, state, zip, country } = address[0]);
     }
+
     return xcpdTemplate
       .replace(/{createdAt}/g, createdAt)
       .replace(/{expiresAt}/g, expiresAt)
       .replace(/{creationTime}/g, creationTime)
       .replace(/{root}/g, root)
       .replace(/{messageId}/g, messageId)
-      .replace(/{queryId}/g, queryId)
+      .replace(/{queryId}/g, queryId || "")
       .replace(/{signature}/g, signature)
       .replace(/{firstName}/g, firstName)
       .replace(/{lastName}/g, lastName)
@@ -159,39 +176,34 @@ const fillTemplate = (
     .replace(/{creationTime}/g, creationTime)
     .replace(/{root}/g, root)
     .replace(/{messageId}/g, messageId)
-    .replace(/{queryId}/g, queryId)
+    .replace(/{queryId}/g, queryId || "")
     .replace(/{signature}/g, signature)
     .replace(/{code}/g, status);
 };
 
 export async function generateXCPD(xml: string): Promise<string> {
-  try {
-    const [patientData, [root, messageId, queryId, signature]] = await parseXmlString(xml);
-    const matchingPatient = isAnyPatientMatching(patientData);
-    let status = "";
-    if (matchingPatient) {
-      status = "OK";
-    } else {
-      console.log("no patient matching");
-      status = "NF";
-    }
-    const { createdAt, expiresAt, creationTime } = generateTimeStrings();
-    const xcpdTemplate = generateXcpdTemplate(status);
-    const xcpd = fillTemplate(
-      xcpdTemplate,
-      createdAt,
-      expiresAt,
-      creationTime,
-      root,
-      messageId,
-      queryId,
-      signature,
-      status,
-      matchingPatient
-    );
-    return xcpd;
-  } catch (error) {
-    console.error(error);
-    throw new Error("XML parsing failed");
+  const [patientData, [root, messageId, queryId, signature]] = await parseXmlString(xml);
+  const matchingPatient = isAnyPatientMatching(patientData);
+  let status = "";
+  if (matchingPatient) {
+    status = "OK";
+  } else {
+    console.log("no patient matching");
+    status = "NF";
   }
+  const { createdAt, expiresAt, creationTime } = generateTimeStrings();
+  const xcpdTemplate = generateXcpdTemplate(status);
+  const xcpd = fillTemplate(
+    xcpdTemplate,
+    createdAt,
+    expiresAt,
+    creationTime,
+    root,
+    messageId,
+    queryId,
+    signature,
+    status,
+    matchingPatient
+  );
+  return xcpd;
 }
