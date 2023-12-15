@@ -49,6 +49,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // TODO update envconfig to have a name for ihestack and update internal repo
   new IHEStack(app, "IHEStack", {
+    env,
     config: config,
     vpc: apiStack.vpc,
     lambdaLayers: apiStack.sharedLambdaLayers,
