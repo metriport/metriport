@@ -1,8 +1,7 @@
 export function generateITI39Template(status: string): string {
   let documentResponse = "";
   if (status === "Success") {
-    documentResponse = `
-    <DocumentResponse>
+    documentResponse = `<DocumentResponse>
         <HomeCommunityId>urn:oid:{homeCommunityId}</HomeCommunityId>
         <RepositoryUniqueId>{homeCommunityId}</RepositoryUniqueId>
         <DocumentUniqueId>{documentId}</DocumentUniqueId>

@@ -2,8 +2,7 @@ export function generateXcpdTemplate(code: string) {
   let registrationEvent = "";
   let queryByParameter = "";
   if (code === "OK") {
-    registrationEvent = `
-      <registrationEvent classCode="REG" moodCode="EVN">
+    registrationEvent = `<registrationEvent classCode="REG" moodCode="EVN">
         <id nullFlavor="NA"/>
         <statusCode code="active"/>
         <subject1 typeCode="SBJ">
@@ -48,8 +47,7 @@ export function generateXcpdTemplate(code: string) {
           </assignedEntity>
         </custodian>
       </registrationEvent>`;
-    queryByParameter = `
-      <queryByParameter>
+    queryByParameter = `<queryByParameter>
         <queryId extension="{queryId}" root="{root}"/>
         <statusCode code="new"/>
         <responseModalityCode code="R"/>
@@ -137,17 +135,3 @@ export function generateXcpdTemplate(code: string) {
   </s:Envelope>`;
   return xcpdTemplate;
 }
-
-/**
- * Removed since wasn't in Particle but was in epic so not necessary: 
- * 
- *         <authorOrPerformer typeCode="AUT">
-          <assignedDevice classCode="ASSIGNED">
-            <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
-          </assignedDevice>
-        </authorOrPerformer>
- * 
- * 
- * 
- * 
- * */
