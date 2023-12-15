@@ -102,7 +102,7 @@ export class IHEStack extends Stack {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      alarmSnsAction: slackNotification?.alarmAction,
     });
 
     const iti39Lambda = createLambda({
@@ -115,7 +115,7 @@ export class IHEStack extends Stack {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      alarmSnsAction: slackNotification?.alarmAction,
     });
 
     const iti55Lambda = createLambda({
@@ -128,7 +128,7 @@ export class IHEStack extends Stack {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      alarmSnsAction: slackNotification?.alarmAction,
     });
 
     // Create resources for each lambda directly under the API root
