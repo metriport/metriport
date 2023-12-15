@@ -29,11 +29,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
       default:
         throw new Error("Invalid path");
     }
-
+    console.log("result", result);
     return buildResponse(200, result);
-  } catch (err) {
-    console.log("error", err);
-    return buildResponse(404, "Invalid XML");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    return buildResponse(404, err.message);
   }
 });
 
