@@ -17,6 +17,19 @@ export type DocumentBulkSignerLambdaRequest = {
   requestId: string;
 };
 
+export enum MAPIWebhookStatus {
+  completed = "completed",
+  failed = "failed",
+}
+
+export type BulkDownloadWebhookParams = {
+  cxId: string;
+  patientId: string;
+  requestId: string;
+  documents: DocumentBulkSignerLambdaResponse[];
+  status: MAPIWebhookStatus;
+};
+
 export async function getSignedUrls(
   cxId: string,
   patientId: string,
@@ -72,8 +85,8 @@ export async function getSignedUrls(
       cxId: cxId,
       patientId: patientId,
       requestId: requestId,
-      dtos: response,
-      status: "completed",
+      documents: response,
+      status: MAPIWebhookStatus.completed,
     });
   } catch (error) {
     capture.error(error, {
@@ -83,27 +96,19 @@ export async function getSignedUrls(
       cxId: cxId,
       patientId: patientId,
       requestId: requestId,
-      dtos: [],
-      status: "failed",
+      documents: [],
+      status: MAPIWebhookStatus.failed,
     });
   }
 }
 
-export type BulkDownloadWebhookParams = {
-  cxId: string;
-  patientId: string;
-  requestId: string;
-  dtos: DocumentBulkSignerLambdaResponse[];
-  status: string;
-};
-
 export function apiClientBulkDownloadWebhook(apiURL: string) {
-  const sendBulkDownloadUrl = `${apiURL}/internal/docs/triggerBulkDownloadWebhook`;
+  const sendBulkDownloadUrl = `${apiURL}/internal/docs/bulkSignerCompletion`;
 
   return {
     callInternalEndpoint: async function (params: BulkDownloadWebhookParams) {
       try {
-        await ossApi.post(sendBulkDownloadUrl, params.dtos, {
+        await ossApi.post(sendBulkDownloadUrl, params.documents, {
           params: {
             cxId: params.cxId,
             patientId: params.patientId,

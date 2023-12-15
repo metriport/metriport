@@ -4,11 +4,11 @@ import { documentReferenceSchema } from "@metriport/api-sdk/medical/models/docum
 const urlSchema = z.object({
   url: z.string(),
 });
-const DocumentBulkSignerLambdaResponseSchema = documentReferenceSchema.and(urlSchema);
+const documentBulkSignerLambdaResponseSchema = documentReferenceSchema.and(urlSchema);
 export type DocumentBulkSignerLambdaResponse = z.infer<
-  typeof DocumentBulkSignerLambdaResponseSchema
+  typeof documentBulkSignerLambdaResponseSchema
 >;
 
-export const DocumentBulkSignerLambdaResponseArraySchema = z.array(
-  DocumentBulkSignerLambdaResponseSchema
+export const documentBulkSignerLambdaResponseArraySchema = z.array(
+  documentBulkSignerLambdaResponseSchema
 );

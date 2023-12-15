@@ -37,7 +37,7 @@ import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 import {
   DocumentBulkSignerLambdaResponse,
-  DocumentBulkSignerLambdaResponseArraySchema,
+  documentBulkSignerLambdaResponseArraySchema,
 } from "@metriport/core/domain/document-bulk-signer-response";
 import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import { parseISODate } from "../../shared/date";
@@ -436,7 +436,7 @@ router.post(
 export default router;
 
 /**
- * POST /internal/docs/triggerBulkDownloadWebhook
+ * POST /internal/docs/bulkSignerCompletion
  *
  * Endpoint called by the bulk signer lambda to trigger the webhook.
  * @param req.query.cxId - The customer/account's ID.
@@ -446,18 +446,18 @@ export default router;
  * @return Updated bulk download query progress.
  */
 router.post(
-  "/triggerBulkDownloadWebhook",
+  "/bulkSignerCompletion",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const requestId = getFrom("query").orFail("requestId", req);
     const status = getFrom("query").orFail("status", req);
-    const dtos: DocumentBulkSignerLambdaResponse[] =
-      DocumentBulkSignerLambdaResponseArraySchema.parse(req.body);
+    const documents: DocumentBulkSignerLambdaResponse[] =
+      documentBulkSignerLambdaResponseArraySchema.parse(req.body);
 
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
-      status: status as BulkGetDocUrlStatus,
+      status: status === "completed" ? BulkGetDocUrlStatus.completed : BulkGetDocUrlStatus.failed,
       requestId: requestId,
     });
 
@@ -466,8 +466,8 @@ router.post(
       cxId,
       patientId,
       "medical.document-bulk-download-urls",
-      status as MAPIWebhookStatus,
-      dtos
+      status === "completed" ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
+      documents
     );
 
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
