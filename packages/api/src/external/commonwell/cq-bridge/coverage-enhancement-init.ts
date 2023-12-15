@@ -1,4 +1,5 @@
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { errorToString } from "@metriport/core/util/error/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { groupBy } from "lodash";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
@@ -8,7 +9,7 @@ import { makeCoverageEnhancer } from "./coverage-enhancer-factory";
 import { setCQLinkStatus } from "./cq-link-status";
 
 const cqLinkStatusInitial = "processing";
-const parallelPatientUpdates = 20;
+const parallelPatientUpdates = 10;
 const coverageEnhancer = makeCoverageEnhancer();
 
 /**
@@ -43,25 +44,33 @@ export async function initEnhancedCoverage(
   for (const [cxId, patients] of entries) {
     console.log(`CX ${cxId} has ${patients.length} patients to run Enhanced Coverage`);
   }
-  for (const [cxId, patients] of entries) {
-    // update the patients to indicate they're being processed
-    const updatePatientsPromise = executeAsynchronously(
-      patients,
-      async ({ cxId, id: patientId }) => {
-        await setCQLinkStatus({ cxId, patientId, cqLinkStatus: cqLinkStatusInitial });
-      },
-      { numberOfParallelExecutions: parallelPatientUpdates }
-    );
-    const orgPromise = getOrganizationOrFail({ cxId });
+  const promises = entries.map(async ([cxId, patients]) => {
+    try {
+      // update the patients to indicate they're being processed
+      const updatePatientsPromise = executeAsynchronously(
+        patients,
+        async ({ cxId, id: patientId }) => {
+          await setCQLinkStatus({ cxId, patientId, cqLinkStatus: cqLinkStatusInitial });
+        },
+        { numberOfParallelExecutions: parallelPatientUpdates }
+      );
+      const orgPromise = getOrganizationOrFail({ cxId });
 
-    const [, org] = await Promise.all([updatePatientsPromise, orgPromise]);
+      const [, org] = await Promise.all([updatePatientsPromise, orgPromise]);
 
-    const patientIds = patients.map(p => p.id);
-    await coverageEnhancer.enhanceCoverage({
-      cxId,
-      orgOID: org.oid,
-      patientIds,
-      fromOrgChunkPos: fromOrgPos,
-    });
-  }
+      const patientIds = patients.map(p => p.id);
+      await coverageEnhancer.enhanceCoverage({
+        cxId,
+        orgOID: org.oid,
+        patientIds,
+        fromOrgChunkPos: fromOrgPos,
+      });
+    } catch (error) {
+      console.log(
+        `Error running EC for cx ${cxId}, not interrupting other cxs: ${errorToString(error)}`
+      );
+      throw error;
+    }
+  });
+  await Promise.all(promises);
 }
