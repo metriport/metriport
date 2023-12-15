@@ -1,6 +1,8 @@
 import {
-  JSON_MIME_TYPE,
-  XML_MIME_TYPE,
+  JSON_APP_MIME_TYPE,
+  JSON_TXT_MIME_TYPE,
+  XML_APP_MIME_TYPE,
+  XML_TXT_MIME_TYPE,
   PDF_MIME_TYPE,
   TIFF_MIME_TYPE,
   TIF_MIME_TYPE,
@@ -8,7 +10,7 @@ import {
   JPEG_MIME_TYPE,
   JPG_MIME_TYPE,
   BMP_MIME_TYPE,
-  TEXT_MIME_TYPE,
+  TXT_MIME_TYPE,
   OCTET_MIME_TYPE,
   HTML_MIME_TYPE,
   XML_FILE_EXTENSION,
@@ -17,7 +19,7 @@ import {
   PNG_FILE_EXTENSION,
   JPEG_FILE_EXTENSION,
   BMP_FILE_EXTENSION,
-  TEXT_FILE_EXTENSION,
+  TXT_FILE_EXTENSION,
   OCTET_FILE_EXTENSION,
 } from "./mime";
 
@@ -124,7 +126,7 @@ export function detectFileType(document: string): [string, string] {
     fileBuffer[4] === XML_MAGIC_NUMBER_5 &&
     fileBuffer[5] === XML_MAGIC_NUMBER_6
   ) {
-    return [XML_MIME_TYPE, XML_FILE_EXTENSION];
+    return [XML_APP_MIME_TYPE, XML_FILE_EXTENSION];
   } else if (
     fileBuffer[0] === PNG_MAGIC_NUMBER_1 &&
     fileBuffer[1] === PNG_MAGIC_NUMBER_2 &&
@@ -141,7 +143,7 @@ export function detectFileType(document: string): [string, string] {
   } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
     return [BMP_MIME_TYPE, BMP_FILE_EXTENSION];
   } else if (isLikelyTextFile(Buffer.from(document))) {
-    return [TEXT_MIME_TYPE, TEXT_FILE_EXTENSION];
+    return [TXT_MIME_TYPE, TXT_FILE_EXTENSION];
   } else {
     return [OCTET_MIME_TYPE, OCTET_FILE_EXTENSION];
   }
@@ -155,8 +157,10 @@ export function detectFileType(document: string): [string, string] {
 
 export function isContentTypeAccepted(mimeType: string | undefined): boolean {
   const acceptedContentTypes = [
-    JSON_MIME_TYPE,
-    XML_MIME_TYPE,
+    JSON_APP_MIME_TYPE,
+    JSON_TXT_MIME_TYPE,
+    XML_APP_MIME_TYPE,
+    XML_TXT_MIME_TYPE,
     PDF_MIME_TYPE,
     TIFF_MIME_TYPE,
     TIF_MIME_TYPE,
@@ -164,7 +168,7 @@ export function isContentTypeAccepted(mimeType: string | undefined): boolean {
     JPEG_MIME_TYPE,
     JPG_MIME_TYPE,
     BMP_MIME_TYPE,
-    TEXT_MIME_TYPE,
+    TXT_MIME_TYPE,
     HTML_MIME_TYPE,
   ];
 
