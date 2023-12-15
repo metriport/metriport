@@ -23,7 +23,7 @@ export const generatePatient = (
       homeCommunityId: orgOid,
       purposeOfUse: "TREATMENT",
     },
-    principalCareProviderNPIs: ["124567893"],
+    principalCareProviderIds: ["124567893"],
     patientResource: {
       resourceType: "Patient",
       id: "666-10-0001",

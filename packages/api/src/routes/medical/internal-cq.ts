@@ -15,6 +15,10 @@ import { createOrUpdateCQOrganization } from "../../external/carequality/organiz
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
+import {
+  handleIHEResponse,
+  IHEResultType,
+} from "../../command/medical/ihe-result/create-ihe-result";
 
 dayjs.extend(duration);
 
@@ -81,7 +85,6 @@ router.post(
 
 /**
  * GET /internal/carequality/directory/nearby-organizations
- 
  *
  * Retrieves the organizations within a specified radius from the patient's address.
  * @param req.query.cxId The ID of the customer organization.
@@ -101,6 +104,53 @@ router.get(
     const orgs = await searchNearbyCQOrganizations({ cxId, patientId, radiusInMiles: radius });
 
     return res.status(httpStatus.OK).json(orgs);
+  })
+);
+
+// BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
+
+/**
+ * POST /internal/carequality/patient-discovery/response
+ *
+ * Receives a Patient Discovery response from the IHE Gateway
+ */
+router.post(
+  "/patient-discovery/response",
+  asyncHandler(async (req: Request, res: Response) => {
+    await handleIHEResponse({
+      type: IHEResultType.PATIENT_DISCOVERY,
+      response: req.body,
+    });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-query/response
+ *
+ * Receives a Document Query response from the IHE Gateway
+ */
+router.post(
+  "/document-query/response",
+  asyncHandler(async (req: Request, res: Response) => {
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: req.body });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-retrieval/response
+ *
+ * Receives a Document Retrieval response from the IHE Gateway
+ */
+router.post(
+  "/document-retrieval/response",
+  asyncHandler(async (req: Request, res: Response) => {
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_RETRIEVAL, response: req.body });
+
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

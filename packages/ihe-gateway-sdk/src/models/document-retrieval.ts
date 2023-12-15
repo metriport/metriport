@@ -1,4 +1,5 @@
 import { BaseRequest, DocumentReference, BaseResponse, XCAGateway } from "./shared";
+
 // The following are for us creating a document retrieval request
 export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   cxId: string;
@@ -8,7 +9,6 @@ export type DocumentRetrievalRequestOutgoing = BaseRequest & {
 };
 
 // The following are for us responding to a document retrieval request
-
 export type DocumentRetrievalRequestIncoming = BaseRequest & {
   documentReference: DocumentReference[];
 };

@@ -13,7 +13,6 @@ export type DateRange = {
 };
 
 // The following are for us creating a document query request
-
 export type DocumentQueryRequestOutgoing = BaseRequest & {
   cxId: string;
   xcpdPatientId: XCPDPatientId;
@@ -25,8 +24,8 @@ export type DocumentQueryRequestOutgoing = BaseRequest & {
   documentCreationDate?: DateRange;
   serviceDate?: DateRange;
 };
-// The following are for us responding to a document query request
 
+// The following are for us responding to a document query request
 export type DocumentQueryRequestIncoming = BaseRequest & {
   xcpdPatientId: XCPDPatientId;
   classCode?: Code[];

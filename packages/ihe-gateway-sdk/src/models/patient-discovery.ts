@@ -13,7 +13,7 @@ export type PatientDiscoveryRequestOutgoing = BaseRequest & {
   cxId: string;
   xcpdGateways: XCPDGateways;
   patientResource: Patient;
-  principalCareProviderNPIs?: NPIStringArray;
+  principalCareProviderIds?: NPIStringArray;
 };
 
 export type PatientDiscoveryRequestIncoming = BaseRequest & {

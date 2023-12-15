@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { APIMode, CommonWell, PurposeOfUse, RequestMetadata } from "@metriport/commonwell-sdk";
+import { APIMode, CommonWell, RequestMetadata } from "@metriport/commonwell-sdk";
+import { PurposeOfUse } from "@metriport/shared";
 import { Command } from "commander";
 import * as dotenv from "dotenv";
 import { documentConsumption } from "./document-consumption";

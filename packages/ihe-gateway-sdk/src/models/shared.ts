@@ -35,20 +35,6 @@ export type BaseRequest = {
   patientId?: string;
 };
 
-export type DocumentReference = {
-  homeCommunityId: string;
-  docUniqueId: string;
-  urn: string;
-  repositoryUniqueId: string;
-  newRepositoryUniqueId?: string;
-  newDocumentUniqueId?: string;
-  contentType?: string;
-  url?: string; // signed urls that mirth will use to download actually b64 bytes
-  uri?: string;
-  creation?: string;
-  title?: string;
-};
-
 export type Code = {
   system: string;
   code: string;
@@ -85,4 +71,18 @@ export type BaseResponse = {
 export type XCAGateway = {
   homeCommunityId: string;
   url: string;
+};
+
+export type DocumentReference = {
+  homeCommunityId: string;
+  docUniqueId: string;
+  urn: string;
+  repositoryUniqueId: string;
+  newRepositoryUniqueId?: string;
+  newDocumentUniqueId?: string;
+  contentType?: string;
+  url?: string; // signed urls that mirth will use to download actually b64 bytes
+  uri?: string;
+  creation?: string;
+  title?: string;
 };
