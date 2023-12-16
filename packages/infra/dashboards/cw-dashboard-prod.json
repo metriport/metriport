@@ -141,16 +141,16 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount" } ],
-                    [ ".", "4XXError", ".", "." ],
-                    [ ".", "Latency", ".", ".", { "yAxis": "right", "stat": "Average" } ],
-                    [ ".", "5XXError", ".", "." ]
+                    [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount", "region": "us-west-1" } ],
+                    [ ".", "4XXError", ".", ".", { "region": "us-west-1" } ],
+                    [ ".", "Latency", ".", ".", { "yAxis": "right", "stat": "p99", "region": "us-west-1" } ],
+                    [ ".", "5XXError", ".", ".", { "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-west-1",
                 "stat": "Sum",
-                "period": 300,
+                "period": 60,
                 "title": "ApiGateway"
             }
         },
@@ -311,9 +311,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ { "expression": "m2*300", "label": "VolumeReadIOPs", "id": "e1", "region": "us-west-1" } ],
-                    [ "AWS/RDS", "VolumeWriteIOPs", "DBClusterIdentifier", "api-cluster", { "yAxis": "right", "id": "m1", "region": "us-west-1" } ],
-                    [ ".", "VolumeReadIOPs", ".", ".", { "period": 60, "id": "m2", "label": "VolumeReadIOPs-Billable", "visible": false, "region": "us-west-1" } ]
+                    [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "api-cluster", { "id": "m2", "label": "VolumeReadIOPs", "region": "us-west-1" } ],
+                    [ ".", "VolumeWriteIOPs", ".", ".", { "yAxis": "right", "id": "m1", "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -700,7 +699,7 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/RDS", "WriteIOPS", "DBClusterIdentifier", "api-cluster", { "region": "us-west-1" } ]
+                    [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "api-cluster" ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
