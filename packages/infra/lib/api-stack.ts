@@ -1433,7 +1433,7 @@ export class APIStack extends Stack {
     const readIOPsMetric = dbCluster.metricVolumeReadIOPs();
     const rIOPSAlarm = readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
       // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraMonitoring.Metrics.html
-      threshold: 166, // BILLED IOPS, that's ~50_000 regular IOPS
+      threshold: 300_000, // IOPS
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
@@ -1442,12 +1442,19 @@ export class APIStack extends Stack {
 
     const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
     const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
-      threshold: 50_000, // IOPS
+      threshold: 60_000, // IOPS
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
     alarmAction && wIOPSAlarm.addAlarmAction(alarmAction);
     alarmAction && wIOPSAlarm.addOkAction(alarmAction);
+
+    const acuMetric = dbCluster.metricACUUtilization();
+    acuMetric.createAlarm(this, `${dbClusterName}ACUUtilizationAlarm`, {
+      threshold: 80, // pct
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
   }
 
   private addDynamoPerformanceAlarms(
