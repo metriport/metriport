@@ -20,9 +20,14 @@ async function parseXmlString(xml: string): Promise<[string, string, string, str
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let result;
   try {
-    const result = await parser.parseStringPromise(xml);
+    result = await parser.parseStringPromise(xml);
+  } catch (err) {
+    console.log("error", err);
+    throw new Error("XML parsing failed: Invalid XML");
+  }
+  try {
     const signature =
       result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
     const messageId = result["Envelope"]["Header"][0]["MessageID"][0]["_"];
@@ -31,7 +36,9 @@ async function parseXmlString(xml: string): Promise<[string, string, string, str
     return [patientId, systemId, signature, messageId];
   } catch (err) {
     console.log("error", err);
-    throw new Error("Invalid XML");
+    throw new Error(
+      "XML parsing failed: A Required field is missing. Either signature, messageId, patientId, or systemId is missing."
+    );
   }
 }
 
@@ -83,24 +90,19 @@ const fillTemplate = (
 };
 
 export async function generateITI38(xml: string): Promise<string> {
-  try {
-    const [patientId, systemId, signature, messageId] = await parseXmlString(xml);
-    const { createdAt, expiresAt } = generateTimeStrings();
-    const documentId = patientToDocumentLinks[patientId];
-    const iti38Template = generateITI38Template(documentId ? "Success" : "Failed");
-    const iti38 = fillTemplate(
-      iti38Template,
-      signature,
-      createdAt,
-      expiresAt,
-      patientId,
-      systemId,
-      messageId,
-      documentId
-    );
-    return iti38;
-  } catch (error) {
-    console.error(error);
-    throw new Error("Invalid XML");
-  }
+  const [patientId, systemId, signature, messageId] = await parseXmlString(xml);
+  const { createdAt, expiresAt } = generateTimeStrings();
+  const documentId = patientToDocumentLinks[patientId];
+  const iti38Template = generateITI38Template(documentId ? "Success" : "Failed");
+  const iti38 = fillTemplate(
+    iti38Template,
+    signature,
+    createdAt,
+    expiresAt,
+    patientId,
+    systemId,
+    messageId,
+    documentId
+  );
+  return iti38;
 }
