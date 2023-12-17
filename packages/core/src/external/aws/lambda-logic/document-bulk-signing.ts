@@ -9,7 +9,7 @@ import { DocumentBulkSignerLambdaResponse } from "../../../domain/document-bulk-
 const ossApi = axios.create();
 dayjs.extend(duration);
 
-const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 3 }).asSeconds();
+const SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 });
 
 export type DocumentBulkSignerLambdaRequest = {
   patientId: string;
@@ -26,7 +26,7 @@ export type BulkDownloadWebhookParams = {
   cxId: string;
   patientId: string;
   requestId: string;
-  documents: DocumentBulkSignerLambdaResponse[];
+  documents?: DocumentBulkSignerLambdaResponse[];
   status: MAPIWebhookStatus;
 };
 
@@ -41,17 +41,15 @@ export async function getSignedUrls(
   const s3Utils = new S3Utils(region);
 
   const documents: DocumentReference[] = await searchDocuments({ cxId, patientId });
-  const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
-
+  const ossApiClient = makeApiClientTriggerBulkSignerCompletion(apiURL);
+  let status: MAPIWebhookStatus;
+  let response: DocumentBulkSignerLambdaResponse[] = [];
   try {
     const urls = await Promise.all(
       documents.map(async doc => {
         // Check if content and attachment exist
-        if (!doc.content || !doc.content[0] || !doc.content[0].attachment) {
-          return;
-        }
-
-        const attachment = doc.content[0].attachment;
+        const attachment = doc?.content?.[0]?.attachment;
+        if (!attachment) return;
 
         // Check if fileName is defined
         const fileName = attachment.title;
@@ -62,11 +60,11 @@ export async function getSignedUrls(
         const signedUrl = await s3Utils.getSignedUrl({
           bucketName,
           fileName,
-          durationSeconds: SIGNED_URL_DURATION_SECONDS,
+          durationSeconds: SIGNED_URL_DURATION.asSeconds(),
         });
 
         return {
-          id: doc.id,
+          id: doc.id || "",
           fileName: fileName,
           description: doc.description,
           mimeType: attachment.contentType,
@@ -78,31 +76,30 @@ export async function getSignedUrls(
         };
       })
     );
-
-    const response = urls.filter(url => url !== undefined) as DocumentBulkSignerLambdaResponse[];
-
-    await ossApiClient.callInternalEndpoint({
-      cxId: cxId,
+    response = urls.flatMap(url => url ?? []);
+    status = MAPIWebhookStatus.completed;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    const msg = "Error in bulkUrlSigningLambda.getSignedUrls";
+    const extra = {
       patientId: patientId,
-      requestId: requestId,
-      documents: response,
-      status: MAPIWebhookStatus.completed,
-    });
-  } catch (error) {
-    capture.error(error, {
-      extra: { patientId, context: `bulkUrlSigningLambda.getSignedUrls`, error },
-    });
-    await ossApiClient.callInternalEndpoint({
-      cxId: cxId,
-      patientId: patientId,
-      requestId: requestId,
-      documents: [],
-      status: MAPIWebhookStatus.failed,
-    });
+      context: `bulkUrlSigningLambda.getSignedUrls`,
+      error,
+    };
+    console.log(msg, extra);
+    capture.message(msg, { extra, level: "error" });
+    status = MAPIWebhookStatus.failed;
   }
+  await ossApiClient.callInternalEndpoint({
+    cxId,
+    patientId,
+    requestId,
+    documents: status === MAPIWebhookStatus.completed ? response : [],
+    status,
+  });
 }
 
-export function apiClientBulkDownloadWebhook(apiURL: string) {
+export function makeApiClientTriggerBulkSignerCompletion(apiURL: string) {
   const sendBulkDownloadUrl = `${apiURL}/internal/docs/bulkSignerCompletion`;
 
   return {
@@ -126,7 +123,6 @@ export function apiClientBulkDownloadWebhook(apiURL: string) {
         };
         console.log(msg, extra);
         capture.message(msg, { extra, level: "info" });
-        throw new Error(`Error from API: ${error.message}`);
       }
     },
   };
