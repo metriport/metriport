@@ -820,7 +820,7 @@ async function ingestIntoSearchEngine(
   requestId: string,
   log = console.log
 ): Promise<void> {
-  const openSearch = makeSearchServiceIngest();
+  const openSearch = await makeSearchServiceIngest();
   if (!openSearch.isIngestible({ contentType: file.contentType, fileName: file.key })) {
     log(
       `Skipping ingestion of doc ${fhirDoc.id} / file ${file.key} into OpenSearch: not ingestible`

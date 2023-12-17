@@ -14,6 +14,7 @@ import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
 import { initEvents } from "./event";
 import { capture } from "@metriport/core/util/notifications";
+import { initEvents } from "./event";
 
 const app: Application = express();
 const version = Config.getVersion();

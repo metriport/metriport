@@ -54,25 +54,24 @@ export const startBulkGetDocumentUrls = async (
     requestId: requestId,
   };
 
-  try {
-    lambdaClient
-      .invoke({
-        FunctionName: bulkSigningLambdaName,
-        InvocationType: "RequestResponse",
-        Payload: JSON.stringify(payload),
-      })
-      .promise();
-  } catch (error) {
-    appendBulkGetDocUrlProgress({
-      patient: { id: patientId, cxId: cxId },
-      status: BulkGetDocUrlStatus.failed,
-      requestId: requestId,
+  lambdaClient
+    .invoke({
+      FunctionName: bulkSigningLambdaName,
+      InvocationType: "RequestResponse",
+      Payload: JSON.stringify(payload),
+    })
+    .promise()
+    .catch(error => {
+      appendBulkGetDocUrlProgress({
+        patient: { id: patientId, cxId: cxId },
+        status: BulkGetDocUrlStatus.failed,
+        requestId: requestId,
+      });
+      capture.error(error, {
+        extra: { patientId, context: `startBulkGetDocumentUrls`, error },
+      });
+      return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.failed, updatedPatient);
     });
-    capture.error(error, {
-      extra: { patientId, context: `startBulkGetDocumentUrls`, error },
-    });
-    return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.failed, updatedPatient);
-  }
 
   return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.processing, updatedPatient);
 };

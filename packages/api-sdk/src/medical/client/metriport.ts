@@ -455,8 +455,8 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Start a bulk document download for a given patient, with the payload returned to the webhook.
-   *
+   * Start a bulk document download for a given patient, with the payload sent via webhook.
+   * @see https://docs.metriport.com/medical-api/api-reference/document/download-url-bulk
    * @param patientId Patient ID for which to retrieve document URLs.
    * @return The document query request ID, progress, and status indicating whether it's being executed or not.
    */

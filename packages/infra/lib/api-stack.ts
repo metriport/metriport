@@ -593,7 +593,7 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    this.setupBulkUrlSigningLambda({
+    this.setupDocumentBulkSignerLambda({
       lambdaLayers,
       vpc: this.vpc,
       medicalDocumentsBucket: medicalDocumentsBucket,
@@ -604,7 +604,7 @@ export class APIStack extends Stack {
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchIndex: ccdaSearchIndexName,
       searchUserName: ccdaSearchUserName,
-      searchPassword: ccdaSearchSecret.secretValue.unsafeUnwrap(),
+      searchSecretName: ccdaSearchSecret.secretName,
       apiService: apiService,
     });
 
@@ -1080,7 +1080,7 @@ export class APIStack extends Stack {
     return documentDownloaderLambda;
   }
 
-  private setupBulkUrlSigningLambda(ownProps: {
+  private setupDocumentBulkSignerLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
@@ -1091,7 +1091,7 @@ export class APIStack extends Stack {
     searchEndpoint: string;
     searchIndex: string;
     searchUserName: string;
-    searchPassword: string;
+    searchSecretName: string;
     apiService: ecs_patterns.NetworkLoadBalancedFargateService;
   }): Lambda {
     const {
@@ -1105,14 +1105,13 @@ export class APIStack extends Stack {
       searchEndpoint,
       searchIndex,
       searchUserName,
-      searchPassword,
+      searchSecretName,
       apiService,
     } = ownProps;
 
     const bulkUrlSigningLambda = createLambda({
       stack: this,
       name: "BulkUrlSigning",
-      runtime: lambda.Runtime.NODEJS_18_X,
       entry: "document-bulk-signer",
       envType,
       envVars: {
@@ -1121,13 +1120,13 @@ export class APIStack extends Stack {
         SEARCH_ENDPOINT: searchEndpoint,
         SEARCH_INDEX: searchIndex,
         SEARCH_USERNAME: searchUserName,
-        SEARCH_PASSWORD: searchPassword,
+        SEARCH_SECRET_NAME: searchSecretName,
         API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}`,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: 512,
-      timeout: Duration.minutes(5),
+      memory: 1024,
+      timeout: Duration.minutes(15),
       vpc,
       alarmSnsAction: alarmAction,
     });
