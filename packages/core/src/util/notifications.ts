@@ -1,12 +1,12 @@
+import * as Sentry from "@sentry/node";
+import { Extras, ScopeContext } from "@sentry/types";
+import stringify from "json-stringify-safe";
 import {
   sendAlert as coreSendAlert,
   sendNotification as coreSendNotification,
   SlackMessage as CoreSlackMessage,
 } from "../external/slack/index";
 import { Capture } from "./capture";
-import * as Sentry from "@sentry/node";
-import { Extras, ScopeContext } from "@sentry/types";
-import stringify from "json-stringify-safe";
 import { MetriportError } from "./error/metriport-error";
 
 export type SlackMessage = CoreSlackMessage;
@@ -44,6 +44,12 @@ export const capture: ApiCapture = {
    */
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   error: (error: any, captureContext?: Partial<ScopeContext>): string => {
+    if (typeof error === "string") {
+      return capture.message(error, {
+        ...captureContext,
+        level: captureContext?.level ?? "error",
+      });
+    }
     const extra = captureContext ? stringifyExtra(captureContext) : {};
     return Sentry.captureException(error, {
       ...captureContext,

@@ -22,23 +22,31 @@ async function parseXmlString(xml: string): Promise<[string, string, string]> {
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
 
+  let result;
   try {
-    const result = await parser.parseStringPromise(xml);
+    result = await parser.parseStringPromise(xml);
+  } catch (err) {
+    throw new Error("XML parsing failed: Invalid XML");
+  }
+  try {
     const signature =
       result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
     const documentId =
       result["Envelope"]["Body"][0]["RetrieveDocumentSetRequest"][0]["DocumentRequest"][0][
         "DocumentUniqueId"
-      ];
+      ][0];
     const homeCommunityId =
       result["Envelope"]["Body"][0]["RetrieveDocumentSetRequest"][0]["DocumentRequest"][0][
         "HomeCommunityId"
-      ];
-
+      ][0];
+    console.log("homeCommunity", homeCommunityId);
+    console.log("documentId", documentId);
     return [signature, documentId, homeCommunityId];
   } catch (err) {
     console.log("error", err);
-    throw new Error("Invalid XML");
+    throw new Error(
+      "XML parsing failed: A Required field is missing. Either signature, documentId, or homeCommunityId is missing."
+    );
   }
 }
 
@@ -68,24 +76,19 @@ const fillTemplate = (
 };
 
 export async function generateITI39(xml: string): Promise<string> {
-  try {
-    const [signature, documentId, homeCommunityid] = await parseXmlString(xml);
-    const { createdAt, expiresAt } = generateTimeStrings();
-    const document = documentData[documentId];
-    const status = document ? "Success" : "Failed";
-    const iti39Template = generateITI39Template(status);
-    const iti38 = fillTemplate(
-      iti39Template,
-      signature,
-      createdAt,
-      expiresAt,
-      homeCommunityid,
-      documentId,
-      document
-    );
-    return iti38;
-  } catch (error) {
-    console.error(error);
-    throw new Error("XML parsing failed");
-  }
+  const [signature, documentId, homeCommunityid] = await parseXmlString(xml);
+  const { createdAt, expiresAt } = generateTimeStrings();
+  const document = documentData[documentId];
+  const status = document ? "Success" : "Failed";
+  const iti39Template = generateITI39Template(status);
+  const iti38 = fillTemplate(
+    iti39Template,
+    signature,
+    createdAt,
+    expiresAt,
+    homeCommunityid,
+    documentId,
+    document
+  );
+  return iti38;
 }
