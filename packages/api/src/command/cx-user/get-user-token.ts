@@ -2,7 +2,7 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { UserToken } from "../../domain/user-token";
 import NotFoundError from "../../errors/not-found";
 import { docTableNames, getDB } from "../../models/db";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 
 export type GetUserTokenCommand = {
   token: string;

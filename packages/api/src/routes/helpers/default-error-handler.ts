@@ -3,9 +3,9 @@ import { ErrorRequestHandler } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
 import MetriportError from "../../errors/metriport-error";
-import { getDetailFromOutcomeError } from "../../external/fhir/shared";
+import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared";
 import { isClientError } from "../../shared/http";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { httpResponseBody } from "../util";
 import { isReportClientErrors } from "./report-client-errors";
 

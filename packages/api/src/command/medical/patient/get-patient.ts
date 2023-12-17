@@ -6,7 +6,7 @@ import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { PatientModel } from "../../../models/medical/patient";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";

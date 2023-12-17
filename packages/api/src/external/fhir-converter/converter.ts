@@ -1,6 +1,6 @@
 import { Document } from "@metriport/commonwell-sdk";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../shared/util";
 import { sandboxSleepTime } from "../commonwell/document/shared";
 import { makeFHIRServerConnector } from "../fhir/connector/connector-factory";

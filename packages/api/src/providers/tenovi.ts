@@ -12,7 +12,7 @@ import { mapToBiometrics } from "../mappings/tenovi/biometrics";
 import { mapToBody } from "../mappings/tenovi/body";
 import { ConnectedUser } from "../models/connected-user";
 import { PROVIDER_TENOVI } from "../shared/constants";
-import { capture } from "../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { RawParams } from "../shared/raw-params";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
 import { NoAuth } from "./shared/noauth";

@@ -18,7 +18,7 @@ import {
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
 import { isResourceDerivedFromDocRef } from "../../../external/fhir/shared";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";

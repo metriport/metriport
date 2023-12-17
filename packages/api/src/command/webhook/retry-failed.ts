@@ -1,6 +1,6 @@
 import { processAsyncError } from "../../errors";
 import { WebhookRequest } from "../../models/webhook-request";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../shared/util";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { processRequest } from "./webhook";

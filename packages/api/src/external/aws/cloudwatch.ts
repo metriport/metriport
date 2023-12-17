@@ -1,6 +1,6 @@
 import AWS from "aws-sdk";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 
 /**
  * @deprecated Move this to @metriport/core

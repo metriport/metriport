@@ -11,7 +11,7 @@ import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-pr
 import { makeLambdaClient } from "../../../external/aws/lambda";
 import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
 import { appendBulkGetDocUrlProgress } from "../patient/bulk-get-doc-url-progress";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 
 const lambdaClient = makeLambdaClient();
 const bulkSigningLambdaName = "BulkUrlSigningLambda";
@@ -107,10 +107,10 @@ const generateRequestId = (): string => uuidv7();
  */
 export const createBulkGetDocumentUrlQueryResponse = (
   status: BulkGetDocUrlStatus,
-  patient?: Patient
+  patient: Patient
 ): BulkGetDocumentsUrlProgress => {
   return {
     status,
-    requestId: patient?.data.bulkGetDocumentsUrlProgress?.requestId,
+    requestId: patient.data.bulkGetDocumentsUrlProgress?.requestId,
   };
 };

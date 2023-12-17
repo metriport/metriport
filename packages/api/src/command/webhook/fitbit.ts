@@ -9,7 +9,7 @@ import { analytics, EventTypes } from "../../shared/analytics";
 import { Constants } from "../../shared/constants";
 import { ISO_DATE } from "../../shared/date";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";

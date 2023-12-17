@@ -18,16 +18,19 @@ import {
   downloadDocsAndUpsertFHIR,
   queryAndProcessDocuments,
 } from "../../../external/commonwell/document/document-query";
-import { hasCommonwellContent, isCommonwellContent } from "../../../external/commonwell/extension";
+import {
+  hasCommonwellContent,
+  isCommonwellContent,
+} from "@metriport/core/external/commonwell/extension";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { getPatientId } from "../../../external/fhir/patient";
-import { downloadedFromHIEs } from "../../../external/fhir/shared";
-import { isMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
+import { downloadedFromHIEs } from "@metriport/core/external/fhir/shared";
+import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { getAllPages } from "../../../external/fhir/shared/paginated";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { errorToString } from "../../../shared/log";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";

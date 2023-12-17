@@ -1,6 +1,6 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { Config } from "../../../shared/config";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Util } from "../../../shared/util";
 import { makeCommonWellAPI, metriportQueryMeta } from "../api";

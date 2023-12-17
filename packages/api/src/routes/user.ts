@@ -23,7 +23,7 @@ import {
   providerOAuth2OptionsSchema,
   PROVIDER_TENOVI,
 } from "../shared/constants";
-import { capture } from "../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { getRawParams, RawParams } from "../shared/raw-params";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";

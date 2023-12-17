@@ -12,8 +12,8 @@ import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
-import { capture } from "./shared/notifications";
 import { initEvents } from "./event";
+import { capture } from "@metriport/core/util/notifications";
 
 const app: Application = express();
 const version = Config.getVersion();

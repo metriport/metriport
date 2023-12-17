@@ -1,6 +1,6 @@
 import { S3Utils } from "../s3";
 import { DocumentReference } from "@medplum/fhirtypes";
-import { searchDocuments } from "../../opensearch/search-documents";
+import { searchDocuments } from "../../fhir/document/search-documents";
 import axios from "axios";
 import { capture } from "../../../util/notifications";
 import dayjs from "dayjs";

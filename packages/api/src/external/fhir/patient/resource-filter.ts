@@ -6,7 +6,10 @@ import {
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
 import { intersection } from "lodash";
-import { isoDateRangeToFHIRDateQuery, resourceSupportsDateQuery } from "../shared";
+import {
+  isoDateRangeToFHIRDateQuery,
+  resourceSupportsDateQuery,
+} from "@metriport/core/external/fhir/shared";
 
 export function getPatientFilter({
   resources = [],

@@ -3,10 +3,10 @@ import { FileData } from "@metriport/core/external/aws/lambda-logic/document-upl
 import dayjs from "dayjs";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
-import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
-import { capture } from "../../../shared/notifications";
 import { randomInt } from "@metriport/shared/common/numbers";
+import { capture } from "@metriport/core/util/notifications";
 import { getPatientOrFail } from "../patient/get-patient";
 import { cloneDeep } from "lodash";
 

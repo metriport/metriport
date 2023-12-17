@@ -2,7 +2,7 @@ import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { getPatientOrFail } from "../patient/get-patient";

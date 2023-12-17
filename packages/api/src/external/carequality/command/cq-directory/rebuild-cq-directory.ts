@@ -2,7 +2,7 @@ import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import { sleep } from "@metriport/core/util/sleep";
 import { QueryTypes, Sequelize } from "sequelize";
 import { Config } from "../../../../shared/config";
-import { capture } from "../../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
 import { cqDirectoryEntryTemp, cqDirectoryEntry, cqDirectoryEntryBackup } from "./shared";

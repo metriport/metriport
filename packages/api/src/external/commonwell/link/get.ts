@@ -16,7 +16,7 @@ import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
 import { setCommonwellId } from "../patient-external-data";
