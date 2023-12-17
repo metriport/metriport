@@ -65,7 +65,7 @@ async function searchOnCCDAFiles(
   contentFilter?: string
 ): Promise<DocumentReference[]> {
   if (!contentFilter) return [];
-  const searchService = makeSearchServiceQuery();
+  const searchService = await makeSearchServiceQuery();
   const searchResult = await searchService.search({ query: contentFilter, cxId, patientId });
   const searchResultIds = searchResult.map(r => r.entryId);
   // only return documents that match both the search result and the documents we got from the FHIR server (using date filter)

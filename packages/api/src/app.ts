@@ -13,6 +13,7 @@ import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
 import { capture } from "@metriport/core/util/notifications";
+import { initEvents } from "./event";
 
 const app: Application = express();
 const version = Config.getVersion();

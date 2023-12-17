@@ -44,8 +44,9 @@ export class Config {
   static getSearchUsername(): string {
     return getEnvVarOrFail("SEARCH_USERNAME");
   }
-  static getSearchPassword(): string {
-    return getEnvVarOrFail("SEARCH_PASSWORD");
+
+  static getSearchSecretName(): string {
+    return getEnvVarOrFail("SEARCH_SECRET_NAME");
   }
   static getSearchIndexName(): string {
     return getEnvVarOrFail("SEARCH_INDEX");
