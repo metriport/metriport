@@ -47,7 +47,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 3. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
   //---------------------------------------------------------------------------------
-  // TODO update envconfig to have a name for ihestack and update internal repo
+  // TODO update envconfig to have a name for ihestack and update internal repo.
   new IHEStack(app, "IHEStack", {
     env,
     config: config,

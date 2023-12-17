@@ -14,6 +14,7 @@ export function isAnyPatientMatching(patientToMatch: PatientData): PatientData |
   return undefined;
 }
 
+// checks if patient is matching
 export const isPatientMatching = (patient1: PatientData, patient2: PatientData): boolean => {
   let score = 0;
   let fieldCount = 0;

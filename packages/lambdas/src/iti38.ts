@@ -5,7 +5,7 @@ import {
   DocumentReference,
 } from "@metriport/ihe-gateway-sdk";
 
-// Function to extract necessary fields and construct the responses
+// Function to extract necessary fields and construct the responses.
 async function processRequest(
   payload: DocumentQueryRequestIncoming
 ): Promise<DocumentQueryResponseOutgoing> {
@@ -16,7 +16,7 @@ async function processRequest(
   return constructSuccessResponse(payload);
 }
 
-// Function to construct error response
+// Function to construct error response.
 function constructErrorResponse(
   payload: DocumentQueryRequestIncoming
 ): DocumentQueryResponseOutgoing {
@@ -38,7 +38,7 @@ function constructErrorResponse(
   };
 }
 
-// Function to construct success response
+// Function to construct success response.
 function constructSuccessResponse(
   payload: DocumentQueryRequestIncoming
 ): DocumentQueryResponseOutgoing {
