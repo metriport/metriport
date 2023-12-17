@@ -13,6 +13,7 @@ import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
 import { capture } from "./shared/notifications";
+import { initEvents } from "./event";
 
 const app: Application = express();
 const version = Config.getVersion();
@@ -54,6 +55,8 @@ if (isSentryEnabled()) {
   );
 }
 app.use(errorHandler);
+
+initEvents();
 
 const port = 8080;
 app.listen(port, "0.0.0.0", async () => {

@@ -3,7 +3,7 @@ import { sleep } from "./sleep";
 
 export type ExecuteInChunksOptions = {
   /**
-   * How many promises should execute at the same time.
+   * How many promises should execute at the same time. Defaults to `collection.length` (all promises to run at the same time).
    */
   numberOfParallelExecutions?: number;
   /**
