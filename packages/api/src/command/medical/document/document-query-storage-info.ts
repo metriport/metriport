@@ -6,7 +6,7 @@ import {
 } from "../../../external/commonwell/document/shared";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../../shared/util";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 

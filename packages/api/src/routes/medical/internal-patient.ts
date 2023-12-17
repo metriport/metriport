@@ -31,7 +31,7 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { stringToBoolean } from "../../shared/types";
 import { stringIntegerSchema, stringListFromQuerySchema } from "../schemas/shared";
 import { getUUIDFrom, uuidSchema } from "../schemas/uuid";

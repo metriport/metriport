@@ -6,7 +6,7 @@ import { uniq } from "lodash";
 import { Organization } from "../../../domain/medical/organization";
 import { Config } from "../../../shared/config";
 import { errorToString } from "../../../shared/log";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { getOrganizationOrFail } from "../organization/get-organization";
 
 const MIN_QUOTA_TO_NOTIFY = 1_000;

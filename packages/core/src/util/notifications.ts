@@ -9,18 +9,11 @@ import { Extras, ScopeContext } from "@sentry/types";
 import stringify from "json-stringify-safe";
 import { MetriportError } from "./error/metriport-error";
 
-/**
- * @deprecated Use core's instead
- */
 export type SlackMessage = CoreSlackMessage;
-/**
- * @deprecated Use core's instead
- */
+
 export const sendNotification = async (notif: SlackMessage | string): Promise<void> =>
   coreSendNotification(notif);
-/**
- * @deprecated Use core's instead
- */
+
 export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
   coreSendAlert(notif);
 

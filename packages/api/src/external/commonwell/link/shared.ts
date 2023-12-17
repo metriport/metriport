@@ -13,7 +13,7 @@ import {
   PatientExternalDataEntry,
 } from "../../../domain/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { PatientDataCommonwell } from "../patient-shared";
 
 export const commonwellPersonLinks = (persons: Person[]): Person[] => {

@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
 import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { ISO_DATE } from "../../../../shared/date";
-import { getFilters } from "../get-documents";
+import { getFilters } from "@metriport/core/external/fhir/document/get-documents";
 
 beforeEach(() => {
   jest.restoreAllMocks();

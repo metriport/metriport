@@ -11,7 +11,7 @@ import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_DEXCOM } from "../shared/constants";
 import { ISO_DATE } from "../shared/date";
-import { capture } from "../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../shared/util";
 import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";

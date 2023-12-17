@@ -1,7 +1,7 @@
 import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
 import { Config } from "../../shared/config";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 
 /**
  * Returns the list of Customer IDs that are enabled to use the Enhanced Coverage flow.

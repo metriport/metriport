@@ -35,7 +35,7 @@ import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { errorToString } from "../../../shared/log";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../../shared/util";
 import { isEnhancedCoverageEnabledForCx } from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
@@ -45,7 +45,7 @@ import { DocumentReferenceWithId, toFHIR as toFHIRDocRef } from "../../fhir/docu
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
-import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-factory";
+import { makeSearchServiceIngest } from "@metriport/core/external/opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";

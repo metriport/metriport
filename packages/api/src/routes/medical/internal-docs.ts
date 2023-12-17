@@ -24,7 +24,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";

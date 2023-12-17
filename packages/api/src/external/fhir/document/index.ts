@@ -29,11 +29,11 @@ import isToday from "dayjs/plugin/isToday";
 import { sortBy, uniqBy } from "lodash";
 import { joinName, Patient, splitName } from "../../../domain/medical/patient";
 import MetriportError from "../../../errors/metriport-error";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
-import { cwExtension } from "../../commonwell/extension";
-import { metriportDataSourceExtension } from "../shared/extensions/metriport";
+import { cwExtension } from "@metriport/core/external/commonwell/extension";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { toFHIRSubject } from "../patient";
 dayjs.extend(isToday);
 

@@ -13,7 +13,7 @@ import {
 } from "../../command/medical/cq-directory/search-cq-directory";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { asyncHandler, getFrom } from "../util";
 import {
   handleIHEResponse,

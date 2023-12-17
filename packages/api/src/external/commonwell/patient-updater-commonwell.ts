@@ -4,7 +4,7 @@ import { Patient } from "../../domain/medical/patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import cwCommands from ".";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { getPatients } from "../../command/medical/patient/get-patient";
 
 const maxNumberOfParallelRequestsToCW = 20;

@@ -4,7 +4,7 @@ import { Request } from "express";
 import { getConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
 import { ConsumerHealthDataType, DAPIParams } from "../../providers/provider";
 import { Constants, ProviderOptions } from "../../shared/constants";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { getRawParams } from "../../shared/raw-params";
 import { getTimezoneIdFrom } from "../schemas/timezone-id";
 import { getUserIdFrom } from "../schemas/user-id";

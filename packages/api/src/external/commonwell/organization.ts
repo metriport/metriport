@@ -3,7 +3,7 @@ import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { Organization } from "../../domain/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../shared/util";
 import {
   getCertificate,

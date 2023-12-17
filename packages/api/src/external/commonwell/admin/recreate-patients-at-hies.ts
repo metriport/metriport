@@ -3,7 +3,7 @@ import { oid } from "@metriport/core/domain/oid";
 import { groupBy } from "lodash";
 import { Patient } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../../shared/util";
 import { makeCommonWellAPI } from "../api";
 import { create, getCWData } from "../patient";

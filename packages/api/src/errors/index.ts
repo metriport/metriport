@@ -1,5 +1,5 @@
 import { errorToString } from "../shared/log";
-import { capture } from "../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 
 export function getErrorMessage(error: unknown) {
   return errorToString(error);

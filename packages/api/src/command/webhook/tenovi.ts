@@ -16,7 +16,7 @@ import { TenoviMetricTypes, tenoviMetricTypes } from "../../mappings/tenovi/cons
 import { ConnectedUser } from "../../models/connected-user";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { formatNumber, getFloatValue } from "../../shared/numbers";
 import { getConnectedUsersByDeviceId } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";

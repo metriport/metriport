@@ -6,7 +6,7 @@ import { UserData } from "../../mappings/garmin";
 import { Settings } from "../../models/settings";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUsers } from "../connected-user/get-connected-user";
 import { getUserTokenByUAT } from "../cx-user/get-user-token";
