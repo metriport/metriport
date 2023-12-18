@@ -1,5 +1,6 @@
 import { intersectionWith, isEqual } from "lodash";
 import { PatientData, Patient } from "../../../domain/medical/patient";
+import { normalizePatientData } from "./normalize-patient";
 import jaroWinkler from "jaro-winkler";
 
 // Define a type for the similarity function
@@ -24,11 +25,14 @@ export const matchPatients = (
   threshold: number
 ): Patient[] => {
   return patients.filter(patient => {
-    if (matchingPersonalIdentifiersRule(demo, patient.data)) {
+    const patientData = normalizePatientData(patient.data);
+    if (!patientData) {
+      return false;
+    }
+    if (matchingPersonalIdentifiersRule(demo, patientData)) {
       return true;
     }
-
-    return similarityFunction(patient.data, demo, threshold);
+    return similarityFunction(patientData, demo, threshold);
   });
 };
 
@@ -150,6 +154,5 @@ export const jaroWinklerSimilarity = (
 
   const totalScore = score / fieldCount;
   similarityScores["Total Score"] = [totalScore];
-  console.log(similarityScores);
   return totalScore >= threshold;
 };

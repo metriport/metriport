@@ -9,7 +9,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { matchPatients, jaroWinklerSimilarity } from "./match-patient";
-import { blockPatients, PatientBlock } from "./block-patients";
+import { blockPatients } from "./block-patients";
 import { normalizePatientData } from "./normalize-patient";
 import { mergePatients, mergeWithFirstPatient } from "./merge-patients";
 
@@ -86,7 +86,8 @@ export const getPatientByDemo = async ({
       dob: normalizedPatientDemo.dob,
       genderAtBirth: normalizedPatientDemo.genderAtBirth,
     },
-  } as PatientBlock);
+  });
+  console.log("blockedPatients", blockedPatients);
 
   const matchingPatients = matchPatients(
     jaroWinklerSimilarity,

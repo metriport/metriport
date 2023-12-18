@@ -1,7 +1,7 @@
 import { PatientData } from "../../../../domain/medical/patient";
 import { normalizePatientData } from "../normalize-patient";
 import { Address } from "@metriport/api-sdk/src/medical/models/common/address";
-import { USState } from "@metriport/api-sdk/src/medical/models/common/us-data";
+import { USState } from "@metriport/core/domain/geographic-locations";
 
 describe("normalizePatientData", () => {
   // Should return the same patient data if no normalization is needed
@@ -16,7 +16,8 @@ describe("normalizePatientData", () => {
           addressLine1: "123 Elm Street",
           city: "New York",
           zip: "10001",
-        } as Address,
+          state: USState.NY,
+        },
       ],
       contact: [
         {

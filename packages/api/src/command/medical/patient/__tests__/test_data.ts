@@ -21,6 +21,19 @@ export const testPatientData: {
           city: "NYC",
         },
       ],
+      contact: [
+        {
+          phone: "123-456-7890",
+          email: "juan@gmail.com",
+        },
+      ],
+      personalIdentifiers: [
+        {
+          type: "driversLicense",
+          value: "123456789",
+          state: USState.NY,
+        },
+      ],
     },
   ],
   sampleInclusions: [
@@ -36,6 +49,13 @@ export const testPatientData: {
           country: "USA",
           state: USState.NY,
           city: "NYC",
+        },
+      ],
+      personalIdentifiers: [
+        {
+          type: "driversLicense",
+          value: "123456789",
+          state: USState.NY,
         },
       ],
     },
@@ -128,6 +148,12 @@ export const testPatientData: {
           country: "USA",
           state: USState.NY,
           city: "NYC",
+        },
+      ],
+      contact: [
+        {
+          phone: "555-555-5555",
+          email: "bill@bill.com",
         },
       ],
     },
