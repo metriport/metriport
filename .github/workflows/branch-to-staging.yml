@@ -43,9 +43,9 @@ jobs:
     with:
       deploy_env: "staging"
       is-branch-to-staging: true
-      ihe_cdk_stack: ${{ vars.IHE_STACK_NAME_STAGING }}
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
+      ihe_cdk_stack: ${{ vars.IHE_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
     secrets:

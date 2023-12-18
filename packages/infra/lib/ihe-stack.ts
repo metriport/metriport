@@ -4,17 +4,18 @@ import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { setupSlackNotifSnsTopic } from "./shared/util";
 
 // comment for diff.
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
   lambdaLayers: LambdaLayers;
+  alarmAction: SnsAction | undefined;
 }
 
 export class IHEStack extends Stack {
@@ -30,9 +31,6 @@ export class IHEStack extends Stack {
     if (!props.config.ihe?.gatewayCertArn) {
       throw new Error("Must define cert arn if building the IHE stack!");
     }
-
-    // create slack
-    const slackNotification = setupSlackNotifSnsTopic(this, props.config);
 
     // get the public zone
     const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
@@ -78,7 +76,7 @@ export class IHEStack extends Stack {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc: props.vpc,
-      alarmSnsAction: slackNotification?.alarmAction,
+      alarmSnsAction: props.alarmAction,
     });
 
     const proxy = new apig.ProxyResource(this, `IHE/Proxy`, {
@@ -103,7 +101,7 @@ export class IHEStack extends Stack {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc: props.vpc,
-      alarmSnsAction: slackNotification?.alarmAction,
+      alarmSnsAction: props.alarmAction,
     });
 
     const iti39Lambda = createLambda({
@@ -116,7 +114,7 @@ export class IHEStack extends Stack {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc: props.vpc,
-      alarmSnsAction: slackNotification?.alarmAction,
+      alarmSnsAction: props.alarmAction,
     });
 
     const iti55Lambda = createLambda({
@@ -129,7 +127,7 @@ export class IHEStack extends Stack {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc: props.vpc,
-      alarmSnsAction: slackNotification?.alarmAction,
+      alarmSnsAction: props.alarmAction,
     });
 
     // Create resources for each lambda directly under the API root

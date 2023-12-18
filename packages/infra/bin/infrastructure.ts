@@ -53,6 +53,7 @@ async function deploy(config: EnvConfig) {
     config: config,
     vpc: apiStack.vpc,
     lambdaLayers: apiStack.sharedLambdaLayers,
+    alarmAction: apiStack.alarmAction,
   });
   //---------------------------------------------------------------------------------
   // 3. Deploy the Connect widget stack.
