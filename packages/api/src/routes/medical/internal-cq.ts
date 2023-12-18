@@ -1,18 +1,19 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
-import { patientDiscoveryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { patientDiscoveryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
-import { handlePatientDiscoveryResponse } from "../../command/medical/patient-discovery-result/create-patient-discovery-result";
 import { rebuildCQDirectory } from "../../command/medical/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchNearbyCQOrganizations,
 } from "../../command/medical/cq-directory/search-cq-directory";
+import { createPatientDiscoveryResult } from "../../command/medical/patient-discovery-result/create-patient-discovery-result";
+import { makeIheGatewayAPI } from "../../external/carequality/api";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
@@ -115,9 +116,32 @@ router.get(
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const patientDiscovery = patientDiscoveryResponseSchema.parse(req.body);
+    console.log("Received patient discovery response from IHE Gateway", req.body);
+    const pdResponse = patientDiscoveryResponseSchema.parse(req.body);
+    await createPatientDiscoveryResult(pdResponse);
 
-    await handlePatientDiscoveryResponse(patientDiscovery);
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+// router.post(
+//   "/patient-discovery/response-trigger",
+//   asyncHandler(async (req: Request, res: Response) => {
+//     const organization = await getOrganizationOrFail({ cxId });
+//     const patient = await getPatientOrFail({ id: patientId, cxId });
+
+//     await cqCommands.patient
+//       .discover(patient, organization, facilityNpi)
+//       .catch(processAsyncError(`cq.patient.discover`));
+//     return res.sendStatus(httpStatus.OK);
+//   })
+// );
+
+router.post(
+  "/patient-discovery/response-trigger",
+  asyncHandler(async (req: Request, res: Response) => {
+    const iheGateway = makeIheGatewayAPI();
+    iheGateway.startPatientDiscovery();
 
     return res.sendStatus(httpStatus.OK);
   })
