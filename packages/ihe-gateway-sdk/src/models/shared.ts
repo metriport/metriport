@@ -30,20 +30,59 @@ export type SamlAttributes = {
 
 export type BaseRequest = {
   id: string;
-  cxId: string;
   timestamp: string;
   samlAttributes: SamlAttributes;
+  patientId?: string;
 };
 
-export const documentReference = z.object({
-  homeCommunityId: z.string(),
-  docUniqueId: z.string(),
-  repositoryUniqueId: z.string(),
-  contentType: z.string().nullish(),
-  language: z.string().nullish(),
-  uri: z.string().nullish(),
-  creation: z.string().nullish(),
-  title: z.string().nullish(),
-});
+export type Code = {
+  system: string;
+  code: string;
+};
 
-export type DocumentReference = z.infer<typeof documentReference>;
+export type Details = { coding: Code[] } | { text: string };
+
+export type Issue = {
+  severity: string;
+  code: string;
+  details: Details;
+};
+
+export type OperationOutcome = {
+  resourceType: string;
+  id: string;
+  issue: Issue[];
+};
+
+export type XCPDPatientId = {
+  id: string;
+  system: string;
+};
+
+export type BaseResponse = {
+  id: string;
+  timestamp: string;
+  responseTimestamp: string;
+  xcpdPatientId?: XCPDPatientId;
+  patientId?: string; // TODO should this not be nullish
+  operationOutcome?: OperationOutcome;
+};
+
+export type XCAGateway = {
+  homeCommunityId: string;
+  url: string;
+};
+
+export type DocumentReference = {
+  homeCommunityId: string;
+  docUniqueId: string;
+  urn: string;
+  repositoryUniqueId: string;
+  newRepositoryUniqueId?: string;
+  newDocumentUniqueId?: string;
+  contentType?: string;
+  url?: string; // signed urls that mirth will use to download actually b64 bytes
+  uri?: string;
+  creation?: string;
+  title?: string;
+};
