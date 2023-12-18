@@ -10,6 +10,7 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { setupSlackNotifSnsTopic } from "./shared/util";
 
+// comment for diff.
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
