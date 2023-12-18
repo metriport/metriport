@@ -53,7 +53,7 @@ async function parseXmlString(
             city: address["city"][0],
             state: address["state"][0],
             zip: address["postalCode"][0],
-            country: address["country"][0] || "USA",
+            country: "USA",
           },
         ];
       }
