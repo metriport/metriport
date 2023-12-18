@@ -1,5 +1,5 @@
 import * as jwt from "jsonwebtoken";
-import { PurposeOfUse } from "../models/purpose-of-use";
+import { PurposeOfUse } from "@metriport/shared";
 import { validateNPI } from "./validate-npi";
 
 // The parameterized JWT claims

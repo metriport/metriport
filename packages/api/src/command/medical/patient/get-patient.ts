@@ -1,5 +1,7 @@
+import { USState } from "@metriport/core/domain/geographic-locations";
+import { uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
-import { Patient, PatientData } from "../../../domain/medical/patient";
+import { getStatesFromAddresses, Patient, PatientData } from "../../../domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
@@ -109,6 +111,9 @@ export type GetPatient = {
     }
 );
 
+/**
+ * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
+ */
 export const getPatient = async ({
   id,
   cxId,
@@ -123,6 +128,9 @@ export const getPatient = async ({
   return patient ?? undefined;
 };
 
+/**
+ * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
+ */
 export const getPatientOrFail = async (params: GetPatient): Promise<PatientModel> => {
   const patient = await getPatient(params);
   if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
@@ -144,4 +152,17 @@ export const getPatientWithDependencies = async ({
   const facilities = await getFacilities({ cxId, ids: patient.facilityIds });
   const organization = await getOrganizationOrFail({ cxId });
   return { patient, facilities, organization };
+};
+
+export const getPatientStates = async ({
+  cxId,
+  patientIds,
+}: {
+  cxId: string;
+  patientIds: string[];
+}): Promise<USState[]> => {
+  if (!patientIds || !patientIds.length) return [];
+  const patients = await getPatients({ cxId, patientIds });
+  const nonUniqueStates = patients.flatMap(getStatesFromAddresses).filter(s => s);
+  return uniq(nonUniqueStates);
 };

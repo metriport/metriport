@@ -38,7 +38,7 @@ export function settings(props: EnhancedCoverageConnectorProps) {
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
     scheduleExpression: isProd(config)
-      ? ["0/30 * ? * * *"] // Every 30min, every day
+      ? ["0/20 * ? * * *"] // Every 20min, every day
       : [],
     memory: 512,
     lambdaTimeout: Duration.minutes(2),

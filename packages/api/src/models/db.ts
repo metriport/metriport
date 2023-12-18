@@ -1,17 +1,21 @@
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
+import { FacilityModel } from "../models/medical/facility";
+import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
+import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
+import { CQDirectoryEntryModel } from "./medical/cq-directory";
 import { DocRefMappingModel } from "./medical/docref-mapping";
-import { FacilityModel } from "../models/medical/facility";
+import { DocumentQueryResultModel } from "./medical/document-query-result";
+import { DocumentRetrievalResultModel } from "./medical/document-retrieval-result";
 import { MAPIAccess } from "./medical/mapi-access";
-import { OrganizationModel } from "../models/medical/organization";
+import { PatientDiscoveryResultModel } from "./medical/patient-discovery-result";
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -19,10 +23,14 @@ const models: ModelSetup[] = [
   Settings.setup,
   WebhookRequest.setup,
   OrganizationModel.setup,
+  CQDirectoryEntryModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
   MAPIAccess.setup,
   DocRefMappingModel.setup,
+  PatientDiscoveryResultModel.setup,
+  DocumentQueryResultModel.setup,
+  DocumentRetrievalResultModel.setup,
 ];
 
 export type MetriportDB = {

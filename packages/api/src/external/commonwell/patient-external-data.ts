@@ -1,9 +1,50 @@
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { executeWithRetries } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { cloneDeep } from "lodash";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "../../domain/medical/patient";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
-import { getCQLinkStatus } from "./patient";
+import { getCWData, getLinkStatusCQ } from "./patient";
 import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
+
+dayjs.extend(duration);
+
+const maxAttemptsToGetPatientCWData = 5;
+const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(2, "seconds");
+
+export type PatientWithCWData = Patient & {
+  data: { externalData: { COMMONWELL: PatientDataCommonwell } };
+};
+
+const _getPatientWithCWData = async ({
+  id,
+  cxId,
+}: Pick<Patient, "id" | "cxId">): Promise<PatientWithCWData | undefined> => {
+  const patientDB: Patient = await getPatientOrFail({
+    id,
+    cxId,
+  });
+
+  const cwData = getCWData(patientDB.data.externalData);
+  if (!cwData) throw new MetriportError(`Missing CW data on patient`);
+  if (!cwData.patientId) throw new MetriportError(`Missing CW patientId`);
+
+  return patientDB as PatientWithCWData;
+};
+
+export async function getPatientWithCWData(
+  patient: Patient
+): Promise<PatientWithCWData | undefined> {
+  return executeWithRetries(
+    () => _getPatientWithCWData(patient),
+    maxAttemptsToGetPatientCWData - 1,
+    waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds()
+  );
+}
 
 /**
  * Sets the CommonWell (CW) IDs and integration status on the patient.
@@ -32,20 +73,27 @@ export const setCommonwellId = async ({
   commonwellStatus?: LinkStatus | undefined;
   cqLinkStatus?: CQLinkStatus | undefined;
 }): Promise<Patient> => {
-  const updatedPatient = await getPatientOrFail({ id: patientId, cxId });
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const updatedPatient = await getPatientOrFail({
+      id: patientId,
+      cxId,
+      lock: true,
+      transaction,
+    });
 
-  const updatedCQLinkStatus = cqLinkStatus ?? getCQLinkStatus(updatedPatient.data.externalData);
+    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(updatedPatient.data.externalData);
 
-  const updatedData = cloneDeep(updatedPatient.data);
-  updatedData.externalData = {
-    ...updatedData.externalData,
-    COMMONWELL: new PatientDataCommonwell(
-      commonwellPatientId,
-      commonwellPersonId,
-      commonwellStatus,
-      updatedCQLinkStatus
-    ),
-  };
+    const updatedData = cloneDeep(updatedPatient.data);
+    updatedData.externalData = {
+      ...updatedData.externalData,
+      COMMONWELL: new PatientDataCommonwell(
+        commonwellPatientId,
+        commonwellPersonId,
+        commonwellStatus,
+        updatedCQLinkStatus
+      ),
+    };
 
-  return updatedPatient.update({ data: updatedData });
+    return updatedPatient.update({ data: updatedData }, { transaction });
+  });
 };

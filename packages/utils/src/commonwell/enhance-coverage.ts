@@ -5,6 +5,7 @@ import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
 import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
 import { TriggerAndQueryDocRefsRemote } from "@metriport/core/domain/document-query/trigger-and-query-remote";
+import { PatientLoaderMetriportAPI } from "@metriport/core/domain/patient/patient-loader-metriport-api";
 import { PatientUpdaterMetriportAPI } from "@metriport/core/domain/patient/patient-updater-metriport-api";
 import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-local";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
@@ -21,9 +22,12 @@ dayjs.extend(duration);
 
 // Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
 // import { chromium as runtime } from "playwright";
+import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
+import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/core/util/sleep";
 import { firefox as runtime } from "playwright";
+import { getCxData } from "../shared/get-cx-data";
 
 /**
  * Script to run on local environment the code that enhances coverage @ CommonWell.
@@ -40,13 +44,25 @@ import { firefox as runtime } from "playwright";
  * Try to limit the impact on the infrastructure by providing a list of patient IDs below.
  */
 
+/**
+ * List of patients to check coverage for.
+ */
 const patientIds: string[] = [];
-
+/**
+ * Update this, each situation requires a diff value here.
+ */
+const triggerWHNotificationsToCx = false;
 /**
  * During the execution, if the cookie gets outdated and the script errors, you'll need to set the index below
  * to the last one that was successful.
  */
 const downloadProgressIndex = 0;
+
+/**
+ * Whether to run session manager and code challenger using local implementations or to use the ones that rely
+ * on Secrets on AWS.
+ */
+const useLocalImplementations = false;
 
 // If it fails to get the cookie, we might need to run this on a "headed" browser = update this to false:
 const headless = true;
@@ -64,29 +80,54 @@ const cwPassword = getEnvVarOrFail("CW_PASSWORD");
 
 const metriportApiBaseUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
-const cxOrgOID = getEnvVarOrFail("ORG_OID");
 
 const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 });
 const DOC_QUERIES_IN_PARALLEL = 25;
 const maxDocQueryAttempts = 3;
 const minDocsToConsiderCompleted = 2;
-const triggerWHNotificationsToCx = true;
 const prefix = "############################### ";
 
-class CodeChallengeFromTerminal implements CodeChallenge {
-  async getCode() {
-    return readline.question("What's the access code? ");
+function getConnectors() {
+  if (useLocalImplementations) {
+    class CodeChallengeFromTerminal implements CodeChallenge {
+      async getCode() {
+        return readline.question("What's the access code? ");
+      }
+    }
+    const codeChallenge = new CodeChallengeFromTerminal();
+    const cookieManager = new CookieManagerInMemory();
+    return { codeChallenge, cookieManager };
   }
+  const awsRegion = getEnvVarOrFail("AWS_REGION");
+  const codeChallengeSecretArn = getEnvVarOrFail("CW_CODE_CHALLENGE_SECRET_ARN");
+  const codeChallengeNotifUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
+  const codeChallenge = new CodeChallengeFromSecretManager(
+    codeChallengeSecretArn,
+    awsRegion,
+    codeChallengeNotifUrl
+  );
+  const sessionManagementSecretArn = getEnvVarOrFail("CW_MANAGEMENT_COOKIE_SECRET_ARN");
+  const cookieManager = new CookieManagerOnSecrets(sessionManagementSecretArn, awsRegion);
+  return { codeChallenge, cookieManager };
 }
-const codeChallenge = new CodeChallengeFromTerminal();
-const cookieManager = new CookieManagerInMemory();
+
+const { codeChallenge, cookieManager } = getConnectors();
 
 const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
+const patientLoader = new PatientLoaderMetriportAPI(metriportApiBaseUrl);
 const patientUpdater = new PatientUpdaterMetriportAPI(metriportApiBaseUrl);
-const coverageEnhancer = new CoverageEnhancerLocal(cwManagementApi, patientUpdater, prefix);
+const coverageEnhancer = new CoverageEnhancerLocal(
+  cwManagementApi,
+  patientLoader,
+  patientUpdater,
+  undefined,
+  prefix
+);
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(metriportApiBaseUrl);
 
 export async function main() {
+  const { orgOID: cxOrgOID } = await getCxData(cxId, undefined, false);
+
   console.log(`Running coverage enhancement... - started at ${new Date().toISOString()}`);
   const startedAt = Date.now();
 
@@ -109,8 +150,10 @@ export async function main() {
     debug: console.log,
   };
 
-  const cwSession = new SessionManagement(props);
-  await cwSession.initSession();
+  if (useLocalImplementations) {
+    const cwSession = new SessionManagement(props);
+    await cwSession.initSession();
+  }
 
   await coverageEnhancer.enhanceCoverage({
     cxId,

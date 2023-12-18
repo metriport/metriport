@@ -1,8 +1,6 @@
 import { z } from "zod";
-import { USState } from "@metriport/core/domain/geographic-locations";
+import { usStateSchema } from "@metriport/api-sdk/medical/models/common/us-data";
 import { defaultOptionalString, defaultZipString } from "./shared";
-
-export const usStateSchema = z.nativeEnum(USState);
 
 export const addressSchema = z.object({
   addressLine1: defaultOptionalString,

@@ -1,17 +1,38 @@
 import {
   APIMode,
+  baseQueryMeta,
   CertificatePurpose,
   CommonWell,
   CommonWellAPI,
   RequestMetadata,
-  baseQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
+import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import { Config } from "../../shared/config";
 import { CommonWellMock } from "./mock";
 
 const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
+
+/**
+ * Returns a new instance of the CommonWellManagementAPI, which is to be used exclusively
+ * to perform operations done through the management portal.
+ * For most cases we want to call makeCommonWellAPI() instead.
+ */
+export function makeCommonWellManagementAPI(): CommonWellManagementAPI | undefined {
+  const cookieArn = Config.getCWManagementCookieArn();
+  if (!cookieArn) return undefined;
+
+  const cwManagementBaseUrl = Config.getCWManagementUrl();
+  if (!cwManagementBaseUrl) return undefined;
+
+  const cookieManager = new CookieManagerOnSecrets(cookieArn, Config.getAWSRegion());
+  return new CommonWellManagementAPI({
+    cookieManager,
+    baseUrl: cwManagementBaseUrl,
+  });
+}
 
 /**
  *

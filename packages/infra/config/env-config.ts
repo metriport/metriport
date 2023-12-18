@@ -22,10 +22,10 @@ export type EnvConfig = {
   domain: string; // Base domain
   subdomain: string; // API subdomain
   authSubdomain: string; // Authentication subdomain
-  iheSubdomain?: string; // Subdomain for IHE integrations
   dbName: string;
   dbUsername: string;
   loadBalancerDnsName?: string;
+  apiGatewayUsagePlanId?: string; // optional since we need to create the stack first, then update this and redeploy
   usageReportUrl?: string;
   fhirServerUrl: string;
   fhirServerQueueUrl?: string;
@@ -36,6 +36,19 @@ export type EnvConfig = {
   fhirConverterBucketName?: string;
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
+  };
+  locationService: {
+    stackName: string;
+    placeIndexName: string;
+    placeIndexRegion: string;
+  };
+  carequality?: {
+    secretNames?: {
+      CQ_API_KEY?: string;
+    };
+    envVars?: {
+      CQ_ORG_DETAILS?: string;
+    };
   };
   commonwell: {
     coverageEnhancement?: CWCoverageEnhancementConfig;
@@ -81,6 +94,10 @@ export type EnvConfig = {
     CW_MEMBER_CERTIFICATE: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
+  };
+  iheGateway?: {
+    certArn: string;
+    subdomain: string; // Subdomain for IHE integrations
   };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;

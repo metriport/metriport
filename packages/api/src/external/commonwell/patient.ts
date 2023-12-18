@@ -1,12 +1,12 @@
 import {
   CommonWellAPI,
-  Patient as CommonwellPatient,
+  getIdTrailingSlash,
   LOLA,
+  organizationQueryMeta,
+  Patient as CommonwellPatient,
   Person,
   RequestMetadata,
   StrongId,
-  getIdTrailingSlash,
-  organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { MedicalDataSource } from "..";
@@ -24,11 +24,11 @@ import { makePersonForPatient, patientToCommonwell } from "./patient-conversion"
 import { setCommonwellId } from "./patient-external-data";
 import {
   CQLinkStatus,
-  FindOrCreatePersonResponse,
-  PatientDataCommonwell,
   findOrCreatePerson,
+  FindOrCreatePersonResponse,
   getMatchingStrongIds,
   getPatientData,
+  PatientDataCommonwell,
 } from "./patient-shared";
 
 const createContext = "cw.patient.create";
@@ -45,7 +45,7 @@ export function getCWData(
 /**
  * Returns the status of linking the Patient with CommonWell.
  */
-export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus {
+export function getLinkStatusCW(data: PatientExternalData | undefined): LinkStatus {
   const defaultStatus: LinkStatus = "processing";
   if (!data) return defaultStatus;
   return getCWData(data)?.status ?? defaultStatus;
@@ -55,7 +55,7 @@ export function getLinkStatus(data: PatientExternalData | undefined): LinkStatus
  * Returns the status of linking the Patient with CommonWell's CareQuality bridge. Used for
  * Enhanced Coverage.
  */
-export function getCQLinkStatus(data: PatientExternalData | undefined): CQLinkStatus {
+export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkStatus {
   const defaultStatus: CQLinkStatus = "unlinked";
   if (!data) return defaultStatus;
   return getCWData(data)?.cqLinkStatus ?? defaultStatus;
@@ -138,17 +138,20 @@ export async function create(
     });
 
     return { commonwellPatientId, personId };
-  } catch (err) {
-    console.error(`Failure while creating patient ${patient.id} @ CW: `, err);
-    capture.error(err, {
+  } catch (error) {
+    const msg = `Failure while creating patient @ CW`;
+    console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
+    capture.message(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
         cwReference: commonWell?.lastReferenceHeader,
         context: createContext,
+        error,
       },
+      level: "error",
     });
-    throw err;
+    throw error;
   }
 }
 
@@ -194,11 +197,11 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     try {
       try {
         const respPerson = await commonWell.updatePerson(queryMeta, person, personId);
-        debug(`resp updatePerson: `, () => JSON.stringify(respPerson, null, 2));
+        debug(`resp updatePerson: `, JSON.stringify(respPerson));
 
         if (!respPerson.enrolled) {
           const respReenroll = await commonWell.reenrollPerson(queryMeta, personId);
-          debug(`resp reenrolPerson: `, () => JSON.stringify(respReenroll, null, 2));
+          debug(`resp reenrolPerson: `, JSON.stringify(respReenroll));
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
@@ -251,7 +254,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
           // safe to get the first one, just need to match one of the person's strong IDs
           strongIds.length ? strongIds[0] : undefined
         );
-        debug(`resp patientLink: `, () => JSON.stringify(respLink, null, 2));
+        debug(`resp patientLink: `, JSON.stringify(respLink));
       }
     } catch (err) {
       log(
@@ -297,7 +300,7 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     commonWell = data.commonWell;
 
     const resp = await commonWell.deletePatient(queryMeta, commonwellPatientId);
-    debug(`resp deletePatient: `, () => JSON.stringify(resp, null, 2));
+    debug(`resp deletePatient: `, JSON.stringify(resp));
   } catch (err) {
     console.error(`Failed to delete patient ${patient.id} @ CW: `, err);
     capture.error(err, {
@@ -391,7 +394,7 @@ async function findOrCreatePersonAndLink({
       // safe to get the first one, just need to match one of the person's strong IDs
       strongIds.length ? strongIds[0] : undefined
     );
-    debug(`resp patientLink: `, () => JSON.stringify(respLink, null, 2));
+    debug(`resp patientLink: `, JSON.stringify(respLink));
   } catch (err) {
     log(`Error linking Patient<>Person @ CW - personId: ${personId}`);
     throw err;
@@ -423,8 +426,8 @@ async function registerPatient({
   const debug = Util.debug(fnName);
 
   const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
+  debug(`resp registerPatient: `, JSON.stringify(respPatient));
 
-  debug(`resp registerPatient: `, () => JSON.stringify(respPatient, null, 2));
   const commonwellPatientId = getIdTrailingSlash(respPatient);
   const log = Util.log(`${fnName} - CW patientId ${commonwellPatientId}`);
   if (!commonwellPatientId) {
@@ -469,8 +472,7 @@ async function updatePatient({
     commonwellPatient,
     commonwellPatientId
   );
-
-  debug(`resp updatePatient: `, () => JSON.stringify(respUpdate, null, 2));
+  debug(`resp updatePatient: `, JSON.stringify(respUpdate));
 
   const patientRefLink = respUpdate._links?.self?.href;
   if (!patientRefLink) {

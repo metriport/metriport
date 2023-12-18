@@ -6,6 +6,8 @@ imports:
 service:
   base-path: /medical/v1/patient
   auth: true
+  audiences: 
+    - public
   endpoints:
     create:
       display-name: Create Patient
@@ -194,7 +196,7 @@ types:
       address:
         type: optional<Addresses>
       contact:
-        type: optional<Contacts>
+        type: optional<list<Contact>>
 
   Patient:
     extends: BasePatient

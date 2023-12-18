@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { demographicsSchema } from "./demographics";
+import { identifierSchema } from "./identifier";
+import { patientOrganizationSchema } from "./patient-organization";
 
 export enum LOLA {
   level_0 = "0",
@@ -23,8 +25,14 @@ export const linkSchema = z.object({
   templated: z.boolean().optional().nullable(),
   type: z.string().optional().nullable(),
 });
-
 export type Link = z.infer<typeof linkSchema>;
+
+export const patientNetworkLinkSchema = z.object({
+  details: demographicsSchema,
+  provider: patientOrganizationSchema.optional().nullable(),
+  identifier: z.array(identifierSchema).optional().nullable(),
+});
+export type PatientNetworkLink = z.infer<typeof patientNetworkLinkSchema>;
 
 export const networkLinkSchema = z.object({
   _links: z
@@ -36,19 +44,12 @@ export const networkLinkSchema = z.object({
     .optional()
     .nullable(),
   assuranceLevel: lolaSchema.optional().nullable(),
-  patient: z
-    .object({
-      details: demographicsSchema,
-    })
-    .optional()
-    .nullable(),
+  patient: patientNetworkLinkSchema.optional().nullable(),
 });
-
 export type NetworkLink = z.infer<typeof networkLinkSchema>;
 
 export const patientLinkProxySchema = z.object({
   relationship: z.string().optional().nullable(),
   name: z.string().optional().nullable(),
 });
-
 export type PatientLinkProxy = z.infer<typeof patientLinkProxySchema>;

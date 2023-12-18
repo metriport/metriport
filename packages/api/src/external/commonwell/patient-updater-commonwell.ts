@@ -7,6 +7,8 @@ import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { getPatients } from "../../command/medical/patient/get-patient";
 
+const maxNumberOfParallelRequestsToCW = 20;
+
 /**
  * Implementation of the PatientUpdater that executes the logic on CommonWell.
  */
@@ -28,13 +30,14 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
         await cwCommands.patient.update(patient, facilityId);
       } catch (error) {
         failedUpdateCount++;
-        console.log(`Failed to update patient ${patient.id} - ${errorToString(error)}`);
-        capture.error(error, { extra: { cxId, patientId: patient.id } });
+        const msg = `Failed to update CW patient`;
+        console.log(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
+        capture.message(msg, { extra: { cxId, patientId: patient.id }, level: "error" });
       }
     };
     // Execute the promises in parallel
     await executeAsynchronously(patients, async patient => updatePatient(patient), {
-      numberOfParallelExecutions: 10,
+      numberOfParallelExecutions: maxNumberOfParallelRequestsToCW,
     });
 
     return { failedUpdateCount };

@@ -1,4 +1,5 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import {
   ConvertResult,
@@ -8,13 +9,11 @@ import {
 } from "../../../domain/medical/document-query";
 import { Patient } from "../../../domain/medical/patient";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
-import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../../external/aws/appConfig";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
-import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { Util, emptyFunction } from "../../../shared/util";
-import { SetDocQueryProgress, appendDocQueryProgress } from "../patient/append-doc-query-progress";
+import { Util } from "../../../shared/util";
+import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
@@ -66,12 +65,6 @@ export async function queryDocumentsAcrossHIEs({
     return createQueryResponse("processing", patient);
   }
 
-  const externalData = patient.data.externalData?.COMMONWELL;
-  if (!externalData) return createQueryResponse("failed");
-
-  const cwData = externalData as PatientDataCommonwell;
-  if (!cwData.patientId) return createQueryResponse("failed");
-
   const updatedPatient = await storeQueryInit({
     id: patient.id,
     cxId: patient.cxId,
@@ -80,17 +73,13 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
-  const cxsWithEnhancedCoverageFeatureFlagValue =
-    await getCxsWithEnhancedCoverageFeatureFlagValue();
-  if (forceQuery || !cxsWithEnhancedCoverageFeatureFlagValue.includes(patient.cxId)) {
-    // kick off document query unless the cx has the enhanced coverage feature enabled
-    getDocumentsFromCW({
-      patient,
-      facilityId,
-      forceDownload: override,
-      requestId,
-    }).catch(emptyFunction);
-  }
+  getDocumentsFromCW({
+    patient,
+    facilityId,
+    forceDownload: override,
+    forceQuery,
+    requestId,
+  }).catch(emptyFunction);
 
   return createQueryResponse("processing", updatedPatient);
 }

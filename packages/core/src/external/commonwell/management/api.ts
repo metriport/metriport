@@ -1,3 +1,4 @@
+import { emptyFunction } from "@metriport/shared";
 import axios, { AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -13,7 +14,7 @@ import { safeStringify } from "../../../util/string";
 dayjs.extend(duration);
 
 const DEFAULT_TIMEOUT_GET_MEMBER = dayjs.duration({ seconds: 20 });
-const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ minutes: 3 });
+const DEFAULT_TIMEOUT_INCLUDE_LIST = dayjs.duration({ minutes: 5 });
 
 export const userAgent =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
@@ -124,11 +125,13 @@ export class CommonWellManagementAPI {
     careQualityOrgIds,
     timeout = DEFAULT_TIMEOUT_INCLUDE_LIST.asMilliseconds(),
     log = console.log,
+    debug = emptyFunction,
   }: {
     oid: string;
     careQualityOrgIds: string[];
     timeout?: number;
-    log?: typeof console.log;
+    log?: typeof console.log | undefined;
+    debug?: typeof console.log | undefined;
   }): Promise<void> {
     const cookies = await this.cookieManager.getCookies();
     if (cookies.length < 1) {
@@ -167,7 +170,7 @@ export class CommonWellManagementAPI {
       log(msg, additionalData);
       throw new MetriportError(msg, undefined, additionalData);
     }
-    log(
+    debug(
       "Response",
       JSON.stringify(
         //eslint-disable-next-line @typescript-eslint/no-explicit-any

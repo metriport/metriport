@@ -24,7 +24,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 36,
+            "y": 44,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -82,7 +82,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 82,
+            "y": 90,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -112,7 +112,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 91,
+            "y": 99,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -136,28 +136,28 @@
         {
             "height": 9,
             "width": 12,
-            "y": 109,
+            "y": 117,
             "x": 0,
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount" } ],
-                    [ ".", "4XXError", ".", "." ],
-                    [ ".", "Latency", ".", ".", { "yAxis": "right", "stat": "Average" } ],
-                    [ ".", "5XXError", ".", "." ]
+                    [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount", "region": "us-west-1" } ],
+                    [ ".", "4XXError", ".", ".", { "region": "us-west-1" } ],
+                    [ ".", "Latency", ".", ".", { "yAxis": "right", "stat": "p99", "region": "us-west-1" } ],
+                    [ ".", "5XXError", ".", ".", { "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-west-1",
                 "stat": "Sum",
-                "period": 300,
+                "period": 60,
                 "title": "ApiGateway"
             }
         },
         {
             "height": 8,
             "width": 10,
-            "y": 46,
+            "y": 54,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -178,7 +178,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 108,
+            "y": 116,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -199,7 +199,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 36,
+            "y": 44,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -231,7 +231,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 34,
+            "y": 42,
             "x": 0,
             "type": "text",
             "properties": {
@@ -242,7 +242,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 44,
+            "y": 52,
             "x": 0,
             "type": "text",
             "properties": {
@@ -253,7 +253,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 46,
+            "y": 54,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -274,7 +274,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 80,
+            "y": 88,
             "x": 0,
             "type": "text",
             "properties": {
@@ -286,7 +286,7 @@
             "height": 8,
             "width": 10,
             "y": 10,
-            "x": 4,
+            "x": 14,
             "type": "metric",
             "properties": {
                 "metrics": [
@@ -307,14 +307,12 @@
             "height": 8,
             "width": 10,
             "y": 10,
-            "x": 14,
+            "x": 4,
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/RDS", "WriteIOPS", "DBClusterIdentifier", "api-cluster", { "yAxis": "right", "region": "us-west-1" } ],
-                    [ ".", "VolumeWriteIOPs", ".", ".", { "region": "us-west-1", "yAxis": "right" } ],
-                    [ ".", "ReadIOPS", ".", ".", { "region": "us-west-1" } ],
-                    [ ".", "VolumeReadIOPS", ".", ".", { "region": "us-west-1" } ]
+                    [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "api-cluster", { "id": "m2", "label": "VolumeReadIOPs", "region": "us-west-1" } ],
+                    [ ".", "VolumeWriteIOPs", ".", ".", { "yAxis": "right", "id": "m1", "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -326,18 +324,30 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 10_000 for 1 datapoints within 5 minutes",
-                            "value": 10000,
+                            "label": "VolumeReadIOPs >= 300_000 for 1 datapoints within 5 minutes",
+                            "value": 300000
+                        },
+                        {
+                            "label": "VolumeWriteIOPs >= 60_000 for 1 datapoints within 5 minutes",
+                            "value": 60000,
                             "yAxis": "right"
                         }
                     ]
+                },
+                "yAxis": {
+                    "right": {
+                        "label": ""
+                    },
+                    "left": {
+                        "label": ""
+                    }
                 }
             }
         },
         {
             "height": 2,
             "width": 24,
-            "y": 70,
+            "y": 78,
             "x": 0,
             "type": "text",
             "properties": {
@@ -348,7 +358,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 72,
+            "y": 80,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -369,15 +379,13 @@
         {
             "height": 8,
             "width": 10,
-            "y": 54,
+            "y": 62,
             "x": 4,
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/RDS", "WriteIOPS", "DBClusterIdentifier", "fhir-server", { "yAxis": "right" } ],
-                    [ ".", "VolumeWriteIOPs", ".", ".", { "region": "us-west-1", "yAxis": "right" } ],
-                    [ ".", "ReadIOPS", ".", "." ],
-                    [ ".", "VolumeReadIOPS", ".", ".", { "region": "us-west-1" } ]
+                    [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "fhir-server", { "region": "us-west-1", "id": "m1", "label": "VolumeReadIOPs-Billable" } ],
+                    [ ".", "VolumeWriteIOPs", ".", ".", { "yAxis": "right", "region": "us-west-1", "id": "m2" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -389,8 +397,8 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 100_000 for 1 datapoints within 5 minutes",
-                            "value": 100000,
+                            "label": "VolumeWriteIOPs >= 300_000 for 1 datapoints within 5 minutes",
+                            "value": 300000,
                             "yAxis": "right"
                         }
                     ]
@@ -400,7 +408,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 62,
+            "y": 70,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -421,7 +429,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 72,
+            "y": 80,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -439,7 +447,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 46,
+            "y": 54,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -457,7 +465,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 36,
+            "y": 44,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -493,7 +501,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 54,
+            "y": 62,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -525,13 +533,21 @@
                 "stat": "Average",
                 "period": 300,
                 "title": "DB - ACU Utilization",
-                "liveData": false
+                "liveData": false,
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "ACU Utilization >= 80%",
+                            "value": 80
+                        }
+                    ]
+                }
             }
         },
         {
             "height": 8,
             "width": 10,
-            "y": 72,
+            "y": 80,
             "x": 14,
             "type": "log",
             "properties": {
@@ -545,7 +561,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 54,
+            "y": 62,
             "x": 14,
             "type": "log",
             "properties": {
@@ -559,7 +575,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 90,
+            "y": 98,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -582,7 +598,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 99,
+            "y": 107,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -607,7 +623,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 100,
+            "y": 108,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -660,7 +676,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 62,
+            "y": 70,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -679,7 +695,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 117,
+            "y": 125,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -699,11 +715,11 @@
             "height": 8,
             "width": 10,
             "y": 18,
-            "x": 14,
+            "x": 5,
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/RDS", "WriteIOPS", "DBClusterIdentifier", "api-cluster", { "region": "us-west-1" } ]
+                    [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "api-cluster" ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -717,7 +733,7 @@
         {
             "height": 8,
             "width": 12,
-            "y": 82,
+            "y": 90,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -742,7 +758,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 26,
+            "y": 34,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -763,7 +779,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 18,
+            "y": 26,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -783,7 +799,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 18,
+            "y": 26,
             "x": 7,
             "type": "metric",
             "properties": {
@@ -803,7 +819,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 26,
+            "y": 34,
             "x": 7,
             "type": "metric",
             "properties": {

@@ -5,11 +5,14 @@ on:
     branches:
       - develop
     paths:
+      - "packages/shared/**"
       - "packages/api/**"
       - "packages/api-sdk/**"
       - "packages/commonwell-sdk/**"
       - "packages/connect-widget/**"
       - "packages/core/**"
+      - "packages/ihe-gateway-sdk/**"
+      - "packages/carequality-sdk/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
   workflow_dispatch: # manually executed by a user
@@ -38,12 +41,16 @@ jobs:
         with:
           filters: |
             api:
+              - "packages/shared/**"
               - "packages/api/**"
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
+              - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
             infra-lambdas:
+              - "packages/shared/**"
+              - "packages/core/**"
               - "packages/infra/**"
               - "packages/lambdas/**"
               - "package*.json"
@@ -93,6 +100,7 @@ jobs:
     needs: files-changed
     with:
       deploy_env: "staging"
+      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}

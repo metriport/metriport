@@ -1,6 +1,6 @@
 {
   "name": "tester-node",
-  "version": "1.1.1",
+  "version": "1.1.14",
   "description": "",
   "private": true,
   "scripts": {
@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/api-sdk": "file:packages/api-sdk",
+    "@metriport/api-sdk": "^7.8.6",
     "@metriport/core": "file:packages/core",
     "dotenv": "^16.0.3"
   },

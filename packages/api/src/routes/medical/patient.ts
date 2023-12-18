@@ -1,4 +1,5 @@
 import { patientCreateSchema } from "@metriport/api-sdk";
+import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -10,7 +11,7 @@ import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -255,11 +256,12 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const patient = await getPatientOrFail({ cxId, id: patientId });
-    return res.json({
-      status: patient.data.consolidatedQuery?.status ?? "not-started",
+    const respPayload: QueryProgressFromSDK = {
+      status: patient.data.consolidatedQuery?.status ?? null,
       message:
         "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
-    });
+    };
+    return res.json(respPayload);
   })
 );
 
@@ -277,6 +279,7 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
+ *        Accepts "pdf" or "html". Defaults to no conversion.
  * @param req.body Optional metadata to be sent through Webhook.
  * @return status of querying for the Patient's consolidated data.
  */
@@ -292,7 +295,7 @@ router.post(
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    const data = await startConsolidatedQuery({
+    const queryResponse = await startConsolidatedQuery({
       cxId,
       patientId,
       resources,
@@ -301,7 +304,10 @@ router.post(
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
     });
-    return res.json(data);
+    const respPayload: QueryProgressFromSDK = {
+      status: queryResponse.status ?? null,
+    };
+    return res.json(respPayload);
   })
 );
 

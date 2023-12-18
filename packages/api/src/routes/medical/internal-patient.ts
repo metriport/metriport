@@ -1,3 +1,4 @@
+import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -7,8 +8,13 @@ import status from "http-status";
 import stringify from "json-stringify-safe";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { getPatientIds, getPatientOrFail } from "../../command/medical/patient/get-patient";
+import {
+  getPatientIds,
+  getPatientOrFail,
+  getPatientStates,
+} from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
@@ -22,14 +28,16 @@ import { completeEnhancedCoverage } from "../../external/commonwell/cq-bridge/co
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
+import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { stringToBoolean } from "../../shared/types";
 import { stringIntegerSchema, stringListFromQuerySchema } from "../schemas/shared";
 import { getUUIDFrom, uuidSchema } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromParamsOrFail } from "../util";
-import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryAsArrayOrFail } from "../util";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 
 dayjs.extend(duration);
@@ -52,6 +60,25 @@ router.get(
     if (facilityId) await getFacilityOrFail({ cxId, id: facilityId });
     const patientIds = await getPatientIds({ cxId, facilityId });
     return res.status(status.OK).json({ patientIds });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/states
+ *
+ * Return a list of unique US states from the patients' addresses.
+ *
+ * @param req.body.cxId The customer ID.
+ * @param req.body.patientIds The IDs of patients to get the state from.
+ * @returns 200 with the list of US states on the body under `states`.
+ */
+router.get(
+  "/states",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
+    const states = await getPatientStates({ cxId, patientIds });
+    return res.status(status.OK).json({ states });
   })
 );
 
@@ -192,19 +219,17 @@ router.get(
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
-    const links: PatientLinksDTO = {
-      currentLinks: [],
-      potentialLinks: [],
-    };
-
     const cwPersonLinks = await cwCommands.link.get(patientId, cxId, facilityId);
     const cwConvertedLinks = dtoFromCW({
       cwPotentialPersons: cwPersonLinks.potentialLinks,
       cwCurrentPersons: cwPersonLinks.currentLinks,
     });
 
-    links.potentialLinks = [...cwConvertedLinks.potentialLinks];
-    links.currentLinks = [...cwConvertedLinks.currentLinks];
+    const links: PatientLinksDTO & { networkLinks: unknown } = {
+      currentLinks: cwConvertedLinks.currentLinks,
+      potentialLinks: cwConvertedLinks.potentialLinks,
+      networkLinks: cwPersonLinks.networkLinks,
+    };
 
     return res.status(status.OK).json(links);
   })
@@ -353,6 +378,10 @@ router.post(
       if (!cxIds.length) {
         cxIds.push(...(await getCxsWithEnhancedCoverageFeatureFlagValue()));
       }
+      if (cxIds.length < 1) {
+        console.log(`No customers to Enhanced Coverage, skipping...`);
+        return res.status(status.OK).json({ patientIds: [] });
+      }
       log(`Using these cxIds: ${cxIds.join(", ")}`);
 
       const checkStaleEC = !fromOrgPos || fromOrgPos <= 0;
@@ -413,6 +442,47 @@ router.post(
     });
 
     return res.status(status.OK).json({ status: status[status.OK] });
+  })
+);
+
+const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/consolidated
+ *
+ * Returns a patient's consolidated data.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.query.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.resources Optional comma-separated list of resources to be returned.
+ * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
+ * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
+ *        Accepts "pdf" or "html". Defaults to no conversion.
+ * @return Patient's consolidated data.
+ */
+router.get(
+  "/consolidated",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFrom("query").orFail("patientId", req);
+    const resources = getResourcesQueryParam(req);
+    const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const typeRaw = getFrom("query").optional("conversionType", req);
+    const conversionType = typeRaw
+      ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
+      : undefined;
+
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const data = await getConsolidated({
+      patient,
+      resources,
+      dateFrom,
+      dateTo,
+      conversionType,
+    });
+    return res.json(data);
   })
 );
 

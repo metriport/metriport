@@ -41,12 +41,29 @@ export const config: EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
+  iheGateway: {
+    certArn: "<your_cert_arn>",
+    subdomain: "ihe",
+  },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
     region: "us-east-1",
     subdomain: "connect",
     domain: "myhealthapp.com",
     host: "myhealthapp.com",
+  },
+  locationService: {
+    stackName: "MetriportLocationServiceStack",
+    placeIndexName: "your_place_index_name",
+    placeIndexRegion: "aws_region",
+  },
+  carequality: {
+    secretNames: {
+      CQ_API_KEY: "CQ_API_KEY",
+    },
+    envVars: {
+      CQ_ORG_DETAILS: `{"name": "Test org","oid": "1.2.3.1.4.1.11.12.29.2022.1234","addressLine1": "123 Main St","city": "Phoenix","state": "AZ","zip": "12345","lat": "33.12345","lon": "-112.12345","urlXCPD": "https://api.myhealthapp.com/xcpd","urlDQ": "https://api.myhealthapp.com/xca-dq","urlDR": "https://api.myhealthapp.com/xca-dr","contactName": "Engineering","phone": "(123)-123-1234","email": "support@healthapp.com"}`,
+    },
   },
   commonwell: {
     envVars: {

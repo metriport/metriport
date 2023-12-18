@@ -1,9 +1,7 @@
 import { PatientCreate, patientCreateSchema } from "@metriport/api-sdk";
 import { z } from "zod";
 import { driversLicenseType, generalTypes } from "../../../domain/medical/patient";
-import { USState } from "@metriport/core/domain/geographic-locations";
-
-const usStateSchema = z.nativeEnum(USState);
+import { usStateSchema } from "@metriport/api-sdk/medical/models/common/us-data";
 
 export const basePersonalIdentifierSchema = z.object({
   value: z.string(),

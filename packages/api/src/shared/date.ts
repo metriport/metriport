@@ -40,6 +40,9 @@ export function parseISODate(date?: string): string | undefined {
   return date;
 }
 
+/**
+ * @deprecated Use @metriport/shared instead
+ */
 export function isValidISODate(date: string): boolean {
   return dayjs(date, ISO_DATE, true).isValid();
 }

@@ -15,7 +15,6 @@ interface IHEStackProps extends StackProps {
   vpc: ec2.IVpc;
   alarmAction: SnsAction | undefined;
   lambdaLayers: LambdaLayers;
-  certificate: cert.DnsValidatedCertificate;
   publicZone: r53.IHostedZone;
 }
 
@@ -23,8 +22,12 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
   //-------------------------------------------
   // API Gateway
   //-------------------------------------------
-  if (!props.config.iheSubdomain) {
-    throw new Error("Must define iheSubdomain if building the IHE stack!");
+  if (!props.config.iheGateway?.subdomain) {
+    throw new Error("Must define subdomainmain if building the IHE stack!");
+  }
+
+  if (!props.config.iheGateway?.certArn) {
+    throw new Error("Must define cert arn if building the IHE stack!");
   }
 
   // Create the API Gateway
@@ -36,11 +39,18 @@ export function createIHEStack(stack: Construct, props: IHEStackProps) {
     },
   });
 
+  // get the certificate form ACM
+  const certificate = cert.Certificate.fromCertificateArn(
+    stack,
+    "IHECertificate",
+    props.config.iheGateway.certArn
+  );
+
   // add domain cert + record
-  const iheApiUrl = `${props.config.iheSubdomain}.${props.config.domain}`;
+  const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
   api.addDomainName("IHEAPIDomain", {
     domainName: iheApiUrl,
-    certificate: props.certificate,
+    certificate: certificate,
     securityPolicy: apig.SecurityPolicy.TLS_1_2,
   });
   new r53.ARecord(stack, "IHEAPIDomainRecord", {

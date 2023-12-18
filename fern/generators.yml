@@ -1,53 +1,62 @@
-default-group: local
 groups:
   publish:
+    audiences: 
+      - public
     generators:
+      - name: fernapi/fern-python-sdk
+        version: 0.6.5
+        output:
+          location: pypi
+          package-name: metriport
+          token: ${PYPI_TOKEN}
+        config:
+          client_class_name: Metriport
+        github: 
+          repository: metriport/metriport-python
+      - name: fernapi/fern-java-sdk
+        version: 0.5.13
+        output:
+          location: maven
+          coordinate: com.metriport:metriport-java
+          username: ${MAVEN_USERNAME}
+          password: ${MAVEN_PASSWORD}
+        config:
+          client-class-name: Metriport
+        github: 
+          repository: metriport/metriport-java
       - name: fernapi/fern-typescript-node-sdk
-        version: 0.8.0-rc4
+        version: 0.8.7
         output:
           location: npm
-          package-name: '@fern-api/metriport'
+          package-name: '@metriport/api-sdk'
           token: ${NPM_TOKEN}
         config:
           namespaceExport: Metriport
+        github: 
+          repository: metriport/metriport-node
+  test: # fern generate --group test will locally generate the SDKs for testing
+    audiences: 
+      - public
+    generators:
       - name: fernapi/fern-python-sdk
-        version: 0.6.2
+        version: 0.6.5
         output:
-          location: pypi
-          package-name: fern-metriport
-          token: ${PYPI_TOKEN}
+          location: local-file-system
+          path: ../packages/sdks/python/generated
         config:
           client_class_name: Metriport
       - name: fernapi/fern-java-sdk
         version: 0.5.13
         output:
-          location: maven
-          coordinate: io.github.fern-api:metriport
-          username: ${MAVEN_USERNAME}
-          password: ${MAVEN_PASSWORD}
+          location: local-file-system
+          path: ../packages/sdks/java/generated
         config:
           client-class-name: Metriport
-  local:
-    generators:
       - name: fernapi/fern-typescript-node-sdk
-        version: 0.7.2
-        output: 
+        version: 0.8.7
+        output:
           location: local-file-system
-          path: ../packages/sdks/typescript
-        config: 
-          outputSourceFiles: true
+          path: ../packages/sdks/typescript/generated
+        config:
           namespaceExport: Metriport
-      - name: fernapi/fern-python-sdk
-        version: 0.4.4
-        output: 
-          location: local-file-system
-          path: ../packages/sdks/python
-        config:
-          client_class_name: Metriport
-      - name: fernapi/fern-java-sdk
-        version: 0.5.10
-        output: 
-          location: local-file-system
-          path: ../packages/sdks/java
-        config:
-          client-class-name: Metriport
+          outputSourceFiles: true

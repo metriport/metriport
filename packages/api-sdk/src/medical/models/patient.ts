@@ -24,7 +24,7 @@ export const patientListSchema = z.object({
 export const queryStatusSchema = z.enum(["processing", "completed", "failed"]);
 export type QueryStatus = z.infer<typeof queryStatusSchema>;
 
-export const queryProgressSchema = z.object({
-  status: queryStatusSchema,
-});
-export type QueryProgress = z.infer<typeof queryProgressSchema>;
+export type QueryProgress = {
+  status: QueryStatus | null;
+  message?: string;
+};

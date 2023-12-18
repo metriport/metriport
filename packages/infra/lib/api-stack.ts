@@ -20,6 +20,7 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
+import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
@@ -32,9 +33,9 @@ import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-con
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { createIHEStack } from "./ihe-stack";
-import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { Secrets, getSecrets } from "./shared/secrets";
+import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 
@@ -594,6 +595,21 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
+    this.setupBulkUrlSigningLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      medicalDocumentsBucket: medicalDocumentsBucket,
+      fhirServerUrl: props.config.fhirServerUrl,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchIndex: ccdaSearchIndexName,
+      searchUserName: ccdaSearchUserName,
+      searchPassword: ccdaSearchSecret.secretValue.unsafeUnwrap(),
+      apiService: apiService,
+    });
+
     this.setupGarminWebhookAuth({
       lambdaLayers,
       baseResource: webhookResource,
@@ -602,7 +618,6 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     this.setupWithingsWebhookAuth({
@@ -612,7 +627,6 @@ export class APIStack extends Stack {
       fargateService: apiService,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     this.setupFitbitWebhook({
@@ -626,7 +640,6 @@ export class APIStack extends Stack {
         props.config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     this.setupTenoviWebhookAuth({
@@ -638,7 +651,6 @@ export class APIStack extends Stack {
       tenoviAuthHeader: props.config.providerSecretNames.TENOVI_AUTH_HEADER,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     // add webhook path for apple health clients
@@ -685,16 +697,22 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // IHE API Gateway
     //-------------------------------------------
-    if (props.config.iheSubdomain) {
+    if (props.config.iheGateway) {
       createIHEStack(this, {
         config: props.config,
         vpc: this.vpc,
         alarmAction: slackNotification?.alarmAction,
         lambdaLayers,
-        certificate,
         publicZone,
       });
     }
+
+    createScheduledAPIQuotaChecker({
+      stack: this,
+      lambdaLayers,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+    });
 
     //-------------------------------------------
     // Output
@@ -777,7 +795,6 @@ export class APIStack extends Stack {
     dynamoDBTokenTable: dynamodb.Table;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }) {
     const {
       lambdaLayers,
@@ -787,7 +804,6 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       envType,
       sentryDsn,
-      alarmAction,
     } = ownProps;
 
     const garminLambda = createLambda({
@@ -803,7 +819,6 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
-      alarmSnsAction: alarmAction,
     });
 
     // Grant lambda access to the DynamoDB token table
@@ -824,7 +839,6 @@ export class APIStack extends Stack {
     fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }) {
     const {
       lambdaLayers,
@@ -866,7 +880,6 @@ export class APIStack extends Stack {
     fitbitSubscriberVerificationCode: string;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }) {
     const {
       lambdaLayers,
@@ -878,7 +891,6 @@ export class APIStack extends Stack {
       fitbitSubscriberVerificationCode,
       envType,
       sentryDsn,
-      alarmAction,
     } = ownProps;
 
     const fitbitAuthLambda = createLambda({
@@ -895,7 +907,6 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
-      alarmSnsAction: alarmAction,
       timeout: FITBIT_LAMBDA_TIMEOUT,
     });
 
@@ -911,7 +922,6 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
-      alarmSnsAction: alarmAction,
     });
 
     // granting secrets read access to both lambdas
@@ -940,7 +950,6 @@ export class APIStack extends Stack {
     tenoviAuthHeader: string;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
   }) {
     const {
       lambdaLayers,
@@ -951,7 +960,6 @@ export class APIStack extends Stack {
       tenoviAuthHeader,
       envType,
       sentryDsn,
-      alarmAction,
     } = ownProps;
 
     const tenoviAuthLambda = createLambda({
@@ -967,7 +975,6 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       vpc,
-      alarmSnsAction: alarmAction,
     });
 
     const tenoviAuthHeaderSecretKey = "TENOVI_AUTH_HEADER";
@@ -1048,8 +1055,8 @@ export class APIStack extends Stack {
       cwOrgCertificate,
       cwOrgPrivateKey,
       bucketName,
-      sentryDsn,
       envType,
+      sentryDsn,
     } = ownProps;
 
     const documentDownloaderLambda = createLambda({
@@ -1088,6 +1095,64 @@ export class APIStack extends Stack {
     return documentDownloaderLambda;
   }
 
+  private setupBulkUrlSigningLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    medicalDocumentsBucket: s3.Bucket;
+    fhirServerUrl: string;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    searchEndpoint: string;
+    searchIndex: string;
+    searchUserName: string;
+    searchPassword: string;
+    apiService: ecs_patterns.NetworkLoadBalancedFargateService;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      medicalDocumentsBucket,
+      fhirServerUrl,
+      sentryDsn,
+      alarmAction,
+      envType,
+      searchEndpoint,
+      searchIndex,
+      searchUserName,
+      searchPassword,
+      apiService,
+    } = ownProps;
+
+    const bulkUrlSigningLambda = createLambda({
+      stack: this,
+      name: "BulkUrlSigning",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "document-bulk-signer",
+      envType,
+      envVars: {
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        FHIR_SERVER_URL: fhirServerUrl,
+        SEARCH_ENDPOINT: searchEndpoint,
+        SEARCH_INDEX: searchIndex,
+        SEARCH_USERNAME: searchUserName,
+        SEARCH_PASSWORD: searchPassword,
+        API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}`,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    medicalDocumentsBucket.grantRead(bulkUrlSigningLambda);
+    bulkUrlSigningLambda.grantInvoke(apiService.taskDefinition.taskRole);
+
+    return bulkUrlSigningLambda;
+  }
+
   private setupFhirToMedicalRecordLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -1114,7 +1179,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.chromium],
-      memory: 1024,
+      memory: 4096,
       timeout: lambdaTimeout,
       vpc,
       alarmSnsAction: alarmAction,
@@ -1367,7 +1432,8 @@ export class APIStack extends Stack {
 
     const readIOPsMetric = dbCluster.metricVolumeReadIOPs();
     const rIOPSAlarm = readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
-      threshold: 20_000, // IOPs per second
+      // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraMonitoring.Metrics.html
+      threshold: 300_000, // IOPS
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
@@ -1376,12 +1442,19 @@ export class APIStack extends Stack {
 
     const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
     const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
-      threshold: 10_000, // IOPs per second
+      threshold: 60_000, // IOPS
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
     alarmAction && wIOPSAlarm.addAlarmAction(alarmAction);
     alarmAction && wIOPSAlarm.addOkAction(alarmAction);
+
+    const acuMetric = dbCluster.metricACUUtilization();
+    acuMetric.createAlarm(this, `${dbClusterName}ACUUtilizationAlarm`, {
+      threshold: 80, // pct
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
   }
 
   private addDynamoPerformanceAlarms(

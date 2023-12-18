@@ -12,6 +12,10 @@ on:
         required: true
         type: string
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
+      location_services_cdk_stack:
+        required: false
+        type: string
+        description: "the name of the Location Services CDK stack we're deploying"
       cdk_stack:
         required: true
         type: string
@@ -77,6 +81,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: metriport
+
       # checkout the internal repo to get configs - default branches
       - name: Checkout internal default branch
         uses: actions/checkout@v3
@@ -89,12 +94,26 @@ jobs:
           sparse-checkout: |
             config-oss/api-infra
       # checkout the internal repo to get configs - feature branch when "branching to staging"
+      - name: Determine which internal branch to checkout
+        env:
+          GITHUB_TOKEN: ${{ secrets.SERVICE_PAT }}
+        run: |
+          set +e # don't stop on failure
+          gh api /repos/metriport/metriport-internal/branches/${{ github.ref_name }} --silent
+          RESULT=$?
+          if [ $RESULT -eq 0 ]; then
+            INTERNAL_BRANCH=${{ github.ref }}
+          else
+            INTERNAL_BRANCH=develop
+          fi
+          echo "Internal branch for checkout: $INTERNAL_BRANCH"
+          echo "INTERNAL_BRANCH=$INTERNAL_BRANCH" >> $GITHUB_ENV
       - name: Checkout internal feature branch
         uses: actions/checkout@v3
         if: ${{ inputs.is-branch-to-staging == true }}
         with:
           repository: metriport/metriport-internal
-          ref: ${{ github.ref }}
+          ref: ${{ env.INTERNAL_BRANCH }}
           token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
           path: metriport-internal
           sparse-checkout: |
@@ -103,6 +122,7 @@ jobs:
       - name: Log Git Ref
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
+        working-directory: metriport
         shell: bash
 
       # INSTALL DEPENDENCIES
@@ -145,9 +165,40 @@ jobs:
           sourcemaps: metriport/packages/lambdas/dist
           projects: lambdas-oss
 
+      # Location Stack CDK DIFF
+      - name: Diff Location Services CDK stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "diff"
+          cdk_version: "2.87.0"
+          cdk_stack: "${{ inputs.location_services_cdk_stack }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+
+      # Location Stack DEPLOY
+      - name: Deploy Location Services CDK stack
+        uses: metriport/deploy-with-cdk@master
+        if: inputs.location_services_cdk_stack != null
+        with:
+          cdk_action: "deploy --verbose --require-approval never"
+          cdk_version: "2.87.0"
+          cdk_stack: "${{ inputs.location_services_cdk_stack }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+          METRIPORT_VERSION: ${{ github.sha }}
+
       # CDK DIFF
       - name: Diff CDK stack
         uses: metriport/deploy-with-cdk@master
+        if: inputs.location_services_cdk_stack != null
         with:
           cdk_action: "diff"
           cdk_version: "2.87.0"

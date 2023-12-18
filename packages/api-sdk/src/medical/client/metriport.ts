@@ -1,5 +1,6 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
+import crypto from "crypto";
 import {
   API_KEY_HEADER,
   BASE_ADDRESS,
@@ -10,19 +11,20 @@ import {
 import { getETagHeader } from "../models/common/base-update";
 import {
   DocumentQuery,
+  BulkGetDocumentUrlQuery,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
   documentListSchema,
   documentQuerySchema,
+  bulkGetDocumentUrlQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
-import { PatientCreate, PatientUpdate, QueryStatus } from "../models/patient";
+import { PatientCreate, PatientUpdate, QueryProgress } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
-import crypto from "crypto";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
@@ -177,7 +179,7 @@ export class MetriportMedicalApi {
    */
   async listFacilities(): Promise<Facility[]> {
     const resp = await this.api.get(`${FACILITY_URL}`);
-    if (!resp.data) [];
+    if (!resp.data) return [];
     return facilityListSchema.parse(resp.data).facilities;
   }
 
@@ -275,7 +277,7 @@ export class MetriportMedicalApi {
     dateTo?: string,
     conversionType?: string,
     metadata?: Record<string, string>
-  ): Promise<QueryStatus> {
+  ): Promise<QueryProgress> {
     const whMetadata = { metadata: metadata };
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, whMetadata, {
       params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
@@ -291,7 +293,7 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient whose data is to be returned.
    * @return The consolidated data query status.
    */
-  async getConsolidatedQueryStatus(patientId: string): Promise<QueryStatus> {
+  async getConsolidatedQueryStatus(patientId: string): Promise<QueryProgress> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query`);
     return resp.data;
   }
@@ -453,6 +455,26 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Start a bulk document download for a given patient, with the payload returned to the webhook.
+   *
+   * @param patientId Patient ID for which to retrieve document URLs.
+   * @return The document query request ID, progress, and status indicating whether it's being executed or not.
+   */
+  async startBulkGetDocumentUrl(patientId: string): Promise<BulkGetDocumentUrlQuery> {
+    const resp = await this.api.post(
+      `${DOCUMENT_URL}/download-url/bulk`,
+      {},
+      {
+        params: {
+          patientId,
+        },
+      }
+    );
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return bulkGetDocumentUrlQuerySchema.parse(resp.data);
+  }
+
+  /**
    * Returns the document query status for the specified patient.
    *
    * @param patientId Patient ID for which to retrieve document query status.
@@ -478,7 +500,7 @@ export class MetriportMedicalApi {
     fileName: string,
     conversionType?: "html" | "pdf"
   ): Promise<{ url: string }> {
-    const resp = await this.api.get(`${DOCUMENT_URL}/downloadUrl`, {
+    const resp = await this.api.get(`${DOCUMENT_URL}/download-url`, {
       params: {
         fileName,
         conversionType,
@@ -535,8 +557,8 @@ export class MetriportMedicalApi {
    * Verifies the signature of a webhook request.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
    *
-   * @param wh_key - your webhook key
-   * @param req.body - the body of the webhook request
+   * @param wh_key - your webhook key.
+   * @param req.body - the body of the webhook request.
    * @param signature - the signature obtained from the webhook request header.
    *
    * @returns True if the signature is verified, false otherwise

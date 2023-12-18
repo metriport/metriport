@@ -6,6 +6,8 @@ imports:
 service:
   base-path: /medical/v1/facility
   auth: true
+  audiences: 
+    - public
   endpoints:
     create:
       display-name: Create Facility

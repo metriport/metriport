@@ -1,10 +1,18 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
+import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { Organization } from "../../domain/medical/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { getCertificate, makeCommonWellAPI, metriportQueryMeta } from "./api";
+import {
+  getCertificate,
+  makeCommonWellAPI,
+  makeCommonWellManagementAPI,
+  metriportQueryMeta,
+} from "./api";
+
+const MAX_HIGH_PRIO_ORGS = 50;
 
 const technicalContact = {
   name: getEnvVarOrFail("CW_TECHNICAL_CONTACT_NAME"),
@@ -67,17 +75,20 @@ export const create = async (org: Organization): Promise<void> => {
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
-    debug(`resp respCreate: `, () => JSON.stringify(respCreate, null, 2));
+    debug(`resp respCreate: `, JSON.stringify(respCreate));
     const respAddCert = await commonWell.addCertificateToOrg(
       metriportQueryMeta,
       getCertificate(),
       org.oid
     );
-    debug(`resp respAddCert: `, () => JSON.stringify(respAddCert, null, 2));
+    debug(`resp respAddCert: `, JSON.stringify(respAddCert));
+
+    // update the CQ bridge include list
+    await initCQOrgIncludeList(org.oid);
   } catch (error) {
     const msg = `Failure creating Org @ CW`;
     log(msg, error);
-    capture.error(error, {
+    capture.message(msg, {
       extra: {
         orgId: org.id,
         orgOID: org.oid,
@@ -85,6 +96,7 @@ export const create = async (org: Organization): Promise<void> => {
         context: `cw.org.create`,
         payload: cwOrg,
       },
+      level: "error",
     });
     throw error;
   }
@@ -96,7 +108,7 @@ export const update = async (org: Organization): Promise<void> => {
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
-    debug(`resp respUpdate: `, () => JSON.stringify(respUpdate, null, 2));
+    debug(`resp respUpdate: `, JSON.stringify(respUpdate));
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -105,6 +117,7 @@ export const update = async (org: Organization): Promise<void> => {
       orgOID: org.oid,
       cwReference: commonWell.lastReferenceHeader,
       context: `cw.org.update`,
+      error,
     };
     // Try to create the org if it doesn't exist
     if (error.response?.status === 404) {
@@ -114,7 +127,33 @@ export const update = async (org: Organization): Promise<void> => {
     // General error handling
     const msg = `Failure updating Org @ CW`;
     log(msg, error);
-    capture.error(error, { extra: { ...extra, payload: cwOrg } });
+    capture.message(msg, { extra: { ...extra, payload: cwOrg }, level: "error" });
     throw error;
   }
 };
+
+export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
+  try {
+    const managementApi = makeCommonWellManagementAPI();
+    if (!managementApi) {
+      console.log(`Not linking org ${orgOID} to CQ Bridge b/c no managementAPI is available`);
+      return;
+    }
+    const highPrioOrgs = getOrgsByPrio().high;
+    const cqOrgIds = highPrioOrgs.map(o => o.id);
+    const cqOrgIdsLimited =
+      cqOrgIds.length > MAX_HIGH_PRIO_ORGS ? cqOrgIds.slice(0, MAX_HIGH_PRIO_ORGS) : cqOrgIds;
+    console.log(
+      `Updating CQ include list for org ${orgOID} with ${cqOrgIdsLimited.length} high prio orgs`
+    );
+    await managementApi.updateIncludeList({ oid: orgOID, careQualityOrgIds: cqOrgIdsLimited });
+  } catch (error) {
+    const additional = { orgOID, error, context: `initCQOrgIncludeList` };
+    const msg = `Error while updating CQ include list`;
+    console.log(`${msg}. Cause: ${additional}`);
+    capture.message(msg, {
+      extra: additional,
+      level: "error",
+    });
+  }
+}

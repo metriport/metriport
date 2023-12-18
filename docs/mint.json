@@ -133,7 +133,8 @@
             "medical-api/api-reference/document/get-document-query",
             "medical-api/api-reference/document/list-documents",
             "medical-api/api-reference/document/get-document",
-            "medical-api/api-reference/document/post-upload-url"
+            "medical-api/api-reference/document/post-upload-url",
+            "medical-api/api-reference/document/download-url-bulk"
           ]
         },
         {

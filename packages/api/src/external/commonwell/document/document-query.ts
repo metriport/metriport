@@ -37,6 +37,7 @@ import { mapDocRefToMetriport } from "../../../shared/external";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
+import { isEnhancedCoverageEnabledForCx } from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -47,7 +48,8 @@ import { getAllPages } from "../../fhir/shared/paginated";
 import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getPatientDataWithSingleFacility, PatientDataCommonwell } from "../patient-shared";
+import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
+import { getPatientDataWithSingleFacility } from "../patient-shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
@@ -81,8 +83,9 @@ type File = DownloadResult & { isNew: boolean };
  * CW for them (optional) - see `downloadDocsAndUpsertFHIR()` for the default value
  */
 export async function queryAndProcessDocuments({
-  patient,
+  patient: patientParam,
   facilityId,
+  forceQuery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
@@ -90,13 +93,41 @@ export async function queryAndProcessDocuments({
 }: {
   patient: Patient;
   facilityId?: string | undefined;
+  forceQuery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<number> {
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patient.id}`);
+  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
+
   try {
+    const [patient, isECEnabledForThisCx] = await Promise.all([
+      getPatientWithCWData(patientParam),
+      isEnhancedCoverageEnabledForCx(patientParam.cxId),
+    ]);
+
+    if (!patient && isECEnabledForThisCx) {
+      log(`Couldn't get CW Data for Patient, but EC is enabled for CX, skipping DQ.`);
+      return 0;
+    }
+    if (!patient) {
+      const msg = `Couldn't get CW Data for Patient`;
+      throw new MetriportError(msg, undefined, {
+        cxId: patientParam.cxId,
+        patientId: patientParam.id,
+      });
+    }
+    const cwData = patient.data.externalData.COMMONWELL;
+
+    const isWaitingForEnhancedCoverage =
+      isECEnabledForThisCx &&
+      cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
+      cwData.cqLinkStatus !== "linked";
+
+    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage;
+    if (!isTriggerDQ) return 0;
+
     const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
 
     if (Config.isSandbox()) {
@@ -133,28 +164,30 @@ export async function queryAndProcessDocuments({
       return fhirDocRefs.length;
     }
   } catch (error) {
-    console.log(`Error: ${errorToString(error)}`);
+    const msg = `Failed to query and process documents`;
+    console.log(`${msg}. Error: ${errorToString(error)}`);
     processPatientDocumentRequest(
-      patient.cxId,
-      patient.id,
+      patientParam.cxId,
+      patientParam.id,
       "medical.document-download",
       MAPIWebhookStatus.failed
     );
     await appendDocQueryProgress({
-      patient: { id: patient.id, cxId: patient.cxId },
+      patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
     });
-    capture.error(error, {
+    capture.message(msg, {
       extra: {
         context: `cw.queryAndProcessDocuments`,
         error,
-        patientId: patient.id,
+        patientId: patientParam.id,
         facilityId,
         forceDownload,
         requestId,
         ignoreDocRefOnFHIRServer,
       },
+      level: "error",
     });
     throw error;
   }
@@ -171,19 +204,14 @@ export async function internalGetDocuments({
   organization,
   facility,
 }: {
-  patient: Patient;
+  patient: PatientWithCWData;
   organization: Organization;
   facility: Facility;
 }): Promise<Document[]> {
   const context = "cw.queryDocument";
   const { log } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
 
-  const externalData = patient.data.externalData?.COMMONWELL;
-  if (!externalData) {
-    log(`No external data found for patient ${patient.id}, not querying for docs`);
-    return [];
-  }
-  const cwData = externalData as PatientDataCommonwell;
+  const cwData = patient.data.externalData.COMMONWELL;
 
   const reportDocQueryMetric = (queryStart: number) => {
     const queryDuration = Date.now() - queryStart;
@@ -267,10 +295,11 @@ function reportCWErrors({
 }): void {
   const errorsByCategory = groupCWErrors(errors);
   for (const [category, errors] of Object.entries(errorsByCategory)) {
-    const msg = `Document query error - ${category}`;
-    log(`${msg}: ${JSON.stringify(errors)}`);
-    capture.error(new Error(msg), {
-      extra: { ...context, errors },
+    const msg = `CW Document query error`;
+    log(`${msg} - Category: ${category}. Cause: ${JSON.stringify(errors)}`);
+    capture.message(msg, {
+      extra: { ...context, errors, category },
+      level: "error",
     });
   }
 }
@@ -537,11 +566,10 @@ export async function downloadDocsAndUpsertFHIR({
               errorReported = true;
               throw error;
             }
+            const msg = `Error downloading from CW and upserting to FHIR`;
             const zeroLengthDetailsStr = isZeroLength ? "zero length document" : "";
-            log(
-              `Error downloading ${zeroLengthDetailsStr} from CW and upserting to FHIR (docId ${doc.id}): ${error}`
-            );
-            capture.error(error, {
+            log(`${msg}: ${zeroLengthDetailsStr}, (docId ${doc.id}): ${error}`);
+            capture.message(msg, {
               extra: {
                 context: `s3.documentUpload`,
                 patientId: patient.id,
@@ -550,6 +578,7 @@ export async function downloadDocsAndUpsertFHIR({
                 requestId,
                 error,
               },
+              level: "error",
             });
             errorReported = true;
             throw error;
@@ -617,10 +646,10 @@ export async function downloadDocsAndUpsertFHIR({
           return FHIRDocRef;
         } catch (error) {
           errorCount++;
-
-          log(`Error processing doc: ${error}`, doc);
+          const msg = `Error processing doc from CW`;
+          log(`${msg}: ${error}; doc ${JSON.stringify(doc)}`);
           if (!errorReported && !(error instanceof NotFoundError)) {
-            capture.error(error, {
+            capture.message(msg, {
               extra: {
                 context: `cw.downloadDocsAndUpsertFHIR`,
                 patientId: patient.id,
@@ -628,6 +657,7 @@ export async function downloadDocsAndUpsertFHIR({
                 requestId,
                 error,
               },
+              level: "error",
             });
           }
           throw error;
@@ -644,8 +674,11 @@ export async function downloadDocsAndUpsertFHIR({
               requestId,
             });
           } catch (error) {
-            capture.error(error, {
+            const msg = `Failed to append doc query progress`;
+            console.log(`${msg}. Cause: ${error}`);
+            capture.message(msg, {
               extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId, error },
+              level: "error",
             });
           }
         }
@@ -757,7 +790,7 @@ async function triggerDownloadDocument({
       ...result,
       isNew: true,
     };
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.status === httpStatus.NOT_FOUND) {
       console.log(`Document not found on CW, skipping - requestId: ${requestId}. Error: ${error}`);
@@ -804,12 +837,9 @@ async function ingestIntoSearchEngine(
       requestId,
     });
   } catch (error) {
-    log(
-      `Error ingesting doc ${fhirDoc.id} / file ${file.key} into OpenSearch: ${errorToString(
-        error
-      )}`
-    );
-    capture.error(error, {
+    const msg = `Error ingesting doc into OpenSearch`;
+    log(`${msg}. Document ID: ${fhirDoc.id}, file key: ${file.key}: ${errorToString(error)}`);
+    capture.message(msg, {
       extra: {
         context: `ingestIntoSearchEngine`,
         patientId: patient.id,
@@ -817,6 +847,7 @@ async function ingestIntoSearchEngine(
         requestId,
         error,
       },
+      level: "error",
     });
     // intentionally not throwing here, we don't want to fail b/c of search ingestion
   }
