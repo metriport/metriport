@@ -46,6 +46,7 @@ jobs:
               - "packages/api/**"
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
+              - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
             infra-lambdas:
@@ -117,6 +118,7 @@ jobs:
     needs: files-changed
     with:
       deploy_env: "production"
+      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_PRODUCTION }}
       cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}
       AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
@@ -134,6 +136,7 @@ jobs:
     if: ${{ !failure() && needs.infra-api-lambdas.result == 'success' }}
     with:
       deploy_env: "sandbox"
+      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_SANDBOX }}
       cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
       AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_SANDBOX  }}

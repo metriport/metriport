@@ -93,6 +93,7 @@ export async function findOrCreatePerson({
 
     if (enrolledPersons.length > 1) {
       // TODO needs to be rewritten to return the one with most links
+      // Update 2023-12-12: the above TODO may be deprecated, since we actually want to link to the earliest person - even if the one has more links, they could be a "duplicate" patient that'll be removed later
       return alertAndReturnEarliestPerson(
         commonwellPatientId,
         [enrolledPersons[0] as CommonwellPerson, ...enrolledPersons.slice(1)], // to match the type requiring at least one element
@@ -271,10 +272,11 @@ export async function searchPersonIds({
   const { log } = Util.out(`CW searchPersonIds`);
   const respSearches = await Promise.allSettled(
     personalIds.map(id =>
-      commonWell.searchPerson(queryMeta, id.key, id.system).catch(err => {
-        log(`Failure searching person @ CW by personal ID`, err);
-        capture.error(err, { extra: { context: `cw.searchPersonIds` } });
-        throw err;
+      commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
+        const msg = `Failure searching person @ CW by personal ID`;
+        log(`${msg}. Cause: ${error}`);
+        capture.message(msg, { extra: { context: `cw.searchPersonIds`, error }, level: "error" });
+        throw error;
       })
     )
   );
@@ -304,10 +306,11 @@ export async function searchPersons({
 }): Promise<CommonwellPerson[]> {
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
-      commonWell.searchPerson(queryMeta, id.key, id.system).catch(err => {
-        console.log(`Failed to search for person with strongId: `, err);
-        capture.error(err, { extra: { context: `cw.searchPersons` } });
-        throw err;
+      commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
+        const msg = `Failed to search for person with strongId`;
+        console.log(`${msg}. Cause: ${error}`);
+        capture.message(msg, { extra: { context: `cw.searchPersons`, error }, level: "error" });
+        throw error;
       })
     )
   );

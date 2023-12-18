@@ -45,6 +45,7 @@ jobs:
               - "packages/api/**"
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
+              - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
             infra-lambdas:
@@ -99,6 +100,7 @@ jobs:
     needs: files-changed
     with:
       deploy_env: "staging"
+      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}

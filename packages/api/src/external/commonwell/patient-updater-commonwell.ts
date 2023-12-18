@@ -30,8 +30,9 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
         await cwCommands.patient.update(patient, facilityId);
       } catch (error) {
         failedUpdateCount++;
-        console.log(`Failed to update patient ${patient.id} - ${errorToString(error)}`);
-        capture.error(error, { extra: { cxId, patientId: patient.id } });
+        const msg = `Failed to update CW patient`;
+        console.log(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
+        capture.message(msg, { extra: { cxId, patientId: patient.id }, level: "error" });
       }
     };
     // Execute the promises in parallel

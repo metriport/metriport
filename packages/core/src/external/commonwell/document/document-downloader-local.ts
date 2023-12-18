@@ -1,5 +1,6 @@
 import { CommonWellAPI, CommonwellError, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import AWS from "aws-sdk";
+import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
@@ -13,6 +14,7 @@ import {
   FileInfo,
 } from "./document-downloader";
 import NotFoundError from "../../../util/error/not-found";
+import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -50,12 +52,15 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const onEnd = () => {
       console.log("Finished downloading document");
     };
-    const downloadResult = await this.downloadFromCommonwellIntoS3(
+    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
+
+    // Check if the detected file type is in the accepted content types and update it if not
+    downloadResult = await this.checkAndUpdateMimeType({
       document,
       fileInfo,
-      onData,
-      onEnd
-    );
+      downloadedDocument,
+      downloadResult,
+    });
 
     const newlyDownloadedFile: DownloadResult = {
       bucket: downloadResult.bucket,
@@ -75,6 +80,53 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     return newlyDownloadedFile;
   }
 
+  /**
+   * Checks if the content type of a downloaded document is accepted. If not accepted, updates the content type
+   * and extension  in S3 and returns the updated download result.
+   */
+  async checkAndUpdateMimeType({
+    document,
+    fileInfo,
+    downloadedDocument,
+    downloadResult,
+  }: {
+    document: Document;
+    fileInfo: FileInfo;
+    downloadedDocument: string;
+    downloadResult: DownloadResult;
+  }): Promise<DownloadResult> {
+    if (isContentTypeAccepted(document.mimeType)) {
+      return { ...downloadResult };
+    }
+
+    const old_extension = path.extname(fileInfo.name);
+    const [detectedFileType, detectedExtension] = detectFileType(downloadedDocument);
+
+    // If the file type has not changed
+    if (detectedFileType === document.mimeType || old_extension === detectedExtension) {
+      return downloadResult;
+    }
+
+    // If the file type has changed
+    console.log(
+      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
+    );
+    const newKey = await this.s3Utils.updateContentTypeInS3(
+      downloadResult.bucket,
+      downloadResult.key,
+      detectedFileType,
+      detectedExtension
+    );
+    const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
+    const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(newKey, downloadResult.bucket);
+
+    return {
+      ...downloadResult,
+      ...fileDetailsUpdated,
+      key: newKey,
+      location: newLocation,
+    };
+  }
   /**
    * Parses the XML file, checking if there's an embedded PDF inside it.
    * If it does, it uploads the PDF to S3 and returns the PDF file info instead of the originally
@@ -185,12 +237,13 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
     const uploadResult = await promise;
 
-    console.log(`Uploaded ${document.id} to ${uploadResult.Location}`);
+    console.log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
 
     const { size, contentType } = await this.s3Utils.getFileInfoFromS3(
       uploadResult.Key,
       uploadResult.Bucket
     );
+
     return {
       key: uploadResult.Key,
       bucket: uploadResult.Bucket,
@@ -215,6 +268,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
           Bucket: s3FileLocation,
           Key: s3FileName,
           Body: pass,
+          // TODO #1258
           ContentType: contentType ? contentType : "text/xml",
         })
         .promise(),
@@ -240,9 +294,10 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         console.log(`${msg} - ${JSON.stringify(additionalInfo)}`);
         throw new NotFoundError(msg, undefined, additionalInfo);
       }
+      const msg = `CW - Error downloading document`;
       this.config.capture &&
-        this.config.capture.error(error, { extra: { ...additionalInfo, error } });
-      throw new MetriportError(`CW - Error downloading document`, error, additionalInfo);
+        this.config.capture.message(msg, { extra: { ...additionalInfo, error }, level: "error" });
+      throw new MetriportError(msg, error, additionalInfo);
     }
   }
 }

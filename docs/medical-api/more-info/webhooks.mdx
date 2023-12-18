@@ -53,7 +53,7 @@ These are messages you can expect to receive in the following scenarios:
   "meta": {
     "messageId": "<message-id>",
     "when": "<date-time-in-utc>",
-    "type": "medical.document-download"
+    "type": "medical.document-bulk-download-urls"
     "data": {
         youCan: "putAny",
         stringKeyValue: "pairsHere",
@@ -125,7 +125,7 @@ The format follows:
 
     <ResponseField name="type" type="string" required>
       The type of the Medical API webhook data message. Can be one of: `medical.document-download`, `medical.document-conversion`,
-      `medical.consolidated-data`.
+      `medical.consolidated-data`, `medical.document-bulk-download-urls`.
     </ResponseField>
 
   </Expandable>
@@ -359,3 +359,107 @@ Example payload:
   ]
 }
 ```
+
+### Bulk Document Download URLs
+
+If you want to download all of a patient's documents, especially when they have a large volume of documents, you can start a [Bulk Get Document URL query](/medical-api/api-reference/document/download-url-bulk). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
+You can use the value of the `url` property in the returned `documents` objects to download the files.
+
+Here is an example payload:
+
+```json
+{
+"meta": {
+    "messageId": "bd4184dd-3b35-4c60-8130-447d1d528fea",
+    "when": "2023-11-30T05:05:12.215Z",
+    "type": "medical.document-bulk-download"
+  },
+  "patients": [
+    {
+      "status": "completed",
+      "patientId": "<patient-id-1>",
+      "externalId": "<external-id-1>",
+      "documents": [
+        {
+          "id": "018c1b94-57dc-7950-b564-f74ab9b56cc4",
+          "size": 40670,
+          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f74ab9b56cc4.xml",
+          "description": "Patient Diagnoses",
+          "status": "current",
+          "indexed": "2019-09-07T15:50:00.000Z",
+          "mimeType": "application/xml",
+          "size": 40670,
+          "type": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "62479008",
+                "display": "Diagnoses"
+              }
+            ],
+            "text": "Diagnoses"
+          }
+          "url": "<a-document-url>"
+        },
+        {
+          "id": "018c1b94-57dc-7950-b564-f749bcf9be3e",
+          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f749bcf9be3e.pdf",
+          "description": "Patient Diagnoses",
+          "status": "current",
+          "indexed": "2019-09-07T15:50:00.000Z",
+          "mimeType": "application/pdf",
+          "size": 77093,
+          "type": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "62479008",
+                "display": "Diagnoses"
+              }
+            ],
+            "text": "Diagnoses"
+          }
+          "url": "<another-document-url>"
+        }
+      ],
+    }
+  ]
+}
+```
+
+The format is as follows:
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+
+  <Expandable title="Details of the 'meta' type property">
+
+    <ResponseField name="type" type="string" required>
+      The type of the Medical API webhook data message. In this case, it will be `medical.document-bulk-download-urls`.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="patients" type="DocumentBulkDownloadUrls[]" required>
+  An array of Document bulk download URLs, where each item corresponds to the queried patient.
+
+  <Expandable title="DocumentBulkDownloadUrl properties">
+
+    <ResponseField name="patientId" type="string" required>
+      The Patient ID.
+    </ResponseField>
+
+    <ResponseField name="status" type="string" required>
+      The outcome of the step corresponding to `type` - can be one of `completed` | `failed`.
+    </ResponseField>
+
+    <ResponseField name="documents" type="DocumentReferenceWithURL[]">
+      An array of objects describing the Documents that can be retrieved for the Patient along with the downloadable url to retrieve them.
+      <Expandable title="DocumentReference properties">
+        <Snippet file="document-reference-bulk-document-response.mdx" />
+      </Expandable>
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
