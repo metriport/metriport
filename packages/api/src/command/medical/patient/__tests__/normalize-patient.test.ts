@@ -1,6 +1,7 @@
 import { PatientData } from "../../../../domain/medical/patient";
 import { normalizePatientData } from "../normalize-patient";
-import { Address } from "../../../../domain/medical/address";
+import { Address } from "@metriport/api-sdk/src/medical/models/common/address";
+import { USState } from "@metriport/api-sdk/src/medical/models/common/us-data";
 
 describe("normalizePatientData", () => {
   // Should return the same patient data if no normalization is needed
@@ -35,7 +36,8 @@ describe("normalizePatientData", () => {
           addressLine1: "123 elm st",
           city: "new york",
           zip: "10001",
-        } as Address,
+          state: USState.NY,
+        },
       ],
       contact: [
         {
@@ -61,6 +63,7 @@ describe("normalizePatientData", () => {
           addressLine1: "123 elm St",
           city: "new york",
           zip: "10001",
+          state: USState.NY,
         },
       ],
       contact: [
@@ -81,6 +84,7 @@ describe("normalizePatientData", () => {
           addressLine1: "123 elm st",
           city: "new york",
           zip: "10001",
+          state: USState.NY,
         },
       ],
       contact: [
@@ -155,6 +159,7 @@ describe("normalizePatientData", () => {
           addressLine1: "123 Elm St",
           city: "New York",
           zip: "10001",
+          state: USState.NY,
         },
       ],
       contact: [
@@ -185,6 +190,7 @@ it("should handle default address values", () => {
         addressLine1: "123 main street",
         city: "anytown",
         zip: "00000",
+        state: USState.NY,
       },
     ],
     contact: [
@@ -211,7 +217,8 @@ it("should handle default contact values and remove period from street", () => {
         addressLine1: "123 elm st.",
         city: "new york",
         zip: "10001",
-      } as Address,
+        state: USState.NY,
+      },
     ],
     contact: [
       {
@@ -231,7 +238,8 @@ it("should handle default contact values and remove period from street", () => {
         addressLine1: "123 elm st",
         city: "new york",
         zip: "10001",
-      } as Address,
+        state: USState.NY,
+      },
     ],
     contact: [
       {
