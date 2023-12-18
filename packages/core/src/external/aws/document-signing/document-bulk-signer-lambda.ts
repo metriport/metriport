@@ -1,3 +1,4 @@
+import * as AWS from "aws-sdk";
 import { makeLambdaClient } from "../lambda";
 import { DocumentBulkSigner, DocumentBulkSignerRequest } from "./document-bulk-signer";
 

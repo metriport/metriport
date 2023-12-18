@@ -38,7 +38,7 @@ import { BulkGetDocUrlStatus } from "../../domain/medical/bulk-get-document-url"
 import {
   DocumentBulkSignerLambdaResponse,
   documentBulkSignerLambdaResponseArraySchema,
-} from "@metriport/core/domain/document-bulk-signer-response";
+} from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 
 const router = Router();
 const upload = multer();
