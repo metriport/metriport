@@ -1,26 +1,21 @@
-import { S3Utils } from "../s3";
-import { DocumentReference } from "@medplum/fhirtypes";
-import { searchDocuments } from "../../fhir/document/search-documents";
 import axios from "axios";
-import { capture } from "../../../util/notifications";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { DocumentBulkSignerLambdaResponse } from "../../../domain/document-bulk-signer-response";
+import { DocumentReference } from "@medplum/fhirtypes";
+import { capture } from "../../../util/notifications";
+import { S3Utils } from "../s3";
+import { DocumentBulkSignerLambdaResponse } from "./document-bulk-signer-response";
+import { searchDocuments } from "../../fhir/document/search-documents";
+
 const ossApi = axios.create();
 dayjs.extend(duration);
-
-const SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 });
-
-export type DocumentBulkSignerLambdaRequest = {
-  patientId: string;
-  cxId: string;
-  requestId: string;
-};
 
 export enum MAPIWebhookStatus {
   completed = "completed",
   failed = "failed",
 }
+
+const SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 });
 
 export type BulkDownloadWebhookParams = {
   cxId: string;
