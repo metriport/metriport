@@ -59,4 +59,15 @@ export class Config {
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
+
+  static getMedicalDocumentsBucketName(): string {
+    return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+  }
+  static getApiUrl(): string {
+    return getEnvVarOrFail("API_URL");
+  }
+
+  static getDocumentSignerLambdaName(): string {
+    return getEnvVarOrFail("DOCUMENT_SIGNER_LAMBDA_NAME");
+  }
 }

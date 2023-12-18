@@ -8,13 +8,10 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-progress";
-import { makeLambdaClient } from "../../../external/aws/lambda";
-import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+import { DocumentBulkSignerRequest } from "@metriport/core/external/aws/document-signing/document-bulk-signer";
+import { makeDocumentBulkSigner } from "../../../external/aws/document-bulk-signer-factory";
 import { appendBulkGetDocUrlProgress } from "../patient/bulk-get-doc-url-progress";
 import { capture } from "@metriport/core/util/notifications";
-
-const lambdaClient = makeLambdaClient();
-const bulkSigningLambdaName = "BulkUrlSigningLambda";
 
 /**
  * The function `startBulkGetDocumentUrls` triggers the bulk signing process lambda for a patient's documents and
@@ -48,30 +45,27 @@ export const startBulkGetDocumentUrls = async (
     requestId,
   });
 
-  const payload: DocumentBulkSignerLambdaRequest = {
+  const payload: DocumentBulkSignerRequest = {
     patientId: patientId,
     cxId: cxId,
     requestId: requestId,
   };
 
-  lambdaClient
-    .invoke({
-      FunctionName: bulkSigningLambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify(payload),
-    })
-    .promise()
-    .catch(error => {
-      appendBulkGetDocUrlProgress({
-        patient: { id: patientId, cxId: cxId },
-        status: BulkGetDocUrlStatus.failed,
-        requestId: requestId,
-      });
-      capture.error(error, {
-        extra: { patientId, context: `startBulkGetDocumentUrls`, error },
-      });
-      return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.failed, updatedPatient);
+  const documentBulkSigner = makeDocumentBulkSigner();
+
+  try {
+    documentBulkSigner.sign(payload);
+  } catch (error) {
+    appendBulkGetDocUrlProgress({
+      patient: { id: patientId, cxId: cxId },
+      status: BulkGetDocUrlStatus.failed,
+      requestId: requestId,
     });
+    capture.error(error, {
+      extra: { patientId, context: `startBulkGetDocumentUrls`, error },
+    });
+    return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.failed, updatedPatient);
+  }
 
   return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.processing, updatedPatient);
 };
