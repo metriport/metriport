@@ -24,7 +24,7 @@ import {
 } from "@metriport/core/external/commonwell/extension";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { getPatientId } from "../../../external/fhir/patient";
-import { downloadedFromHIEs } from "@metriport/core/external/fhir/shared";
+import { downloadedFromHIEs } from "@metriport/core/external/fhir/shared/index";
 import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { getAllPages } from "../../../external/fhir/shared/paginated";
 import { PatientModel } from "../../../models/medical/patient";

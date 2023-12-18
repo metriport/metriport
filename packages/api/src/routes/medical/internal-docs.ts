@@ -38,7 +38,7 @@ import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import {
   DocumentBulkSignerLambdaResponse,
   documentBulkSignerLambdaResponseArraySchema,
-} from "@metriport/core/domain/document-bulk-signer-response";
+} from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";

@@ -9,7 +9,7 @@ import { intersection } from "lodash";
 import {
   isoDateRangeToFHIRDateQuery,
   resourceSupportsDateQuery,
-} from "@metriport/core/external/fhir/shared";
+} from "@metriport/core/external/fhir/shared/index";
 
 export function getPatientFilter({
   resources = [],

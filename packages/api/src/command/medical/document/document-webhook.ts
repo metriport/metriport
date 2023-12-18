@@ -9,8 +9,12 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
-import { MAPIWebhookStatus } from "@metriport/core/external/aws/document-signing/bulk-sign";
 const log = Util.log(`Document Webhook`);
+
+export enum MAPIWebhookStatus {
+  completed = "completed",
+  failed = "failed",
+}
 
 type WebhookDocumentDataPayload = {
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[];
