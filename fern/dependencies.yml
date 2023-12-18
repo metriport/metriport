@@ -1,0 +1,6 @@
+# Metriport depends on the FHIR Fern Definition 	
+# which is maintained by the Fern Team	
+# https://github.com/fern-api/fern/tree/main/fern/fhir	
+
+dependencies:	
+  "@fern/fhir": "0.0.0" 	

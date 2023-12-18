@@ -4,7 +4,7 @@ groups:
       - public
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.7.1
+        version: 0.7.5
         output:
           location: pypi
           package-name: metriport
@@ -14,7 +14,7 @@ groups:
         github: 
           repository: metriport/metriport-python
       - name: fernapi/fern-java-sdk
-        version: 0.5.13
+        version: 0.5.18
         output:
           location: maven
           coordinate: com.metriport:metriport-java
@@ -25,7 +25,7 @@ groups:
         github: 
           repository: metriport/metriport-java
       - name: fernapi/fern-typescript-node-sdk
-        version: 0.8.7
+        version: 0.9.0-rc1
         output:
           location: npm
           package-name: '@metriport/api-sdk'
@@ -39,14 +39,14 @@ groups:
       - public
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.7.1
+        version: 0.7.5
         output:
           location: local-file-system
           path: ../packages/sdks/python/tester-local/generated
         config:
           client_class_name: Metriport
       - name: fernapi/fern-java-sdk
-        version: 0.5.13
+        version: 0.5.18
         output:
           location: local-file-system
           path: ../packages/sdks/java/tester-local/src/main/java/com/metriport/generated
@@ -54,7 +54,7 @@ groups:
           package-prefix: com.metriport.generated
           client-class-name: Metriport
       - name: fernapi/fern-typescript-node-sdk
-        version: 0.8.7
+        version: 0.9.0-rc1
         output:
           location: local-file-system
           path: ../packages/sdks/typescript/generated
