@@ -35,9 +35,15 @@ export type BaseRequest = {
   patientId?: string;
 };
 
+export type ErrorCode =
+  | "InternalError"
+  | "ResponderBusy"
+  | "LivingSubjectAdministrativeGenderRequested"
+  | "PatientAddressRequested";
+
 export type Code = {
   system: string;
-  code: string;
+  code: ErrorCode;
 };
 
 export type Details = { coding: Code[] } | { text: string };

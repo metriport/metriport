@@ -3,11 +3,13 @@ import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
+import { PatientDataMPI, convertPatientToFHIR } from "../mpi/patient-incoming-schema";
 import {
-  PatientDataMPI,
-  convertFHIRToPatient,
-  convertPatientToFHIR,
-} from "../mpi/patient-incoming-schema";
+  validateFHIRAndExtractPatient,
+  InternalError,
+  PatientAddressRequestedError,
+  LivingSubjectAdministrativeGenderRequestedError,
+} from "../carequality/validating-iti55";
 import { matchPatients, jaroWinklerSimilarity } from "../mpi/match-patients";
 import { normalizePatientDataMPI } from "../mpi/normalize-patient";
 import { mergePatients, mergeWithFirstPatient } from "../mpi/merge-patients";
@@ -26,14 +28,54 @@ type MPIBlockParams = {
   lastNameInitial?: string;
 };
 
-export async function processRequest(
+function constructInternalErrorResponse(
+  payload: PatientDiscoveryRequestIncoming,
+  error: string
+): PatientDiscoveryResponseOutgoing {
+  return {
+    id: payload.id,
+    timestamp: payload.timestamp,
+    responseTimestamp: new Date().toISOString(),
+    patientMatch: false,
+    xcpdHomeCommunityId: payload.samlAttributes.homeCommunityId,
+    operationOutcome: {
+      resourceType: "OperationOutcome",
+      id: payload.id,
+      issue: [
+        {
+          severity: "error",
+          code: "processing",
+          details: {
+            coding: [{ system: "1.3.6.1.4.1.19376.1.2.27.3", code: "InternalError" }],
+            text: error,
+          },
+        },
+      ],
+    },
+  };
+}
+
+export async function processIncomingRequest(
   payload: PatientDiscoveryRequestIncoming
 ): Promise<PatientDiscoveryResponseOutgoing> {
   const apiClient = apiClientMPIBlockEndpoint();
   console.log("payload", payload);
 
-  const patient = convertFHIRToPatient(payload.patientResource);
-  console.log("patient", patient);
+  let patient: PatientDataMPI;
+  try {
+    patient = validateFHIRAndExtractPatient(payload.patientResource);
+    console.log("patient", patient);
+  } catch (error) {
+    if (error instanceof InternalError) {
+      return constructInternalErrorResponse(payload, error.message);
+    } else if (error instanceof PatientAddressRequestedError) {
+      return constructInternalErrorResponse(payload, error.message);
+    } else if (error instanceof LivingSubjectAdministrativeGenderRequestedError) {
+      return constructInternalErrorResponse(payload, error.message);
+    } else {
+      return constructInternalErrorResponse(payload, "Internal Server Error");
+    }
+  }
 
   const normalizedPatientDemo = normalizePatientDataMPI(patient);
   if (!normalizedPatientDemo) {

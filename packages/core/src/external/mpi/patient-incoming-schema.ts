@@ -80,31 +80,70 @@ export type PatientDataMPI = {
 };
 
 export function convertFHIRToPatient(patient: FHIRPatient): PatientDataMPI {
+  const firstName = patient.name?.[0]?.given?.[0];
+  if (!firstName) {
+    throw new Error("Given name is not defined");
+  }
+  const lastName = patient.name?.[0]?.family;
+  if (!lastName) {
+    throw new Error("Family name is not defined");
+  }
+  const birthDate = patient.birthDate;
+  if (!birthDate) {
+    throw new Error("Birth date is not defined");
+  }
+  const genderAtBirth = patient.gender;
+  if (!genderAtBirth) {
+    throw new Error("Gender at Birth is not defined");
+  }
+
+  const addresses = (patient.address ?? []).map((addr: FHIRAddress) => {
+    const addressLine1 = addr.line ? addr.line.join(" ") : "";
+    const city = addr.city || "";
+    const state = addr.state ? getStateEnum(addr.state) : USState.CA;
+    const zip = addr.postalCode || "";
+    const country = addr.country || "";
+
+    if (!addressLine1) {
+      throw new Error("Address Line 1 is not defined");
+    }
+    if (!city) {
+      throw new Error("City is not defined");
+    }
+    if (!state) {
+      throw new Error("State is not defined");
+    }
+    if (!zip) {
+      throw new Error("Zip is not defined");
+    }
+
+    const newAddress: Address = {
+      addressLine1,
+      city,
+      state,
+      zip,
+      country,
+    };
+    return newAddress;
+  });
+
+  const contacts = (patient.telecom ?? []).map((tel: ContactPoint) => {
+    const contact: Contact = {};
+    if (tel.system) {
+      contact[tel.system] = tel.value;
+    }
+    return contact;
+  });
+
   const patientDataMPI: PatientDataMPI = {
     id: patient.id || "",
-    firstName: (patient.name && patient.name[0]?.given ? patient.name[0].given[0] : "") || "",
-    lastName: patient.name?.[0]?.family ?? "",
-    dob: patient.birthDate || "",
+    firstName: firstName,
+    lastName: lastName,
+    dob: birthDate,
     genderAtBirth: patient.gender === "male" ? "M" : "F",
-    address: (patient.address ?? []).map((addr: FHIRAddress) => {
-      const newAddress: Address = {
-        addressLine1: addr.line ? addr.line.join(" ") : "",
-        city: addr.city || "",
-        state: addr.state ? getStateEnum(addr.state) : USState.CA,
-        zip: addr.postalCode || "",
-        country: addr.country || "",
-      };
-      return newAddress;
-    }),
-    contact: (patient.telecom ?? []).map((tel: ContactPoint) => {
-      const contact: Contact = {};
-      if (tel.system) {
-        contact[tel.system] = tel.value;
-      }
-      return contact;
-    }),
+    address: addresses,
+    contact: contacts,
   };
-
   return patientDataMPI;
 }
 
