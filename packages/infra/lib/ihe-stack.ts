@@ -10,7 +10,6 @@ import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 
-// comment for diff.
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
