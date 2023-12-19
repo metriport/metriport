@@ -95,9 +95,9 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
-  ihe?: {
+  iheGateway?: {
     stackName: string;
-    gatewayCertArn: string;
+    certArn: string;
     subdomain: string; // Subdomain for IHE integrations
   };
   sentryDSN?: string; // API's Sentry DSN
