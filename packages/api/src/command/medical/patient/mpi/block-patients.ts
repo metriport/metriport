@@ -36,7 +36,6 @@ export const blockPatients = async (criteria: Partial<PatientBlock>): Promise<Pa
     }
   }
 
-  console.log("whereClause", whereClause);
   const patients = await PatientModel.findAll({
     where: whereClause,
   });

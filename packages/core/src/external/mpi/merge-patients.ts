@@ -4,7 +4,7 @@ import { capture } from "../../util/notifications";
 export type MergeProtocol = (
   patients: PatientDataMPI[],
   demo: PatientDataMPI,
-  cxid: string
+  cxid?: string
 ) => PatientDataMPI | undefined;
 
 export const mergeWithFirstPatient: MergeProtocol = (patients, demo) => {
@@ -28,7 +28,7 @@ export const mergePatients = async (
   mergeProtocol: MergeProtocol,
   patients: PatientDataMPI[],
   demo: PatientDataMPI,
-  cxId: string
+  cxId?: string
 ): Promise<PatientDataMPI | undefined> => {
   if (patients.length === 0) return undefined;
   if (patients.length === 1) return patients[0];

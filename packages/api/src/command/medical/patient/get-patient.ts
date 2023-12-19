@@ -13,7 +13,7 @@ import {
   convertPatientModelToPatientData,
   convertPatientDataToPatientDataMPI,
 } from "./mpi/convert-patients";
-import { matchPatients, jaroWinklerSimilarity } from "@metriport/core/external/mpi/match-patient";
+import { matchPatients, jaroWinklerSimilarity } from "@metriport/core/external/mpi/match-patients";
 import { normalizePatientDataMPI } from "@metriport/core/external/mpi/normalize-patient";
 import { mergePatients, mergeWithFirstPatient } from "@metriport/core/external/mpi/merge-patients";
 

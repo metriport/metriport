@@ -10,6 +10,8 @@ import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { blockPatients } from "../../command/medical/patient/mpi/block-patients";
+import { convertPatientModelToPatientData } from "../../command/medical/patient/mpi/convert-patients";
 import {
   getPatientIds,
   getPatientOrFail,
@@ -39,6 +41,7 @@ import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryAsArrayOrFail }
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
+import { GenderAtBirth } from "../../domain/medical/patient";
 
 dayjs.extend(duration);
 
@@ -483,6 +486,31 @@ router.get(
       conversionType,
     });
     return res.json(data);
+  })
+);
+
+router.post(
+  "/mpi/block",
+  asyncHandler(async (req: Request, res: Response) => {
+    const dob = getFrom("query").orFail("dob", req);
+    const genderAtBirthRaw = getFrom("query").orFail("genderAtBirth", req);
+    if (genderAtBirthRaw !== "F" && genderAtBirthRaw !== "M") {
+      throw new Error("Invalid genderAtBirth value");
+    }
+    const genderAtBirth = genderAtBirthRaw as GenderAtBirth;
+    const firstNameInitial = getFrom("query").optional("firstNameInitial", req);
+    const lastNameInitial = getFrom("query").optional("lastNameInitial", req);
+
+    const blockedPatients = await blockPatients({
+      data: {
+        dob,
+        genderAtBirth,
+        firstNameInitial,
+        lastNameInitial,
+      },
+    });
+
+    return res.status(status.OK).json(blockedPatients.map(convertPatientModelToPatientData));
   })
 );
 
