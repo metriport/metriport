@@ -58,7 +58,7 @@ export type Address = {
 
 export type ContactTypes = "phone" | "fax" | "email" | "pager" | "url" | "sms" | "other";
 
-export type Contact = Partial<Record<ContactTypes, string>>;
+export type Contact = Partial<Record<ContactTypes, string | undefined>>;
 
 // modify address schema to have type of AddressLine2 be string? instead of string | undefined
 

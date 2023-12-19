@@ -510,6 +510,8 @@ router.post(
       },
     });
 
+    console.log("blockedPatients", blockedPatients);
+
     return res.status(status.OK).json(blockedPatients.map(convertPatientModelToPatientData));
   })
 );

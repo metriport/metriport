@@ -1,4 +1,6 @@
 import * as dotenv from "dotenv";
+import { processRequest } from "@metriport/core/external/carequality/process-incoming-iti-55";
+
 dotenv.config();
 
 import express, { Application, Request, Response } from "express";
@@ -10,9 +12,9 @@ app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
 app.post("/iti55/v1", async (req: Request, res: Response) => {
   try {
-    console.log(req.body);
+    const response = await processRequest(req.body);
     res.set("Content-Type", "application/json; charset=utf-8");
-    res.send({});
+    res.send({ response });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     res.status(400).send(err.message);

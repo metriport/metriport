@@ -1,8 +1,8 @@
+import { AxiosResponse } from "axios";
 import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
-
 import {
   PatientDataMPI,
   convertFHIRToPatient,
@@ -19,9 +19,6 @@ const ossApi = axios.create();
 const SIMILARITY_THRESHOLD = 0.96;
 const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 
-//function timestampVerification(payload: PatientDiscoveryRequestIncoming): void {}
-//function samlVerification(payload: PatientDiscoveryRequestIncoming): void {}
-
 type MPIBlockParams = {
   dob: string;
   genderAtBirth: string;
@@ -33,17 +30,23 @@ export async function processRequest(
   payload: PatientDiscoveryRequestIncoming
 ): Promise<PatientDiscoveryResponseOutgoing> {
   const apiClient = apiClientMPIBlockEndpoint();
+  console.log("payload", payload);
 
   const patient = convertFHIRToPatient(payload.patientResource);
+  console.log("patient", patient);
 
   const normalizedPatientDemo = normalizePatientDataMPI(patient);
   if (!normalizedPatientDemo) {
     throw new Error("Invalid patient data");
   }
-  const blockedPatients: PatientDataMPI[] = await apiClient.callInternalEndpoint({
+  console.log("normalizedPatientDemo", normalizedPatientDemo);
+
+  const response = await apiClient.callInternalEndpoint({
     dob: normalizedPatientDemo.dob,
     genderAtBirth: normalizedPatientDemo.genderAtBirth,
   });
+  const blockedPatients: PatientDataMPI[] = response.data;
+  console.log("blockedPatients", blockedPatients);
 
   const matchingPatients = matchPatients(
     jaroWinklerSimilarity,
@@ -51,12 +54,15 @@ export async function processRequest(
     normalizedPatientDemo,
     SIMILARITY_THRESHOLD
   );
+  console.log("matchingPatients", matchingPatients);
 
   const mpiPatient = await mergePatients(
     mergeWithFirstPatient,
     matchingPatients,
     normalizedPatientDemo
   );
+  console.log("mpiPatient", mpiPatient);
+
   if (!mpiPatient) throw Error("No patient found");
   return {
     id: payload.id,
@@ -74,10 +80,13 @@ export async function processRequest(
 
 export function apiClientMPIBlockEndpoint() {
   const apiURL = getEnvVarOrFail("API_URL");
-  const postEndpointUrl = `${apiURL}/mpi/block`;
+  const postEndpointUrl = `${apiURL}/internal/patient/mpi/block`;
+  console.log("postEndpointUrl", postEndpointUrl);
 
   return {
-    callInternalEndpoint: async function (params: MPIBlockParams): Promise<PatientDataMPI[]> {
+    callInternalEndpoint: async function (
+      params: MPIBlockParams
+    ): Promise<AxiosResponse<PatientDataMPI[]>> {
       try {
         return await ossApi.post(postEndpointUrl, params, {
           params: {
