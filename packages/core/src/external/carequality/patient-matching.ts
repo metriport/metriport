@@ -1,10 +1,10 @@
 import { USState } from "@metriport/api-sdk/medical/models/common/us-data";
 import jaroWinkler from "jaro-winkler";
-import { PatientData } from "./patient-incoming-schema";
+import { PatientDataMPI } from "../mpi/patient-incoming-schema";
 
 // TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
 const SIMILARITY_THRESHOLD = 0.9;
-export function isAnyPatientMatching(patientToMatch: PatientData): PatientData | undefined {
+export function isAnyPatientMatching(patientToMatch: PatientDataMPI): PatientDataMPI | undefined {
   const patients = [patient_1, patient_2, patient_3];
   for (const patient of patients) {
     if (isPatientMatching(patient, patientToMatch)) {
@@ -15,7 +15,7 @@ export function isAnyPatientMatching(patientToMatch: PatientData): PatientData |
 }
 
 // checks if patient is matching
-export const isPatientMatching = (patient1: PatientData, patient2: PatientData): boolean => {
+export const isPatientMatching = (patient1: PatientDataMPI, patient2: PatientDataMPI): boolean => {
   let score = 0;
   let fieldCount = 0;
 

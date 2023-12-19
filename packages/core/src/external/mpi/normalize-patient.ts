@@ -1,27 +1,20 @@
-import { PatientData, splitName } from "../../../domain/medical/patient";
-
-// Define default values for each field
-const defaultValues = {
-  firstName: "john",
-  lastName: "doe",
-  address: [{ addressLine1: "123 main street", city: "anytown", zip: "00000" }],
-  contact: [{ email: "example@example.com", phone: "0000000000" }],
-};
+import { PatientDataMPI, Address } from "./patient-incoming-schema";
 
 /**
  * The function checks if a patient's address or name matches the default values and returns null if
  * they do, otherwise it updates the patient's contact information and returns the modified patient
  * object.
- * @param {PatientData} patient - The `patient` parameter is an object of type `PatientData`. It
+ * @param {Patient} patient - The `patient` parameter is an object of type `Patient`. It
  * represents the data of a patient, including their address, name, and contact information.
- * @returns either a modified `PatientData` object or `null`.
+ * @returns either a modified `Patient` object or `null`.
  */
-function handleDefaultValues(patient: PatientData): PatientData | null {
-  const isDefaultAddress = patient.address.some(
+function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | null {
+  const isDefaultAddress = patient.address?.some(
     addr =>
-      addr.addressLine1 === defaultValues["address"][0].addressLine1 ||
-      addr.city === defaultValues["address"][0].city ||
-      addr.zip === defaultValues["address"][0].zip
+      addr &&
+      (addr.addressLine1 === defaultValues.address?.[0]?.addressLine1 ||
+        addr.city === defaultValues.address?.[0]?.city ||
+        addr.zip === defaultValues.address?.[0]?.zip)
   );
 
   const isDefaultName =
@@ -32,8 +25,11 @@ function handleDefaultValues(patient: PatientData): PatientData | null {
     return null;
   }
 
-  patient.contact = patient.contact?.map(contact => {
-    const defaultContact = defaultValues["contact"][0];
+  patient.contact = (patient.contact ?? []).map(contact => {
+    const defaultContact = defaultValues["contact"]?.[0];
+    if (!defaultContact) {
+      return contact;
+    }
     return {
       email: contact.email === defaultContact.email ? "" : contact.email,
       phone: contact.phone === defaultContact.phone ? "" : contact.phone,
@@ -44,32 +40,42 @@ function handleDefaultValues(patient: PatientData): PatientData | null {
 }
 
 /**
- * The function `normalizePatientData` takes in patient data and normalizes it by splitting the first
+ * The function `normalizePatient` takes in patient data and normalizes it by splitting the first
  * and last names, normalizing email and phone numbers, and formatting the address.
- * @param {PatientData} patient - The `patient` parameter is an object that represents patient data. It
+ * @param {Patient} patient - The `patient` parameter is an object that represents patient data. It
  * has the following properties:
  * @returns a normalized version of the patient data. If the patient data is valid, it will return the
- * normalized patient data as an object of type `PatientData`. If the patient data is null, it will
+ * normalized patient data as an object of type `Patient`. If the patient data is null, it will
  * return null.
  */
-export function normalizePatientData(patient: PatientData): PatientData | null {
-  const normalizedPatient: PatientData = {
+export function normalizePatientDataMPI(patient: PatientDataMPI): PatientDataMPI | null {
+  // array destructuring to extract the first element of the array with defaults
+  const [firstName = patient.firstName] = splitName(normalizeString(patient.firstName));
+  const [lastName = patient.lastName] = splitName(normalizeString(patient.lastName));
+
+  const normalizedPatient: PatientDataMPI = {
     ...patient,
     // TODO: Handle the possibility of multiple patient names. right now we are just selecting for the first patient name.
-    firstName: splitName(normalizeString(patient.firstName))[0],
-    lastName: splitName(normalizeString(patient.lastName))[0],
-    contact: patient.contact?.map(contact => ({
+    firstName,
+    lastName,
+    contact: (patient.contact ?? []).map(contact => ({
       ...contact,
       email: contact.email ? normalizeEmail(contact.email) : contact.email,
       phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
     })),
-    address: patient.address.map(addr => ({
-      ...addr,
-      addressLine1: addr.addressLine1 ? normalizeAddress(addr.addressLine1) : addr.addressLine1,
-      addressLine2: addr.addressLine2 ? normalizeAddress(addr.addressLine2) : addr.addressLine2,
-      city: addr.city ? normalizeString(addr.city) : addr.city,
-      zip: addr.zip.slice(0, 5),
-    })),
+    address: (patient.address ?? []).map(addr => {
+      const newAddress: Address = {
+        addressLine1: normalizeAddress(addr.addressLine1),
+        city: normalizeString(addr.city),
+        zip: addr.zip.slice(0, 5),
+        state: addr.state,
+        country: addr.country || "USA",
+      };
+      if (addr.addressLine2) {
+        newAddress.addressLine2 = normalizeAddress(addr.addressLine2);
+      }
+      return newAddress;
+    }),
   };
   return handleDefaultValues(normalizedPatient);
 }
@@ -134,12 +140,28 @@ function normalizeAddress(address: string): string {
   };
 
   address = address.trim().toLowerCase().replace(/['-.]/g, "");
-  const words = address.split(" ");
+  const words: string[] = address.split(" ");
 
   for (let i = 0; i < words.length; i++) {
-    if (suffixes[words[i]]) {
-      words[i] = suffixes[words[i]];
+    const word = words[i];
+    if (word) {
+      const suffix = suffixes[word];
+      if (suffix) {
+        words[i] = suffix;
+      }
     }
   }
   return words.join(" ");
 }
+
+export function splitName(name: string): string[] {
+  // splits by comma delimiter and filters out empty strings
+  return name.split(/[\s,]+/).filter(str => str);
+}
+// Define default values for each field
+const defaultValues = {
+  firstName: "john",
+  lastName: "doe",
+  address: [{ addressLine1: "123 main street", city: "anytown", zip: "00000" }],
+  contact: [{ email: "example@example.com", phone: "0000000000" }],
+};

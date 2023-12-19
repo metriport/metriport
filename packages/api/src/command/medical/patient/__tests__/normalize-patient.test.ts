@@ -1,5 +1,5 @@
 import { PatientData } from "../../../../domain/medical/patient";
-import { normalizePatientData } from "../normalize-patient";
+import { normalizePatientData } from "@metriport/core/external/mpi/normalize-patient";
 import { Address } from "@metriport/api-sdk/src/medical/models/common/address";
 import { USState } from "@metriport/core/domain/geographic-locations";
 

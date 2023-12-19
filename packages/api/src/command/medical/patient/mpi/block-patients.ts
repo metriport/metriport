@@ -1,7 +1,8 @@
-import { Patient, GenderAtBirth } from "../../../domain/medical/patient";
-import { PatientModel } from "../../../models/medical/patient";
+import { GenderAtBirth } from "../../../../domain/medical/patient";
+import { PatientModel } from "../../../../models/medical/patient";
 import { Op, WhereOptions } from "sequelize";
 
+// cxId is optional since we will use this code to also block patients for CQ
 export type PatientBlock = {
   cxId?: string;
   facilityIds?: string[];
@@ -13,7 +14,7 @@ export type PatientBlock = {
   };
 };
 
-export const blockPatients = async (criteria: Partial<PatientBlock>): Promise<Patient[]> => {
+export const blockPatients = async (criteria: Partial<PatientBlock>): Promise<PatientModel[]> => {
   const { data, ...restCriteria } = criteria;
 
   // Define a specific type for the whereClause

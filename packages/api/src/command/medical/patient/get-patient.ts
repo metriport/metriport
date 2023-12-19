@@ -8,10 +8,14 @@ import { OrganizationModel } from "../../../models/medical/organization";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import { matchPatients, jaroWinklerSimilarity } from "./match-patient";
-import { blockPatients } from "./block-patients";
-import { normalizePatientData } from "./normalize-patient";
-import { mergePatients, mergeWithFirstPatient } from "./merge-patients";
+import { blockPatients } from "./mpi/block-patients";
+import {
+  convertPatientModelToPatientData,
+  convertPatientDataToPatientDataMPI,
+} from "./mpi/convert-patients";
+import { matchPatients, jaroWinklerSimilarity } from "@metriport/core/external/mpi/match-patient";
+import { normalizePatientDataMPI } from "@metriport/core/external/mpi/normalize-patient";
+import { mergePatients, mergeWithFirstPatient } from "@metriport/core/external/mpi/merge-patients";
 
 const SIMILARITY_THRESHOLD = 0.96;
 
@@ -72,11 +76,11 @@ export const getPatientByDemo = async ({
   facilityId: string;
   cxId: string;
   demo: PatientData;
-}): Promise<Patient | null> => {
+}): Promise<Patient | undefined> => {
   // TODO this normalization should not be rollled out until we do a migration to normalize all existing patients.
   // A null normalizaed patient means that the patient demographics included default values.
-  const normalizedPatientDemo = normalizePatientData(demo);
-  if (!normalizedPatientDemo) return null;
+  const normalizedPatientDemo = normalizePatientDataMPI(convertPatientDataToPatientDataMPI(demo));
+  if (!normalizedPatientDemo) return undefined;
 
   // TODO this might be bad form to use PatientCreate for this. Also because
   const blockedPatients = await blockPatients({
@@ -87,11 +91,14 @@ export const getPatientByDemo = async ({
       genderAtBirth: normalizedPatientDemo.genderAtBirth,
     },
   });
+
+  // convert patients to proper datatype
+  const blockedPatientsData = blockedPatients.map(p => convertPatientModelToPatientData(p));
   console.log("blockedPatients", blockedPatients);
 
   const matchingPatients = matchPatients(
     jaroWinklerSimilarity,
-    blockedPatients,
+    blockedPatientsData,
     normalizedPatientDemo,
     SIMILARITY_THRESHOLD
   );

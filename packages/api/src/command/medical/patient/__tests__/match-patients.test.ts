@@ -2,7 +2,7 @@ import {
   jaroWinklerSimilarity,
   matchingPersonalIdentifiersRule,
   matchingContactDetailsRule,
-} from "../match-patient";
+} from "@metriport/core/external/mpi/match-patient";
 import { PatientData } from "../../../../domain/medical/patient";
 import { testPatientData } from "./test_data";
 

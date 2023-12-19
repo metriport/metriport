@@ -1,4 +1,4 @@
-import { blockPatients } from "../block-patients";
+import { blockPatients } from "../mpi/block-patients";
 import { GenderAtBirth } from "../../../../domain/medical/patient";
 import { PatientModel } from "../../../../models/medical/patient";
 import { Op } from "sequelize";

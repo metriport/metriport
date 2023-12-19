@@ -1,8 +1,12 @@
 import * as xml2js from "xml2js";
-import { PatientData, LivingSubjectId, PrincipalCareProviderId } from "./patient-incoming-schema";
+import {
+  PatientDataMPI,
+  Address,
+  LivingSubjectId,
+  PrincipalCareProviderId,
+} from "../mpi/patient-incoming-schema";
 import { cleanXml, generateTimeStrings } from "./utils";
 import { generateXcpdTemplate } from "./iti-55-template";
-import { Address } from "@metriport/api-sdk/medical/models/common/address";
 import { isAnyPatientMatching } from "./patient-matching";
 
 /**
@@ -12,7 +16,7 @@ import { isAnyPatientMatching } from "./patient-matching";
  */
 async function parseXmlString(
   xml: string
-): Promise<[PatientData, [string, string, string | undefined, string]]> {
+): Promise<[PatientDataMPI, [string, string, string | undefined, string]]> {
   // Removing leading newlines and escaping double quote variations
   xml = cleanXml(xml);
   const parser = new xml2js.Parser({
@@ -34,7 +38,7 @@ async function parseXmlString(
 
   // these need to be defined
   let parameterList, patientName, gender, dob, signature, messageId;
-  let patientAddress: Address[] | undefined;
+  let patientAddress: Address[] = [];
   try {
     parameterList =
       result["Envelope"]["Body"][0]["PRPA_IN201305UV02"][0]["controlActProcess"][0][
@@ -54,6 +58,7 @@ async function parseXmlString(
             state: address["state"][0],
             zip: address["postalCode"][0],
             country: address["country"][0] || "USA",
+            addressLine2: "",
           },
         ];
       }
@@ -94,9 +99,8 @@ async function parseXmlString(
       }
     : undefined;
 
-  const patientData = {
-    livingSubjectId: livingSubjectId,
-    principalCareProviderId: principalCareProviderId,
+  const patientData: PatientDataMPI = {
+    id: "",
     firstName: patientName["given"][0],
     lastName: patientName["family"][0],
     dob: dob,
@@ -104,6 +108,13 @@ async function parseXmlString(
     address: patientAddress,
     contact: [{ phone: phone }],
   };
+  if (livingSubjectId) {
+    patientData.livingSubjectId = livingSubjectId;
+  }
+
+  if (principalCareProviderId) {
+    patientData.principalCareProviderId = principalCareProviderId;
+  }
   return [patientData, [root, messageId, queryId, signature]];
 }
 
@@ -117,7 +128,7 @@ const fillTemplate = (
   queryId: string | undefined,
   signature: string,
   status: string,
-  patientData?: PatientData
+  patientData?: PatientDataMPI
 ) => {
   if (patientData) {
     const {
@@ -143,7 +154,7 @@ const fillTemplate = (
       zip,
       country = "";
     if (Array.isArray(address) && typeof address[0] === "object") {
-      ({ addressLine1, city, state, zip, country } = address[0]);
+      ({ addressLine1, city, state, zip, country = "USA" } = address[0]);
     }
 
     return xcpdTemplate

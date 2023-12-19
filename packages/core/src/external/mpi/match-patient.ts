@@ -1,12 +1,12 @@
 import { intersectionWith, isEqual } from "lodash";
-import { PatientData, Patient } from "../../../domain/medical/patient";
-import { normalizePatientData } from "./normalize-patient";
+import { PatientDataMPI } from "./patient-incoming-schema";
+import { normalizePatientDataMPI } from "./normalize-patient";
 import jaroWinkler from "jaro-winkler";
 
 // Define a type for the similarity function
 type SimilarityFunction = (
-  patient1: PatientData,
-  patient2: PatientData,
+  patient1: PatientDataMPI,
+  patient2: PatientDataMPI,
   threshold: number
 ) => boolean;
 
@@ -14,26 +14,34 @@ type SimilarityFunction = (
  * `matchPatients` filters patients based on a similarity function and a threshold.
  * @param {SimilarityFunction} similarityFunction - Determines if a patient is a match.
  * @param {Patient[]} patients - Array of patients.
- * @param {PatientData} demo - Patient data to find matches for.
+ * @param {Patient} demo - Patient data to find matches for.
  * @param {number} threshold - Minimum similarity score for a match.
+ * @param {boolean} greedy - If true, returns the first match. If false, returns all matches.
  * @returns matched patients.
  */
 export const matchPatients = (
   similarityFunction: SimilarityFunction,
-  patients: Patient[],
-  demo: PatientData,
-  threshold: number
-): Patient[] => {
-  return patients.filter(patient => {
-    const patientData = normalizePatientData(patient.data);
-    if (!patientData) {
+  patients: PatientDataMPI[],
+  demo: PatientDataMPI,
+  threshold: number,
+  greedy = false
+): PatientDataMPI[] => {
+  const matchFunction = (patient: PatientDataMPI) => {
+    const PatientDataMPI = normalizePatientDataMPI(patient);
+    if (!PatientDataMPI) {
       return false;
     }
-    if (matchingPersonalIdentifiersRule(demo, patientData)) {
+    if (matchingPersonalIdentifiersRule(demo, PatientDataMPI)) {
       return true;
     }
-    return similarityFunction(patientData, demo, threshold);
-  });
+    return similarityFunction(PatientDataMPI, demo, threshold);
+  };
+  if (greedy) {
+    const foundPatient = patients.find(matchFunction);
+    return foundPatient ? [foundPatient] : [];
+  } else {
+    return patients.filter(matchFunction);
+  }
 };
 
 /**
@@ -44,8 +52,8 @@ export const matchPatients = (
  * @returns true if the patient has any personal identifiers that match the demo.
  */
 export const matchingPersonalIdentifiersRule = (
-  demo: PatientData,
-  patient: PatientData
+  demo: PatientDataMPI,
+  patient: PatientDataMPI
 ): boolean => {
   if (
     demo.personalIdentifiers &&
@@ -65,7 +73,10 @@ export const matchingPersonalIdentifiersRule = (
  * @param patient
  * @returns true if the patient has any contact details that match the demo.
  */
-export const matchingContactDetailsRule = (demo: PatientData, patient: PatientData): boolean => {
+export const matchingContactDetailsRule = (
+  demo: PatientDataMPI,
+  patient: PatientDataMPI
+): boolean => {
   // Check for matching phone numbers
   if (
     demo.contact &&
@@ -95,8 +106,8 @@ export const matchingContactDetailsRule = (demo: PatientData, patient: PatientDa
  * @returns The average of the similarity scores for each field.
  */
 export const jaroWinklerSimilarity = (
-  patient1: PatientData,
-  patient2: PatientData,
+  patient1: PatientDataMPI,
+  patient2: PatientDataMPI,
   threshold: number
 ): boolean => {
   let score = 0;
