@@ -7,6 +7,7 @@ import { out } from "../../../util/log";
 import { CommonWellManagementAPI } from "../management/api";
 import { LinkPatients } from "../management/link-patients";
 import { CoverageEnhancementParams, CoverageEnhancer } from "./coverage-enhancer";
+import { ECUpdater } from "./ec-updater";
 
 dayjs.extend(duration);
 
@@ -20,22 +21,25 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
     private readonly cwManagementApi: CommonWellManagementAPI,
     patientLoader: PatientLoader,
     private readonly patientUpdater: PatientUpdater,
+    private readonly ecUpdater: ECUpdater,
     private readonly capture: Capture = emptyCapture,
     private readonly prefix = ""
   ) {
     super({ patientLoader });
-    this.linkPatients = new LinkPatients(this.cwManagementApi, this.patientUpdater);
+    this.linkPatients = new LinkPatients(this.cwManagementApi, this.patientUpdater, this.ecUpdater);
   }
 
   public override async enhanceCoverage({
+    ecId: ecIdParam,
     cxId,
     orgOID,
     patientIds,
     fromOrgChunkPos = 0,
     stopOnErrors = false,
-  }: CoverageEnhancementParams) {
+  }: CoverageEnhancementParams): Promise<string> {
     const startedAt = Date.now();
-    const { log } = out(`${this.prefix}EC - MAIN - cx ${cxId}`);
+    const ecId = ecIdParam ?? super.makeId();
+    const { log } = out(`${this.prefix}EC ${ecId} - cx ${cxId}`);
     try {
       const { total, chunks } = await this.getCarequalityOrgs({
         cxId,
@@ -62,6 +66,7 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
         );
         try {
           await this.linkPatients.linkPatientsToOrgs({
+            ecId,
             cxId,
             cxOrgOID: orgOID,
             patientIds,
@@ -101,5 +106,6 @@ export class CoverageEnhancerLocal extends CoverageEnhancer {
       const durationMin = dayjs.duration(duration).asMinutes();
       log(`Patient linking time: ${duration} ms / ${durationMin} min`);
     }
+    return ecId;
   }
 }

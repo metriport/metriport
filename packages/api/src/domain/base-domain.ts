@@ -2,9 +2,12 @@ export interface BaseDomainCreate {
   id: string;
 }
 
-export interface BaseDomain extends BaseDomainCreate {
+export interface BaseDomainNoId {
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface BaseDomain extends BaseDomainCreate, BaseDomainNoId {
   eTag: string;
 }
 
