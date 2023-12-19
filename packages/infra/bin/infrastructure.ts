@@ -47,13 +47,15 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 3. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
   //---------------------------------------------------------------------------------
-  new IHEStack(app, config.ihe.stackName, {
-    env,
-    config: config,
-    vpc: apiStack.vpc,
-    lambdaLayers: apiStack.sharedLambdaLayers,
-    alarmAction: apiStack.alarmAction,
-  });
+  if (config.ihe) {
+    new IHEStack(app, config.ihe.stackName, {
+      env,
+      config: config,
+      vpc: apiStack.vpc,
+      lambdaLayers: apiStack.sharedLambdaLayers,
+      alarmAction: apiStack.alarmAction,
+    });
+  }
   //---------------------------------------------------------------------------------
   // 3. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
