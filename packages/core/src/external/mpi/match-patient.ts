@@ -26,6 +26,8 @@ export const matchPatients = (
   threshold: number,
   greedy = false
 ): PatientDataMPI[] => {
+  console.log("patients", patients);
+  console.log("demo", demo);
   const matchFunction = (patient: PatientDataMPI) => {
     const PatientDataMPI = normalizePatientDataMPI(patient);
     if (!PatientDataMPI) {

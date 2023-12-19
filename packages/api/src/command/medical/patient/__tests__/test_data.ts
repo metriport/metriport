@@ -1,13 +1,14 @@
-import { PatientData } from "../../../../domain/medical/patient";
+import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient-incoming-schema";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
-export const testPatientData: {
-  sampleSearch: PatientData[];
-  sampleInclusions: PatientData[];
-  sampleExclusions: PatientData[];
+export const testPatientDataMPI: {
+  sampleSearch: PatientDataMPI[];
+  sampleInclusions: PatientDataMPI[];
+  sampleExclusions: PatientDataMPI[];
 } = {
   sampleSearch: [
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Valdez",
       dob: "09/10/1947",
@@ -38,6 +39,7 @@ export const testPatientData: {
   ],
   sampleInclusions: [
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Valdez",
       dob: "09/10/1947",
@@ -60,6 +62,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Valdez",
       dob: "09/10/1947",
@@ -75,6 +78,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Valdez",
       dob: "10/09/1947",
@@ -90,6 +94,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Valdez",
       dob: "09/10/1947",
@@ -105,6 +110,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Valdes",
       dob: "09/10/1947",
@@ -120,6 +126,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Valdez",
       dob: "09/10/1946",
@@ -137,6 +144,7 @@ export const testPatientData: {
   ],
   sampleExclusions: [
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Valdez",
       dob: "09/10/1947",
@@ -158,6 +166,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "John",
       lastName: "Valdez",
       dob: "09/10/1957",
@@ -173,6 +182,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "John",
       lastName: "Valdez",
       dob: "09/10/1947",
@@ -188,6 +198,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Smith",
       dob: "09/10/1947",
@@ -203,6 +214,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Smith",
       dob: "09/10/1947",
@@ -218,6 +230,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "John",
       lastName: "Valdez",
       dob: "09/10/1947",
@@ -233,6 +246,7 @@ export const testPatientData: {
       ],
     },
     {
+      id: "123456789",
       firstName: "Juan",
       lastName: "Smith",
       dob: "09/10/1947",

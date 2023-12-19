@@ -1,12 +1,13 @@
-import { PatientData } from "../../../../domain/medical/patient";
-import { normalizePatientData } from "@metriport/core/external/mpi/normalize-patient";
+import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient-incoming-schema";
+import { normalizePatientDataMPI } from "@metriport/core/external/mpi/normalize-patient";
 import { Address } from "@metriport/api-sdk/src/medical/models/common/address";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
-describe("normalizePatientData", () => {
+describe("normalizePatientDataMPI", () => {
   // Should return the same patient data if no normalization is needed
   it("should lowercase name and address and alter street suffix", () => {
-    const patientData: PatientData = {
+    const PatientDataMPI: PatientDataMPI = {
+      id: "123456789",
       firstName: "John",
       lastName: "Dogo",
       dob: "1990-01-01",
@@ -27,7 +28,8 @@ describe("normalizePatientData", () => {
       ],
     };
 
-    const expected: PatientData = {
+    const expected: PatientDataMPI = {
+      id: "",
       firstName: "john",
       lastName: "dogo",
       dob: "1990-01-01",
@@ -48,13 +50,14 @@ describe("normalizePatientData", () => {
       ],
     };
 
-    const result = normalizePatientData(patientData);
+    const result = normalizePatientDataMPI(PatientDataMPI);
     expect(result).toEqual(expected);
   });
 
   // Should normalize first and last name to lowercase and remove apostrophes and hyphens
   it("should normalize first and last name to lowercase and remove apostrophes and hyphens", () => {
-    const patientData: PatientData = {
+    const PatientDataMPI: PatientDataMPI = {
+      id: "123456789",
       firstName: "John-O'Connor",
       lastName: "Doe-Smith",
       dob: "1990-01-01",
@@ -75,7 +78,8 @@ describe("normalizePatientData", () => {
       ],
     };
 
-    const expected: PatientData = {
+    const expected: PatientDataMPI = {
+      id: "",
       firstName: "johnoconnor",
       lastName: "doesmith",
       dob: "1990-01-01",
@@ -96,14 +100,15 @@ describe("normalizePatientData", () => {
       ],
     };
 
-    const result = normalizePatientData(patientData);
+    const result = normalizePatientDataMPI(PatientDataMPI);
 
     expect(result).toEqual(expected);
   });
 
   // Should normalize email addresses to lowercase and remove leading/trailing whitespaces
   it("should normalize email addresses to lowercase and remove leading/trailing whitespaces", () => {
-    const patientData: PatientData = {
+    const PatientDataMPI: PatientDataMPI = {
+      id: "123456789",
       firstName: "john   ",
       lastName: "dogo    ",
       dob: "1990-01-01",
@@ -123,7 +128,8 @@ describe("normalizePatientData", () => {
       ],
     };
 
-    const expected: PatientData = {
+    const expected: PatientDataMPI = {
+      id: "",
       firstName: "john",
       lastName: "dogo",
       dob: "1990-01-01",
@@ -143,14 +149,15 @@ describe("normalizePatientData", () => {
       ],
     };
 
-    const result = normalizePatientData(patientData);
+    const result = normalizePatientDataMPI(PatientDataMPI);
 
     expect(result).toEqual(expected);
   });
 
   // Should handle default values for first name, last name, and address
   it("should handle default values for first name, last name, and return null", () => {
-    const patientData: PatientData = {
+    const PatientDataMPI: PatientDataMPI = {
+      id: "123456789",
       firstName: "John",
       lastName: "Doe",
       dob: "1990-01-01",
@@ -173,7 +180,7 @@ describe("normalizePatientData", () => {
 
     const expected = null;
 
-    const result = normalizePatientData(patientData);
+    const result = normalizePatientDataMPI(PatientDataMPI);
 
     expect(result).toEqual(expected);
   });
@@ -181,7 +188,8 @@ describe("normalizePatientData", () => {
 
 // Should return null if the patient has a default address
 it("should handle default address values", () => {
-  const patientData: PatientData = {
+  const PatientDataMPI: PatientDataMPI = {
+    id: "123456789",
     firstName: "John",
     lastName: "Doe",
     dob: "1990-01-01",
@@ -202,13 +210,14 @@ it("should handle default address values", () => {
     ],
   };
 
-  const result = normalizePatientData(patientData);
+  const result = normalizePatientDataMPI(PatientDataMPI);
   expect(result).toBeNull();
 });
 
 // Should return null if the patient has default contact values
 it("should handle default contact values and remove period from street", () => {
-  const patientData: PatientData = {
+  const PatientDataMPI: PatientDataMPI = {
+    id: "123456789",
     firstName: "john",
     lastName: "dogo",
     dob: "1990-01-01",
@@ -229,7 +238,8 @@ it("should handle default contact values and remove period from street", () => {
     ],
   };
 
-  const expected: PatientData = {
+  const expected: PatientDataMPI = {
+    id: "",
     firstName: "john",
     lastName: "dogo",
     dob: "1990-01-01",
@@ -250,6 +260,6 @@ it("should handle default contact values and remove period from street", () => {
     ],
   };
 
-  const result = normalizePatientData(patientData);
+  const result = normalizePatientDataMPI(PatientDataMPI);
   expect(result).toEqual(expected);
 });

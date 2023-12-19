@@ -94,7 +94,7 @@ export const getPatientByDemo = async ({
 
   // convert patients to proper datatype
   const blockedPatientsData = blockedPatients.map(p => convertPatientModelToPatientData(p));
-  console.log("blockedPatients", blockedPatients);
+  console.log("blockedPatients", blockedPatientsData);
 
   const matchingPatients = matchPatients(
     jaroWinklerSimilarity,
@@ -102,7 +102,16 @@ export const getPatientByDemo = async ({
     normalizedPatientDemo,
     SIMILARITY_THRESHOLD
   );
-  return mergePatients(mergeWithFirstPatient, matchingPatients, normalizedPatientDemo, cxId);
+  console.log("matchingPatients", matchingPatients);
+  const mpiPatient = await mergePatients(
+    mergeWithFirstPatient,
+    matchingPatients,
+    normalizedPatientDemo,
+    cxId
+  );
+  console.log("mpiPatient", mpiPatient);
+  if (!mpiPatient) return undefined;
+  return getPatientOrFail({ id: mpiPatient.id, cxId });
 };
 
 export type GetPatient = {
