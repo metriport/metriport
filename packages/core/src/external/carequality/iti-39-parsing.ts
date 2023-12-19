@@ -16,8 +16,7 @@ const documentData: { [key: string]: string } = {
  * @returns A promise that resolves to an array containing the signature, documentId, and homeCommunityID extracted from the XML.
  */
 async function parseXmlString(xml: string, header: string): Promise<[string, string, string]> {
-  xml = parseMtomResponse(xml, header);
-  xml = cleanXml(xml);
+  const cleanedXml = cleanXml(parseMtomResponse(xml, header));
 
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
@@ -25,7 +24,7 @@ async function parseXmlString(xml: string, header: string): Promise<[string, str
 
   let result;
   try {
-    result = await parser.parseStringPromise(xml);
+    result = await parser.parseStringPromise(cleanedXml);
   } catch (err) {
     throw new Error("XML parsing failed: Invalid XML");
   }

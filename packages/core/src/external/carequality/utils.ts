@@ -41,11 +41,8 @@ interface ParsedContentType {
 }
 
 function parseContentTypeHeader(header: string): ParsedContentType | undefined {
-  console.log("header", header);
   const boundaryMatch = header.match(/boundary="([^"]+)"/);
   const startTokenMatch = header.match(/start="<([^"]+)>"/);
-  console.log("boundaryMatch", boundaryMatch);
-  console.log("startTokenMatch", startTokenMatch);
   if (!boundaryMatch || !startTokenMatch || !boundaryMatch[1] || !startTokenMatch[1]) {
     return undefined;
   }
@@ -56,7 +53,6 @@ function parseContentTypeHeader(header: string): ParsedContentType | undefined {
 }
 
 function extractXmlFromBody(body: string, contentType: ParsedContentType): string | undefined {
-  console.log("contentType", contentType);
   const parts = body.split(`--${contentType.boundary}`);
   for (const part of parts) {
     if (part.includes(`Content-ID: <${contentType.startToken}>`)) {
