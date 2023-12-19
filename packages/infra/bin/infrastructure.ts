@@ -5,7 +5,7 @@ import { APIStack } from "../lib/api-stack";
 import { ConnectWidgetStack } from "../lib/connect-widget-stack";
 import { EnvConfig } from "../config/env-config";
 import { SecretsStack } from "../lib/secrets-stack";
-import { IHEStack } from "../lib/ihe-stack";
+// import { IHEStack } from "../lib/ihe-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar } from "../lib/shared/util";
 import { LocationServicesStack } from "../lib/location-services-stack";
@@ -42,18 +42,19 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 2. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  const apiStack = new APIStack(app, config.stackName, { env, config, version });
+  // const apiStack = new APIStack(app, config.stackName, { env, config, version });
+  new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 3. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
   //---------------------------------------------------------------------------------
-  new IHEStack(app, config.ihe.stackName, {
-    env,
-    config: config,
-    vpc: apiStack.vpc,
-    lambdaLayers: apiStack.sharedLambdaLayers,
-    alarmAction: apiStack.alarmAction,
-  });
+  // new IHEStack(app, config.ihe.stackName, {
+  //   env,
+  //   config: config,
+  //   vpc: apiStack.vpc,
+  //   lambdaLayers: apiStack.sharedLambdaLayers,
+  //   alarmAction: apiStack.alarmAction,
+  // });
   //---------------------------------------------------------------------------------
   // 3. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
