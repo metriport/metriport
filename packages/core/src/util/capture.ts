@@ -1,5 +1,7 @@
 import { ScopeContext } from "@sentry/types";
 
+export type AdditionalInfo = Record<string, string | number | boolean | undefined | null>;
+
 export type Capture = {
   /**
    * Captures an exception event and sends it to Sentry.

@@ -8,7 +8,8 @@ import {
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
 import { base64ToBuffer } from "@metriport/core/util/base64";
-import { AdditionalInfo, MetriportError } from "@metriport/core/util/error/metriport-error";
+import { AdditionalInfo } from "@metriport/core/util/capture";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 
 import * as playwright from "playwright-aws-lambda";

@@ -1,6 +1,5 @@
 import status from "http-status";
-
-export type AdditionalInfo = Record<string, string | number | undefined | null>;
+import { AdditionalInfo } from "../capture";
 
 export class MetriportError extends Error {
   status: number = status.INTERNAL_SERVER_ERROR;

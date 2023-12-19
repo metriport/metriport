@@ -10,9 +10,9 @@ import { DownloadResult } from "@metriport/core/external/commonwell/document/doc
 import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
 import { getEnvType } from "@metriport/core/util/env-var";
-import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail, isProduction } from "./shared/env";
+import { defaultHandler } from "./shared/handler";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -27,7 +27,7 @@ const cwOrgPrivateKeySecret = getEnvOrFail("CW_ORG_PRIVATE_KEY");
 
 const apiMode = isProduction() ? APIMode.production : APIMode.integration;
 
-export const handler = Sentry.AWSLambda.wrapHandler(
+export const handler = defaultHandler(
   async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
     const { orgName, orgOid, npi, cxId, fileInfo, document } = req;
     capture.setUser({ id: cxId });
