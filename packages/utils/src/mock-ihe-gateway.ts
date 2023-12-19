@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 // TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
 
 const app = express();
+
 app.use(bodyParser.text({ type: "application/soap+xml" }));
 
 app.post("/xcpd/v1", async (req, res) => {
@@ -33,7 +34,9 @@ app.post("/iti38/v1", async (req, res) => {
 
 app.post("/iti39/v1", async (req, res) => {
   try {
-    const iti39 = await generateITI39(req.body);
+    const hardcodedContentType =
+      'multipart/related; type="application/xop+xml"; start="<soapenv>"; boundary="MIME_multipart"; start-info="application/soap+xml"';
+    const iti39 = await generateITI39(req.body, hardcodedContentType);
     res.set("Content-Type", "application/soap+xml; charset=utf-8");
     res.send(iti39);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

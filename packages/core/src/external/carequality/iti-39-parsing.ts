@@ -1,5 +1,5 @@
 import { generatePatientDoc } from "./docs";
-import { generateTimeStrings, cleanXml } from "./utils";
+import { generateTimeStrings, cleanXml, parseMtomResponse } from "./utils";
 import * as xml2js from "xml2js";
 import { generateITI39Template } from "./iti-39-template";
 
@@ -15,7 +15,8 @@ const documentData: { [key: string]: string } = {
  * @param xml - The XML string to be parsed.
  * @returns A promise that resolves to an array containing the signature, documentId, and homeCommunityID extracted from the XML.
  */
-async function parseXmlString(xml: string): Promise<[string, string, string]> {
+async function parseXmlString(xml: string, header: string): Promise<[string, string, string]> {
+  xml = parseMtomResponse(xml, header);
   xml = cleanXml(xml);
 
   const parser = new xml2js.Parser({
@@ -75,8 +76,8 @@ const fillTemplate = (
   );
 };
 
-export async function generateITI39(xml: string): Promise<string> {
-  const [signature, documentId, homeCommunityid] = await parseXmlString(xml);
+export async function generateITI39(xml: string, header: string): Promise<string> {
+  const [signature, documentId, homeCommunityid] = await parseXmlString(xml, header);
   const { createdAt, expiresAt } = generateTimeStrings();
   const document = documentData[documentId];
   const status = document ? "Success" : "Failed";

@@ -34,3 +34,51 @@ export function cleanXml(xml: string): string {
   xml = xml.replace(/\\"/g, '"');
   return xml;
 }
+
+interface ParsedContentType {
+  boundary: string;
+  startToken: string;
+}
+
+function parseContentTypeHeader(header: string): ParsedContentType | undefined {
+  console.log("header", header);
+  const boundaryMatch = header.match(/boundary="([^"]+)"/);
+  const startTokenMatch = header.match(/start="<([^"]+)>"/);
+  console.log("boundaryMatch", boundaryMatch);
+  console.log("startTokenMatch", startTokenMatch);
+  if (!boundaryMatch || !startTokenMatch || !boundaryMatch[1] || !startTokenMatch[1]) {
+    return undefined;
+  }
+  return {
+    boundary: boundaryMatch[1],
+    startToken: startTokenMatch[1],
+  };
+}
+
+function extractXmlFromBody(body: string, contentType: ParsedContentType): string | undefined {
+  console.log("contentType", contentType);
+  const parts = body.split(`--${contentType.boundary}`);
+  for (const part of parts) {
+    if (part.includes(`Content-ID: <${contentType.startToken}>`)) {
+      const xmlStartIndex =
+        part.indexOf("<soap:Envelope") >= 0
+          ? part.indexOf("<soap:Envelope")
+          : part.indexOf("<s:Envelope");
+      if (xmlStartIndex >= 0) {
+        const xmlContent = part.substring(xmlStartIndex);
+        return xmlContent.split("\r\n")[0] ?? undefined;
+      }
+    }
+  }
+  return undefined;
+}
+
+export function parseMtomResponse(body: string, contentTypeHeader: string): string {
+  const parsedContentType = parseContentTypeHeader(contentTypeHeader);
+  if (!parsedContentType) {
+    console.error("Invalid or unsupported Content-Type header");
+    return body;
+  }
+  const extractedXml = extractXmlFromBody(body, parsedContentType);
+  return extractedXml ?? body;
+}
