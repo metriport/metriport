@@ -59,13 +59,16 @@ export const operationOutcome = z.object({
   issue: z.array(issue),
 });
 
+export const gatewaySchema = z.object({ oid: z.string(), url: z.string() });
+export type Gateway = z.infer<typeof gatewaySchema>;
+
 export const baseResponseSchema = z.object({
   id: z.string(),
   cxId: z.string(),
   timestamp: z.string(),
   responseTimestamp: z.string(),
   xcpdPatientId: z.object({ id: z.string(), system: z.string() }).optional(),
-  gateway: z.object({ oid: z.string(), url: z.string() }),
+  gateway: gatewaySchema,
   patientId: z.string(),
   operationOutcome: operationOutcome.nullish(),
 });

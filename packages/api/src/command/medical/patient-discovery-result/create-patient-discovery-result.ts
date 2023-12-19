@@ -2,16 +2,16 @@ import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { PatientDiscoveryResultModel } from "../../../models/medical/patient-discovery-result";
 
-export async function handlePatientDiscoveryResponse(
-  patientDiscoveryResponse: PatientDiscoveryResponse
+export async function createPatientDiscoveryResult(
+  pdResponse: PatientDiscoveryResponse
 ): Promise<void> {
-  const { id, operationOutcome, patientId } = patientDiscoveryResponse;
+  const { id, operationOutcome, patientId } = pdResponse;
 
   await PatientDiscoveryResultModel.create({
     id: uuidv7(),
     requestId: id,
     patientId,
     status: operationOutcome?.issue ? "failure" : "success",
-    data: patientDiscoveryResponse,
+    data: pdResponse,
   });
 }

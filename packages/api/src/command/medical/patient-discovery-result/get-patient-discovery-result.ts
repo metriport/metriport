@@ -11,3 +11,9 @@ export async function getPatientDiscoveryResults(
     },
   });
 }
+
+export async function getPatientDiscoveryResultCount(requestId: string): Promise<number> {
+  return await PatientDiscoveryResultModel.count({
+    where: { requestId },
+  });
+}

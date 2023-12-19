@@ -5,6 +5,7 @@ import { validateVersionForUpdate } from "../../../models/_default";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
+import { deletePatientCQData } from "../cq-patient-data/delete-cq-data";
 import { getPatientOrFail } from "./get-patient";
 
 export type PatientDeleteCmd = BaseUpdateCmdWithCustomer & {
@@ -34,6 +35,7 @@ export const deletePatient = async (
       // Synchronous bc it needs to run after the Patient is deleted (it needs patient data from the DB)
       await cwCommands.patient.remove(patient, facilityId);
       await fhirApi.deleteResource("Patient", patient.id);
+      await deletePatientCQData({ id, cxId, eTag });
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       // if its a 404, continue without surfacing the error, the patient is not in CW anyway

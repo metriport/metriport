@@ -5,7 +5,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import dayjs from "dayjs";
 
 // TODO: https://github.com/metriport/metriport/pull/1302#discussion_r1422870828
-export function patientToIheGateway({
+export function createPatientDiscoveryRequest({
   patient,
   cxId,
   xcpdGateways,

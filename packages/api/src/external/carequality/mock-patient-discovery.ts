@@ -3,7 +3,7 @@ import {
   PatientDiscoveryRequest,
   patientDiscoveryResponseSchema,
 } from "@metriport/ihe-gateway-sdk";
-import { handlePatientDiscoveryResponse } from "../../command/medical/patient-discovery-result/create-patient-discovery-result";
+import { createPatientDiscoveryResult } from "../../command/medical/patient-discovery-result/create-patient-discovery-result";
 import { PATIENT_DISCOVERY_TIMEOUT } from "./patient";
 
 export async function mockLongExecution(patientDiscoveryRequest: PatientDiscoveryRequest) {
@@ -21,13 +21,13 @@ export async function mockLongExecution(patientDiscoveryRequest: PatientDiscover
   );
   return new Promise(resolve => {
     setTimeout(() => {
-      resolve("ABC");
+      resolve("mockResult");
     }, PATIENT_DISCOVERY_TIMEOUT.asMilliseconds() * 2);
   });
 }
 
 export async function mockResult(id: string, cxId: string, patientId: string) {
-  const randInt = Math.floor(Math.random() * 100);
+  const randInt = Math.floor(Math.random() * 3);
   const body = {
     id,
     cxId,
@@ -62,5 +62,5 @@ export async function mockResult(id: string, cxId: string, patientId: string) {
     },
   };
   const patientDiscovery = patientDiscoveryResponseSchema.parse(body);
-  await handlePatientDiscoveryResponse(patientDiscovery);
+  await createPatientDiscoveryResult(patientDiscovery);
 }

@@ -14,6 +14,7 @@ import { PatientDiscoveryResultModel } from "./medical/patient-discovery-result"
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
+import { PatientCQDataModel } from "./medical/cq-patient-data";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -22,6 +23,7 @@ const models: ModelSetup[] = [
   WebhookRequest.setup,
   OrganizationModel.setup,
   CQDirectoryEntryModel.setup,
+  PatientCQDataModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
   MAPIAccess.setup,
