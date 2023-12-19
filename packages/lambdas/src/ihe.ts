@@ -6,7 +6,6 @@ import { generateITI39 } from "@metriport/core/external/carequality/iti-39-parsi
 import { generateXCPD } from "@metriport/core/external/carequality/iti-55-parsing";
 
 capture.init();
-// comment for diff.
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProxyEvent) => {
   console.log(JSON.stringify(event));

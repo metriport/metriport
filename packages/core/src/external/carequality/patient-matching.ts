@@ -14,7 +14,6 @@ export function isAnyPatientMatching(patientToMatch: PatientDataMPI): PatientDat
   return undefined;
 }
 
-// checks if patient is matching
 export const isPatientMatching = (patient1: PatientDataMPI, patient2: PatientDataMPI): boolean => {
   let score = 0;
   let fieldCount = 0;

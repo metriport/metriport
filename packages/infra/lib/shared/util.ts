@@ -1,10 +1,5 @@
 import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
-import { Stack } from "aws-cdk-lib";
-import * as sns from "aws-cdk-lib/aws-sns";
-import { ITopic } from "aws-cdk-lib/aws-sns";
-import { AlarmSlackBot } from "../api-stack/alarm-slack-chatbot";
-import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 
 export function isStaging(config: EnvConfig): boolean {
   return config.environmentType === EnvType.staging;
@@ -29,23 +24,4 @@ export function getEnvVarOrFail(varName: string): string {
     throw new Error(`Missing ${varName} env var`);
   }
   return value;
-}
-
-export function setupSlackNotifSnsTopic(
-  stack: Stack,
-  config: EnvConfig
-): { snsTopic: ITopic; alarmAction: SnsAction } | undefined {
-  if (!config.slack) return undefined;
-
-  const slackNotifSnsTopic = new sns.Topic(stack, "SlackSnsTopic", {
-    displayName: "Slack SNS Topic",
-  });
-  AlarmSlackBot.addSlackChannelConfig(stack, {
-    configName: `slack-chatbot-configuration-` + config.environmentType,
-    workspaceId: config.slack.workspaceId,
-    channelId: config.slack.alertsChannelId,
-    topics: [slackNotifSnsTopic],
-  });
-  const alarmAction = new SnsAction(slackNotifSnsTopic);
-  return { snsTopic: slackNotifSnsTopic, alarmAction };
 }
