@@ -6,7 +6,7 @@ import com.metriport.generated.resources.medical.document.types.Coding;
 import com.metriport.generated.resources.medical.document.types.CodeableConcept;
 import com.metriport.generated.resources.medical.document.types.DocumentReferenceContext;
 import com.metriport.generated.resources.medical.document.requests.UploadDocumentRequest;
-import com.metriport.generated.resources.commons.types.Period;
+import com.metriport.generated.resources.fhir.types.Period;
 
 import org.junit.jupiter.api.Test;
 import io.github.cdimascio.dotenv.Dotenv;

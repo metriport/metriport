@@ -14,7 +14,7 @@ groups:
         github: 
           repository: metriport/metriport-python
       - name: fernapi/fern-java-sdk
-        version: 0.5.19
+        version: 0.5.20
         output:
           location: maven
           coordinate: com.metriport:metriport-java
@@ -46,7 +46,7 @@ groups:
         config:
           client_class_name: Metriport
       - name: fernapi/fern-java-sdk
-        version: 0.5.19
+        version: 0.5.20
         output:
           location: local-file-system
           path: ../packages/sdks/java/tester-local/src/main/java/com/metriport/generated
