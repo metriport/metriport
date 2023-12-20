@@ -26,7 +26,7 @@ export function createPatientDiscoveryRequest({
     id: uuidv7(),
     cxId: cxId,
     timestamp: dayjs().toISOString(),
-    xcpdGateways: xcpdGateways,
+    gateways: xcpdGateways,
     principalCareProviderIds: [facilityNPI],
     samlAttributes: {
       subjectId: user,

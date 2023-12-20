@@ -16,7 +16,7 @@ export type PatientDiscoveryRequest = {
   id: string;
   cxId: string;
   timestamp: string;
-  xcpdGateways: XCPDGateways;
+  gateways: XCPDGateways;
   samlAttributes: SamlAttributes;
   patientResource: Patient;
   principalCareProviderIds?: NPIStringArray;
@@ -24,7 +24,7 @@ export type PatientDiscoveryRequest = {
 
 export const patientDiscoveryResponseSchema = baseResponseSchema.extend({
   patientMatch: z.boolean(),
-  xcpdHomeCommunityId: z.string(),
+  xcpdHomeCommunityId: z.string().nullish(),
 });
 
 export type PatientDiscoveryResponse = z.infer<typeof patientDiscoveryResponseSchema>;

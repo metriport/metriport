@@ -5,12 +5,12 @@ import { PatientDiscoveryResultModel } from "../../../models/medical/patient-dis
 export async function createPatientDiscoveryResult(
   pdResponse: PatientDiscoveryResponse
 ): Promise<void> {
-  const { id, operationOutcome, patientId } = pdResponse;
+  const { id, operationOutcome, patientResourceId } = pdResponse;
 
   await PatientDiscoveryResultModel.create({
     id: uuidv7(),
     requestId: id,
-    patientId,
+    patientId: patientResourceId,
     status: operationOutcome?.issue ? "failure" : "success",
     data: pdResponse,
   });

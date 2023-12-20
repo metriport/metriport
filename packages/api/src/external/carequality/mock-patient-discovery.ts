@@ -1,4 +1,4 @@
-// THIS FILE SHOULD BE REMOVED WHEN TESTING IS DONE
+// TODO: #1350 - Write integration tests for patient discovery on CQ go live
 import {
   PatientDiscoveryRequest,
   patientDiscoveryResponseSchema,

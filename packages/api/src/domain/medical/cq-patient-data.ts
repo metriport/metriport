@@ -17,11 +17,9 @@ export type CQData = {
   links: CQLink[];
 };
 
-export type CQDataWithCxId = {
+export interface PatientCQDataCreate extends BaseDomainCreate {
   cxId: string;
   data: CQData;
-};
-
-export interface PatientCQDataCreate extends BaseDomainCreate, CQDataWithCxId {}
+}
 
 export interface PatientCQData extends BaseDomain, PatientCQDataCreate {}

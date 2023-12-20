@@ -18,11 +18,11 @@ export enum APIMode {
 export class IHEGateway {
   static productionUrl = "https://ihe.metriport.com";
   static integrationUrl = "https://ihe.staging.metriport.com";
-  static devUrl = "http://localhost:8081";
+  static devUrl = "http://localhost:8082";
 
-  static PATIENT_DISCOVERY_ENDPOINT = "/xcpd";
-  static DOCUMENT_QUERY_ENDPOINT = "/xcadq";
-  static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr";
+  static PATIENT_DISCOVERY_ENDPOINT = "/xcpd/";
+  static DOCUMENT_QUERY_ENDPOINT = "/xcadq/";
+  static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr/";
 
   private api: AxiosInstance;
   constructor(apiMode: APIMode, options: { timeout?: number } = {}) {
@@ -44,12 +44,8 @@ export class IHEGateway {
    * @param pdRequest A patient discovery transaction request to IHE Gateway.
    *
    */
-  async startPatientDiscovery(pdRequest: PatientDiscoveryRequest[]): Promise<void> {
-    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, pdRequest, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  async startPatientDiscovery(pdRequest: PatientDiscoveryRequest): Promise<void> {
+    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, pdRequest);
   }
 
   /**

@@ -17,16 +17,13 @@ export function makeCarequalityAPI(apiKey?: string): Carequality | undefined {
  * Creates a new instance of the IHE Gateway client.
  * @returns IHE Gateway client.
  */
-export function makeIheGatewayAPI(): IHEGateway {
-  // TODO https://github.com/metriport/metriport/pull/1302#discussion_r1420598185
-  // TODO ADD IHE GATEWAY MOCK
-  // if (Config.isSandbox()) {
-  //   return;
-  // }
-
-  if (Config.isDev() || Config.isStaging()) {
-    return new IHEGateway(APIMode.dev);
+export function makeIheGatewayAPI(): IHEGateway | undefined {
+  if (Config.isSandbox() || Config.isProdEnv()) {
+    // TODO: #1350 - Remove this when we go live with CQ
+    return;
+  } else if (Config.isStaging()) {
+    return new IHEGateway(APIMode.integration);
   }
 
-  return new IHEGateway(APIMode.production, {});
+  return new IHEGateway(APIMode.dev);
 }

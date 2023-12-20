@@ -1,39 +1,41 @@
+import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { searchNearbyCQOrganizations } from "../../command/medical/cq-directory/search-cq-directory";
 import { createOrUpdatePatientCQData } from "../../command/medical/cq-patient-data/create-cq-data";
+import { deletePatientCQData } from "../../command/medical/cq-patient-data/delete-cq-data";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {
   getPatientDiscoveryResultCount,
   getPatientDiscoveryResults,
 } from "../../command/medical/patient-discovery-result/get-patient-discovery-result";
-import { CQLink, PatientCQDataCreate } from "../../domain/medical/cq-patient-data";
-import { Organization } from "../../domain/medical/organization";
+import { CQLink } from "../../domain/medical/cq-patient-data";
 import { Patient } from "../../domain/medical/patient";
 import { PatientDiscoveryResult } from "../../domain/medical/patient-discovery-result";
 import { Product } from "../../domain/product";
 import { EventTypes, analytics } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
+import { Util } from "../../shared/util";
 import { toFHIR } from "../fhir/patient";
-import { cqOrgsToXCPDGateways } from "./organization-conversion";
-import { createPatientDiscoveryRequest } from "./create-pd-request";
 import { makeIheGatewayAPI } from "./api";
+import { createPatientDiscoveryRequest } from "./create-pd-request";
+import { cqOrgsToXCPDGateways } from "./organization-conversion";
 
 dayjs.extend(duration);
 
 const createContext = "cq.patient.discover";
-export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 2 });
+export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 0.25 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 5 });
 type RaceControl = { isRaceInProgress: boolean };
 
-export async function discover(
-  patient: Patient,
-  organization: Organization,
-  facilityNPI: string
-): Promise<void> {
+export async function discover(patient: Patient, facilityNPI: string): Promise<void> {
+  const { log } = Util.out(`CQ discover - M patientId ${patient.id}`);
   try {
-    const { id, cxId } = patient;
     const iheGateway = makeIheGatewayAPI();
-    console.log(`Kicking off patient discovery for patientId: ${id}`);
+    if (!iheGateway) return;
+
+    const { id, cxId } = patient;
+    const organization = await getOrganizationOrFail({ cxId });
 
     const fhirPatient = toFHIR(patient);
 
@@ -42,6 +44,7 @@ export async function discover(
       patientId: id,
     });
     const xcpdGateways = cqOrgsToXCPDGateways(nearbyCQOrgs);
+    const numGateways = xcpdGateways.length;
 
     const pdRequest = createPatientDiscoveryRequest({
       patient: fhirPatient,
@@ -52,36 +55,42 @@ export async function discover(
       orgOid: organization.oid,
     });
 
+    log(`Kicking off patient discovery. RequestID: ${pdRequest.id}`);
     // Intentionally asynchronous - we will be checking for the results in the database
-    iheGateway.startPatientDiscovery([pdRequest]);
+    iheGateway.startPatientDiscovery(pdRequest);
 
     const raceControl: RaceControl = { isRaceInProgress: true };
     // Run the patient discovery until it either times out, or all the results are in the database
     const raceResult = await Promise.race([
-      startTimeout(),
-      checkNumberOfResults(raceControl, pdRequest.id, pdRequest.xcpdGateways.length), // TODO: RAISE A FOLLOW UP - set up an event listener for Mirth
+      controlDuration(),
+      checkNumberOfResults(raceControl, pdRequest.id, pdRequest.gateways.length), // TODO: #1372 - set up an event listener for XCPD completion instead of polling
     ]);
+    const pdResults = await getPatientDiscoveryResults(pdRequest.id);
     if (raceResult) {
-      console.log(`${raceResult}. Starting to handle patient discovery results. PatientId: ${id}`);
+      log(
+        `${raceResult}. Got ${pdResults.length} successes out of ${numGateways} gateways for PD. RequestID: ${pdRequest.id}`
+      );
       raceControl.isRaceInProgress = false;
     }
-
-    // At this point, discovery results are stored in the database, so we can retrieve them
-    const discoveryResults = await getPatientDiscoveryResults(pdRequest.id);
-    await handlePatientDiscoveryResults(patient, discoveryResults);
-
     analytics({
       distinctId: cxId,
       event: EventTypes.patientDiscovery,
       properties: {
         apiType: Product.medical,
-        numberGateways: xcpdGateways.length,
-        numberLinkedGateways: discoveryResults.length,
+        numberGateways: numGateways,
+        numberLinkedGateways: pdResults.length,
       },
     });
+
+    if (pdResults.length === 0) {
+      log(`No patient discovery results found. RequestID: ${pdRequest.id}`);
+      return;
+    }
+    log(`Starting to handle patient discovery results. RequestID: ${pdRequest.id}`);
+    await handlePatientDiscoveryResults(patient, pdResults);
   } catch (err) {
-    const msg = `Failed to carry out patient discovery for ${patient.id}`;
-    console.error(msg, err);
+    const msg = `Failed to carry out patient discovery - M patient ${patient.id}`;
+    log(msg, err);
     capture.message(msg, {
       extra: {
         facilityNPI,
@@ -94,24 +103,18 @@ export async function discover(
   }
 }
 
+export async function remove(patient: Patient): Promise<void> {
+  console.log(`Deleting CQ data - M patientId ${patient.id}`);
+  await deletePatientCQData({ id: patient.id, cxId: patient.cxId });
+}
+
 export async function handlePatientDiscoveryResults(
   patient: Patient,
   pdResults: PatientDiscoveryResult[]
 ): Promise<void> {
-  if (pdResults.length === 0) {
-    console.log(`No patient discovery results found for patientId: ${patient.id}`);
-    return;
-  }
   const { id, cxId } = patient;
-
   const cqLinks = buildCQLinks(pdResults);
-  const pdCreate: PatientCQDataCreate = {
-    id,
-    cxId,
-    data: { links: cqLinks },
-  };
-
-  if (cqLinks.length) await createOrUpdatePatientCQData(pdCreate);
+  if (cqLinks.length) await createOrUpdatePatientCQData({ id, cxId, cqLinks });
 }
 
 export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
@@ -127,39 +130,29 @@ export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
   });
 }
 
-function startTimeout() {
+async function controlDuration(): Promise<string> {
   const timeout = PATIENT_DISCOVERY_TIMEOUT.asMilliseconds();
-  return new Promise<string>(resolve => {
-    setTimeout(() => {
-      const msg = `Patient discovery reached timeout after ${timeout} ms`;
-      resolve(msg);
-    }, timeout);
-  });
+  await sleep(timeout);
+  return `Patient discovery reached timeout after ${timeout} ms`;
 }
 
-function checkNumberOfResults(
+async function checkNumberOfResults(
   raceControl: RaceControl,
   requestId: string,
   numberOfGateways: number
-): Promise<string> {
-  return new Promise(resolve => {
-    const checkAndResolve = () => {
-      isPDComplete(requestId, numberOfGateways).then(isComplete => {
-        if (isComplete) {
-          const msg = `Patient discovery results came back in full (${numberOfGateways} gateways)`;
-          resolve(msg);
-          raceControl.isRaceInProgress = false;
-        } else {
-          setTimeout(checkAndResolve, CHECK_DB_INTERVAL.asMilliseconds());
-        }
-      });
-    };
-
-    checkAndResolve();
-  });
+): Promise<string | undefined> {
+  while (raceControl.isRaceInProgress) {
+    const isComplete = await isPDComplete(requestId, numberOfGateways);
+    if (isComplete) {
+      const msg = `Patient discovery results came back in full (${numberOfGateways} gateways). RequestID: ${requestId}`;
+      raceControl.isRaceInProgress = false;
+      return msg;
+    }
+    await sleep(CHECK_DB_INTERVAL.asMilliseconds());
+  }
 }
 
-async function isPDComplete(requestId: string, numGatewaysInRequest: number) {
+async function isPDComplete(requestId: string, numGatewaysInRequest: number): Promise<boolean> {
   const pdResultCount = await getPatientDiscoveryResultCount(requestId);
-  return pdResultCount === numGatewaysInRequest;
+  return pdResultCount >= numGatewaysInRequest;
 }

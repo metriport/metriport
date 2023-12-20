@@ -37,11 +37,14 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction }
     );
+
+    await queryInterface.addIndex(tableName, ["request_id"], { transaction });
   });
 };
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
+    await queryInterface.removeIndex(tableName, ["request_id"], { transaction });
     await queryInterface.dropTable(tableName, { transaction });
   });
 };
