@@ -21,7 +21,7 @@ export type PatientDiscoveryRequestIncoming = BaseRequest & {
 };
 
 export type PatientDiscoveryResponseOutgoing = BaseResponse & {
-  patientMatch: boolean;
+  patientMatch: boolean | null;
   xcpdHomeCommunityId: string;
   patientResource?: Patient;
 };

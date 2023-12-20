@@ -28,16 +28,19 @@ type MPIBlockParams = {
   lastNameInitial?: string;
 };
 
-function constructInternalErrorResponse(
+function constructErrorResponse(
   payload: PatientDiscoveryRequestIncoming,
-  error: string
+  codingSystem: string,
+  code: string,
+  error: string,
+  patientMatch: boolean | null = null
 ): PatientDiscoveryResponseOutgoing {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
-    patientMatch: false,
-    xcpdHomeCommunityId: payload.samlAttributes.homeCommunityId,
+    patientMatch: patientMatch,
+    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
     operationOutcome: {
       resourceType: "OperationOutcome",
       id: payload.id,
@@ -46,12 +49,42 @@ function constructInternalErrorResponse(
           severity: "error",
           code: "processing",
           details: {
-            coding: [{ system: "1.3.6.1.4.1.19376.1.2.27.3", code: "InternalError" }],
+            coding: [{ system: codingSystem, code: code }],
             text: error,
           },
         },
       ],
     },
+  };
+}
+
+function constructNoMatchResponse(
+  payload: PatientDiscoveryRequestIncoming
+): PatientDiscoveryResponseOutgoing {
+  return {
+    id: payload.id,
+    timestamp: payload.timestamp,
+    responseTimestamp: new Date().toISOString(),
+    patientMatch: false,
+    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+  };
+}
+
+function constructMatchResponse(
+  payload: PatientDiscoveryRequestIncoming,
+  patient: PatientDataMPI
+): PatientDiscoveryResponseOutgoing {
+  return {
+    id: payload.id,
+    timestamp: payload.timestamp,
+    responseTimestamp: new Date().toISOString(),
+    patientMatch: true,
+    xcpdPatientId: {
+      id: patient.id,
+      system: "000", // TBD	- what is this
+    },
+    patientResource: convertPatientToFHIR(patient),
+    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
 }
 
@@ -67,19 +100,45 @@ export async function processIncomingRequest(
     console.log("patient", patient);
   } catch (error) {
     if (error instanceof InternalError) {
-      return constructInternalErrorResponse(payload, error.message);
+      return constructErrorResponse(
+        payload,
+        "1.3.6.1.4.1.19376.1.2.27.3",
+        "InternalError",
+        error.message,
+        null
+      );
     } else if (error instanceof PatientAddressRequestedError) {
-      return constructInternalErrorResponse(payload, error.message);
+      return constructErrorResponse(
+        payload,
+        "1.3.6.1.4.1.19376.1.2.27.1",
+        "PatientAddressRequested",
+        error.message
+      );
     } else if (error instanceof LivingSubjectAdministrativeGenderRequestedError) {
-      return constructInternalErrorResponse(payload, error.message);
+      return constructErrorResponse(
+        payload,
+        "1.3.6.1.4.1.19376.1.2.27.1",
+        "LivingSubjectAdministrativeGenderRequested",
+        error.message
+      );
     } else {
-      return constructInternalErrorResponse(payload, "Internal Server Error");
+      return constructErrorResponse(
+        payload,
+        "1.3.6.1.4.1.19376.1.2.27.3",
+        "Internal Server Error",
+        ""
+      );
     }
   }
 
   const normalizedPatientDemo = normalizePatientDataMPI(patient);
   if (!normalizedPatientDemo) {
-    throw new Error("Invalid patient data");
+    return constructErrorResponse(
+      payload,
+      "1.3.6.1.4.1.19376.1.2.27.3",
+      "Internal Server Error",
+      "Invalid Patient Data"
+    );
   }
   console.log("normalizedPatientDemo", normalizedPatientDemo);
 
@@ -105,19 +164,10 @@ export async function processIncomingRequest(
   );
   console.log("mpiPatient", mpiPatient);
 
-  if (!mpiPatient) throw Error("No patient found");
-  return {
-    id: payload.id,
-    timestamp: payload.timestamp,
-    responseTimestamp: new Date().toISOString(),
-    patientMatch: true,
-    xcpdPatientId: {
-      id: mpiPatient.id,
-      system: "000",
-    },
-    patientResource: convertPatientToFHIR(mpiPatient),
-    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
-  };
+  if (!mpiPatient) {
+    return constructNoMatchResponse(payload);
+  }
+  return constructMatchResponse(payload, mpiPatient);
 }
 
 export function apiClientMPIBlockEndpoint() {
