@@ -4,6 +4,8 @@ import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
+import NotFoundError from "../../../util/error/not-found";
+import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
 import {
@@ -13,8 +15,6 @@ import {
   DownloadResult,
   FileInfo,
 } from "./document-downloader";
-import NotFoundError from "../../../util/error/not-found";
-import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -292,12 +292,9 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       if (error instanceof CommonwellError && error.cause?.response?.status === 404) {
         const msg = "CW - Document not found";
         console.log(`${msg} - ${JSON.stringify(additionalInfo)}`);
-        throw new NotFoundError(msg, undefined, additionalInfo);
+        throw new NotFoundError(msg, error, additionalInfo);
       }
-      const msg = `CW - Error downloading document`;
-      this.config.capture &&
-        this.config.capture.message(msg, { extra: { ...additionalInfo, error }, level: "error" });
-      throw new MetriportError(msg, error, additionalInfo);
+      throw new MetriportError(`CW - Error downloading document`, error, additionalInfo);
     }
   }
 }
