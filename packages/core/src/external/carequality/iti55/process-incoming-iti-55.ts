@@ -3,18 +3,18 @@ import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
-import { PatientDataMPI, convertPatientToFHIR } from "../mpi/patient-incoming-schema";
+import { PatientDataMPI, convertPatientToFHIR } from "../../mpi/patient-incoming-schema";
 import {
   validateFHIRAndExtractPatient,
   InternalError,
   PatientAddressRequestedError,
   LivingSubjectAdministrativeGenderRequestedError,
-} from "../carequality/validating-iti55";
-import { matchPatients, jaroWinklerSimilarity } from "../mpi/match-patients";
-import { normalizePatientDataMPI } from "../mpi/normalize-patient";
-import { mergePatients, mergeWithFirstPatient } from "../mpi/merge-patients";
-import { capture } from "../../util/notifications";
-import { getEnvVarOrFail } from "../../util/env-var";
+} from "./validating-iti55";
+import { matchPatients, jaroWinklerSimilarity } from "../../mpi/match-patients";
+import { normalizePatientDataMPI } from "../../mpi/normalize-patient";
+import { mergePatients, mergeWithFirstPatient } from "../../mpi/merge-patients";
+import { capture } from "../../../util/notifications";
+import { getEnvVarOrFail } from "../../../util/env-var";
 
 import axios from "axios";
 const ossApi = axios.create();
