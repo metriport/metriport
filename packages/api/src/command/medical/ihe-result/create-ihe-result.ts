@@ -1,10 +1,10 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { PatientDiscoveryResultModel } from "../../../external/carequality/models/patient-discovery-result";
 import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
 import { DocumentQueryResponse } from "../../../domain/medical/document-query-result";
-import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
 import { DocumentRetrievalResponse } from "../../../domain/medical/document-retrieval-result";
+import { createPatientDiscoveryResult } from "../../../external/carequality/command/patient-discovery-result/create-patient-discovery-result";
+import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
+import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
 
 export enum IHEResultType {
   PATIENT_DISCOVERY = "patient-discovery",
@@ -37,13 +37,7 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
 
   switch (type) {
     case IHEResultType.PATIENT_DISCOVERY: {
-      const hasError = operationOutcome?.issue && !response.patientMatch;
-
-      await PatientDiscoveryResultModel.create({
-        ...defaultPayload,
-        status: hasError ? "success" : "failure",
-        data: response,
-      });
+      await createPatientDiscoveryResult(response);
       return;
     }
     case IHEResultType.DOCUMENT_QUERY: {
@@ -51,7 +45,7 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
 
       await DocumentQueryResultModel.create({
         ...defaultPayload,
-        status: hasError ? "success" : "failure",
+        status: hasError ? "failure" : "success",
         data: response,
       });
       return;
@@ -61,7 +55,7 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
 
       await DocumentRetrievalResultModel.create({
         ...defaultPayload,
-        status: hasError ? "success" : "failure",
+        status: hasError ? "failure" : "success",
         data: response,
       });
       return;

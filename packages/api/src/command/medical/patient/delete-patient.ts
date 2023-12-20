@@ -1,4 +1,5 @@
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
+import { processAsyncError } from "../../../errors";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
@@ -7,6 +8,8 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
+
+const deleteContext = "cw.patient.delete";
 
 export type PatientDeleteCmd = BaseUpdateCmdWithCustomer & {
   facilityId?: string;
@@ -33,33 +36,28 @@ export const deletePatient = async (
     try {
       // TODO: #393 move to declarative, event-based integration
       // Synchronous bc it needs to run after the Patient is deleted (it needs patient data from the DB)
-      const results = await Promise.allSettled([
-        cwCommands.patient.remove(patient, facilityId),
-        fhirApi.deleteResource("Patient", patient.id),
-        cqCommands.patient.remove(patient),
+      await Promise.allSettled([
+        cwCommands.patient.remove(patient, facilityId).catch(err => {
+          if (err.response?.status !== 404) throw err;
+          console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
+          processAsyncError(deleteContext);
+        }),
+        fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
+        cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
       ]);
-
-      results.forEach(result => {
-        if (result.status === "rejected") {
-          throw result.reason;
-        }
-      });
 
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      // if its a 404, continue without surfacing the error, the patient is not in CW anyway
-      if (err.response?.status !== 404) throw err;
-      console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
-
       capture.error(err, {
         extra: {
-          context: `cw.deletePatient`,
+          context: deleteContext,
           patientId: patient.id,
           facilityId,
           options,
           err,
         },
       });
+      throw err;
     }
     await patient.destroy();
   }

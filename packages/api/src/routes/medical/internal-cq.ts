@@ -6,21 +6,20 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import {
+  IHEResultType,
+  handleIHEResponse,
+} from "../../command/medical/ihe-result/create-ihe-result";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchNearbyCQOrganizations,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
-import { createPatientDiscoveryResult } from "../../external/carequality/command/patient-discovery-result/create-patient-discovery-result";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
-import {
-  handleIHEResponse,
-  IHEResultType,
-} from "../../command/medical/ihe-result/create-ihe-result";
 
 dayjs.extend(duration);
 
@@ -120,10 +119,9 @@ router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
     const pdResponse = patientDiscoveryResponseSchema.parse(req.body);
-    await createPatientDiscoveryResult(pdResponse);
     await handleIHEResponse({
       type: IHEResultType.PATIENT_DISCOVERY,
-      response: req.body,
+      response: pdResponse,
     });
 
     return res.sendStatus(httpStatus.OK);

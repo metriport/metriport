@@ -8,7 +8,7 @@ import { getCQPatientDataOrFail } from "./get-cq-data";
 export type CQPatientDataUpdate = CQPatientDataCreate & BaseUpdateCmdWithCustomer;
 
 export async function updateCQPatientData(cqData: CQPatientDataUpdate) {
-  const { id, cxId } = cqData;
+  const { id, cxId, data: newData } = cqData;
 
   return executeOnDBTx(CQPatientDataModel.prototype, async transaction => {
     const cqPatientData = await getCQPatientDataOrFail({
@@ -16,12 +16,14 @@ export async function updateCQPatientData(cqData: CQPatientDataUpdate) {
       cxId,
     });
 
-    const updatedLinks = [...cqPatientData.data.links, ...cqData.data.links];
+    const updatedLinks = [...cqPatientData.data.links, ...newData.links];
     const uniqueLinks = uniqBy(updatedLinks, "oid");
 
     return cqPatientData.update(
       {
         data: {
+          ...cqPatientData.data,
+          ...newData,
           links: uniqueLinks,
         },
       },
