@@ -1,6 +1,5 @@
 import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient-incoming-schema";
 import { normalizePatientDataMPI } from "@metriport/core/external/mpi/normalize-patient";
-import { Address } from "@metriport/api-sdk/src/medical/models/common/address";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
 describe("normalizePatientDataMPI", () => {
@@ -29,7 +28,7 @@ describe("normalizePatientDataMPI", () => {
     };
 
     const expected: PatientDataMPI = {
-      id: "",
+      id: "123456789",
       firstName: "john",
       lastName: "dogo",
       dob: "1990-01-01",
@@ -40,6 +39,7 @@ describe("normalizePatientDataMPI", () => {
           city: "new york",
           zip: "10001",
           state: USState.NY,
+          country: "USA",
         },
       ],
       contact: [
@@ -54,7 +54,6 @@ describe("normalizePatientDataMPI", () => {
     expect(result).toEqual(expected);
   });
 
-  // Should normalize first and last name to lowercase and remove apostrophes and hyphens
   it("should normalize first and last name to lowercase and remove apostrophes and hyphens", () => {
     const PatientDataMPI: PatientDataMPI = {
       id: "123456789",
@@ -79,7 +78,7 @@ describe("normalizePatientDataMPI", () => {
     };
 
     const expected: PatientDataMPI = {
-      id: "",
+      id: "123456789",
       firstName: "johnoconnor",
       lastName: "doesmith",
       dob: "1990-01-01",
@@ -90,6 +89,7 @@ describe("normalizePatientDataMPI", () => {
           city: "new york",
           zip: "10001",
           state: USState.NY,
+          country: "USA",
         },
       ],
       contact: [
@@ -118,7 +118,8 @@ describe("normalizePatientDataMPI", () => {
           addressLine1: "123 elm st    ",
           city: "   new york     ",
           zip: "10001",
-        } as Address,
+          state: USState.NY,
+        },
       ],
       contact: [
         {
@@ -129,7 +130,7 @@ describe("normalizePatientDataMPI", () => {
     };
 
     const expected: PatientDataMPI = {
-      id: "",
+      id: "123456789",
       firstName: "john",
       lastName: "dogo",
       dob: "1990-01-01",
@@ -139,7 +140,9 @@ describe("normalizePatientDataMPI", () => {
           addressLine1: "123 elm st",
           city: "new york",
           zip: "10001",
-        } as Address,
+          state: USState.NY,
+          country: "USA",
+        },
       ],
       contact: [
         {
@@ -239,7 +242,7 @@ it("should handle default contact values and remove period from street", () => {
   };
 
   const expected: PatientDataMPI = {
-    id: "",
+    id: "123456789",
     firstName: "john",
     lastName: "dogo",
     dob: "1990-01-01",
@@ -250,6 +253,7 @@ it("should handle default contact values and remove period from street", () => {
         city: "new york",
         zip: "10001",
         state: USState.NY,
+        country: "USA",
       },
     ],
     contact: [
