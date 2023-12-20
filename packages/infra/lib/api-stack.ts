@@ -32,7 +32,6 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
-import { createIHEStack } from "./ihe-stack";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
@@ -48,7 +47,9 @@ interface APIStackProps extends StackProps {
 }
 
 export class APIStack extends Stack {
-  readonly vpc: ec2.IVpc;
+  public readonly vpc: ec2.IVpc;
+  public readonly sharedLambdaLayers: LambdaLayers;
+  public readonly alarmAction: SnsAction | undefined;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -62,6 +63,7 @@ export class APIStack extends Stack {
     const secrets = getSecrets(this, props.config);
 
     const slackNotification = setupSlackNotifSnsTopic(this, props.config);
+    this.alarmAction = slackNotification?.alarmAction;
 
     //-------------------------------------------
     // VPC + NAT Gateway
@@ -239,6 +241,7 @@ export class APIStack extends Stack {
     }
 
     const lambdaLayers = setupLambdasLayers(this);
+    this.sharedLambdaLayers = lambdaLayers;
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -693,19 +696,6 @@ export class APIStack extends Stack {
         period: apig.Period.DAY,
       },
     });
-
-    //-------------------------------------------
-    // IHE API Gateway
-    //-------------------------------------------
-    if (props.config.iheGateway) {
-      createIHEStack(this, {
-        config: props.config,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-        lambdaLayers,
-        publicZone,
-      });
-    }
 
     createScheduledAPIQuotaChecker({
       stack: this,
