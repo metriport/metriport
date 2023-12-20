@@ -1,5 +1,5 @@
 import { CQLink, CQPatientData, CQPatientDataCreate } from "../../domain/cq-patient-data";
-import { CQPatientDataModel } from "../../../../models/medical/cq-patient-data";
+import { CQPatientDataModel } from "../../models/cq-patient-data";
 import { getCQPatientData } from "./get-cq-data";
 import { updateCQPatientData } from "./update-cq-data";
 

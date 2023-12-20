@@ -1,6 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { CQData, CQPatientData } from "../../external/carequality/domain/cq-patient-data";
-import { BaseModel, ModelSetup } from "../_default";
+import { CQData, CQPatientData } from "../domain/cq-patient-data";
+import { BaseModel, ModelSetup } from "../../../models/_default";
 
 export class CQPatientDataModel extends BaseModel<CQPatientDataModel> implements CQPatientData {
   static NAME = "cq_patient_data";

@@ -9,7 +9,7 @@ import { cqDirectoryEntryTemp, cqDirectoryEntry, cqDirectoryEntryBackup } from "
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
-import { CQDirectoryEntryModel } from "../../../../models/medical/cq-directory";
+import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 dayjs.extend(duration);
 const BATCH_SIZE = 1000;

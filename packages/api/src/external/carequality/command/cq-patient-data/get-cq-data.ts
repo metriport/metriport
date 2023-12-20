@@ -1,5 +1,5 @@
 import NotFoundError from "../../../../errors/not-found";
-import { CQPatientDataModel } from "../../../../models/medical/cq-patient-data";
+import { CQPatientDataModel } from "../../models/cq-patient-data";
 
 export type GetCQData = { id: string; cxId: string };
 

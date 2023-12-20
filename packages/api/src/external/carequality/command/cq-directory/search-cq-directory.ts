@@ -2,7 +2,7 @@ import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
 import { geocodeAddresses } from "../../../aws/address";
-import { CQDirectoryEntryModel } from "../../../../models/medical/cq-directory";
+import { CQDirectoryEntryModel } from "../../models/cq-directory";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;

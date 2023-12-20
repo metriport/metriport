@@ -1,5 +1,5 @@
 import { PatientDiscoveryResult } from "../../domain/patient-discovery-result";
-import { PatientDiscoveryResultModel } from "../../../../models/medical/patient-discovery-result";
+import { PatientDiscoveryResultModel } from "../../models/patient-discovery-result";
 
 export async function getPatientDiscoveryResults(
   requestId: string

@@ -1,6 +1,6 @@
-import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { PatientDiscoveryResultModel } from "../../../../models/medical/patient-discovery-result";
+import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
+import { PatientDiscoveryResultModel } from "../../models/patient-discovery-result";
 
 export async function createPatientDiscoveryResult(
   pdResponse: PatientDiscoveryResponse

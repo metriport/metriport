@@ -1,8 +1,8 @@
 import { uniqBy } from "lodash";
-import { CQPatientDataCreate } from "../../domain/cq-patient-data";
-import { CQPatientDataModel } from "../../../../models/medical/cq-patient-data";
-import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { BaseUpdateCmdWithCustomer } from "../../../../command/medical/base-update-command";
+import { executeOnDBTx } from "../../../../models/transaction-wrapper";
+import { CQPatientDataCreate } from "../../domain/cq-patient-data";
+import { CQPatientDataModel } from "../../models/cq-patient-data";
 import { getCQPatientDataOrFail } from "./get-cq-data";
 
 export type CQPatientDataUpdate = CQPatientDataCreate & BaseUpdateCmdWithCustomer;
