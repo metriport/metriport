@@ -23,7 +23,7 @@ export class IHEStack extends Stack {
     //-------------------------------------------
     // API Gateway
     //-------------------------------------------
-    if (!props.config.ihe) {
+    if (!props.config.iheGateway) {
       throw new Error("Must define IHE properties!");
     }
 
@@ -45,11 +45,11 @@ export class IHEStack extends Stack {
     const certificate = cert.Certificate.fromCertificateArn(
       this,
       "IHECertificate",
-      props.config.ihe.gatewayCertArn
+      props.config.iheGateway.certArn
     );
 
     // add domain cert + record
-    const iheApiUrl = `${props.config.ihe?.subdomain}.${props.config.domain}`;
+    const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
     api.addDomainName("IHEAPIDomain", {
       domainName: iheApiUrl,
       certificate: certificate,
