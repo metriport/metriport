@@ -30,51 +30,24 @@ export function generateTimeStrings(): {
 export function cleanXml(xml: string): string {
   xml = xml.trim();
   xml = xml.replace(/^\\n/, "");
+  // all the different escape permutations I have seen
+  xml = xml.replace(/\\\\\\\\"/g, '"');
   xml = xml.replace(/\\\\\\"/g, '"');
+  xml = xml.replace(/\\\\"/g, '"');
   xml = xml.replace(/\\"/g, '"');
   return xml;
 }
 
-interface ParsedContentType {
-  boundary: string;
-  startToken: string;
-}
+export function parseMtomResponseRegex(body: string): string {
+  const envelopeTags = ["soap:Envelope", "s:Envelope", "soapenv:Envelope"];
+  //eslint-disable-next-line
+  const regex = new RegExp(`(<(${envelopeTags.join("|")}).*<\/(${envelopeTags.join("|")})>)`, "s");
+  const match = body.match(regex);
 
-function parseContentTypeHeader(header: string): ParsedContentType | undefined {
-  const boundaryMatch = header.match(/boundary="([^"]+)"/);
-  const startTokenMatch = header.match(/start="<([^"]+)>"/);
-  if (!boundaryMatch || !startTokenMatch || !boundaryMatch[1] || !startTokenMatch[1]) {
-    return undefined;
+  if (match && match[1]) {
+    return match[1];
   }
-  return {
-    boundary: boundaryMatch[1],
-    startToken: startTokenMatch[1],
-  };
-}
 
-function extractXmlFromBody(body: string, contentType: ParsedContentType): string | undefined {
-  const parts = body.split(`--${contentType.boundary}`);
-  for (const part of parts) {
-    if (part.includes(`Content-ID: <${contentType.startToken}>`)) {
-      const xmlStartIndex =
-        part.indexOf("<soap:Envelope") >= 0
-          ? part.indexOf("<soap:Envelope")
-          : part.indexOf("<s:Envelope");
-      if (xmlStartIndex >= 0) {
-        const xmlContent = part.substring(xmlStartIndex);
-        return xmlContent.split("\r\n")[0] ?? undefined;
-      }
-    }
-  }
-  return undefined;
-}
-
-export function parseMtomResponse(body: string, contentTypeHeader: string): string {
-  const parsedContentType = parseContentTypeHeader(contentTypeHeader);
-  if (!parsedContentType) {
-    console.error("Invalid or unsupported Content-Type header");
-    return body;
-  }
-  const extractedXml = extractXmlFromBody(body, parsedContentType);
-  return extractedXml ?? body;
+  console.log("No valid XML envelope found in the body");
+  return body;
 }

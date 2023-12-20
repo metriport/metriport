@@ -24,7 +24,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
         result = await generateITI38(event.body);
         break;
       case "/iti39/v1":
-        result = await generateITI39(event.body, event.headers["content-type"] ?? "");
+        result = await generateITI39(event.body);
         break;
       default:
         throw new Error("Invalid path");
