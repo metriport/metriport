@@ -24,7 +24,7 @@ export type PatientDiscoveryRequest = {
 
 export const patientDiscoveryResponseSchema = baseResponseSchema.extend({
   patientMatch: z.boolean(),
-  xcpdHomeCommunityId: z.string().nullish(),
+  gatewayHomeCommunityId: z.string().nullish(),
 });
 
 export type PatientDiscoveryResponse = z.infer<typeof patientDiscoveryResponseSchema>;

@@ -108,7 +108,7 @@ router.get(
 // BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
 
 /**
- * POST /internal/carequality/patient-discovery
+ * POST /internal/carequality/patient-discovery/response
  *
  * Receives a Patient Discovery request from the IHE Gateway
  */
